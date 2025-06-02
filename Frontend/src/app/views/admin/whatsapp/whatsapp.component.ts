@@ -1,0 +1,376 @@
+import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { interval, Subscription } from 'rxjs';
+
+@Component({
+  selector: 'app-whatsapp',
+  templateUrl: './whatsapp.component.html',
+  styleUrls: ['./whatsapp.component.scss']
+})
+export class WhatsAppComponent implements OnInit, OnDestroy {
+
+  public stats: any = null;
+  public sessions: any[] = [];
+  public loading: boolean = false;
+  public refreshing: boolean = false;
+
+  public filtros: any = {
+    search: '',
+    status: '',
+    empresa_id: '',
+    per_page: 15,
+    page: 1
+  };
+
+  // Estado de conexiones
+  public connectionStatus: string = 'unknown';
+  public lastUpdate: Date = new Date();
+  
+  // Auto-refresh
+  private autoRefreshSubscription?: Subscription;
+  public autoRefreshEnabled: boolean = true;
+  public refreshInterval: number = 30; // segundos
+
+  // Envío manual
+  public sendingMessage: boolean = false;
+  public manualMessage = {
+    whatsapp_number: '',
+    message: '',
+    empresa_id: null
+  };
+
+  public modalRef?: BsModalRef;
+
+  public empresas: any[] = [];
+
+  constructor(
+    public apiService: ApiService,
+    public alertService: AlertService,
+    private modalService: BsModalService
+  ) {}
+
+  ngOnInit() {
+    
+    this.loadInitialData();
+    this.setupAutoRefresh();
+  }
+
+  ngOnDestroy() {
+    if (this.autoRefreshSubscription) {
+      this.autoRefreshSubscription.unsubscribe();
+    }
+  }
+
+  loadInitialData() {
+    this.loading = true;
+    console.log('📥 Cargando datos iniciales...');
+    
+    Promise.all([
+      this.loadStats(),
+      this.loadSessions(),
+      this.loadEmpresas()
+    ]).finally(() => {
+      this.loading = false;
+      console.log('✅ Datos iniciales cargados');
+    });
+  }
+
+  loadStats(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('📊 Cargando estadísticas...');
+      
+
+      
+
+      this.apiService.getAll('admin/whatsapp/stats').subscribe(
+        (response) => {
+          if (response && response.success !== undefined) {
+            if (response.success) {
+              this.stats = response.data;
+            }
+          } else {
+            this.stats = response;
+          }
+          
+          this.connectionStatus = this.determineConnectionStatus();
+          this.lastUpdate = new Date();
+          resolve();
+        },
+        (error) => {
+          console.error('Error cargando estadísticas:', error);
+          this.connectionStatus = 'disconnected';
+   
+          this.connectionStatus = 'connected';
+          resolve();
+        }
+      );
+      
+    });
+  }
+
+  loadSessions(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('👥 Cargando sesiones...');
+      
+   
+      
+  
+      this.apiService.getAll('admin/whatsapp/sessions', this.filtros).subscribe(
+        (response) => {
+          if (response && response.success !== undefined) {
+            if (response.success) {
+              this.sessions = response.data.data || response.data;
+            }
+          } else {
+            this.sessions = response.data || response;
+          }
+          resolve();
+        },
+        (error) => {
+          console.error('Error cargando sesiones:', error);
+          resolve();
+        }
+      );
+      
+    });
+  }
+
+  loadEmpresas(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('🏢 Cargando empresas...');
+      
+      // Usar el mismo endpoint que en usuarios
+      this.apiService.getAll('empresas/list').subscribe(
+        (empresas) => {
+          this.empresas = empresas || [];
+          console.log('✅ Empresas cargadas:', this.empresas);
+          resolve();
+        },
+        (error) => {
+          console.error('Error cargando empresas:', error);
+          this.empresas = [];
+          resolve();
+        }
+      );
+    });
+  }
+
+
+
+  setupAutoRefresh() {
+    if (this.autoRefreshEnabled) {
+      this.autoRefreshSubscription = interval(this.refreshInterval * 1000).subscribe(() => {
+        this.refreshData();
+      });
+    }
+  }
+
+  refreshData() {
+    console.log('🔄 Refrescando datos...');
+    this.refreshing = true;
+    Promise.all([
+      this.loadStats(),
+      this.loadSessions()
+    ]).finally(() => {
+      this.refreshing = false;
+      console.log('✅ Datos refrescados');
+    });
+  }
+
+  toggleAutoRefresh() {
+    this.autoRefreshEnabled = !this.autoRefreshEnabled;
+    
+    if (this.autoRefreshSubscription) {
+      this.autoRefreshSubscription.unsubscribe();
+    }
+
+    if (this.autoRefreshEnabled) {
+      this.setupAutoRefresh();
+      this.alertService.success('Auto-actualización activada', 'WhatsApp');
+    } else {
+      this.alertService.info('Auto-actualización desactivada', 'WhatsApp');
+    }
+  }
+
+
+  determineConnectionStatus(): string {
+    if (!this.stats) return 'unknown';
+    
+    if (this.stats.sessions?.connected > 0) {
+      return 'connected';
+    } else if (this.stats.sessions?.total > 0) {
+      return 'disconnected';
+    } else {
+      return 'unknown';
+    }
+  }
+
+  getConnectionStatusClass(): string {
+    switch (this.connectionStatus) {
+      case 'connected': return 'text-success';
+      case 'disconnected': return 'text-warning';
+      default: return 'text-muted';
+    }
+  }
+
+  getConnectionStatusIcon(): string {
+    switch (this.connectionStatus) {
+      case 'connected': return 'fa-check-circle';
+      case 'disconnected': return 'fa-exclamation-circle';
+      default: return 'fa-question-circle';
+    }
+  }
+
+  getSessionStatusClass(status: string): string {
+    if (!status) return 'text-muted';
+    
+    switch (status.toLowerCase()) {
+      case 'connected': return 'text-success';
+      case 'pending_code':
+      case 'pending_user': return 'text-warning';
+      case 'disconnected': return 'text-danger';
+      default: return 'text-muted';
+    }
+  }
+
+  getSessionStatusIcon(status: string): string {
+    if (!status) return 'fa-question-circle';
+    
+    switch (status.toLowerCase()) {
+      case 'connected': return 'fa-check-circle';
+      case 'pending_code':
+      case 'pending_user': return 'fa-clock';
+      case 'disconnected': return 'fa-times-circle';
+      default: return 'fa-question-circle';
+    }
+  }
+
+  formatLastActivity(timestamp: string): string {
+    if (!timestamp) return 'Nunca';
+    
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const minutes = Math.floor(diff / 60000);
+      
+      if (minutes < 1) return 'Ahora mismo';
+      if (minutes < 60) return `Hace ${minutes} min`;
+      
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `Hace ${hours}h`;
+      
+      const days = Math.floor(hours / 24);
+      return `Hace ${days} días`;
+    } catch (error) {
+      return 'Fecha inválida';
+    }
+  }
+
+  applyFilters() {
+    console.log('🔍 Aplicando filtros:', this.filtros);
+    this.loadSessions();
+  }
+
+  clearFilters() {
+    console.log('🧹 Limpiando filtros');
+    this.filtros = {
+      search: '',
+      status: '',
+      empresa_id: '',
+      per_page: 15,
+      page: 1
+    };
+    this.loadSessions();
+  }
+
+  openSendMessageModal(template: TemplateRef<any>) {
+    console.log('📝 Abriendo modal de envío');
+    this.manualMessage = {
+      whatsapp_number: '',
+      message: '',
+      empresa_id: null
+    };
+    
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg'
+    });
+  }
+
+
+  disconnectSession(sessionId: number) {
+    if (!confirm('¿Está seguro de desconectar esta sesión?')) return;
+
+    console.log('🔌 Desconectando sesión:', sessionId);
+    
+    this.alertService.info('Desconectando sesión...', 'WhatsApp');
+    this.refreshing = true;
+    this.loading = true;
+    
+    this.apiService.delete('admin/whatsapp/sessions', sessionId).subscribe(
+      (response) => {
+        this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
+        this.refreshData();
+      },
+      (error) => {
+        this.alertService.error('Error al desconectar sesión');
+      }
+    );
+    
+  }
+
+
+  trackBySessionId(index: number, session: any): number {
+    return session?.id || index;
+  }
+
+  getMessageTypePercentage(type: 'incoming' | 'outgoing'): number {
+    if (!this.stats?.messages?.total) return 0;
+    
+    const total = this.stats.messages.total;
+    const count = this.stats.messages[type] || 0;
+    
+    return Math.round((count / total) * 100);
+  }
+
+  copyToClipboard(text: string): void {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.alertService.success('Copiado al portapapeles', 'WhatsApp');
+      }).catch(err => {
+        console.error('Error copiando al portapapeles:', err);
+        this.fallbackCopyTextToClipboard(text);
+      });
+    } else {
+      this.fallbackCopyTextToClipboard(text);
+    }
+  }
+
+  private fallbackCopyTextToClipboard(text: string): void {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        this.alertService.success('Copiado al portapapeles', 'WhatsApp');
+      } else {
+        this.alertService.error('No se pudo copiar al portapapeles');
+      }
+    } catch (err) {
+      console.error('Fallback: Error copiando al portapapeles:', err);
+      this.alertService.error('No se pudo copiar al portapapeles');
+    }
+    
+    document.body.removeChild(textArea);
+  }
+}

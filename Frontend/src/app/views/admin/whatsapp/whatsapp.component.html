@@ -1,0 +1,278 @@
+<!-- Header principal -->
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <div class="d-flex align-items-center">
+    <h2 class="page-heading mb-0 me-3">
+      <i class="fab fa-whatsapp text-success me-2"></i>
+      WhatsApp Business
+    </h2>
+    
+    <!-- Estado de conexión -->
+    <div class="d-flex align-items-center">
+      <span [class]="getConnectionStatusClass()">
+        <i class="fa" [class]="getConnectionStatusIcon()"></i>
+      </span>
+      <span class="ms-2 text-muted small">
+        {{ connectionStatus === 'connected' ? 'Conectado' : 
+           connectionStatus === 'disconnected' ? 'Desconectado' : 'Desconocido' }}
+      </span>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button 
+      class="btn btn-sm"
+      [class]="autoRefreshEnabled ? 'btn-success' : 'btn-outline-secondary'"
+      (click)="toggleAutoRefresh()"
+      [tooltip]="autoRefreshEnabled ? 'Desactivar auto-actualización' : 'Activar auto-actualización'">
+      <i class="fa" [class]="autoRefreshEnabled ? 'fa-sync fa-spin' : 'fa-sync'"></i>
+    </button>
+
+    <button 
+      class="btn btn-outline-primary btn-sm" 
+      (click)="refreshData()" 
+      [disabled]="refreshing">
+      <i class="fa fa-refresh" [class.fa-spin]="refreshing"></i>
+      {{ refreshing ? 'Actualizando...' : 'Actualizar' }}
+    </button>
+
+  </div>
+</section>
+
+
+<div *ngIf="loading" class="text-center py-5">
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Cargando...</span>
+  </div>
+  <p class="mt-2 text-muted">Cargando datos de WhatsApp...</p>
+</div>
+
+<!-- Contenido principal con tabs -->
+<div *ngIf="!loading">
+  
+  <!-- Tabs de navegación -->
+  <tabset>
+    
+    <!-- Tab: Estadísticas -->
+    <tab heading="📊 Estadísticas">
+      <section class="bg-white rounded p-4 mb-4">
+        
+        <!-- Métricas principales -->
+        <div class="row mb-4" *ngIf="stats">
+          <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body text-center">
+                <i class="fa fa-users fa-3x text-primary mb-3"></i>
+                <h3 class="card-title mb-1">{{ stats.sessions?.connected || 0 }}</h3>
+                <p class="card-text text-muted mb-0">Sesiones Activas</p>
+                <small class="text-success">de {{ stats.sessions?.total || 0 }} total</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body text-center">
+                <i class="fa fa-comments fa-3x text-success mb-3"></i>
+                <h3 class="card-title mb-1">{{ stats.messages?.total || 0 }}</h3>
+                <p class="card-text text-muted mb-0">Mensajes Totales</p>
+                <small class="text-muted">últimos 30 días</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body text-center">
+                <i class="fa fa-arrow-down fa-3x text-info mb-3"></i>
+                <h3 class="card-title mb-1">{{ stats.messages?.incoming || 0 }}</h3>
+                <p class="card-text text-muted mb-0">Mensajes Recibidos</p>
+                <small class="text-info">{{ getMessageTypePercentage('incoming') }}% del total</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body text-center">
+                <i class="fa fa-arrow-up fa-3x text-warning mb-3"></i>
+                <h3 class="card-title mb-1">{{ stats.messages?.outgoing || 0 }}</h3>
+                <p class="card-text text-muted mb-0">Mensajes Enviados</p>
+                <small class="text-warning">{{ getMessageTypePercentage('outgoing') }}% del total</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row" *ngIf="stats?.daily_activity">
+          <div class="col-12">
+            <h5 class="mb-3">Actividad de los últimos 7 días</h5>
+            <div class="card">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+
+                    <div class="bg-light p-4 rounded text-center">
+                      <i class="fa fa-chart-line fa-2x text-muted mb-2"></i>
+                      <p class="text-muted mb-0">Gráfico de actividad diaria</p>
+              
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <h6>Empresas más activas</h6>
+                    <div *ngFor="let empresa of stats.top_companies?.slice(0, 5)" 
+                         class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                      <span class="text-truncate">{{ empresa.nombre }}</span>
+                      <span class="badge bg-primary">{{ empresa.session_count }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-end mt-3">
+          <small class="text-muted">
+            <i class="fa fa-clock me-1"></i>
+            Última actualización: {{ lastUpdate | date:'short' }}
+          </small>
+        </div>
+
+      </section>
+    </tab>
+
+    <tab heading="👥 Sesiones">
+      <section class="bg-white rounded p-4 mb-4">
+        
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <input 
+              type="text" 
+              class="form-control" 
+              placeholder="Buscar número o empresa..."
+              [(ngModel)]="filtros.search"
+              (keyup.enter)="applyFilters()">
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" [(ngModel)]="filtros.status" (change)="applyFilters()">
+              <option value="">Todos los estados</option>
+              <option value="connected">Conectado</option>
+              <option value="pending_code">Esperando código</option>
+              <option value="pending_user">Esperando usuario</option>
+              <option value="disconnected">Desconectado</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" [(ngModel)]="filtros.empresa_id" (change)="applyFilters()">
+              <option value="">Todas las empresas</option>
+              <option *ngFor="let empresa of empresas" [value]="empresa.id">
+                {{ empresa.nombre }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select class="form-select" [(ngModel)]="filtros.per_page" (change)="applyFilters()">
+              <option value="15">15 por página</option>
+              <option value="25">25 por página</option>
+              <option value="50">50 por página</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-secondary" (click)="clearFilters()">
+              <i class="fa fa-times me-1"></i>
+              Limpiar
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de sesiones -->
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Número WhatsApp</th>
+                <th>Estado</th>
+                <th>Empresa</th>
+                <th>Usuario</th>
+                <th>Mensajes</th>
+                <th>Última Actividad</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="sessions.length === 0">
+                <td colspan="7" class="text-center py-4">
+                  <i class="fa fa-inbox fa-2x text-muted mb-2"></i>
+                  <p class="text-muted mb-0">No hay sesiones disponibles</p>
+                </td>
+              </tr>
+              
+              <tr *ngFor="let session of sessions; trackBy: trackBySessionId">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-success rounded-circle d-flex align-items-center justify-content-center me-2">
+                      <i class="fab fa-whatsapp text-white"></i>
+                    </div>
+                    <span class="fw-bold">{{ session.whatsapp_number }}</span>
+                  </div>
+                </td>
+                
+                <td>
+                  <span [class]="getSessionStatusClass(session.status)">
+                    <i class="fa" [class]="getSessionStatusIcon(session.status)"></i>
+                    {{ session.status === 'connected' ? 'Conectado' :
+                       session.status === 'pending_code' ? 'Esperando código' :
+                       session.status === 'pending_user' ? 'Esperando usuario' :
+                       session.status === 'disconnected' ? 'Desconectado' : session.status }}
+                  </span>
+                </td>
+                
+                <td>
+                  <span *ngIf="session.empresa">{{ session.empresa.nombre }}</span>
+                  <span *ngIf="!session.empresa" class="text-muted">Sin empresa</span>
+                </td>
+                
+                <td>
+                  <div *ngIf="session.usuario">
+                    <div class="fw-bold">{{ session.usuario.name }}</div>
+                    <small class="text-muted">{{ session.usuario.email }}</small>
+                  </div>
+                  <span *ngIf="!session.usuario" class="text-muted">Sin usuario</span>
+                </td>
+                
+                <td>
+                  <span class="badge bg-primary">{{ session.message_count || 0 }}</span>
+                </td>
+                
+                <td>
+                  <small>{{ formatLastActivity(session.last_message_at) }}</small>
+                  <div *ngIf="session.is_active" class="badge bg-success">Activa</div>
+                </td>
+                
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button 
+                      class="btn btn-outline-info" 
+                      tooltip="Ver detalles">
+
+                      <i class="fa fa-eye"></i>
+                    </button>
+                    <button 
+                      *ngIf="session.status === 'connected' && apiService.canChange()"
+                      class="btn btn-outline-danger" 
+                      tooltip="Desconectar"
+                      (click)="disconnectSession(session.id)">
+                      <i class="fa fa-unlink"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </section>
+    </tab>
+
+  </tabset>
+</div>

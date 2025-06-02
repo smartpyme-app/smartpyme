@@ -9,6 +9,7 @@ use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Http\JsonResponse;
 
 class WebhookController extends Controller
 {
@@ -275,5 +276,200 @@ class WebhookController extends Controller
                     ->distinct('whatsapp_number')->count(),
             ]
         ];
+    }
+
+
+
+
+
+    
+    public function disconnectSession(int $sessionId): JsonResponse
+    {
+        try {
+            $session = WhatsAppSession::findOrFail($sessionId);
+
+      
+            $session->update([
+                'status' => 'disconnected',
+                'disconnected_at' => now(),
+                'disconnected_by' => auth()->id()
+            ]);
+
+
+            $this->whatsAppService->disconnectSession($session->whatsapp_number);
+
+            Log::info('Sesión WhatsApp desconectada', [
+                'session_id' => $sessionId,
+                'whatsapp_number' => $session->whatsapp_number,
+                'disconnected_by' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sesión desconectada correctamente'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error desconectando sesión WhatsApp', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desconectar sesión'
+            ], 500);
+        }
+    }
+
+
+
+    public function getSessionMessages(int $sessionId, Request $request): JsonResponse
+    {
+        try {
+            $session = WhatsAppSession::findOrFail($sessionId);
+            $perPage = $request->get('per_page', 20);
+
+            $messages = WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)
+                ->orderByDesc('created_at')
+                ->paginate($perPage);
+
+            $messages->getCollection()->transform(function ($message) {
+                return [
+                    'id' => $message->id,
+                    'content' => $message->content,
+                    'message_type' => $message->message_type,
+                    'status' => $message->status,
+                    'created_at' => $message->created_at,
+                    'metadata' => $message->metadata,
+                    'is_ai_generated' => $message->metadata['ai_generated'] ?? false,
+                    'sent_by' => $message->metadata['sent_by_user'] ?? null
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $messages,
+                'session' => [
+                    'id' => $session->id,
+                    'whatsapp_number' => $session->whatsapp_number,
+                    'status' => $session->status,
+                    'empresa' => $session->empresa->nombre
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo mensajes de sesión', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo mensajes'
+            ], 500);
+        }
+    }
+
+
+    public function getExecutiveSummary(Request $request): JsonResponse
+    {
+        try {
+            $days = $request->get('days', 7);
+
+            $summary = [
+                'period' => $days,
+                'overview' => [
+                    'total_sessions' => WhatsAppSession::count(),
+                    'active_sessions_today' => WhatsAppSession::where('last_message_at', '>=', now()->startOfDay())->count(),
+                    'messages_today' => WhatsAppMessage::whereDate('created_at', today())->count(),
+                    'companies_using' => WhatsAppSession::distinct('id_empresa')->count()
+                ],
+                'trends' => [
+                    'messages_growth' => $this->calculateGrowthRate('messages', $days),
+                    'sessions_growth' => $this->calculateGrowthRate('sessions', $days),
+                    'engagement_rate' => $this->calculateEngagementRate($days)
+                ],
+                'top_metrics' => [
+                    'busiest_hour' => $this->getBusiestHour($days),
+                    'most_active_company' => $this->getMostActiveCompany($days),
+                    'avg_response_time' => $this->getAverageResponseTime($days)
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $summary,
+                'generated_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error generando resumen ejecutivo WhatsApp', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generando resumen'
+            ], 500);
+        }
+    }
+
+    // Métodos auxiliares privados para el resumen ejecutivo
+
+    private function calculateGrowthRate(string $type, int $days): float
+    {
+        $currentPeriod = $type === 'messages'
+            ? WhatsAppMessage::where('created_at', '>=', now()->subDays($days))->count()
+            : WhatsAppSession::where('created_at', '>=', now()->subDays($days))->count();
+
+        $previousPeriod = $type === 'messages'
+            ? WhatsAppMessage::whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count()
+            : WhatsAppSession::whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
+
+        if ($previousPeriod === 0) return $currentPeriod > 0 ? 100 : 0;
+
+        return round((($currentPeriod - $previousPeriod) / $previousPeriod) * 100, 2);
+    }
+
+    private function calculateEngagementRate(int $days): float
+    {
+        $totalSessions = WhatsAppSession::where('created_at', '>=', now()->subDays($days))->count();
+        $activeSessions = WhatsAppSession::where('last_message_at', '>=', now()->subDays($days))->count();
+
+        if ($totalSessions === 0) return 0;
+
+        return round(($activeSessions / $totalSessions) * 100, 2);
+    }
+
+    private function getBusiestHour(int $days): int
+    {
+        $messages = WhatsAppMessage::where('created_at', '>=', now()->subDays($days))
+            ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
+            ->groupBy('hour')
+            ->orderByDesc('count')
+            ->first();
+
+        return $messages->hour ?? 12;
+    }
+
+    private function getMostActiveCompany(int $days): ?array
+    {
+        $company = WhatsAppSession::join('empresas', 'whatsapp_sessions.id_empresa', '=', 'empresas.id')
+            ->where('whatsapp_sessions.created_at', '>=', now()->subDays($days))
+            ->selectRaw('empresas.nombre, empresas.id, COUNT(whatsapp_sessions.id) as session_count')
+            ->groupBy('empresas.id', 'empresas.nombre')
+            ->orderByDesc('session_count')
+            ->first();
+
+        return $company ? [
+            'id' => $company->id,
+            'nombre' => $company->nombre,
+            'session_count' => $company->session_count
+        ] : null;
+    }
+
+    private function getAverageResponseTime(int $days): float
+    {
+        // Esta es una implementación simplificada
+        // Deberías calcular el tiempo real entre mensajes entrantes y salientes
+        return 2.5; // minutos (placeholder)
     }
 }

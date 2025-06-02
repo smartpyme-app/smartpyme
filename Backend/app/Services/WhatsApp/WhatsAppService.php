@@ -110,4 +110,16 @@ class WhatsAppService
             $session->usuario
         );
     }
+    
+    public function disconnectSession(string $whatsappNumber): void
+    {
+        $session = WhatsAppSession::where('whatsapp_number', $whatsappNumber)->first();
+        if ($session) {
+            $session->update([
+                'status' => 'disconnected',
+                'disconnected_at' => now(),
+                'disconnected_by' => auth()->id()
+            ]);
+        }
+    }
 }
