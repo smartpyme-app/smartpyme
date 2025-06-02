@@ -161,14 +161,16 @@ class MHNotaDebito extends Model
 
         $tributos = NULL;
 
-        if ($this->devolucion->iva) {
+        if ($this->devolucion->iva > 0) {
             $tributos = collect();
             if ($this->devolucion->iva){ 
-                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->devolucion->iva,2))]);
+                $tributos->push(['codigo' => '20', 'descripcion'=> 'Impuesto al Valor Agregado 13%', 'valor' => floatval(number_format($this->devolucion->iva, 2, '.', ''))]);
             }
+            $this->devolucion->gravada = $this->devolucion->sub_total;
+        }else{
+            $this->devolucion->gravada = 0;
+            $this->devolucion->exenta = $this->devolucion->sub_total;
         }
-
-        $this->devolucion->gravada = $this->devolucion->sub_total;
 
         return 
             [
@@ -228,9 +230,16 @@ class MHNotaDebito extends Model
                 $detalle->tipo_item = 1;
             }
 
-
             $detalle->codTributo = NULL;
-            $detalle->gravada = $detalle->total;
+            $tributos = NULL;
+            if ($this->devolucion->iva > 0) {
+                $tributos = collect();
+                $tributos = ['20'];
+                $detalle->gravada = $detalle->total;
+            }else{
+                $detalle->gravada = 0;
+                $detalle->exenta = $detalle->total;
+            }
 
             $detalles->push([
                 "numItem" => $index + 1,
@@ -246,7 +255,7 @@ class MHNotaDebito extends Model
                 "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                 "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
                 "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
-                "tributos" => ['20'],
+                "tributos" => $tributos,
                 // "ivaItem" => floatval($detalle->iva)
               ]);
         }
