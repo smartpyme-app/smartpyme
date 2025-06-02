@@ -18,6 +18,7 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class PartidasController extends Controller
 {
@@ -848,6 +849,17 @@ class PartidasController extends Controller
 
         return Response()->json($data, 200);
 
+    }
+
+    public function generarPDF($id)
+    {
+        $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
+
+        $pdf = PDF::loadView('contabilidad.partidas.detalle-partida', [
+            'partida' => $partida
+        ]);
+
+        return $pdf->stream('partida-' . $partida->id . '.pdf');
     }
 
     public function delete($id)

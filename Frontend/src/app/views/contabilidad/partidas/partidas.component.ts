@@ -375,4 +375,11 @@ export class PartidasComponent implements OnInit {
       }
     });
   }
+
+  public imprimirPartida(partida: any) {
+    window.open(
+      this.apiService.baseUrl + '/api/partidas/descargar/' + partida.id + '?token=' + this.apiService.auth_token(),
+      '_blank'
+    );
+  }
 }

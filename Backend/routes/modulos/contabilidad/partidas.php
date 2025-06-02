@@ -25,4 +25,6 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
 
     Route::post('/partidas/abrir', [PartidasController::class, 'abrirPartida']);
 
+    Route::get('/partidas/descargar/{id}',  [PartidasController::class, 'generarPDF']);
+
 ?>
