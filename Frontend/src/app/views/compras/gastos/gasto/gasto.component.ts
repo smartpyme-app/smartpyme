@@ -27,6 +27,9 @@ export class GastoComponent implements OnInit {
   public impuestos: any = [];
   public mostrar_otros_impuestos = false;
   public impuestos_seleccionados: any[] = [];
+  public areasDisponibles: any[] = [];
+  public loadingAreas: boolean = false;
+  public departamentos: any[] = [];
 
   public jsonContent: string = '';
   public processingJson: boolean = false;
@@ -43,6 +46,7 @@ export class GastoComponent implements OnInit {
 
   ngOnInit() {
     this.loadAll();
+    this.loadDepartamentos();
 
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
@@ -135,13 +139,19 @@ export class GastoComponent implements OnInit {
       this.apiService.read('gasto/', id).subscribe(
         (gasto) => {
           this.gasto = gasto;
+          
+          // Convertir IDs a string para que coincidan con los selects
+          if (this.gasto.id_departamento) {
+            this.gasto.id_departamento = this.gasto.id_departamento.toString();
+          }
+          if (this.gasto.id_area_empresa) {
+            this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
+          }
+          
           if (this.gasto.iva > 0) this.gasto.impuesto = true;
-
           if (this.gasto.iva_percibido > 0) this.gasto.percepcion = true;
-
-          if (this.gasto.renta_retenida > 0)
-            this.gasto.renta = true;
-
+          if (this.gasto.renta_retenida > 0) this.gasto.renta = true;
+  
           if (this.gasto.otros_impuestos) {
             if (typeof this.gasto.otros_impuestos === 'object' && 
                   this.gasto.otros_impuestos.seleccionados) {
@@ -150,7 +160,7 @@ export class GastoComponent implements OnInit {
                   this.gasto.impuestos_valores = this.gasto.otros_impuestos.valores;
               }
           }
-
+  
           if (this.tieneOtrosImpuestos(this.gasto.otros_impuestos)) {
               this.mostrar_otros_impuestos = true;
               
@@ -158,11 +168,16 @@ export class GastoComponent implements OnInit {
                   this.cargarImpuestosSeleccionados();
               }
           }
-
-          if (!this.gasto.area_empresa) {
-            this.gasto.area_empresa = '';
+  
+          if (!this.gasto.id_area_empresa) {
+            this.gasto.id_area_empresa = '';
           }
-
+  
+          // Cargar áreas si existe id_departamento
+          if (this.gasto.id_departamento) {
+            this.loadAreasPorDepartamento(this.gasto.id_departamento);
+          }
+  
           this.loading = false;
         },
         (error) => {
@@ -179,23 +194,21 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo = '';
       this.gasto.id_categoria = '';
       this.gasto.id_proveedor = '';
-      // this.gasto.fecha_pago = this.apiService.date();
       this.gasto.fecha = this.apiService.date();
       this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
       this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
       this.gasto.id_usuario = this.apiService.auth_user().id;
       this.gasto.otros_impuestos = []; 
       this.gasto.impuestos_valores = [];
-      this.gasto.area_empresa = '';
-
+      this.gasto.id_area_empresa = '';
+  
       if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
         this.gasto.id_proyecto =
           +this.route.snapshot.queryParamMap.get('id_proyecto')!;
       }
     }
-
+  
     // Duplicar gasto
-
     if (
       this.route.snapshot.queryParamMap.get('recurrente')! &&
       this.route.snapshot.queryParamMap.get('id_gasto')!
@@ -208,10 +221,23 @@ export class GastoComponent implements OnInit {
             this.gasto = gasto;
             this.gasto.fecha = this.apiService.date();
             this.gasto.id = null;
-
+  
+            // Convertir IDs a string también para gastos duplicados
+            if (this.gasto.id_departamento) {
+              this.gasto.id_departamento = this.gasto.id_departamento.toString();
+            }
+            if (this.gasto.id_area_empresa) {
+              this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
+            }
+  
             if(this.gasto.otros_impuestos) {
               this.mostrar_otros_impuestos = true;
               this.cargarImpuestosSeleccionados();
+            }
+  
+            // Cargar áreas para gasto duplicado
+            if (this.gasto.id_departamento) {
+              this.loadAreasPorDepartamento(this.gasto.id_departamento);
             }
           },
           (error) => {
@@ -220,7 +246,7 @@ export class GastoComponent implements OnInit {
           }
         );
     }
-
+  
     this.cargarDocumentos();
   }
 
@@ -881,7 +907,56 @@ export class GastoComponent implements OnInit {
         }
       }
     }
-
-    // Si no se encontró coincidencia, se dejara la categoría predeterminada
   }
+
+  private loadDepartamentos(): Promise<any> {
+    return new Promise((resolve, reject) => {
+        this.apiService.getAll('departamentosEmpresa/list').subscribe(departamentos => { 
+            this.departamentos = departamentos;
+            resolve(departamentos);
+        }, error => {
+            this.alertService.error(error);
+            reject(error);
+        });
+    });
+}
+
+  public onDepartamentoChangeGasto() {
+      // Limpiar área seleccionada
+      this.gasto.id_area_empresa = '';
+      this.areasDisponibles = [];
+      
+      if (this.gasto.id_departamento) {
+          this.loadAreasPorDepartamento(this.gasto.id_departamento);
+      }
+  }
+
+  // Cargar áreas por departamento
+  private loadAreasPorDepartamento(idDepartamento: string) {
+      this.loadingAreas = true;
+      
+      this.apiService.getAll('area-empresa', { id_departamento: idDepartamento, estado: 1 })
+          .subscribe(response => {
+              this.areasDisponibles = response.data || response;
+              this.loadingAreas = false;
+          }, error => {
+              this.alertService.error(error);
+              this.loadingAreas = false;
+              this.areasDisponibles = [];
+          });
+  }
+
+
+public setDepartamento(departamento: any) {
+  this.departamentos.push(departamento);
+  this.gasto.id_departamento = departamento.id.toString();
+  // Limpiar área seleccionada y cargar nuevas áreas
+  this.gasto.id_area_empresa = '';
+  this.loadAreasPorDepartamento(departamento.id);
+}
+
+public setArea(area: any) {
+  this.areasDisponibles.push(area);
+  this.gasto.id_area_empresa = area.id.toString();
+}
 }

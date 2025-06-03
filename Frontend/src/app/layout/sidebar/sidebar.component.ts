@@ -20,6 +20,7 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
+    public gastosIsCollapsed:boolean = true;
 
     public usuario: any = {};
     public isVisible: boolean = false;
@@ -73,6 +74,11 @@ export class SidebarComponent implements OnInit {
             localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        }else{
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
         }
         
         this.usuario = this.apiService.auth_user();
@@ -148,6 +154,15 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleGastos() {
+        if(this.gastosIsCollapsed){
+            this.closeAll();
+        }
+        this.gastosIsCollapsed = !this.gastosIsCollapsed;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePreferencias() {
         if(this.preferenciasIsCollapsed){
             this.closeAll();
@@ -207,6 +222,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.gastosIsCollapsed = true;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
     }
 
     public onSubmit(){

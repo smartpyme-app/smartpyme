@@ -433,7 +433,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.saving = true;
     this.departamento.activo = true;
 
-    this.apiService.store('departamentosPlanilla', this.departamento).subscribe(
+    this.apiService.store('departamentosEmpresa', this.departamento).subscribe(
       (response: any) => {
         this.alertService.success(
           'Exito',
@@ -582,7 +582,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
   public loadCatalogos(): Promise<void> {
     return new Promise((resolve) => {
       Promise.all([
-        this.apiService.getAll('departamentosPlanilla/list').toPromise(),
+        this.apiService.getAll('departamentosEmpresa/list').toPromise(),
         this.apiService.getAll('cargos/list').toPromise(),
       ])
         .then(([departamentos, cargos]) => {

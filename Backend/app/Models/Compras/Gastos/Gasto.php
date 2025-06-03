@@ -34,7 +34,7 @@ class Gasto extends Model {
         'otros_impuestos',
         'total',
         'nota',
-        'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
@@ -47,7 +47,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'id_departamento'];
 
     protected static function boot()
     {
@@ -108,6 +108,18 @@ class Gasto extends Model {
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function areaEmpresa(){
+        return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
+    }
+
+    public function getIdDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
+    }
+
+    public function getDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
     }
 
 

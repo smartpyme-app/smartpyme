@@ -126,7 +126,7 @@ class GastosController extends Controller
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
             'otros_impuestos' => 'nullable',
-            'area_empresa'   => 'nullable',
+            'id_area_empresa'   => 'nullable',
         ],[
             'tipo.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
@@ -139,8 +139,11 @@ class GastosController extends Controller
         else
             $gasto = new Gasto;
 
-
-        $gasto->fill($request->all());
+        $data = $request->all();
+        if (isset($data['otros_impuestos']) && empty($data['otros_impuestos'])) {
+            $data['otros_impuestos'] = null;
+        }
+        $gasto->fill($data);
         $gasto->save();
 
         // Incrementar el correlarivo de Sujeto excluido
