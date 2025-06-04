@@ -2,7 +2,7 @@
 
 namespace App\Exports\Contabilidad;
 
-use App\Models\Ventas\Venta;
+use App\Models\Compras\Compra;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
-class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
     private $index = 1;
@@ -28,7 +28,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A1', 'PERCEPCIÓN DE IVA 1% EFECTUADA AL DECLARANTE');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');
@@ -41,15 +41,15 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
 
     public function headings():array{
         return[
-            'N°',
-            'Fecha',
-            'Correlativo',
-            'Ventas Exentas',
-            'Ventas Gravadas',
-            'Ventas No Sujetas',
-            'Exportaciones',
-            'Total',
-            'Venta a Cuenta de Terceros',
+            'NIT AGENTE',
+            'FECHA DE EMISIÓN',
+            'TIPO DE DOCUMENTO',
+            'SERIE DE DOCUMENTO',
+            'NÚMERO DE DOCUMENTO',
+            'MONTO SUJETO',
+            'MONTO DE LA PERCEPCIÓN 1%',
+            'DUI DEL AGENTE',
+            'NÚMERO DEL ANEXO ',
         ];
     }
 
@@ -57,39 +57,35 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
         
-        $ventas = Venta::with(['cliente', 'documento'])
+        $compras = Compra::with(['proveedor'])
                         ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function ($q) {
-                            $q->where('nombre', 'Factura')
-                                ->orWhere('nombre', 'Factura de exportación');
-                        })
+                        ->where('percepcion', '>', 0)
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
-                        ->orderByDesc('correlativo')
                         ->get();
-        return $ventas;
+        return $compras;
         
     }
 
-    public function map($venta): array{
+    public function map($compra): array{
 
-        $documento = $venta->documento;
-        $cliente = optional($venta->cliente);
+        $documento = $compra->documento;
+        $proveedor = optional($compra->proveedor);
 
         return [
-            $this->index++,
-            $venta->fecha,
-            $venta->correlativo,
-            $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
-            $venta->no_sujeta,
-            $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
-            $venta->total,
-            $venta->cuenta_a_terceros,
+            $compra->proveedor->nit ?? '',
+            $compra->fecha,
+            $compra->tipo_documento,
+            $compra->serie,
+            $compra->referencia,
+            $compra->sub_total,
+            $compra->percepcion,
+            $compra->proveedor->dui ?? '',
+            8,
         ];
     }
 }
