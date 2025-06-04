@@ -18,6 +18,7 @@ use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class PartidasController extends Controller
 {
@@ -850,6 +851,17 @@ class PartidasController extends Controller
 
     }
 
+    public function generarPDF($id)
+    {
+        $partida = Partida::with('detalles')->where('id', $id)->firstOrFail();
+
+        $pdf = PDF::loadView('contabilidad.partidas.detalle-partida', [
+            'partida' => $partida
+        ]);
+
+        return $pdf->stream('partida-' . $partida->id . '.pdf');
+    }
+
     public function delete($id)
     {
         $partida = Partida::findOrFail($id);
@@ -857,6 +869,85 @@ class PartidasController extends Controller
 
         return Response()->json($partida, 201);
 
+    }
+
+    public function cerrarPartidas(Request $request)
+    {
+        try {
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            // Validar que el mes y año sean válidos
+            if (!$month || !$year || $month < 1 || $month > 12) {
+                return response()->json([
+                    'error' => 'Mes y año inválidos'
+                ], 400);
+            }
+
+            // Calcular las fechas de inicio y fin del mes
+            $startDate = Carbon::create($year, $month, 1)->startOfMonth();
+            $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+
+            // Actualizar solo las partidas aplicadas del mes y año especificados
+            $partidas = Partida::whereBetween('fecha', [$startDate, $endDate])
+                ->where('estado', 'Aplicada')
+                ->where('id_empresa', auth()->user()->id_empresa)
+                ->update(['estado' => 'Cerrada']);
+
+            return response()->json([
+                'message' => 'Partidas aplicadas cerradas exitosamente',
+                'partidas_cerradas' => $partidas
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al cerrar las partidas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function abrirPartida(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            if ($user->tipo !== 'Administrador') {
+                return response()->json([
+                    'error' => 'No tiene permisos para realizar esta acción.'
+                ], 403);
+            }
+
+            $id = $request->input('id');
+            if (!$id) {
+                return response()->json([
+                    'error' => 'ID de partida no proporcionado.'
+                ], 400);
+            }
+
+            $partida = Partida::find($id);
+            if (!$partida) {
+                return response()->json([
+                    'error' => 'Partida no encontrada.'
+                ], 404);
+            }
+
+            if ($partida->estado !== 'Cerrada') {
+                return response()->json([
+                    'error' => 'Solo se pueden abrir partidas cerradas.'
+                ], 400);
+            }
+
+            $partida->estado = 'Pendiente';
+            $partida->save();
+
+            return response()->json([
+                'message' => 'Partida abierta exitosamente',
+                'partida' => $partida
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al abrir la partida: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
 }

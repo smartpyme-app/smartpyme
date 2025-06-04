@@ -144,6 +144,7 @@ export class FacturacionCompraComponent implements OnInit {
     this.compra.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.compra.id_empresa = this.apiService.auth_user().id_empresa;
     this.compra.incoterms = "FOB";
+    this.compra.es_retaceo = false;
     let corte = JSON.parse(sessionStorage.getItem('worder_corte')!);
     if (corte) {
       this.compra.fecha = JSON.parse(sessionStorage.getItem('worder_corte')!).fecha;

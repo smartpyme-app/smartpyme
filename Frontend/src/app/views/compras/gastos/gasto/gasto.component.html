@@ -57,6 +57,16 @@
                 </div>
             </div>
             <div class="form-group col-md-4 col-lg-3">
+                <label for="area_empresa">Area empresa:</label>
+                <input 
+                type="text" 
+                [(ngModel)]="gasto.area_empresa" 
+                name="area_empresa" 
+                class="form-control" 
+                id="area_empresa" 
+                placeholder="Ingrese el área de la empresa">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento" class="form-select">
                     <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
@@ -123,6 +133,26 @@
                 <label for="fecha_pago">Fecha de pago:</label><br>
                 <input [disabled]="!gasto.credito" type="date" class="form-control" [(ngModel)]="gasto.fecha_pago" name="fecha_pago" id="fecha_pago">
             </div>  
+            <!-- Fragmento de HTML para añadir al formulario de creación/edición de gastos -->
+
+            <div class="form-group col-md-6 col-lg-3 without-label">
+                <div class="form-switch border rounded">
+                <label for="es_retaceo">Es para retaceo</label>
+                <input 
+                    class="form-check-input float-end" 
+                    type="checkbox" 
+                    role="switch" 
+                    [(ngModel)]="gasto.es_retaceo" 
+                    name="es_retaceo"
+                    id="es_retaceo">
+                </div>
+            </div>
+            <div class="form-group col-md-12" *ngIf="gasto.es_retaceo">
+                <div class="alert alert-info py-2 px-3 mt-2 mb-0">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <small>Los gastos marcados como "para retaceo" aparecerán automáticamente en la selección de gastos al crear un retaceo.</small>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -180,6 +210,52 @@
                 <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
             </div>
         </div>
+
+        <div class="row mt-2">
+                    <h6>Detalles contable</h6>
+                    <div class="form-group col-lg-2">
+                        <label for="tipo_operacion">Tipo de operación:</label>
+                        <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Gravada">Gravada</option>
+                            <option value="No Gravada">No Gravada</option>
+                            <option value="Excluido">Excluido</option>
+                            <option value="Mixta">Mixta</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-2">
+                        <label for="clasificacion">Clasificación:</label>
+                        <select name="clasificacion" class="form-select" [(ngModel)]="gasto.clasificacion">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Costo">Costo</option>
+                            <option value="Gasto">Gasto</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-4">
+                        <label for="tipo_gasto">Tipo:</label>
+                        <select name="tipo_gasto" class="form-select" [(ngModel)]="gasto.tipo_gasto">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                            <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                            <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                            <option value="Costo artículos producidos/gastodos importaciones/internaciones">Costo artículos producidos/gastodos importaciones/internaciones</option>
+                            <option value="Costo artículos producidos/gastodos interno">Costo artículos producidos/gastodos interno</option>
+                            <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                            <option value="Mano de obra">Mano de obra</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-sm-4">
+                        <label for="sector">Sector:</label>
+                        <select name="sector" class="form-select" [(ngModel)]="gasto.sector">
+                            <option [ngValue]="null">Seleccione aquí</option>
+                            <option value="Industria">Industria</option>
+                            <option value="Comercio">Comercio</option>
+                            <option value="Agropecuaria">Agropecuaria</option>
+                            <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                        </select>
+                    </div>
+                </div>
+
     </div>
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">

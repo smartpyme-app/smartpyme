@@ -3,25 +3,46 @@
     <div>
         <h2>Libro Consumidor Final</h2>
     </div>
-    <div>
-        <button [disabled]="downloading" tooltip="Descargar Libro" (click)="descargarLibro()" class="btn btn-default tcla-F6 me-2">
-            Libro <img src="/assets/icons/download.png" class="icon">
+
+    <div class="dropdown">
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+                data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
+          Descargas 
         </button>
-        <button [disabled]="downloading" tooltip="Descargar Anexo" (click)="descargarAnexo()" class="btn btn-default tcla-F6">
-            Anexo <img src="/assets/icons/download.png" class="icon">
-        </button>
-    </div>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Libro de IVA
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                Anexo
+            </button>
+          </li>
+          <li>
+            <button class="dropdown-item d-flex align-items-center" (click)="descargarDTEConsumidorFinal()" title="Descargar DTEs en zip como JSON ">
+                <img src="/assets/icons/download.png" class="icon me-2"> 
+                DTEs
+            </button>
+          </li>
+        </ul>
+      </div>
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
     <div class="d-flex">
-        <div class="col-md-6 d-flex gap-2 mb-3">
+        <div class="col-md-8 d-flex gap-2 mb-3">
             <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
             <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-anulados">Anulados</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
-            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal">
+        <div class="col-md-4 d-flex gap-2 justify-content-end  mb-3">
+            <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
             </select>
@@ -74,10 +95,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td colspan="8" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                            <td colspan="9" class="text-center" *ngIf="ivas?.length < 1 && !loading">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="8" class="text-center" *ngIf="loading">
+                            <td colspan="9" class="text-center" *ngIf="loading">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
                         </tr>
@@ -132,7 +153,7 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
                 </select>

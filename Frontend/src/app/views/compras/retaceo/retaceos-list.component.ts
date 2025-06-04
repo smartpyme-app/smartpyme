@@ -136,5 +136,22 @@ export class RetaceosListComponent implements OnInit {
     localStorage.removeItem('retaceosFiltros');
     this.loadAll();
   }
+  generarPartidaContable(retaceo: any) {
+    this.loading = true;
+    
+    this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: retaceo.id })
+      .subscribe(
+        (response) => {
+          this.alertService.success('Partida contable generada correctamente', 'Partida contable generada');
+          // Marcar el retaceo como contabilizado (opcional, dependiendo de tu modelo)
+          retaceo.contabilizado = true;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+  }
 
 }

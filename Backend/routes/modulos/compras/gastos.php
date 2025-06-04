@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Compras\Gastos\GastosController;
 use App\Http\Controllers\Api\Compras\Gastos\CategoriasController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/gastos',             [GastosController::class, 'index']);
     Route::post('/gasto',             [GastosController::class, 'store']);

@@ -7,7 +7,7 @@
     <div class="row mb-3">
         <div class="col">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="compras?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarCompras()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -78,7 +78,7 @@
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
-                        
+
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a *ngIf="compra.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
@@ -88,7 +88,7 @@
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
                                 {{ compra.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -99,7 +99,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    
+
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.tipo_documento == 'Sujeto excluido' && compra.estado != 'Anulada' && !compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
@@ -291,7 +291,13 @@
             <div class="form-group col-md-6">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
-                    <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                    <option value="Ticket">Ticket</option>
+                    <option value="Nota de crédito">Nota de crédito</option>
+                    <option value="Nota de débito">Nota de débito</option>
+                    <option value="Factura de exportación">Factura de exportación</option>
+                    <option value="Factura">Factura</option>
+                    <option value="Sujeto excluido">Sujeto excluido</option>
+                    <option value="Crédito fiscal">Crédito fiscal</option>
                 </select>
             </div>
             <div class="form-group col-md-6">
@@ -307,6 +313,47 @@
                     </ng-option>
                 </ng-select>
             </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.tipo">Tipo:</label>
+                <select name="tipo" class="form-select" [(ngModel)]="compra.tipo">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                    <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
+                    <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
+                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                    <option value="Mano de obra">Mano de obra</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.sector">Sector:</label>
+                <select name="sector" class="form-select" [(ngModel)]="compra.sector">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Industria">Industria</option>
+                    <option value="Comercio">Comercio</option>
+                    <option value="Agropecuaria">Agropecuaria</option>
+                    <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                </select>
+            </div>
+          <div class="form-group col-md-6 without-label">
+            <div class="form-switch border rounded">
+              <label for="es_retaceo">Es para retaceo</label>
+              <input
+                class="form-check-input float-end"
+                type="checkbox"
+                role="switch"
+                [(ngModel)]="compra.es_retaceo"
+                name="es_retaceo"
+                id="es_retaceo">
+            </div>
+          </div>
+          <div class="form-group col-md-12" *ngIf="compra.es_retaceo">
+            <div class="alert alert-info py-2 px-3 mt-2 mb-0">
+              <i class="fa fa-info-circle me-2"></i>
+              <small>Las compras marcadas como "para retaceo" aparecerán automáticamente en la selección de gastos al crear un retaceo.</small>
+            </div>
+          </div>
             <div class="form-group col-md-12">
                 <label for="observaciones">Observaciones:</label>
                 <textarea class="form-control" [(ngModel)]="compra.observaciones" name="observaciones" cols="30" rows="3"></textarea>

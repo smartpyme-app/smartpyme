@@ -92,6 +92,7 @@ export class AjustesComponent implements OnInit {
 
     public setProducto(){
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
+        this.ajuste.costo = this.producto.costo;
     }
 
     public setBodega(){
@@ -150,6 +151,12 @@ export class AjustesComponent implements OnInit {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    generarPartidaContable(ajuste:any){
+        this.apiService.store('contabilidad/partida/ajuste', ajuste).subscribe(ajuste => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
     }
 
     public descargar(){

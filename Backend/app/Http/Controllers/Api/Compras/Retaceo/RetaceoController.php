@@ -13,6 +13,9 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Retaceo\Retaceo;
 use App\Models\Compras\Retaceo\RetaceoDistribucion;
 use App\Models\Compras\Retaceo\RetaceoGasto;
+use App\Models\Inventario\Inventario;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class RetaceoController extends Controller
 {
@@ -80,6 +83,7 @@ class RetaceoController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
       //  dd($request->all());
+      Log::info($request->id_usuario);
 
         try {
             DB::beginTransaction();
@@ -140,8 +144,13 @@ class RetaceoController extends Controller
                 if ($producto) {
                     $producto->costo = $item['costo_retaceado'];
                     $producto->save();
+                    $inventario = Inventario::where('id_producto', $item['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
+                    if ($inventario) {
+                        $producto->id_usuario = Auth::id();
+                        $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+                    }
                 }
-
+                
                 // Actualizar el costo en el detalle de la compra
                 $detalleCompra = Detalle::find($item['id_detalle_compra']);
                 if ($detalleCompra) {

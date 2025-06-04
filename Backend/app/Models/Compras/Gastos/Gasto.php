@@ -4,7 +4,7 @@ namespace App\Models\Compras\Gastos;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 class Gasto extends Model {
 
     protected $table = 'egresos';
@@ -33,13 +33,19 @@ class Gasto extends Model {
         'iva_percibido',
         'total',
         'nota',
+        'area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
         'id_sucursal',
         'dte',
         'dte_invalidacion',
-        'otros_impuestos'
+        'otros_impuestos',
+        'es_retaceo',
+        'clasificacion',
+        'tipo_operacion',
+        'sector',
+        'tipo_gasto'
     ];
 
     protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];
@@ -103,6 +109,11 @@ class Gasto extends Model {
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function retaceoGasto()
+    {
+        return $this->hasOne('App\Models\Compras\Retaceo\RetaceoGasto', 'id_gasto');
     }
 
 
