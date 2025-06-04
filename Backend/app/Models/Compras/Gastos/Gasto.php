@@ -33,7 +33,7 @@ class Gasto extends Model {
         'iva_percibido',
         'total',
         'nota',
-        'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
@@ -45,10 +45,10 @@ class Gasto extends Model {
         'clasificacion',
         'tipo_operacion',
         'sector',
-        'tipo_gasto'
+        'tipo_gasto',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'id_departamento'];
 
     protected static function boot()
     {
@@ -114,6 +114,18 @@ class Gasto extends Model {
     public function retaceoGasto()
     {
         return $this->hasOne('App\Models\Compras\Retaceo\RetaceoGasto', 'id_gasto');
+    }
+
+    public function areaEmpresa(){
+        return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
+    }
+
+    public function getIdDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
+    }
+
+    public function getDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
     }
 
 

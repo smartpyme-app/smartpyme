@@ -42,6 +42,9 @@ import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.co
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -81,7 +84,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -109,7 +114,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   providers: [AlertService],
 })

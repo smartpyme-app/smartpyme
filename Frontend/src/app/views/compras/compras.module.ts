@@ -39,6 +39,9 @@ import { RetaceoComponent } from './retaceo/retaceo.component';
 import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
 import { RetaceosListComponent } from './retaceo/retaceos-list.component';
 
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
+
 // import { HistorialComprasComponent } from './reportes/historial/historial-compras.component';
 // import { DetalleComprasComponent } from './reportes/detalle/detalle-compras.component';
 // import { CategoriasComprasComponent } from './reportes/categorias/categorias-compras.component';
@@ -79,7 +82,9 @@ import { RetaceosListComponent } from './retaceo/retaceos-list.component';
     GastosCategoriasComponent,
     RetaceoComponent,
     OrdenCompraFormComponent,
-    RetaceosListComponent
+    RetaceosListComponent,
+    AreaEmpresaComponent,
+    DepartamentoEmpresaComponent
   ],
   exports: [
     ComprasComponent,
@@ -102,7 +107,9 @@ import { RetaceosListComponent } from './retaceo/retaceos-list.component';
     GastosDashComponent,
     GastosCategoriasComponent,
     RetaceoComponent,
-    RetaceosListComponent
+    RetaceosListComponent,
+    AreaEmpresaComponent,
+    DepartamentoEmpresaComponent
   ]
 })
 export class ComprasModule { }
