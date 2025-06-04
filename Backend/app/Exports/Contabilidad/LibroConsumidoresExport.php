@@ -85,10 +85,10 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
             $venta->fecha,
             $venta->correlativo,
             $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->sub_total,
+            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
             $venta->no_sujeta,
-            $venta->documento->nombre === 'Factura de exportación' ? $venta->sub_total : '0',
-            $venta->sub_total,
+            $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
+            $venta->total,
             $venta->cuenta_a_terceros,
         ];
     }
