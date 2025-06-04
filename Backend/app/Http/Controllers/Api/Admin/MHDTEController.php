@@ -424,7 +424,7 @@ class MHDTEController extends Controller
 
         $pdfContent = $pdf->output();
 
-        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '03'){
+        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11'){
             $nombre = $DTE['receptor']['nombre'];
         }
         if($DTE['identificacion']['tipoDte'] == '14'){

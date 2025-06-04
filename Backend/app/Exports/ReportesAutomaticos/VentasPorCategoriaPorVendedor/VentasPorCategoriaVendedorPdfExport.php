@@ -105,7 +105,8 @@ class VentasPorCategoriaVendedorPdfExport
                 'cat.nombre as nombre_categoria',
                 'us.name as nombre_vendedor',
                 'us.id as id_vendedor',
-                DB::raw('SUM(dv.total - COALESCE(dv.descuento, 0)) as total_ventas')
+                // DB::raw('SUM(dv.total - COALESCE(dv.descuento, 0)) as total_ventas')
+                DB::raw('SUM(dv.total) as total_ventas')
             )
                 ->groupBy('cat.id', 'cat.nombre', 'us.name', 'us.id')
                 ->orderBy('us.name')

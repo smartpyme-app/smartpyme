@@ -17,10 +17,10 @@ export class SupervisorLimitadoGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): boolean {
     
-    if (this.apiService.isSupervisorLimitado()) {
-      this.location.back();
-      return false;
-    }
+    // if (this.apiService.isSupervisorLimitado()) {
+    //   this.location.back();
+    //   return false;
+    // }
 
     return true;
   }
