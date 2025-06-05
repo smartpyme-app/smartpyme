@@ -55,7 +55,7 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
+        $request = $this->request;
         
         $compras = Compra::with(['proveedor'])
                         ->where('estado', '!=', 'Anulada')

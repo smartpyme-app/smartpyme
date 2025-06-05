@@ -22,7 +22,9 @@ use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
 use App\Exports\Contabilidad\LibroRetencion1Export;
+use App\Exports\Contabilidad\AnexoRetencion1Export;
 use App\Exports\Contabilidad\LibroPercepcion1Export;
+use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -602,12 +604,29 @@ class LibrosIVAController extends Controller
         return Excel::download($retencion, 'LibroRetencion1.xlsx');
     }
 
+
     public function libroPercepcion1Export(Request $request)
     {
         $percepcion = new LibroPercepcion1Export();
         $percepcion->filter($request);
 
         return Excel::download($percepcion, 'LibroPercepcion1.xlsx');
+    }
+
+    public function anexoRetencion1Export(Request $request)
+    {
+        $retencion = new AnexoRetencion1Export();
+        $retencion->filter($request);
+
+        return Excel::download($retencion, 'AnexoRetencion1.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    public function anexoPercepcion1Export(Request $request)
+    {
+        $percepcion = new AnexoPercepcion1Export();
+        $percepcion->filter($request);
+
+        return Excel::download($percepcion, 'AnexoPercepcion1.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
 }

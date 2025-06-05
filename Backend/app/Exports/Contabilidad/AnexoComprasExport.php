@@ -104,7 +104,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $compra->origen == 'gasto' ? 2 : 1 ,  // R - CLASIFICACI Costo gasto
                 $this->tipoSector($compra->sector),  // S - SECTOR
                 $this->tipo($compra->tipo),  // T - TIPO DE COSTO / GASTO
-                'num_anexo' => 3,  // U - NUMERO DE ANEXO
+                3,  // U - NUMERO DE ANEXO
             ];
 
         return $data;

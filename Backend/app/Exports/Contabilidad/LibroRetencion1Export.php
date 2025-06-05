@@ -55,7 +55,7 @@ class LibroRetencion1Export implements FromCollection, WithMapping, WithHeadings
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
+        $request = $this->request;
         
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
