@@ -125,5 +125,24 @@ export class LibroComprasComponent implements OnInit {
         });
     }
 
+    public descargarAnexoPercepcion() {
+        this.downloading = true;
+        this.apiService.export('libro-iva/percepcion1/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Percepciones1.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
+    }
+
 
 }
