@@ -31,6 +31,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'Banco',
             'Vencimiento',
             'Proveedor',
+            'Area',
+            'Departamento',
             'NIT',
             'Registro',
             'Subtotal',
@@ -52,6 +54,9 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
                     })
                     ->when($request->recurrente !== null, function($q) use ($request){
                         $q->where('recurrente', !!$request->recurrente);
+                    })
+                    ->when($request->id_area_empresa, function($query) use ($request){
+                        return $query->where('id_area_empresa', $request->id_area_empresa);
                     })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
@@ -86,6 +91,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->detalle_banco,
               $row->vencimiento,
               $row->nombre_proveedor,
+              $row->areaEmpresa()->pluck('nombre')->first(),
+              $row->nombre_departamento,
               $row->proveedor()->pluck('nit')->first(),
               $row->proveedor()->pluck('ncr')->first(),
               number_format($row->sub_total,2),

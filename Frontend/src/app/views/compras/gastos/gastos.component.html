@@ -236,6 +236,16 @@
                     <option value="1">Emitidos</option>
                 </select>
             </div>
+
+            <div class="form-group col-sm-6">
+                <label for="filtro.id_area_empresa">Area:</label>
+                <ng-select [(ngModel)]="filtros.id_area_empresa" class="form-select p-0" name="id_area_empresa">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let area of areas" [value]="area.id">
+                        {{ area.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
