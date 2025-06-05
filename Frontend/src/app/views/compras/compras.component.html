@@ -58,6 +58,8 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('num_identificacion')" [ngClass]="{'sorted-asc': filtros.orden == 'num_identificacion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'num_identificacion' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
+
                         <th>Proveedor</th>
                         <th class="d-none d-md-table-cell">Documento</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
@@ -80,6 +82,13 @@
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td *ngIf="isColumnEnabled('columna_proyecto')">
+                            <div class="d-flex flex-column align-items-center">
+                                <span *ngIf="compra.nombre_proyecto" class="badge bg-info">{{ compra.nombre_proyecto | truncate:20 }}</span>
+                                <small class="text-muted d-block">{{compra.num_identificacion ?? ''}}</small>
+                            </div>
+                            <span *ngIf="!compra.nombre_proyecto" class="text-muted">-</span>
+                        </td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a *ngIf="compra.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
                         <td>{{compra.forma_pago}}</td>
@@ -258,6 +267,16 @@
                     <option value="1">Emitidos</option>
                 </select>
             </div>
+
+            <div class="form-group col-sm-6" *ngIf="isColumnEnabled('columna_proyecto')">
+                <label for="filtro.num_identificacion">Num. Identificación:</label>
+                <ng-select [(ngModel)]="filtros.num_identificacion" class="form-select p-0" name="num_identificacion">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let numIds of numeros_ids" [value]="numIds.num_identificacion">
+                        {{ numIds.num_identificacion }}
+                    </ng-option>
+                </ng-select>
+            </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -327,6 +346,25 @@
                     <option value="Agropecuaria">Agropecuaria</option>
                     <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
                 </select>
+            </div>
+            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
+                <label for="id_proyecto">Proyecto:</label>
+                <ng-select [(ngModel)]="compra.id_proyecto" class="form-select p-0" name="id_proyecto">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
+                        {{ proyecto.nombre }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6 col-lg-6" *ngIf="isColumnEnabled('columna_proyecto')">
+                <label for="num_identificacion">Número identificación:</label>
+                <input 
+                type="text" 
+                [(ngModel)]="compra.num_identificacion" 
+                name="num_identificacion" 
+                class="form-control" 
+                id="num_identificacion" 
+                placeholder="Número de identificación">
             </div>
             <div class="form-group col-md-12">
                 <label for="observaciones">Observaciones:</label>

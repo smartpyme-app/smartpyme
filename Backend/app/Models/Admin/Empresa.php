@@ -103,11 +103,14 @@ class Empresa extends Model
         'woocommerce_error',
         'woocommerce_canal_id',
 
+        //Personalización
+        'custom_empresa'
     ];
 
     protected $casts = [
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
+        'custom_empresa' => 'json',
     ];
 
     protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce','currency_symbol'];
@@ -396,5 +399,128 @@ class Empresa extends Model
         $this->save();
 
         return $estadoPruebas;
+    }
+
+    public function getCustomConfigAttribute()
+    {
+        if (empty($this->custom_empresa)) {
+            return $this->initializeCustomConfig();
+        }
+        
+        return $this->custom_empresa;
+    }
+
+    public function initializeCustomConfig()
+    {
+        $defaultConfig = [
+            'columnas' => [
+                'columna_proyecto' => false
+            ],
+            'modulos' => [
+                // Para futuras personalizaciones de módulos
+            ],
+            'configuraciones' => [
+                // Para futuras configuraciones generales
+            ],
+            'campos_personalizados' => [
+                // Para futuros campos personalizados
+            ]
+        ];
+        
+        $this->custom_empresa = $defaultConfig;
+        $this->save();
+        
+        return $defaultConfig;
+    }
+
+    /**
+     * Actualizar una configuración específica
+     */
+    public function updateCustomConfig($section, $key, $value)
+    {
+        $config = $this->custom_config;
+        
+        if (!isset($config[$section])) {
+            $config[$section] = [];
+        }
+        
+        $config[$section][$key] = $value;
+        $this->custom_empresa = $config;
+        $this->save();
+        
+        return $this;
+    }
+
+    /**
+     * Obtener una configuración específica
+     */
+    public function getCustomConfigValue($section, $key = null, $default = null)
+    {
+        $config = $this->custom_config;
+        
+        if (!isset($config[$section])) {
+            return $default;
+        }
+        
+        if ($key === null) {
+            return $config[$section];
+        }
+        
+        return $config[$section][$key] ?? $default;
+    }
+
+    /**
+     * Verificar si una columna está habilitada
+     */
+    public function isColumnEnabled($columnName)
+    {
+        return $this->getCustomConfigValue('columnas', $columnName, false);
+    }
+
+    /**
+     * Habilitar/deshabilitar una columna
+     */
+    public function toggleColumn($columnName, $enabled = null)
+    {
+        if ($enabled === null) {
+            $enabled = !$this->isColumnEnabled($columnName);
+        }
+        
+        return $this->updateCustomConfig('columnas', $columnName, $enabled);
+    }
+
+    /**
+     * Agregar nueva configuración personalizada
+     */
+    public function addCustomConfigSection($section, $data = [])
+    {
+        $config = $this->custom_config;
+        $config[$section] = $data;
+        $this->custom_empresa = $config;
+        $this->save();
+        
+        return $this;
+    }
+
+    /**
+     * Obtener todas las columnas disponibles con su estado
+     */
+    public function getAvailableColumns()
+    {
+        return [
+            'columna_proyecto' => [
+                'label' => 'Columna Proyecto',
+                'description' => 'Mostrar columna de proyectos en listados',
+                'enabled' => $this->isColumnEnabled('columna_proyecto'),
+                'section' => 'Proyectos'
+            ],
+            // Aquí puedes agregar más columnas fácilmente
+            // 'columna_categoria' => [
+            //     'label' => 'Columna Categoría',
+            //     'description' => 'Mostrar columna de categorías en productos',
+            //     'enabled' => $this->isColumnEnabled('columna_categoria'),
+            //     'section' => 'Inventario'
+            // ],
+        ];
     }
 }

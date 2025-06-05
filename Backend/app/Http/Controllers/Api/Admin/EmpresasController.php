@@ -41,6 +41,13 @@ class EmpresasController extends Controller
         $empresas = Empresa::when($request->activo !== null, function($q) use ($request){
             $q->where('activo', !!$request->activo);
         })
+        ->when($request->isColumnEnabled('columna_proyecto'), function($query) {
+            return $query->with('proyecto');
+        })
+        ->when($request->id_proyecto, function($query) use ($request) {
+            return $query->where('id_proyecto', $request->id_proyecto);
+        })
+        
         ->when($request->buscador, function($query) use ($request){
             return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                             ->orwhere('correo', 'like' ,"%" . $request->buscador . "%");
@@ -230,6 +237,8 @@ class EmpresasController extends Controller
         $this->handleUserAccountStatus($empresa, $request);
         
         $woocommerceValues = $this->preserveWoocommerceSettings($empresa);
+
+        $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
         
         $empresa->fill($request->all());
         
@@ -769,6 +778,117 @@ class EmpresasController extends Controller
                 'message' => 'Error al desactivar la alerta: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function handleCustomEmpresa(Request $request, Empresa $empresa)
+    {
+        // Si viene custom_empresa en el request
+        if ($request->has('custom_empresa')) {
+            $customConfig = $request->input('custom_empresa');
+            
+            // Si es string JSON, decodificar
+            if (is_string($customConfig)) {
+                $customConfig = json_decode($customConfig, true);
+            }
+            
+            // Validar estructura básica
+            if (is_array($customConfig)) {
+                // Asegurar que existan las secciones básicas
+                $defaultStructure = [
+                    'columnas' => [],
+                    'modulos' => [],
+                    'configuraciones' => [],
+                    'campos_personalizados' => []
+                ];
+                
+                // Mergear con estructura por defecto
+                $customConfig = array_merge($defaultStructure, $customConfig);
+                
+                // Validar y limpiar datos de columnas
+                if (isset($customConfig['columnas']) && is_array($customConfig['columnas'])) {
+                    $customConfig['columnas'] = $this->validateColumnConfig($customConfig['columnas']);
+                }
+                
+                $empresa->custom_empresa = $customConfig;
+            }
+        } else {
+            // Si no viene custom_empresa pero la empresa no tiene configuración, inicializarla
+            if (empty($empresa->custom_empresa)) {
+                $empresa->initializeCustomConfig();
+            }
+        }
+    }
+
+    private function validateColumnConfig(array $columnas): array
+    {
+        $validatedColumns = [];
+        $allowedColumns = [
+            'columna_proyecto',
+            // Agregar más columnas válidas aquí
+        ];
+        
+        foreach ($columnas as $column => $enabled) {
+            // Solo permitir columnas válidas
+            if (in_array($column, $allowedColumns)) {
+                // Asegurar que el valor sea boolean
+                $validatedColumns[$column] = (bool) $enabled;
+            }
+        }
+        
+        return $validatedColumns;
+    }
+
+    public function updateCustomConfig(Request $request)
+    {
+        $request->validate([
+            'section' => 'required|string|in:columnas,modulos,configuraciones,campos_personalizados',
+            'key' => 'required|string',
+            'value' => 'required'
+        ]);
+
+        $empresa = Auth::user()->empresa;
+        
+        $empresa->updateCustomConfig(
+            $request->input('section'),
+            $request->input('key'),
+            $request->input('value')
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración actualizada correctamente',
+            'config' => $empresa->fresh()->custom_empresa
+        ]);
+    }
+
+    public function getCustomConfig()
+    {
+        $empresa = Auth::user()->empresa;
+        
+        if (empty($empresa->custom_empresa)) {
+            $empresa->initializeCustomConfig();
+        }
+        
+        return response()->json([
+            'success' => true,
+            'config' => $empresa->custom_empresa,
+            'available_columns' => $empresa->getAvailableColumns()
+        ]);
+    }
+
+    public function resetCustomConfig()
+    {
+        $empresa = Auth::user()->empresa;
+        $empresa->custom_empresa = null;
+        $empresa->save();
+        
+        $defaultConfig = $empresa->initializeCustomConfig();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración restablecida correctamente',
+            'config' => $defaultConfig
+        ]);
     }
 
 }

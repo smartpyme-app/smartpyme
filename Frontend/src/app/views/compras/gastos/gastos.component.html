@@ -57,6 +57,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('num_identificacion')" [ngClass]="{'sorted-asc': filtros.orden == 'num_identificacion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'num_identificacion' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
                         <!-- <th>Usuario</th> -->
                         <th>Proveedor</th>
                         <th>Concepto</th>
@@ -79,8 +80,14 @@
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let gasto of gastos?.data">
-                        
                         <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td *ngIf="isColumnEnabled('columna_proyecto')">
+                            <div class="d-flex flex-column align-items-center">
+                                <span *ngIf="gasto.nombre_proyecto" class="badge bg-info">{{ gasto.nombre_proyecto | truncate:20 }}</span>
+                                <small class="text-muted d-block">{{gasto.num_identificacion ?? ''}}</small>
+                            </div>
+                            <span *ngIf="!gasto.nombre_proyecto" class="text-muted">-</span>
+                        </td>
                         <!-- <td>{{gasto.nombre_usuario }}</td> -->
                         <td>{{gasto.nombre_proveedor | truncate:30 }}<a *ngIf="gasto.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{gasto.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{gasto.concepto}}</td>
@@ -235,6 +242,15 @@
                     <option value="0">Sin emitir</option>
                     <option value="1">Emitidos</option>
                 </select>
+            </div>
+            <div class="form-group col-sm-6" *ngIf="isColumnEnabled('columna_proyecto')">
+                <label for="filtro.num_identificacion">Num. Identificación:</label>
+                <ng-select [(ngModel)]="filtros.num_identificacion" class="form-select p-0" name="num_identificacion">
+                    <ng-option value="">Todos</ng-option>
+                    <ng-option *ngFor="let numIds of numeros_ids" [value]="numIds.num_identificacion">
+                        {{ numIds.num_identificacion }}
+                    </ng-option>
+                </ng-select>
             </div>
         </div>
         <div class="d-grid mt-4">

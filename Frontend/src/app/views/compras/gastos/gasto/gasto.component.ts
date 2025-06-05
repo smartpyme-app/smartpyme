@@ -884,4 +884,8 @@ export class GastoComponent implements OnInit {
 
     // Si no se encontró coincidencia, se dejara la categoría predeterminada
   }
+
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+}
 }

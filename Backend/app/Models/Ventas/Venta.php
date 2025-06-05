@@ -17,6 +17,7 @@ class Venta extends Model {
         'prueba_masiva',
         'fecha',
         'correlativo',
+        'num_identificacion',
         'estado',
         'detalle_banco',
         // 'tipo',
@@ -72,7 +73,7 @@ class Venta extends Model {
         'tipo_renta',
     );
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
     protected $casts = ['recurrente' => 'string'];
     
     protected static function boot()
@@ -125,6 +126,12 @@ class Venta extends Model {
 
     public function getNombreCanalAttribute(){
         return $this->canal()->pluck('nombre')->first();
+    }
+
+
+    public function getNombreProyectoAttribute()
+    {
+        return $this->proyecto ? $this->proyecto->nombre : null;
     }
 
     public function detalleText(){
@@ -202,6 +209,11 @@ class Venta extends Model {
 
     public function devoluciones(){
         return $this->hasMany('App\Models\Ventas\Devoluciones\Devolucion', 'id_venta');
+    }
+
+    public function proyecto()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
     }
 
 
