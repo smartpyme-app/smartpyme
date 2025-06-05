@@ -10,6 +10,7 @@ class Detalle extends Model {
     protected $fillable = array(
         'id_producto',
         'cantidad',
+        'costo',
         'id_traslado'
     );
 

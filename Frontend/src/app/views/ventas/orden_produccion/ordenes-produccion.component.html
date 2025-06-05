@@ -45,6 +45,8 @@
             <th>Asesor</th>
             <th>Estado</th>
             <th>Fecha Entrega</th>
+            <th>Avance</th>
+            
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
@@ -63,7 +65,7 @@
           <tr class="animated fadeIn" *ngFor="let orden of ordenes?.data">
             <td>{{orden.codigo}}</td>
             <td>{{orden.fecha | date:'dd/MM/yyyy'}}</td>
-            <td>{{orden.cliente?.nombre}}</td>
+            <td>{{orden.nombre_cliente}}</td>
             <td>{{orden.asesor?.name}}</td>
             <td>
               <select name="estado" class="form-select w-auto border-0" 
@@ -71,22 +73,44 @@
                       [(ngModel)]="orden.estado"
                       [disabled]="orden.estado === 'entregada' || orden.estado === 'aceptada' || orden.estado === 'anulada'"
                       [ngClass]="{
-                        'bg-light-warning': orden?.estado == 'pendiente',
-                        'bg-light-info': orden?.estado == 'aceptada',
-                        'bg-light-primary': orden?.estado == 'en_proceso',
-                        'bg-light-success': orden?.estado == 'completada',
-                        'bg-light-secondary': orden?.estado == 'entregada',
-                        'bg-light-danger': orden?.estado == 'anulada'
+                        'bg-light-warning': orden?.estado == 'creada',
+                        'bg-light-info': orden?.estado == 'aceptada' || orden?.estado == 'en_proceso',
+                        'bg-light-success': orden?.estado == 'completada' || orden?.estado == 'facturada',
+                        'bg-light-danger': orden?.estado == 'anulada',
                       }">
-                <option value="pendiente">Pendiente</option>
-                <option value="aceptada">Aceptada</option>
+                      <!-- 'bg-light-success': orden?.estado == 'facturada' -->
+                      <!-- 'bg-light-warning': orden?.estado == 'pendiente', -->
+                      <!-- 'bg-light-secondary': orden?.estado == 'entregada', -->
+                <option value="creada">Creada</option>
                 <option value="en_proceso">En Proceso</option>
+                <option value="aceptada">Aceptada</option>
+                <!-- <option value="pendiente">Pendiente</option> -->
                 <option value="completada">Completada</option>
-                <option value="entregada">Entregada</option>
                 <option value="anulada">Anulada</option>
+                <!-- <option value="entregada">Entregada</option> -->
+                <option value="facturada">Facturada</option>
               </select>
             </td>
             <td>{{orden.fecha_entrega | date:'dd/MM/yyyy'}}</td>
+            <td style="width: 150px;">
+              <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1" style="height: 8px;">
+                  <div class="progress-bar" 
+                       role="progressbar" 
+                       [style.width]="orden.avance + '%'" 
+                       [ngClass]="{
+                         'bg-danger': orden.avance < 30,
+                         'bg-warning': orden.avance >= 30 && orden.avance < 70,
+                         'bg-success': orden.avance >= 70
+                       }"
+                       [attr.aria-valuenow]="orden.avance" 
+                       aria-valuemin="0" 
+                       aria-valuemax="100">
+                  </div>
+                </div>
+                <span class="ms-2 small">{{orden.avance}}%</span>
+              </div>
+            </td>
             <td class="text-center">
               <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
@@ -94,6 +118,26 @@
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
                  
+                  <a *ngIf="(orden.estado == 'aceptada' || orden.estado == 'creada' || orden.estado == 'en_proceso') && apiService.canEdit()" 
+                     routerLink="/orden-produccion/editar/{{orden.id}}" 
+                     class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Editar
+                  </a>
+                  <a *ngIf="orden.estado == 'creada' && apiService.canEdit()" 
+                     (click)="changeStateOrden(orden.id, 'aceptada')"
+                     class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Cambiar a Aceptada
+                  </a>
+                  <a *ngIf="orden.estado == 'aceptada' && apiService.canEdit()" 
+                     (click)="changeStateOrden(orden.id, 'en_proceso')"
+                     class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Cambiar a En Proceso
+                  </a>
+                  <a *ngIf="orden.estado == 'en_proceso' && apiService.canEdit()" 
+                     (click)="changeStateOrden(orden.id, 'completada')"
+                     class="btn">
+                    <i class="fa fa-fw fa-edit"></i> Cambiar a Completada
+                  </a>
                   <a routerLink="/orden-produccion/detalles/{{orden.id}}" class="btn">
                     <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                   </a>
@@ -101,11 +145,17 @@
                     <i class="fa fa-fw fa-print"></i> Imprimir
                   </a>
                   <!-- Poder anular la orden -->
-                  <a *ngIf="orden.estado != 'anulada' && apiService.canDeleteTest('ventas.ordenes_produccion.eliminar')" 
+                  <!-- <a *ngIf="orden.estado != 'anulada' && apiService.canDeleteTest('ventas.ordenes_produccion.eliminar')"  -->
+                  <!-- && apiService.canDelete()"  -->
+                  <a *ngIf="!['anulada', 'facturada', 'completada'].includes(orden.estado) && apiService.canDeleteTest('ventas.ordenes_produccion.eliminar')" 
                      (click)="anular(orden)" 
                      class="btn">
                     <i class="fa fa-fw fa-ban"></i> Anular
                   </a>
+                  <a *ngIf="orden.estado == 'completada' && !orden.facturada " routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: orden.id_cotizacion_venta }" class="btn">
+                    <i class="fa fa-fw fa-money-bill"></i> Facturar
+                </a>
+                  
                 </div>
               </ng-template>
             </td>

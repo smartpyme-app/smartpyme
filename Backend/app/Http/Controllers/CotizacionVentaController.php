@@ -7,6 +7,7 @@ use App\Models\CotizacionVentaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CotizacionVentaController extends Controller
 {
@@ -84,6 +85,7 @@ class CotizacionVentaController extends Controller
 
     public function index(Request $request)
     {
+        //Log::info('test');
 
         $ordenes = CotizacionVenta::with(
             "cliente:id,nombre",
@@ -119,6 +121,7 @@ class CotizacionVentaController extends Controller
                     ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
                 ;
             })
+         //   ->where('id_empresa', Auth::user()->id_empresa)
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);

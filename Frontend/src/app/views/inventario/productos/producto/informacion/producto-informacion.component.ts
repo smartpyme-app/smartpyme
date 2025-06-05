@@ -1,20 +1,28 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  TemplateRef,
+  Input,
+  ViewChild,
+} from '@angular/core';
+
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ChangeDetectionStrategy, ChangeDetectorRef  } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
   selector: 'app-producto-informacion',
   templateUrl: './producto-informacion.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-
 export class ProductoInformacionComponent implements OnInit {
-
+  @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
+  modalRef?: BsModalRef;
   @Input() producto: any = {};
   public categorias: any = [];
   public subcategorias: any = [];
@@ -26,56 +34,129 @@ export class ProductoInformacionComponent implements OnInit {
   public medidas: any = [];
   public loading = false;
   public guardar = false;
-  public variants: Array<{ nombre: string, cantidad: number }> = [];
-  public tallas = ['x', 'm', 'l', 'xl'];
-  public colores = ['azul', 'Amarillo', 'Blanco', 'Negro'];
-  public materiales = ['Madera', 'Papel', 'Metal', 'Plastico', 'Vidrio'];
+  public variants: Array<{ nombre: string; cantidad: number }> = [];
+  public tallas: any = [];
+  public colores: any = [];
+  public materiales: any = [];
+
+  tipoAtributoActual: string = '';
+  nuevoAtributo: any = {};
+  guardandoAtributo: boolean = false;
 
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
-    private route: ActivatedRoute, private router: Router,
-    private cdr: ChangeDetectorRef 
+    private apiService: ApiService,
+    private alertService: AlertService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+    private modalService: BsModalService // Agregar esto
   ) {
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
   }
 
-  ngOnInit(){
+  ngOnInit() {
+    this.loadAtributes();
     this.usuario = this.apiService.auth_user();
 
-    this.apiService.getAll('categorias/padre').subscribe(categorias => {
-      this.categorias = categorias;
-    }, error => { this.alertService.error(error); });
-    
-    this.apiService.getAll('subcategorias').subscribe(subcategorias => {
-      this.subcategorias = subcategorias;
-      this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == this.producto.id_categoria; });
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('categorias/padre').subscribe(
+      (categorias) => {
+        this.categorias = categorias;
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    this.apiService.getAll('subcategorias').subscribe(
+      (subcategorias) => {
+        this.subcategorias = subcategorias;
+        this.subcategRes = this.subcategorias.filter((cat: any) => {
+          return cat.id_cate_padre == this.producto.id_categoria;
+        });
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
 
     this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
-    this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-      this.proveedores = proveedores;
-      this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+    this.apiService.getAll('proveedores/list').subscribe(
+      (proveedores) => {
+        this.proveedores = proveedores;
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
 
+    // this.apiService.getAll('bodegas').subscribe(
+    //   (bodegas) => {
+    //     this.bodegas = bodegas;
+    //     this.loading = false;
+    //   },
+    //   (error) => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   }
+    // );
+
+    this.cdr.detectChanges();
+  }
+
+  public loadAtributes() {
+    console.log('color1', this.producto.color);
+    this.apiService.getAll('atributos').subscribe(
+      (atributos) => {
+        //this.categorias = categorias;
+        console.log('color2', this.producto.color);
+        //  recorrer los atributos por tipo 'talla', 'color', 'material'
+        this.tallas = atributos.filter((cat: any) => {
+          return cat.tipo == 'talla';
+        });
+        this.colores = atributos.filter((cat: any) => {
+          return cat.tipo == 'color';
+        });
+        this.materiales = atributos.filter((cat: any) => {
+          return cat.tipo == 'material';
+        });
+
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+    //volver a setear los valores
+    this.producto.talla = this.producto.talla;
+    this.producto.color = this.producto.color;
+    this.producto.material = this.producto.material;
   }
 
   public setCategoria(categoria: any) {
+    this.loadCategorias();
+    console.log('entro');
     if (categoria.subcategoria) {
       this.subcategRes.push(categoria);
       this.producto.id_subcategoria = categoria.id;
+      this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
       this.subcategorias.push(categoria);
     } else {
       this.categorias.push(categoria);
-      this.producto.id_categoria = categoria.id;
+       this.producto.id_categoria = categoria.id;
+     // this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
     }
-
   }
 
   public opAvanzadas: boolean = false;
 
-  toggleDiv(): void { this.opAvanzadas = !this.opAvanzadas; this.cdr.detectChanges(); }
+  toggleDiv(): void {
+    this.opAvanzadas = !this.opAvanzadas;
+    this.cdr.detectChanges();
+  }
 
   public setCompuesto() {
     if (this.producto.tipo == 'Producto') {
@@ -88,57 +169,107 @@ export class ProductoInformacionComponent implements OnInit {
   public calPrecioBase() {
     if (this.usuario.empresa.iva > 0) {
       this.producto.impuesto = this.usuario.empresa.iva / 100;
-      this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
+      this.producto.precio = (
+        this.producto.precio_final /
+        (1 + this.producto.impuesto * 1)
+      ).toFixed(4);
     }
   }
 
   public calPrecioFinal() {
     if (this.usuario.empresa.iva > 0) {
       this.producto.impuesto = this.usuario.empresa.iva / 100;
-      this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+      this.producto.precio_final = (
+        this.producto.precio * 1 +
+        this.producto.precio * this.producto.impuesto
+      ).toFixed(2);
     }
   }
 
   public onSubmit() {
-    this.guardar = true;    
-    this.apiService.store('producto', this.producto).subscribe(producto => {
-      this.guardar = false;
-      if (!this.producto.id) {
-        this.producto = producto;
+    this.guardar = true;
+    this.apiService.store('producto', this.producto).subscribe(
+      (producto) => {
+        this.guardar = false;
+       // this.loading = false;
+        if (!this.producto.id) {
+          this.producto = producto;
+        }
+        if (this.producto.tipo == 'Producto') {
+          this.router.navigate(['/producto/editar/' + producto.id]);
+          this.alertService.success(
+            'Producto guardado',
+            'El producto fue guardado exitosamente.'
+          );
+          
+        }
+        if (this.producto.tipo == 'Servicio') {
+          this.router.navigate(['/servicio/editar/' + producto.id]);
+          this.alertService.success(
+            'Servicio guardado',
+            'El servicio fue guardado exitosamente.'
+          );
+        }
+        if (this.producto.tipo == 'Compuesto') {
+          this.router.navigate(['/producto/editar/' + producto.id]);
+          this.alertService.success(
+            'Producto compuesto guardado',
+            'El producto compuesto fue guardado exitosamente.'
+          );
+        }
+        if (this.producto.tipo == 'Materia Prima') {
+          this.router.navigate(['/materias-prima/editar/' + producto.id]);
+          this.alertService.success(
+            'Materia prima guardada',
+            'La materia prima fue guardada exitosamente.'
+          );
+        }
+      },
+
+      
+      (error) => {
+        this.alertService.error(error);
+        this.guardar = false;
+        this.loading = false;
       }
-      if (this.producto.tipo == 'Producto') {
-        this.router.navigate(['/producto/editar/' + producto.id]);
-        this.alertService.success("Producto guardado", 'El producto fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Servicio') {
-        this.router.navigate(['/servicio/editar/' + producto.id]);
-        this.alertService.success("Servicio guardado", 'El servicio fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Compuesto') {
-        this.router.navigate(['/producto/editar/' + producto.id]);
-        this.alertService.success("Producto compuesto guardado", 'El producto compuesto fue guardado exitosamente.');
-      }
-      if (this.producto.tipo == 'Materia Prima') {
-        this.router.navigate(['/materias-prima/editar/' + producto.id]);
-        this.alertService.success("Materia prima guardada", 'La materia prima fue guardada exitosamente.');
-      }
-    }, error => { this.alertService.error(error); this.guardar = false; });
+    );
   }
 
   public barcode() {
-    var ventana = window.open(this.apiService.baseUrl + "/api/barcode/" + this.producto.barcode + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    var ventana = window.open(
+      this.apiService.baseUrl +
+        '/api/barcode/' +
+        this.producto.barcode +
+        '?token=' +
+        this.apiService.auth_token(),
+      '_new',
+      'toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900'
+    );
   }
 
   public verificarSiExiste() {
     if (this.producto.nombre) {
-      this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, }).subscribe(productos => {
-        if (productos.data[0]) {
-          this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
-            'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
-          );
-        }
-        this.loading = false;
-      }, error => { this.alertService.error(error); this.loading = false; });
+      this.apiService
+        .getAll('productos', { nombre: this.producto.nombre, estado: 1 })
+        .subscribe(
+          (productos) => {
+            if (productos.data[0]) {
+              this.alertService.warning(
+                '🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
+                'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' +
+                  this.apiService.appUrl +
+                  '/producto/editar/' +
+                  productos.data[0].id +
+                  '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+              );
+            }
+            this.loading = false;
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+          }
+        );
     }
   }
 
@@ -146,53 +277,154 @@ export class ProductoInformacionComponent implements OnInit {
   private correlativo: number = 1; // Inicialmente, este sería el primer SKU
 
   public updateInputValue(event: any): void {
+    const categoriaSeleccionada = this.categorias.find(
+      (c: any) => c.id == this.producto.id_categoria
+    );
 
-    const categoriaSeleccionada = this.categorias.find((c: any) => c.id == this.producto.id_categoria);
+    const subcategoriaSeleccionada = this.subcategorias.find(
+      (s: any) => s.id == this.producto.id_subcategoria
+    );
 
-    const subcategoriaSeleccionada = this.subcategorias.find((s: any) => s.id == this.producto.id_subcategoria);
+    this.subcategRes = this.subcategorias.filter((cat: any) => {
+      return cat.id_cate_padre == event;
+    });
 
-    this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == event; });    
-
-    this.producto.codigo = `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
+    this.producto.codigo = `${
+      categoriaSeleccionada?.nombre
+        ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase()
+        : ''
+    }${
+      subcategoriaSeleccionada?.nombre
+        ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase()
+        : ''
+    }${this.correlativo.toString().padStart(5, '0')}`;
   }
   //   variantes
 
-  addVariant(): void { this.variants.push({ nombre: '', cantidad: 0 }); }
-
-  removeVariant(index: number): void { this.variants.splice(index, 1); }
-
-  addAttribute(event: string, tipo: string){
-    switch(tipo) { 
-      case 'talla': { 
-         //statements; 
-        if(event && !this.tallas.includes(event)) {
-          this.tallas.push(event); // Agregar la nueva talla a la lista
-        }
-        this.producto.talla = event; // Establecer la talla seleccionada
-         break; 
-      } 
-      case 'color': { 
-         //statements; 
-        if(event && !this.colores.includes(event)) {
-          this.colores.push(event); // Agregar la nueva talla a la lista
-        }
-        this.producto.colores = event; // Establecer la talla seleccionada
-         break; 
-      } 
-      case 'material': { 
-         //statements; 
-        if(event && !this.materiales.includes(event)){
-          this.materiales.push(event); // Agregar la nueva talla a la lista
-        }
-        this.producto.material = event; // Establecer la talla seleccionada
-         break; 
-      } 
-      default: { 
-         //statements; 
-         break; 
-      } 
-   }
-
+  addVariant(): void {
+    this.variants.push({ nombre: '', cantidad: 0 });
   }
 
+  removeVariant(index: number): void {
+    this.variants.splice(index, 1);
+  }
+
+
+
+  addAttribute(event: any, tipo: string) {
+    // console.log('event', event);
+    // console.log('tipo', tipo);
+    switch (tipo) {
+      case 'talla': {
+        this.producto.talla = event ? event.valor : null;
+        break;
+      }
+      case 'color': {
+        this.producto.color = event ? event.valor : null;
+        break;
+      }
+      case 'material': {
+        this.producto.material = event ? event.valor : null;
+        break;
+      }
+    }
+    this.cdr.detectChanges();
+  }
+
+  private loadCategorias() {
+    // Cargar categorías principales
+    this.apiService.getAll('categorias/padre').subscribe(
+      (categorias) => {
+        this.categorias = categorias;
+
+        // Si ya hay una categoría seleccionada, generar el código
+        if (this.producto.id_categoria) {
+          this.updateInputValue(this.producto.id_categoria);
+        }
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+
+    // Cargar subcategorías
+    this.apiService.getAll('subcategorias').subscribe(
+      (subcategorias) => {
+        this.subcategorias = subcategorias;
+        if (this.producto.id_categoria) {
+          this.subcategRes = this.subcategorias.filter((cat: any) => {
+            return cat.id_cate_padre == this.producto.id_categoria;
+          });
+
+          // Si ya hay una subcategoría seleccionada, actualizar el código
+          if (this.producto.id_subcategoria) {
+            this.updateInputValue(this.producto.id_categoria);
+          }
+        }
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  openModalAtributo(tipo: string) {
+    this.tipoAtributoActual = tipo;
+    this.nuevoAtributo = {
+      tipo: tipo,
+      valor: '',
+      // id_empresa: this.usuario.id_empresa,
+    };
+    this.modalRef = this.modalService.show(this.modalAtributo, {
+      class: 'modal-sm',
+    });
+  }
+
+  guardarAtributo() {
+    if (!this.nuevoAtributo.valor) return;
+
+    this.guardandoAtributo = true;
+
+    this.apiService.store('atributos', this.nuevoAtributo).subscribe(
+      (response) => {
+       // this.loadAtributes();
+
+        console.log('tipo', this.tipoAtributoActual);
+        console.log('response', response);
+
+        // Asignar el nuevo valor según el tipo
+        switch (this.tipoAtributoActual) {
+          case 'talla':
+            //agregar el nuevo valor a la lista de tallas
+
+            this.tallas.push(response);
+            this.producto.talla = response.valor;
+            break;
+          case 'color':
+            this.colores.push(response);
+            this.producto.color = response.valor;
+            break;
+          case 'material':
+            this.materiales.push(response);
+            this.producto.material = response.valor;
+            break;
+        }
+
+        this.alertService.success(
+          'Atributo guardado',
+          `El ${this.tipoAtributoActual} fue agregado exitosamente.`
+        );
+
+        this.modalRef?.hide();
+        this.guardandoAtributo = false;
+        this.cdr.detectChanges();
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.guardandoAtributo = false;
+      }
+    );
+  }
 }

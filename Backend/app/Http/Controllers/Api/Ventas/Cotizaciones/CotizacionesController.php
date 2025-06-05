@@ -16,6 +16,7 @@ use App\Models\CotizacionVenta;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Constants\CotizacionConstants;
 
 
 class CotizacionesController extends Controller
@@ -116,6 +117,7 @@ class CotizacionesController extends Controller
     public function store(Request $request)
     {
         //  dd($request->all());
+      
 
         $request->validate([
             'fecha'         => 'required',
@@ -270,5 +272,22 @@ class CotizacionesController extends Controller
         $cotizaciones->filter($request);
 
         return Excel::download($cotizaciones, 'cotizaciones.xlsx');
+    }
+
+    public function changeStateCotizacion(Request $request)
+    {
+        $cotizacion = CotizacionVenta::findOrFail($request->id);
+        $cotizacion->estado = $request->estado;
+        $cotizacion->save();
+        return Response()->json($cotizacion, 200);
+    }
+
+    public function duplicarCotizacion(Request $request)
+    {
+        $cotizacion = CotizacionVenta::findOrFail($request->id);
+        $nuevaCotizacion = $cotizacion->replicate();
+        $nuevaCotizacion->save();
+        
+        return response()->json($nuevaCotizacion, 200);
     }
 }

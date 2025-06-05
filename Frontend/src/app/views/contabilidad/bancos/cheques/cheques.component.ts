@@ -136,6 +136,10 @@ export class ChequesComponent implements OnInit {
 
     }
 
+    public imprimir(cheque:any){
+        window.open(this.apiService.baseUrl + '/api/banco/cheque/imprimir/' + cheque.id + '?token=' + this.apiService.auth_token());
+    }
+
     public onSubmit(){
         this.saving = true;
         this.apiService.store('banco/cheque', this.cheque).subscribe(cheque => {

@@ -87,6 +87,7 @@ class UsuariosController extends Controller
             'email'         => 'required|unique:users,email,'.$request->id,
             'rol_id'        => 'required',
             'id_empresa'    => 'required',
+            'id_bodega'     => 'required',
             'id_sucursal'   => 'required',
             'password'      => [
                   'required_if:id,null',

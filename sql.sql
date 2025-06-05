@@ -1,27 +1,10 @@
--- Bodegas
-
-CREATE TABLE sucursal_bodegas AS SELECT * FROM sucursales;
-ALTER TABLE sucursal_bodegas ADD PRIMARY KEY(id);
-
-ALTER TABLE `sucursal_bodegas`
-  DROP `telefono`,
-  DROP `correo`,
-  DROP `municipio`,
-  DROP `departamento`,
-  DROP `direccion`;
-
-ALTER TABLE sucursal_bodegas ADD id_sucursal INT NULL after activo;
-UPDATE sucursal_bodegas SET id_sucursal=id;
+-- Costo promedio
+ALTER TABLE ajustes ADD costo decimal(10,2) NULL default 0 after ajuste;
+ALTER TABLE traslados ADD costo decimal(10,2) NULL default 0 after cantidad;
+ALTER TABLE traslado_detalles ADD costo decimal(10,2) NOT NULL after cantidad;
 
 
-ALTER TABLE ajustes CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal_de id_bodega_de INT(11) NULL DEFAULT NULL;
-ALTER TABLE traslados CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_perdida_ajuste INT NULL after id_cuenta_renta_retenida_compras;
+ALTER TABLE contabilidad_configuracion ADD id_cuenta_ganancia_ajuste INT NULL after id_cuenta_perdida_ajuste;
 
-ALTER TABLE inventario CHANGE id_sucursal id_bodega INT(11) NULL DEFAULT NULL;
 
-ALTER TABLE devoluciones_compras ADD id_bodega INT NOT NULL after id_sucursal;
-ALTER TABLE devoluciones_ventas ADD id_bodega INT NOT NULL after id_sucursal;
-
-ALTER TABLE users ADD id_bodega INT NOT NULL after id_sucursal;
-UPDATE users SET id_bodega=id_sucursal;

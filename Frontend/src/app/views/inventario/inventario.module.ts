@@ -147,7 +147,6 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
-
     CategoriaCuentasComponent,
     SubCategoriasComponent,
     BodegaComponent,

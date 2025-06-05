@@ -164,7 +164,7 @@ export class VentaDetallesComponent implements OnInit {
       this.detalle.cuenta_a_terceros = 0;
     }
 
-    if (!this.detalle.total) {
+    if(!this.detalle.total || detalle){
       this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento)).toFixed(4);
     }
 
@@ -249,6 +249,13 @@ export class VentaDetallesComponent implements OnInit {
     console.log(composicion);
     console.log(opcion);
 
+  }
+
+  getColumnCount(): number {
+    let count = 5; // Base columns (Product, Quantity, Price, Discount, Total, Actions)
+    if (this.usuario.empresa.vendedor_detalle_venta) count++;
+    count += this.selectedCustomFields.length;
+    return count;
   }
 
 

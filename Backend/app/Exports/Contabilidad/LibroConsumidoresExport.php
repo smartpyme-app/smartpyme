@@ -3,23 +3,40 @@
 namespace App\Exports\Contabilidad;
 
 use App\Models\Ventas\Venta;
-use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
+use Auth;
 
-class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMapping
+class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
     public $request;
     private $index = 1;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+            BeforeSheet::class => function (BeforeSheet $event) {
+                $event->sheet->insertNewRowBefore(1, 4);
+
+                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
+                $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
+                $event->sheet->setCellValue('E3', 'Folio N°:');
+                $event->sheet->setCellValue('A4', 'Mes: ' . ucfirst(Carbon::parse($this->request->inicio)->translatedFormat('F')));
+                $event->sheet->setCellValue('E4', 'Año: ' . Carbon::parse($this->request->inicio)->format('Y'));
+
+            },
+        ];
     }
 
     public function headings():array{
@@ -29,6 +46,7 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
             'Correlativo',
             'Ventas Exentas',
             'Ventas Gravadas',
+            'Ventas No Sujetas',
             'Exportaciones',
             'Total',
             'Venta a Cuenta de Terceros',
@@ -41,14 +59,17 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
         
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->when($request->tipo_documento, function($query) {
-                            return $query->whereHas('documento', function($q) {
-                                $q->where('nombre', 'Factura');
-                            });
+                        ->whereHas('documento', function ($q) {
+                            $q->where('nombre', 'Factura')
+                                ->orWhere('nombre', 'Factura de exportación');
+                        })
+                        ->when($request->id_sucursal, function ($query) use ($request) {
+                            return $query->where('id_sucursal', $request->id_sucursal);
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
                         ->orderByDesc('fecha')
+                        ->orderByDesc('correlativo')
                         ->get();
         return $ventas;
         
@@ -63,10 +84,10 @@ class LibroConsumidoresExport implements FromCollection, WithHeadings, WithMappi
             $this->index++,
             $venta->fecha,
             $venta->correlativo,
-            $venta->correlativo,
             $venta->exenta,
-            $venta->sub_total,
-            0,
+            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
+            $venta->no_sujeta,
+            $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
             $venta->total,
             $venta->cuenta_a_terceros,
         ];

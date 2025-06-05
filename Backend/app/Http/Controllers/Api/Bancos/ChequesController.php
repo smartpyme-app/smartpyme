@@ -7,9 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\Bancos\Cheque;
 use App\Models\Bancos\Transaccion;
 use Illuminate\Support\Facades\DB;
-use Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Bancos\ChequesExport;
+use Barryvdh\DomPDF\Facade as PDF;
+use Auth;
 
 class ChequesController extends Controller
 {
@@ -136,5 +137,20 @@ class ChequesController extends Controller
 
         return Excel::download($cheques, 'cheques.xlsx');
     }
+
+    public function generarDoc($id){
+        $cheque = Cheque::where('id', $id)->firstOrFail();
+        
+        if(Auth::user()->id_empresa == 415){ //415 
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+        }else{
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+        }
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream('cheque-' . $cheque->correlativo . '.pdf');
+
+    }
+
 
 }

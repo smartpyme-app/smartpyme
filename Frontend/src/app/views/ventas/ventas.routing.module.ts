@@ -275,13 +275,10 @@ const routes: Routes = [
         title: 'Crear Orden de Producción',
       },
       //{ path: 'orden-produccion/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
-      {
-        path: 'orden-produccion/detalles/:id',
-        component: CrearOrdenProduccionComponent,
-        title: 'Ver Orden de Producción',
-      },
-    ],
-  },
+      { path: 'orden-produccion/detalles/:id', component: CrearOrdenProduccionComponent, title: 'Ver Orden de Producción' },
+      { path: 'orden-produccion/editar/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
+    ]
+  }
 ];
 
 @NgModule({

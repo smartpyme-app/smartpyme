@@ -8,8 +8,11 @@ use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Producto;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
+use App\Models\Ventas\Venta;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class CotizacionVenta extends Model
 {
@@ -49,7 +52,18 @@ class CotizacionVenta extends Model
         "terminos_de_venta"
     ];
 
-    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento'];
+    protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_documento','facturada'];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+        }
+    }
 
     public function getNombreClienteAttribute()
     {
@@ -150,4 +164,18 @@ class CotizacionVenta extends Model
     {
         return $this->hasMany(OrdenProduccion::class, 'id_cotizacion_venta')->where('estado', '!=', 'anulada');
     }
+
+
+    public function facturada()
+    {
+        return $this->hasOne(Venta::class, 'num_cotizacion');
+    }
+
+
+    public function getFacturadaAttribute()
+    {
+        return $this->facturada()->exists();
+    }
+
+
 }

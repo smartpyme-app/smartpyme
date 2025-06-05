@@ -31,6 +31,7 @@ import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.c
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { RetaceoComponent } from './retaceo/retaceo.component';
+import { RetaceosListComponent } from './retaceo/retaceos-list.component';
 import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
 
 import { RoleGuard } from '../../guards/role.guard';
@@ -227,17 +228,26 @@ const routes: Routes = [
         title: 'Categorías de gastos',
       },
 
-      {
-        path: 'retaceo',
-        component: RetaceoComponent,
-        canActivate: [PermissionGuard],
-        data: {
-          permission: 'compras.retaceo.ver',
-        },
-        title: 'Retaceo',
-      },
-    ],
-  },
+      //     {
+      //       path: 'retaceo',
+      //       component: RetaceoComponent,
+      //       canActivate: [PermissionGuard],
+      //       data: {
+      //         permission: 'compras.retaceo.ver',
+      //       },
+      //       title: 'Retaceo',
+      //     },
+      //   ],
+      // },
+
+      
+      // { path: 'retaceo', component: RetaceoComponent },
+      { path: 'retaceos', component: RetaceosListComponent, title: 'Retaceos' },
+      { path: 'retaceo/crear', component: RetaceoComponent, title: 'Retaceo' },
+      { path: 'retaceo/:id', component: RetaceoComponent, title: 'Retaceo' },
+
+    ]
+  }
 ];
 
 @NgModule({

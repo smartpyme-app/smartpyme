@@ -1,67 +1,109 @@
 <div class="d-flex justify-content-end mb-3">
   <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
-    <app-tienda-venta-buscador class="w-100" [venta]="venta" *ngIf="this.mode != 'show'"
-      (productoSelect)="productoSelect($event)"></app-tienda-venta-buscador>
-    <app-tienda-venta-producto [venta]="venta" (productoSelect)="productoSelect($event)"
-      *ngIf="this.mode != 'show'"></app-tienda-venta-producto>
-    <app-tienda-venta-paquetes *ngIf="usuario.empresa.modulo_paquetes && venta.cotizacion != 1 && this.mode != 'show'"
-      [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-paquetes>
-    <app-tienda-venta-citas *ngIf="usuario.empresa.modulo_citas && venta.cotizacion != 1 && this.mode != 'show'"
-      [venta]="venta" (productoSelect)="productoSelect($event)"></app-tienda-venta-citas>
+    <app-tienda-venta-buscador
+      class="w-100"
+      [venta]="venta"
+      *ngIf="this.mode != 'show'"
+      (productoSelect)="productoSelect($event)"
+    ></app-tienda-venta-buscador>
+    <app-tienda-venta-producto
+      [venta]="venta"
+      (productoSelect)="productoSelect($event)"
+      *ngIf="this.mode != 'show'"
+    ></app-tienda-venta-producto>
+    <app-tienda-venta-paquetes
+      *ngIf="
+        usuario.empresa.modulo_paquetes &&
+        venta.cotizacion != 1 &&
+        this.mode != 'show'
+      "
+      [venta]="venta"
+      (productoSelect)="productoSelect($event)"
+    ></app-tienda-venta-paquetes>
+    <app-tienda-venta-citas
+      *ngIf="
+        usuario.empresa.modulo_citas &&
+        venta.cotizacion != 1 &&
+        this.mode != 'show'
+      "
+      [venta]="venta"
+      (productoSelect)="productoSelect($event)"
+    ></app-tienda-venta-citas>
   </div>
 </div>
 <div class="row">
   <div class="col-md-12 table-responsive">
-    <table class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle">
+    <table
+      class="table table-sm table-borderless table-hover table-condensed mb-0 align-middle"
+    >
       <thead>
         <tr>
           <th *ngIf="usuario.empresa.vendedor_detalle_venta">Vendedor</th>
           <th>Producto</th>
-          <th style="width: 150px;">Cantidad</th>
-          <th *ngFor="let field of customFields.data" 
-    [hidden]="!selectedCustomFields.includes(field.id)"
-    style="min-width: 100px">
-  {{field.name}}
-</th>
-          <th style="width: 150px;">Precio</th>
-          <th style="width: 150px;">Descuento</th>
-          <th style="width: 100px;" class="text-right">Total</th>
-          <th style="width: 50px;" class="text-center"><i class="fa fa-cog"></i></th>
+          <th class="text-center" style="min-width: 120px">Cantidad</th>
+          <th
+            *ngFor="let field of customFields.data"
+            [hidden]="!selectedCustomFields.includes(field.id)"
+            style="min-width: 100px"
+          >
+            {{ field.name }}
+          </th>
+          <th class="text-end" style="min-width: 120px">Precio</th>
+          <th class="text-end" style="min-width: 120px">Descuento</th>
+          <th class="text-end" style="min-width: 120px">Total</th>
+          <th style="width: 50px" class="text-center">
+            <i class="fa fa-cog"></i>
+          </th>
         </tr>
       </thead>
       <tbody class="align-top">
         <!-- if no h ay ningun producto -->
         <tr *ngIf="venta?.detalles?.length < 1">
           <td colspan="7" class="text-center">
-            <p class="text-muted my-3">
-              Agregue productos y servicios
-            </p>
+            <p class="text-muted my-3">Agregue productos y servicios</p>
           </td>
         </tr>
         <tr *ngFor="let detalle of venta?.detalles; let i = index">
           <!-- detalle de vendedor  -->
           <td *ngIf="usuario.empresa.vendedor_detalle_venta">
-            <select name="id_vendedor" [(ngModel)]="detalle.id_vendedor" class="form-select">
+            <select
+              name="id_vendedor"
+              [(ngModel)]="detalle.id_vendedor"
+              class="form-select"
+            >
               <option [value]="usuario.id" *ngFor="let usuario of usuarios">
                 {{ usuario.name }}
               </option>
             </select>
           </td>
           <td>
-            <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
+            <div
+              class="d-flex gap-3"
+              *ngIf="!usuario.empresa.editar_descripcion_venta"
+            >
               <div>
-                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px"
-                  width="50px">
+                <img
+                  src="{{ apiService.baseUrl }}/img/{{ detalle.img }}"
+                  class="rounded-circle"
+                  height="50px"
+                  width="50px"
+                />
               </div>
               <div>
-                {{ detalle.descripcion }} <br>
+                {{ detalle.descripcion }} <br />
                 <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
-                <div style="font-size: 14px;">
+                <div style="font-size: 14px">
                   <ul>
-                    <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
-                      <a class="click text-dark text-decoration-none"
-                        (click)="openModalCompuesto(mcomposicion, composicion)">
-                        {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
+                    <li
+                      class="mb-2"
+                      *ngFor="let composicion of detalle?.composiciones"
+                    >
+                      <a
+                        class="click text-dark text-decoration-none"
+                        (click)="openModalCompuesto(mcomposicion, composicion)"
+                      >
+                        {{ composicion.nombre_compuesto }} X
+                        {{ composicion.cantidad }}
                       </a>
                     </li>
                   </ul>
@@ -69,66 +111,130 @@
               </div>
             </div>
             <div *ngIf="usuario.empresa.editar_descripcion_venta">
-              <input class="form-control" type="text" [disabled]="this.mode=='show'" [(ngModel)]="detalle.descripcion"
-                name="descripcion">
+              <input
+                class="form-control"
+                type="text"
+                [disabled]="this.mode == 'show'"
+                [(ngModel)]="detalle.descripcion"
+                name="descripcion"
+              />
               <small class="text-muted text-tiny">{{ detalle?.tipo }}</small>
-              <div style="font-size: 14px;">
+              <div style="font-size: 14px">
                 <ul>
-                  <li class="mb-2" *ngFor="let composicion of detalle?.composiciones">
-                    <a class="click text-dark text-decoration-none"
-                      (click)="openModalCompuesto(mcomposicion, composicion)">
-                      {{ composicion.nombre_compuesto }} X {{ composicion.cantidad }}
+                  <li
+                    class="mb-2"
+                    *ngFor="let composicion of detalle?.composiciones"
+                  >
+                    <a
+                      class="click text-dark text-decoration-none"
+                      (click)="openModalCompuesto(mcomposicion, composicion)"
+                    >
+                      {{ composicion.nombre_compuesto }} X
+                      {{ composicion.cantidad }}
                     </a>
                   </li>
                 </ul>
               </div>
             </div>
-            <div class="d-flex gap-10 flex-wrap" *ngIf="detalle?.detalles?.length>0">
+            <div
+              class="d-flex gap-10 flex-wrap"
+              *ngIf="detalle?.detalles?.length > 0"
+            >
               <small>En combo:</small>
-              <small *ngFor="let item of detalle?.detalles" class="ms-3 badge bg-light text-muted">{{
-                item.producto.nombre }} X {{ item.cantidad }}</small>
+              <small
+                *ngFor="let item of detalle?.detalles"
+                class="ms-3 badge bg-light text-muted"
+                >{{ item.producto.nombre }} X {{ item.cantidad }}</small
+              >
             </div>
           </td>
-          <td style="width: 150px;">
-            <input type="number"
-              tooltip="{{ detalle.stock != null ? (detalle.stock > 0 ? detalle.stock + ' disponibles' : 'No hay disponibles') : '' }}"
-              [disabled]="this.mode=='show'" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control"
-              [ngClass]="{ 'border-danger': ((detalle.cantidad > detalle.stock) && (detalle.stock != null)) }"
-              name="cantidad">
+          <td style="width: 150px">
+            <input
+              type="number"
+              tooltip="{{
+                detalle.stock != null
+                  ? detalle.stock > 0
+                    ? detalle.stock + ' disponibles'
+                    : 'No hay disponibles'
+                  : ''
+              }}"
+              [disabled]="this.mode == 'show'"
+              [(ngModel)]="detalle.cantidad"
+              (change)="updateTotal(detalle)"
+              (keyup)="updateTotal(detalle)"
+              class="form-control"
+              [ngClass]="{
+                'border-danger':
+                  detalle.cantidad > detalle.stock && detalle.stock != null
+              }"
+              name="cantidad"
+            />
           </td>
-          <td *ngFor="let field of customFields.data" 
-    [hidden]="!selectedCustomFields.includes(field.id)">
-  <app-product-specs
-    [producto]="detalle"
-    [field]="field"
-    [mode]="mode"
-    (onChange)="updateTotal(detalle)">
-  </app-product-specs>
-</td>
-          <td style="width: 150px;">
+          <td
+            *ngFor="let field of customFields.data"
+            [hidden]="!selectedCustomFields.includes(field.id)"
+          >
+            <app-producto-specs
+              [producto]="detalle"
+              [field]="field"
+              (onChange)="updateTotal(detalle)"
+            >
+            </app-producto-specs>
+          </td>
+          <td style="width: 150px">
             <div class="input-group" *ngIf="detalle?.precios?.length < 2">
               <span class="input-group-text">$</span>
-              <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [disabled]="this.mode=='show'"
-                [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)"
-                class="form-control" name="precio">
+              <input
+                type="number"
+                [disabled]="!usuario.empresa.editar_precio_venta"
+                [disabled]="this.mode == 'show'"
+                [(ngModel)]="detalle.precio"
+                (change)="updateTotal(detalle)"
+                (keyup)="updateTotal(detalle)"
+                class="form-control"
+                name="precio"
+              />
             </div>
-            <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)"
-              class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
-              <option [value]="precio.precio" *ngFor="let precio of detalle.precios">
-                {{ precio.precio | currency}}
+            <select
+              [(ngModel)]="detalle.precio"
+              (change)="updateTotal(detalle)"
+              (keyup)="updateTotal(detalle)"
+              class="form-select"
+              name="precio"
+              *ngIf="detalle?.precios?.length > 1"
+            >
+              <option
+                [value]="precio.precio"
+                *ngFor="let precio of detalle.precios"
+              >
+                {{ precio.precio | currency }}
               </option>
             </select>
           </td>
-          <td style="width: 150px;">
+          <!-- <td style="width: 150px">
             <div class="input-group">
               <span class="input-group-text">%</span>
-              <input type="number" [disabled]="this.mode=='show'" [(ngModel)]="detalle.descuento || detalle.descuento_porcentaje"
-                (change)="updateTotal(detalle)" class="form-control" name="descuento">
+              <input
+                type="number"
+                [disabled]="this.mode == 'show'"
+                [(ngModel)]="detalle.descuento || detalle.descuento_porcentaje"
+                (change)="updateTotal(detalle)"
+                class="form-control"
+                name="descuento"
+              />
             </div>
+          </td> -->
+          <td style="width: 150px;">
+            <div class="input-group">
+                <span class="input-group-text">%</span>
+                <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+            </div>
+        </td>
+
+          <td style="width: 100px" class="text-right">
+            {{ detalle.total | currency }}
           </td>
-          <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
-          <td style="width: 50px;" class="text-center">
+          <td style="width: 50px" class="text-center">
             <div class="btn-group">
               <button class="btn btn-link" (click)="delete(detalle)">
                 <i class="fa fa-trash"></i>
@@ -141,7 +247,6 @@
   </div>
 </div>
 
-
 <ng-template #msupervisor>
   <div class="modal-header">
     <h4 class="modal-title text-center">Autorización</h4>
@@ -151,11 +256,19 @@
       <form name="form" (ngSubmit)="supervisorCheck()">
         <div class="form-group col-md-12">
           <label for="codigo">Ingrese el código de supervisor:</label>
-          <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center"
-            focus="true">
+          <input
+            type="password"
+            [(ngModel)]="supervisor.codigo"
+            name="codigo"
+            class="form-control text-center"
+            focus="true"
+          />
         </div>
         <div class="d-grid mt-4">
-          <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+          <button
+            [disabled]="loading || !supervisor.codigo"
+            class="btn btn-primary btn-block"
+          >
             <span *ngIf="!loading">Autorizar</span>
             <span *ngIf="loading">Autorizando...</span>
           </button>
@@ -168,25 +281,41 @@
 <ng-template #mcomposicion>
   <div class="modal-header">
     <h4 class="modal-title text-center">Opciones</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button
+      type="button"
+      class="btn-close"
+      (click)="modalRef.hide()"
+      aria-label="Close"
+    ></button>
   </div>
   <div class="modal-body">
     <div class="row">
       <div class="col-12">
-
-        <p>Seleccione el sustituto de <b>{{ composicion.nombre_compuesto }}</b>:</p>
-        <br>
-        <div *ngIf="composicion.opciones.length > 0" style="max-height: 300px; overflow: auto;">
+        <p>
+          Seleccione el sustituto de <b>{{ composicion.nombre_compuesto }}</b
+          >:
+        </p>
+        <br />
+        <div
+          *ngIf="composicion.opciones.length > 0"
+          style="max-height: 300px; overflow: auto"
+        >
           <ul class="list-group">
-            <button type="button" class="list-group-item text-start" *ngFor="let opcion of composicion.opciones"
-              (click)="cambiarOpcion(composicion, opcion); modalRef.hide();">
+            <button
+              type="button"
+              class="list-group-item text-start"
+              *ngFor="let opcion of composicion.opciones"
+              (click)="cambiarOpcion(composicion, opcion); modalRef.hide()"
+            >
               {{ opcion.nombre_producto }}
             </button>
           </ul>
         </div>
-        <p class="alert bg-info" *ngIf="composicion.opciones.length == 0">No tiene productos sustitutos, puede
-          agregarlos en la configuración del producto.</p>
-        <br>
+        <p class="alert bg-info" *ngIf="composicion.opciones.length == 0">
+          No tiene productos sustitutos, puede agregarlos en la configuración
+          del producto.
+        </p>
+        <br />
       </div>
     </div>
   </div>

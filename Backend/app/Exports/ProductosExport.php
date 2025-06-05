@@ -42,17 +42,18 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
 
     public function map($row): array{
             $etiquetas = $row->etiquetas;
-           $fields = [
+            $stockSum = $row->inventarios->sum('stock');
+            $fields = [
               $row->nombre,
               $row->nombre_categoria,
               $row->codigo,
               $row->barcode,
               $row->marca,
-              number_format($row->costo, 2),
+              $row->empresa()->pluck('valor_inventario')->first() == 'promedio' ? number_format($row->costo_promedio, 2) : number_format($row->costo, 2),
               number_format($row->precio, 2),
               number_format($row->precio - $row->costo, 2),
               number_format($row->precio + ($row->precio * ($row->empresa()->pluck('iva')->first() ? $row->empresa()->pluck('iva')->first() / 100 : 0)), 2),
-              $this->request->id_sucursal ? $row->inventarios()->where('id_sucursal', $this->request->id_sucursal)->pluck('stock')->first() : $row->inventarios()->sum('stock'),
+              $stockSum ? $stockSum : '0',
               $row->proveedores()->count() ? $row->proveedores()->first()->nombre_proveedor : '',
               $row->enable ? 'Activo' : 'Inactivo',
               // $etiquetas,
@@ -64,14 +65,13 @@ class ProductosExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         $request = $this->request;
-        return Producto::with('inventarios', 'precios')
+        return Producto::with(['inventarios' => function ($q) use ($request) {
+                        if ($request->id_bodega) {
+                            $q->where('id_bodega', $request->id_bodega);
+                        }
+                    }, 'precios'])
                     ->when($request->id_categoria, function($query) use ($request){
                         return $query->where('id_categoria', $request->id_categoria);
-                    })
-                    ->when($request->id_sucursal, function($q) use ($request){
-                        $q->whereHas('inventarios', function($q) use ($request){
-                            return $q->where('id_sucursal', $request->id_sucursal);
-                        });
                     })
                     ->when($request->buscador, function($query) use ($request){
                         return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')

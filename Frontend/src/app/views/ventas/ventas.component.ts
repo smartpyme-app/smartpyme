@@ -40,7 +40,7 @@ export class VentasComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -85,7 +85,7 @@ export class VentasComponent implements OnInit {
 
     public filtrarVentas(){
         this.loading = true;
-        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
+        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => {
             this.ventas = ventas;
             this.loading = false;
             if(this.modalRef){
@@ -111,24 +111,24 @@ export class VentasComponent implements OnInit {
         }
 
     }
-    
+
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('venta/', id) .subscribe(data => {
-                for (let i = 0; i < this.ventas['data'].length; i++) { 
+                for (let i = 0; i < this.ventas['data'].length; i++) {
                     if (this.ventas['data'][i].id == data.id )
                         this.ventas['data'].splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
 
     }
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => { 
+        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => {
             this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -142,7 +142,7 @@ export class VentasComponent implements OnInit {
 
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
-        
+
         if(!this.documentos.length){
             this.apiService.getAll('documentos/list').subscribe(documentos => {
                 this.documentos = documentos;
@@ -151,29 +151,29 @@ export class VentasComponent implements OnInit {
         }
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.canales.length){
-            this.apiService.getAll('canales/list').subscribe(canales => { 
+            this.apiService.getAll('canales/list').subscribe(canales => {
                 this.canales = canales;
             }, error => {this.alertService.error(error); });
         }
 
         this.modalRef = this.modalService.show(template);
     }
-    
+
     public openFilter(template: TemplateRef<any>) {
         if(!this.clientes.length){
-            this.apiService.getAll('clientes/list').subscribe(clientes => { 
+            this.apiService.getAll('clientes/list').subscribe(clientes => {
                 this.clientes = clientes;
             }, error => {this.alertService.error(error); });
         }
@@ -186,25 +186,25 @@ export class VentasComponent implements OnInit {
         }
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.canales.length){
-            this.apiService.getAll('canales/list').subscribe(canales => { 
+            this.apiService.getAll('canales/list').subscribe(canales => {
                 this.canales = canales;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
                 this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
         }
@@ -258,7 +258,7 @@ export class VentasComponent implements OnInit {
     }
 
     public onSubmit() {
-        this.saving = true;            
+        this.saving = true;
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
             this.saving = false;
@@ -273,7 +273,7 @@ export class VentasComponent implements OnInit {
     public setRecurrencia(venta:any){
         this.venta = venta;
         this.venta.recurrente = true;
-        
+
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
             this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
@@ -355,11 +355,11 @@ export class VentasComponent implements OnInit {
                     this.venta.dte_invalidacion = dte;
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        
+
                         if(dteFirmado.status == 'ERROR'){
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
-                        
+
                         this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
@@ -397,6 +397,12 @@ export class VentasComponent implements OnInit {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }
+
+  public limpiarFiltros() {
+    localStorage.removeItem('ventasFiltros');
+    this.loadAll();
+  }
+
 
 
 }

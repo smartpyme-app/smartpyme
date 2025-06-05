@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use JWTAuth;
 use App\Models\Admin\Empresa;
-use App\Models\Admin\Bodega;
+//use App\Models\Admin\Bodega;
+use App\Models\Inventario\Bodega;
 
 class BodegasController extends Controller
 {
@@ -38,7 +39,7 @@ class BodegasController extends Controller
     	
         $request->validate([
             'nombre'       => 'required|max:255',
-            'descripcion'  => 'sometimes|max:255',
+            //'descripcion'  => 'sometimes|max:255',
             'sucursal_id'  => 'required|numeric',
         ]);
 

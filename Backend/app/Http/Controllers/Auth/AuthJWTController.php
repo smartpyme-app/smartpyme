@@ -15,6 +15,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Admin\Canal;
 use App\Models\Admin\FormaDePago;
 use App\Models\Admin\Documento;
+use App\Models\Inventario\Bodega;
 use App\Models\Transaccion;
 use App\Models\User;
 use Carbon\Carbon;
@@ -219,6 +220,8 @@ class AuthJWTController extends Controller
         if (!$request->id) {
             // Crear sucursal
                 $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
+            // Crear bodega
+                $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
            // Crear canales
                Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
 
@@ -241,6 +244,7 @@ class AuthJWTController extends Controller
         }else{
             $usuario = new User();
             $usuario->id_sucursal  = $sucursal->id;
+            $usuario->id_bodega    = $bodega->id;
             $usuario->id_empresa   = $empresa->id;
         }
 

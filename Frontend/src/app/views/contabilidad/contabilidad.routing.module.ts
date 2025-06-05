@@ -6,6 +6,9 @@ import { LayoutComponent } from '@layout/layout.component';
 import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
 import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
+import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
+import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
+
 import { PresupuestosComponent } from '@views/contabilidad/presupuestos/presupuestos.component';
 import { PresupuestoComponent } from '@views/contabilidad/presupuestos/presupuesto/presupuesto.component';
 import { PresupuestoDetallesComponent } from '@views/contabilidad/presupuestos/presupuesto-detalles/presupuesto-detalles.component';
@@ -41,6 +44,9 @@ const routes: Routes = [
         { path: 'libro-iva/contribuyentes', component: ContribuyentesComponent, title: 'Libro Contribuyentes' },
         { path: 'libro-iva/consumidor-final', component: ConsumidorFinalComponent, title: 'Libro Consumidor Final' },
         { path: 'libro-compras', component: LibroComprasComponent, title: 'Libro de compras' },
+
+        { path: 'libro-anulados', component: LibroAnuladosComponent },
+        { path: 'libro-compras-sujetos-excluidos', component: LibroComprasSujetosExcluidosComponent },
 
         { path: 'bancos/cuentas', component: CuentasComponent, title: 'Cuentas' },
         { path: 'bancos/cuenta/:id', component: CuentaComponent, title: 'Cuenta' },

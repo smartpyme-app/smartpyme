@@ -69,6 +69,12 @@ export class ApiService {
       .pipe(retry(0), catchError(this.handleError));
   }
 
+  get(url: string) {
+    return this.http
+      .get<any>(this.apiUrl + url)
+      .pipe(retry(0), catchError(this.handleError));
+  }
+
   store(url: string, model: any) {
     return this.http
       .post<any>(this.apiUrl + url, model)
@@ -122,6 +128,16 @@ export class ApiService {
     return this.http.get(this.apiUrl + url, {
       responseType: 'blob',
       params: filtros,
+    });
+  }
+
+  exportAcumulado(url: string, filtros: any): Observable<Blob> {
+    console.log('Enviando filtros:', filtros);
+    return this.http.post(this.apiUrl + url, filtros, {
+      responseType: 'blob',
+      headers: new HttpHeaders({
+        Authorization: 'Bearer ' + this.auth_token(),
+      }),
     });
   }
 
@@ -557,8 +573,6 @@ export class ApiService {
     }
     return false;
   }
-
- 
 
   // isAdmin() {
   //   let usuario = this.auth_user();

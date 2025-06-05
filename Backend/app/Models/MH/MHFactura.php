@@ -7,6 +7,7 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
+use Carbon\Carbon;
 
 class MHFactura extends Model
 {
@@ -22,8 +23,6 @@ class MHFactura extends Model
         $this->venta = $venta;
         $this->empresa = $this->venta->empresa()->first();
         $this->sucursal = $this->venta->sucursal()->first();
-
-        $this->venta->total = $this->venta->total - $this->venta->cuenta_a_terceros;
 
         $this->caja_codigo = '0001';
         $this->venta->tipo_dte = '01';
@@ -79,7 +78,7 @@ class MHFactura extends Model
             }
 
         // Total en letras
-        $partes = explode('.', strval( number_format($this->venta->total, 2) ));
+        $partes = explode('.', strval( number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2) ));
 
         $formatter = new NumeroALetras();
         $n = explode(".", number_format($venta->total,2));
@@ -104,8 +103,8 @@ class MHFactura extends Model
             "tipoOperacion" => $this->venta->tipoOperacion,
             "tipoContingencia" => $this->venta->tipoContingencia,
             "motivoContin" => $this->venta->motivoContin,
-            "fecEmi" => \Carbon\Carbon::parse($this->venta->fecha)->format('Y-m-d'),
-            "horEmi" => \Carbon\Carbon::parse($this->venta->created_at)->format('H:i:s'),
+            "fecEmi" => Carbon::parse($this->venta->fecha)->format('Y-m-d'),
+            "horEmi" => Carbon::parse($this->venta->created_at)->format('H:i:s'),
             "tipoMoneda" => $this->venta->moneda,
         ];
     }
@@ -215,9 +214,9 @@ class MHFactura extends Model
                   "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
                   "reteRenta" => 0,
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total + $this->venta->iva_retenido, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   "totalIva" => floatval(number_format($this->venta->iva, 2, '.', '')),
                   "saldoFavor" => 0,
@@ -225,10 +224,10 @@ class MHFactura extends Model
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros, 2, '.', '')),
                       "referencia" => NULL,
-                      "plazo" => NULL,
-                      "periodo" => NULL
+                      "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
+                      "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
                     ]
                   ],
                   "numPagoElectronico" => ""
@@ -297,11 +296,21 @@ class MHFactura extends Model
                 "tributos" => $tributos,
                 "psv" => 0,
                 "noGravado" => 0,
-                "ivaItem" => floatval(number_format($detalle->iva,2))
+                "ivaItem" => floatval(number_format($detalle->iva, 2, '.', ''))
               ]);
         }
 
         return $detalles;
+    }
+
+    private function obtenerPlazo($dias_credito) {
+        if ($dias_credito <= 30) {
+            return "01"; // Corto plazo
+        } elseif ($dias_credito <= 60) {
+            return "02"; // Mediano plazo
+        } else {
+            return "03"; // Largo plazo
+        }
     }
 
 

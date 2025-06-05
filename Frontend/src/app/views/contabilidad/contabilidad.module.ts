@@ -18,6 +18,8 @@ import { PresupuestoDetallesComponent } from './presupuestos/presupuesto-detalle
 import { ConsumidorFinalComponent } from '@views/contabilidad/libro-iva/consumidor-final/consumidor-final.component';
 import { ContribuyentesComponent } from '@views/contabilidad/libro-iva/contribuyentes/contribuyentes.component';
 import { LibroComprasComponent } from '@views/contabilidad/libro-compras/libro-compras.component';
+import { LibroAnuladosComponent } from '@views/contabilidad/libro-anulados/libro-anulados.component';
+import { LibroComprasSujetosExcluidosComponent } from '@views/contabilidad/libro-compras-sujetos-excluidos/libro-compras-sujetos-excluidos.component';
 
 import { CuentasComponent } from '@views/contabilidad/bancos/cuentas/cuentas.component';
 import { CuentaComponent } from '@views/contabilidad/bancos/cuentas/cuenta/cuenta.component';
@@ -60,6 +62,8 @@ import { ComprasModule } from '@views/compras/compras.module';
     ConsumidorFinalComponent,
     ContribuyentesComponent,
     LibroComprasComponent,
+    LibroAnuladosComponent,
+    LibroComprasSujetosExcluidosComponent,
     CuentasComponent,
     CuentaComponent,
     ChequesComponent,
@@ -84,6 +88,8 @@ import { ComprasModule } from '@views/compras/compras.module';
     ConsumidorFinalComponent,
     ContribuyentesComponent,
     LibroComprasComponent,
+    LibroAnuladosComponent,
+    LibroComprasSujetosExcluidosComponent,
     CuentasComponent,
     CuentaComponent,
     ChequesComponent,

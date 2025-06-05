@@ -59,6 +59,12 @@ export class EmpresaComponent implements OnInit {
                 user.empresa = empresa;
                 localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
+                if(this.empresa.fe_ambiente == '01'){
+                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                }else{
+                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                }
+
                 this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
                 this.saving = false;
                 resolve(null);
@@ -68,7 +74,8 @@ export class EmpresaComponent implements OnInit {
     }
 
     setGiro(){
-        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
+        this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_actividad_economica).nombre;
+        console.log(this.empresa);
     }
 
     setDistrito(){

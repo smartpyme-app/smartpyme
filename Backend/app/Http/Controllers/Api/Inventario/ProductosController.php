@@ -29,16 +29,13 @@ class ProductosController extends Controller
 
     public function index(Request $request) {
 
-        $productos = Producto::with('inventarios', 'precios')
+        $productos = Producto::with(['inventarios' => function ($q) use ($request) {
+                                    if ($request->id_bodega) {
+                                        $q->where('id_bodega', $request->id_bodega);
+                                    }
+                                }, 'precios'])
                                 ->when($request->id_categoria, function($query) use ($request){
                                     return $query->where('id_categoria', $request->id_categoria);
-                                })
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->with(['inventarios' => function ($q) {
-                                        $q->whereHas('bodega', function ($bodegaQuery) {
-                                            $bodegaQuery->where('id_sucursal', Auth::user()->id_sucursal);
-                                        });
-                                    }]);
                                 })
                                 ->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')

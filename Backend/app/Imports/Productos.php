@@ -23,7 +23,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
     // use Importable;
 
     private $numRows = 0;
-    
+
     public function model(array $row)
     {
 
@@ -32,7 +32,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $id_categoria = Categoria::where('nombre', $row['categoria'])
                                 ->where('id_empresa', $usuario->id_empresa)
                                 ->pluck('id')->first();
-        
+
 
         if(!$id_categoria){
             $categoria = new Categoria();
@@ -42,6 +42,23 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $categoria->id_empresa = $usuario->id_empresa;
             $categoria->save();
             $id_categoria = $categoria->id;
+        }
+
+        $id_subcategoria = Categoria::where('nombre', $row['subcategoria'])
+            ->where('id_empresa', $usuario->id_empresa)
+            ->pluck('id')->first();
+
+
+        if(!$id_subcategoria){
+            $subcategoria = new Categoria();
+            $subcategoria->nombre = $row['categoria'];
+            $subcategoria->descripcion = $row['categoria'];
+            $subcategoria->enable = true;
+            $subcategoria->id_empresa = $usuario->id_empresa;
+            $subcategoria->subcategoria = true;
+            $subcategoria->id_cate_padre = $id_categoria;
+            $subcategoria->save();
+            $id_subcategoria = $subcategoria->id;
         }
 
         if ($row['proveedor_nombre'] && $row['proveedor_apellido']) {
@@ -76,8 +93,10 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
         $producto->costo = $row['costo'];
+        $producto->costo_promedio = $row['costo'];
         $producto->stock = $row['sucursal_1_stock'];
         $producto->id_categoria = $id_categoria;
+        $producto->id_subcategoria = $id_subcategoria ?? null;
         $producto->codigo = $row['codigo'];
         $producto->descripcion = $row['descripcion'];
         $producto->marca = $row['marca'];
@@ -98,7 +117,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $bodegas = Bodega::all();
 
         if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
-            
+
             $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[0]->id)->first();
 
             if (!$inventario) {
@@ -108,7 +127,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             $inventario->id_producto = $producto->id;
             $inventario->id_bodega = $bodegas[0]->id;
             $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
-            $inventario->save(); 
+            $inventario->save();
 
 
             $ajuste = Ajuste::create([
@@ -122,7 +141,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
                 'id_empresa' => $usuario->id_empresa,
                 'id_usuario' => $usuario->id,
             ]);
-            
+
             if (!$inventario) {
                 $inventario->kardex($ajuste, $ajuste->ajuste);
             }
@@ -130,7 +149,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         }
 
         if (isset($bodegas[1]) && isset($row['sucursal_2_stock'])) {
-            
+
             $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[1]->id)->first();
 
             if (!$inventario) {
@@ -161,8 +180,8 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         }
 
         if ($bodegas->count() > 2) {
-           for ($i=2; $i < $bodegas->count(); $i++) { 
-               
+           for ($i=2; $i < $bodegas->count(); $i++) {
+
                $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[$i]->id)->first();
 
                if (!$inventario) {

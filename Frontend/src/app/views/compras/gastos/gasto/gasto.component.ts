@@ -80,6 +80,10 @@ export class GastoComponent implements OnInit {
 
                 if(this.gasto.renta_retenida > 0)
                     this.gasto.renta = true;
+
+                if(!this.gasto.area_empresa)
+                    this.gasto.area_empresa = '';
+
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
@@ -95,6 +99,8 @@ export class GastoComponent implements OnInit {
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
             this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.gasto.id_usuario = this.apiService.auth_user().id;
+            this.gasto.area_empresa = '';
+            this.gasto.es_retaceo = false;
 
             if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
                 this.gasto.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
@@ -180,8 +186,8 @@ export class GastoComponent implements OnInit {
             case 'renta':
                 if(this.gasto.renta_retenida == 0){
                     this.gasto.renta_retenida = Number((this.gasto.sub_total * 0.10).toFixed(2));
-                    this.gasto.total += this.gasto.renta_retenida;
-                }else{ this.gasto.total -= this.gasto.renta_retenida; this.gasto.renta_retenida = 0;}
+                    this.gasto.total -= this.gasto.renta_retenida;
+                }else{ this.gasto.total += this.gasto.renta_retenida; this.gasto.renta_retenida = 0;}
                 break;
             case 'percepcion':
                 if(this.gasto.iva_percibido == 0){

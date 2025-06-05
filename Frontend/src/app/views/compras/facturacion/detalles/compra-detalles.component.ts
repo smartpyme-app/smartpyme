@@ -47,10 +47,11 @@ export class CompraDetallesComponent implements OnInit {
     if (!detalle.cantidad) {
       detalle.cantidad = 0;
     }
-    detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
+    detalle.total  = (parseFloat((detalle.cantidad ?? 0)) * parseFloat((detalle.costo ?? 0)) - parseFloat((detalle.descuento ?? 0))).toFixed(2);
     detalle.fobTotal = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
     this.update.emit(this.compra);
   }
+
 
   public modalSupervisor(detalle: any) {
     this.detalle = detalle;
@@ -82,7 +83,6 @@ export class CompraDetallesComponent implements OnInit {
     this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
     this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
     this.detalle.fobTotal = (this.detalle.costo * this.detalle.cantidad);
-
 
     if (!detalle)
       this.compra.detalles.push(this.detalle);

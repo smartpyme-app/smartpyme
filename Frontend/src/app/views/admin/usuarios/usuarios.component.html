@@ -184,9 +184,17 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="id_sucursal">* Sucursal:</label>
-                <select [(ngModel)]="usuario.id_sucursal" class="form-control form-select" name="id_sucursal">
+                <select [(ngModel)]="usuario.id_sucursal" (change)="selectSucursal()" class="form-control form-select" name="id_sucursal">
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="id_bodega">* Bodega:</label>
+                <select [(ngModel)]="usuario.id_bodega" class="form-control form-select" name="id_bodega">
+                    <option *ngFor="let bodega of bodegas | filter:'id_sucursal':usuario.id_sucursal" [value]="bodega.id">
+                        {{ bodega.nombre }}
                     </option>
                 </select>
             </div>

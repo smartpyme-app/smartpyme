@@ -25,6 +25,9 @@
                     <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <!-- <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                  </button> -->
             </div>
         </div>
     </div>
@@ -210,7 +213,8 @@
 <ng-template #mdescargar>
   <div class="modal-header">
     <h4 class="modal-title text-center">Descargar registro de ventas</h4>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+    <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
@@ -230,6 +234,19 @@
                     <span *ngIf="downloadingVentas">Descargando...</span>
                 </button>
             </div>
+            <!-- <div class="d-grid my-4">
+                <p>Descarga Acumulado por Producto.</p>
+                <button [disabled]="saving" (click)="descargarAcumulado()" class="btn btn-primary btn-block">
+                    <span *ngIf="!downloadingVentas">Descargar Acumulado</span>
+                    <span *ngIf="downloadingVentas">Descargando...</span>
+                </button>
+            </div> -->
+            <div class="d-grid my-4">
+                <p>Descarga Acumulado por Producto.</p>
+                <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)" class="btn btn-primary btn-block">
+                  Descargar Acumulado
+                </button>
+              </div>
         </div>
   </div>
 </ng-template>
@@ -281,9 +298,46 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
+            <!-- <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
                 <label for="fecha_pago">Fecha de pago:</label>
                 <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
+            </div> -->
+
+            <div class="form-group col-md-6">
+                <label for="num_cotizacion">Núm Cotización:</label>
+                <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="num_orden">Núm de orden:</label>
+                <input type="number" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtro.tipo_renta">Tipo de ingreso:</label>
+                <select name="tipo_renta" class="form-select" [(ngModel)]="venta.tipo_renta">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                    <option value="Actividades de Servicios">Actividades de Servicios</option>
+                    <option value="Actividades Comerciales">Actividades Comerciales</option>
+                    <option value="Actividades Industriales">Actividades Industriales</option>
+                    <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                    <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                    <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                    <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
+                    <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                    <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                    <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
+                    <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                </select>
             </div>
             <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
                 <div class="form-group col-md-12 without-label">
@@ -334,19 +388,34 @@
                 <span *ngIf="sending">Enviando...</span>
             </button>
 
-            <button *ngIf="!venta.sello_mh" [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary btn-block">
-                <span *ngIf="!saving">Emitir</span>
-                <span *ngIf="saving">Emitiendo...</span>
-            </button>
+            <div class="w-100" *ngIf="!venta?.sello_mh">
+                <p *ngIf="consulting" class="alert alert-info">El DTE ya fue emitido, se consultará por el sello correspondiente.</p>
+                <button [disabled]="saving" (click)="emitirDTE()" class="mb-3 btn btn-primary w-100">
+                    <span *ngIf="!saving && !consulting">Emitir</span>
+                    <span *ngIf="saving">Emitiendo...</span>
+
+                    <span *ngIf="!saving && consulting">Obteniendo sello...</span>
+                </button>
+            </div>
 
         </div>
   </div>
 </ng-template>
 
 <ng-template #mfilter>
-  <div class="modal-header">
+  <!-- <div class="modal-header">
     <div class="modal-title text-center">
         <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div> -->
+  <!-- En el modal de filtros -->
+<div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center">
+        Filtrar
+        <!-- <span *ngIf="filtrosActivos()" class="badge bg-primary ms-2">Filtros activos</span> -->
+      </h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
@@ -450,8 +519,8 @@
                 <label for="filtro.dte">Facturación electrónica (DTE):</label>
                 <select name="dts" class="form-select" [(ngModel)]="filtros.dte">
                     <option value="">Todos</option>
-                    <option value="0">Sin emitir</option>
-                    <option value="1">Emitidos</option>
+                    <option value="1">Sin emitir</option>
+                    <option value="2">Emitidos</option>
                 </select>
             </div>
         </div>
@@ -465,3 +534,74 @@
     </form>
   </div>
 </ng-template>
+
+    <ng-template #mfiltrosAcumulado>
+      <div class="modal-header">
+        <h4 class="modal-title text-center">Filtros para Reporte Acumulado</h4>
+        <button type="button" class="btn-close" (click)="modalRefAcumulado.hide()" aria-label="Close"></button>
+        <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
+      </div>
+      <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        
+        <form (ngSubmit)="descargarAcumulado()">
+          <div class="row">
+            <!-- Fechas -->
+            <div class="form-group col-sm-6">
+              <label>Del:</label>
+              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
+            </div>
+            <div class="form-group col-sm-6">
+              <label>Al:</label>
+              <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
+            </div>
+    
+            <!-- Sucursales -->
+            <div class="form-group col-12 mt-3">
+              <label>Sucursales:</label>
+              <ng-select [multiple]="true"
+                        [items]="sucursales"
+                        [(ngModel)]="filtrosAcumulado.sucursales"
+                        bindLabel="nombre"
+                        bindValue="id"
+                        placeholder="Seleccione sucursales"
+                        name="sucursales">
+              </ng-select>
+            </div>
+    
+            <!-- Categorías -->
+            <div class="form-group col-12 mt-3">
+              <label>Categorías:</label>
+              <ng-select [multiple]="true"
+                        [items]="categorias"
+                        [(ngModel)]="filtrosAcumulado.categorias"
+                        bindLabel="nombre"
+                        bindValue="id"
+                        placeholder="Seleccione categorías"
+                        name="categorias">
+              </ng-select>
+            </div>
+    
+            <!-- Marcas -->
+            <div class="form-group col-12 mt-3">
+              <label>Marcas:</label>
+              <ng-select [multiple]="true"
+                        [items]="marcas"
+                        [(ngModel)]="filtrosAcumulado.marcas"
+                        bindLabel="nombre"
+                        bindValue="nombre"
+                        placeholder="Seleccione marcas"
+                        name="marcas">
+              </ng-select>
+            </div>
+          </div>
+    
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
+              <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
+              <span *ngIf="downloadingAcumulado">Descargando...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </ng-template>

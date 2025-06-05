@@ -11,12 +11,14 @@ use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
 use App\Http\Controllers\ComboProductoController;
+use App\Http\Controllers\Api\Inventario\AtributoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/productos',                     [ProductosController::class, 'index']);
 Route::get('/producto/{id}',                 [ProductosController::class, 'read']);
 Route::get('/productos/list',               [ProductosController::class, 'list']);
 Route::get('/productos/buscar/{txt}',             [ProductosController::class, 'search']);
+Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
 Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
 Route::post('/producto',                    [ProductosController::class, 'store']);
 Route::delete('/producto/{id}',              [ProductosController::class, 'delete']);
@@ -42,6 +44,9 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
 // Precios
 Route::post('/producto/precio',        [PreciosController::class, 'store']);
 Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+Route::post('/producto/precio',        [PreciosController::class, 'store']);
+Route::delete('/producto/precio/{id}', [PreciosController::class, 'delete']);
+Route::post('/precios/importar',          [PreciosController::class, 'import']);
 
 // Proveedor
 Route::post('/producto/proveedor',        [ProveedorController::class, 'store']);
@@ -64,6 +69,10 @@ Route::get('promociones',        [PromocionesController::class, 'index']);
 Route::post('promocion',          [PromocionesController::class, 'store']);
 Route::delete('promocion/{id}',   [PromocionesController::class, 'delete']);
 Route::get('promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
+
+Route::get('atributos', [AtributoController::class, 'index']);
+Route::post('atributos', [AtributoController::class, 'store']);
+
 
 // Imagenes
 Route::post('/producto/imagen',        [ImagenesController::class, 'store']);

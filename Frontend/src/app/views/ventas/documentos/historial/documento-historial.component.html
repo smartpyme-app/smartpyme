@@ -1,0 +1,149 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3>Historial de Documento: {{ nombre }}</h3>
+    <button class="btn btn-light text-danger" routerLink="/documentos">
+        <i class="fa fa-arrow-left"></i> Regresar
+    </button>
+</div>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="documentos?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="cargarDocumentos()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ documentos?.total + ' registros' }}
+            </span>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+            <thead>
+                <tr>
+                    <th (click)="setOrden('nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" class="click">Nombre</th>
+                    <th (click)="setOrden('correlativo')" [ngClass]="{'sorted-asc': filtros.orden == 'correlativo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'correlativo' && filtros.direccion == 'desc'}" class="click">Correlativo</th>
+                    <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha de Creación</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngIf="documentos?.total < 1 && !loading">
+                    <td colspan="6" class="text-center">
+                        <span class="badge bg-primary">No hay documentos en el historial</span>
+                    </td>
+                </tr>
+                <tr *ngIf="loading">
+                    <td colspan="6" class="text-center">
+                        <span class="badge bg-primary">Cargando...</span>
+                    </td>
+                </tr>
+                <tr *ngFor="let documento of documentos?.data">
+                    <td>{{ documento.nombre }}</td>
+                    <td>{{ documento.correlativo }}</td>
+                    <td>{{ documento.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td>
+                        <span class="badge" [ngClass]="{
+                            'bg-success': documento.activo == 1,
+                            'bg-warning': documento.activo == 0
+                        }">
+                            {{ documento.activo == 1 ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                            <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                        </span>
+                        <ng-template #accionesTemplate>
+                            <div class="list-group border-0">
+                                <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mdetalle, documento)" tooltip="Ver detalles">
+                                    <i class="fa fa-pencil-alt"></i> Ver Detalles
+                                </a>
+                            </div>
+                        </ng-template>
+                     
+
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-12" *ngIf="documentos?.last_page > 1">
+        <app-pagination [items]="documentos" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+</section>
+
+<ng-template #mdetalle>
+    <div class="modal-header">
+      <div class="modal-title text-center">
+          <h2 class="text-center no-margin">Documento</h2>
+      </div>
+      <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <form autocomplete="off" (ngSubmit)="onSubmit()">
+          <app-notificaciones-container></app-notificaciones-container>
+          <div class="row">
+              <div class="form-group col-md-6">
+                  <label for="documento.nombre">Nombre</label>
+                  <select class="form-select" [(ngModel)]="documento.nombre" name="documento.nombre">
+                      <option value="Factura">Factura</option>
+                      <option value="Crédito fiscal">Crédito fiscal</option>
+                      <option value="Ticket">Ticket</option>
+                      <option value="Cotización">Cotización</option>
+                      <option value="Recibo">Recibo</option>
+                      <option value="Orden de compra">Orden de compra</option>
+                      <option value="Nota de crédito">Nota de crédito</option>
+                      <option value="Nota de débito">Nota de débito</option>
+                      <option value="Sujeto excluido">Sujeto excluido</option>
+                      <option value="Factura de exportación">Factura de exportación</option>
+                  </select>
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="id_sucursal">Sucursal</label>
+                  <select name="id_sucursal" [(ngModel)]="documento.id_sucursal" class="form-select">
+                      <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                          {{ sucursal.nombre }}
+                      </option>
+                  </select>
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="documento.correlativo">Correlativo</label>
+                  <input type="text" class="form-control" [(ngModel)]="documento.correlativo" name="documento.correlativo">
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="documento.rangos">Serie</label>
+                  <input type="text" class="form-control" [(ngModel)]="documento.rangos" name="documento.rangos">
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="documento.numero_autorizacion">Autorización</label>
+                  <input type="text" class="form-control" [(ngModel)]="documento.numero_autorizacion" name="documento.numero_autorizacion">
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="documento.resolucion">Resolución</label>
+                  <input type="text" class="form-control" [(ngModel)]="documento.resolucion" name="documento.resolucion">
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="documento.fecha">Fecha</label>
+                  <input type="date" class="form-control" [(ngModel)]="documento.fecha" name="documento.fecha">
+              </div>
+              <div class="form-group col-md-6">
+                  <div class="form-switch bg-light-info rounded">
+                    <label for="activo">Activo</label>
+                    <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="documento.activo" name="activo">
+                  </div>
+              </div>
+              <div class="form-group col-12">
+                  <label for="documento.nota">Nota</label>
+                  <textarea name="documento.nota" class="form-control" cols="30" rows="3" [(ngModel)]="documento.nota"></textarea>
+              </div>
+          </div>
+      </form>
+    </div>
+  </ng-template>

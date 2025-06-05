@@ -14,6 +14,7 @@ export class AdminUsuariosComponent implements OnInit {
 
     public usuario:any = {};
     public sucursales:any = [];
+    public bodegas:any = [];
     public sucursalesList:any = [];
     public empresas:any = [];
     public usuarios:any = [];
@@ -82,6 +83,10 @@ export class AdminUsuariosComponent implements OnInit {
             this.setSucursales();
         }, error => {this.alertService.error(error); });
 
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+            this.bodegas = bodegas;
+        }, error => {this.alertService.error(error); });
+
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
@@ -89,6 +94,10 @@ export class AdminUsuariosComponent implements OnInit {
         this.sucursales = this.sucursalesList.filter((item:any) => item.id_empresa == this.usuario.id_empresa);
         this.usuario.id_sucursal = this.sucursales[0].id;
         console.log(this.sucursales);
+    }
+
+    selectSucursal(){
+        this.usuario.id_bodega = this.bodegas[0].id;
     }
 
     public setPagination(event:any):void{

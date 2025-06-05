@@ -13,6 +13,7 @@ import { ApiService } from '@services/api.service';
 export class UsuariosComponent implements OnInit {
 
     public sucursales:any = [];
+    public bodegas:any = [];
     public usuarios:any = [];
     public roles:any = [];
     public usuario:any = {};
@@ -42,6 +43,10 @@ export class UsuariosComponent implements OnInit {
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+            this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
 
@@ -131,6 +136,10 @@ export class UsuariosComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false;});
                    
         }
+    }
+
+    selectSucursal(){
+        this.usuario.id_bodega = this.usuario.id_sucursal;
     }
 
 

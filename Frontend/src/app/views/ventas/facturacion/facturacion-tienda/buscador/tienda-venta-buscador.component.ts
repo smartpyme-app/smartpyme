@@ -133,7 +133,11 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.precios.unshift({
                 'precio' : this.detalle.precio
             });
-        this.detalle.costo          = parseFloat(producto.costo);
+        if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){
+            this.detalle.costo          = parseFloat(producto.costo_promedio);
+        }else{
+            this.detalle.costo          = parseFloat(producto.costo);
+        }
 
         // Verificar que los compuestos tengan stock
             if(producto.tipo == 'Compuesto'){
@@ -160,42 +164,6 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         this.detalle.descuento_porcentaje      = 0;
         console.log(this.detalle);
         this.onSubmit();
-    }
-
-    onCheckProducto(producto:any){
-        let radio = document.getElementById('producto' + producto.id) as HTMLInputElement;
-        if(radio.checked){
-            // radio.checked = true
-            this.detalle = Object.assign({}, producto);
-            this.detalle.id_producto    = producto.id;
-            this.detalle.descripcion = producto.nombre;
-            this.detalle.img            = producto.img;
-            this.detalle.precio         = parseFloat(producto.precio);
-            this.detalle.precios        = producto.precios;
-            this.detalle.precios.unshift({
-                    'precio' : this.detalle.precio
-                });
-            this.detalle.costo          = parseFloat(producto.costo);
-            producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-            if(producto.inventarios.length > 0){
-                this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
-            }else{
-                this.detalle.stock = null;
-            }
-            this.detalle.cantidad       = 1;
-            this.detalle.descuento      = 0;
-            this.detalle.descuento_porcentaje      = 0;
-            this.detalles.unshift(this.detalle);
-        }else{
-            // radio.checked = false;
-            const indexAEliminar = this.detalles.findIndex((item:any) => item.id_producto === producto.id);
-            if (indexAEliminar !== -1) {
-              this.detalles.splice(indexAEliminar, 1);
-            }
-            console.log(indexAEliminar);
-        }
-
-        console.log(this.detalles);
     }
 
     onSubmit(){
