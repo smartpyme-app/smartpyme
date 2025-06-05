@@ -37,6 +37,9 @@ class GastosController extends Controller
                     ->when($request->recurrente !== null, function($q) use ($request){
                         $q->where('recurrente', !!$request->recurrente);
                     })
+                    ->when($request->id_area_empresa, function($query) use ($request){
+                        return $query->where('id_area_empresa', $request->id_area_empresa);
+                    })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })

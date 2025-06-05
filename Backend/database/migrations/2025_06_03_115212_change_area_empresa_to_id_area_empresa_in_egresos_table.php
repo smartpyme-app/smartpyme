@@ -15,7 +15,7 @@ class ChangeAreaEmpresaToIdAreaEmpresaInEgresosTable extends Migration
     {
         Schema::table('egresos', function (Blueprint $table) {
             // Agregar nueva columna id_area_empresa
-            $table->unsignedBigInteger('id_area_empresa')->nullable();
+            $table->unsignedBigInteger('id_area_empresa')->nullable()->after('id_proyecto');
             
             // Crear índice y foreign key
             $table->index('id_area_empresa');

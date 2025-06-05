@@ -48,7 +48,7 @@ class Gasto extends Model {
         'tipo_gasto',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'id_departamento'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'id_departamento','nombre_departamento'];
 
     protected static function boot()
     {
@@ -120,12 +120,20 @@ class Gasto extends Model {
         return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
     }
 
+    public function departamento(){
+        return $this->belongsTo('App\Models\Admin\Departamento', 'id_departamento');
+    }
+
     public function getIdDepartamentoAttribute(){
         return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
     }
 
     public function getDepartamentoAttribute(){
         return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
+    }
+
+    public function getNombreDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento->nombre : null;
     }
 
 
