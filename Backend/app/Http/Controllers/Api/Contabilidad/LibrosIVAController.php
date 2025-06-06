@@ -466,7 +466,7 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -503,7 +503,7 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -525,10 +525,10 @@ class LibrosIVAController extends Controller
                 'referencia' => $gasto->referencia,
                 'total' => $gasto->total,
                 'iva' => $gasto->iva,
-                'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
+                'tipo_operacion' => $gasto->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' => 'Gasto' ,  // J - CLASIFICACI Costo gasto
-                'sector' => $compra->sector,  // K - SECTOR
-                'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
+                'sector' => $gasto->sector,  // K - SECTOR
+                'tipo' =>   $gasto->tipo,  // L - TIPO DE COSTO / GASTO
                 'num_anexo' => 5,
             ];
 

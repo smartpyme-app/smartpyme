@@ -71,7 +71,7 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
