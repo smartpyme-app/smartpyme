@@ -55,7 +55,7 @@ export class CatalogoCuentasComponent implements OnInit {
 
     public filtrarCuentas(){
         this.loading = true;
-        this.apiService.getAll('catalogo/cuentas', this.filtros).subscribe(cuentas => { 
+        this.apiService.getAll('catalogo/cuentas', this.filtros).subscribe(cuentas => {
             this.cuentas = cuentas;
             this.loading = false;
             if(this.modalRef){
@@ -73,7 +73,7 @@ export class CatalogoCuentasComponent implements OnInit {
 
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
         this.alertService.modal = true;
@@ -88,7 +88,7 @@ export class CatalogoCuentasComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => { 
+        this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => {
             this.cuentas = cuentas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -106,7 +106,7 @@ export class CatalogoCuentasComponent implements OnInit {
         }).then((result) => {
           if (result.isConfirmed) {
                 this.apiService.delete('cuenta/', cuenta.id) .subscribe(data => {
-                    for (let i = 0; i < this.cuentas.data.length; i++) { 
+                    for (let i = 0; i < this.cuentas.data.length; i++) {
                         if (this.cuentas.data[i].id == data.id )
                             this.cuentas.data.splice(i, 1);
                     }

@@ -19,14 +19,18 @@ export class CatalogoCuentaComponent implements OnInit {
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
+    public cuentas: any[] = [];
 
-	constructor( 
+	constructor(
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
 
 	ngOnInit() {
         this.loadAll();
+        this.apiService.getAll('catalogo/list').subscribe(cuentas => {
+            this.cuentas = cuentas;
+        }, error => { this.alertService.error(error); });
 
         // this.apiService.getAll('bancos/list').subscribe(bancos => {
         //     this.bancos = bancos;
