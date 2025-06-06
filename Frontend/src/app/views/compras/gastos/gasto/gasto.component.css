@@ -1,0 +1,23 @@
+.input-text {
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    font-weight: normal;
+    color: #212529 !important; /* Color del texto normal */
+}
+
+.input-text-total {
+    border-bottom: 1px solid #ced4da !important;
+}
+
+.input-text:disabled {
+    background-color: transparent !important;
+    opacity: 1 !important;
+    color: #212529 !important;
+}
+
+label.label-input {
+    margin-top: 5px !important;
+    margin-right: 5px !important;
+}
