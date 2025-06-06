@@ -374,12 +374,13 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        // Obtener todas las cuentas manteniendo el orden original
-        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
+        // Obtener todas las cuentas y aplicar ordenamiento jerárquico
+        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo');
         if ($cuenta && $cuenta !== 'all') {
             $cuentasQuery->where('id', $cuenta);
         }
-        $cuentas = $cuentasQuery->get();
+        $todasLasCuentas = $cuentasQuery->get();
+        $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
@@ -399,12 +400,19 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
+        // Crear un mapa de ID a código para facilitar las búsquedas
+        $idACodigo = [];
+        foreach ($cuentas as $cuenta) {
+            $idACodigo[$cuenta->id] = $cuenta->codigo;
+        }
+
         // Asignamos los valores iniciales obtenidos de la consulta de partidas
         foreach ($cuentas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
             $cuentas_saldos[$codigo] = [
                 'padre' => $cuenta->id_cuenta_padre ?? 0,
+                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
                 'saldoFinal' => ($partida_detalles[$id]->total_debe ?? 0) - ($partida_detalles[$id]->total_haber ?? 0),
@@ -413,26 +421,35 @@ class GenerarReportesController extends Controller
 
         // Ahora sumamos los valores a las cuentas padre
         foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre) {
-                $id_padre = $cuenta->id_cuenta_padre;
-                $cuentas_saldos[$id_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$id_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-                $cuentas_saldos[$id_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
-
+            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
+                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
+                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
+                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
+                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
+                $cuentas_saldos[$codigo_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
             }
         }
 
         $balance = [];
         foreach ($cuentas as $cuenta) {
             $codigo = $cuenta->codigo;
+            $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
+            $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
+            $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
+            $saldo_actual = $debe - $haber; // Movimiento neto del período
+            $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
             $balance[] = [
                 'codigo' => $codigo,
                 'nombre' => $cuenta->nombre,
                 'nivel' => $cuenta->nivel,
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
-                'debe' => $cuentas_saldos[$codigo]['debe'] ?? 0,
-                'haber' => $cuentas_saldos[$codigo]['haber'] ?? 0,
-                'saldo_final' => $cuentas_saldos[$codigo]['saldoFinal'] ?? 0,
+                'nivel_visual' => $cuenta->nivel_visual ?? 0,
+                'saldo_inicial' => $saldo_inicial,
+                'debe' => $debe,
+                'haber' => $haber,
+                'saldo_actual' => $saldo_actual,
+                'saldo_acumulado' => $saldo_acumulado,
+                'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
             ];
         }
 
@@ -448,12 +465,13 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        // Obtener todas las cuentas manteniendo el orden original
-        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id);
+        // Obtener todas las cuentas y aplicar ordenamiento jerárquico
+        $cuentasQuery = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo');
         if ($cuenta && $cuenta !== 'all') {
             $cuentasQuery->where('id', $cuenta);
         }
-        $cuentas = $cuentasQuery->get();
+        $todasLasCuentas = $cuentasQuery->get();
+        $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
@@ -473,12 +491,19 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
+        // Crear un mapa de ID a código para facilitar las búsquedas
+        $idACodigo = [];
+        foreach ($cuentas as $cuenta) {
+            $idACodigo[$cuenta->id] = $cuenta->codigo;
+        }
+
         // Asignamos los valores iniciales obtenidos de la consulta de partidas
         foreach ($cuentas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
             $cuentas_saldos[$codigo] = [
                 'padre' => $cuenta->id_cuenta_padre ?? 0,
+                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
                 'saldoFinal' => ($partida_detalles[$id]->total_debe ?? 0) - ($partida_detalles[$id]->total_haber ?? 0),
@@ -487,26 +512,35 @@ class GenerarReportesController extends Controller
 
         // Ahora sumamos los valores a las cuentas padre
         foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre) {
-                $id_padre = $cuenta->id_cuenta_padre;
-                $cuentas_saldos[$id_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$id_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-                $cuentas_saldos[$id_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
-
+            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
+                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
+                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
+                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
+                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
+                $cuentas_saldos[$codigo_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
             }
         }
 
         $balance = [];
         foreach ($cuentas as $cuenta) {
             $codigo = $cuenta->codigo;
+            $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
+            $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
+            $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
+            $saldo_actual = $debe - $haber; // Movimiento neto del período
+            $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
             $balance[] = [
                 'codigo' => $codigo,
                 'nombre' => $cuenta->nombre,
                 'nivel' => $cuenta->nivel,
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
-                'debe' => $cuentas_saldos[$codigo]['debe'] ?? 0,
-                'haber' => $cuentas_saldos[$codigo]['haber'] ?? 0,
-                'saldo_final' => $cuentas_saldos[$codigo]['saldoFinal'] ?? 0,
+                'nivel_visual' => $cuenta->nivel_visual ?? 0,
+                'saldo_inicial' => $saldo_inicial,
+                'debe' => $debe,
+                'haber' => $haber,
+                'saldo_actual' => $saldo_actual,
+                'saldo_acumulado' => $saldo_acumulado,
+                'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
             ];
         }
 
@@ -582,5 +616,27 @@ class GenerarReportesController extends Controller
         $pdf = PDF::loadView('reportes.contabilidad.balance_general');
         $pdf->setPaper('US Letter', 'portrait');
         return $pdf->stream();
+    }
+
+    /**
+     * Ordena las cuentas jerárquicamente en un array plano (padre seguido de sus hijos)
+     */
+    private function ordenarJerarquicamente($cuentas, $padreId = null, $nivel = 0)
+    {
+        $resultado = [];
+        foreach ($cuentas as $cuenta) {
+            if (
+                ($padreId === null && ($cuenta->id_cuenta_padre === null || $cuenta->id_cuenta_padre == 0)) ||
+                ($cuenta->id_cuenta_padre == $padreId && $padreId !== null)
+            ) {
+                $cuenta->nivel_visual = $nivel;
+                $resultado[] = $cuenta;
+                $hijos = $this->ordenarJerarquicamente($cuentas, $cuenta->id, $nivel + 1);
+                foreach ($hijos as $hijo) {
+                    $resultado[] = $hijo;
+                }
+            }
+        }
+        return $resultado;
     }
 }
