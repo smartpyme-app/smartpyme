@@ -150,9 +150,14 @@
                     </ng-option>
                 </ng-select>
             </div>
-            <div class="form-group col-md-12">
+            <div class="form-group col-md-6">
                 <label for="stock_real">Cantidad a trasladar:</label>
                 <input type="number" [disabled]="!traslado.id_bodega_de && !traslado.id_bodega" class="form-control text-center" [(ngModel)]="traslado.cantidad" name="cantidad">
+            </div>
+
+            <div class="form-group col-md-6">
+                <label for="costo">Costo:</label>
+                <input type="text" class="form-control" [(ngModel)]="traslado.costo" name="costo">
             </div>
             
             <div class="form-group col-md-6" *ngIf="traslado.id_bodega_de">

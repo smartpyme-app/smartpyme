@@ -94,6 +94,7 @@ export class TrasladosComponent implements OnInit {
 
     public setProducto(){
         this.producto = this.productos.find((item:any) => item.id == this.traslado.id_producto);
+        this.traslado.costo = this.producto.costo;
     }
 
     public setSucursalDe(){

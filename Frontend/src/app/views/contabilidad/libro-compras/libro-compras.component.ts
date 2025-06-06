@@ -20,15 +20,15 @@ export class LibroComprasComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-    ngOnInit() {   
-        const currentYear = new Date().getFullYear();
+    ngOnInit() {
+        const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
-        
+        // Crear un array con el año actual y los 10 años anteriores
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
@@ -48,7 +48,7 @@ export class LibroComprasComponent implements OnInit {
 
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -60,7 +60,7 @@ export class LibroComprasComponent implements OnInit {
         // Guardar filtros en localStorage antes de cargar
         localStorage.setItem('compras_filtros', JSON.stringify(this.filtros));
 
-        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => { 
+        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -113,6 +113,23 @@ export class LibroComprasComponent implements OnInit {
         );
     }
 
+    public descargarLibroPercepcion(){
+        this.downloading = true;
+        this.apiService.export('libro-iva/percepcion1/descargar-libro', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Percepciones1.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
+    }
+
     public descargarAnexo() {
         this.downloading = true;
         this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros).subscribe((data: Blob) => {
@@ -121,6 +138,25 @@ export class LibroComprasComponent implements OnInit {
             const a = document.createElement('a');
             a.href = url;
             a.download = 'Anexo-compras.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
+    }
+
+    public descargarAnexoPercepcion() {
+        this.downloading = true;
+        this.apiService.export('libro-iva/percepcion1/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Percepciones1.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

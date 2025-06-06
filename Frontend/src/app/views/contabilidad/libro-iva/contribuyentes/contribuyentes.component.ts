@@ -109,6 +109,43 @@ export class ContribuyentesComponent implements OnInit {
         );
     }
 
+
+    public descargarLibroRetencion(){
+        this.downloading = true;
+        this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtros).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Retenciones1.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        );
+    }
+
+    public descargarAnexoRetencion() {
+        this.downloading = true;
+        this.apiService.export('libro-iva/retencion1/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+            const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Retenciones1.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        }, (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        });
+    }
+
     public descargarAnexo() {
         this.downloading = true;
         this.apiService.export('libro-iva/contribuyentes/descargar-anexo', this.filtros).subscribe((data: Blob) => {

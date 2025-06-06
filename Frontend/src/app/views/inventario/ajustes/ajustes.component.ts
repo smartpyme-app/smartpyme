@@ -92,6 +92,7 @@ export class AjustesComponent implements OnInit {
 
     public setProducto(){
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
+        this.ajuste.costo = this.producto.costo;
     }
 
     public setBodega(){
