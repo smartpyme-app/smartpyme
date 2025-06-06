@@ -851,4 +851,8 @@ export class FacturacionComponent implements OnInit {
       );
     }
   }
+
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+}
 }

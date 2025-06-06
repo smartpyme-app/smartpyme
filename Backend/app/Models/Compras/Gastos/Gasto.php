@@ -17,6 +17,7 @@ class Gasto extends Model {
         'referencia',
         'tipo_documento',
         'concepto',
+        'num_identificacion',
         'id_categoria',
         'tipo',
         'estado',
@@ -51,7 +52,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto'];
 
     protected static function boot()
     {
@@ -94,6 +95,12 @@ class Gasto extends Model {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
+
+    public function getNombreProyectoAttribute()
+    {
+        return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
     public function usuario(){
         return $this->belongsTo('App\Models\User', 'id_usuario');
     }
@@ -112,6 +119,11 @@ class Gasto extends Model {
 
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function proyecto()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
     }
 
 

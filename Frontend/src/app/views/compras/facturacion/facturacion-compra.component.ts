@@ -332,18 +332,22 @@ export class FacturacionCompraComponent implements OnInit {
 
     //Limpiar
 
-        public limpiar(){
-            this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
-        }
+    public limpiar(){
+        this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
+    }
 
-        public supervisorCheck(){
-            this.loading = true;
-            this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
-                this.modalRef.hide();
-                this.cargarDatosIniciales();
-                this.loading = false;
-                this.supervisor = {};
-            },error => {this.alertService.error(error); this.loading = false; });
+    public supervisorCheck(){
+        this.loading = true;
+        this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+            this.modalRef.hide();
+            this.cargarDatosIniciales();
+            this.loading = false;
+            this.supervisor = {};
+        },error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public isColumnEnabled(columnName: string): boolean {
+        return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
         }
 
 

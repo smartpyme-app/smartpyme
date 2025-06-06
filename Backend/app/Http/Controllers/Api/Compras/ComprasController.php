@@ -33,6 +33,9 @@ class ComprasController extends Controller
                         ->when($request->recurrente !== null, function($q) use ($request){
                             $q->where('recurrente', !!$request->recurrente);
                         })
+                        ->when($request->num_identificacion, function ($q) use ($request) {
+                            $q->where('num_identificacion', $request->num_identificacion);
+                        })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
@@ -572,6 +575,18 @@ class ComprasController extends Controller
 
         return Excel::download($ventas, 'corte.xlsx');
     }
+
+
+    public function getNumerosIdentificacion(){
+        $numsIds = Compra::select('num_identificacion')
+            ->distinct()
+            ->where('id_empresa', auth()->user()->id_empresa)
+            ->whereNotNull('num_identificacion')
+            ->where('num_identificacion', '!=', '')
+            ->get();
+        
+        return Response()->json($numsIds, 200);
+     }
 
 
 }

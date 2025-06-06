@@ -24,4 +24,6 @@ use Illuminate\Support\Facades\Route;
     //compras-rentabilidad/exportar post
     Route::post('/compras-rentabilidad/exportar',    [ComprasController::class, 'exportRentabilidad']);
 
+    Route::get('compras/nums-ids',    [ComprasController::class, 'getNumerosIdentificacion']);
+
 ?>
