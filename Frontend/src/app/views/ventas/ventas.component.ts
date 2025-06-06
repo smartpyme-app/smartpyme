@@ -30,6 +30,7 @@ export class VentasComponent implements OnInit {
   public consulting: boolean = false;
   public categorias: any[] = [];
   public marcas: any[] = [];
+  public numeros_ids:any = [];
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -52,6 +53,7 @@ export class VentasComponent implements OnInit {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadAll();
+    this.getNumsIds();
 
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
@@ -115,6 +117,7 @@ export class VentasComponent implements OnInit {
         id_canal: '',
         id_documento: '',
         id_proyecto: '',
+        num_identificacion: '',
         dte: '',
         forma_pago: '',
         estado: '',
@@ -216,6 +219,17 @@ export class VentasComponent implements OnInit {
 
   public openModalEdit(template: TemplateRef<any>, venta: any) {
     this.venta = venta;
+
+    if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
+      this.apiService.getAll('proyectos/list').subscribe(
+        (proyectos) => {
+          this.proyectos = proyectos;
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
 
     if (!this.documentos.length) {
       this.apiService.getAll('documentos/list').subscribe(
@@ -658,6 +672,18 @@ export class VentasComponent implements OnInit {
         return valor !== '' && valor !== null && valor !== undefined;
       });
     }
+
+    public isColumnEnabled(columnName: string): boolean {
+      return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+
+  getNumsIds(){
+    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => { 
+        this.numeros_ids = numsIds;
+    }, error => {this.alertService.error(error); });
+  } 
+
 
 
 }

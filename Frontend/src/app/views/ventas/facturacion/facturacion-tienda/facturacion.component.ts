@@ -128,7 +128,8 @@ export class FacturacionComponent implements OnInit {
         this.usuarios = usuarios;
         if (
           this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor'
+          this.apiService.auth_user().tipo != 'Supervisor' &&
+          this.apiService.auth_user().tipo != 'Supervisor Limitado'
         ) {
           this.usuarios = this.usuarios.filter(
             (item: any) => item.id == this.apiService.auth_user().id
@@ -181,16 +182,16 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('clientes/list').subscribe(
-      (clientes) => {
-        this.clientes = clientes;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+    // this.apiService.getAll('clientes/list').subscribe(
+    //   (clientes) => {
+    //     this.clientes = clientes;
+    //     this.loading = false;
+    //   },
+    //   (error) => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   }
+    // );
 
     this.apiService.getAll('proyectos/list').subscribe(
       (proyectos) => {
@@ -546,19 +547,18 @@ export class FacturacionComponent implements OnInit {
   }
 
   // Cliente
-    public setCliente(cliente:any){
-          if(cliente.id){
-              cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
-              this.venta.id_cliente = cliente.id;
-              this.venta.cliente = cliente;
-              if(cliente.tipo_contribuyente == "Grande") {
-                  this.venta.retencion = 1;
-                  this.sumTotal();
-              }
-          }
-          console.log(cliente);
-      }
-
+  public setCliente(cliente:any){
+        if(cliente.id){
+            cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+            this.venta.id_cliente = cliente.id;
+            this.venta.cliente = cliente;
+            if(cliente.tipo_contribuyente == "Grande") {
+                this.venta.retencion = 1;
+                this.sumTotal();
+            }
+        }
+        console.log(cliente);
+    }
 
   // Proyecto
   public setProyecto(proyecto: any) {
@@ -880,35 +880,39 @@ export class FacturacionComponent implements OnInit {
 
   buscarCliente(termino: string) {
     this.terminoBusqueda = termino;
-    
+
     if (!termino) {
       this.clientesFiltrados = this.clientes;
       return;
     }
 
     const terminoLowerCase = termino.toLowerCase();
-    
+
     // Buscar en todos los campos relevantes simultáneamente
     this.clientesFiltrados = this.clientes.filter((cliente: Cliente) => {
       // Buscar en nombre
-      const nombreBusqueda = cliente.tipo == 'Empresa' 
-        ? (cliente.nombre_empresa || '').toLowerCase() 
+      const nombreBusqueda = cliente.tipo == 'Empresa'
+        ? (cliente.nombre_empresa || '').toLowerCase()
         : (cliente.nombre || '').toLowerCase();
-      
+
       // Buscar en teléfono, DUI y NIT
       const telefonoBusqueda = (cliente.telefono || '').toLowerCase();
       const duiBusqueda = (cliente.dui || '').toLowerCase();
       const nitBusqueda = (cliente.nit || '').toLowerCase();
       const correoBusqueda = (cliente.correo || '').toLowerCase();
       const ncrBusqueda = (cliente.ncr || '').toLowerCase();
-      
+
       // Si coincide con cualquiera de los campos, se incluye el cliente
-      return nombreBusqueda.includes(terminoLowerCase) || 
-             telefonoBusqueda.includes(terminoLowerCase) || 
-             duiBusqueda.includes(terminoLowerCase) || 
-             nitBusqueda.includes(terminoLowerCase) || 
-             correoBusqueda.includes(terminoLowerCase) || 
+      return nombreBusqueda.includes(terminoLowerCase) ||
+             telefonoBusqueda.includes(terminoLowerCase) ||
+             duiBusqueda.includes(terminoLowerCase) ||
+             nitBusqueda.includes(terminoLowerCase) ||
+             correoBusqueda.includes(terminoLowerCase) ||
              ncrBusqueda.includes(terminoLowerCase);
     });
   }
+
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+}
 }

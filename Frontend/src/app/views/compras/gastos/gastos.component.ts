@@ -16,12 +16,13 @@ export class GastosComponent implements OnInit {
   public sending: boolean = false;
   public downloading: boolean = false;
 
-  public clientes: any = [];
-  public usuarios: any = [];
-  public proyectos: any = [];
-  public sucursales: any = [];
-  public proveedores: any = [];
-  public filtros: any = {};
+    public clientes:any = [];
+    public usuarios:any = [];
+    public proyectos:any = [];
+    public sucursales:any = [];
+    public proveedores:any = [];
+    public filtros:any = {};
+    public numeros_ids:any = [];
 
   modalRef!: BsModalRef;
 
@@ -45,29 +46,31 @@ export class GastosComponent implements OnInit {
     );
   }
 
-  public loadAll() {
-    const filtrosGuardados = localStorage.getItem('gastosFiltros');
+    public loadAll() {
+      const filtrosGuardados = localStorage.getItem('gastosFiltros');
 
-    if (filtrosGuardados) {
-      this.filtros = JSON.parse(filtrosGuardados);
-    } else {
-      this.filtros.id_sucursal = '';
-      this.filtros.id_proveedor = '';
-      this.filtros.id_usuario = '';
-      this.filtros.id_proyecto = '';
-      this.filtros.forma_pago = '';
-      this.filtros.dte = '';
-      this.filtros.estado = '';
-      this.filtros.tipo = '';
-      this.filtros.buscador = '';
-      this.filtros.orden = 'fecha';
-      this.filtros.direccion = 'desc';
-      this.filtros.paginate = 10;
+      if (filtrosGuardados) {
+        this.filtros = JSON.parse(filtrosGuardados);
+      } else {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_proyecto = '';
+        this.filtros.forma_pago = '';
+        this.filtros.dte = '';
+        this.filtros.estado = '';
+        this.filtros.tipo = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        this.filtros.num_identificacion = '';
+      }
+
+        this.loading = true;
+        this.filtrarGastos();
+        this.getNumsIds();
     }
-
-    this.loading = true;
-    this.filtrarGastos();
-  }
 
   public filtrarGastos() {
     localStorage.setItem('gastosFiltros', JSON.stringify(this.filtros));
@@ -227,19 +230,19 @@ export class GastosComponent implements OnInit {
       );
     }
 
-    if (
-      !this.proyectos.length &&
-      this.apiService.auth_user().empresa.modulo_proyectos
-    ) {
-      this.apiService.getAll('proyectos/list').subscribe(
-        (proyectos) => {
-          this.proyectos = proyectos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
+        // if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+        //     this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+        //         this.proyectos = proyectos;
+        //     }, error => {this.alertService.error(error); });
+        // }
+
+        if(!this.proyectos.length &&
+            this.apiService.auth_user().empresa.modulo_proyectos &&
+            this.isColumnEnabled('columna_proyecto')){
+             this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+                 this.proyectos = proyectos;
+             }, error => {this.alertService.error(error); });
+         }
 
     this.modalRef = this.modalService.show(template);
   }
@@ -397,4 +400,14 @@ export class GastosComponent implements OnInit {
     localStorage.removeItem('gastosFiltros');
     this.loadAll();
   }
+    public isColumnEnabled(columnName: string): boolean {
+        return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+    }
+
+    getNumsIds(){
+        this.apiService.getAll('gastos/nums-ids').subscribe(numsIds => {
+            this.numeros_ids = numsIds;
+        }, error => {this.alertService.error(error); });
+    }
+
 }

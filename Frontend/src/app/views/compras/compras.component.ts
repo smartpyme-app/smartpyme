@@ -10,31 +10,35 @@ declare var $: any;
   selector: 'app-compras',
   templateUrl: './compras.component.html',
 })
+
 export class ComprasComponent implements OnInit {
-  public compras: any = [];
-  public compra: any = {};
-  public formaPagos: any = [];
-  public documentos: any = [];
-  public proveedores: any = [];
-  public usuarios: any = [];
-  public proyectos: any = [];
-  public sucursales: any = [];
-  public buscador: any = '';
-  public loading: boolean = false;
-  public saving: boolean = false;
-  public sending: boolean = false;
-  public downloadingDetalles: boolean = false;
-  public downloadingCompras: boolean = false;
-  public modalRefAcumulado!: BsModalRef;
-  public modalRefRentabilidad!: BsModalRef;
-  public filtrosRentabilidad: any = {
-    inicio: '',
-    fin: '',
-    sucursales: [],
-    categorias: [],
-    marcas: [],
-  };
-  public downloadingRentabilidad: boolean = false;
+
+    public compras:any = [];
+    public compra:any = {};
+    public formaPagos:any = [];
+    public documentos:any = [];
+    public proveedores:any = [];
+    public usuarios:any = [];
+    public proyectos:any = [];
+    public sucursales:any = [];
+    public buscador:any = '';
+    public loading:boolean = false;
+    public saving:boolean = false;
+    public sending:boolean = false;
+    public downloadingDetalles:boolean = false;
+    public downloadingCompras:boolean = false;
+    public modalRefAcumulado!: BsModalRef;
+    public modalRefRentabilidad!: BsModalRef;
+    public filtrosRentabilidad:any = {
+        inicio: '',
+        fin: '',
+        sucursales: [],
+        categorias: [],
+        marcas: [],
+    };
+    public numeros_ids:any = [];
+    public downloadingRentabilidad:boolean = false;
+
 
   public filtros: any = {};
 
@@ -47,41 +51,38 @@ export class ComprasComponent implements OnInit {
     private modalService: BsModalService
   ) {}
 
-  ngOnInit() {
-    this.loadAll();
-    this.apiService.getAll('proveedores/list').subscribe(
-      (proveedores) => {
-        this.proveedores = proveedores;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
-  }
-
-  public loadAll() {
-    const filtrosGuardados = localStorage.getItem('comprasFiltros');
-
-    if (filtrosGuardados) {
-      this.filtros = JSON.parse(filtrosGuardados);
-    } else {
-      this.filtros.id_sucursal = '';
-      this.filtros.id_proveedor = '';
-      this.filtros.id_usuario = '';
-      this.filtros.id_usuario = '';
-      this.filtros.id_canal = '';
-      this.filtros.id_documento = '';
-      this.filtros.id_proyecto = '';
-      this.filtros.forma_pago = '';
-      this.filtros.dte = '';
-      this.filtros.estado = '';
-      this.filtros.buscador = '';
-      this.filtros.orden = 'fecha';
-      this.filtros.direccion = 'desc';
-      this.filtros.paginate = 10;
+    ngOnInit() {
+        this.loadAll();
+        this.getNumsIds();
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+            this.proveedores = proveedores;
+        }, error => {this.alertService.error(error); });
     }
 
-    this.filtrarCompras();
+    public loadAll() {
+      const filtrosGuardados = localStorage.getItem('comprasFiltros');
+
+      if (filtrosGuardados) {
+        this.filtros = JSON.parse(filtrosGuardados);
+      } else {
+        this.filtros.id_sucursal = '';
+        this.filtros.id_proveedor = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_usuario = '';
+        this.filtros.id_canal = '';
+        this.filtros.id_documento = '';
+        this.filtros.id_proyecto = '';
+        this.filtros.forma_pago = '';
+        this.filtros.dte = '';
+        this.filtros.estado = '';
+        this.filtros.buscador = '';
+        this.filtros.orden = 'fecha';
+        this.filtros.direccion = 'desc';
+        this.filtros.paginate = 10;
+        this.filtros.num_identificacion = '';
+      }
+
+      this.filtrarCompras();
   }
 
   public filtrarCompras() {
@@ -158,14 +159,15 @@ export class ComprasComponent implements OnInit {
   public openModalEdit(template: TemplateRef<any>, compra: any) {
     this.compra = compra;
 
-    this.apiService.getAll('documentos/list').subscribe(
-      (documentos) => {
-        this.documentos = documentos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
+
+        this.apiService.getAll('documentos/list').subscribe(documentos => {
+            this.documentos = documentos;
+        }, error => {this.alertService.error(error);});
 
     if (!this.formaPagos.length) {
       this.apiService.getAll('formas-de-pago/list').subscribe(
@@ -205,26 +207,20 @@ export class ComprasComponent implements OnInit {
     );
   }
 
-  public onSubmit() {
-    this.saving = true;
-    this.apiService.store('compra', this.compra).subscribe(
-      (compra) => {
-        this.compra = {};
-        this.saving = false;
-        if (this.modalRef) {
-          this.modalRef.hide();
-        }
-        this.alertService.success(
-          'Venta guardado',
-          'La compra fue guardada exitosamente.'
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
-  }
+    public onSubmit() {
+        this.saving = true;
+        this.apiService.store('compra', this.compra).subscribe(compra => {
+            this.compra = {};
+            this.saving = false;
+            if(this.modalRef){
+                this.modalRef.hide();
+            }
+            this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
+
+        this.filtrarCompras();
+
+    }
 
   public setRecurrencia(compra: any) {
     this.compra = compra;
@@ -605,4 +601,15 @@ export class ComprasComponent implements OnInit {
     localStorage.removeItem('comprasFiltros');
     this.loadAll();
   }
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+  getNumsIds(){
+    this.apiService.getAll('compras/nums-ids').subscribe(numsIds => {
+        this.numeros_ids = numsIds;
+    }, error => {this.alertService.error(error); });
+  }
+
+
 }

@@ -148,10 +148,10 @@
         <div class="form-group col-md-4 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
               <label for="opciones_avanzadas">Opciones Avanzadas</label>
-              <input class="form-check-input float-end" 
-                     type="checkbox" 
-                     role="switch" 
-                     (change)="onOpcionesAvanzadasChange()" 
+              <input class="form-check-input float-end"
+                     type="checkbox"
+                     role="switch"
+                     (change)="onOpcionesAvanzadasChange()"
                      [checked]="opciones_avanzadas_active"
                      name="opciones_avanzadas"
                      id="opciones_avanzadas">
@@ -160,13 +160,23 @@
         <div class="row" *ngIf="opciones_avanzadas_active">
                 <div class="form-group col-md-4 col-lg-3">
                     <label for="area_empresa">Area empresa:</label>
-                    <input 
-                    type="text" 
-                    [(ngModel)]="gasto.area_empresa" 
-                    name="area_empresa" 
-                    class="form-control" 
-                    id="area_empresa" 
+                    <input
+                    type="text"
+                    [(ngModel)]="gasto.area_empresa"
+                    name="area_empresa"
+                    class="form-control"
+                    id="area_empresa"
                     placeholder="Ingrese el área de la empresa">
+                </div>
+                <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
+                  <label for="num_identificacion">Número identificación:</label>
+                  <input
+                    type="text"
+                    [(ngModel)]="gasto.num_identificacion"
+                    name="num_identificacion"
+                    class="form-control"
+                    id="num_identificacion"
+                    placeholder="Número de identificación">
                 </div>
                 <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
                     <label for="">Proyecto</label>
@@ -223,12 +233,12 @@
             <div class="form-group col-md-4 col-lg-3 without-label">
                 <div class="form-switch bg-light-info rounded">
                     <label for="switch_otros_impuestos">Otros impuestos</label>
-                    <input class="form-check-input float-end" 
-                           type="checkbox" 
-                           role="switch" 
+                    <input class="form-check-input float-end"
+                           type="checkbox"
+                           role="switch"
                            id="switch_otros_impuestos"
-                           (change)="setOtrosImpuestos()" 
-                           [(ngModel)]="mostrar_otros_impuestos" 
+                           (change)="setOtrosImpuestos()"
+                           [(ngModel)]="mostrar_otros_impuestos"
                            name="mostrar_otros_impuestos">
                 </div>
             </div>
@@ -236,10 +246,10 @@
             <div class="form-group col-md-8 col-lg-8" *ngIf="mostrar_otros_impuestos">
                 <label for="">Selecciona los impuestos aplicables</label>
                 <div class="input-group flex-nowrap">
-                    <ng-select 
-                        name="otros_impuestos" 
-                        placeholder="Seleccione impuestos" 
-                        [(ngModel)]="gasto.otros_impuestos" 
+                    <ng-select
+                        name="otros_impuestos"
+                        placeholder="Seleccione impuestos"
+                        [(ngModel)]="gasto.otros_impuestos"
                         [multiple]="true"
                         (change)="onImpuestosChange()"
                         class="form-select p-0">
@@ -249,7 +259,7 @@
                     </ng-select>
                     <app-crear-impuesto (update)="setImpuesto($event)"></app-crear-impuesto>
                 </div>
-                
+
                 <!-- Lista de impuestos seleccionados -->
                 <div class="mt-2 mb-3" *ngIf="impuestos_seleccionados.length > 0">
                     <div class="d-flex flex-wrap gap-2">
@@ -259,7 +269,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="form-group col-md-12 col-lg-12">
                 <label for="">Observaciones:</label>
                 <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />

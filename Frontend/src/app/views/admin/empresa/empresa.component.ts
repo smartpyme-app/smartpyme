@@ -7,7 +7,6 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
-
 @Component({
   selector: 'app-empresa',
   templateUrl: './empresa.component.html'
@@ -46,6 +45,12 @@ export class EmpresaComponent implements OnInit {
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
 
+    public customConfig: any = {
+        columnas: {
+            columna_proyecto: false
+        }
+    };
+
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -69,6 +74,8 @@ export class EmpresaComponent implements OnInit {
         this.loading = true;
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
             this.empresa = empresa;
+
+            this.initializeCustomConfig();
             //empresa.empresa_cliente.id_client
             this.getClienteById(this.empresa.empresa_cliente.id_client);
             this.loading = false;
@@ -103,6 +110,8 @@ export class EmpresaComponent implements OnInit {
             this.saving = true;
             this.apiService.store('empresa', this.empresa).subscribe(empresa => {
                 this.empresa = empresa;
+
+                this.initializeCustomConfig();
 
                 let user:any = {};
                 user = JSON.parse(localStorage.getItem('SP_auth_user')!);
@@ -425,7 +434,7 @@ export class EmpresaComponent implements OnInit {
             this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
           }
         );
-      }
+    }
 
     public copyToClipboard(text: string): void {
         const selBox = document.createElement('textarea');
@@ -545,7 +554,6 @@ export class EmpresaComponent implements OnInit {
 
     }
 
-
     public exportarWooCommerce(){
         Swal.fire({
             title: '¿Está seguro de exportar sus productos a WooCommerce?',
@@ -664,5 +672,66 @@ export class EmpresaComponent implements OnInit {
       }
 
 
+
+
+    private initializeCustomConfig() {
+        if (this.empresa.custom_empresa) {
+            this.customConfig = this.empresa.custom_empresa;
+        } else {
+            // Valores por defecto si no existe configuración
+            this.customConfig = {
+                columnas: {
+                    columna_proyecto: false
+                },
+                modulos: {},
+                configuraciones: {},
+                campos_personalizados: {}
+            };
+        }
+    }
+
+    public updateColumnConfig(columnName: string, enabled: boolean) {
+        this.customConfig.columnas[columnName] = enabled;
+        this.empresa.custom_empresa = this.customConfig;
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Columna ${columnName} ${enabled ? 'habilitada' : 'deshabilitada'} correctamente`
+            );
+        });
+    }
+
+    public isColumnEnabled(columnName: string): boolean {
+        return this.customConfig.columnas && this.customConfig.columnas[columnName] === true;
+    }
+
+    public toggleColumn(columnName: string) {
+        const currentValue = this.isColumnEnabled(columnName);
+        this.updateColumnConfig(columnName, !currentValue);
+    }
+
+    // Método para agregar nuevas configuraciones dinámicamente
+    public addCustomConfig(section: string, key: string, value: any) {
+        if (!this.customConfig[section]) {
+            this.customConfig[section] = {};
+        }
+        this.customConfig[section][key] = value;
+        this.empresa.custom_empresa = this.customConfig;
+    }
+
+    // Método para obtener configuración específica
+    public getCustomConfig(section: string, key?: string, defaultValue?: any) {
+        if (!this.customConfig[section]) {
+            return defaultValue;
+        }
+
+        if (key) {
+            return this.customConfig[section][key] || defaultValue;
+        }
+
+        return this.customConfig[section];
+    }
 
 }

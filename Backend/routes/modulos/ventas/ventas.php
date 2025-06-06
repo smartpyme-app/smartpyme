@@ -35,5 +35,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('ventas/importar', [VentasImportController::class, 'importar']);
 
+    Route::get('ventas/nums-ids',    [VentasController::class, 'getNumerosIdentificacion']);
+
 
 ?>

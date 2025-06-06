@@ -201,6 +201,8 @@
         <form name="form" (ngSubmit)="onSubmit()">
             <section class="bg-white p-4 rounded mb-3">
                 <div class="row mt-3">
+                    <h4 class="mb-0 fw-bold">Personalización</h4>
+                    <hr>
                     <h4 class="mb-0 fw-bold">Módulos habilitados</h4>
                     <div class="form-group col-md-6 col-xl-4 without-label">
                         <div class="form-switch bg-light-info rounded">
@@ -220,6 +222,26 @@
                           <input class="form-check-input float-end" type="checkbox" role="switch" (change)="onSubmit()" [(ngModel)]="empresa.modulo_paquetes" name="modulo_paquetes">
                         </div>
                     </div>
+                    <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Mostrar columnas</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="columna_proyecto" class="form-label">
+                                    <strong>Mostrar columna proyecto</strong>
+                                </label>
+                                <input 
+                                    class="form-check-input float-end" 
+                                    type="checkbox" 
+                                    role="switch" 
+                                    id="columna_proyecto"
+                                    [checked]="isColumnEnabled('columna_proyecto')"
+                                    (change)="toggleColumn('columna_proyecto')"
+                                    name="columna_proyecto">
+                            </div>
+                        </div> 
+                    </div>
+
                     <hr>
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
@@ -330,7 +352,7 @@
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
                 </div>
-
+               
             </section>
             <div class="bg-white rounded p-3 mb-3">
                 <div class="form-group col-sm-12 pt-2 pb-4">
