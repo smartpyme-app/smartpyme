@@ -88,7 +88,7 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
                 '0.00', //O Débito ventas a terceros
                 number_format($venta->total, 2, '.', ''), //P Total (formato numérico con 2 decimales)
                 '', //Q DUI (vacío)
-                $venta->exenta > 0 ? 2 : 1, //R Tipo operación renta 1 Gravada 2 Exenta
+                $this->tipoOperacion($venta->tipo_operacion), //R Tipo operación renta 1 Gravada 2 Exenta
                 $this->tipoRenta($venta->tipo_renta), //S Tipo ingreso renta
                 1, //T Número de Anexo
             ];
@@ -103,6 +103,16 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
             'enclosure' => '',
             'use_bom' => false,
         ];
+    }
+
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
     }
 
     function tipoRenta($tipo) {
