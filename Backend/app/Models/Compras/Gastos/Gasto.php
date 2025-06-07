@@ -35,7 +35,7 @@ class Gasto extends Model {
         'otros_impuestos',
         'total',
         'nota',
-        'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
@@ -52,7 +52,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento'];
 
     protected static function boot()
     {
@@ -65,12 +65,12 @@ class Gasto extends Model {
         }
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
@@ -82,7 +82,7 @@ class Gasto extends Model {
     public function getNombreCategoriaAttribute(){
         return $this->categoria()->pluck('nombre')->first();
     }
-    
+
     public function getNombreProveedorAttribute()
     {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
@@ -90,7 +90,7 @@ class Gasto extends Model {
         }
         return 'Consumidor Final';
     }
-    
+
     public function getNombreSucursalAttribute(){
         return $this->sucursal()->pluck('nombre')->first();
     }
@@ -124,6 +124,26 @@ class Gasto extends Model {
     public function proyecto()
     {
         return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
+    }
+
+    public function areaEmpresa(){
+        return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
+    }
+
+    public function departamento(){
+        return $this->belongsTo('App\Models\Admin\Departamento', 'id_departamento');
+    }
+
+    public function getIdDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
+    }
+
+    public function getDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
+    }
+
+    public function getNombreDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento->nombre : null;
     }
 
 

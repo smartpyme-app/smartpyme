@@ -106,4 +106,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(MetodoPago::class, 'id_usuario');
     }
 
+    public function role()
+    {
+        return $this->tipo;
+    }
+
 }

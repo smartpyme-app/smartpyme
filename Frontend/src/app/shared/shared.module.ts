@@ -45,6 +45,9 @@ import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
+
 
 
 @NgModule({
@@ -90,7 +93,9 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearImpuestoComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-    ThreedsModalComponent
+    ThreedsModalComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -123,7 +128,9 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   providers: [AlertService],
 })

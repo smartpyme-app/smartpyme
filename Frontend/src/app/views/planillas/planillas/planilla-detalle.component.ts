@@ -56,7 +56,7 @@ export class PlanillaDetalleComponent implements OnInit {
   }
 
   public cargarCatalogos() {
-    this.apiService.getAll('departamentosPlanilla/list').subscribe({
+    this.apiService.getAll('departamentosEmpresa/list').subscribe({
       next: (departamentos) => {
         this.departamentos = departamentos;
       },
