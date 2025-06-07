@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Exports;
+
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+
+class AreasEmpresaExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
+{
+    protected $areas;
+
+    public function __construct($areas)
+    {
+        $this->areas = $areas;
+    }
+
+    /**
+     * Colección de datos a exportar
+     */
+    public function collection()
+    {
+        return $this->areas;
+    }
+
+    /**
+     * Encabezados de las columnas
+     */
+    public function headings(): array
+    {
+        return [
+            'ID',
+            'Nombre',
+            'Descripción',
+            'Sucursal',
+            'Departamento',
+            'Estado',
+            'Fecha de Creación',
+            'Fecha de Actualización'
+        ];
+    }
+
+    /**
+     * Mapeo de datos para cada fila
+     */
+    public function map($area): array
+    {
+        return [
+            $area->id,
+            $area->nombre,
+            $area->descripcion ?: 'N/A',
+            $area->sucursal ? $area->sucursal->nombre : 'N/A',
+            $area->departamento ? $area->departamento->nombre : 'N/A',
+            $area->activo ? 'Activo' : 'Inactivo',
+            $area->created_at ? $area->created_at->format('d/m/Y H:i') : 'N/A',
+            $area->updated_at ? $area->updated_at->format('d/m/Y H:i') : 'N/A'
+        ];
+    }
+
+    /**
+     * Estilos para el archivo Excel
+     */
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            // Estilo para la fila de encabezados
+            1 => [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4472C4'],
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ],
+            ],
+        ];
+    }
+}

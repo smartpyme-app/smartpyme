@@ -24,6 +24,7 @@ export class GastosComponent implements OnInit {
     public sucursales:any = [];
     public proveedores:any = [];
     public filtros:any = {};
+    public areas:any = [];
 
     modalRef!: BsModalRef;
 
@@ -37,6 +38,10 @@ export class GastosComponent implements OnInit {
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('area-empresa/list').subscribe(areas => { 
+            this.areas = areas;
+        }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -48,6 +53,7 @@ export class GastosComponent implements OnInit {
         this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.tipo = '';
+        this.filtros.id_area_empresa = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
