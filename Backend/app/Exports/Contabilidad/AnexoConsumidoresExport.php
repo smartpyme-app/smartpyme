@@ -112,7 +112,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             case 'Otras Rentas Gravables': return 10;
             case 'Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910': return 12;
             case 'Sujetos pasivos excluidos': return 13;
-            default: return null;
+            default: return '0';
         }
     }
 
