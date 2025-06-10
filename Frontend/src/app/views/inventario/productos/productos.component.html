@@ -50,10 +50,10 @@
     </div>
     <div class="row">
         <div class="col-md-8 d-flex gap-2 mb-3">
-            <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/productos">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/consignas">Consignas</button>
+            <button class="tcla-F3 btn " tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/productos">Todos</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
         </div>
         <div class="col-md-4 d-md-none d-lg-flex gap-2 justify-content-end mb-3">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">

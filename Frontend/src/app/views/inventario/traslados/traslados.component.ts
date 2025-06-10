@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -25,12 +26,26 @@ export class TrasladosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
 
-        this.loadAll();
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                search: params['search'] || '',
+                id_bodega_de: +params['id_bodega_de'] || '',
+                id_bodega_para: +params['id_bodega_para'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            this.filtrarTraslados();
+        });
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
@@ -47,6 +62,7 @@ export class TrasladosComponent implements OnInit {
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
         this.loading = true;
         this.filtrarTraslados();
@@ -54,6 +70,12 @@ export class TrasladosComponent implements OnInit {
     }
 
     public filtrarTraslados(){
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge', // mantiene otros params si hay
+        });
+        this.loading = true;
         this.apiService.getAll('traslados', this.filtros).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
@@ -73,10 +95,8 @@ export class TrasladosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.traslados.path + '?page='+ event.page, this.filtros).subscribe(traslados => { 
-            this.traslados = traslados;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarTraslados();
     }
 
     public setEstado(traslado:any){
