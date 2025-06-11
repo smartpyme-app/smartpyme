@@ -31,6 +31,8 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'NIT',
             'Dirección',
             'Documento',
+            'Proyecto',
+            'Num Identificacion',
             'Correlativo',
             'Forma de pago',
             'Banco',
@@ -65,6 +67,12 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             })
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
+            })
+            ->when($request->id_proyecto, function($q) use ($request){
+                $q->where('id_proyecto', $request->id_proyecto);
+            })
+            ->when($request->num_identificacion, function($q) use ($request){
+                $q->where('num_identificacion', $request->num_identificacion);
             })
             ->when($request->fin, function ($query) use ($request) {
                 return $query->where('fecha', '<=', $request->fin);
@@ -123,6 +131,8 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->cliente()->pluck('nit')->first(),
             $row->cliente()->pluck('direccion')->first(),
             $row->nombre_documento,
+            $row->nombre_proyecto,
+            $row->num_identificacion,
             $row->correlativo,
             $row->forma_pago,
             $row->detalle_banco,

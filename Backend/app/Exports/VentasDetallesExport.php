@@ -33,6 +33,8 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Marca',
             'Categoria',
             'Documento',
+            'Proyecto',
+            'Num Identificacion',
             'Correlativo',
             'Forma de pago',
             'Banco',
@@ -85,6 +87,12 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
                                 ->when($request->id_documento, function($query) use ($request){
                                     return $query->where('id_documento', $request->id_documento);
                                 })
+                                ->when($request->id_proyecto, function($query) use ($request){
+                                    return $query->where('id_proyecto', $request->id_proyecto);
+                                })
+                                ->when($request->num_identificacion, function($query) use ($request){
+                                    return $query->where('num_identificacion', $request->num_identificacion);
+                                })
                                 ->when($request->id_vendedor, function($query) use ($request){
                                     return $query->where('id_vendedor', $request->id_vendedor);
                                 })
@@ -118,6 +126,8 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->producto()->pluck('marca')->first(),
               $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
               $row->venta()->first()->documento()->pluck('nombre')->first(),
+              $row->nombre_proyecto,
+              $row->venta()->pluck('num_identificacion')->first(),
               $row->venta()->pluck('correlativo')->first(),
               $row->venta()->pluck('forma_pago')->first(),
               $row->venta()->pluck('detalle_banco')->first(),
