@@ -29,6 +29,8 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
             'NIT',
             'Documento',
             'Referencia',
+            'Proyecto',
+            'Num identificación',
             'Estado', 
             'Vencimiento', 
             'Costo',
@@ -55,6 +57,12 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
                         })
                         ->when($request->recurrente !== null, function($q) use ($request){
                             $q->where('recurrente', !!$request->recurrente);
+                        })
+                        ->when($request->id_proyecto, function($q) use ($request){
+                            $q->where('id_proyecto', $request->id_proyecto);
+                        })
+                        ->when($request->num_identificacion, function($q) use ($request){
+                            $q->where('num_identificacion', $request->num_identificacion);
                         })
                         ->when($request->id_sucursal, function($query) use ($request){
                             return $query->where('id_sucursal', $request->id_sucursal);
@@ -91,6 +99,8 @@ class ComprasExport implements FromCollection, WithHeadings, WithMapping
               $row->proveedor()->pluck('nit')->first(),
               $row->tipo_documento,
               $row->referencia,
+              $row->proyecto()->pluck('nombre')->first(),
+              $row->num_identificacion,
               $row->estado,
               $row->fecha_pago,
               $row->sub_total,
