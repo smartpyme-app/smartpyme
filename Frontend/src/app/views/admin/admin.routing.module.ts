@@ -15,7 +15,7 @@ import { UsuarioComponent }     from '@views/admin/usuarios/usuario/usuario.comp
 
 import { NotificacionesComponent }     from '@views/admin/notificaciones/notificaciones.component';
 import { DocsComponent }     from '@views/admin/docs/docs.component';
-
+import { RolesPermisosComponent }     from '@views/admin/roles-permisos/roles-permisos.component';
 import { ReportesComponent }    from '@views/reportes/reportes.component';
 
 const routes: Routes = [
@@ -32,7 +32,8 @@ const routes: Routes = [
          { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
-        { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'}
+        { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
+        { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
     ]
   }
 ];

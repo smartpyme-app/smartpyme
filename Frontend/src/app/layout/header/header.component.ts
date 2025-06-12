@@ -25,9 +25,13 @@ export class HeaderComponent implements OnInit {
         // $('.drop-down').dropdown();
         this.usuario = this.apiService.auth_user();
 
+
         let user = localStorage.getItem('SP_user_permissions');
         if (user) {
             this.rol = JSON.parse(user).role;
+            this.rol = this.rol.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
+        }else{
+            this.rol = this.usuario.roles[0].name;
             this.rol = this.rol.replace(/_/g, ' ').replace(/\b\w/g, (char: string) => char.toUpperCase());
         }
 

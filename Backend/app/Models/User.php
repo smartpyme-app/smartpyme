@@ -35,7 +35,7 @@ class User extends Authenticatable implements JWTSubject
         'editar_precio_venta'
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token','rol_id'];
     // protected $appends = ['nombre_sucursal'];
 
     protected $casts = [
@@ -93,6 +93,10 @@ class User extends Authenticatable implements JWTSubject
     //solo se puede tener un rol    
     public function getRoleAttribute(){
         return $this->roles->first();
+    }
+
+    public function getRolIdAttribute(){
+        return $this->roles->first()->id;
     }
 
 }

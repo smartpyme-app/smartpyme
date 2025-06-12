@@ -18,25 +18,24 @@ class UsuariosController extends Controller
     
 
     public function index(Request $request) {
-       
         $usuarios = Usuario::with('roles')->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->with('sucursal')
-                                ->when($request->estado !== null, function($q) use ($request){
-                                    $q->where('enable', !!$request->estado);
-                                })
-                                ->when($request->id_sucursal, function($q) use ($request){
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                })
-                                ->when($request->buscador, function($query) use ($request){
-                                    return $query->where('name', 'like' ,'%' . $request->buscador . '%')
-                                                 ->orwhere('email', 'like' ,"%" . $request->buscador . "%");
-                                })
-                                // ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
-
+            ->with('sucursal')
+            ->when($request->estado !== null, function($q) use ($request){
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_sucursal, function($q) use ($request){
+                $q->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->buscador, function($query) use ($request){
+                return $query->where(function($subQuery) use ($request) {
+                    $subQuery->where('name', 'like', '%' . $request->buscador . '%')
+                             ->orWhere('email', 'like', '%' . $request->buscador . '%');
+                });
+            })
+            ->orderBy($request->orden, $request->direccion)
+            ->paginate($request->paginate);
+    
         return Response()->json($usuarios, 200);
-
     }
 
     public function list() {
@@ -59,6 +58,7 @@ class UsuariosController extends Controller
 
     public function filter(Request $request) {
 
+        Log::info("filter");
         $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
                         ->when($request->sucursal_id, function($query) use ($request){
                             return $query->where('sucursal_id', $request->sucursal_id);
@@ -74,7 +74,9 @@ class UsuariosController extends Controller
 
     public function search($txt) {
 
-        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
+        Log::info("loggg");
+        $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                            ->where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
                             ->where('name', 'like' ,'%' . $txt . '%')->paginate(15);
         return Response()->json($usuarios, 200);
 
@@ -83,7 +85,7 @@ class UsuariosController extends Controller
 
     public function store(Request $request)
     {
-      //  Log::info($request->all());
+       Log::info($request->all());
         $request->validate([
             'name'          => 'required|max:255',
             'email'         => 'required|unique:users,email,'.$request->id,
@@ -140,10 +142,9 @@ class UsuariosController extends Controller
     
         $usuario->roles()->sync([$request->rol_id]);
 
+        $usuario->load('roles');
 
         return Response()->json($usuario, 200);
-
-
     }
 
     public function delete($id)

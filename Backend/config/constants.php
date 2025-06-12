@@ -11,6 +11,7 @@ return [
     'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',   // Del SP-119
     'ROL_GERENTE_COMPRAS'     => 'gerente_compras',      // Del SP-119
     'ROL_USUARIO'             => 'usuario',               // Del SP-120
+    'ROL_SUPERVISOR_LIMITADO' => 'supervisor_limitado',
 
     // Roles adicionales según los nuevos requerimientos
     'ROL_USUARIO_VENTAS'      => 'usuario_ventas',

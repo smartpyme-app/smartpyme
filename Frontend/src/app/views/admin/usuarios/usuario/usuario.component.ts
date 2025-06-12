@@ -143,6 +143,8 @@ export class UsuarioComponent implements OnInit {
       formData.append(key, this.usuario[key] == null ? '' : this.usuario[key]);
     }
 
+    
+
     // Save the user
     this.apiService.store('usuario', formData).subscribe(
       (usuario) => {
@@ -150,6 +152,16 @@ export class UsuarioComponent implements OnInit {
           this.router.navigate(['/usuarios']);
         }
         this.usuario = usuario;
+
+        if (this.usuario.roles && this.usuario.roles.length > 0) {
+            this.usuario.rol_id = this.usuario.roles[0].id;
+            this.rol = this.usuario.roles[0];
+            this.rol.name = this.rol.name
+                .split('_')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+
         this.loading = false;
         this.preview = false;
         this.alertService.success(
@@ -450,6 +462,12 @@ export class UsuarioComponent implements OnInit {
     this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
 
      
+  }
+
+  onRoleChange(selectedRoleId: any) {
+      console.log('Role seleccionado:', selectedRoleId, typeof selectedRoleId);
+      console.log('Roles disponibles:', this.roles);
+      console.log('Usuario rol_id:', this.usuario.rol_id, typeof this.usuario.rol_id);
   }
   
 }

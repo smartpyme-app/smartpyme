@@ -16,7 +16,7 @@ class Admin
         // }
 
         if(!$user->roles()->where('name', 'admin')->exists()){
-            return  Response()->json(['error' => 'No posee permisos para ejecutar esta acción.', 'code' => 403], 403);
+            return  Response()->json(['error' => 'No posee permisos para ejecutar esta acción admin.', 'code' => 403], 403);
 
         }
             

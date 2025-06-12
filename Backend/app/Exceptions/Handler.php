@@ -78,7 +78,7 @@ class Handler extends ExceptionHandler
             }
 
             if ($exception instanceof AuthorizationException) {
-                return  Response()->json(['error' => 'No posee permisos para ejecutar esta acción.', 'code' => 403], 403);
+                return  Response()->json(['error' => 'No posee permisos para ejecutar esta acción handler.', 'code' => 403], 403);
             }
 
             if ($exception instanceof NotFoundHttpException) {

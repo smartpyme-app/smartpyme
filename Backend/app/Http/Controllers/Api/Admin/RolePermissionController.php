@@ -17,27 +17,66 @@ class RolePermissionController extends Controller
     /**
      * Mostrar todos los roles y permisos
      */
+    // public function index(Request $request)
+    // {
+    //     $roles = Role::with('permissions')
+    //         ->where('name', 'like', '%' . $request->buscador . '%')
+    //         ->paginate($request->paginate);
+
+    //     return response()->json($roles, 200);
+    // }
+
     public function index(Request $request)
     {
-        $roles = Role::with('permissions')
-            ->where('name', 'like', '%' . $request->buscador . '%')
-            ->paginate($request->paginate);
+        $user = auth()->user();
+        
+        $query = Role::with('permissions');
+
+        $query->where(function($q) use ($user) {
+            $q->where('id_empresa', $user->id_empresa)
+              ->orWhereNull('id_empresa');
+        });
+
+        if ($request->buscador) {
+            $query->where('name', 'like', '%' . $request->buscador . '%');
+        }
+
+        $roles = $query->paginate($request->paginate ?? 10);
 
         return response()->json($roles, 200);
     }
 
     //permissions
+    // public function permissions(Request $request)
+    // {
+    //     Log::info('permissions');
+
+    //     $modules = Module::with([
+    //         'permissions' => function ($query) {
+    //             $query->with('permission'); // Obtener el permiso relacionado
+    //         },
+    //         'submodules' => function ($query) {
+    //             $query->with(['permissions' => function ($q) {
+    //                 $q->with('permission'); // Obtener los permisos de cada submódulo
+    //             }]);
+    //         }
+    //     ])->get();
+
+    //     $permissions = Permission::all();
+    //     return response()->json(['modules' => $modules, 'permissions' => $permissions], 200);
+    // }
+
     public function permissions(Request $request)
     {
         Log::info('permissions');
 
         $modules = Module::with([
             'permissions' => function ($query) {
-                $query->with('permission'); // Obtener el permiso relacionado
+                $query->with('permission');
             },
             'submodules' => function ($query) {
                 $query->with(['permissions' => function ($q) {
-                    $q->with('permission'); // Obtener los permisos de cada submódulo
+                    $q->with('permission');
                 }]);
             }
         ])->get();
@@ -161,19 +200,82 @@ class RolePermissionController extends Controller
     }
 
     //store
+    // public function store(Request $request)
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string|max:255',
+    //         'permissions' => 'required|array',
+    //         'is_global' => 'boolean'
+    //     ]);
+
+    //     $user = auth()->user();
+        
+
+    //     $role = Role::create(['name' => $request->name]);
+    //     $role->syncPermissions($request->permissions);
+
+    //     return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
+    // }
+
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'permissions' => 'required|array'
+            'permissions' => 'present|array',
+            'is_global' => 'boolean'
         ]);
 
-        $role = Role::create(['name' => $request->name]);
-        $role->syncPermissions($request->permissions);
+        $user = auth()->user();
+        
+        // Verificar si el nombre del rol ya existe para esta empresa
+        $existingRole = Role::where('name', $request->name)
+            ->where(function($q) use ($user) {
+                $q->where('id_empresa', $user->id_empresa)
+                  ->orWhereNull('id_empresa');
+            })
+            ->first();
 
-        return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
+        if ($existingRole) {
+            return response()->json([
+                'message' => 'Ya existe un rol con ese nombre'
+            ], 422);
+        }
+
+        $roleData = [
+            'name' => $request->name,
+            'guard_name' => 'web'
+        ];
+
+        if ($request->is_global && $this->isSuperAdmin($user)) {
+            $roleData['id_empresa'] = null;
+        } else {
+            $roleData['id_empresa'] = $user->id_empresa;
+        }
+
+        $role = Role::create($roleData);
+        
+        if (!empty($request->permissions)) {
+            $role->syncPermissions($request->permissions);
+        }
+
+        return response()->json([
+            'message' => 'Rol creado correctamente', 
+            'role' => $role->load('permissions')
+        ], 201);
     }
 
+    // public function updateRolePermissions(Request $request)
+    // {
+    //     $request->validate([
+    //         'role' => 'required|exists:roles,name',
+    //         'permissions' => 'required|array'
+    //     ]);
+
+    //     $role = Role::findByName($request->role);
+    //     $role->syncPermissions($request->permissions);
+
+    //     return response()->json(['message' => 'Permisos actualizados correctamente', 'role' => $role], 200);
+    // }
 
     public function updateRolePermissions(Request $request)
     {
@@ -182,10 +284,34 @@ class RolePermissionController extends Controller
             'permissions' => 'required|array'
         ]);
 
-        $role = Role::findByName($request->role);
+        $user = auth()->user();
+        
+        $role = Role::where('name', $request->role)
+            ->where(function($q) use ($user) {
+                $q->where('id_empresa', $user->id_empresa)
+                  ->orWhereNull('id_empresa');
+            })
+            ->first();
+
+        if (!$role) {
+            return response()->json([
+                'message' => 'Rol no encontrado o sin permisos para modificar'
+            ], 404);
+        }
+
+        // Verificar si el usuario puede modificar este rol
+        if (!$this->canModifyRole($role, $user)) {
+            return response()->json([
+                'message' => 'No tienes permisos para modificar este rol'
+            ], 403);
+        }
+
         $role->syncPermissions($request->permissions);
 
-        return response()->json(['message' => 'Permisos actualizados correctamente', 'role' => $role], 200);
+        return response()->json([
+            'message' => 'Permisos actualizados correctamente', 
+            'role' => $role->load('permissions')
+        ], 200);
     }
 
 
@@ -216,63 +342,166 @@ class RolePermissionController extends Controller
     //     }
     // }
 
+    // public function getUserPermissions($userId)
+    // {
+    //    // try {
+    //         $user = User::findOrFail($userId);
+
+    //         // Obtener permisos del rol
+    //         $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+
+    //         // Obtener permisos directos
+    //         $directPermissions = $user->getDirectPermissions()->pluck('name');
+
+    //         // Obtener permisos revocados
+    //         $revokedPermissions = DB::table('permission_revocations')
+    //             ->where('user_id', $userId)
+    //             ->pluck('permission_name');
+
+    //         // Obtener permisos efectivos
+    //         $effectivePermissions = collect($rolePermissions)
+    //             ->merge($directPermissions)
+    //             ->diff($revokedPermissions);
+
+    //         // Filtrar módulos
+    //         $modules = Module::with(['permissions', 'submodules.permissions'])
+    //             ->get()
+    //             ->map(function ($module) use ($revokedPermissions) {
+    //                 $module->permissions = $module->permissions->filter(function ($permission) use ($revokedPermissions) {
+    //                     return !$revokedPermissions->contains($permission->permission->name);
+    //                 });
+
+    //                 $module->submodules->each(function ($submodule) use ($revokedPermissions) {
+    //                     $submodule->permissions = $submodule->permissions->filter(function ($permission) use ($revokedPermissions) {
+    //                         return !$revokedPermissions->contains($permission->permission->name);
+    //                     });
+    //                 });
+
+    //                 return $module;
+    //             });
+
+    //         return response()->json([
+    //             'ok' => true,
+    //             'data' => [
+    //                 'role' => $user->roles->first()->name ?? 'Sin rol asignado',
+    //                 'rolePermissions' => $rolePermissions,
+    //                 'directPermissions' => $directPermissions,
+    //                 'revokedPermissions' => $revokedPermissions,
+    //                 'effectivePermissions' => $effectivePermissions,
+    //                 'modules' => $modules
+    //             ]
+    //         ]);
+    //     // } catch (\Exception $e) {
+    //     //     return response()->json([
+    //     //         'ok' => false,
+    //     //         'message' => 'Error al obtener permisos',
+    //     //         'error' => $e->getMessage()
+    //     //     ], 500);
+    //     // }
+    // }
+
     public function getUserPermissions($userId)
     {
-       // try {
-            $user = User::findOrFail($userId);
+        $user = User::findOrFail($userId);
 
-            // Obtener permisos del rol
-            $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+        // Obtener permisos del rol
+        $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
 
-            // Obtener permisos directos
-            $directPermissions = $user->getDirectPermissions()->pluck('name');
+        // Obtener permisos directos
+        $directPermissions = $user->getDirectPermissions()->pluck('name');
 
-            // Obtener permisos revocados
-            $revokedPermissions = DB::table('permission_revocations')
-                ->where('user_id', $userId)
-                ->pluck('permission_name');
+        // Obtener permisos revocados
+        $revokedPermissions = DB::table('permission_revocations')
+            ->where('user_id', $userId)
+            ->pluck('permission_name');
 
-            // Obtener permisos efectivos
-            $effectivePermissions = collect($rolePermissions)
-                ->merge($directPermissions)
-                ->diff($revokedPermissions);
+        // Obtener permisos efectivos
+        $effectivePermissions = collect($rolePermissions)
+            ->merge($directPermissions)
+            ->diff($revokedPermissions);
 
-            // Filtrar módulos
-            $modules = Module::with(['permissions', 'submodules.permissions'])
-                ->get()
-                ->map(function ($module) use ($revokedPermissions) {
-                    $module->permissions = $module->permissions->filter(function ($permission) use ($revokedPermissions) {
-                        return !$revokedPermissions->contains($permission->permission->name);
-                    });
-
-                    $module->submodules->each(function ($submodule) use ($revokedPermissions) {
-                        $submodule->permissions = $submodule->permissions->filter(function ($permission) use ($revokedPermissions) {
-                            return !$revokedPermissions->contains($permission->permission->name);
-                        });
-                    });
-
-                    return $module;
+        // Filtrar módulos
+        $modules = Module::with(['permissions', 'submodules.permissions'])
+            ->get()
+            ->map(function ($module) use ($revokedPermissions) {
+                $module->permissions = $module->permissions->filter(function ($permission) use ($revokedPermissions) {
+                    return !$revokedPermissions->contains($permission->permission->name);
                 });
 
-            return response()->json([
-                'ok' => true,
-                'data' => [
-                    'role' => $user->roles->first()->name,
-                    'rolePermissions' => $rolePermissions,
-                    'directPermissions' => $directPermissions,
-                    'revokedPermissions' => $revokedPermissions,
-                    'effectivePermissions' => $effectivePermissions,
-                    'modules' => $modules
-                ]
-            ]);
-        // } catch (\Exception $e) {
-        //     return response()->json([
-        //         'ok' => false,
-        //         'message' => 'Error al obtener permisos',
-        //         'error' => $e->getMessage()
-        //     ], 500);
-        // }
+                $module->submodules->each(function ($submodule) use ($revokedPermissions) {
+                    $submodule->permissions = $submodule->permissions->filter(function ($permission) use ($revokedPermissions) {
+                        return !$revokedPermissions->contains($permission->permission->name);
+                    });
+                });
+
+                return $module;
+            });
+
+        return response()->json([
+            'ok' => true,
+            'data' => [
+                'role' => $user->roles->first()->name,
+                'rolePermissions' => $rolePermissions,
+                'directPermissions' => $directPermissions,
+                'revokedPermissions' => $revokedPermissions,
+                'effectivePermissions' => $effectivePermissions,
+                'modules' => $modules
+            ]
+        ]);
     }
+
+    // public function saveUserPermissions(Request $request, $userId)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+
+    //         $user = User::findOrFail($userId);
+
+    //         $request->validate([
+    //             'added_permissions' => 'present|array',
+    //             'removed_permissions' => 'present|array'
+    //         ]);
+
+    //         // Manejar permisos a remover
+    //         foreach ($request->removed_permissions ?? [] as $permission) {
+    //             DB::table('permission_revocations')->updateOrInsert(
+    //                 [
+    //                     'user_id' => $userId,
+    //                     'permission_name' => $permission
+    //                 ],
+    //                 ['created_at' => now(), 'updated_at' => now()]
+    //             );
+    //         }
+
+    //         // Manejar permisos a agregar
+    //         foreach ($request->added_permissions ?? [] as $permission) {
+    //             // Eliminar la revocación si existe
+    //             DB::table('permission_revocations')
+    //                 ->where('user_id', $userId)
+    //                 ->where('permission_name', $permission)
+    //                 ->delete();
+
+    //             // Dar el permiso si es necesario
+    //             if (!$user->hasDirectPermission($permission)) {
+    //                 $user->givePermissionTo($permission);
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'ok' => true,
+    //             'message' => 'Permisos actualizados correctamente'
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Error al actualizar permisos',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 
     public function saveUserPermissions(Request $request, $userId)
     {
@@ -326,7 +555,6 @@ class RolePermissionController extends Controller
             ], 500);
         }
     }
-
 
     public function getRolePermissions($roleId)
     {
@@ -572,18 +800,72 @@ class RolePermissionController extends Controller
         }
     }
 
+    // public function roles()
+    // {
+    //     // $tipoToRol = [
+    //     //     'Administrador'  => config('constants.ROL_ADMIN'),
+    //     //     'Supervisor'   => config('constants.ROL_USUARIO_SUPERVISOR'),
+    //     //     'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
+    //     //     'Citas'        => config('constants.ROL_USUARIO_CITAS'),
+    //     //     'Ventas'       => config('constants.ROL_USUARIO_VENTAS')
+    //     // ];
+
+    //     // $roles = Role::whereIn('name', array_values($tipoToRol))->get();
+    //     $roles = Role::all();
+    //     return response()->json($roles, 200);
+    // }
+
     public function roles()
     {
-        // $tipoToRol = [
-        //     'Administrador'  => config('constants.ROL_ADMIN'),
-        //     'Supervisor'   => config('constants.ROL_USUARIO_SUPERVISOR'),
-        //     'Contador'     => config('constants.ROL_CONTADOR_SUPERIOR'),
-        //     'Citas'        => config('constants.ROL_USUARIO_CITAS'),
-        //     'Ventas'       => config('constants.ROL_USUARIO_VENTAS')
-        // ];
+        $user = auth()->user();
+        
+        $roles = Role::where(function($q) use ($user) {
+            $q->where('id_empresa', $user->id_empresa)
+              ->orWhereNull('id_empresa');
+        })
+        ->orderBy('name')
+        ->get()
+        ->map(function($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'display_name' => $this->formatRoleName($role->name),
+                'is_global' => is_null($role->id_empresa),
+                'permissions_count' => $role->permissions()->count()
+            ];
+        });
 
-        // $roles = Role::whereIn('name', array_values($tipoToRol))->get();
-        $roles = Role::all();
         return response()->json($roles, 200);
     }
+
+    private function isSuperAdmin($user)
+    {
+        return $user->hasRole('super_admin');
+    }
+
+    private function canModifyRole($role, $user)
+    {
+        // Super admin puede modificar cualquier rol
+        if ($this->isSuperAdmin($user)) {
+            return true;
+        }
+
+        // Admin puede modificar roles de su empresa
+        if ($user->hasRole('admin') && $role->id_empresa == $user->id_empresa) {
+            return true;
+        }
+
+        // No puede modificar roles globales si no es super admin
+        if (is_null($role->id_empresa)) {
+            return false;
+        }
+
+        return false;
+    }
+
+    private function formatRoleName($name)
+    {
+        return ucwords(str_replace('_', ' ', $name));
+    }
+
 }
