@@ -44,15 +44,17 @@ class ConsignasController extends Controller
             }
             $producto = $detallesGroup[0]->producto()->first();
 
-            $detalles->push([
-                'nombre'             => $producto->nombre,
-                'img'                => $producto->img,
-                'nombre_categoria'   => $producto->nombre_categoria,
-                'precio'             => $detallesGroup[0]->precio,
-                'codigo'             => $producto->codigo,
-                'stock'              => $detallesGroup->sum('cantidad'),
-                'ventas'             => $ventas,
-            ]); 
+            if ($producto) {
+                $detalles->push([
+                    'nombre'             => $producto->nombre,
+                    'img'                => $producto->img,
+                    'nombre_categoria'   => $producto->nombre_categoria,
+                    'precio'             => $detallesGroup[0]->precio,
+                    'codigo'             => $producto->codigo,
+                    'stock'              => $detallesGroup->sum('cantidad'),
+                    'ventas'             => $ventas,
+                ]); 
+            }
         }
 
         return Response()->json($detalles, 200);
