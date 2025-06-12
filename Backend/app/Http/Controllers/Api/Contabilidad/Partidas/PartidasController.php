@@ -158,7 +158,7 @@ class PartidasController extends Controller
         ]);
 
         $configuracion = Configuracion::first();
-        $ventas = Venta::where('estado', 'Pagada')
+        $ventas = Venta::where('estado','!=', 'Anulada')
                         ->where('fecha', $request->fecha)->get();
         $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
                         ->where('fecha', $request->fecha)->with('venta')->get();
