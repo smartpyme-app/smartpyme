@@ -56,7 +56,14 @@ class CatalogoImport implements ToModel, WithHeadingRow, WithValidation
         $cuenta->codigo = $row['codigo'];
         $cuenta->nombre = $row['nombre'];
         $cuenta->naturaleza = $row['naturaleza'];
-        $cuenta->id_cuenta_padre = $row['id_cuenta_padre'] ? $row['id_cuenta_padre'] : NULL;
+        if (!empty($row['id_cuenta_padre'])) {
+            $cuentaPadre = Cuenta::where('codigo', $row['id_cuenta_padre'])
+                ->where('id_empresa', Auth::user()->id_empresa)
+                ->first();
+            $cuenta->id_cuenta_padre = $cuentaPadre ? $cuentaPadre->id : null;
+        } else {
+            $cuenta->id_cuenta_padre = null;
+        }
         $cuenta->rubro = ucfirst(strtolower($row['rubro']));
         $cuenta->nivel = $row['nivel'];
         $cuenta->id_empresa = Auth::user()->id_empresa;

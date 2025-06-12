@@ -314,28 +314,47 @@
                 </ng-select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.tipo">Tipo:</label>
-                <select name="tipo" class="form-select" [(ngModel)]="compra.tipo">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
-                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
-                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
-                    <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
-                    <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
-                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
-                    <option value="Mano de obra">Mano de obra</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtro.sector">Sector:</label>
-                <select name="sector" class="form-select" [(ngModel)]="compra.sector">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Industria">Industria</option>
-                    <option value="Comercio">Comercio</option>
-                    <option value="Agropecuaria">Agropecuaria</option>
-                    <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
-                </select>
-            </div>
+                            <label for="tipo_clasificacion">Clasificación:</label>
+                            <select name="tipo_clasificacion" class="form-select" [(ngModel)]="compra.tipo_clasificacion">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Costo">Costo</option>
+                                <option value="Gasto">Gasto</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_operacion">Tipo de operación:</label>
+                            <select name="tipo_operacion" class="form-select" [(ngModel)]="compra.tipo_operacion">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Gravada">Gravada</option>
+                                <option value="No Gravada">No Gravada</option>
+                                <option value="Excluido">Excluido</option>
+                                <option value="Mixta">Mixta</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_costo_gasto">Tipo:</label>
+                            <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="compra.tipo_costo_gasto">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                                <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                                <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                                <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
+                                <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
+                                <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                                <option value="Mano de obra">Mano de obra</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_sector">Sector:</label>
+                            <select name="tipo_sector" class="form-select" [(ngModel)]="compra.tipo_sector">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Industria">Industria</option>
+                                <option value="Comercio">Comercio</option>
+                                <option value="Agropecuaria">Agropecuaria</option>
+                                <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                            </select>
+                        </div>
+                        
           <div class="form-group col-md-6 without-label">
             <div class="form-switch border rounded">
               <label for="es_retaceo">Es para retaceo</label>

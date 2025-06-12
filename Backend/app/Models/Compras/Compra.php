@@ -48,10 +48,10 @@ class Compra extends Model {
         'dte_invalidacion',
         'no_sujeta',
         'es_retaceo',
-        'clasificacion',
         'tipo_operacion',
-        'sector',
-        'tipo_gasto'
+        'tipo_clasificacion',
+        'tipo_sector',
+        'tipo_costo_gasto',
 
     );
 
