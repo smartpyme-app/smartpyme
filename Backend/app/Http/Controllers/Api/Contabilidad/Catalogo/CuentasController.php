@@ -14,16 +14,53 @@ class CuentasController extends Controller
 
 
     public function index(Request $request) {
+        $perPage = $request->get('paginate', 10); // Número de cuentas por página
+        $page = $request->get('page', 1);
 
-        $cuentas = Cuenta::when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
-                                                ->orwhere('codigo', 'like' ,'%' . $request->buscador . '%');
-                                })
-                                ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
-                                ->paginate($request->paginate);
+        // Obtener todas las cuentas y construir jerarquía completa
+        $todasLasCuentas = Cuenta::orderBy('codigo')->get();
+        $cuentasJerarquicas = $this->ordenarJerarquicamente($todasLasCuentas);
 
-        return Response()->json($cuentas, 200);
+        // Paginar el resultado jerárquico final
+        $total = count($cuentasJerarquicas);
+        $offset = ($page - 1) * $perPage;
+        $cuentasPaginadas = array_slice($cuentasJerarquicas, $offset, $perPage);
 
+        // Preparar respuesta paginada
+        $response = [
+            'data' => $cuentasPaginadas,
+            'current_page' => (int)$page,
+            'per_page' => (int)$perPage,
+            'total' => $total,
+            'last_page' => ceil($total / $perPage),
+            'from' => $offset + 1,
+            'to' => $offset + count($cuentasPaginadas),
+            'path' => request()->url()
+        ];
+
+        return response()->json($response, 200);
+    }
+
+    /**
+     * Ordena las cuentas jerárquicamente en un array plano (padre seguido de sus hijos)
+     */
+    private function ordenarJerarquicamente($cuentas, $padreId = null, $nivel = 0)
+    {
+        $resultado = [];
+        foreach ($cuentas as $cuenta) {
+            if (
+                ($padreId === null && ($cuenta->id_cuenta_padre === null || $cuenta->id_cuenta_padre == 0)) ||
+                ($cuenta->id_cuenta_padre == $padreId && $padreId !== null)
+            ) {
+                $cuenta->nivel_visual = $nivel;
+                $resultado[] = $cuenta;
+                $hijos = $this->ordenarJerarquicamente($cuentas, $cuenta->id, $nivel + 1);
+                foreach ($hijos as $hijo) {
+                    $resultado[] = $hijo;
+                }
+            }
+        }
+        return $resultado;
     }
 
     public function list() {
@@ -46,7 +83,7 @@ class CuentasController extends Controller
             'codigo'        => 'required|max:255',
             'nombre'        => 'required|max:255',
             'naturaleza'    => 'required|max:255',
-            'id_cuenta_padre'   => 'required|numeric',
+            'id_cuenta_padre'   => 'required',
             'rubro'         => 'required|max:255',
             'nivel'         => 'required|numeric',
             'id_empresa'    => 'required|numeric',
@@ -57,7 +94,28 @@ class CuentasController extends Controller
         else
             $cuenta = new Cuenta;
 
-        $cuenta->fill($request->all());
+        $data = $request->all();
+
+        // Buscar el id real de la cuenta padre si se envía un código en vez de un id
+        if (!empty($data['id_cuenta_padre'])) {
+            // Si el valor es numérico y existe como id, lo dejamos; si no, buscamos por código
+            $cuentaPadre = Cuenta::where('id', $data['id_cuenta_padre'])
+                ->where('id_empresa', $data['id_empresa'])
+                ->first();
+
+            if (!$cuentaPadre) {
+                // Si no existe como id, intentamos buscarlo como código
+                $cuentaPadre = Cuenta::where('codigo', $data['id_cuenta_padre'])
+                    ->where('id_empresa', $data['id_empresa'])
+                    ->first();
+            }
+
+            $data['id_cuenta_padre'] = $cuentaPadre ? $cuentaPadre->id : null;
+        } else {
+            $data['id_cuenta_padre'] = null;
+        }
+
+        $cuenta->fill($data);
         $cuenta->save();
 
         return Response()->json($cuenta, 200);
