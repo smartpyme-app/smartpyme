@@ -100,11 +100,11 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $compra->iva,  // N - credito fiscal
                 $compra->total,  // O - total
                 null,  // P - dui
-                $compra->exenta > 0 ? 2 : 1,  // Q - TIPO DE OPERACIÖN
-                $compra->origen == 'gasto' ? 2 : 1 ,  // R - CLASIFICACI Costo gasto
-                $this->tipoSector($compra->sector),  // S - SECTOR
-                $this->tipo($compra->tipo),  // T - TIPO DE COSTO / GASTO
-                'num_anexo' => 3,  // U - NUMERO DE ANEXO
+                $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
+                $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto
+                $this->tipoSector($compra->tipo_sector),  // S - SECTOR
+                $this->tipoCostoGasto($compra->tipo_costo_gasto),  // T - TIPO DE COSTO / GASTO
+                3,  // U - NUMERO DE ANEXO
             ];
 
         return $data;
@@ -119,6 +119,24 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
         ];
     }
 
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
+    }
+
+    function tipoClasificacion($sector) {
+        switch ($sector) {
+            case 'Costo': return 1;
+            case 'Gasto': return 2;
+            default: return '0';
+        }
+    }
+
     function tipoSector($sector) {
         switch ($sector) {
             case 'Industria': return 1;
@@ -129,7 +147,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
         }
     }
 
-    function tipo($tipo) {
+    function tipoCostoGasto($tipo) {
         switch ($tipo) {
             case 'Gastos de venta sin donación': return 1;
             case 'Gastos de administración sin donación': return 2;

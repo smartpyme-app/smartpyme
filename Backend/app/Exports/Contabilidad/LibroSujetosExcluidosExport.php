@@ -71,7 +71,7 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -113,13 +113,56 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
             'referencia' => $compra->referencia,  // F - NUMERO DE DOCUMENTO
             'total' => $compra->total,  // G - MONTO DE LA OPERACIÖN
             'iva' => $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
-            'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
-            'clasificacion' =>  $compra->origen == 'gasto' ? 'Gasto' : 'Costo' ,  // J - CLASIFICACI Costo gasto
-            'sector' => $compra->sector,  // K - SECTOR
-            'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
+            'tipo_operacion' => $this->tipoOperacion($compra->tipo_operacion),  // I - TIPO DE OPERACIÖN
+            'clasificacion' =>  $this->tipoClasificacion($compra->tipo_clasificacion),  // J - CLASIFICACI Costo gasto
+            'sector' => $this->tipoSector($compra->tipo_sector),  // K - SECTOR
+            'tipo' =>   $this->tipoCostoGasto($compra->tipo_costo_gasto),  // L - TIPO DE COSTO / GASTO
             'num_anexo' => 5,  // M - NUMERO DE ANEXO
         ];
 
         return $data;
     }
+
+
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
+    }
+
+    function tipoClasificacion($sector) {
+        switch ($sector) {
+            case 'Costo': return 1;
+            case 'Gasto': return 2;
+            default: return '0';
+        }
+    }
+
+    function tipoSector($sector) {
+        switch ($sector) {
+            case 'Industria': return 1;
+            case 'Comercio': return 2;
+            case 'Agropecuaria': return 3;
+            case 'Servicios, profesiones, artes y oficios': return 4;
+            default: return '0';
+        }
+    }
+
+    function tipoCostoGasto($tipo) {
+        switch ($tipo) {
+            case 'Gastos de venta sin donación': return 1;
+            case 'Gastos de administración sin donación': return 2;
+            case 'Gastos financieros sin donación': return 3;
+            case 'Costo artículos producidos/comprados importaciones/internaciones': return 4;
+            case 'Costo artículos producidos/comprados interno': return 5;
+            case 'Costos indirectos de fabricación': return 6;
+            case 'Mano de obra': return 7;
+            default: return '0';
+        }
+    }
+
 }

@@ -21,6 +21,10 @@ use App\Exports\Contabilidad\AnexoSujetosExcluidosExport;
 use App\Exports\Contabilidad\LibroComprasExport;
 use App\Exports\Contabilidad\AnexoComprasExport;
 use App\Exports\Contabilidad\GlobalDttesExport;
+use App\Exports\Contabilidad\LibroRetencion1Export;
+use App\Exports\Contabilidad\AnexoRetencion1Export;
+use App\Exports\Contabilidad\LibroPercepcion1Export;
+use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -462,7 +466,7 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -499,7 +503,7 @@ class LibrosIVAController extends Controller
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
@@ -521,10 +525,10 @@ class LibrosIVAController extends Controller
                 'referencia' => $gasto->referencia,
                 'total' => $gasto->total,
                 'iva' => $gasto->iva,
-                'tipo_operacion' => $compra->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
+                'tipo_operacion' => $gasto->exenta > 0 ? 'Exenta' : 'Gravada',  // I - TIPO DE OPERACIÖN
                 'clasificacion' => 'Gasto' ,  // J - CLASIFICACI Costo gasto
-                'sector' => $compra->sector,  // K - SECTOR
-                'tipo' =>   $compra->tipo,  // L - TIPO DE COSTO / GASTO
+                'sector' => $gasto->sector,  // K - SECTOR
+                'tipo' =>   $gasto->tipo,  // L - TIPO DE COSTO / GASTO
                 'num_anexo' => 5,
             ];
 
@@ -591,4 +595,38 @@ class LibrosIVAController extends Controller
                 ->header('Content-Type', 'text/plain');
         }
     }
+
+    public function libroRetencion1Export(Request $request)
+    {
+        $retencion = new LibroRetencion1Export();
+        $retencion->filter($request);
+
+        return Excel::download($retencion, 'LibroRetencion1.xlsx');
+    }
+
+
+    public function libroPercepcion1Export(Request $request)
+    {
+        $percepcion = new LibroPercepcion1Export();
+        $percepcion->filter($request);
+
+        return Excel::download($percepcion, 'LibroPercepcion1.xlsx');
+    }
+
+    public function anexoRetencion1Export(Request $request)
+    {
+        $retencion = new AnexoRetencion1Export();
+        $retencion->filter($request);
+
+        return Excel::download($retencion, 'AnexoRetencion1.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
+    public function anexoPercepcion1Export(Request $request)
+    {
+        $percepcion = new AnexoPercepcion1Export();
+        $percepcion->filter($request);
+
+        return Excel::download($percepcion, 'AnexoPercepcion1.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
+
 }

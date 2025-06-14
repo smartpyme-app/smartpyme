@@ -250,6 +250,44 @@ class MHFactura extends Model
     protected function detalles(){
         $detalles = collect();
 
+        if ($this->venta->descripcion_personalizada) {
+
+            if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
+                $this->venta->tipo_item = 2;
+            }else{
+                $this->venta->tipo_item = 1;
+            }
+
+            if ($this->venta->iva > 0) {
+                $this->venta->gravada = $this->venta->sub_total;
+            }else{
+                $this->venta->gravada = 0;
+                $this->venta->exenta = $this->venta->sub_total;
+            }
+
+            $detalles->push([
+                "numItem" => 1,
+                "tipoItem" => $this->venta->tipo_item,
+                "numeroDocumento" => NULL,
+                "cantidad" => floatval(number_format(1 ,2, '.', '')),
+                "codigo" => NULL,
+                "codTributo" => NULL,
+                "uniMedida" => 59,
+                "descripcion" => $this->venta->descripcion_impresion,
+                "precioUni" => floatval(number_format($this->venta->sub_total + $this->venta->iva,2, '.', '')),
+                "montoDescu" => floatval(number_format($this->venta->descuento,2, '.', '')),
+                "ventaNoSuj" => floatval(number_format($this->venta->no_sujeta,2, '.', '')),
+                "ventaExenta" => floatval(number_format($this->venta->exenta,2, '.', '')),
+                "ventaGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva,2, '.', '')),
+                "tributos" => NULL,
+                "psv" => 0,
+                "noGravado" => 0,
+                "ivaItem" => floatval(number_format($this->venta->iva, 2, '.', ''))
+            ]);
+
+            return $detalles;
+        }
+
         foreach ($this->venta->detalles as $index => $detalle) {
 
             $cod = Unidad::where('nombre', ucfirst($detalle->unidad))->pluck('cod')->first();
