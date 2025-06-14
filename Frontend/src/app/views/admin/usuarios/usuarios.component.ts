@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
 
 @Component({
   selector: 'app-usuarios',
@@ -23,6 +24,18 @@ export class UsuariosComponent implements OnInit {
   public showpassword: boolean = false;
   public showpassword2: boolean = false;
   public authUser: any = {};
+  separateDialCode = false;
+  SearchCountryField = SearchCountryField;
+  CountryISO = CountryISO;
+  PhoneNumberFormat = PhoneNumberFormat;
+  preferredCountries: CountryISO[] = [
+    CountryISO.ElSalvador,
+    CountryISO.Guatemala,
+    CountryISO.Honduras,
+    CountryISO.Nicaragua,
+    CountryISO.CostaRica,
+    CountryISO.Panama
+  ];
 
   modalRef?: BsModalRef;
 
@@ -86,19 +99,27 @@ export class UsuariosComponent implements OnInit {
     ).length;
   }
 
-  openModal(template: TemplateRef<any>, usuario: any) {
-    this.alertService.modal = true;
-    this.usuario = usuario;
-    if (!this.usuario.id) {
-      this.usuario.tipo = 'Administrador';
-      this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
-      this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
-    }
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static',
-    });
+
+
+openModal(template: TemplateRef<any>, usuario: any) {
+  this.alertService.modal = true;
+  this.usuario = usuario;
+  
+  // Si el teléfono viene como objeto, extraer solo el número
+  if (this.usuario.telefono && typeof this.usuario.telefono === 'object') {
+    this.usuario.telefono = this.usuario.telefono.number || this.usuario.telefono.e164Number;
   }
+  
+  if (!this.usuario.id) {
+    this.usuario.tipo = 'Administrador';
+    this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
+    this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
+  }
+  this.modalRef = this.modalService.show(template, {
+    class: 'modal-lg',
+    backdrop: 'static',
+  });
+}
 
   public mostrarPassword() {
     this.showpassword = !this.showpassword;
@@ -110,7 +131,7 @@ export class UsuariosComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
-    // Guardamos al usuario
+    this.usuario.telefono = this.usuario.telefono.e164Number;
     this.apiService.store('usuario', this.usuario).subscribe(
       (usuario) => {
         this.loadAll();
@@ -193,4 +214,12 @@ export class UsuariosComponent implements OnInit {
   public usuarioLogueado() {
     this.authUser = this.apiService.auth_user();
   }
+
+
+
+public changePhoneNumber(event: any) {
+  console.log('Evento completo:', event);
+  this.usuario.telefono = event.e164Number; 
+  console.log('Teléfono a enviar:', this.usuario.telefono);
+}
 }

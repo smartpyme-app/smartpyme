@@ -32,6 +32,7 @@ import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
 // import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
 import { WhatsAppComponent } from './whatsapp/whatsapp.component';
+import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
 
 @NgModule({
   imports: [
@@ -49,6 +50,7 @@ import { WhatsAppComponent } from './whatsapp/whatsapp.component';
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
+    NgxIntlTelInputModule
   ],
   declarations: [
     EmpresaComponent,
