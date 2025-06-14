@@ -7,6 +7,8 @@ use App\Models\WhatsApp\WhatsAppSession;
 use App\Models\WhatsApp\WhatsAppMessage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
+use App\Notifications\WhatsAppVerificationCode;
+use Carbon\Carbon;
 
 class MessageHandler
 {
@@ -18,6 +20,7 @@ class MessageHandler
             $this->chatController = app(ChatController::class);
         }
     }
+
     public function handle(WhatsAppSession $session, string $message): ?string
     {
         $message = trim($message);
@@ -32,6 +35,9 @@ class MessageHandler
 
             case 'pending_user':
                 return $this->handlePendingUser($session, $message);
+
+            case 'pending_verification': // ← NUEVO ESTADO
+                return $this->handlePendingVerification($session, $message);
 
             case 'connected':
                 if (config('services.whatsapp.use_ai', false)) {
@@ -281,7 +287,6 @@ class MessageHandler
 
     private function handlePendingUser(WhatsAppSession $session, string $message): string
     {
-
         if ($session->shouldBlockForTooManyAttempts()) {
             return "❌ Demasiados intentos fallidos. Escribe 'reset' para reiniciar.";
         }
@@ -290,13 +295,45 @@ class MessageHandler
             return "❌ Formato de email inválido.\n\n" .
                 "Por favor, escribe un email válido (ejemplo: usuario@empresa.com)";
         }
+
         $usuario = $session->connectToUser($message);
 
         if ($usuario) {
-            return "🎉 ¡Bienvenido, *{$usuario->name}*!\n\n" .
-                "Empresa: {$session->empresa->nombre}\n" .
-                "Cargo: " . ($usuario->tipo ?? 'Usuario') . "\n\n" .
-                $this->getMainMenu($session);
+            try {
+                $verificationCode = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+                $usuario->update([
+                    'whatsapp_verification_code' => $verificationCode,
+                    'whatsapp_code_expires_at' => Carbon::now()->addMinutes(10),
+                    'whatsapp_verified' => false
+                ]);
+
+                $usuario->notify(new WhatsAppVerificationCode($verificationCode, $usuario->name));
+
+                $session->update(['status' => 'pending_verification']);
+
+                Log::info('Código de WhatsApp enviado', [
+                    'usuario_id' => $usuario->id,
+                    'empresa_id' => $session->id_empresa,
+                    'session_id' => $session->id
+                ]);
+
+                return "🎉 ¡Perfecto, *{$usuario->name}*!\n\n" .
+                    "📧 Te hemos enviado un código de verificación a tu correo:\n" .
+                    "*{$usuario->email}*\n\n" .
+                    "⏰ El código expirará en 10 minutos.\n\n" .
+                    "✍️ Por favor, escribe el código de 6 dígitos que recibiste por correo:";
+            } catch (\Exception $e) {
+                Log::error('Error enviando código WhatsApp', [
+                    'error' => $e->getMessage(),
+                    'usuario_id' => $usuario->id ?? null,
+                    'session_id' => $session->id
+                ]);
+
+                return "❌ Error al enviar el código de verificación.\n\n" .
+                    "Por favor, intenta nuevamente o contacta soporte.\n\n" .
+                    "Escribe 'reset' para reiniciar.";
+            }
         }
 
         $attempts = $session->user_attempts;
@@ -437,5 +474,54 @@ class MessageHandler
             "• Reporte de clientes\n\n" .
             "_Funcionalidad en desarrollo..._\n\n" .
             "Escribe 'menu' para volver al menú principal.";
+    }
+
+
+    private function handlePendingVerification(WhatsAppSession $session, string $message): string
+    {
+        $code = trim($message);
+
+        if (!preg_match('/^\d{6}$/', $code)) {
+            return "❌ Formato de código inválido.\n\n" .
+                "El código debe tener exactamente 6 dígitos.\n\n" .
+                "Por favor, escribe el código que recibiste por correo:";
+        }
+
+        $usuario = $session->usuario;
+        if (
+            $usuario->whatsapp_verification_code === $code &&
+            $usuario->whatsapp_code_expires_at > Carbon::now()
+        ) {
+
+            $usuario->update([
+                'whatsapp_verified' => true,
+                'whatsapp_verification_code' => null,
+                'whatsapp_code_expires_at' => null
+            ]);
+
+            $session->update(['status' => 'connected']);
+
+            Log::info('Usuario verificado exitosamente en WhatsApp', [
+                'usuario_id' => $usuario->id,
+                'empresa_id' => $session->id_empresa,
+                'session_id' => $session->id
+            ]);
+
+            return "✅ ¡Verificación exitosa!\n\n" .
+                "🎉 ¡Bienvenido, *{$usuario->name}*!\n\n" .
+                "🏢 Empresa: {$session->empresa->nombre}\n" .
+                "👤 Cargo: " . ($usuario->tipo ?? 'Usuario') . "\n\n" .
+                $this->getMainMenu($session);
+        }
+
+        if ($usuario->whatsapp_code_expires_at < Carbon::now()) {
+            return "⏰ El código ha expirado.\n\n" .
+                "Por favor, escribe 'reset' para generar un nuevo código.";
+        }
+        return "❌ Código incorrecto.\n\n" .
+            "Verifica el código de 6 dígitos que recibiste por correo.\n\n" .
+            "💡 Si no recibiste el correo:\n" .
+            "• Revisa tu carpeta de spam\n" .
+            "• Escribe 'reset' para generar un nuevo código";
     }
 }
