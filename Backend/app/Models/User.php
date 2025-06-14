@@ -30,7 +30,8 @@ class User extends Authenticatable implements JWTSubject
         'modulo_citas',
         'codigo_autorizacion',
         'editar_precio_venta',
-        'woocommerce_status'
+        'woocommerce_status',
+        'telefono'
     ];
 
     protected $hidden = ['password', 'remember_token'];
