@@ -7,6 +7,7 @@ use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
+use Carbon\Carbon;
 
 class MHFacturaExportacion extends Model
 {
@@ -159,8 +160,8 @@ class MHFacturaExportacion extends Model
         }
 
         return [
-              "tipoDocumento" => $this->venta->cliente->tipo_documento, //36 NIT 13 DUI
-              "numDocumento" => $this->venta->cliente->dui,
+              "tipoDocumento" => $this->venta->cliente->tipo_documento ?? '36', //36 NIT 13 DUI
+              "numDocumento" => $this->venta->cliente->dui ?? str_replace('-', '', $this->venta->cliente->nit),
               "nombre" => $this->venta->nombre_cliente,
               "nombreComercial" => $this->venta->cliente->nombre_empresa,
               "descActividad" => $this->venta->cliente->giro ? $this->venta->cliente->giro : NULL,
@@ -203,8 +204,8 @@ class MHFacturaExportacion extends Model
                       "codigo" => $this->venta->cod_metodo_pago,
                       "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
                       "referencia" => NULL,
-                      "plazo" => NULL,
-                      "periodo" => NULL
+                      "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
+                      "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL
                     ]
                   ],
                     "numPagoElectronico" => "",
@@ -245,10 +246,13 @@ class MHFacturaExportacion extends Model
 
             $detalle->codTributo = NULL;
 
-            $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-            $detalle->iva = ($detalle->total * 0.13);
-            $detalle->gravada = $detalle->total;
-            $detalle->total = $detalle->total + $detalle->iva;
+            if ($this->venta->iva > 0) {
+                $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
+                $detalle->iva = ($detalle->total * 0.13);
+                $detalle->total = $detalle->total + $detalle->iva;
+            }else{
+                $detalle->gravada = $detalle->total;
+            }
 
             $detalles->push([
                 "numItem" => $index + 1,
@@ -256,7 +260,7 @@ class MHFacturaExportacion extends Model
                 "descripcion" => $detalle->nombre_producto,
                 "cantidad" => floatval($detalle->cantidad),
                 "uniMedida" => $detalle->cod_medida,
-                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                "precioUni" => floatval(number_format($detalle->precio + $detalle->iva,2, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                 "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
                 "tributos" => $tributos,
@@ -267,6 +271,15 @@ class MHFacturaExportacion extends Model
         return $detalles;
     }
 
+    private function obtenerPlazo($dias_credito) {
+        if ($dias_credito <= 30) {
+            return "01"; // Corto plazo
+        } elseif ($dias_credito <= 60) {
+            return "02"; // Mediano plazo
+        } else {
+            return "03"; // Largo plazo
+        }
+    }
 
 }
 

@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -25,11 +26,27 @@ export class AjustesComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
-        this.loadAll();
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                search: params['search'] || '',
+                id_bodega: +params['id_bodega'] || '',
+                id_producto: +params['id_producto'] || '',
+                id_usuario: +params['id_usuario'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            this.filtrarAjustes();
+        });
+
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
             this.bodegas = bodegas;
@@ -46,12 +63,19 @@ export class AjustesComponent implements OnInit {
         this.filtros.orden = 'created_at';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
         this.loading = true;
         this.filtrarAjustes();
     }
 
     public filtrarAjustes(){
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge',
+        });
+        this.loading = true;
         this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;
@@ -71,10 +95,8 @@ export class AjustesComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.ajustes.path + '?page='+ event.page, this.filtros).subscribe(ajustes => { 
-            this.ajustes = ajustes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarAjustes();
     }
 
     public setEstado(ajuste:any){
@@ -92,6 +114,7 @@ export class AjustesComponent implements OnInit {
 
     public setProducto(){
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
+        this.ajuste.costo = this.producto.costo;
     }
 
     public setBodega(){

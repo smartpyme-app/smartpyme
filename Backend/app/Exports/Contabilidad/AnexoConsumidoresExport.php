@@ -71,7 +71,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 '0.00', //R Ventas zonas francas'
                 '0.00', //S Ventas a terceros
                 $venta->total ? $venta->total : '0.00', //T Total
-                $venta->exenta > 0 ? 2 : 1, //U Tipo operacion renta 1 Gravada 2 Exenta
+                $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
                 $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
                 2, //W num de Anexo
 
@@ -86,6 +86,16 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             'enclosure' => '',
             'use_bom' => false,
         ];
+    }
+
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
     }
 
     function tipoRenta($tipo) {

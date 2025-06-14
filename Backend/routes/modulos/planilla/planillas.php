@@ -16,7 +16,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
         Route::post('/', 'store');
         Route::post('update/{id}', 'update');
         Route::post('{id}/pagar','processPayment');
-        Route::get('detalles/{id}/boleta', 'generateIndividualInvoice');
+        Route::get('detalles/{id}/boleta', 'generarBoletaIndividual');
         Route::post('detalles/editar/{id}', 'updateDetailsPayroll');
         Route::post('detalles/retirar/{id}', 'withdrawPayroll');
         Route::post('detalles/incluir/{id}', 'includePayroll');

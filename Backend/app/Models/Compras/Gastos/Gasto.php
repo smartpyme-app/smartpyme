@@ -41,6 +41,10 @@ class Gasto extends Model {
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'tipo_operacion',
+        'tipo_clasificacion',
+        'tipo_sector',
+        'tipo_costo_gasto',
     ];
 
     protected $casts = [
