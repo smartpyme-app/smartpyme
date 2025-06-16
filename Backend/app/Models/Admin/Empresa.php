@@ -103,6 +103,11 @@ class Empresa extends Model
         'woocommerce_error',
         'woocommerce_canal_id',
 
+        //Renta
+        'tipo_renta_servicios',
+        'tipo_renta_productos',
+        'tipo_sector',
+
     ];
 
     protected $casts = [
