@@ -238,14 +238,7 @@
                         (change)="onImpuestoValorChange()"/>
                 </div>
             </div>
-            <div class="form-group col-md-12 col-lg-12">
-                <label for="">Observaciones:</label>
-                <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
-            </div>
-        </div>
-        <div class="row mt-2">
-            <h6>Detalles contable</h6>
-            <div class="form-group col-lg-2">
+            <div class="form-group col-6 col-lg-2">
                 <label for="tipo_operacion">Tipo de operación:</label>
                 <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -255,7 +248,7 @@
                     <option value="Mixta">Mixta</option>
                 </select>
             </div>
-            <div class="form-group col-lg-2">
+            <div class="form-group col-6 col-lg-2">
                 <label for="tipo_clasificacion">Clasificación:</label>
                 <select name="tipo_clasificacion" class="form-select" [(ngModel)]="gasto.tipo_clasificacion">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -263,20 +256,7 @@
                     <option value="Gasto">Gasto</option>
                 </select>
             </div>
-            <div class="form-group col-lg-4">
-                <label for="tipo_costo_gasto">Tipo:</label>
-                <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="gasto.tipo_costo_gasto">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
-                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
-                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
-                    <option value="Costo artículos producidos/gastodos importaciones/internaciones">Costo artículos producidos/gastodos importaciones/internaciones</option>
-                    <option value="Costo artículos producidos/gastodos interno">Costo artículos producidos/gastodos interno</option>
-                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
-                    <option value="Mano de obra">Mano de obra</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-4">
+            <div class="form-group col-6 col-sm-3">
                 <label for="tipo_sector">Sector:</label>
                 <select name="tipo_sector" class="form-select" [(ngModel)]="gasto.tipo_sector">
                     <option [ngValue]="null">Seleccione aquí</option>
@@ -285,6 +265,23 @@
                     <option value="Agropecuaria">Agropecuaria</option>
                     <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
                 </select>
+            </div>
+            <div class="form-group col-6 col-lg-5">
+                <label for="tipo_costo_gasto">Tipo {{gasto.tipo_clasificacion}}:</label>
+                <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="gasto.tipo_costo_gasto">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                    <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
+                    <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
+                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                    <option value="Mano de obra">Mano de obra</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="">Observaciones:</label>
+                <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí" />
             </div>
         </div>
 

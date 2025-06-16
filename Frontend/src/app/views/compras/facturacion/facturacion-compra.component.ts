@@ -118,6 +118,10 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.tipo = 'Interna';
         this.compra.estado = 'Pagada';
         this.compra.condicion = 'Contado';
+        this.compra.tipo_clasificacion = 'Costo';
+        this.compra.tipo_operacion = 'Gravada';
+        this.compra.tipo_costo_gasto = 'Costo artículos producidos/comprados interno';
+        this.compra.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
         this.compra.tipo_documento = 'Factura';
         this.compra.detalle_banco = '';
         this.compra.id_proveedor = '';
@@ -224,6 +228,14 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);
         this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido) - parseFloat(this.compra.renta_retenida)).toFixed(2);
+
+        // Asignar tipoOperacion según los detalles
+        if (this.compra.cobrar_impuestos) {
+          this.compra.tipo_operacion = 'Gravada'; // Aplica IVA
+        } else {
+          this.compra.tipo_operacion = 'No Gravada'; // No aplica IVA
+        }
+
     }
 
     // proveedor

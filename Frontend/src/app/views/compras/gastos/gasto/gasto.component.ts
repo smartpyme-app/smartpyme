@@ -199,6 +199,10 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo_documento = 'Factura';
       this.gasto.detalle_banco = '';
       this.gasto.tipo = '';
+      this.gasto.tipo_clasificacion = 'Costo';
+      this.gasto.tipo_operacion = 'Gravada';
+      this.gasto.tipo_costo_gasto = 'Gastos de venta sin donación';
+      this.gasto.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
       this.gasto.id_categoria = '';
       this.gasto.id_proveedor = '';
       // this.gasto.fecha_pago = this.apiService.date();
@@ -214,6 +218,7 @@ export class GastoComponent implements OnInit {
         this.gasto.id_proyecto =
           +this.route.snapshot.queryParamMap.get('id_proyecto')!;
       }
+      this.setTotal();
     }
 
     // Duplicar gasto
@@ -444,6 +449,13 @@ export class GastoComponent implements OnInit {
     }
     
     this.gasto.total = total.toFixed(2);
+
+    // Asignar tipoOperacion según los detalles
+        if (this.gasto.impuesto) {
+          this.gasto.tipo_operacion = 'Gravada'; // Aplica IVA
+        } else {
+          this.gasto.tipo_operacion = 'No Gravada'; // No aplica IVA
+        }
 }
   
   public setSubTotal(){
