@@ -34,7 +34,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('tipo_documento', 'Sujeto excluido')
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
@@ -45,7 +45,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             });
 
         $gastos = Gasto::with('proveedor')
-            ->where('iva' , '>', 0)
+            // ->where('iva' , '>', 0)
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
@@ -68,7 +68,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
     }
 
     public function map($compra): array{
-
+            setlocale(LC_NUMERIC, 'C');
             $proveedor = optional($compra->proveedor()->first());
 
             $data = [
@@ -77,13 +77,13 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
                 $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
                 $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-                $compra->referencia,  // F - NUMERO DE DOCUMENTO
-                $compra->total,  // G - MONTO DE LA OPERACIÖN
-                $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
-                $compra->exenta > 0 ? 2 : 1,  // I - TIPO DE OPERACIÖN
-                $compra->origen == 'gasto' ? 2 : 1 ,  // J - CLASIFICACI Costo gasto
-                $this->tipoSector($compra->sector),  // K - SECTOR
-                $this->tipo($compra->tipo),  // L - TIPO DE COSTO / GASTO
+                str_replace('-', '', $compra->referencia),  // F - NUMERO DE DOCUMENTO
+                number_format($compra->total, 2, '.', ''),  // G - MONTO DE LA OPERACIÖN
+                number_format($compra->iva, 2, '.', ''),  // H - MONTO DE LA RETENCIÖN IVA 13%
+                $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
+                $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto
+                $this->tipoSector($compra->tipo_sector),  // S - SECTOR
+                $this->tipoCostoGasto($compra->tipo_costo_gasto),  // T - TIPO DE COSTO / GASTO
                 5,  // M - NUMERO DE ANEXO
             ];
 
@@ -99,6 +99,24 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
         ];
     }
 
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
+    }
+
+    function tipoClasificacion($sector) {
+        switch ($sector) {
+            case 'Costo': return 1;
+            case 'Gasto': return 2;
+            default: return '0';
+        }
+    }
+
     function tipoSector($sector) {
         switch ($sector) {
             case 'Industria': return 1;
@@ -109,7 +127,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
         }
     }
 
-    function tipo($tipo) {
+    function tipoCostoGasto($tipo) {
         switch ($tipo) {
             case 'Gastos de venta sin donación': return 1;
             case 'Gastos de administración sin donación': return 2;

@@ -66,7 +66,8 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
     }
 
     public function map($compra): array{
-
+            setlocale(LC_NUMERIC, 'C');
+            
             $proveedor = optional($compra->proveedor()->first());
 
             $tipo = '03'; //CCF
@@ -83,28 +84,35 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $tipo = '11';
             }
 
+            if ($compra->iva > 0) {
+                $compra->gravada = $compra->sub_total;
+            }else{
+                $compra->gravada = 0;
+                $compra->exenta = $compra->sub_total;
+            }
+
             $data = [
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
                 strlen($compra->referencia) >= 15 ? '4' : '1', //B Clase DTE o Impreso
                 $tipo, //C Tipo
-                $compra->referencia, //D Num Documento
+                str_replace('-', '', $compra->referencia), //D Num Documento
                 $proveedor->ncr ? $proveedor->ncr : $proveedor->nit,  // E - NIT o NRC
                 $compra->nombre_proveedor,  // F - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 '0',  // G - Compras internas exentas
-                $compra->exenta ?? '0' ,  // H - Internaciones exentas
+                number_format($compra->exenta, 2, '.', '') ?? '0' ,  // H - Internaciones exentas
                 '0',  // I - Importaciones exentas
-                $compra->sub_total,  // J - Compras gravadas
+                number_format($compra->gravada, 2, '.', ''),  // J - Compras gravadas
                 '0',  // K - Internaciones gravadas
                 '0',  // l - Importaciones gravadas de bienes
                 '0',  // M - Importaciones gravadas de servicios
-                $compra->iva,  // N - credito fiscal
-                $compra->total,  // O - total
+                number_format($compra->iva, 2, '.', ''),  // N - credito fiscal
+                number_format($compra->total, 2, '.', ''),  // O - total
                 null,  // P - dui
-                $compra->exenta > 0 ? 2 : 1,  // Q - TIPO DE OPERACIÖN
-                $compra->origen == 'gasto' ? 2 : 1 ,  // R - CLASIFICACI Costo gasto
-                $this->tipoSector($compra->sector),  // S - SECTOR
-                $this->tipo($compra->tipo),  // T - TIPO DE COSTO / GASTO
-                'num_anexo' => 3,  // U - NUMERO DE ANEXO
+                $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
+                $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto
+                $this->tipoSector($compra->tipo_sector),  // S - SECTOR
+                $this->tipoCostoGasto($compra->tipo_costo_gasto),  // T - TIPO DE COSTO / GASTO
+                3,  // U - NUMERO DE ANEXO
             ];
 
         return $data;
@@ -119,6 +127,24 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
         ];
     }
 
+    function tipoOperacion($operacion) {
+        switch ($operacion) {
+            case 'Gravada': return 1;
+            case 'No Gravada': return 2;
+            case 'Excluido': return 3;
+            case 'Mixta': return 4;
+            default: return '0';
+        }
+    }
+
+    function tipoClasificacion($sector) {
+        switch ($sector) {
+            case 'Costo': return 1;
+            case 'Gasto': return 2;
+            default: return '0';
+        }
+    }
+
     function tipoSector($sector) {
         switch ($sector) {
             case 'Industria': return 1;
@@ -129,7 +155,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
         }
     }
 
-    function tipo($tipo) {
+    function tipoCostoGasto($tipo) {
         switch ($tipo) {
             case 'Gastos de venta sin donación': return 1;
             case 'Gastos de administración sin donación': return 2;

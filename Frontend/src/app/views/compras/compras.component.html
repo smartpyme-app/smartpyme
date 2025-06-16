@@ -325,8 +325,26 @@
                 </ng-select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.tipo">Tipo:</label>
-                <select name="tipo" class="form-select" [(ngModel)]="compra.tipo">
+                <label for="tipo_clasificacion">Clasificación:</label>
+                <select name="tipo_clasificacion" class="form-select" [(ngModel)]="compra.tipo_clasificacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Costo">Costo</option>
+                    <option value="Gasto">Gasto</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_operacion">Tipo de operación:</label>
+                <select name="tipo_operacion" class="form-select" [(ngModel)]="compra.tipo_operacion">
+                    <option [ngValue]="null">Seleccione aquí</option>
+                    <option value="Gravada">Gravada</option>
+                    <option value="No Gravada">No Gravada</option>
+                    <option value="Excluido">Excluido</option>
+                    <option value="Mixta">Mixta</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="tipo_costo_gasto">Tipo:</label>
+                <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="compra.tipo_costo_gasto">
                     <option [ngValue]="null">Seleccione aquí</option>
                     <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
                     <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
@@ -338,8 +356,8 @@
                 </select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.sector">Sector:</label>
-                <select name="sector" class="form-select" [(ngModel)]="compra.sector">
+                <label for="tipo_sector">Sector:</label>
+                <select name="tipo_sector" class="form-select" [(ngModel)]="compra.tipo_sector">
                     <option [ngValue]="null">Seleccione aquí</option>
                     <option value="Industria">Industria</option>
                     <option value="Comercio">Comercio</option>

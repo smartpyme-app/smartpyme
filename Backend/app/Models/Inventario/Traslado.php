@@ -16,6 +16,7 @@ class Traslado extends Model
         'id_bodega_de',
         'id_bodega',
         'cantidad',
+        'costo',
         'id_empresa',
         'id_usuario',
         'concepto',

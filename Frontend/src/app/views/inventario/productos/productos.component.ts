@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -25,12 +26,30 @@ export class ProductosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
 
-        this.loadAll();
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_bodega: +params['id_bodega'] || '',
+                id_categoria: +params['id_categoria'] || '',
+                id_proveedor: +params['id_proveedor'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                marca: params['marca'] || '',
+                sin_stock: params['sin_stock'] || '',
+                compuestos: params['compuestos'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            this.filtrarProductos();
+        });
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
@@ -50,6 +69,7 @@ export class ProductosComponent implements OnInit {
         this.filtros.id_bodega = '';
         this.filtros.id_categoria = '';
         this.filtros.id_proveedor = '';
+        this.filtros.id_sucursal = '';
         this.filtros.marca = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
@@ -57,11 +77,18 @@ export class ProductosComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.sin_stock = '';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
         this.filtrarProductos();
     }
 
     public filtrarProductos(){
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge',
+        });
+
         this.loading = true;
 
         if(!this.filtros.sin_stock){
@@ -117,10 +144,8 @@ export class ProductosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarProductos();
     }
 
     public onSubmit() {

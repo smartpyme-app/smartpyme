@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth;
 
-class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+class LibroRetencion1Export implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
     public $request;
     private $index = 1;
@@ -28,7 +28,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A1', 'RETENCIÓN DE IVA 1% EFECTUADA AL DECLARANTE');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');
@@ -41,28 +41,25 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
 
     public function headings():array{
         return[
-            'N°',
-            'Fecha',
-            'Correlativo',
-            'Ventas Exentas',
-            'Ventas Gravadas',
-            'Ventas No Sujetas',
-            'Exportaciones',
-            'Total',
-            'Venta a Cuenta de Terceros',
+            'NIT AGENTE',
+            'FECHA DE EMISIÓN',
+            'TIPO DE DOCUMENTO',
+            'SERIE DE DOCUMENTO',
+            'NÚMERO DE DOCUMENTO',
+            'MONTO SUJETO',
+            'MONTO DE LA RETENCIÓN 1%',
+            'DUI DEL AGENTE',
+            'NÚMERO DEL ANEXO ',
         ];
     }
 
     public function collection()
     {
-        $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
+        $request = $this->request;
         
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
-                        ->whereHas('documento', function ($q) {
-                            $q->where('nombre', 'Factura')
-                                ->orWhere('nombre', 'Factura de exportación');
-                        })
+                        ->where('iva_retenido', '>', 0)
                         ->when($request->id_sucursal, function ($query) use ($request) {
                             return $query->where('id_sucursal', $request->id_sucursal);
                         })
@@ -80,23 +77,16 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         $documento = $venta->documento;
         $cliente = optional($venta->cliente);
 
-        if ($venta->iva > 0) {
-            $venta->gravada = $venta->sub_total;
-        }else{
-            $venta->gravada = 0;
-            $venta->exenta = $venta->sub_total;
-        }
-
         return [
-            $this->index++,
+            $venta->cliente->nit ?? '',
             $venta->fecha,
+            $venta->nombre_documento,
+            $venta->serie,
             $venta->correlativo,
-            $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->gravada,
-            $venta->no_sujeta,
-            $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
-            $venta->total,
-            $venta->cuenta_a_terceros,
+            $venta->sub_total,
+            $venta->iva_retenido,
+            $venta->cliente->dui ?? '',
+            7,
         ];
     }
 }
