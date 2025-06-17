@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { interval, Subscription } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-whatsapp',
@@ -21,35 +22,32 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   public loading: boolean = false;
   public refreshing: boolean = false;
 
-  // Propiedades para filtros que faltan en el template
+
   public filtros: any = {
     search: '',
-    buscador: '', // Para el template
+    buscador: '',
     status: '',
-    id_empresa: '', // Para el template
-    id_usuario: '', // Para el template
-    whatsapp_number: '', // Para el template
+    id_empresa: '',
+    id_usuario: '',
+    whatsapp_number: '',
     per_page: 15,
-    paginate: 10, // Para el template
+    paginate: 10,
     page: 1,
-    orden: 'created_at', // Para ordenamiento
-    direccion: 'desc', // Para ordenamiento
-    inicio: '', // Para filtro de fecha
-    fin: '', // Para filtro de fecha
-    con_mensajes: '', // Para filtro de mensajes
-    activa: '' // Para filtro de sesión activa
+    orden: 'created_at',
+    direccion: 'desc',
+    inicio: '',
+    fin: '',
+    con_mensajes: '',
+    activa: ''
   };
 
-  // Estado de conexiones
   public connectionStatus: string = 'unknown';
   public lastUpdate: Date = new Date();
   
-  // Auto-refresh
   private autoRefreshSubscription?: Subscription;
   public autoRefreshEnabled: boolean = true;
-  public refreshInterval: number = 30; // segundos
+  public refreshInterval: number = 30;
 
-  // Envío manual
   public sendingMessage: boolean = false;
   public manualMessage = {
     whatsapp_number: '',
@@ -61,14 +59,8 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   public modalRef?: BsModalRef;
   public modalRefDescargar?: BsModalRef;
 
-  // Datos
   public empresas: any[] = [];
   public usuarios: any[] = [];
-
-  // Estados de descarga
-  public downloadingSesiones: boolean = false;
-  public downloadingMensajes: boolean = false;
-  public downloadingEstadisticas: boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -268,121 +260,85 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     });
   }
 
-  openDescargar(template: TemplateRef<any>) {
-    this.modalRefDescargar = this.modalService.show(template, {
-      class: 'modal-lg'
-    });
-  }
-
-  // Métodos de descarga
-  descargarSesiones() {
-    this.downloadingSesiones = true;
-    console.log('📥 Descargando sesiones...');
-    
-    this.apiService.getAll('admin/whatsapp/sessions/export', this.filtros).subscribe(
-      (response) => {
-        // Lógica para descargar archivo
-        this.alertService.success('Sesiones descargadas correctamente', 'WhatsApp');
-        this.downloadingSesiones = false;
-      },
-      (error) => {
-        this.alertService.error('Error al descargar sesiones');
-        this.downloadingSesiones = false;
-      }
-    );
-  }
-
-  descargarMensajes() {
-    this.downloadingMensajes = true;
-    console.log('📥 Descargando mensajes...');
-    
-    this.apiService.getAll('admin/whatsapp/messages/export', this.filtros).subscribe(
-      (response) => {
-        this.alertService.success('Mensajes descargados correctamente', 'WhatsApp');
-        this.downloadingMensajes = false;
-      },
-      (error) => {
-        this.alertService.error('Error al descargar mensajes');
-        this.downloadingMensajes = false;
-      }
-    );
-  }
-
-  descargarEstadisticas() {
-    this.downloadingEstadisticas = true;
-    console.log('📥 Descargando estadísticas...');
-    
-    this.apiService.getAll('admin/whatsapp/stats/export', this.filtros).subscribe(
-      (response) => {
-        this.alertService.success('Estadísticas descargadas correctamente', 'WhatsApp');
-        this.downloadingEstadisticas = false;
-      },
-      (error) => {
-        this.alertService.error('Error al descargar estadísticas');
-        this.downloadingEstadisticas = false;
-      }
-    );
-  }
-
-  // Métodos de acciones de sesión
-  verDetalles(session: any) {
-    console.log('👁️ Ver detalles de sesión:', session);
-    // Implementar navegación o modal de detalles
-  }
-
-  verMensajes(session: any) {
-    console.log('💬 Ver mensajes de sesión:', session);
-    // Implementar navegación a mensajes
-  }
-
   desconectarSesion(session: any) {
-    if (!confirm('¿Está seguro de desconectar esta sesión?')) return;
+    Swal.fire({
+     title: '¿Está seguro de desconectar esta sesión?',
+     text: 'Esta acción no se puede deshacer.',
+     icon: 'warning',
+     showCancelButton: true,
+     confirmButtonColor: '#3085d6',
+     cancelButtonColor: '#d33',
+     confirmButtonText: 'Sí, desconectar',
+     cancelButtonText: 'Cancelar'
+    }).then((result) => {
+     if (result.isConfirmed) {
+       this.apiService.read('admin/whatsapp/sessions/disconnect/',session.id).subscribe(
+         (response) => {
+           this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
+           this.refreshData();
+         },
+         (error) => {
+           this.alertService.error('Error al desconectar sesión');
+         }
+       );
+     }
+    });
 
-    console.log('🔌 Desconectando sesión:', session.id);
-    
-    this.alertService.info('Desconectando sesión...', 'WhatsApp');
-    
-    this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
-      (response) => {
-        this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
-        this.refreshData();
-      },
-      (error) => {
-        this.alertService.error('Error al desconectar sesión');
-      }
-    );
   }
 
-  desbloquearSesion(session: any) {
-    if (!confirm('¿Está seguro de desbloquear esta sesión?')) return;
+  conectarSesion(session: any) {
 
-    console.log('🔓 Desbloqueando sesión:', session.id);
-    
-    this.apiService.store('admin/whatsapp/sessions/unblock', { id: session.id }).subscribe(
-      (response) => {
-        this.alertService.success('Sesión desbloqueada correctamente', 'WhatsApp');
-        this.refreshData();
-      },
-      (error) => {
-        this.alertService.error('Error al desbloquear sesión');
+    console.log('🔌 Conectando sesión:', session.id);
+    Swal.fire({
+      title: '¿Está seguro de conectar esta sesión?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, conectar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.apiService.read('admin/whatsapp/sessions/connect/' ,session.id).subscribe(
+          (response) => {
+            this.alertService.success('Sesión conectada correctamente', 'WhatsApp');
+            this.refreshData();
+          },
+          (error) => {
+            this.alertService.error('Error al conectar sesión');
+          }
+        );
       }
-    );
+    });
+    
   }
+
 
   eliminarSesion(session: any) {
-    if (!confirm('¿Está seguro de eliminar esta sesión? Esta acción no se puede deshacer.')) return;
 
-    console.log('🗑️ Eliminando sesión:', session.id);
-    
-    this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
-      (response) => {
-        this.alertService.success('Sesión eliminada correctamente', 'WhatsApp');
-        this.refreshData();
-      },
-      (error) => {
-        this.alertService.error('Error al eliminar sesión');
+    Swal.fire({
+      title: '¿Está seguro de eliminar esta sesión?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
+          (response) => {
+            this.alertService.success('Sesión eliminada correctamente', 'WhatsApp');
+            this.refreshData();
+          },
+          (error) => {
+            this.alertService.error('Error al eliminar sesión');
+          }
+        );
       }
-    );
+    });
   }
 
   setupAutoRefresh() {
@@ -456,6 +412,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       case 'pending_code':
       case 'pending_user': return 'text-warning';
       case 'disconnected': return 'text-danger';
+      case 'blocked': return 'text-danger';
+      case 'pending_verification': return 'text-danger';
+      case 'disconnected': return 'text-danger';
       default: return 'text-muted';
     }
   }
@@ -467,6 +426,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       case 'connected': return 'fa-check-circle';
       case 'pending_code':
       case 'pending_user': return 'fa-clock';
+      case 'disconnected': return 'fa-times-circle';
+      case 'blocked': return 'fa-times-circle';
+      case 'pending_verification': return 'fa-times-circle';
       case 'disconnected': return 'fa-times-circle';
       default: return 'fa-question-circle';
     }

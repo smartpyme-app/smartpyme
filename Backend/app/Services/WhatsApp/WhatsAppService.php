@@ -22,6 +22,7 @@ class WhatsAppService
 
     public function processIncomingMessage(array $webhookData): array
     {
+        Log::info('WhatsApp webhook recibido', ['payload' => $webhookData]);
         try {
             $messageData = $this->extractMessageData($webhookData);
             
@@ -119,6 +120,18 @@ class WhatsAppService
                 'status' => 'disconnected',
                 'disconnected_at' => now(),
                 'disconnected_by' => auth()->id()
+            ]);
+        }
+    }
+
+    public function connectSession(string $whatsappNumber): void
+    {
+        $session = WhatsAppSession::where('whatsapp_number', $whatsappNumber)->first();
+        if ($session) {
+            $session->update([
+                'status' => 'connected',
+                'connected_at' => now(),
+                'connected_by' => auth()->id()
             ]);
         }
     }

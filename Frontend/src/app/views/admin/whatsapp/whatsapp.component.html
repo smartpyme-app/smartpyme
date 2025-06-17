@@ -64,6 +64,7 @@
                 <option value="pending_user">Esperando usuario</option>
                 <option value="pending_verification">Esperando verificación</option>
                 <option value="blocked">Bloqueado</option>
+                <option value="disconnected">Desconectado</option>
             </select>
         </div>
     </div>
@@ -137,21 +138,15 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a class="list-group-item list-group-item-action border-0 click" (click)="verDetalles(session)">
-                                        <i class="fa fa-fw fa-eye"></i> Ver detalles
-                                    </a>
-                                    <a class="list-group-item list-group-item-action border-0 click" (click)="verMensajes(session)">
-                                        <i class="fa fa-fw fa-comments"></i> Ver mensajes
-                                    </a>
                                     <a *ngIf="session.status === 'connected' && apiService.canEdit()" 
                                        class="list-group-item list-group-item-action border-0 click" 
                                        (click)="desconectarSesion(session)">
                                         <i class="fa fa-fw fa-unlink"></i> Desconectar
                                     </a>
-                                    <a *ngIf="session.status === 'blocked' && apiService.canEdit()" 
+                                    <a *ngIf="session.status === 'disconnected' && apiService.canEdit()" 
                                        class="list-group-item list-group-item-action border-0 click" 
-                                       (click)="desbloquearSesion(session)">
-                                        <i class="fa fa-fw fa-unlock"></i> Desbloquear
+                                       (click)="conectarSesion(session)">
+                                        <i class="fa fa-fw fa-link"></i> Conectar
                                     </a>
                                     <a *ngIf="apiService.canEdit()" 
                                        class="list-group-item list-group-item-action border-0 click" 

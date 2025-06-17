@@ -18,7 +18,8 @@ return new class extends Migration
             'pending_user', 
             'pending_verification', 
             'connected', 
-            'blocked'
+            'blocked',
+            'disconnected'
         ) DEFAULT 'pending_code'");
     }
 
@@ -31,8 +32,10 @@ return new class extends Migration
             'active', 
             'pending_code', 
             'pending_user', 
+            'pending_verification', 
             'connected', 
-            'blocked'
+            'blocked',
+            'disconnected'
         ) DEFAULT 'pending_code'");
     }
 };

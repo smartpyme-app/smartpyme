@@ -18,12 +18,15 @@ class WhatsAppSession extends Model
         'code_attempts',
         'user_attempts',
         'last_message_at',
-        'session_data'
+        'session_data',
+        'disconnected_by',
+        'disconnected_at'
     ];
 
     protected $casts = [
         'last_message_at' => 'datetime',
-        'session_data' => 'array'
+        'session_data' => 'array',
+        'disconnected_at' => 'datetime'
     ];
 
     // Relaciones

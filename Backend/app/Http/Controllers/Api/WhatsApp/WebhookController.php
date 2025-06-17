@@ -598,7 +598,6 @@ class WebhookController extends Controller
 
     private function getAverageResponseTime(int $days, ?int $empresaId = null): float
     {
-        // Implementación mejorada para calcular tiempo de respuesta real
         try {
             $conversations = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
                 return $query->where('id_empresa', $empresaId);
@@ -655,7 +654,7 @@ class WebhookController extends Controller
         $insights = [];
 
         try {
-            // Insight sobre horarios
+     
             $busiestHour = $this->getBusiestHour($days, $empresaId);
             if ($busiestHour >= 9 && $busiestHour <= 17) {
                 $insights[] = [
@@ -671,7 +670,6 @@ class WebhookController extends Controller
                 ];
             }
 
-            // Insight sobre crecimiento
             $messageGrowth = $this->calculateGrowthRate('messages', $days, $empresaId);
             if ($messageGrowth > 20) {
                 $insights[] = [
@@ -687,7 +685,6 @@ class WebhookController extends Controller
                 ];
             }
 
-            // Insight sobre engagement
             $engagementRate = $this->calculateEngagementRate($days, $empresaId);
             if ($engagementRate > 80) {
                 $insights[] = [
@@ -714,7 +711,6 @@ class WebhookController extends Controller
         $recommendations = [];
 
         try {
-            // Recomendación sobre tiempo de respuesta
             $avgResponseTime = $this->getAverageResponseTime($days, $empresaId);
             if ($avgResponseTime > 30) {
                 $recommendations[] = [
@@ -748,5 +744,63 @@ class WebhookController extends Controller
         }
 
         return $recommendations;
+    }
+
+    public function connectSession(int $sessionId): JsonResponse
+    {
+        try {
+            $session = WhatsAppSession::findOrFail($sessionId);
+
+            $this->whatsAppService->connectSession($session->whatsapp_number);
+
+            Log::info('Sesión WhatsApp conectada', [
+                'sessionId' => $sessionId,
+                'whatsapp_number' => $session->whatsapp_number
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sesión conectada correctamente'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error conectando sesión WhatsApp', [
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al conectar sesión'
+            ], 500);
+        }
+    }
+
+    public function deleteSession(int $sessionId): JsonResponse
+    {
+        try {
+            $session = WhatsAppSession::findOrFail($sessionId);
+
+            $session->delete();
+
+            Log::info('Sesión WhatsApp eliminada', [
+                'sessionId' => $sessionId,
+                'whatsapp_number' => $session->whatsapp_number
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sesión eliminada correctamente'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error eliminando sesión WhatsApp', [
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar sesión'
+            ], 500);
+        }
     }
 }
