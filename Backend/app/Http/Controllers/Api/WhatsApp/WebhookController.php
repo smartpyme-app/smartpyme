@@ -284,13 +284,13 @@ class WebhookController extends Controller
 
 
 
-    
+
     public function disconnectSession(int $sessionId): JsonResponse
     {
         try {
             $session = WhatsAppSession::findOrFail($sessionId);
 
-      
+
             $session->update([
                 'status' => 'disconnected',
                 'disconnected_at' => now(),
@@ -376,74 +376,110 @@ class WebhookController extends Controller
     {
         try {
             $days = $request->get('days', 7);
+            $empresaId = $request->get('empresa_id');
+
+            // Aplicar filtro de empresa si se proporciona
+            $baseQuery = $empresaId ? ['id_empresa' => $empresaId] : [];
 
             $summary = [
                 'period' => $days,
                 'overview' => [
-                    'total_sessions' => WhatsAppSession::count(),
-                    'active_sessions_today' => WhatsAppSession::where('last_message_at', '>=', now()->startOfDay())->count(),
-                    'messages_today' => WhatsAppMessage::whereDate('created_at', today())->count(),
-                    'companies_using' => WhatsAppSession::distinct('id_empresa')->count()
+                    'total_sessions' => WhatsAppSession::when($empresaId, function ($query) use ($empresaId) {
+                        return $query->where('id_empresa', $empresaId);
+                    })->count(),
+
+                    'active_sessions_today' => WhatsAppSession::when($empresaId, function ($query) use ($empresaId) {
+                        return $query->where('id_empresa', $empresaId);
+                    })->where('last_message_at', '>=', now()->startOfDay())->count(),
+
+                    'messages_today' => WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
+                        return $query->where('id_empresa', $empresaId);
+                    })->whereDate('created_at', today())->count(),
+
+                    'companies_using' => $empresaId ? 1 : WhatsAppSession::distinct('id_empresa')->count()
                 ],
                 'trends' => [
-                    'messages_growth' => $this->calculateGrowthRate('messages', $days),
-                    'sessions_growth' => $this->calculateGrowthRate('sessions', $days),
-                    'engagement_rate' => $this->calculateEngagementRate($days)
+                    'messages_growth' => $this->calculateGrowthRate('messages', $days, $empresaId),
+                    'sessions_growth' => $this->calculateGrowthRate('sessions', $days, $empresaId),
+                    'engagement_rate' => $this->calculateEngagementRate($days, $empresaId)
                 ],
                 'top_metrics' => [
-                    'busiest_hour' => $this->getBusiestHour($days),
-                    'most_active_company' => $this->getMostActiveCompany($days),
-                    'avg_response_time' => $this->getAverageResponseTime($days)
-                ]
+                    'busiest_hour' => $this->getBusiestHour($days, $empresaId),
+                    'most_active_company' => $empresaId ? null : $this->getMostActiveCompany($days),
+                    'avg_response_time' => $this->getAverageResponseTime($days, $empresaId),
+                    'peak_day' => $this->getPeakDay($days, $empresaId)
+                ],
+                'insights' => $this->generateInsights($days, $empresaId),
+                'recommendations' => $this->generateRecommendations($days, $empresaId)
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $summary,
-                'generated_at' => now()
+                'generated_at' => now()->toISOString()
             ]);
         } catch (\Exception $e) {
             Log::error('Error generando resumen ejecutivo WhatsApp', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Error generando resumen'
+                'error' => 'Error generando resumen ejecutivo',
+                'message' => config('app.debug') ? $e->getMessage() : 'Error interno'
             ], 500);
         }
     }
 
-    // Métodos auxiliares privados para el resumen ejecutivo
 
-    private function calculateGrowthRate(string $type, int $days): float
+
+    private function calculateGrowthRate(string $type, int $days, ?int $empresaId = null): float
     {
-        $currentPeriod = $type === 'messages'
-            ? WhatsAppMessage::where('created_at', '>=', now()->subDays($days))->count()
-            : WhatsAppSession::where('created_at', '>=', now()->subDays($days))->count();
+        $baseQuery = function ($query) use ($empresaId) {
+            if ($empresaId) {
+                return $query->where('id_empresa', $empresaId);
+            }
+            return $query;
+        };
 
-        $previousPeriod = $type === 'messages'
-            ? WhatsAppMessage::whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count()
-            : WhatsAppSession::whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
+        if ($type === 'messages') {
+            $currentPeriod = WhatsAppMessage::where($baseQuery)
+                ->where('created_at', '>=', now()->subDays($days))->count();
+
+            $previousPeriod = WhatsAppMessage::where($baseQuery)
+                ->whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
+        } else {
+            $currentPeriod = WhatsAppSession::where($baseQuery)
+                ->where('created_at', '>=', now()->subDays($days))->count();
+
+            $previousPeriod = WhatsAppSession::where($baseQuery)
+                ->whereBetween('created_at', [now()->subDays($days * 2), now()->subDays($days)])->count();
+        }
 
         if ($previousPeriod === 0) return $currentPeriod > 0 ? 100 : 0;
-
         return round((($currentPeriod - $previousPeriod) / $previousPeriod) * 100, 2);
     }
 
-    private function calculateEngagementRate(int $days): float
+    private function calculateEngagementRate(int $days, ?int $empresaId = null): float
     {
-        $totalSessions = WhatsAppSession::where('created_at', '>=', now()->subDays($days))->count();
-        $activeSessions = WhatsAppSession::where('last_message_at', '>=', now()->subDays($days))->count();
+        $query = WhatsAppSession::when($empresaId, function ($q) use ($empresaId) {
+            return $q->where('id_empresa', $empresaId);
+        });
+
+        $totalSessions = $query->where('created_at', '>=', now()->subDays($days))->count();
+        $activeSessions = $query->where('last_message_at', '>=', now()->subDays($days))->count();
 
         if ($totalSessions === 0) return 0;
-
         return round(($activeSessions / $totalSessions) * 100, 2);
     }
 
-    private function getBusiestHour(int $days): int
+    private function getBusiestHour(int $days, ?int $empresaId = null): int
     {
-        $messages = WhatsAppMessage::where('created_at', '>=', now()->subDays($days))
+        $messages = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
+            return $query->where('id_empresa', $empresaId);
+        })
+            ->where('created_at', '>=', now()->subDays($days))
             ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
             ->groupBy('hour')
             ->orderByDesc('count')
@@ -468,10 +504,157 @@ class WebhookController extends Controller
         ] : null;
     }
 
-    private function getAverageResponseTime(int $days): float
+    private function getAverageResponseTime(int $days, ?int $empresaId = null): float
     {
-        // Esta es una implementación simplificada
-        // Deberías calcular el tiempo real entre mensajes entrantes y salientes
-        return 2.5; // minutos (placeholder)
+        // Implementación mejorada para calcular tiempo de respuesta real
+        try {
+            $conversations = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
+                return $query->where('id_empresa', $empresaId);
+            })
+                ->where('created_at', '>=', now()->subDays($days))
+                ->orderBy('whatsapp_number')
+                ->orderBy('created_at')
+                ->get(['whatsapp_number', 'message_type', 'created_at']);
+
+            $responseTimes = [];
+            $currentConversation = null;
+            $lastIncomingTime = null;
+
+            foreach ($conversations as $message) {
+                if ($currentConversation !== $message->whatsapp_number) {
+                    $currentConversation = $message->whatsapp_number;
+                    $lastIncomingTime = null;
+                }
+
+                if ($message->message_type === 'incoming') {
+                    $lastIncomingTime = $message->created_at;
+                } elseif ($message->message_type === 'outgoing' && $lastIncomingTime) {
+                    $diffMinutes = $lastIncomingTime->diffInMinutes($message->created_at);
+                    if ($diffMinutes <= 120) { // Solo respuestas dentro de 2 horas
+                        $responseTimes[] = $diffMinutes;
+                    }
+                    $lastIncomingTime = null;
+                }
+            }
+
+            return count($responseTimes) > 0 ? round(array_sum($responseTimes) / count($responseTimes), 1) : 0;
+        } catch (\Exception $e) {
+            Log::warning('Error calculando tiempo de respuesta promedio', ['error' => $e->getMessage()]);
+            return 0;
+        }
+    }
+
+    private function getPeakDay(int $days, ?int $empresaId = null): ?string
+    {
+        $peakDay = WhatsAppMessage::when($empresaId, function ($query) use ($empresaId) {
+            return $query->where('id_empresa', $empresaId);
+        })
+            ->where('created_at', '>=', now()->subDays($days))
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as message_count')
+            ->groupBy('date')
+            ->orderByDesc('message_count')
+            ->first();
+
+        return $peakDay->date;
+    }
+
+    private function generateInsights(int $days, ?int $empresaId = null): array
+    {
+        $insights = [];
+
+        try {
+            // Insight sobre horarios
+            $busiestHour = $this->getBusiestHour($days, $empresaId);
+            if ($busiestHour >= 9 && $busiestHour <= 17) {
+                $insights[] = [
+                    'type' => 'info',
+                    'message' => 'La mayor actividad ocurre durante horario laboral (' . $busiestHour . ':00)',
+                    'icon' => 'fas fa-clock'
+                ];
+            } else {
+                $insights[] = [
+                    'type' => 'warning',
+                    'message' => 'Hay actividad significativa fuera del horario laboral (' . $busiestHour . ':00)',
+                    'icon' => 'fas fa-moon'
+                ];
+            }
+
+            // Insight sobre crecimiento
+            $messageGrowth = $this->calculateGrowthRate('messages', $days, $empresaId);
+            if ($messageGrowth > 20) {
+                $insights[] = [
+                    'type' => 'success',
+                    'message' => 'Excelente crecimiento en mensajes: +' . $messageGrowth . '%',
+                    'icon' => 'fas fa-arrow-up'
+                ];
+            } elseif ($messageGrowth < -10) {
+                $insights[] = [
+                    'type' => 'warning',
+                    'message' => 'Disminución en actividad de mensajes: ' . $messageGrowth . '%',
+                    'icon' => 'fas fa-arrow-down'
+                ];
+            }
+
+            // Insight sobre engagement
+            $engagementRate = $this->calculateEngagementRate($days, $empresaId);
+            if ($engagementRate > 80) {
+                $insights[] = [
+                    'type' => 'success',
+                    'message' => 'Excelente tasa de engagement: ' . $engagementRate . '%',
+                    'icon' => 'fas fa-heart'
+                ];
+            } elseif ($engagementRate < 50) {
+                $insights[] = [
+                    'type' => 'warning',
+                    'message' => 'La tasa de engagement puede mejorarse: ' . $engagementRate . '%',
+                    'icon' => 'fas fa-chart-line'
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error generando insights', ['error' => $e->getMessage()]);
+        }
+
+        return $insights;
+    }
+
+    private function generateRecommendations(int $days, ?int $empresaId = null): array
+    {
+        $recommendations = [];
+
+        try {
+            // Recomendación sobre tiempo de respuesta
+            $avgResponseTime = $this->getAverageResponseTime($days, $empresaId);
+            if ($avgResponseTime > 30) {
+                $recommendations[] = [
+                    'priority' => 'high',
+                    'message' => 'Mejorar tiempo de respuesta (actual: ' . $avgResponseTime . ' min)',
+                    'action' => 'Considerar implementar respuestas automáticas o aumentar personal'
+                ];
+            }
+
+            // Recomendación sobre horarios
+            $busiestHour = $this->getBusiestHour($days, $empresaId);
+            if ($busiestHour < 9 || $busiestHour > 17) {
+                $recommendations[] = [
+                    'priority' => 'medium',
+                    'message' => 'Evaluar extender horarios de atención',
+                    'action' => 'La mayor actividad ocurre a las ' . $busiestHour . ':00'
+                ];
+            }
+
+            // Recomendación sobre engagement
+            $engagementRate = $this->calculateEngagementRate($days, $empresaId);
+            if ($engagementRate < 60) {
+                $recommendations[] = [
+                    'priority' => 'medium',
+                    'message' => 'Implementar estrategias para aumentar engagement',
+                    'action' => 'Crear contenido más interactivo y personalizado'
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Error generando recomendaciones', ['error' => $e->getMessage()]);
+        }
+
+        return $recommendations;
     }
 }

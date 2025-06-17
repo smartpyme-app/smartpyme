@@ -12,16 +12,33 @@ import { interval, Subscription } from 'rxjs';
 export class WhatsAppComponent implements OnInit, OnDestroy {
 
   public stats: any = null;
-  public sessions: any[] = [];
+  public sessions: any = {
+    data: [],
+    total: 0,
+    last_page: 1,
+    current_page: 1
+  };
   public loading: boolean = false;
   public refreshing: boolean = false;
 
+  // Propiedades para filtros que faltan en el template
   public filtros: any = {
     search: '',
+    buscador: '', // Para el template
     status: '',
     empresa_id: '',
+    id_empresa: '', // Para el template
+    id_usuario: '', // Para el template
+    whatsapp_number: '', // Para el template
     per_page: 15,
-    page: 1
+    paginate: 10, // Para el template
+    page: 1,
+    orden: 'created_at', // Para ordenamiento
+    direccion: 'desc', // Para ordenamiento
+    inicio: '', // Para filtro de fecha
+    fin: '', // Para filtro de fecha
+    con_mensajes: '', // Para filtro de mensajes
+    activa: '' // Para filtro de sesión activa
   };
 
   // Estado de conexiones
@@ -41,9 +58,18 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     empresa_id: null
   };
 
+  // Modals
   public modalRef?: BsModalRef;
+  public modalRefDescargar?: BsModalRef;
 
+  // Datos
   public empresas: any[] = [];
+  public usuarios: any[] = [];
+
+  // Estados de descarga
+  public downloadingSesiones: boolean = false;
+  public downloadingMensajes: boolean = false;
+  public downloadingEstadisticas: boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -52,7 +78,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    
     this.loadInitialData();
     this.setupAutoRefresh();
   }
@@ -70,20 +95,40 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     Promise.all([
       this.loadStats(),
       this.loadSessions(),
-      this.loadEmpresas()
+      this.loadEmpresas(),
+      this.loadUsuarios()
     ]).finally(() => {
       this.loading = false;
       console.log('✅ Datos iniciales cargados');
     });
   }
 
+  loadAll() {
+    this.filtros = {
+      search: '',
+      buscador: '',
+      status: '',
+      empresa_id: '',
+      id_empresa: '',
+      id_usuario: '',
+      whatsapp_number: '',
+      per_page: 15,
+      paginate: 10,
+      page: 1,
+      orden: 'created_at',
+      direccion: 'desc',
+      inicio: '',
+      fin: '',
+      con_mensajes: '',
+      activa: ''
+    };
+    this.loadSessions();
+  }
+
   loadStats(): Promise<void> {
     return new Promise((resolve) => {
       console.log('📊 Cargando estadísticas...');
       
-
-      
-
       this.apiService.getAll('admin/whatsapp/stats').subscribe(
         (response) => {
           if (response && response.success !== undefined) {
@@ -101,12 +146,10 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
         (error) => {
           console.error('Error cargando estadísticas:', error);
           this.connectionStatus = 'disconnected';
-   
           this.connectionStatus = 'connected';
           resolve();
         }
       );
-      
     });
   }
 
@@ -114,26 +157,23 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       console.log('👥 Cargando sesiones...');
       
-   
-      
-  
       this.apiService.getAll('admin/whatsapp/sessions', this.filtros).subscribe(
         (response) => {
           if (response && response.success !== undefined) {
             if (response.success) {
-              this.sessions = response.data.data || response.data;
+              this.sessions = response.data || { data: [], total: 0, last_page: 1 };
             }
           } else {
-            this.sessions = response.data || response;
+            this.sessions = response || { data: [], total: 0, last_page: 1 };
           }
           resolve();
         },
         (error) => {
           console.error('Error cargando sesiones:', error);
+          this.sessions = { data: [], total: 0, last_page: 1 };
           resolve();
         }
       );
-      
     });
   }
 
@@ -141,7 +181,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
       console.log('🏢 Cargando empresas...');
       
-      // Usar el mismo endpoint que en usuarios
       this.apiService.getAll('empresas/list').subscribe(
         (empresas) => {
           this.empresas = empresas || [];
@@ -157,7 +196,195 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadUsuarios(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('👤 Cargando usuarios...');
+      
+      this.apiService.getAll('usuarios/list').subscribe(
+        (usuarios) => {
+          this.usuarios = usuarios || [];
+          console.log('✅ Usuarios cargados:', this.usuarios);
+          resolve();
+        },
+        (error) => {
+          console.error('Error cargando usuarios:', error);
+          this.usuarios = [];
+          resolve();
+        }
+      );
+    });
+  }
 
+  // Métodos de filtrado y ordenamiento
+  filtrarSesiones() {
+    console.log('🔍 Filtrando sesiones:', this.filtros);
+    // Sincronizar propiedades de filtros
+    this.filtros.search = this.filtros.buscador;
+    this.filtros.empresa_id = this.filtros.id_empresa;
+    this.loadSessions();
+  }
+
+  limpiarFiltros() {
+    console.log('🧹 Limpiando filtros');
+    this.filtros = {
+      search: '',
+      buscador: '',
+      status: '',
+      empresa_id: '',
+      id_empresa: '',
+      id_usuario: '',
+      whatsapp_number: '',
+      per_page: 15,
+      paginate: 10,
+      page: 1,
+      orden: 'created_at',
+      direccion: 'desc',
+      inicio: '',
+      fin: '',
+      con_mensajes: '',
+      activa: ''
+    };
+    this.loadSessions();
+  }
+
+  setOrden(campo: string) {
+    if (this.filtros.orden === campo) {
+      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = campo;
+      this.filtros.direccion = 'asc';
+    }
+    this.filtrarSesiones();
+  }
+
+  setPagination(event: any) {
+    this.filtros.page = event.page;
+    this.loadSessions();
+  }
+
+  // Métodos para modales
+  openFilter(template: TemplateRef<any>) {
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg'
+    });
+  }
+
+  openDescargar(template: TemplateRef<any>) {
+    this.modalRefDescargar = this.modalService.show(template, {
+      class: 'modal-lg'
+    });
+  }
+
+  // Métodos de descarga
+  descargarSesiones() {
+    this.downloadingSesiones = true;
+    console.log('📥 Descargando sesiones...');
+    
+    this.apiService.getAll('admin/whatsapp/sessions/export', this.filtros).subscribe(
+      (response) => {
+        // Lógica para descargar archivo
+        this.alertService.success('Sesiones descargadas correctamente', 'WhatsApp');
+        this.downloadingSesiones = false;
+      },
+      (error) => {
+        this.alertService.error('Error al descargar sesiones');
+        this.downloadingSesiones = false;
+      }
+    );
+  }
+
+  descargarMensajes() {
+    this.downloadingMensajes = true;
+    console.log('📥 Descargando mensajes...');
+    
+    this.apiService.getAll('admin/whatsapp/messages/export', this.filtros).subscribe(
+      (response) => {
+        this.alertService.success('Mensajes descargados correctamente', 'WhatsApp');
+        this.downloadingMensajes = false;
+      },
+      (error) => {
+        this.alertService.error('Error al descargar mensajes');
+        this.downloadingMensajes = false;
+      }
+    );
+  }
+
+  descargarEstadisticas() {
+    this.downloadingEstadisticas = true;
+    console.log('📥 Descargando estadísticas...');
+    
+    this.apiService.getAll('admin/whatsapp/stats/export', this.filtros).subscribe(
+      (response) => {
+        this.alertService.success('Estadísticas descargadas correctamente', 'WhatsApp');
+        this.downloadingEstadisticas = false;
+      },
+      (error) => {
+        this.alertService.error('Error al descargar estadísticas');
+        this.downloadingEstadisticas = false;
+      }
+    );
+  }
+
+  // Métodos de acciones de sesión
+  verDetalles(session: any) {
+    console.log('👁️ Ver detalles de sesión:', session);
+    // Implementar navegación o modal de detalles
+  }
+
+  verMensajes(session: any) {
+    console.log('💬 Ver mensajes de sesión:', session);
+    // Implementar navegación a mensajes
+  }
+
+  desconectarSesion(session: any) {
+    if (!confirm('¿Está seguro de desconectar esta sesión?')) return;
+
+    console.log('🔌 Desconectando sesión:', session.id);
+    
+    this.alertService.info('Desconectando sesión...', 'WhatsApp');
+    
+    this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
+      (response) => {
+        this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
+        this.refreshData();
+      },
+      (error) => {
+        this.alertService.error('Error al desconectar sesión');
+      }
+    );
+  }
+
+  desbloquearSesion(session: any) {
+    if (!confirm('¿Está seguro de desbloquear esta sesión?')) return;
+
+    console.log('🔓 Desbloqueando sesión:', session.id);
+    
+    this.apiService.store('admin/whatsapp/sessions/unblock', { id: session.id }).subscribe(
+      (response) => {
+        this.alertService.success('Sesión desbloqueada correctamente', 'WhatsApp');
+        this.refreshData();
+      },
+      (error) => {
+        this.alertService.error('Error al desbloquear sesión');
+      }
+    );
+  }
+
+  eliminarSesion(session: any) {
+    if (!confirm('¿Está seguro de eliminar esta sesión? Esta acción no se puede deshacer.')) return;
+
+    console.log('🗑️ Eliminando sesión:', session.id);
+    
+    this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
+      (response) => {
+        this.alertService.success('Sesión eliminada correctamente', 'WhatsApp');
+        this.refreshData();
+      },
+      (error) => {
+        this.alertService.error('Error al eliminar sesión');
+      }
+    );
+  }
 
   setupAutoRefresh() {
     if (this.autoRefreshEnabled) {
@@ -193,7 +420,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       this.alertService.info('Auto-actualización desactivada', 'WhatsApp');
     }
   }
-
 
   determineConnectionStatus(): string {
     if (!this.stats) return 'unknown';
@@ -278,10 +504,21 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     console.log('🧹 Limpiando filtros');
     this.filtros = {
       search: '',
+      buscador: '',
       status: '',
       empresa_id: '',
+      id_empresa: '',
+      id_usuario: '',
+      whatsapp_number: '',
       per_page: 15,
-      page: 1
+      paginate: 10,
+      page: 1,
+      orden: 'created_at',
+      direccion: 'desc',
+      inicio: '',
+      fin: '',
+      con_mensajes: '',
+      activa: ''
     };
     this.loadSessions();
   }
@@ -298,7 +535,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       class: 'modal-lg'
     });
   }
-
 
   disconnectSession(sessionId: number) {
     if (!confirm('¿Está seguro de desconectar esta sesión?')) return;
@@ -318,9 +554,7 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
         this.alertService.error('Error al desconectar sesión');
       }
     );
-    
   }
-
 
   trackBySessionId(index: number, session: any): number {
     return session?.id || index;

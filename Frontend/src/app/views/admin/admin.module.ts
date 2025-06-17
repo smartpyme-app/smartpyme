@@ -32,6 +32,7 @@ import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
 // import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
 import { WhatsAppComponent } from './whatsapp/whatsapp.component';
+import { WhatsAppEstadisticasComponent } from './whatsapp/estadisticas/whatsapp-estadisticas.component';
 import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
 
 @NgModule({
@@ -64,7 +65,7 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     NotificacionesComponent,
     DocsComponent,
     WhatsAppComponent,
-    // ThreedsModalComponent
+    WhatsAppEstadisticasComponent
   ],
   exports: [
     EliminarDatosComponent,
@@ -76,7 +77,8 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
-    WhatsAppComponent
+    WhatsAppComponent,
+    WhatsAppEstadisticasComponent
   ]
 })
 export class AdminModule { }
