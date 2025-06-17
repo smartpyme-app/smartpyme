@@ -27,18 +27,6 @@
             border-bottom: 2px solid #f3f3f3;
             margin-bottom: 30px;
         }
-        .whatsapp-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #25D366, #128C7E);
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 30px;
-            color: white;
-        }
         .header h1 {
             color: #25D366;
             margin: 0;
@@ -150,9 +138,6 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="whatsapp-icon">
-                📱
-            </div>
             <h1>Verificación de WhatsApp</h1>
             <p>¡Hola <strong>{{ $datos['userName'] }}</strong>!</p>
         </div>
@@ -174,27 +159,18 @@
         <div class="steps">
             <h3 style="margin-top: 0; color: #2c3e50;">Cómo usar este código:</h3>
             <div class="step">
-                <div class="step-number">1</div>
                 <span>Regresa a WhatsApp donde iniciaste el proceso</span>
             </div>
             <div class="step">
-                <div class="step-number">2</div>
                 <span>Escribe exactamente el código de 6 dígitos mostrado arriba</span>
             </div>
             <div class="step">
-                <div class="step-number">3</div>
                 <span>¡Listo! Tu cuenta quedará verificada y conectada</span>
             </div>
         </div>
 
         <div class="security-note">
             <strong>🔒 Nota de seguridad:</strong> Si no solicitaste este código, puedes ignorar este mensaje. Tu cuenta permanecerá segura.
-        </div>
-
-        <div class="support-info">
-            <strong>¿Necesitas ayuda?</strong><br>
-            Si tienes problemas con la verificación, contacta a nuestro equipo de soporte.<br>
-            <strong>📧 Soporte:</strong> soporte@smartpyme.com
         </div>
         
         <div class="footer">
