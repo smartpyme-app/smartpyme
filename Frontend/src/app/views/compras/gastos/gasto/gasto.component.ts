@@ -199,7 +199,7 @@ export class GastoComponent implements OnInit {
       this.gasto.tipo_documento = 'Factura';
       this.gasto.detalle_banco = '';
       this.gasto.tipo = '';
-      this.gasto.tipo_clasificacion = 'Costo';
+      this.gasto.tipo_clasificacion = 'Gasto';
       this.gasto.tipo_operacion = 'Gravada';
       this.gasto.tipo_costo_gasto = 'Gastos de venta sin donación';
       this.gasto.tipo_sector = this.apiService.auth_user().empresa.tipo_sector ?? null;
