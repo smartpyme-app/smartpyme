@@ -470,7 +470,7 @@ class WebhookController extends Controller
             $days = $request->get('days', 7);
             $empresaId = $request->get('empresa_id');
 
-            // Aplicar filtro de empresa si se proporciona
+
             $baseQuery = $empresaId ? ['id_empresa' => $empresaId] : [];
 
             $summary = [

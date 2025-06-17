@@ -81,16 +81,14 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   loadInitialData() {
     this.loading = true;
-    console.log('📥 Cargando datos iniciales...');
+
     
     Promise.all([
       this.loadStats(),
       this.loadSessions(),
-      this.loadEmpresas(),
       this.loadUsuarios()
     ]).finally(() => {
       this.loading = false;
-      console.log('✅ Datos iniciales cargados');
     });
   }
 
@@ -118,7 +116,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   loadStats(): Promise<void> {
     return new Promise((resolve) => {
-      console.log('📊 Cargando estadísticas...');
       
       this.apiService.getAll('admin/whatsapp/stats').subscribe(
         (response) => {
@@ -146,7 +143,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   loadSessions(): Promise<void> {
     return new Promise((resolve) => {
-      console.log('👥 Cargando sesiones...');
       
       this.apiService.getAll('admin/whatsapp/sessions', this.filtros).subscribe(
         (response) => {
@@ -168,33 +164,14 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadEmpresas(): Promise<void> {
-    return new Promise((resolve) => {
-      console.log('🏢 Cargando empresas...');
-      
-      this.apiService.getAll('empresas/list').subscribe(
-        (empresas) => {
-          this.empresas = empresas || [];
-          console.log('✅ Empresas cargadas:', this.empresas);
-          resolve();
-        },
-        (error) => {
-          console.error('Error cargando empresas:', error);
-          this.empresas = [];
-          resolve();
-        }
-      );
-    });
-  }
 
   loadUsuarios(): Promise<void> {
     return new Promise((resolve) => {
-      console.log('👤 Cargando usuarios...');
+  
       
       this.apiService.getAll('usuarios/list').subscribe(
         (usuarios) => {
           this.usuarios = usuarios || [];
-          console.log('✅ Usuarios cargados:', this.usuarios);
           resolve();
         },
         (error) => {
@@ -208,15 +185,13 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   // Métodos de filtrado y ordenamiento
   filtrarSesiones() {
-    console.log('🔍 Filtrando sesiones:', this.filtros);
-    // Sincronizar propiedades de filtros
+
     this.filtros.search = this.filtros.buscador;
     this.filtros.empresa_id = this.filtros.id_empresa;
     this.loadSessions();
   }
 
   limpiarFiltros() {
-    console.log('🧹 Limpiando filtros');
     this.filtros = {
       search: '',
       buscador: '',

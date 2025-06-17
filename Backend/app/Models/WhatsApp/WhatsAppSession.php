@@ -29,7 +29,15 @@ class WhatsAppSession extends Model
         'disconnected_at' => 'datetime'
     ];
 
-    // Relaciones
+    protected static function boot()
+    {
+        parent::boot();
+       if (auth()->check()) {
+            static::addGlobalScope('empresa', function ($builder) {
+                $builder->where('id_empresa', auth()->user()->id_empresa);
+            });
+        }
+    }
     public function empresa()
     {
         return $this->belongsTo(Empresa::class, 'id_empresa');
