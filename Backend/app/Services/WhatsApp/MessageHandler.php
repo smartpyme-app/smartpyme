@@ -304,10 +304,12 @@ class MessageHandler
 
     private function handleGlobalCommand(WhatsAppSession $session, string $message): string
     {
+        Log::info('WhatsApp session handleGlobalCommand', ['session' => $session]);
+        Log::info('WhatsApp session handleGlobalCommand message', ['message' => $message]);
         switch ($message) {
-            case 'hola':
-            case 'inicio':
-            case 'menu':
+            case 'Hola':
+            case 'Inicio':
+            case 'Menu':
                 if ($session->isConnected()) {
                     $menu = $this->getMainMenu($session);
                     if (is_array($menu)) {
@@ -317,11 +319,11 @@ class MessageHandler
                 }
                 return $this->getWelcomeMessage();
 
-            case 'ayuda':
+            case 'Ayuda':
                 return $this->getHelpMessage();
 
-            case 'salir':
-            case 'reset':
+            case 'Salir':
+            case 'Reset':
                 $session->resetConnection();
                 return "👋 Sesión reiniciada. " . $this->getWelcomeMessage();
 
@@ -523,11 +525,11 @@ class MessageHandler
     {
         return "🆘 *Ayuda - SmartPyme WhatsApp*\n\n" .
             "*Comandos disponibles:*\n" .
-            "• `hola` - Mostrar menú principal\n" .
-            "• `menu` - Mostrar opciones\n" .
-            "• `ayuda` - Mostrar esta ayuda\n" .
-            "• `salir` - Cerrar sesión\n" .
-            "• `reset` - Reiniciar completamente\n\n" .
+            "• `Hola` - Mostrar menú principal\n" .
+            "• `Menu` - Mostrar opciones\n" .
+            "• `Ayuda` - Mostrar esta ayuda\n" .
+            "• `Salir` - Cerrar sesión\n" .
+            "• `Reset` - Reiniciar completamente\n\n" .
             "*¿Necesitas más ayuda?*\n" .
             "Contacta a tu administrador del sistema.";
     }
