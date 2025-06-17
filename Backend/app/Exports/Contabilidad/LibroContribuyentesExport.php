@@ -30,7 +30,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             BeforeSheet::class => function (BeforeSheet $event) {
                 $event->sheet->insertNewRowBefore(1, 4);
 
-                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONSUMIDORES ');
+                $event->sheet->setCellValue('A1', 'LIBRO DE VENTAS A CONTRIBUYENTES ');
                 $event->sheet->setCellValue('A2', Auth::user()->empresa()->pluck('nombre')->first());
                 $event->sheet->setCellValue('A3', 'NRC: ' . Auth::user()->empresa()->pluck('ncr')->first());
                 $event->sheet->setCellValue('E3', 'Folio N°:');

@@ -58,8 +58,8 @@ class LibrosIVAController extends Controller
                 'correlativo'           => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
                 'num_control_interno'   => $venta->correlativo,
                 'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
-                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
+                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total,
+                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0.00',
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
                 'no_sujeta'            => $venta->no_sujeta,
@@ -78,8 +78,8 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores'));
-            $pdf->setPaper('US Letter', 'portrait');
+            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-consumidores.pdf');
         }
@@ -174,7 +174,6 @@ class LibrosIVAController extends Controller
                 'ventas_exentas_cuenta_a_terceros' => 0,
                 'ventas_gravadas_cuenta_a_terceros' => 0,
                 'debito_fiscal_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
                 'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
@@ -193,8 +192,8 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes'));
-            $pdf->setPaper('US Letter', 'portrait');
+            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-contribuyentes.pdf');
         }
@@ -457,8 +456,8 @@ class LibrosIVAController extends Controller
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras'));
-            $pdf->setPaper('US Letter', 'portrait');
+            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
 
             return $pdf->stream('libro-compras.pdf');
         }
