@@ -285,6 +285,8 @@ class MessageHandler
             "Escribe 'ayuda' si necesitas asistencia.";
     }
 
+
+
     private function handlePendingUser(WhatsAppSession $session, string $message): string
     {
         if ($session->shouldBlockForTooManyAttempts()) {
@@ -299,7 +301,27 @@ class MessageHandler
         $usuario = $session->connectToUser($message);
 
         if ($usuario) {
+            // ✨ NUEVA VALIDACIÓN: Verificar que el teléfono del usuario coincida con WhatsApp
+            if (!$this->validatePhoneNumber($usuario, $session->whatsapp_number)) {
+                Log::warning('Intento de conexión con teléfono no coincidente', [
+                    'usuario_id' => $usuario->id,
+                    'usuario_telefono' => $usuario->telefono,
+                    'whatsapp_number' => $session->whatsapp_number,
+                    'empresa_id' => $session->id_empresa
+                ]);
+
+                return "❌ *Verificación de seguridad fallida*\n\n" .
+                    "El número de teléfono registrado en tu cuenta no coincide con este número de WhatsApp.\n\n" .
+                    "📱 *Tu WhatsApp:* {$session->whatsapp_number}\n" .
+                    "📋 *Registrado:* " . ($usuario->telefono ?: 'No registrado') . "\n\n" .
+                    "Por favor:\n" .
+                    "• Contacta a tu administrador para actualizar tu teléfono\n" .
+                    "• O usa el WhatsApp registrado en tu cuenta\n\n" .
+                    "Escribe 'reset' para intentar con otro email.";
+            }
+
             try {
+                // Si la validación del teléfono es exitosa, continúa con el envío del código
                 $verificationCode = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
                 $usuario->update([
@@ -312,13 +334,15 @@ class MessageHandler
 
                 $session->update(['status' => 'pending_verification']);
 
-                Log::info('Código de WhatsApp enviado', [
+                Log::info('Código de WhatsApp enviado después de validación telefónica', [
                     'usuario_id' => $usuario->id,
                     'empresa_id' => $session->id_empresa,
-                    'session_id' => $session->id
+                    'session_id' => $session->id,
+                    'telefono_validado' => true
                 ]);
 
                 return "🎉 ¡Perfecto, *{$usuario->name}*!\n\n" .
+                    "✅ *Teléfono verificado:* {$session->whatsapp_number}\n\n" .
                     "📧 Te hemos enviado un código de verificación a tu correo:\n" .
                     "*{$usuario->email}*\n\n" .
                     "⏰ El código expirará en 10 minutos.\n\n" .
@@ -524,4 +548,55 @@ class MessageHandler
             "• Revisa tu carpeta de spam\n" .
             "• Escribe 'reset' para generar un nuevo código";
     }
+
+
+
+    private function validatePhoneNumber($usuario, string $whatsappNumber): bool
+    {
+        if (empty($usuario->telefono)) {
+            Log::info('Usuario sin teléfono registrado, permitiendo conexión', [
+                'usuario_id' => $usuario->id,
+                'whatsapp_number' => $whatsappNumber
+            ]);
+            return true;
+        }
+
+        $userPhone = $this->cleanPhoneForComparison($usuario->telefono);
+        $whatsappPhone = $this->cleanPhoneForComparison($whatsappNumber);
+
+        Log::info('Validando teléfonos internacionales', [
+            'usuario_id' => $usuario->id,
+            'telefono_original' => $usuario->telefono,
+            'telefono_limpio' => $userPhone,
+            'whatsapp_original' => $whatsappNumber,
+            'whatsapp_limpio' => $whatsappPhone
+        ]);
+
+        // Comparar números limpios (deberían ser idénticos)
+        $isValid = $userPhone === $whatsappPhone;
+
+        if ($isValid) {
+            Log::info('Teléfonos coinciden exactamente', [
+                'usuario_id' => $usuario->id,
+                'numero_validado' => $userPhone
+            ]);
+        } else {
+            Log::warning('Teléfonos NO coinciden', [
+                'usuario_id' => $usuario->id,
+                'usuario_limpio' => $userPhone,
+                'whatsapp_limpio' => $whatsappPhone
+            ]);
+        }
+
+        return $isValid;
+    }
+
+    private function cleanPhoneForComparison(string $phone): string
+    {
+        $cleaned = preg_replace('/[^0-9]/', '', $phone);
+
+        return $cleaned;
+    }
+
+   
 }

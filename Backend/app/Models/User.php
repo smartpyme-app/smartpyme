@@ -31,15 +31,20 @@ class User extends Authenticatable implements JWTSubject
         'codigo_autorizacion',
         'editar_precio_venta',
         'woocommerce_status',
-        'telefono'
+        'telefono',
+        'whatsapp_verification_code',
+        'whatsapp_code_expires_at',
+        'whatsapp_verified'
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'whatsapp_verification_code'];
     // protected $appends = ['nombre_sucursal'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'enable' => 'string'
+        'enable' => 'string',
+        'whatsapp_code_expires_at' => 'datetime',
+        'whatsapp_verified' => 'boolean'
     ];
 
     protected static function boot()

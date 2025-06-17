@@ -43,6 +43,8 @@ class WebhookController extends Controller
 
     public function handle(Request $request)
     {
+        Log::info('Manejando webhook de WhatsApp', ['payload' => $request->all()]);
+
         try {
             if (config('app.env') === 'production') {
                 Log::info('WhatsApp webhook recibido', ['payload' => $request->all()]);
