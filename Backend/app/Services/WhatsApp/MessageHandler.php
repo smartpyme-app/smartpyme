@@ -7,7 +7,8 @@ use App\Models\WhatsApp\WhatsAppSession;
 use App\Models\WhatsApp\WhatsAppMessage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
-use App\Notifications\WhatsAppVerificationCode;
+use App\Mail\WhatsAppVerificationMail;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class MessageHandler
@@ -398,7 +399,15 @@ class MessageHandler
                     'whatsapp_verified' => false
                 ]);
 
-                $usuario->notify(new WhatsAppVerificationCode($verificationCode, $usuario->name));
+                $datosEmail = [
+                    'verificationCode' => $verificationCode,
+                    'userName' => $usuario->name,
+                    'userEmail' => $usuario->email
+                ];
+
+                Mail::to($usuario->email)->send(new WhatsAppVerificationMail($datosEmail));
+
+               // $usuario->notify(new WhatsAppVerificationCode($verificationCode, $usuario->name));
 
                 $session->update(['status' => 'pending_verification']);
 
