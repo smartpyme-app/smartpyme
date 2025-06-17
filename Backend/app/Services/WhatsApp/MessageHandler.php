@@ -172,14 +172,53 @@ class MessageHandler
     }
 
 
-    private function getMainMenu(WhatsAppSession $session)
+    // private function getMainMenu(WhatsAppSession $session)
+    // {
+    //     if (config('services.whatsapp.use_ai', false)) {
+
+    //         return $this->getAIMenuWithButtons($session);
+    //     }
+
+    //     return $this->getTraditionalTextMenu($session);
+    // }
+
+    private function getMainMenu(WhatsAppSession $session, $forceText = false)
     {
-        if (config('services.whatsapp.use_ai', false)) {
+        if (config('services.whatsapp.use_ai', false) && !$forceText) {
 
             return $this->getAIMenuWithButtons($session);
         }
 
         return $this->getTraditionalTextMenu($session);
+    }
+
+    private function getMainMenuAsText(WhatsAppSession $session)
+    {
+        if (config('services.whatsapp.use_ai', false)) {
+            return $this->getAITextMenu($session);
+        }
+
+        return $this->getTraditionalTextMenu($session);
+    }
+
+    private function getAITextMenu(WhatsAppSession $session)
+    {
+        $menu = "🤖 *Lucas - Asistente IA*\n\n";
+        $menu .= "🏢 Empresa: {$session->empresa->nombre}\n";
+        $menu .= "👤 Usuario: {$session->usuario->name}\n\n";
+        $menu .= "¿Qué información necesitas?\n\n";
+
+        $menu .= "📈 Escribe *ventas* para ver resumen de ventas\n";
+        $menu .= "💰 Escribe *flujo* para ver flujo de efectivo\n";
+        $menu .= "📦 Escribe *inventario* para ver estado de inventario\n\n";
+
+        $menu .= "💡 *También puedes preguntarme libremente:*\n";
+        $menu .= "• \"¿Cuánto vendimos la semana pasada?\"\n";
+        $menu .= "• \"¿Cuáles son mis mejores productos?\"\n";
+        $menu .= "• \"¿Tengo facturas vencidas?\"\n\n";
+        $menu .= "✨ *Escribe tu pregunta o usa las opciones de arriba*";
+
+        return $menu;
     }
 
     private function getAIMenuWithButtons(WhatsAppSession $session)
@@ -241,13 +280,41 @@ class MessageHandler
         return in_array($message, $globalCommands);
     }
 
+    // private function handleGlobalCommand(WhatsAppSession $session, string $message): string
+    // {
+    //     switch ($message) {
+    //         case 'hola':
+    //         case 'inicio':
+    //         case 'menu':
+    //             return $session->isConnected() ? $this->getMainMenu($session) : $this->getWelcomeMessage();
+
+    //         case 'ayuda':
+    //             return $this->getHelpMessage();
+
+    //         case 'salir':
+    //         case 'reset':
+    //             $session->resetConnection();
+    //             return "👋 Sesión reiniciada. " . $this->getWelcomeMessage();
+
+    //         default:
+    //             return $this->getWelcomeMessage();
+    //     }
+    // }
+
     private function handleGlobalCommand(WhatsAppSession $session, string $message): string
     {
         switch ($message) {
             case 'hola':
             case 'inicio':
             case 'menu':
-                return $session->isConnected() ? $this->getMainMenu($session) : $this->getWelcomeMessage();
+                if ($session->isConnected()) {
+                    $menu = $this->getMainMenu($session);
+                    if (is_array($menu)) {
+                        return $menu['body'];
+                    }
+                    return $menu;
+                }
+                return $this->getWelcomeMessage();
 
             case 'ayuda':
                 return $this->getHelpMessage();
@@ -261,6 +328,7 @@ class MessageHandler
                 return $this->getWelcomeMessage();
         }
     }
+
 
     private function handlePendingCode(WhatsAppSession $session, string $message): string
     {
@@ -501,6 +569,54 @@ class MessageHandler
     }
 
 
+    // private function handlePendingVerification(WhatsAppSession $session, string $message): string
+    // {
+    //     $code = trim($message);
+
+    //     if (!preg_match('/^\d{6}$/', $code)) {
+    //         return "❌ Formato de código inválido.\n\n" .
+    //             "El código debe tener exactamente 6 dígitos.\n\n" .
+    //             "Por favor, escribe el código que recibiste por correo:";
+    //     }
+
+    //     $usuario = $session->usuario;
+    //     if (
+    //         $usuario->whatsapp_verification_code === $code &&
+    //         $usuario->whatsapp_code_expires_at > Carbon::now()
+    //     ) {
+
+    //         $usuario->update([
+    //             'whatsapp_verified' => true,
+    //             'whatsapp_verification_code' => null,
+    //             'whatsapp_code_expires_at' => null
+    //         ]);
+
+    //         $session->update(['status' => 'connected']);
+
+    //         Log::info('Usuario verificado exitosamente en WhatsApp', [
+    //             'usuario_id' => $usuario->id,
+    //             'empresa_id' => $session->id_empresa,
+    //             'session_id' => $session->id
+    //         ]);
+
+    //         return "✅ ¡Verificación exitosa!\n\n" .
+    //             "🎉 ¡Bienvenido, *{$usuario->name}*!\n\n" .
+    //             "🏢 Empresa: {$session->empresa->nombre}\n" .
+    //             "👤 Cargo: " . ($usuario->tipo ?? 'Usuario') . "\n\n" .
+    //             $this->getMainMenu($session);
+    //     }
+
+    //     if ($usuario->whatsapp_code_expires_at < Carbon::now()) {
+    //         return "⏰ El código ha expirado.\n\n" .
+    //             "Por favor, escribe 'reset' para generar un nuevo código.";
+    //     }
+    //     return "❌ Código incorrecto.\n\n" .
+    //         "Verifica el código de 6 dígitos que recibiste por correo.\n\n" .
+    //         "💡 Si no recibiste el correo:\n" .
+    //         "• Revisa tu carpeta de spam\n" .
+    //         "• Escribe 'reset' para generar un nuevo código";
+    // }
+
     private function handlePendingVerification(WhatsAppSession $session, string $message): string
     {
         $code = trim($message);
@@ -512,6 +628,7 @@ class MessageHandler
         }
 
         $usuario = $session->usuario;
+
         if (
             $usuario->whatsapp_verification_code === $code &&
             $usuario->whatsapp_code_expires_at > Carbon::now()
@@ -531,17 +648,19 @@ class MessageHandler
                 'session_id' => $session->id
             ]);
 
+
             return "✅ ¡Verificación exitosa!\n\n" .
                 "🎉 ¡Bienvenido, *{$usuario->name}*!\n\n" .
                 "🏢 Empresa: {$session->empresa->nombre}\n" .
                 "👤 Cargo: " . ($usuario->tipo ?? 'Usuario') . "\n\n" .
-                $this->getMainMenu($session);
+                $this->getMainMenuAsText($session);
         }
 
         if ($usuario->whatsapp_code_expires_at < Carbon::now()) {
             return "⏰ El código ha expirado.\n\n" .
                 "Por favor, escribe 'reset' para generar un nuevo código.";
         }
+
         return "❌ Código incorrecto.\n\n" .
             "Verifica el código de 6 dígitos que recibiste por correo.\n\n" .
             "💡 Si no recibiste el correo:\n" .
@@ -597,6 +716,4 @@ class MessageHandler
 
         return $cleaned;
     }
-
-   
 }
