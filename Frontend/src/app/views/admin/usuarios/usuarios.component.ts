@@ -105,10 +105,6 @@ openModal(template: TemplateRef<any>, usuario: any) {
   this.alertService.modal = true;
   this.usuario = usuario;
   
-  // Si el teléfono viene como objeto, extraer solo el número
-  if (this.usuario.telefono && typeof this.usuario.telefono === 'object') {
-    this.usuario.telefono = this.usuario.telefono.number || this.usuario.telefono.e164Number;
-  }
   
   if (!this.usuario.id) {
     this.usuario.tipo = 'Administrador';
