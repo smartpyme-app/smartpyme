@@ -27,6 +27,7 @@ use App\Exports\Contabilidad\LibroPercepcion1Export;
 use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class LibrosIVAController extends Controller
 {
@@ -69,12 +70,21 @@ class LibrosIVAController extends Controller
 
 
         // Ordenamos por 'correlativo' de forma descendente y reindexamos
-        $ivas = $ivas->sortByDesc(function ($item) {
+        $libroconsumidores = $ivas->sortByDesc(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
             })->values()->all();
-        // Log::info($ivas);
+        
 
-        return response()->json($ivas, 200);
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores'));
+            $pdf->setPaper('US Letter', 'portrait');
+
+            return $pdf->stream('libro-consumidores.pdf');
+        }
+
+        return response()->json($libroconsumidores, 200);
     }
 
     public function consumidoresLibroExport(Request $request)
@@ -172,7 +182,7 @@ class LibrosIVAController extends Controller
         });
 
         // Unir y ordenar ambas colecciones por fecha
-        $libroventas = collect($ventasData)
+        $librocontribuyentes = collect($ventasData)
             ->merge(collect($devolucionesData))
             ->sortByDesc(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
@@ -180,7 +190,16 @@ class LibrosIVAController extends Controller
             ->values()
             ->all();
 
-        return response()->json($libroventas, 200);
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes'));
+            $pdf->setPaper('US Letter', 'portrait');
+
+            return $pdf->stream('libro-contribuyentes.pdf');
+        }
+
+        return response()->json($librocontribuyentes, 200);
     }
 
     public function contribuyentesLibroExport(Request $request)
@@ -428,16 +447,24 @@ class LibrosIVAController extends Controller
         });
 
         // Unir y ordenar ambas colecciones por fecha
-        $libroCompras = collect($comprasData)
+        $librocompras = collect($comprasData)
             ->merge(collect($gastosData))
             ->merge(collect($devolucionesData))
             ->sortBy('fecha')
             ->values()
             ->all();
 
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras'));
+            $pdf->setPaper('US Letter', 'portrait');
+
+            return $pdf->stream('libro-compras.pdf');
+        }
 
 
-        return response()->json($libroCompras, 200);
+        return response()->json($librocompras, 200);
     }
 
 
