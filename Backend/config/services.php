@@ -75,6 +75,7 @@ return [
         'webhook_url' => env('WHATSAPP_WEBHOOK_URL', '/api/whatsapp/webhook'),
         'dev_mode' => env('WHATSAPP_DEV_MODE', true),
         'use_ai' => env('WHATSAPP_USE_AI', false), // 
+        'use_whatsapp_business' => env('WHATSAPP_USE_BUSINESS', true), //
     ],
 
 ];

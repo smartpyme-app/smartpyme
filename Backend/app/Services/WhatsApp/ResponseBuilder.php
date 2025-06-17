@@ -27,7 +27,7 @@ class ResponseBuilder
 
     private function sendTextMessage(string $to, string $message): bool
     {
-        if (config('app.env') !== 'production') {
+       if (!config('services.whatsapp.use_whatsapp_business', false)) {
             Log::info('📱 [MODO DESARROLLO] Mensaje texto simulado', [
                 'to' => $to,
                 'message' => $message,
@@ -40,7 +40,8 @@ class ResponseBuilder
 
     private function sendInteractiveMessage(string $to, array $messageData): bool
     {
-        if (config('app.env') !== 'production') {
+
+       if(!config('services.whatsapp.use_whatsapp_business', false)) {
             $simulatedText = $this->convertButtonsToText($messageData);
 
             Log::info('📱 [MODO DESARROLLO] Botones simulados como texto', [
