@@ -168,27 +168,62 @@ class WebhookController extends Controller
     public function getSessions(Request $request)
     {
         try {
+           
             $perPage = $request->get('per_page', 15);
+            $paginate = $request->get('paginate', $perPage); 
+            $page = $request->get('page', 1);
+
             $status = $request->get('status');
-            $empresaId = $request->get('empresa_id');
-            $search = $request->get('search');
+            $empresaId = $request->get('empresa_id') ?: $request->get('id_empresa'); 
+            $usuarioId = $request->get('id_usuario');
+            $search = $request->get('search') ?: $request->get('buscador'); 
+            $whatsappNumber = $request->get('whatsapp_number');
 
-            $query = WhatsAppSession::with(['empresa', 'usuario'])
-                ->orderByDesc('last_message_at');
+            $fechaInicio = $request->get('inicio');
+            $fechaFin = $request->get('fin');
 
+            $conMensajes = $request->get('con_mensajes');
+            $sesionActiva = $request->get('activa');
+
+            $orden = $request->get('orden', 'created_at');
+            $direccion = $request->get('direccion', 'desc');
+
+
+            $query = WhatsAppSession::with(['empresa', 'usuario']);
+
+            $validOrders = ['created_at', 'last_message_at', 'message_count', 'whatsapp_number', 'status'];
+            if (in_array($orden, $validOrders)) {
+                if ($orden === 'message_count') {
+                    $query->withCount(['messages as message_count']);
+                    $query->orderBy('message_count', $direccion);
+                } else {
+                    $query->orderBy($orden, $direccion);
+                }
+            } else {
+                $query->orderByDesc('last_message_at');
+            }
+
+ 
             if ($status) {
                 $query->where('status', $status);
             }
 
-            if ($empresaId) {
-                $query->where('id_empresa', $empresaId);
+       
+
+            if ($usuarioId) {
+                $query->where('id_usuario', $usuarioId);
+            }
+
+            if ($whatsappNumber) {
+                $query->where('whatsapp_number', 'like', "%{$whatsappNumber}%");
             }
 
             if ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('whatsapp_number', 'like', "%{$search}%")
                         ->orWhereHas('empresa', function ($eq) use ($search) {
-                            $eq->where('nombre', 'like', "%{$search}%");
+                            $eq->where('nombre', 'like', "%{$search}%")
+                                ->orWhere('codigo', 'like', "%{$search}%");
                         })
                         ->orWhereHas('usuario', function ($uq) use ($search) {
                             $uq->where('name', 'like', "%{$search}%")
@@ -197,9 +232,23 @@ class WebhookController extends Controller
                 });
             }
 
-            $sessions = $query->paginate($perPage);
 
+            if ($fechaInicio) {
+                $query->whereDate('created_at', '>=', $fechaInicio);
+            }
+
+            if ($fechaFin) {
+                $query->whereDate('created_at', '<=', $fechaFin);
+            }
+
+            $itemsPerPage = $paginate ?: $perPage;
+            $sessions = $query->paginate($itemsPerPage, ['*'], 'page', $page);
+
+      
             $sessions->getCollection()->transform(function ($session) {
+                $messageCount = $session->message_count ??
+                    WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)->count();
+
                 return [
                     'id' => $session->id,
                     'whatsapp_number' => $session->whatsapp_number,
@@ -207,20 +256,26 @@ class WebhookController extends Controller
                     'empresa' => $session->empresa ? [
                         'id' => $session->empresa->id,
                         'nombre' => $session->empresa->nombre,
-                        'codigo' => $session->empresa->codigo
+                        'codigo' => $session->empresa->codigo ?? null
                     ] : null,
                     'usuario' => $session->usuario ? [
                         'id' => $session->usuario->id,
                         'name' => $session->usuario->name,
                         'email' => $session->usuario->email,
-                        'tipo' => $session->usuario->tipo
+                        'tipo' => $session->usuario->tipo ?? null
                     ] : null,
                     'created_at' => $session->created_at,
                     'last_message_at' => $session->last_message_at,
-                    'code_attempts' => $session->code_attempts,
-                    'user_attempts' => $session->user_attempts,
-                    'is_active' => $session->last_message_at >= now()->subHours(24),
-                    'message_count' => WhatsAppMessage::where('whatsapp_number', $session->whatsapp_number)->count()
+                    'code_attempts' => $session->code_attempts ?? 0,
+                    'user_attempts' => $session->user_attempts ?? 0,
+                    'is_active' => $session->last_message_at && $session->last_message_at >= now()->subHours(24),
+                    'message_count' => $messageCount,
+                    'days_since_created' => $session->created_at ? $session->created_at->diffInDays(now()) : 0,
+                    'hours_since_last_activity' => $session->last_message_at ?
+                        $session->last_message_at->diffInHours(now()) : null,
+                    'status_label' => $this->getStatusLabel($session->status),
+                    'can_disconnect' => $session->status === 'connected',
+                    'can_unblock' => $session->status === 'blocked'
                 ];
             });
 
@@ -230,21 +285,58 @@ class WebhookController extends Controller
                 'filters_applied' => array_filter([
                     'status' => $status,
                     'empresa_id' => $empresaId,
-                    'search' => $search
-                ])
+                    'usuario_id' => $usuarioId,
+                    'search' => $search,
+                    'whatsapp_number' => $whatsappNumber,
+                    'fecha_inicio' => $fechaInicio,
+                    'fecha_fin' => $fechaFin,
+                    'con_mensajes' => $conMensajes,
+                    'sesion_activa' => $sesionActiva,
+                    'orden' => $orden,
+                    'direccion' => $direccion
+                ]),
+                'pagination_info' => [
+                    'current_page' => $sessions->currentPage(),
+                    'per_page' => $sessions->perPage(),
+                    'total' => $sessions->total(),
+                    'last_page' => $sessions->lastPage(),
+                    'from' => $sessions->firstItem(),
+                    'to' => $sessions->lastItem()
+                ],
+                'summary' => [
+                    'total_filtered' => $sessions->total(),
+                    'connected' => $sessions->getCollection()->where('status', 'connected')->count(),
+                    'active_24h' => $sessions->getCollection()->where('is_active', true)->count(),
+                    'with_messages' => $sessions->getCollection()->where('message_count', '>', 0)->count()
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error obteniendo sesiones WhatsApp', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
             ]);
 
             return response()->json([
                 'success' => false,
                 'error' => 'Error obteniendo sesiones',
-                'message' => config('app.debug') ? $e->getMessage() : 'Error interno'
+                'message' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
+    }
+
+    private function getStatusLabel(string $status): string
+    {
+        $labels = [
+            'connected' => 'Conectado',
+            'pending_code' => 'Esperando código',
+            'pending_user' => 'Esperando usuario',
+            'pending_verification' => 'Esperando verificación',
+            'blocked' => 'Bloqueado',
+            'disconnected' => 'Desconectado'
+        ];
+
+        return $labels[$status] ?? ucfirst($status);
     }
 
     private function getEmpresaStats(int $empresaId, int $days): array

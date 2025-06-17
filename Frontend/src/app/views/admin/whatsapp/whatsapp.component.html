@@ -1,7 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">
       <i class="fab fa-whatsapp text-success me-2"></i>
-      WhatsApp Business
+      WhatsApp 
     </h2>
     <div class="d-flex gap-2">
       <button 
@@ -216,22 +216,6 @@
                             {{ usuario.name }}
                         </ng-option>
                     </ng-select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.con_mensajes">Con mensajes:</label>
-                    <select [(ngModel)]="filtros.con_mensajes" class="form-control form-select" name="filtros.con_mensajes">
-                        <option value="">Todos</option>
-                        <option value="1">Con mensajes</option>
-                        <option value="0">Sin mensajes</option>
-                    </select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.activa">Sesión activa:</label>
-                    <select [(ngModel)]="filtros.activa" class="form-control form-select" name="filtros.activa">
-                        <option value="">Todas</option>
-                        <option value="1">Activas (últimas 24h)</option>
-                        <option value="0">Inactivas</option>
-                    </select>
                 </div>
             </div>
             
