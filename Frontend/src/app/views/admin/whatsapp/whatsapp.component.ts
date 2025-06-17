@@ -26,7 +26,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     search: '',
     buscador: '', // Para el template
     status: '',
-    empresa_id: '',
     id_empresa: '', // Para el template
     id_usuario: '', // Para el template
     whatsapp_number: '', // Para el template

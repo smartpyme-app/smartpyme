@@ -76,7 +76,6 @@
                         <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
                         <th>Número WhatsApp</th>
                         <th>Estado</th>
-                        <th class="d-none d-md-table-cell">Empresa</th>
                         <th class="d-none d-md-table-cell">Usuario</th>
                         <th (click)="setOrden('last_message_at')" [ngClass]="{'sorted-asc': filtros.orden == 'last_message_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'last_message_at' && filtros.direccion == 'desc'}" class="click">Última Actividad</th>
                         <th (click)="setOrden('message_count')" [ngClass]="{'sorted-asc': filtros.orden == 'message_count' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'message_count' && filtros.direccion == 'desc'}" class="click text-right">Mensajes</th>
@@ -120,10 +119,6 @@
                                    session.status === 'blocked' ? 'Bloqueado' :
                                    session.status === 'disconnected' ? 'Desconectado' : session.status }}
                             </span>
-                        </td>
-                        <td class="d-none d-md-table-cell">
-                            <span *ngIf="session.empresa">{{ session.empresa.nombre | truncate:30 }}</span>
-                            <span *ngIf="!session.empresa" class="text-muted">Sin empresa</span>
                         </td>
                         <td class="d-none d-md-table-cell">
                             <div *ngIf="session.usuario">
@@ -207,15 +202,6 @@
                         <option value="pending_verification">Esperando verificación</option>
                         <option value="blocked">Bloqueadas</option>
                         <option value="disconnected">Desconectadas</option>
-                    </select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.id_empresa">Empresa:</label>
-                    <select [(ngModel)]="filtros.id_empresa" class="form-control form-select" name="filtros.id_empresa">
-                        <option value="">Todas</option>
-                        <option *ngFor="let empresa of empresas" [value]="empresa.id">
-                            {{ empresa.nombre }}
-                        </option>
                     </select>
                 </div>
                 <div class="form-group col-sm-6">
