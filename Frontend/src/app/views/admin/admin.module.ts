@@ -31,6 +31,9 @@ import { NotificacionesComponent } from './notificaciones/notificaciones.compone
 import { ReportesComponent } from './reportes/reportes.component';
 import { DocsComponent } from './docs/docs.component';
 // import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
+import { WhatsAppComponent } from './whatsapp/whatsapp.component';
+import { WhatsAppEstadisticasComponent } from './whatsapp/estadisticas/whatsapp-estadisticas.component';
+import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
 
 @NgModule({
   imports: [
@@ -47,6 +50,8 @@ import { DocsComponent } from './docs/docs.component';
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
+    ModalModule.forRoot(),
+    NgxIntlTelInputModule
   ],
   declarations: [
     EmpresaComponent,
@@ -59,7 +64,8 @@ import { DocsComponent } from './docs/docs.component';
     ReportesComponent,
     NotificacionesComponent,
     DocsComponent,
-    // ThreedsModalComponent
+    WhatsAppComponent,
+    WhatsAppEstadisticasComponent
   ],
   exports: [
     EliminarDatosComponent,
@@ -70,7 +76,9 @@ import { DocsComponent } from './docs/docs.component';
     UsuarioComponent,
     ReportesComponent,
     NotificacionesComponent,
-    DocsComponent
+    DocsComponent,
+    WhatsAppComponent,
+    WhatsAppEstadisticasComponent
   ]
 })
 export class AdminModule { }
