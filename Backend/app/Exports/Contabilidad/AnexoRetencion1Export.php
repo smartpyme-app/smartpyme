@@ -39,7 +39,7 @@ class AnexoRetencion1Export implements FromCollection, WithMapping, WithCustomCs
     }
 
     public function map($venta): array{
-
+        setlocale(LC_NUMERIC, 'C');
         $cliente = optional($venta->cliente);
 
         $tipo = '03'; //CCF
@@ -61,9 +61,9 @@ class AnexoRetencion1Export implements FromCollection, WithMapping, WithCustomCs
             \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), // B fecha
             $tipo, // C Tipo
             $venta->dte['sello'] ?? '', // D serie o sello
-            $venta->dte['identificacion']['codigoGeneracion'] ?? '', // E numero de documento o codigo de generacion
-            $venta->sub_total, // F monto sujeto
-            $venta->percepcion, // G monto percepcion
+            str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) ?? '', // E numero de documento o codigo de generacion
+            number_format($venta->sub_total, 2, '.', ''), // F monto sujeto
+            number_format($venta->percepcion, 2, '.', ''), // G monto percepcion
             $venta->cliente->dui ?? '', // H Dui agente
             8, // numero anexo
         ];

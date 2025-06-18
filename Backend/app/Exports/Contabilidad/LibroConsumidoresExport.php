@@ -80,12 +80,19 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         $documento = $venta->documento;
         $cliente = optional($venta->cliente);
 
+        if ($venta->iva > 0) {
+            $venta->gravada = $venta->sub_total;
+        }else{
+            $venta->gravada = 0;
+            $venta->exenta = $venta->sub_total;
+        }
+
         return [
             $this->index++,
             $venta->fecha,
             $venta->correlativo,
             $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
+            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->gravada,
             $venta->no_sujeta,
             $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
             $venta->total,

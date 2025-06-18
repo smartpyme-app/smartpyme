@@ -38,7 +38,7 @@ class AnexoPercepcion1Export implements FromCollection, WithMapping, WithCustomC
     }
 
     public function map($compra): array{
-
+        setlocale(LC_NUMERIC, 'C');
         $documento = $compra->documento;
         $proveedor = optional($compra->proveedor);
 
@@ -61,9 +61,9 @@ class AnexoPercepcion1Export implements FromCollection, WithMapping, WithCustomC
             \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'), // B fecha
             $tipo, // C Tipo
             $compra->serie, // D serie o sello
-            $compra->referencia, // E numero de documento o codigo de generacion
-            $compra->sub_total, // F monto sujeto
-            $compra->percepcion, // G monto percepcion
+            str_replace('-', '', $compra->referencia), // E numero de documento o codigo de generacion
+            number_format($compra->sub_total, 2, '.', ''), // F monto sujeto
+            number_format($compra->percepcion, 2, '.', ''), // G monto percepcion
             $compra->proveedor->dui ?? '', // H Dui agente
             8, // numero anexo
         ];
