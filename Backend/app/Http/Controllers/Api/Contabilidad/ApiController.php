@@ -193,4 +193,31 @@ class ApiController extends Controller
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }
+
+    /**
+     * Crear partidas contables de retaceo siguiendo el patrón específico del cliente
+     */
+    public function retaceoEstiloCliente(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id_retaceo' => 'required|exists:retaceos,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $retaceoService = new RetaceoService();
+            $resultado = $retaceoService->crearPartidaEstiloCliente($request->id_retaceo);
+
+            return response()->json([
+                'message' => $resultado['mensaje'],
+                'partidas_creadas' => $resultado['partidas_creadas'],
+                'success' => $resultado['success']
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
 }

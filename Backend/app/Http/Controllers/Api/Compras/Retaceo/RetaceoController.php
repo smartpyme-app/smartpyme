@@ -87,7 +87,7 @@ class RetaceoController extends Controller
 
         try {
             DB::beginTransaction();
-            
+
 
             // Crear el retaceo
             $compra = Compra::findOrFail($request->id_compra);
@@ -150,7 +150,7 @@ class RetaceoController extends Controller
                         $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
                     }
                 }
-                
+
                 // Actualizar el costo en el detalle de la compra
                 $detalleCompra = Detalle::find($item['id_detalle_compra']);
                 if ($detalleCompra) {
@@ -249,6 +249,74 @@ class RetaceoController extends Controller
     }
 
     public function historial(Request $request) {}
+
+    /**
+     * Actualizar el estado del retaceo
+     */
+    public function actualizarEstado(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:retaceos,id',
+            'estado' => 'required|in:Borrador,Aplicado,Anulado',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $retaceo = Retaceo::findOrFail($request->id);
+
+            // Validar transiciones de estado
+            if ($retaceo->estado === 'Aplicado' && $request->estado === 'Borrador') {
+                return response()->json(['error' => 'No se puede cambiar de Aplicado a Borrador'], 422);
+            }
+
+            $estadoAnterior = $retaceo->estado;
+            $retaceo->estado = $request->estado;
+            $retaceo->save();
+
+            // Si se está aplicando el retaceo, marcar como estado = 'Aplicado'
+            if ($request->estado === 'Aplicado' && $estadoAnterior !== 'Aplicado') {
+                // El retaceo ya está marcado como aplicado,
+                // los costos ya fueron actualizados en el método store()
+            }
+
+            // Si se está anulando el retaceo, restaurar costos originales
+            if ($request->estado === 'Anulado' && $estadoAnterior === 'Aplicado') {
+                $distribucion = RetaceoDistribucion::where('id_retaceo', $retaceo->id)->get();
+
+                foreach ($distribucion as $item) {
+                    // Restaurar el costo original del producto
+                    $producto = Producto::find($item->id_producto);
+                    if ($producto) {
+                        $producto->costo = $item->costo_original;
+                        $producto->save();
+                    }
+
+                    // Restaurar el costo original en el detalle de la compra
+                    $detalleCompra = Detalle::find($item->id_detalle_compra);
+                    if ($detalleCompra) {
+                        $detalleCompra->costo = $item->costo_original;
+                        $detalleCompra->save();
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Estado actualizado correctamente',
+                'retaceo' => $retaceo
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     public function retaceoGastos(Request $request)
     {

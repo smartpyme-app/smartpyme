@@ -13,13 +13,13 @@ export class RetaceosListComponent implements OnInit {
 
   public retaceos: any = [];
   public loading = false;
-  
+
   public filtros: any = {};
   public modalRef!: BsModalRef;
   public clientes: any = [];
   public usuarios: any = [];
   public sucursales: any = [];
-  
+
 
 
   constructor(
@@ -36,7 +36,7 @@ export class RetaceosListComponent implements OnInit {
   public loadAll() {
 
     const filtrosGuardados = localStorage.getItem('retaceosFiltros');
-    
+
     if (filtrosGuardados) {
       this.filtros = JSON.parse(filtrosGuardados);
       console.log(this.filtros);
@@ -60,7 +60,7 @@ export class RetaceosListComponent implements OnInit {
     this.cargarRetaceos();
   }
 
-  
+
 
   formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -72,7 +72,7 @@ export class RetaceosListComponent implements OnInit {
   cargarRetaceos() {
     localStorage.setItem('retaceosFiltros', JSON.stringify(this.filtros));
     this.loading = true;
-    
+
     this.apiService.getAll('retaceos', this.filtros).subscribe(response => {
       this.retaceos = response
       this.loading = false;
@@ -115,17 +115,17 @@ export class RetaceosListComponent implements OnInit {
   }
   openFilter(template: TemplateRef<any>) {
     if(!this.clientes.length){
-      this.apiService.getAll('clientes/list').subscribe(clientes => { 
+      this.apiService.getAll('clientes/list').subscribe(clientes => {
           this.clientes = clientes;
       }, error => {this.alertService.error(error); });
     }
     if(!this.usuarios.length){
-      this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+      this.apiService.getAll('usuarios/list').subscribe(usuarios => {
           this.usuarios = usuarios;
       }, error => {this.alertService.error(error); });
     }
     if(!this.sucursales.length){
-      this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+      this.apiService.getAll('sucursales/list').subscribe(sucursales => {
         this.sucursales = sucursales;
       }, error => {this.alertService.error(error); });
     }
@@ -138,13 +138,34 @@ export class RetaceosListComponent implements OnInit {
   }
   generarPartidaContable(retaceo: any) {
     this.loading = true;
-    
+
     this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: retaceo.id })
       .subscribe(
         (response) => {
           this.alertService.success('Partida contable generada correctamente', 'Partida contable generada');
           // Marcar el retaceo como contabilizado (opcional, dependiendo de tu modelo)
           retaceo.contabilizado = true;
+          this.loading = false;
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+  }
+
+  generarPartidaContableEstiloCliente(retaceo: any) {
+    this.loading = true;
+
+    this.apiService.store('contabilidad/partida/retaceo-cliente', { id_retaceo: retaceo.id })
+      .subscribe(
+        (response) => {
+          this.alertService.success(
+            `Partidas contables estilo cliente generadas correctamente. Se crearon ${response.partidas_creadas} partidas.`,
+            'Partidas generadas'
+          );
+          // Marcar el retaceo como contabilizado
+          retaceo.contabilizado_cliente = true;
           this.loading = false;
         },
         (error) => {
