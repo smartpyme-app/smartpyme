@@ -482,6 +482,30 @@
                     </div>
                 </div>
 
+                <div class="col-12 mb-5">
+                    <h5 class="mb-3">Codigo de empresa para whatsapp</h5>
+                    <div class="form-group">
+                        <label for="key_webhook" class="form-label">Codigo de empresa para whatsapp:</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.codigo" 
+                                   name="key_webhook" 
+                                   placeholder="Codigo de empresa para whatsapp" 
+                                   readonly>
+                            <button class="btn btn-secondary" 
+                                    type="button" 
+                                    (click)="copyToClipboard(empresa.codigo)" 
+                                    tooltip="Copiar Codigo">
+                                <i class="fa fa-copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            Este es el codigo de su empresa para whatsapp
+                        </small>
+                    </div>
+                </div>
+
     
                 <div class="col-12">
                     <h5 class="mb-3">Integración WooCommerce</h5>
