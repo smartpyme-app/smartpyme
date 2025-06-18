@@ -721,7 +721,7 @@ class WebhookController extends Controller
                 ];
             }
 
-            // Recomendación sobre horarios
+            
             $busiestHour = $this->getBusiestHour($days, $empresaId);
             if ($busiestHour < 9 || $busiestHour > 17) {
                 $recommendations[] = [
@@ -731,7 +731,7 @@ class WebhookController extends Controller
                 ];
             }
 
-            // Recomendación sobre engagement
+            
             $engagementRate = $this->calculateEngagementRate($days, $empresaId);
             if ($engagementRate < 60) {
                 $recommendations[] = [
