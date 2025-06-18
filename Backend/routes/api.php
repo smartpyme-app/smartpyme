@@ -139,7 +139,8 @@ require base_path('routes/modulos/webhook/webhook.php');
 
 // Route::get('/api/pago-completado/{id}', [AuthJWTController::class, 'pagoCompletado'])->name('pagoCompletado');
 
-
+//whatsapp
+require base_path('routes/modulos/whatsapp/whatsapp.php');
 
 Route::get('/prueba/factura', function () {
 	return view('reportes/pruebas/factura');
