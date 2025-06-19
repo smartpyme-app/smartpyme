@@ -60,14 +60,15 @@
         <thead>
             <tr>
                 <th>N°</th>
-                <th>Fecha</th>
-                <th>Correlativo</th>
-                <th class="text-right">Ventas Exentas</th>
-                <th class="text-right">Ventas No Sujetas</th>
-                <th class="text-right">Ventas Gravadas</th>
-                <th class="text-right">Exportaciones</th>
-                <th class="text-right">Total</th>
-                <th class="text-right">Cuenta a terceros</th>
+                <th>DÍA</th>
+                <th>DOCMENTO EMITIDO (DEL)</th>
+                <th>DOCUMENTO EMITIDO (AL)</th>
+                <th>N° DE CAJA O SISTEMA COMPUTARIZADO</th>
+                <th class="text-right">VENTAS EXENTAS</th>
+                <th class="text-right">VENTAS INTERNAS GRAVADAS</th>
+                <th class="text-right">EXPORTACIONES</th>
+                <th class="text-right">TOTAL DE VENTAS DIARIAS PROPIAS </th>
+                <th class="text-right">VENTAS A CUENTAS DE TERCEROS</th>
             </tr>
         </thead>
         <tbody>
@@ -76,8 +77,9 @@
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ Carbon\Carbon::parse($venta['fecha'])->format('d/m/Y') }}</td>
                     <td>{{ $venta['correlativo'] }}</td>
+                    <td>{{ $venta['correlativo'] }}</td>
+                    <td></td>
                     <td class="text-right">${{ $venta['ventas_exentas'] }}</td>
-                    <td class="text-right">${{ $venta['no_sujeta'] }}</td>
                     <td class="text-right">${{ $venta['ventas_gravadas'] }}</td>
                     <td class="text-right">${{ $venta['exportaciones'] }}</td>
                     <td class="text-right">${{ $venta['total'] }}</td>

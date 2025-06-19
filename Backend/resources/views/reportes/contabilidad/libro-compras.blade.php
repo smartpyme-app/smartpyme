@@ -60,7 +60,7 @@
         <thead>
             <tr>
                 <th>N°</th>
-                <th>FECHA</th>
+                <th>FECHA DE EMISIÓN DEL DOCUMENTO</th>
                 <th>NÚMERO DE DOCUMENTO</th>
                 <th>NÚMERO DE REGISTRO DEL CONTRIBUYENTE</th>
                 <th>NOMBRE DEL PROVEEDOR</th>
@@ -70,7 +70,7 @@
                 <th class="text-right">IMPORTACIONES E INTERNACIONES GRAVADAS</th>
                 <th class="text-right">CRÉDITO FISCAL</th>
                 <th class="text-right">ANTICIPO A CUENTA IVA PERCIBIDO</th>
-                <th class="text-right">TOTAL</th>
+                <th class="text-right">TOTAL DE COMPRAS</th>
                 <th class="text-right">COMPRAS A SUJETOS EXCLUIDOS</th>
             </tr>
         </thead>
