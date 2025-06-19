@@ -241,11 +241,11 @@ class GastosController extends Controller
                 if (isset($jsonData['identificacion']['tipoDte'])) {
                     $tiposDte = [
                         '01' => 'Factura',
-                        '03' => 'Comprobante de Crédito Fiscal',
-                        '05' => 'Nota de Débito',
-                        '06' => 'Nota de Crédito',
-                        '07' => 'Comprobante de Retención',
-                        '11' => 'Factura de Exportación',
+                        '03' => 'Crédito fiscal',
+                        '05' => 'Nota de débito',
+                        '06' => 'Nota de crédito',
+                        '07' => 'Comprobante de retención',
+                        '11' => 'Factura de exportación',
                         '14' => 'Sujeto excluido'
                     ];
 
