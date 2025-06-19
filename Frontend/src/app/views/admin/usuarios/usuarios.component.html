@@ -79,7 +79,7 @@
                 <tr *ngFor=" let usuario of usuarios.data">                    
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.tipo}}</td>
-                    <td>{{usuario.sucursal.nombre}}</td>
+                    <td>{{usuario.sucursal?.nombre}}</td>
                     <td>
                         <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
                             <option value="1">Activo</option>
@@ -149,6 +149,26 @@
                       <i class="fa" [ngClass]="{'fa-eye-slash': !showpassword2, 'fa-eye': showpassword2 }"></i>
                   </button>
               </div>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="telefono">Teléfono:</label>
+                <ngx-intl-tel-input
+                    [cssClass]="'form-control'"
+                    [preferredCountries]="preferredCountries"
+                    [enableAutoCountrySelect]="true"
+                    [enablePlaceholder]="true"
+                    [searchCountryFlag]="true"
+                    [searchCountryField]="[SearchCountryField.Iso2, SearchCountryField.Name]"
+                    [selectFirstCountry]="false"
+                    [selectedCountryISO]="CountryISO.ElSalvador"
+                    [maxLength]="15"
+                    [phoneValidation]="true"
+                    [separateDialCode]="separateDialCode"
+                    [numberFormat]="PhoneNumberFormat.International"
+                    [(ngModel)]="usuario.telefono"
+                    name="telefono"
+                    (countryChange)="changePhoneNumber($event)">
+                </ngx-intl-tel-input>
             </div>
             <div class="form-group col-12">
                 <div id="passwordHelpBlock" class="form-text">
