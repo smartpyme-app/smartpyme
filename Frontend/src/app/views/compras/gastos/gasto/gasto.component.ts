@@ -1047,10 +1047,6 @@ public setArea(area: any) {
     this.opciones_avanzadas_active = !this.opciones_avanzadas_active;
   }
 
-  public isColumnEnabled(columnName: string): boolean {
-    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
-  }
-
   public onImpuestoValorChange() {
     this.calcularTotalConImpuestosEditados();
   }
