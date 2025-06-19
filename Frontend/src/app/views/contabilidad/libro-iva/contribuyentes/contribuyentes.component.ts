@@ -183,5 +183,14 @@ export class ContribuyentesComponent implements OnInit {
         );
       }
 
+      public descargarLibroPDF(): void {
+        this.filtros.formato = 'pdf';
+        const filtros = new URLSearchParams(this.filtros).toString();
+        const token = this.apiService.auth_token();
+
+        const url = `${this.apiService.baseUrl}/api/libro-iva/contribuyentes?${filtros}&token=${token}`;
+        window.open(url, '_blank');
+      }
+
 
 }

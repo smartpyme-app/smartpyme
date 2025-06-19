@@ -18,6 +18,7 @@ class Empresa extends Model
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',
+        'codigo',
         'nombre_propietario',
         'sector',
         'giro',
@@ -113,7 +114,7 @@ class Empresa extends Model
         'custom_empresa' => 'json',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce','currency_symbol'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol'];
 
     public function limiteUsuarios()
     {
@@ -264,6 +265,17 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
+    public function whatsappSessions()
+    {
+        return $this->hasMany('App\Models\WhatsApp\WhatsAppSession', 'id_empresa');
+    }
+
+    public function whatsappMessages()
+    {
+        return $this->hasMany('App\Models\WhatsApp\WhatsAppMessage', 'id_empresa');
+    }
+
+
     public function currency()
     {
         return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
@@ -303,15 +315,15 @@ class Empresa extends Model
     public function departamentos()
     {
         return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
-                    ->withPivot('estado')
-                    ->withTimestamps();
+            ->withPivot('estado')
+            ->withTimestamps();
     }
 
     public function cargos()
     {
         return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
-                    ->withPivot('estado')
-                    ->withTimestamps();
+            ->withPivot('estado')
+            ->withTimestamps();
     }
 
 
@@ -400,6 +412,7 @@ class Empresa extends Model
 
         return $estadoPruebas;
     }
+
 
     public function getCustomConfigAttribute()
     {
@@ -521,6 +534,51 @@ class Empresa extends Model
             //     'enabled' => $this->isColumnEnabled('columna_categoria'),
             //     'section' => 'Inventario'
             // ],
+        ];
+    }
+
+    public function generateWhatsAppCode()
+    {
+        if (!$this->codigo) {
+            $baseCode = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $this->nombre), 0, 3)) . $this->id;
+
+
+            $codigo = $baseCode;
+            $counter = 1;
+
+            while (self::where('codigo', $codigo)->exists()) {
+                $codigo = $baseCode . $counter;
+                $counter++;
+            }
+
+            $this->update(['codigo' => $codigo]);
+        }
+
+        return $this->codigo;
+    }
+
+    public function getActiveWhatsAppSessions()
+    {
+        return $this->whatsappSessions()
+            ->where('status', 'connected')
+            ->where('last_message_at', '>=', now()->subHours(24))
+            ->get();
+    }
+
+    public function getWhatsAppStatsToday()
+    {
+        return [
+            'messages_received' => $this->whatsappMessages()
+                ->incoming()
+                ->today()
+                ->count(),
+            'messages_sent' => $this->whatsappMessages()
+                ->outgoing()
+                ->today()
+                ->count(),
+            'active_sessions' => $this->whatsappSessions()
+                ->where('last_message_at', '>=', now()->subHours(24))
+                ->count()
         ];
     }
 }

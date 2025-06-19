@@ -1,0 +1,225 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">
+      <i class="fab fa-whatsapp text-success me-2"></i>
+      WhatsApp 
+    </h2>
+    <div class="d-flex gap-2">
+      <button 
+        class="btn btn-sm"
+        [class]="autoRefreshEnabled ? 'btn-success' : 'btn-outline-secondary'"
+        (click)="toggleAutoRefresh()"
+        [tooltip]="autoRefreshEnabled ? 'Desactivar auto-actualización' : 'Activar auto-actualización'">
+        <i class="fa" [class]="autoRefreshEnabled ? 'fa-sync fa-spin' : 'fa-sync'"></i>
+      </button>
+      <button 
+        class="btn btn-outline-primary btn-sm" 
+        (click)="refreshData()" 
+        [disabled]="refreshing">
+        <i class="fa fa-refresh" [class.fa-spin]="refreshing"></i>
+        {{ refreshing ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="sessions?.total">
+                Mostrando 
+                <select name="paginate" class="form-select w-auto" (change)="filtrarSesiones()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ sessions?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSesiones()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar número o empresa..." [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
+                    <img src="/assets/icons/filter.png" class="icon">
+                </button>
+                <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                    <i class="fa fa-refresh"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/whatsapp">Todas</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/whatsapp/estadisticas">Estadísticas</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
+            <select name="status" (change)="filtrarSesiones()" [(ngModel)]="filtros.status" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="connected">Conectado</option>
+                <option value="pending_code">Esperando código</option>
+                <option value="pending_user">Esperando usuario</option>
+                <option value="pending_verification">Esperando verificación</option>
+                <option value="blocked">Bloqueado</option>
+                <option value="disconnected">Desconectado</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('created_at')" [ngClass]="{'sorted-asc': filtros.orden == 'created_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'created_at' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th>Número WhatsApp</th>
+                        <th>Estado</th>
+                        <th class="d-none d-md-table-cell">Usuario</th>
+                        <th (click)="setOrden('last_message_at')" [ngClass]="{'sorted-asc': filtros.orden == 'last_message_at' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'last_message_at' && filtros.direccion == 'desc'}" class="click">Última Actividad</th>
+                        <th (click)="setOrden('message_count')" [ngClass]="{'sorted-asc': filtros.orden == 'message_count' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'message_count' && filtros.direccion == 'desc'}" class="click text-right">Mensajes</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="8" class="text-center" *ngIf="sessions?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene sesiones registradas</span>
+                        </td>
+                        <td colspan="8" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+
+                    <tr *ngFor="let session of sessions?.data; trackBy: trackBySessionId">
+                        <td>
+                            <span tooltip="{{ session.created_at | date:'hh:mm a'}}">
+                                {{session.created_at | date:'dd/MM/yyyy'}}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-success rounded-circle d-flex align-items-center justify-content-center me-2">
+                                    <i class="fab fa-whatsapp text-white"></i>
+                                </div>
+                                <span class="fw-bold">{{ session.whatsapp_number }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" 
+                                  [ngClass]="{'bg-success' : session?.status == 'connected', 
+                                             'bg-warning' : session?.status == 'pending_code' || session?.status == 'pending_user' || session?.status == 'pending_verification', 
+                                             'bg-danger' : session?.status == 'blocked', 
+                                             'bg-secondary' : session?.status == 'disconnected'}">
+                                {{ session.status === 'connected' ? 'Conectado' :
+                                   session.status === 'pending_code' ? 'Esperando código' :
+                                   session.status === 'pending_user' ? 'Esperando usuario' :
+                                   session.status === 'pending_verification' ? 'Esperando verificación' :
+                                   session.status === 'blocked' ? 'Bloqueado' :
+                                   session.status === 'disconnected' ? 'Desconectado' : session.status }}
+                            </span>
+                        </td>
+                        <td class="d-none d-md-table-cell">
+                            <div *ngIf="session.usuario">
+                                <div class="fw-bold">{{ session.usuario.name | truncate:20 }}</div>
+                                <small class="text-muted">{{ session.usuario.email | truncate:25 }}</small>
+                            </div>
+                            <span *ngIf="!session.usuario" class="text-muted">Sin usuario</span>
+                        </td>
+                        <td>{{ formatLastActivity(session.last_message_at) }}</td>
+                        <td class="text-end">
+                            <span class="badge bg-primary">{{ session.message_count || 0 }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a *ngIf="session.status === 'connected' && apiService.canEdit()" 
+                                       class="list-group-item list-group-item-action border-0 click" 
+                                       (click)="desconectarSesion(session)">
+                                        <i class="fa fa-fw fa-unlink"></i> Desconectar
+                                    </a>
+                                    <a *ngIf="session.status === 'disconnected' && apiService.canEdit()" 
+                                       class="list-group-item list-group-item-action border-0 click" 
+                                       (click)="conectarSesion(session)">
+                                        <i class="fa fa-fw fa-link"></i> Conectar
+                                    </a>
+                                    <a *ngIf="apiService.canEdit()" 
+                                       class="list-group-item list-group-item-action border-0 click" 
+                                       (click)="eliminarSesion(session)">
+                                        <i class="fa fa-fw fa-trash"></i> Eliminar
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="sessions?.last_page > 1">
+            <app-pagination [items]="sessions" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<!-- Modal de filtros -->
+<ng-template #mfilter>
+    <div class="modal-header">
+        <div class="modal-title text-center">
+            <h2 class="text-center">Filtrar</h2>
+        </div>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form autocomplete="off" (ngSubmit)="filtrarSesiones()">
+            <div class="row">
+                <div class="form-group col-sm-6">
+                    <label for="">Del:</label>
+                    <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="">Al:</label>
+                    <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.status">Estado:</label>
+                    <select [(ngModel)]="filtros.status" class="form-control form-select" name="filtros.status">
+                        <option value="">Todos</option>
+                        <option value="connected">Conectadas</option>
+                        <option value="pending_code">Esperando código</option>
+                        <option value="pending_user">Esperando usuario</option>
+                        <option value="pending_verification">Esperando verificación</option>
+                        <option value="blocked">Bloqueadas</option>
+                        <option value="disconnected">Desconectadas</option>
+                    </select>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.whatsapp_number">Número WhatsApp:</label>
+                    <input type="text" class="form-control" name="filtros.whatsapp_number" [(ngModel)]="filtros.whatsapp_number" placeholder="Ej: 50373455844"/>
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtros.id_usuario">Usuario:</label>
+                    <ng-select [(ngModel)]="filtros.id_usuario" class="form-select p-0" name="filtros.id_usuario">
+                        <ng-option value="">Todos</ng-option>
+                        <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                            {{ usuario.name }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+            </div>
+            
+            <div class="d-grid mt-3">
+                <button type="submit" [disabled]="loading" class="btn btn-primary">
+                    <span *ngIf="!loading">Filtrar</span>
+                    <span *ngIf="loading">Filtrando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>

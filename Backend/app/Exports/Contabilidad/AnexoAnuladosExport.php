@@ -37,7 +37,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
     }
 
     public function map($venta): array{
-
+            setlocale(LC_NUMERIC, 'C');
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
 
