@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -22,12 +23,25 @@ export class ServiciosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
 
-        this.loadAll();
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_categoria: +params['id_categoria'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            this.filtrarServicios();
+        });
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
@@ -42,12 +56,20 @@ export class ServiciosComponent implements OnInit {
         this.filtros.orden = 'nombre';
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
         this.loading = true;
         this.filtrarServicios();
 
     }
 
     public filtrarServicios(){
+
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge',
+        });
+
         this.loading = true;
         if(!this.filtros.id_categoria){
             this.filtros.id_categoria = '';
@@ -74,10 +96,8 @@ export class ServiciosComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.servicios.path + '?page='+ event.page, this.filtros).subscribe(servicios => { 
-            this.servicios = servicios;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarServicios();
     }
 
     openModalPrecio(template: TemplateRef<any>, servicio:any) {

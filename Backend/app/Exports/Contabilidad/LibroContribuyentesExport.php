@@ -102,6 +102,13 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
 
+            if ($venta->iva > 0) {
+                $venta->gravada = $venta->sub_total;
+            }else{
+                $venta->gravada = 0;
+                $venta->exenta = $venta->sub_total;
+            }
+
             return [
                 $this->index++,
                 $venta->fecha ?? 'N/A',
@@ -111,7 +118,7 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                 $cliente->nit ?? $cliente->ncr ?? 'N/A',
                 $venta->exenta > 0 ? $venta->exenta * -1 : $venta->exenta,
                 $venta->no_sujeta > 0 ? $venta->no_sujeta * -1 : $venta->no_sujeta,
-                $venta->id_venta ? $venta->sub_total * -1 : $venta->sub_total,
+                $venta->id_venta ? $venta->gravada * -1 : $venta->gravada,
                 $venta->id_venta ? $venta->iva * -1 : $venta->iva,
                 0,
                 $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,

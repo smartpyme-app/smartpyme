@@ -239,7 +239,13 @@
             <div class="row" *ngIf="gasto.impuestos_valores && gasto.impuestos_valores.length > 0">
                 <div class="form-group col-md-4 col-lg-4" *ngFor="let impuestoValor of gasto.impuestos_valores">
                     <label for="">{{ impuestoValor.nombre }}:</label>
-                    <input type='number' disabled class="form-control" [name]="'impuesto_'+impuestoValor.id_impuesto" [(ngModel)]="impuestoValor.valor"/>
+                    <input 
+                        type='number' 
+                        step="0.01"
+                        class="form-control" 
+                        [name]="'impuesto_'+impuestoValor.id_impuesto" 
+                        [(ngModel)]="impuestoValor.valor"
+                        (change)="onImpuestoValorChange()"/>
                 </div>
             </div>
             <div class="form-group col-md-12 col-lg-12">
