@@ -60,7 +60,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
-                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('num_identificacion')" [ngClass]="{'sorted-asc': filtros.orden == 'num_identificacion' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'num_identificacion' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
+                        <th *ngIf="isColumnEnabled('columna_proyecto')" (click)="setOrden('id_proyecto')" [ngClass]="{'sorted-asc': filtros.orden == 'id_proyecto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'id_proyecto' && filtros.direccion == 'desc'}" class="click">Proyecto</th>
                         <!-- <th>Usuario</th> -->
                         <th>Proveedor</th>
                         <th>Concepto</th>

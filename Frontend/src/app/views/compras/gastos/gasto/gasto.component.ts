@@ -1094,4 +1094,8 @@ public setArea(area: any) {
 
     this.gasto.total = total.toFixed(2);
   }
+
+  public isColumnEnabled(columnName: string): boolean {
+      return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
 }
