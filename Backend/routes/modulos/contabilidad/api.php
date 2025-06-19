@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/contabilidad/partida/cxp',  [ApiController::class, 'cxp']);
     Route::post('/contabilidad/partida/cxc',  [ApiController::class, 'cxc']);
     Route::post('/contabilidad/partida/retaceo',  [ApiController::class, 'retaceo']);
-    Route::post('/contabilidad/partida/retaceo-cliente',  [ApiController::class, 'retaceoEstiloCliente']);
     Route::post('/contabilidad/partida/ajuste',  [ApiController::class, 'ajuste']);
     Route::post('/contabilidad/partida/traslado',  [ApiController::class, 'traslado']);
 

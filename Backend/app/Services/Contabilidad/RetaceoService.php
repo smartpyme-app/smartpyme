@@ -13,6 +13,10 @@ use Exception;
 
 class RetaceoService
 {
+    /**
+     * Crear partidas contables siguiendo el patrón específico del cliente
+     * Usa cuenta "Pedido en Transito" y agrupa gastos por proveedor
+     */
     public function crearPartida($id_retaceo)
     {
         $configuracion = Configuracion::firstOrFail();
@@ -28,160 +32,6 @@ class RetaceoService
                                   ->first();
         if ($partidaExistente) {
             throw new Exception('Ya existe una partida contable para este retaceo.', 400);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            // Crear la partida principal del retaceo
-            $partida = Partida::create([
-                'fecha'         => $retaceo->fecha,
-                'tipo'          => 'Ajuste',
-                'concepto'      => 'Retaceo de importación. DUCA #' . $retaceo->numero_duca . ' - Factura #' . $retaceo->numero_factura,
-                'estado'        => 'Pendiente',
-                'referencia'    => 'Retaceo',
-                'id_referencia' => $retaceo->id,
-                'id_usuario'    => $retaceo->id_usuario,
-                'id_empresa'    => $retaceo->id_empresa,
-            ]);
-
-            // DEBE: Incrementar el inventario por el monto de los gastos distribuidos
-            foreach ($retaceo->distribucion as $distribucion) {
-                $montoIncremento = $distribucion->costo_landed - $distribucion->valor_fob;
-
-                if ($montoIncremento > 0) {
-                    // Buscar la cuenta contable específica de la categoría del producto
-                    $producto = $distribucion->producto;
-
-                    if ($producto && $producto->id_categoria) {
-                        $cuentaCategoria = CuentaCategoria::where('id_categoria', $producto->id_categoria)
-                                                         ->where('id_sucursal', $retaceo->id_sucursal)
-                                                         ->first();
-
-                        if ($cuentaCategoria && $cuentaCategoria->id_cuenta_contable_inventario) {
-                            $cuenta = Cuenta::findOrFail($cuentaCategoria->id_cuenta_contable_inventario);
-                        } else {
-                            $cuenta = Cuenta::findOrFail($configuracion->id_cuenta_inventario);
-                        }
-                    } else {
-                        $cuenta = Cuenta::findOrFail($configuracion->id_cuenta_inventario);
-                    }
-
-                    Detalle::create([
-                        'id_cuenta'         => $cuenta->id,
-                        'codigo'            => $cuenta->codigo,
-                        'nombre_cuenta'     => $cuenta->nombre,
-                        'concepto'          => 'Incremento de inventario por retaceo - ' . $producto->nombre,
-                        'debe'              => $montoIncremento,
-                        'haber'             => null,
-                        'saldo'             => 0,
-                        'id_partida'        => $partida->id
-                    ]);
-                }
-            }
-
-            // HABER: Registrar los gastos del retaceo
-            foreach ($retaceo->gastos as $gasto) {
-                if ($gasto->monto > 0) {
-                    // Determinar la cuenta contable según el tipo de gasto
-                    $cuentaGasto = $this->obtenerCuentaGasto($gasto->tipo_gasto, $configuracion);
-
-                    if ($cuentaGasto) {
-                        Detalle::create([
-                            'id_cuenta'         => $cuentaGasto->id,
-                            'codigo'            => $cuentaGasto->codigo,
-                            'nombre_cuenta'     => $cuentaGasto->nombre,
-                            'concepto'          => 'Gasto de importación - ' . $gasto->tipo_gasto,
-                            'debe'              => null,
-                            'haber'             => $gasto->monto,
-                            'saldo'             => 0,
-                            'id_partida'        => $partida->id
-                        ]);
-                    }
-                }
-            }
-
-            // Si no hay gastos específicos, usar CxP por el total
-            if ($retaceo->gastos->isEmpty() && $retaceo->total_gastos > 0) {
-                $cuentaCxP = Cuenta::findOrFail($configuracion->id_cuenta_cxp);
-
-                Detalle::create([
-                    'id_cuenta'         => $cuentaCxP->id,
-                    'codigo'            => $cuentaCxP->codigo,
-                    'nombre_cuenta'     => $cuentaCxP->nombre,
-                    'concepto'          => 'Gastos de importación pendientes de pago',
-                    'debe'              => null,
-                    'haber'             => $retaceo->total_gastos,
-                    'saldo'             => 0,
-                    'id_partida'        => $partida->id
-                ]);
-            }
-
-            DB::commit();
-
-            return [
-                'success' => true,
-                'mensaje' => 'Partida contable generada correctamente',
-                'partida' => $partida
-            ];
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            throw new Exception('Error al generar partida contable: ' . $e->getMessage(), 400);
-        }
-    }
-
-    /**
-     * Obtener la cuenta contable según el tipo de gasto
-     */
-    private function obtenerCuentaGasto($tipoGasto, $configuracion)
-    {
-        // Mapear tipos de gasto a cuentas contables
-        // Esto puede ser configurado según las necesidades contables de la empresa
-        switch (strtolower($tipoGasto)) {
-            case 'transporte':
-                // Buscar cuenta específica de gastos de transporte
-                return Cuenta::where('nombre', 'like', '%transporte%')
-                           ->orWhere('nombre', 'like', '%flete%')
-                           ->first() ?? Cuenta::findOrFail($configuracion->id_cuenta_cxp);
-
-            case 'seguro':
-                // Buscar cuenta específica de seguros
-                return Cuenta::where('nombre', 'like', '%seguro%')
-                           ->first() ?? Cuenta::findOrFail($configuracion->id_cuenta_cxp);
-
-            case 'dai':
-                // Buscar cuenta específica de DAI/Aranceles
-                return Cuenta::where('nombre', 'like', '%dai%')
-                           ->orWhere('nombre', 'like', '%arancel%')
-                           ->first() ?? Cuenta::findOrFail($configuracion->id_cuenta_cxp);
-
-            case 'otros':
-            default:
-                // Usar cuenta por pagar por defecto
-                return Cuenta::findOrFail($configuracion->id_cuenta_cxp);
-        }
-    }
-
-    /**
-     * Crear partidas contables siguiendo el patrón específico del cliente
-     * Usa cuenta "Pedido en Transito" y agrupa gastos por proveedor
-     */
-    public function crearPartidaEstiloCliente($id_retaceo)
-    {
-        $configuracion = Configuracion::firstOrFail();
-        $retaceo = Retaceo::with('distribucion', 'gastos', 'compra')->findOrFail($id_retaceo);
-
-        if ($retaceo->estado !== 'Aplicado') {
-            throw new Exception('El retaceo debe estar en estado Aplicado para generar la partida contable.', 400);
-        }
-
-        // Verificar que no exista una partida contable para este retaceo
-        $partidaExistente = Partida::where('referencia', 'Retaceo-Cliente')
-                                  ->where('id_referencia', $retaceo->id)
-                                  ->first();
-        if ($partidaExistente) {
-            throw new Exception('Ya existe una partida contable estilo cliente para este retaceo.', 400);
         }
 
         if (!$configuracion->id_cuenta_pedidos_transito) {
@@ -203,7 +53,7 @@ class RetaceoService
                     'tipo'          => 'Egreso',
                     'concepto'      => $grupo['concepto'],
                     'estado'        => 'Pendiente',
-                    'referencia'    => 'Retaceo-Cliente',
+                    'referencia'    => 'Retaceo',
                     'id_referencia' => $retaceo->id,
                     'id_usuario'    => $retaceo->id_usuario,
                     'id_empresa'    => $retaceo->id_empresa,
@@ -266,13 +116,13 @@ class RetaceoService
 
             return [
                 'success' => true,
-                'mensaje' => 'Partidas contables estilo cliente generadas correctamente',
+                'mensaje' => 'Partidas contables generadas correctamente',
                 'partidas_creadas' => $partidaNumero - 1
             ];
 
         } catch (\Exception $e) {
             DB::rollback();
-            throw new Exception('Error al generar partidas estilo cliente: ' . $e->getMessage(), 400);
+            throw new Exception('Error al generar partidas contables: ' . $e->getMessage(), 400);
         }
     }
 

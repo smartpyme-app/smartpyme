@@ -142,30 +142,12 @@ export class RetaceosListComponent implements OnInit {
     this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: retaceo.id })
       .subscribe(
         (response) => {
-          this.alertService.success('Partida contable generada correctamente', 'Partida contable generada');
-          // Marcar el retaceo como contabilizado (opcional, dependiendo de tu modelo)
-          retaceo.contabilizado = true;
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-  }
-
-  generarPartidaContableEstiloCliente(retaceo: any) {
-    this.loading = true;
-
-    this.apiService.store('contabilidad/partida/retaceo-cliente', { id_retaceo: retaceo.id })
-      .subscribe(
-        (response) => {
           this.alertService.success(
-            `Partidas contables estilo cliente generadas correctamente. Se crearon ${response.partidas_creadas} partidas.`,
+            `Partidas contables generadas correctamente. Se crearon ${response.partidas_creadas} partidas.`,
             'Partidas generadas'
           );
           // Marcar el retaceo como contabilizado
-          retaceo.contabilizado_cliente = true;
+          retaceo.contabilizado = true;
           this.loading = false;
         },
         (error) => {
