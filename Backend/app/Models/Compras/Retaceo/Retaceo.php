@@ -31,7 +31,12 @@ class Retaceo extends Model
         'total_retaceado',
         'id_empresa',
         'id_sucursal',
+        'id_bodega',
         'id_usuario'
+    ];
+
+    protected $attributes = [
+        'estado' => 'Borrador'
     ];
 
     protected static function boot()

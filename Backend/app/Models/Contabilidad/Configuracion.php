@@ -28,11 +28,12 @@ class Configuracion extends Model
         'id_cuenta_iva_compras',
         'id_cuenta_iva_retenido_compras',
         'id_cuenta_renta_retenida_compras',
-        
+
         'id_cuenta_perdida_ajuste',
         'id_cuenta_ganancia_ajuste',
 
         'generar_partidas', // Manual, Auto
+        'id_cuenta_pedidos_transito',
         'id_empresa',
     ];
 
@@ -51,5 +52,5 @@ class Configuracion extends Model
     public function empresa(){
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
-    
+
 }
