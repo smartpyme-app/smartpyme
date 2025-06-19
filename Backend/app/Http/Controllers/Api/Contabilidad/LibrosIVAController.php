@@ -27,6 +27,7 @@ use App\Exports\Contabilidad\LibroPercepcion1Export;
 use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class LibrosIVAController extends Controller
 {
@@ -56,9 +57,9 @@ class LibrosIVAController extends Controller
                 'fecha'                 => $venta->fecha,
                 'correlativo'           => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
                 'num_control_interno'   => $venta->correlativo,
-                'ventas_exentas'        => $venta->exenta,
-                'ventas_gravadas'       => $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->total,
-                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
+                'ventas_exentas'        => $venta->iva == 0 ? $venta->total : 0,
+                'ventas_gravadas'       => $venta->iva > 0 ? ($venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total) : 0,
+                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0.00',
                 'total'                 => $venta->total,
                 'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
                 'no_sujeta'            => $venta->no_sujeta,
@@ -69,12 +70,21 @@ class LibrosIVAController extends Controller
 
 
         // Ordenamos por 'correlativo' de forma descendente y reindexamos
-        $ivas = $ivas->sortByDesc(function ($item) {
+        $libroconsumidores = $ivas->sortByDesc(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
             })->values()->all();
-        // Log::info($ivas);
+        
 
-        return response()->json($ivas, 200);
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
+
+            return $pdf->stream('libro-consumidores.pdf');
+        }
+
+        return response()->json($libroconsumidores, 200);
     }
 
     public function consumidoresLibroExport(Request $request)
@@ -119,19 +129,14 @@ class LibrosIVAController extends Controller
                 'num_documento'         => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
                 'nombre_cliente'        => $venta->nombre_cliente,
                 'nit_nrc'               => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas'        => $venta->exenta,
-                'ventas_no_sujetas'     => $venta->no_sujeta,
-                'ventas_gravadas'       => $venta->sub_total,
-                'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
+                'ventas_exentas'        => $venta->iva == 0 ? $venta->sub_total : 0,
+                'ventas_gravadas'       => $venta->iva > 0 ? $venta->sub_total : 0,
                 'debito_fiscal'         => $venta->iva,
-                'ventas_exentas_cuenta_a_terceros' => 0,
-                'ventas_gravadas_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
-                'iva_retenido'         => $venta->iva_retenido,
+                'ventas_exentas_cuenta_a_terceros' => 0.00,
+                'ventas_gravadas_cuenta_a_terceros' => $venta->cuenta_a_terceros,
+                'debito_fiscal_cuenta_a_terceros' => 0.00,
                 'iva_percibido'         => $venta->iva_percibido,
                 'total'                 => $venta->total,
-                'no_sujeta'            => $venta->no_sujeta,
                 'id_venta'              => $venta->id,
             ];
         });
@@ -164,7 +169,6 @@ class LibrosIVAController extends Controller
                 'ventas_exentas_cuenta_a_terceros' => 0,
                 'ventas_gravadas_cuenta_a_terceros' => 0,
                 'debito_fiscal_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
                 'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
                 'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
                 'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
@@ -172,7 +176,7 @@ class LibrosIVAController extends Controller
         });
 
         // Unir y ordenar ambas colecciones por fecha
-        $libroventas = collect($ventasData)
+        $librocontribuyentes = collect($ventasData)
             ->merge(collect($devolucionesData))
             ->sortByDesc(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
@@ -180,7 +184,16 @@ class LibrosIVAController extends Controller
             ->values()
             ->all();
 
-        return response()->json($libroventas, 200);
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
+
+            return $pdf->stream('libro-contribuyentes.pdf');
+        }
+
+        return response()->json($librocontribuyentes, 200);
     }
 
     public function contribuyentesLibroExport(Request $request)
@@ -428,16 +441,24 @@ class LibrosIVAController extends Controller
         });
 
         // Unir y ordenar ambas colecciones por fecha
-        $libroCompras = collect($comprasData)
+        $librocompras = collect($comprasData)
             ->merge(collect($gastosData))
             ->merge(collect($devolucionesData))
             ->sortBy('fecha')
             ->values()
             ->all();
 
+        $formato = $request->query('formato') ?? 'json';
+
+        if ($formato === 'pdf') {
+            $pdf = PDF::loadView('reportes.contabilidad.libro-compras', compact('librocompras', 'request'));
+            $pdf->setPaper('US Letter', 'landscape');
+
+            return $pdf->stream('libro-compras.pdf');
+        }
 
 
-        return response()->json($libroCompras, 200);
+        return response()->json($librocompras, 200);
     }
 
 
