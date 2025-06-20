@@ -7,6 +7,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Illuminate\Http\Request;
 use App\Models\Compras\Gastos\Gasto;
+use Illuminate\Support\Facades\Log;
 
 class GastosExport implements FromCollection, WithHeadings, WithMapping
 {
@@ -17,7 +18,9 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
 
     public function filter(Request $request)
     {
+        Log::info($request);
         $this->request = $request;
+
     }
 
     public function headings():array{
@@ -31,6 +34,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'Banco',
             'Vencimiento',
             'Proveedor',
+            'Num identificación',
+            'Proyecto',
             'NIT',
             'Registro',
             'Subtotal',
@@ -52,6 +57,12 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
                     })
                     ->when($request->recurrente !== null, function($q) use ($request){
                         $q->where('recurrente', !!$request->recurrente);
+                    })
+                    ->when($request->num_identificacion, function($q) use ($request){
+                        $q->where('num_identificacion', $request->num_identificacion);
+                    })
+                    ->when($request->id_proyecto, function($q) use ($request){
+                        $q->where('id_proyecto', $request->id_proyecto);
                     })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
@@ -86,6 +97,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->detalle_banco,
               $row->vencimiento,
               $row->nombre_proveedor,
+              $row->num_identificacion,
+              $row->proyecto()->pluck('nombre')->first(),
               $row->proveedor()->pluck('nit')->first(),
               $row->proveedor()->pluck('ncr')->first(),
               number_format($row->sub_total,2),

@@ -80,6 +80,16 @@
                 <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
             </div>
         </div>
+        <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
+            <label for="num_identificacion">Número identificación:</label>
+            <input 
+            type="text" 
+            [(ngModel)]="venta.num_identificacion" 
+            name="num_identificacion" 
+            class="form-control" 
+            id="num_identificacion" 
+            placeholder="Número de identificación">
+        </div>
     </div>
 </section>
 

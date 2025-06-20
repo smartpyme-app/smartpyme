@@ -29,6 +29,9 @@ class GastosController extends Controller
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
             })
+            ->when($request->num_identificacion, function ($q) use ($request) {
+                $q->where('num_identificacion', $request->num_identificacion);
+            })
             ->when($request->id_usuario, function ($query) use ($request) {
                 return $query->where('id_usuario', $request->id_usuario);
             })
@@ -463,4 +466,15 @@ class GastosController extends Controller
         // Categoría predeterminada
         return 'Gastos varios';
     }
+
+    public function getNumerosIdentificacion(){
+        $numsIds = Gasto::select('num_identificacion')
+            ->distinct()
+            ->where('id_empresa', auth()->user()->id_empresa)
+            ->whereNotNull('num_identificacion')
+            ->where('num_identificacion', '!=', '')
+            ->get();
+        
+        return Response()->json($numsIds, 200);
+     }
 }

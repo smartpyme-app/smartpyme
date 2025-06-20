@@ -31,6 +31,8 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
             'Categoria',
             'Documento',
             'Referencia',
+            'Proyecto',
+            'Num Identificacion',
             'Estado',
             'Vencimiento',
             'Cantidad',
@@ -59,6 +61,12 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
                             })
                             ->when($request->recurrente !== null, function($q) use ($request){
                                 $q->where('recurrente', !!$request->recurrente);
+                            })
+                            ->when($request->id_proyecto, function($q) use ($request){
+                                $q->where('id_proyecto', $request->id_proyecto);
+                            })
+                            ->when($request->num_identificacion, function($q) use ($request){
+                                $q->where('num_identificacion', $request->num_identificacion);
                             })
                             ->when($request->id_sucursal, function($query) use ($request){
                                 return $query->where('id_sucursal', $request->id_sucursal);
@@ -97,6 +105,8 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
               $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
               $row->compra()->pluck('tipo_documento')->first(),
               $row->compra()->pluck('referencia')->first(),
+              $row->compra()->first()->nombre_proyecto,
+              $row->compra()->pluck('num_identificacion')->first(),
               $row->compra()->pluck('estado')->first(),
               $row->compra()->pluck('fecha_pago')->first(),
               $row->cantidad,

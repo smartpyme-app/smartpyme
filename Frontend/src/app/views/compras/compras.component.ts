@@ -36,6 +36,7 @@ export class ComprasComponent implements OnInit {
         categorias: [],
         marcas: [],
     };
+    public numeros_ids:any = [];
     public downloadingRentabilidad:boolean = false;
     
 
@@ -49,6 +50,7 @@ export class ComprasComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+        this.getNumsIds();
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
@@ -69,6 +71,7 @@ export class ComprasComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.num_identificacion = '';
 
         this.filtrarCompras();
     }
@@ -138,6 +141,12 @@ export class ComprasComponent implements OnInit {
     public openModalEdit(template: TemplateRef<any>, compra:any) {
         this.compra = compra;
 
+        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                this.proyectos = proyectos;
+            }, error => {this.alertService.error(error); });
+        }
+
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
@@ -177,6 +186,8 @@ export class ComprasComponent implements OnInit {
             }
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
+
+        this.filtrarCompras();
 
     }
 
@@ -421,5 +432,16 @@ export class ComprasComponent implements OnInit {
       }
     );
   }
+
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
+
+  getNumsIds(){
+    this.apiService.getAll('compras/nums-ids').subscribe(numsIds => { 
+        this.numeros_ids = numsIds;
+    }, error => {this.alertService.error(error); });
+  } 
+
 
 }

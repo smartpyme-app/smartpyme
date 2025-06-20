@@ -18,6 +18,7 @@ class Compra extends Model {
         'estado',
         'forma_pago',
         'tipo_documento',
+        'num_identificacion',
         // 'condicion',
         'fecha_pago',
         'referencia',
@@ -53,7 +54,7 @@ class Compra extends Model {
         'tipo_costo_gasto',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto'];
 
     protected static function boot()
     {
@@ -97,6 +98,11 @@ class Compra extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
+    public function getNombreProyectoAttribute()
+    {
+        return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
     public function bodega(){
         return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
     }
@@ -127,6 +133,11 @@ class Compra extends Model {
 
     public function devoluciones(){
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
+    }
+    
+    public function proyecto()
+    {
+        return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
     }
 
 

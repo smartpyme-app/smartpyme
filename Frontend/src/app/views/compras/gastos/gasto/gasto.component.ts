@@ -990,6 +990,7 @@ export class GastoComponent implements OnInit {
     this.gasto.total = total.toFixed(2);
   }
 
-  
-
+  public isColumnEnabled(columnName: string): boolean {
+      return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  }
 }

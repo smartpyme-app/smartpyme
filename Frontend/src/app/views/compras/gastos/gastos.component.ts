@@ -24,6 +24,7 @@ export class GastosComponent implements OnInit {
     public sucursales:any = [];
     public proveedores:any = [];
     public filtros:any = {};
+    public numeros_ids:any = [];
 
     modalRef!: BsModalRef;
 
@@ -52,9 +53,11 @@ export class GastosComponent implements OnInit {
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.num_identificacion = '';
 
         this.loading = true;
         this.filtrarGastos();
+        this.getNumsIds();
     }
 
     public filtrarGastos(){
@@ -165,11 +168,19 @@ export class GastosComponent implements OnInit {
             }, error => {this.alertService.error(error); });
         }
 
-        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
-                this.proyectos = proyectos;
-            }, error => {this.alertService.error(error); });
-        }
+        // if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+        //     this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+        //         this.proyectos = proyectos;
+        //     }, error => {this.alertService.error(error); });
+        // }
+
+        if(!this.proyectos.length && 
+            this.apiService.auth_user().empresa.modulo_proyectos && 
+            this.isColumnEnabled('columna_proyecto')){
+             this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+                 this.proyectos = proyectos;
+             }, error => {this.alertService.error(error); });
+         }
 
         this.modalRef = this.modalService.show(template);
     }
@@ -262,5 +273,14 @@ export class GastosComponent implements OnInit {
         }
     }
 
+    public isColumnEnabled(columnName: string): boolean {
+        return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+    }
+
+    getNumsIds(){
+        this.apiService.getAll('gastos/nums-ids').subscribe(numsIds => { 
+            this.numeros_ids = numsIds;
+        }, error => {this.alertService.error(error); });
+    }
 
 }
