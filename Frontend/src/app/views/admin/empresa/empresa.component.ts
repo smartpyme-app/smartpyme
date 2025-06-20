@@ -81,7 +81,7 @@ export class EmpresaComponent implements OnInit {
 
     public onSubmit(): Promise<any> {
 
-      return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             this.saving = true;
             this.apiService.store('empresa', this.empresa).subscribe(empresa => {
                 this.empresa = empresa;
@@ -618,6 +618,23 @@ export class EmpresaComponent implements OnInit {
                 this.downloading = false; 
             }
         );
+    }
+
+
+    setCamposRenta(){
+        this.onSubmit().then(() => {
+            this.mhService.auth().subscribe(response => {
+
+                this.apiService.getAll('set-campos-nuevos').subscribe((usuario) => {
+                    this.alertService.success(
+                      'Usuario guardado',
+                      'El usuario fue guardado exitosamente.'
+                    );
+                  }, (error) => {this.alertService.error(error); this.saving = false; }
+                );
+                
+            },error => {this.alertService.error(error); this.cheking = false; });
+        });
     }
 
 }
