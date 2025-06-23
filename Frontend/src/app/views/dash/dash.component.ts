@@ -31,6 +31,7 @@ export class DashComponent implements OnInit {
         if(this.apiService.validateRole('usuario_ventas', true)){
             this.router.navigate(['/vendedor/ventas']);    
         }
+        
         if(this.apiService.validateRole('usuario_citas', true)){
             this.router.navigate(['/citas']);    
         }

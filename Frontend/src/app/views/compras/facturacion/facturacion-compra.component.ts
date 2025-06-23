@@ -35,6 +35,9 @@ export class FacturacionCompraComponent implements OnInit {
   public facturarCotizacion = false;
   public imprimir: boolean = false;
   public comprainternacional = false;
+  public showAuthModal = false;
+  
+
   cotizacion: any = {};
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -343,41 +346,120 @@ export class FacturacionCompraComponent implements OnInit {
   }
 
   // Guardar compra
-  public onSubmit() {
+  // public onSubmit() {
+  //   this.saving = true;
+    
+  //   if (this.duplicarcompra) {
+  //     this.compra.recurrente = false;
+  //   }
+    
+  //   this.apiService.store('compra/facturacion', this.compra).subscribe(
+  //     compra => {
+  //       this.saving = false;
 
+  //       // Verificar si la compra está pendiente de autorización
+  //       if (compra.estado === 'Pendiente Autorización') {
+  //         this.alertService.success(
+  //           'Compra pendiente de autorización', 
+  //           'La compra se ha creado y está esperando aprobación. Recibirá una notificación cuando sea autorizada.'
+  //         );
+  //         this.router.navigate(['/compras']);
+  //         return;
+  //       }
+
+  //       // Flujo normal para compras aprobadas
+  //       if (this.compra.cotizacion == 1) {
+  //         this.router.navigate(['/ordenes-de-compras']);
+  //         this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+  //       } else {
+  //         this.router.navigate(['/compras']);
+  //         this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+          
+  //         // Generar partida contable solo para compras aprobadas
+  //         if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
+  //           this.apiService.store('contabilidad/partida/compra', compra).subscribe(
+  //             compra => {}, 
+  //             error => { this.alertService.error(error); }
+  //           );
+  //         }
+  //       }
+  //     }, 
+  //     error => { 
+  //       this.saving = false;
+        
+  //       // Error 403 = primera solicitud de autorización (abre modal)
+  //       if (error.status === 403 && error.error?.requires_authorization) {
+  //         // El interceptor ya abrió el modal
+  //         // No hacer nada más aquí
+  //         return;
+  //       }
+        
+  //       this.alertService.error(error);
+  //     }
+  //   );
+  // }
+
+  // Guardar compra
+  public onSubmit() {
     this.saving = true;
+    
     if (this.duplicarcompra) {
       this.compra.recurrente = false;
     }
-    this.apiService.store('compra/facturacion', this.compra).subscribe(compra => {
-      this.saving = false;
+    
+    console.log('=== COMPRA COMPONENT DEBUG ===');
+    console.log('Datos de compra a enviar:', this.compra);
+    
+    this.apiService.store('compra/facturacion', this.compra).subscribe(
+      compra => {
+        this.saving = false;
 
-      if (this.compra.cotizacion == 1) {
-        this.router.navigate(['/ordenes-de-compras']);
-        this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-      } else {
-        this.router.navigate(['/compras']);
-        this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
-        //Generar partida contable
-        if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
-          this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
-          }, error => { this.alertService.error(error); });
+        // Verificar si la compra está pendiente de autorización
+        if (compra.estado === 'Pendiente Autorización') {
+          this.alertService.success(
+            'Compra pendiente de autorización', 
+            'La compra se ha creado y está esperando aprobación. Recibirá una notificación cuando sea autorizada.'
+          );
+          this.router.navigate(['/compras']);
+          return;
         }
+
+        // Flujo normal para compras aprobadas
+        if (this.compra.cotizacion == 1) {
+          this.router.navigate(['/ordenes-de-compras']);
+          this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+        } else {
+          this.router.navigate(['/compras']);
+          this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+          
+          // Generar partida contable solo para compras aprobadas
+          if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
+            this.apiService.store('contabilidad/partida/compra', compra).subscribe(
+              compra => {}, 
+              error => { this.alertService.error(error); }
+            );
+          }
+        }
+      }, 
+      error => { 
+        this.saving = false;
+        
+        console.log('=== ERROR RECIBIDO ===');
+        console.log('Error status:', error.status);
+        console.log('Error object:', error);
+        console.log('Error body:', error.error);
+        
+        // Error 403 = primera solicitud de autorización (abre modal)
+        if (error.status === 403 && error.error?.requires_authorization) {
+          console.log('Debería abrir modal de autorización');
+          // El interceptor ya abrió el modal
+          // No hacer nada más aquí
+          return;
+        }
+        
+        this.alertService.error(error);
       }
-
-      // // Si es cotización
-      // if (this.facturarCotizacion) {
-      //   this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
-      //     // compra.estado = 'Aceptada';
-      //     // this.apiService.store('compra', compra).subscribe(compra => {
-
-      //     // }, error => { this.alertService.error(error); this.saving = false; });
-      //   }, error => { this.alertService.error(error); this.saving = false; });
-
-      // }
-
-    }, error => { this.alertService.error(error); this.saving = false; });
-
+    );
   }
 
   //Limpiar
@@ -511,5 +593,27 @@ export class FacturacionCompraComponent implements OnInit {
       const valor = parseFloat(detalle[campo]) || 0;
       return total + valor;
     }, 0);
+  }
+
+  openModal() {
+    console.log('Abriendo modal, showAuthModal antes:', this.showAuthModal);
+    this.showAuthModal = true;
+    console.log('Abriendo modal, showAuthModal después:', this.showAuthModal);
+  }
+
+  closeAuthModal() {
+    this.showAuthModal = false;
+  }
+
+  onAuthorizationRequested(event: any) {
+    console.log('Authorization requested:', event);
+    
+    if (event.shouldProceedWithSubmit) {
+      // Agregar el authorization_id a la compra para que no requiera autorización de nuevo
+      this.compra.authorization_id = event.authorization.id;
+      
+      // Ejecutar el submit automáticamente
+      this.onSubmit();
+    }
   }
 }

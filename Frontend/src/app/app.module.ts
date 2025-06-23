@@ -1,6 +1,7 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthorizationInterceptor } from '@services/Authorization/authorization.interceptor';
 
 import { AppRoutingModule } from './app.routing.module';
 import { JwtInterceptor } from '@services/JwtInterceptor';
@@ -27,8 +28,6 @@ import { AuthModule } from './auth/auth.module';
 import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
 import { ReactiveFormsModule } from '@angular/forms';
-
-
 // Super Admin
   import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
@@ -63,8 +62,7 @@ import { ReactiveFormsModule } from '@angular/forms';
   import { HasPermissionDirective } from './directives/has-permission.directive';
   import { RoleGuard } from './guards/role.guard';
   import { PermissionGuard } from './guards/permission.guard';
-import { ServiceWorkerModule } from '@angular/service-worker';
-
+  import { ServiceWorkerModule } from '@angular/service-worker';
 
 @NgModule({
   declarations: [
@@ -104,7 +102,8 @@ import { ServiceWorkerModule } from '@angular/service-worker';
       registrationStrategy: 'registerWhenStable:30000'
     }),
   ],
-  providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
+  providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true } ,
+                { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, RoleGuard, PermissionGuard,  AlertService, ApiService,
                 MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]

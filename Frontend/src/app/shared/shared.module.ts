@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
@@ -41,6 +42,8 @@ import { NotFoundComponent } from './404/not-found.component';
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { AuthorizationRequestModalComponent } from './authorization/authorization-request/authorization-request-modal.component';
+import { AuthorizationViewComponent } from './authorization/authorization-view/authorization-view.component';
 
 @NgModule({
   imports: [
@@ -81,7 +84,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -109,7 +114,8 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
     CrearEventoComponent,
-    CrearProyectoComponent
+    CrearProyectoComponent,
+    AuthorizationRequestModalComponent
   ],
   providers: [AlertService],
 })

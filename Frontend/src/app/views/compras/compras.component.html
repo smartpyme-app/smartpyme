@@ -85,7 +85,13 @@
                         <td><span title="{{ compra.detalle_banco }}">{{compra.forma_pago}}</span></td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{
+                                'bg-warning' : compra?.estado == 'Pendiente', 
+                                'bg-danger' : compra?.estado == 'Anulada', 
+                                'bg-info' : compra?.estado == 'Consigna', 
+                                'bg-success' : compra?.estado == 'Pagada', 
+                                'bg-primary' : compra?.estado == 'Pre-compra' || compra?.estado == 'Pendiente Autorización'
+                            }">
                                 {{ compra.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
                                     ✅

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Authorization\AuthorizationType;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -97,6 +98,11 @@ class User extends Authenticatable implements JWTSubject
 
     public function getRolIdAttribute(){
         return $this->roles->first()->id;
+    }
+
+    public function authorizationTypes()
+    {
+        return $this->belongsToMany(AuthorizationType::class, 'user_authorization_types', 'user_id', 'authorization_type_id');
     }
 
 }

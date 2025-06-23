@@ -17,6 +17,7 @@ import { NotificacionesComponent }     from '@views/admin/notificaciones/notific
 import { DocsComponent }     from '@views/admin/docs/docs.component';
 import { RolesPermisosComponent }     from '@views/admin/roles-permisos/roles-permisos.component';
 import { ReportesComponent }    from '@views/reportes/reportes.component';
+import { AuthorizationViewComponent } from '@shared/authorization/authorization-view/authorization-view.component';
 
 const routes: Routes = [
   {
@@ -34,6 +35,7 @@ const routes: Routes = [
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
         { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
+        { path: 'authorization/:code', component: AuthorizationViewComponent, title: 'Autorización' },
     ]
   }
 ];

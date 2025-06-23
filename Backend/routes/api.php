@@ -103,6 +103,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// Ordenes de producción
 		require base_path('routes/modulos/ventas/orden_produccion.php');
 
+	// Autorizaciones
+		require base_path('routes/modulos/authorization/authorizations.php');
+
 
 });
 

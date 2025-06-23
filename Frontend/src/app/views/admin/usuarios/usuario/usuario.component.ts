@@ -35,11 +35,18 @@ export class UsuarioComponent implements OnInit {
 
   public editandoEmail: boolean = false;
   public editandoPassword: boolean = false;
+  public editandoCodigoAuth: boolean = false;
   public nuevoEmail: string = '';
   public newPassword: string = '';
+  public nuevoCodigoAuth: string = '';
+
+  
   public confirmPassword: string = '';
+  public confirmarCodigoAuth: string = '';
   public showPassword: boolean = false;
+  public showAuthCode: boolean = false;
   public showConfirmPassword: boolean = false;
+  public showConfirmAuthCode: boolean = false;
   public rolePermissions: string[] = [];
   public directPermissions: string[] = [];
   public allPermissions: Permission[] = [];
@@ -278,6 +285,63 @@ export class UsuarioComponent implements OnInit {
     this.editandoPassword = true;
     this.newPassword = '';
     this.confirmPassword = '';
+  }
+
+  editarCodigoAuth() {
+    this.editandoCodigoAuth = true;
+    this.newPassword = '';
+    this.confirmPassword = '';
+  }
+
+  cancelarCodigoAuth() {
+    this.editandoCodigoAuth = false;
+    this.newPassword = '';
+    this.confirmPassword = '';
+  }
+
+  guardarCodigoAuth() {
+
+    if (!this.nuevoCodigoAuth) {
+        this.alertService.error('El código de autorización es requerido');
+        return;
+    }
+
+    if (this.nuevoCodigoAuth.length < 3 || this.nuevoCodigoAuth.length > 80) {
+        this.alertService.error('El código debe tener entre 3 y 80 caracteres');
+        return;
+    }
+
+    if (!/^\d+$/.test(this.nuevoCodigoAuth)) {
+        this.alertService.error('El código debe ser numérico');
+        return;
+    }
+
+    if (this.nuevoCodigoAuth !== this.confirmarCodigoAuth) {
+        this.alertService.error('Los códigos no coinciden');
+        return;
+    }
+
+    this.apiService
+        .update('usuario/codigo-autorizacion', this.usuario.id, {
+            codigo_autorizacion: this.nuevoCodigoAuth
+        })
+        .subscribe(
+            () => {
+                this.usuario.codigo_autorizacion = this.nuevoCodigoAuth;
+                this.editandoCodigoAuth = false;
+                this.nuevoCodigoAuth = '';
+                this.confirmarCodigoAuth = '';
+                this.showAuthCode = false;
+                this.showConfirmAuthCode = false;
+                this.alertService.success(
+                    'Código de autorización actualizado correctamente',
+                    'El código de autorización se ha actualizado correctamente.'
+                );
+            },
+            (error) => {
+                this.alertService.error(error);
+            }
+        );
   }
 
   cancelarPassword() {

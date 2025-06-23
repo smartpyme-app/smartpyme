@@ -21,9 +21,9 @@
 <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
   <app-sidebar-admin *ngIf="apiService.verifyRoleAdmin() && !usuario.empresa.licencia"></app-sidebar-admin>
   <app-sidebar *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia"></app-sidebar>
-  <app-sidebar-ventas *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyVentasRole()"></app-sidebar-ventas>
-  <app-sidebar-servicios *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyCitasRole()"></app-sidebar-servicios>
-  <app-sidebar-organizaciones *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-sidebar-organizaciones>
+  <!-- <app-sidebar-ventas *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyVentasRole()"></app-sidebar-ventas> -->
+  <!-- <app-sidebar-servicios *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyCitasRole()"></app-sidebar-servicios> -->
+  <!-- <app-sidebar-organizaciones *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-sidebar-organizaciones> -->
 
   <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <app-header></app-header>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User as Usuario;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
@@ -204,6 +205,19 @@ class UsuariosController extends Controller
         $user->password = Hash::make($request->password);
         $user->save();
         return Response()->json($user, 200);
+    }
+
+    public function updateAuthCode(Request $request, $id)
+    {
+        $request->validate([
+            'codigo_autorizacion' => 'required|numeric|digits_between:3,10'
+        ]);
+
+        $user = User::findOrFail($id);
+        $user->codigo_autorizacion = $request->codigo_autorizacion;
+        $user->save();
+
+        return response()->json(['message' => 'Código actualizado correctamente']);
     }
 
 

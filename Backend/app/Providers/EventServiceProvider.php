@@ -19,6 +19,16 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class
+        ],  
+        
+        'App\Events\AuthorizationApproved' => [
+            'App\Listeners\HandleAuthorizationApproved',
+        ],
+        'App\Events\AuthorizationRejected' => [
+            'App\Listeners\HandleAuthorizationRejected',
+        ],
+        'App\Events\AuthorizationApproved' => [
+            'App\Listeners\Authorization\AuthorizationApprovedListener',
         ],
     ];
 
