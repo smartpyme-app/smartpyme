@@ -14,10 +14,10 @@ use Auth;
 
 class ChequesController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $cheques = Cheque::when($request->buscador, function($query) use ($request){
                                     return $query->where('anombrede', 'like' ,'%' . $request->buscador . '%');
                                 })
@@ -42,7 +42,7 @@ class ChequesController extends Controller
     }
 
     public function list() {
-       
+
         $cheques = Cheque::orderby('nombre')
                                 // ->where('activo', true)
                                 ->get();
@@ -50,7 +50,7 @@ class ChequesController extends Controller
         return Response()->json($cheques, 200);
 
     }
-    
+
     public function read($id) {
 
         $cheque = Cheque::where('id', $id)->firstOrFail();
@@ -71,12 +71,21 @@ class ChequesController extends Controller
             'id_empresa'    => 'required|numeric',
         ]);
 
+        // Validar que la cuenta existe y pertenece a la empresa
+        $cuentaExists = \App\Models\Bancos\Cuenta::where('id', $request->id_cuenta)
+                                                 ->where('id_empresa', $request->id_empresa)
+                                                 ->exists();
+
+        if (!$cuentaExists) {
+            return Response()->json(['error' => 'La cuenta bancaria seleccionada no existe o no pertenece a su empresa'], 400);
+        }
+
         if($request->id)
             $cheque = Cheque::findOrFail($request->id);
         else
             $cheque = new Cheque;
-        
-        
+
+
         DB::beginTransaction();
 
         try {
@@ -105,7 +114,16 @@ class ChequesController extends Controller
 
             // Incrementar correlativo
                 if(!$request->id){
-                    $cheque->cuenta->increment('correlativo_cheques');
+                    // Verificar que la cuenta existe y pertenece a la empresa antes de incrementar
+                    $cuenta = \App\Models\Bancos\Cuenta::where('id', $cheque->id_cuenta)
+                                                       ->where('id_empresa', $cheque->id_empresa)
+                                                       ->first();
+
+                    if ($cuenta) {
+                        $cuenta->increment('correlativo_cheques');
+                    } else {
+                        throw new \Exception('La cuenta bancaria seleccionada no existe o no pertenece a su empresa');
+                    }
                 }
 
 
@@ -140,8 +158,8 @@ class ChequesController extends Controller
 
     public function generarDoc($id){
         $cheque = Cheque::where('id', $id)->firstOrFail();
-        
-        if(Auth::user()->id_empresa == 415){ //415 
+
+        if(Auth::user()->id_empresa == 415){ //415
             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
         }else{
             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
