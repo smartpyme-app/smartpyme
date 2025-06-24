@@ -63,23 +63,11 @@ class AuthorizationTypeSeeder extends Seeder
                 'roles' => ['gerencia_general', 'admin', 'super_admin']
             ],
             [
-                'name' => 'ventas_precio_minimo',
-                'display_name' => 'Ventas Bajo Precio Mínimo',
-                'description' => 'Autorización para vender productos por debajo del precio mínimo establecido',
-                'conditions' => [
-                    'below_minimum_price' => true,
-                    'exclude_roles' => ['admin', 'super_admin']
-                ],
-                'expiration_hours' => 8,
-                'active' => true,
-                'roles' => ['admin', 'super_admin', 'usuario_supervisor']
-            ],
-            [
                 'name' => 'editar_usuario_password',
                 'display_name' => 'Modificar Contraseña de Usuario',
                 'description' => 'Autorización requerida para cambiar la contraseña de otros usuarios',
                 'conditions' => [
-                    'exclude_roles' => ['super_admin']
+                    'exclude_roles' => ['super_admin', 'admin']
                 ],
                 'expiration_hours' => 12,
                 'active' => true,
@@ -90,12 +78,12 @@ class AuthorizationTypeSeeder extends Seeder
                 'display_name' => 'Modificar Rol de Usuario',
                 'description' => 'Autorización requerida para cambiar el rol/tipo de un usuario',
                 'conditions' => [
-                    'exclude_roles' => ['super_admin']
+                    'exclude_roles' => ['super_admin', 'admin']
                 ],
                 'expiration_hours' => 24,
                 'active' => true,
-                'roles' => ['super_admin']
-            ],
+                'roles' => ['super_admin', 'admin']
+            ]
         ];
 
         // Crear tipos de autorización (una sola vez, son globales)

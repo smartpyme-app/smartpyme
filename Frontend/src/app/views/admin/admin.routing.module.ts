@@ -30,7 +30,7 @@ const routes: Routes = [
         { path: 'sucursales', component: SucursalesComponent, title: 'Sucursales' },
         // { path: 'sucursal/:id', component: SucursalComponent, title: 'Sucursal' },
         { path: 'usuarios', component: UsuariosComponent, title: 'Usuarios' },
-         { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
+        { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},

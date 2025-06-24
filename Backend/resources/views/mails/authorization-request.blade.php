@@ -99,7 +99,7 @@
         </div>
 
         <div class="warning">
-            <strong>⚠️ Importante:</strong> Para aprobar o rechazar esta solicitud, necesitarás ingresar tu código personal de autorización junto con el código proporcionado arriba.
+            <strong>⚠️ Importante:</strong> Para aprobar o rechazar esta solicitud, necesitarás ingresar tu código personal de autorización, tienes que tenerlo configurado en tu perfil.
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
@@ -112,12 +112,10 @@
         <ol>
             <li>Haz clic en "Ver Solicitud" para acceder al sistema</li>
             <li>Revisa los detalles de la autorización</li>
-            <li>Ingresa el código de autorización: <strong>{{ $code }}</strong></li>
+            <li>Verifica el código de autorización: <strong>{{ $code }}</strong></li>
             <li>Ingresa tu código personal de autorización</li>
             <li>Aprueba o rechaza la solicitud</li>
         </ol>
-
-        <p><strong>Nota:</strong> Esta solicitud expirará el {{ $expires_at }}. Después de esta fecha, la autorización será rechazada automáticamente.</p>
     </div>
 
     <div class="footer">

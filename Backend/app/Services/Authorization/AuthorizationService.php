@@ -51,6 +51,9 @@ class AuthorizationService
             'status' => 'pending'
         ]);
 
+
+        Log::info("Si llega");
+
         $this->notifyAuthorizers($authorization);
         return $authorization;
     }
@@ -146,26 +149,27 @@ class AuthorizationService
             ->update(['status' => 'expired']);
     }
 
-    private function notifyAuthorizers(Authorization $authorization)
-    {
-        Mail::to("joseespana94@gmail.com")->send(
-            new AuthorizationRequest($authorization, auth()->user())
-        );
-    }
-
     // private function notifyAuthorizers(Authorization $authorization)
     // {
-    //     // Solo notificar usuarios de la misma empresa
-    //     $authorizers = $authorization->authorizationType->users()
-    //         ->where('id_empresa', $authorization->id_empresa)
-    //         ->get();
-
-    //     foreach ($authorizers as $authorizer) {
-    //         Mail::to($authorizer->email)->send(
-    //             new AuthorizationRequest($authorization, $authorizer)
-    //         );
-    //     }
+    //     Log::info("Notifying authorizers for authorization: " . $authorization->id);
+    //     Mail::to("jose.e@smartpyme.sv")->send(
+    //         new AuthorizationRequest($authorization, auth()->user())
+    //     );
     // }
+
+    private function notifyAuthorizers(Authorization $authorization)
+    {
+        // Solo notificar usuarios de la misma empresa
+        $authorizers = $authorization->authorizationType->users()
+            ->where('id_empresa', $authorization->id_empresa)
+            ->get();
+
+        foreach ($authorizers as $authorizer) {
+            Mail::to($authorizer->email)->send(
+                new AuthorizationRequest($authorization, $authorizer)
+            );
+        }
+    }
 
     private function canUserAuthorize(User $user, AuthorizationType $type)
     {

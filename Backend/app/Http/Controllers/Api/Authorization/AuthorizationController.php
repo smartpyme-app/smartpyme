@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Services\Authorization\AuthorizationService;
 use App\Models\Authorization\Authorization;
 use App\Models\Authorization\AuthorizationType;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Spatie\Permission\Models\Role;
 
 class AuthorizationController extends Controller
 {
@@ -124,20 +127,9 @@ class AuthorizationController extends Controller
            'description' => 'required|string',
            'data' => 'nullable|array'
        ]);
-    
-       // DEBUG: Agregar logs para ver qué datos llegan
-       Log::info('=== AUTHORIZATION REQUEST DEBUG ===');
-       Log::info('Type: ' . $request->type);
-       Log::info('Data: ' . json_encode($request->data));
-    
-       try {
-           // CAMBIO: Si es compras_altas, SIEMPRE crear compra pendiente
-           if ($request->type === 'compras_altas') {
-               Log::info('Creating pending purchase for compras_altas...');
-               return $this->createCompraPendiente($request);
-           }
 
-           // Para otros tipos de autorización, usar el flujo normal
+       try {
+
            if ($request->model_id) {
                $modelClass = $request->model_type;
                $model = $modelClass::findOrFail($request->model_id);
@@ -145,13 +137,30 @@ class AuthorizationController extends Controller
                $model = new \stdClass();
                $model->id = 0;
            }
-    
+
            $authorization = $this->authorizationService->requestAuthorization(
                $request->type,
                $model,
                $request->description,
                $request->data ?? []
            );
+
+            // Si es compras_altas, SIEMPRE crear compra pendiente
+            if ($request->type === 'compras_altas') {
+                Log::info('Creating pending purchase for compras_altas...');
+                return $this->createCompraPendiente($request);
+            }
+
+            // Si es orden de compra, crear orden pendiente
+            if (str_starts_with($request->type, 'orden_compra_nivel_')) {
+                Log::info('Creating pending orden compra for ' . $request->type);
+                return $this->createOrdenCompraPendiente($request, $authorization);
+            }
+
+            if (str_starts_with($request->type, 'editar_usuario_')) {
+                return $this->handleUserPendingChanges($request, $authorization);
+            }
+        
     
            return response()->json([
                'ok' => true,
@@ -270,7 +279,7 @@ class AuthorizationController extends Controller
             ]);
 
             // Vincular autorización con compra
-            $compra->update(['authorization_id' => $authorization->id]);
+            $compra->update(['id_authorization' => $authorization->id]);
 
             DB::commit();
 
@@ -290,6 +299,193 @@ class AuthorizationController extends Controller
             Log::error("Stack trace: " . $e->getTraceAsString());
             throw $e;
         }
+    }
+
+    /**
+     * Crear orden de compra pendiente 
+     */
+    private function createOrdenCompraPendiente($request, $authorization = null)
+    {
+       $ordenData = $request->data;
+    
+       if (!$ordenData || !isset($ordenData['detalles'])) {
+           throw new \Exception('Datos de orden de compra requeridos');
+       }
+    
+       DB::beginTransaction();
+       
+       try {
+           $ordenData['estado'] = 'Pendiente Autorización';
+           $ordenData['id_sucursal'] = auth()->user()->id_sucursal;
+           $ordenData['id_empresa'] = auth()->user()->id_empresa;
+           
+           Log::info("Creando orden de compra pendiente con estado: Pendiente Autorización");
+           
+           // Crear la orden
+           $orden = \App\Models\OrdenCompra::create($ordenData);
+           
+           Log::info("Orden de compra creada con ID: " . $orden->id);
+           
+           // Crear detalles
+           foreach ($ordenData['detalles'] as $det) {
+               $detalle = new \App\Models\OrdenCompraDetalle;
+               $det['id_orden_compra'] = $orden->id;
+               $detalle->fill($det);
+               $detalle->save();
+           }
+    
+           // Si ya existe autorización, solo vincular
+           if ($authorization) {
+               $orden->update(['id_authorization' => $authorization->id]);
+               $authorization->update([
+                   'authorizeable_type' => 'App\Models\OrdenCompra',
+                   'authorizeable_id' => $orden->id
+               ]);
+               $authorizationToReturn = $authorization;
+           } 
+           // Si no existe, crear nueva (caso legacy)
+           else {
+               $authTypeModel = AuthorizationType::where('name', $request->type)->first();
+               
+               if (!$authTypeModel) {
+                   throw new \Exception("Tipo de autorización '{$request->type}' no encontrado");
+               }
+    
+               $authorizationToReturn = Authorization::create([
+                   'authorization_type_id' => $authTypeModel->id,
+                   'authorizeable_type' => 'App\Models\OrdenCompra',
+                   'authorizeable_id' => $orden->id,
+                   'requested_by' => auth()->id(),
+                   'description' => $request->description,
+                   'data' => json_encode($request->data),
+                   'operation_type' => 'creacion',
+                   'operation_data' => json_encode($this->extractRelevantData($ordenData, 'orden_compra')),
+                   'operation_hash' => $this->generateOperationHash('creacion', $ordenData, 'orden_compra'),
+                   'expires_at' => now()->addHours($authTypeModel->expiration_hours ?? 24),
+               ]);
+    
+               $orden->update(['id_authorization' => $authorizationToReturn->id]);
+           }
+    
+           DB::commit();
+    
+           return response()->json([
+               'ok' => true,
+               'message' => 'Orden de compra creada pendiente de autorización',
+               'data' => $authorizationToReturn,
+               'orden' => $orden,
+               'estado' => 'Pendiente Autorización'
+           ]);
+           
+       } catch (\Exception $e) {
+           DB::rollback();
+           Log::error("Error creando orden pendiente: " . $e->getMessage());
+           throw $e;
+       }
+    }
+
+    private function handleUserPendingChanges($request, $authorization)
+    {
+        $userId = $request->data['id_usuario'];
+        $user = \App\Models\User::findOrFail($userId);
+        
+        $dataToStore = $request->data;
+        
+        Log::info('=== HANDLE USER PENDING CHANGES (FIXED) ===');
+        Log::info('User ID:', ['id' => $userId]);
+        Log::info('Request type:', ['type' => $request->type]);
+        Log::info('Request data received:', $request->data);
+        
+        // CORRECCIÓN: Limpiar y procesar los datos correctamente
+        $cleanedData = [];
+        
+        foreach ($dataToStore as $key => $value) {
+            // Evitar campos problemáticos
+            if (in_array($key, ['roles', 'pending_changes', 'created_at', 'updated_at'])) {
+                Log::info("Saltando campo problemático: {$key}");
+                continue;
+            }
+            
+            // Si el valor es "[object Object]", saltarlo
+            if ($value === '[object Object]') {
+                Log::warning("Saltando valor [object Object] para campo: {$key}");
+                continue;
+            }
+            
+            // Si es un string que parece JSON, intentar decodificarlo
+            if (is_string($value) && (str_starts_with($value, '{') || str_starts_with($value, '['))) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $cleanedData[$key] = $decoded;
+                    Log::info("JSON decodificado para {$key}:", $decoded);
+                } else {
+                    $cleanedData[$key] = $value;
+                }
+            } else {
+                $cleanedData[$key] = $value;
+            }
+        }
+        
+        Log::info('Datos limpiados:', $cleanedData);
+        
+        // Procesar según el tipo de cambio
+        switch ($request->type) {
+            case 'editar_usuario_password':
+                if (isset($cleanedData['password'])) {
+                    $cleanedData['password'] = Hash::make($cleanedData['password']);
+                    Log::info('Password hasheado para usuario:', ['user_id' => $userId]);
+                }
+                break;
+                
+            case 'editar_usuario_rol':
+                if (!isset($cleanedData['rol_id'])) {
+                    Log::error('rol_id no encontrado en datos:', $cleanedData);
+                    throw new \Exception('rol_id es requerido para cambiar el rol del usuario');
+                }
+                
+                $rol = \Spatie\Permission\Models\Role::find($cleanedData['rol_id']);
+                if (!$rol) {
+                    throw new \Exception("Rol con ID {$cleanedData['rol_id']} no encontrado");
+                }
+                
+                $cleanedData['rol_name'] = $rol->name;
+                
+                Log::info('Preparando cambio de rol:', [
+                    'user_id' => $userId,
+                    'new_rol_id' => $cleanedData['rol_id'],
+                    'rol_name' => $rol->name
+                ]);
+                break;
+                
+            case 'editar_usuario_codigo':
+                if (!isset($cleanedData['codigo_autorizacion'])) {
+                    throw new \Exception('codigo_autorizacion es requerido');
+                }
+                break;
+        }
+
+        $pendingChanges = [
+            'type' => $request->type,
+            'data' => $cleanedData  // Usar datos limpiados
+        ];
+        
+        Log::info('Guardando pending_changes limpios:', $pendingChanges);
+        
+        $user->pending_changes = $pendingChanges;
+        $user->id_authorization = $authorization->id;
+        $user->save();
+
+        $authorization->update([
+            'authorizeable_type' => 'App\Models\User',
+            'authorizeable_id' => $user->id
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Cambio pendiente de autorización',
+            'data' => $authorization,
+            'pending_changes' => $pendingChanges
+        ]);
     }
 
     /**

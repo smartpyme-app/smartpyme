@@ -49,25 +49,25 @@ class AuthorizationType extends Model
     // }
 
     public function evaluateConditions($data)
-{
-    if (!$this->conditions) return true;
+    {
+        if (!$this->conditions) return true;
 
-    foreach ($this->conditions as $key => $value) {
-        if ($key === 'exclude_roles' && auth()->user()) {
-            $userRoles = auth()->user()->roles->pluck('name')->toArray();
-            if (array_intersect($userRoles, $value)) {
-                return false; // Usuario tiene rol excluido, NO necesita autorización
+        foreach ($this->conditions as $key => $value) {
+            if ($key === 'exclude_roles' && auth()->user()) {
+                $userRoles = auth()->user()->roles->pluck('name')->toArray();
+                if (array_intersect($userRoles, $value)) {
+                    return false; // Usuario tiene rol excluido, NO necesita autorización
+                }
+            }
+            if ($key === 'amount_threshold') {
+                $amount = $data['amount'] ?? $data['total'] ?? $data['sub_total'] ?? 0;
+                return $amount > $value;
+            }
+            if ($key === 'discount_threshold' && isset($data['discount'])) {
+                return $data['discount'] > $value;
             }
         }
-        if ($key === 'amount_threshold') {
-            $amount = $data['amount'] ?? $data['total'] ?? $data['sub_total'] ?? 0;
-            return $amount > $value;
-        }
-        if ($key === 'discount_threshold' && isset($data['discount'])) {
-            return $data['discount'] > $value;
-        }
-    }
 
-    return false;
-}
+        return false;
+    }
 }

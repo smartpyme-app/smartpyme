@@ -2,6 +2,8 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { EncryptService } from '@services/encryption/encrypt.service';
+import { Router } from '@angular/router';
 
 // declare var $:any;
 
@@ -19,7 +21,7 @@ export class HeaderComponent implements OnInit {
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
 
-     constructor(public apiService: ApiService, private alertService: AlertService, @Inject(DOCUMENT) private document: any) { }
+     constructor(public apiService: ApiService, private alertService: AlertService, public encryptService: EncryptService, private router: Router, @Inject(DOCUMENT) private document: any) { }
 
     ngOnInit() {
         // $('.drop-down').dropdown();
@@ -42,6 +44,11 @@ export class HeaderComponent implements OnInit {
         this.elem = document.documentElement;
 
         this.loadNotificaciones();
+    }
+
+    irAPerfil() {
+        const encryptedId = this.encryptService.encrypt(this.usuario.id);
+        this.router.navigate(['/usuario', encryptedId]);
     }
 
     public fullscreen() {

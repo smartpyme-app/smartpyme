@@ -104,11 +104,11 @@
                         <!-- Solo mostrar el botón de editar si puede editar el rol -->
                         <button 
                                 *ngIf="!role.is_global"
-                                class="btn btn-primary btn-sm"
+                                class="btn btn-default"
                                 (click)="openModal(permisoModal, role)" 
                                 data-toggle="tooltip" 
                                 title="Gestionar Permisos">
-                            <i class="fa fa-pencil-alt"></i>
+                                <i class="fa fa-fw fa-user"></i> Editar
                         </button>            
                         <span *ngIf="!role.can_edit" class="text-muted small">
                             <i class="fa fa-lock"></i> Solo lectura
@@ -128,11 +128,10 @@
 
 <!-- Modal de Permisos -->
 <ng-template #permisoModal>
-  <div class="modal-header bg-primary text-white border-0">
-    <h5 class="modal-title d-flex align-items-center">
-      <i class="fas fa-key me-2"></i>
-      Gestionar Permisos - {{ selectedRole?.name }}
-    </h5>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h3 class="text-center no-margin">Gestionar Permisos - {{ selectedRole?.name }}</h3>
+    </div>
     <button
       type="button"
       class="btn-close btn-close-white"
@@ -482,11 +481,10 @@
 </ng-template>
 
 <ng-template #mnewrol>
-  <div class="modal-header bg-primary text-white border-0">
-    <h5 class="modal-title d-flex align-items-center">
-      <i class="fas fa-plus me-2"></i>
-      Añadir rol
-    </h5>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+      <h2 class="text-center no-margin">Añadir rol</h2>
+    </div>
     <button
       type="button"
       class="btn-close btn-close-white"

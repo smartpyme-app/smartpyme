@@ -4,6 +4,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { EncryptService } from '@services/encryption/encrypt.service';
+
 
 @Component({
   selector: 'app-usuarios',
@@ -38,7 +40,8 @@ export class UsuariosComponent implements OnInit {
     modalRef?: BsModalRef;
 
     constructor( public apiService:ApiService, public alertService:AlertService,
-        private modalService: BsModalService ){}
+        private modalService: BsModalService,
+        public encryptService: EncryptService ){}
 
 	ngOnInit() {
         this.filtros.id_sucursal = '';
@@ -93,6 +96,7 @@ export class UsuariosComponent implements OnInit {
                     usuario.rol_id = null;
                     usuario.rol_name = 'Sin rol asignado';
                 }
+                 usuario.encrypted_id = this.encryptService.encrypt(usuario.id);
             });
             this.contarActivos();
             this.loading = false;
@@ -298,4 +302,10 @@ export class UsuariosComponent implements OnInit {
             is_global: false
         };
     }
+
+    editarUsuario(usuario: any) {
+        const encryptedId = this.encryptService.encrypt(usuario.id);
+        // Navegar usando Router si lo tienes importado, o usar window.location
+        window.location.href = `/usuario/${encryptedId}`;
+      }
 }

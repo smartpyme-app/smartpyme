@@ -609,8 +609,8 @@ export class FacturacionCompraComponent implements OnInit {
     console.log('Authorization requested:', event);
     
     if (event.shouldProceedWithSubmit) {
-      // Agregar el authorization_id a la compra para que no requiera autorización de nuevo
-      this.compra.authorization_id = event.authorization.id;
+      // Agregar el id_authorization a la compra para que no requiera autorización de nuevo
+      this.compra.id_authorization = event.authorization.id;
       
       // Ejecutar el submit automáticamente
       this.onSubmit();

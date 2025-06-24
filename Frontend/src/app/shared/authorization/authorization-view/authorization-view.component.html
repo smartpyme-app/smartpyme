@@ -70,16 +70,16 @@
           <!-- Botones de acción -->
           <div *ngIf="authorization.status === 'pending'" class="d-flex gap-2 mt-4">
             <button type="button" 
-                    class="btn btn-success" 
-                    (click)="approve()"
-                    [disabled]="!authCode || processing">
-              <i class="fa fa-check me-2"></i>
+                  class="btn btn-default font-weight-bold" 
+                  (click)="approve()"
+                  [disabled]="!authCode || processing">
+              <img src="/assets/icons/check.png" class="icon me-2">
               <span *ngIf="!processing">Aprobar</span>
               <span *ngIf="processing">Procesando...</span>
             </button>
             
             <button type="button" 
-                    class="btn btn-danger" 
+                    class="btn btn-danger font-weight-bold" 
                     (click)="reject()"
                     [disabled]="!authCode || processing">
               <i class="fa fa-times me-2"></i>

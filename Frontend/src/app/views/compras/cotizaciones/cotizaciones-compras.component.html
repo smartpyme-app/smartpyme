@@ -80,10 +80,13 @@
             <td>
               <select name="enable" class="form-select w-auto border-0" (ngModelChange)="setEstado(compra)"
                 [(ngModel)]="compra.estado"
-                [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada'}">
+                disabled="compra.estado == 'Pendiente Autorización'"
+                [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente' || compra?.estado == 'Pendiente Autorización', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada' || compra?.estado == 'Aprobada'}">
                 <option value="Pendiente">Pendiente</option>
                 <option value="Aceptada">Aceptada</option>
                 <option value="Anulada">Anulada</option>
+                <option value="Aprobada">Aprobada</option>
+                <option value="Pendiente Autorización">Pendiente Autorización</option>
               </select>
             </td>
             <td class="text-right">{{compra.total_orden_compra | currency:'USD':'symbol':'1.2'}}</td>

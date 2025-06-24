@@ -30,8 +30,8 @@
                 <a class="nav-link dropdown-toggle user-img c-pointer-x px-0" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
                     <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="30" width="30" class="img-circle">
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" style="margin-top: 54px; min-width: 210px;">
-                    <li class="dropdown-item click user-header text-center">
+                <ul class="dropdown-menu dropdown-menu-end" style="margin-top: 54px; min-width: 210px;"  >
+                    <li class="dropdown-item click user-header text-center" (click)="irAPerfil()">
                         <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
                         <p>
                           {{ usuario.name }} <br>

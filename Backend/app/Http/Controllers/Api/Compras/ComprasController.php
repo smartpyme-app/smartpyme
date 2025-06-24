@@ -271,7 +271,7 @@ class ComprasController extends Controller
 
         Log::info("Facturacion - iniciando proceso");
     
-        // VERIFICAR AUTORIZACIÓN - Solo para compras nuevas sin authorization_id
+        // VERIFICAR AUTORIZACIÓN - Solo para compras nuevas sin id_authorization
         if (!$request->id && !$request->id_authorization) {
             $total = $this->calcularTotalCompra($request);
             
@@ -667,7 +667,7 @@ class ComprasController extends Controller
             // Crear compra en estado pendiente
             $compraData = $data;
             $compraData['estado'] = 'Pendiente Autorización';
-            $compraData['authorization_id'] = $authorization->id;
+            $compraData['id_authorization'] = $authorization->id;
             $compraData['id_sucursal'] = Auth::user()->id_sucursal;
             
             $compra = new Compra;

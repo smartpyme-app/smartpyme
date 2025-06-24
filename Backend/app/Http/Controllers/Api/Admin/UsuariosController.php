@@ -11,12 +11,15 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
-//log
+use App\Traits\Authorization\HasAutoAuthorization;
 use Illuminate\Support\Facades\Log;
 
 class UsuariosController extends Controller
 {
-    
+
+    use HasAutoAuthorization;
+    protected $authModule = 'usuarios';
+
 
     public function index(Request $request) {
         $usuarios = Usuario::with('roles')->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
@@ -86,7 +89,6 @@ class UsuariosController extends Controller
 
     public function store(Request $request)
     {
-       Log::info($request->all());
         $request->validate([
             'name'          => 'required|max:255',
             'email'         => 'required|unique:users,email,'.$request->id,
@@ -105,6 +107,17 @@ class UsuariosController extends Controller
             ],
 
         ]);
+
+        // Verificar si se está cambiando el rol
+        if ($request->id && $request->rol_id) {
+            $usuario = Usuario::findOrFail($request->id);
+            if ($usuario->roles->first()->id != $request->rol_id) {
+                if ($response = $this->checkAuth('change_role', ['id_usuario' => $request->id])) {
+                    return $response;
+                }
+            }
+        }
+
 
         if($request->id)
             $usuario = Usuario::findOrFail($request->id);
@@ -199,16 +212,29 @@ class UsuariosController extends Controller
         return Response()->json($user, 200);
     }
 
-    public function updatePassword(Request $request,$id)
+    public function updatePassword(Request $request, $id)
     {
+        if ($response = $this->checkAuth('change_password', [
+            'id_usuario' => $id,
+            'password' => $request->password
+        ])) {
+            return $response;
+        }
+    
         $user = Usuario::findOrFail($id);
         $user->password = Hash::make($request->password);
         $user->save();
         return Response()->json($user, 200);
     }
+    
 
     public function updateAuthCode(Request $request, $id)
     {
+        
+        if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
+            return $response;
+        }
+
         $request->validate([
             'codigo_autorizacion' => 'required|numeric|digits_between:3,10'
         ]);
@@ -220,6 +246,13 @@ class UsuariosController extends Controller
         return response()->json(['message' => 'Código actualizado correctamente']);
     }
 
-
+    protected function handlePendingAuthorization($data, $authorization)
+    {
+        return response()->json([
+            'ok' => false,
+            'requires_authorization' => true,
+            'message' => 'Esta acción requiere autorización'
+        ], 403);
+    }
 
 }

@@ -30,10 +30,12 @@ class User extends Authenticatable implements JWTSubject
         'codigo',
         'id_bodega',
         'id_sucursal',
+        'id_authorization',
         'tipo',
         'modulo_citas',
         'codigo_autorizacion',
-        'editar_precio_venta'
+        'pending_changes',
+        'editar_precio_venta',
     ];
 
     protected $hidden = ['password', 'remember_token','rol_id'];
@@ -41,7 +43,8 @@ class User extends Authenticatable implements JWTSubject
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'enable' => 'string'
+        'enable' => 'string',
+        'pending_changes' => 'array',
     ];
 
     
@@ -103,6 +106,11 @@ class User extends Authenticatable implements JWTSubject
     public function authorizationTypes()
     {
         return $this->belongsToMany(AuthorizationType::class, 'user_authorization_types', 'user_id', 'authorization_type_id');
+    }
+
+    public function authorization()
+    {
+        return $this->belongsTo('App\Models\Authorization\Authorization', 'id_authorization');
     }
 
 }

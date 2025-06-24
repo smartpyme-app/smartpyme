@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { AlertService } from '../../../../services/alert.service';
-import { ApiService } from '../../../../services/api.service';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import { EncryptService } from '@services/encryption/encrypt.service';
+
 
 interface Permission {
   id: number;
@@ -65,20 +67,23 @@ export class UsuarioComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    public encryptService: EncryptService
   ) {}
 
   ngOnInit() {
-    const id = +this.route.snapshot.paramMap.get('id')!;
-
-    if (isNaN(id)) {
+    const encryptedId = this.route.snapshot.paramMap.get('id')!;
+    const id = this.encryptService.decrypt(encryptedId);
+  
+    if (id === 0 || isNaN(id)) {
+      // Nuevo usuario
       this.usuario = {};
-      //  this.usuario.tipo = 'admin';
-      this.usuario.rol_id = 2
+      this.usuario.rol_id = 2;
       this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
       this.usuario.caja_id = 1;
       this.usuario.activo = true;
     } else {
+      // Usuario existente
       this.loadAll(id);
     }
 
@@ -137,29 +142,46 @@ export class UsuarioComponent implements OnInit {
 
   public onSubmit() {
     this.loading = true;
-    //this.usuario.rol_id = 2;
+    
     if (this.usuario.rol_id == 2) {
-      this.usuario.caja_id == null;
+      this.usuario.caja_id = null;
     }
-
+  
     let formData: FormData = new FormData();
+    
     for (var key in this.usuario) {
       if (key == 'activo' || key == 'empleado') {
         this.usuario[key] = this.usuario[key] ? 1 : 0;
       }
-      formData.append(key, this.usuario[key] == null ? '' : this.usuario[key]);
+      
+      // CORRECCIÓN: Manejar objetos complejos
+      let value = this.usuario[key];
+      
+      if (value === null || value === undefined) {
+        formData.append(key, '');
+      } else if (typeof value === 'object') {
+        // Para objetos (como roles), serializar a JSON string
+        formData.append(key, JSON.stringify(value));
+      } else {
+        formData.append(key, value.toString());
+      }
     }
-
-    
-
+  
+    console.log('=== FORM DATA DEBUG ===');
+    formData.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
+  
     // Save the user
     this.apiService.store('usuario', formData).subscribe(
       (usuario) => {
+        console.log('✅ Usuario guardado exitosamente:', usuario);
+        
         if (!this.usuario.id) {
           this.router.navigate(['/usuarios']);
         }
         this.usuario = usuario;
-
+  
         if (this.usuario.roles && this.usuario.roles.length > 0) {
             this.usuario.rol_id = this.usuario.roles[0].id;
             this.rol = this.usuario.roles[0];
@@ -168,7 +190,7 @@ export class UsuarioComponent implements OnInit {
                 .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(' ');
         }
-
+  
         this.loading = false;
         this.preview = false;
         this.alertService.success(
@@ -177,8 +199,25 @@ export class UsuarioComponent implements OnInit {
         );
       },
       (error) => {
-        this.alertService.error(error);
+        console.log('❌ Error en onSubmit:', error);
         this.loading = false;
+        
+        if (error.status === 403 && error.error?.requires_authorization) {
+          console.log('🔐 Se requiere autorización - el interceptor manejará esto');
+          return;
+        }
+        
+        let errorMessage = 'Ha ocurrido un error al guardar el usuario';
+        
+        if (error?.error?.message) {
+          errorMessage = error.error.message;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'string') {
+          errorMessage = error;
+        }
+        
+        this.alertService.error(errorMessage);
       }
     );
   }
@@ -222,27 +261,55 @@ export class UsuarioComponent implements OnInit {
 
   guardarCambiosContrasena() {
     // Validate that the passwords match
-    if (this.usuario.password === this.usuario.password_confirmation) {
-      // Save the password changes
-      this.apiService
-        .update('usuario', this.usuario.id, {
-          password: this.usuario.password,
-        })
-        .subscribe(
-          () => {
+    if (this.usuario.password !== this.usuario.password_confirmation) {
+      this.alertService.error('Las contraseñas no coinciden');
+      return;
+    }
+  
+    if (!this.usuario.password || !this.usuario.password_confirmation) {
+      this.alertService.error('Todos los campos son requeridos');
+      return;
+    }
+  
+    this.loading = true;
+  
+    // Save the password changes
+    this.apiService
+      .update('usuario', this.usuario.id, {
+        password: this.usuario.password,
+      })
+      .subscribe(
+        (response) => {
+          console.log('Respuesta del servidor:', response);
+          
+          this.loading = false;
+          this.mostrarCambioContrasena = false;
+          
+          // Limpiar los campos de contraseña
+          this.usuario.password = '';
+          this.usuario.password_confirmation = '';
+          this.usuario.password_show = false;
+          this.usuario.password_confirmation_show = false;
+          
+          // Si la respuesta contiene información de autorización pendiente
+          if (response && response.status === 'pending') {
+            this.alertService.success(
+              'Solicitud de autorización creada',
+              `Se ha creado una solicitud de autorización con código: ${response.code}. La contraseña se actualizará una vez aprobada.`
+            );
+          } else {
             this.alertService.success(
               'Contraseña actualizada',
               'La contraseña se ha actualizado correctamente.'
             );
-            this.mostrarCambioContrasena = false;
-          },
-          (error) => {
-            this.alertService.error(error);
           }
-        );
-    } else {
-      this.alertService.error('Las contraseñas no coinciden');
-    }
+        },
+        (error) => {
+          console.error('Error al actualizar contraseña:', error);
+          this.loading = false;
+          this.alertService.error(error);
+        }
+      );
   }
 
   editarEmail() {
@@ -357,28 +424,68 @@ export class UsuarioComponent implements OnInit {
       this.alertService.error('Todos los campos son requeridos');
       return;
     }
-
+    
     if (this.newPassword !== this.confirmPassword) {
       this.alertService.error('Las contraseñas no coinciden');
       return;
     }
-
+    
+    this.loading = true; // Agregar loading state
+    
     this.apiService
       .update('usuario/password', this.usuario.id, {
         password: this.newPassword,
       })
       .subscribe(
-        () => {
+        (response: any) => {
+          console.log('Respuesta exitosa:', response);
+          
+          this.loading = false;
           this.editandoPassword = false;
           this.newPassword = '';
           this.confirmPassword = '';
-          this.alertService.success(
-            'Contraseña actualizada correctamente',
-            'La contraseña se ha actualizado correctamente.'
-          );
+          this.showPassword = false;
+          this.showConfirmPassword = false;
+          
+          if (response && response.status === 'pending') {
+            this.alertService.success(
+              'Solicitud de autorización creada',
+              `Se ha creado una solicitud de autorización con código: ${response.code}. La contraseña se actualizará una vez aprobada.`
+            );
+          } else {
+            this.alertService.success(
+              'Contraseña actualizada correctamente',
+              'La contraseña se ha actualizado correctamente.'
+            );
+          }
         },
         (error) => {
-          this.alertService.error(error);
+          console.error('Error completo:', error);
+          console.error('Tipo de error:', typeof error);
+          console.error('Error.message:', error?.message);
+          console.error('Error.error:', error?.error);
+          
+          this.loading = false;
+          
+          // Manejo mejorado del error
+          let errorMessage = 'Ha ocurrido un error al actualizar la contraseña';
+          
+          if (error?.error?.message) {
+            errorMessage = error.error.message;
+          } else if (error?.message) {
+            errorMessage = error.message;
+          } else if (typeof error === 'string') {
+            errorMessage = error;
+          } else if (error?.error) {
+            // Si error.error es un objeto, intentar extraer información útil
+            if (typeof error.error === 'object') {
+              errorMessage = JSON.stringify(error.error);
+            } else {
+              errorMessage = error.error;
+            }
+          }
+          
+          this.alertService.error(errorMessage);
         }
       );
   }
