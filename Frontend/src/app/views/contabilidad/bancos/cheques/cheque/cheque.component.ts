@@ -15,16 +15,22 @@ import * as moment from 'moment';
 export class ChequeComponent implements OnInit {
 
     public cheque:any = {};
+    public cuentas:any = [];
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
 
-	constructor( 
+	constructor(
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
 	) { }
 
 	ngOnInit() {
+        // Cargar cuentas bancarias disponibles
+        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+            this.cuentas = cuentas;
+        }, error => {this.alertService.error(error);});
+
         this.loadAll();
 
     }
@@ -41,7 +47,7 @@ export class ChequeComponent implements OnInit {
             this.cheque = {};
             this.cheque.estado = 'Pendiente';
             this.cheque.fecha = this.apiService.date();
-            this.cheque.id_cuenta = 1;
+            this.cheque.id_cuenta = '';  // Dejar vacío para que el usuario seleccione
             this.cheque.id_empresa = this.apiService.auth_user().id_empresa;
             this.cheque.id_usuario = this.apiService.auth_user().id;
         }
@@ -50,6 +56,12 @@ export class ChequeComponent implements OnInit {
 
 
     public onSubmit(){
+        // Validar que se haya seleccionado una cuenta
+        if (!this.cheque.id_cuenta) {
+            this.alertService.error('Debe seleccionar una cuenta bancaria');
+            return;
+        }
+
         this.saving = true;
 
         this.apiService.store('banco/cheque', this.cheque).subscribe(cheque => {
