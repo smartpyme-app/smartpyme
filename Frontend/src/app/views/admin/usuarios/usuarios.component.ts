@@ -127,7 +127,7 @@ openModal(template: TemplateRef<any>, usuario: any) {
 
   public onSubmit() {
     this.saving = true;
-    this.usuario.telefono = this.usuario.telefono.e164Number;
+    this.usuario.telefono = this.usuario.telefono?.e164Number || '';
     this.apiService.store('usuario', this.usuario).subscribe(
       (usuario) => {
         this.loadAll();
