@@ -34,6 +34,7 @@
                 <tr>
                     <th>Fecha</th>
                     <th>Proveedor</th>
+                    <th>Sucursal</th>
                     <th>Usuario</th>
                     <th>Estado</th>
                     <th>Forma de pago</th>
@@ -42,13 +43,14 @@
                 <tr>
                     <td>{{ compra.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ compra.nombre_proveedor }}</td>
+                    <td>{{ compra.nombre_sucursal }}</td>
                     <td>{{ compra.nombre_usuario }}</td>
                     <td>{{ compra.estado }}</td>
                     <td>{{ compra.forma_pago }}</td>
                     <td>{{ compra.tipo_documento }} #{{ compra.referencia }}</td>
                 </tr>
             </table>
-        </div>    
+        </div>
     </div>
 
     <div class="card-body">
@@ -110,7 +112,7 @@
                     </tbody>
                 </table>
             </div>
-            
+
         </div>
 
         <div class="row mt-4">
