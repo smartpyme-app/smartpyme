@@ -16,6 +16,7 @@
                 <tr>
                     <th>Fecha</th>
                     <th>Proveedor</th>
+                    <th>Sucursal</th>
                     <th>Usuario</th>
                     <th>Documento</th>
                     <th>Observaciones</th>
@@ -23,12 +24,13 @@
                 <tr>
                     <td>{{ devolucion.fecha | date:'dd/MM/yyyy'}}</td>
                     <td>{{ devolucion.nombre_proveedor }}</td>
+                    <td>{{ devolucion.nombre_sucursal }}</td>
                     <td>{{ devolucion.nombre_usuario }}</td>
                     <td>{{ (devolucion.tipo_documento || 'Devolución') + (devolucion.referencia ? ' #' + devolucion.referencia : '') }}</td>
                     <td>{{ devolucion.observaciones }}</td>
                 </tr>
             </table>
-        </div>    
+        </div>
     </div>
 
 </div>
@@ -121,6 +123,6 @@
                     <td>{{ devolucion?.compra.tipo_documento }} #{{ devolucion?.compra.referencia }}</td>
                 </tr>
             </table>
-        </div>    
+        </div>
     </div>
 </section>
