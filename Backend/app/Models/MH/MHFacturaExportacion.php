@@ -177,8 +177,6 @@ class MHFacturaExportacion extends Model
     public function generarFactura(){
         $tributos = NULL;
 
-        $this->venta->gravada = $this->venta->sub_total;
-
         return 
             [
                 "identificacion" => $this->identificador(),
@@ -188,7 +186,7 @@ class MHFacturaExportacion extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
-                  "totalGravada" => floatval(number_format($this->venta->gravada + $this->venta->iva, 2, '.', '')),
+                  "totalGravada" => floatval(number_format($this->venta->total, 2, '.', '')),
                   "descuento" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
@@ -260,9 +258,9 @@ class MHFacturaExportacion extends Model
                 "descripcion" => $detalle->nombre_producto,
                 "cantidad" => floatval($detalle->cantidad),
                 "uniMedida" => $detalle->cod_medida,
-                "precioUni" => floatval(number_format($detalle->precio + $detalle->iva,2, '.', '')),
+                "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
                 "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
-                "ventaGravada" => floatval(number_format($detalle->gravada + $detalle->iva,2, '.', '')),
+                "ventaGravada" => floatval(number_format($detalle->gravada,2, '.', '')),
                 "tributos" => $tributos,
                 "noGravado" => 0,
               ]);
