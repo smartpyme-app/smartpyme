@@ -428,16 +428,15 @@ class Empresa extends Model
         $defaultConfig = [
             'columnas' => [
                 'columna_proyecto' => false
+                // Para futuras columnas
             ],
-            'modulos' => [
-                // Para futuras personalizaciones de módulos
-            ],
-            'configuraciones' => [
+            'modulos' => (object)[], 
+            'configuraciones' => (object)[
+                'ticket_en_pdf' => false
                 // Para futuras configuraciones generales
             ],
-            'campos_personalizados' => [
-                // Para futuros campos personalizados
-            ]
+            'campos_personalizados' => (object)[] 
+            // Para futuros campos personalizados
         ];
         
         $this->custom_empresa = $defaultConfig;
@@ -580,5 +579,30 @@ class Empresa extends Model
                 ->where('last_message_at', '>=', now()->subHours(24))
                 ->count()
         ];
+    }
+
+    /**
+     * Verificar si los tickets deben generarse en PDF
+     */
+    public function ticketEnPdf()
+    {
+        return $this->getCustomConfigValue('configuraciones', 'ticket_en_pdf', false);
+    }
+
+    /**
+     * Establecer si los tickets deben generarse en PDF
+     */
+    public function setTicketEnPdf($pdf)
+    {
+        return $this->updateCustomConfig('configuraciones', 'ticket_en_pdf', $pdf);
+    }
+
+    /**
+     * Alternar entre ticket HTML y PDF
+     */
+    public function toggleTicketEnPdf()
+    {
+        $actualValue = $this->ticketEnPdf();
+        return $this->setTicketEnPdf(!$actualValue);
     }
 }

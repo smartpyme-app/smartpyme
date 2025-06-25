@@ -28,7 +28,6 @@ use JWTAuth;
 
 class EmpresasController extends Controller
 {
-
     private $suscripcionService;
 
     public function __construct(SuscripcionService $suscripcionService)
@@ -809,6 +808,11 @@ class EmpresasController extends Controller
                     $customConfig['columnas'] = $this->validateColumnConfig($customConfig['columnas']);
                 }
                 
+                // Validar y limpiar datos de configuraciones
+                if (isset($customConfig['configuraciones']) && is_array($customConfig['configuraciones'])) {
+                    $customConfig['configuraciones'] = $this->validateConfiguracionConfig($customConfig['configuraciones']);
+                }
+                
                 $empresa->custom_empresa = $customConfig;
             }
         } else {
@@ -838,6 +842,32 @@ class EmpresasController extends Controller
         return $validatedColumns;
     }
 
+    /**
+     * Validación opcional para configuraciones
+     */
+    private function validateConfiguracionConfig(array $configuraciones): array
+    {
+        $validatedConfig = [];
+        $allowedConfigs = [
+            'ticket_en_pdf',
+            // Agregar más configuraciones válidas aquí
+        ];
+        
+        foreach ($configuraciones as $config => $value) {
+            // Solo permitir configuraciones válidas
+            if (in_array($config, $allowedConfigs)) {
+                // Para ticket_en_pdf debe ser boolean
+                if ($config === 'ticket_en_pdf') {
+                    $validatedConfig[$config] = (bool) $value;
+                } else {
+                    $validatedConfig[$config] = $value;
+                }
+            }
+        }
+        
+        return $validatedConfig;
+    }
+
     public function updateCustomConfig(Request $request)
     {
         $request->validate([
@@ -847,6 +877,12 @@ class EmpresasController extends Controller
         ]);
 
         $empresa = Auth::user()->empresa;
+
+        if ($request->input('section') === 'configuraciones' && $request->input('key') === 'ticket_en_pdf') {
+            $request->validate([
+                'value' => 'boolean'
+            ]);
+        }
         
         $empresa->updateCustomConfig(
             $request->input('section'),
