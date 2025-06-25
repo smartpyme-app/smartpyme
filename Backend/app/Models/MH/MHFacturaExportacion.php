@@ -138,8 +138,8 @@ class MHFacturaExportacion extends Model
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
             "tipoItemExpor" => (int) $this->venta->tipo_item_export,
-            "recintoFiscal" => $this->venta->recinto_fiscal, //Punto de Aduana
-            "regimen" => $this->venta->regimen,
+            "recintoFiscal" => $this->venta->recinto_fiscal ?? NULL, //Punto de Aduana
+            "regimen" => $this->venta->regimen ?? NULL,
         ];
     }
 
@@ -246,13 +246,13 @@ class MHFacturaExportacion extends Model
 
             $detalle->codTributo = NULL;
 
-            if ($this->venta->iva > 0) {
-                $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
-                $detalle->iva = ($detalle->total * 0.13);
-                $detalle->total = $detalle->total + $detalle->iva;
-            }else{
+            // if ($this->venta->iva > 0) {
+            //     $detalle->precio = $detalle->precio + ($detalle->precio * 0.13);
+            //     $detalle->iva = ($detalle->total * 0.13);
+            //     $detalle->total = $detalle->total + $detalle->iva;
+            // }else{
                 $detalle->gravada = $detalle->total;
-            }
+            // }
 
             $detalles->push([
                 "numItem" => $index + 1,
