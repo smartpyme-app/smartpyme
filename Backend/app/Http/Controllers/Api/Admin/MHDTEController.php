@@ -69,11 +69,13 @@ class MHDTEController extends Controller
             $DTE = $mh->generarDTE($devolucion);
         }
 
-        if ($devolucion->nombre_documento == 'Nota de débito') {
+        else if ($devolucion->nombre_documento == 'Nota de débito') {
             $mh = new MHNotaDebito;
             $DTE = $mh->generarDTE($devolucion);
         }
-
+        else{
+            return response()->json(['error' => 'Tipo de documento no valido, debe de ser Nota de crédito o nota de débito.'], 400);
+        }
         return Response()->json($DTE, 200);
     }
 
