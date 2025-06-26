@@ -58,7 +58,22 @@ class UsuariosController extends Controller
 
         return Response()->json($usuarios, 200);
 
-    }
+        }
+
+    public function listEditDevolucion() {
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        // if ($usuario->tipo == 'Administrador') {
+        //     $usuarios = Usuario::where('enable', true)->orderBy('name','asc')->get();
+        // }else{
+            $usuarios = Usuario::where('id_sucursal', $usuario->id_sucursal)
+                                ->where('enable', true)
+                                ->orderBy('name','asc')->get();
+        // }
+
+        return Response()->json($usuarios, 200);
+
+    }    
 
 
     public function read($id) {

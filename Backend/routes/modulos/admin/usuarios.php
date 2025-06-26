@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/usuarios',                 [UsuariosController::class, 'index']);
     Route::get('/usuarios/list',            [UsuariosController::class, 'list']);
+    Route::get('/usuarios/list-edit-devolucion',            [UsuariosController::class, 'listEditDevolucion']);
     Route::post('/usuarios/filtrar',         [UsuariosController::class, 'filter']);
     Route::post('/usuario',                 [UsuariosController::class, 'store'])->middleware('limite.usuarios');
     Route::get('/usuario/{id}',             [UsuariosController::class, 'read']);
