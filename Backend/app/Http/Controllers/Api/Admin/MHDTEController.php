@@ -36,6 +36,10 @@ class MHDTEController extends Controller
     public function generarDTE(Request $request){
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
+        if (!$this->venta->sucursal()->pluck('cod_estable_mh')->first()) {
+            return Response()->json(['error' => 'Falta configurar la sucursal.'], 400);
+        }
+
         if ($venta->nombre_documento == 'Crédito fiscal') {
             $mh = new MHCCF;
             $DTE = $mh->generarDTE($venta);
