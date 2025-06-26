@@ -152,10 +152,10 @@ export class RetaceoComponent implements OnInit {
     // Cargar gastos filtrados por bodega
     this.apiService.getAll('gastos', this.filtros).subscribe(
       (gastos) => {
-        //this.gastos = gastos.data;
-        this.gastos = gastos.data.filter(
-          (c: any) => c.estado === 'Confirmado'
-        );
+        this.gastos = gastos.data;
+        // this.gastos = gastos.data.filter(
+        //   (c: any) => c.estado === 'Confirmado'
+        // );
         this.loading = false;
       },
       (error) => {
@@ -363,11 +363,10 @@ export class RetaceoComponent implements OnInit {
       item.monto_seguro = Number(((porcentaje / 100) * totalesPorTipo['Seguro']).toFixed(3));
       item.monto_otros = Number(((porcentaje / 100) * totalesPorTipo['Otro']).toFixed(3));
 
-      // Calcular la base para el DAI (suma de valor FOB + transporte + seguro + otros)
+      // Calcular la base para el DAI (suma de valor FOB + transporte + seguro)
       const baseDAI = parseFloat(item.valor_fob?.toString() || '0') +
                      parseFloat(item.monto_transporte?.toString() || '0') +
-                     parseFloat(item.monto_seguro?.toString() || '0') +
-                     parseFloat(item.monto_otros?.toString() || '0');
+                     parseFloat(item.monto_seguro?.toString() || '0');
 
       // Calcular el DAI aplicando el porcentaje a la base
       item.monto_dai = Number(((baseDAI * parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(4));
@@ -484,10 +483,15 @@ export class RetaceoComponent implements OnInit {
 
       // Calcular el DAI según el porcentaje del producto
       if (item.porcentaje_dai) {
-        // Redondear a 3 decimales el porcentaje DAI
-        item.porcentaje_dai = Number(parseFloat(item.porcentaje_dai.toString()).toFixed(1));
-        item.monto_dai = Number(((parseFloat(item.valor_fob?.toString() || '0') *
-          parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(1));
+        // Redondear a 4 decimales el porcentaje DAI
+        item.porcentaje_dai = Number(parseFloat(item.porcentaje_dai.toString()).toFixed(4));
+
+        // Calcular la base para el DAI (suma de valor FOB + transporte + seguro)
+        const baseDAI = parseFloat(item.valor_fob?.toString() || '0') +
+                       parseFloat(item.monto_transporte?.toString() || '0') +
+                       parseFloat(item.monto_seguro?.toString() || '0');
+
+        item.monto_dai = Number(((baseDAI * parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(4));
       }
 
       this.actualizarCostosProducto(item);
@@ -570,11 +574,10 @@ export class RetaceoComponent implements OnInit {
   }
 
   calcularDAIProducto(item: ItemDistribucion) {
-    // Calcular la base para el DAI (suma de valor FOB + transporte + seguro + otros)
+    // Calcular la base para el DAI (suma de valor FOB + transporte + seguro)
     const baseDAI = parseFloat(item.valor_fob?.toString() || '0') +
                    parseFloat(item.monto_transporte?.toString() || '0') +
-                   parseFloat(item.monto_seguro?.toString() || '0') +
-                   parseFloat(item.monto_otros?.toString() || '0');
+                   parseFloat(item.monto_seguro?.toString() || '0');
 
     // Calcular el DAI aplicando el porcentaje a la base
     item.monto_dai = Number(((baseDAI * parseFloat(item.porcentaje_dai?.toString() || '0')) / 100).toFixed(4));
