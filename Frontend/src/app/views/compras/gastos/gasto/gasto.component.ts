@@ -28,11 +28,16 @@ export class GastoComponent implements OnInit {
 
     public opAvanzadas: boolean = false;
     public otrosImpuestos: boolean = false;
+    public areasDisponibles: any[] = [];
+    public loadingAreas: boolean = false;
+    public departamentos: any[] = [];
 
 	constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService) {}
 
 	ngOnInit(){
         this.loadAll();
+        this.loadDepartamentos();
+
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
@@ -84,6 +89,16 @@ export class GastoComponent implements OnInit {
                 if(!this.gasto.area_empresa)
                     this.gasto.area_empresa = '';
 
+                if (!this.gasto.id_area_empresa) {
+                    this.gasto.id_area_empresa = '';
+                }
+        
+                // Cargar áreas si existe id_departamento
+                if (this.gasto.id_departamento) {
+                    this.loadAreasPorDepartamento(this.gasto.id_departamento);
+                }
+        
+
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
@@ -99,7 +114,7 @@ export class GastoComponent implements OnInit {
             this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
             this.gasto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.gasto.id_usuario = this.apiService.auth_user().id;
-            this.gasto.area_empresa = '';
+            this.gasto.id_area_empresa = '';
             this.gasto.es_retaceo = false;
 
             if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
@@ -116,6 +131,20 @@ export class GastoComponent implements OnInit {
                 this.gasto = gasto;
                 this.gasto.fecha = this.apiService.date();
                 this.gasto.id = null;
+
+                if (this.gasto.id_departamento) {
+                    this.gasto.id_departamento = this.gasto.id_departamento.toString();
+                  }
+                  if (this.gasto.id_area_empresa) {
+                    this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
+                  }
+        
+                  // Cargar áreas para gasto duplicado
+                  if (this.gasto.id_departamento) {
+                    this.loadAreasPorDepartamento(this.gasto.id_departamento);
+                  }
+      
+                
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
@@ -238,5 +267,56 @@ export class GastoComponent implements OnInit {
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
+
+    private loadDepartamentos(): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.apiService.getAll('departamentosEmpresa/list').subscribe(departamentos => { 
+                this.departamentos = departamentos;
+                resolve(departamentos);
+            }, error => {
+                this.alertService.error(error);
+                reject(error);
+            });
+        });
+    }
+
+    public onDepartamentoChangeGasto() {
+        // Limpiar área seleccionada
+        this.gasto.id_area_empresa = '';
+        this.areasDisponibles = [];
+        
+        if (this.gasto.id_departamento) {
+            this.loadAreasPorDepartamento(this.gasto.id_departamento);
+        }
+    }
+
+    private loadAreasPorDepartamento(idDepartamento: string) {
+        this.loadingAreas = true;
+        
+        this.apiService.getAll('area-empresa', { id_departamento: idDepartamento, estado: 1 })
+            .subscribe(response => {
+                this.areasDisponibles = response.data || response;
+                this.loadingAreas = false;
+            }, error => {
+                this.alertService.error(error);
+                this.loadingAreas = false;
+                this.areasDisponibles = [];
+            });
+    }
+  
+  
+  public setDepartamento(departamento: any) {
+    this.departamentos.push(departamento);
+    this.gasto.id_departamento = departamento.id.toString();
+    // Limpiar área seleccionada y cargar nuevas áreas
+    this.gasto.id_area_empresa = '';
+    this.loadAreasPorDepartamento(departamento.id);
+  }
+  
+  public setArea(area: any) {
+    this.areasDisponibles.push(area);
+    this.gasto.id_area_empresa = area.id.toString();
+  }
+  
 
 }
