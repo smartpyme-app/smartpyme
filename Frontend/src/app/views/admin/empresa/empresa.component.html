@@ -228,6 +228,27 @@
                     </div>
 
                     <hr>
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Ajustes en impresión</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="mostrar_ticket_pdf" class="form-label">
+                                    <strong>Mostrar ticket en PDF</strong>
+                                </label>
+                                <input 
+                                    class="form-check-input float-end" 
+                                    type="checkbox" 
+                                    role="switch" 
+                                    id="mostrar_ticket_pdf"
+                                    [checked]="isTicketEnPdfEnabled()"
+                                    (change)="toggleTicketEnPdf()"
+                                    name="mostrar_ticket_pdf">
+                            </div>
+                            <small class="text-muted">
+                                Los tickets se generarán en formato PDF.
+                            </small>
+                        </div> 
+                    </div>
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Calcular el IVA por defecto.</p>

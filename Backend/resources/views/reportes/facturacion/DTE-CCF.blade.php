@@ -43,7 +43,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                            <img height="130" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
@@ -51,7 +51,7 @@
                         <h2>COMPROBANTE DE CRÉDITO FISCAL</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
-                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+                        {!! '<img id="qrcode" width="130" height="130" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
                     </td>
                 </tr>
             </tbody>
@@ -66,7 +66,6 @@
                 'Transmisión por contingencia'
             ];
         @endphp
-        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -89,7 +88,6 @@
                     '13'
             ];
         @endphp
-        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -130,9 +128,6 @@
                 </tr>
             </tbody>
         </table> 
-
-        <br>
-
         <table class="table bordered">
             <thead>
                 <tr class="bg-light">

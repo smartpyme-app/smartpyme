@@ -3,8 +3,11 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <script language="javascript">setTimeout("self.close();",2000)</script>
-  <title>Ticket</title>
+  <title>{{ $DTE['identificacion']['codigoGeneracion'] }}</title>
   <style media="all">
+    @if ($venta->pdf)
+        body{ width: 80mm; margin: 0;}
+    @endif
     h1, h2, h3{
         margin: 3pt;
     }
@@ -20,7 +23,7 @@
     "Droid Sans", "Helvetica Neue", sans-serif;
         margin: 0pt;
         padding: 0pt;
-        font-size: 9pt;
+        font-size: 10pt;
     }
 
     p{ margin: 0px; }
@@ -36,15 +39,14 @@
 <body onload="javascript:print();">
   
     <div class="header">
-        <p class="no-print">
-            <button onClick="window.print();" autofocus>Imprimir</button>
-            <button onClick="window.close();" autofocus>Cerrar</button>
-            <br><br>
-        </p>
-        <br>
-        {{--        @if ($venta->empresa->logo)--}}
-        {{--            <img src="{{ asset('img/'.$venta->empresa->logo) }}" alt="Logo">--}}
-        {{--        @endif--}}
+        @if (!$venta->pdf)
+            <p class="no-print">
+                <button onClick="window.print();" autofocus>Imprimir</button>
+                <button onClick="window.close();" autofocus>Cerrar</button>
+                <br><br>
+            </p>
+            <br>
+        @endif
         @if ($venta->sucursal()->first())
             <h3>{{ $venta->sucursal()->pluck('nombre')->first() }}</h3>
         @else
@@ -121,7 +123,7 @@
             </tr>
         </thead>
         <tbody>
-            @php($iva = 13 / 100);
+            @php($iva = 13 / 100)
             
             @if ($venta->descripcion_personalizada)
                 <tr>
@@ -137,7 +139,7 @@
                 <tr>
                     <td>
                         {{ $detalle->nombre_producto }}
-                        @if ($detalle->producto()->first()->promocion()->first())
+                        @if ($detalle->producto()->first() && $detalle->producto()->first()->promocion()->first())
                           @foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det)
                             <p style="font-size: 8px !important; margin: 0px;">{{ $det->nombre_producto }} x {{ $det->cantidad }}</p>
                           @endforeach

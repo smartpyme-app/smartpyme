@@ -632,19 +632,49 @@ export class EmpresaComponent implements OnInit {
 
 
     private initializeCustomConfig() {
+        // Estructura por defecto
+        const defaultConfig = {
+            columnas: {
+                columna_proyecto: false
+            },
+            modulos: {},
+            configuraciones: {
+                ticket_en_pdf: false
+            },
+            campos_personalizados: {}
+        };
+    
         if (this.empresa.custom_empresa) {
-            this.customConfig = this.empresa.custom_empresa;
+            // Hacer deep merge de la configuración existente con los valores por defecto
+            this.customConfig = this.deepMerge(defaultConfig, this.empresa.custom_empresa);
+            
+            // Convertir arrays a objetos si es necesario
+            if (Array.isArray(this.customConfig.configuraciones)) {
+                this.customConfig.configuraciones = defaultConfig.configuraciones;
+            }
+            if (Array.isArray(this.customConfig.modulos)) {
+                this.customConfig.modulos = defaultConfig.modulos;
+            }
+            if (Array.isArray(this.customConfig.campos_personalizados)) {
+                this.customConfig.campos_personalizados = defaultConfig.campos_personalizados;
+            }
         } else {
-            // Valores por defecto si no existe configuración
-            this.customConfig = {
-                columnas: {
-                    columna_proyecto: false
-                },
-                modulos: {},
-                configuraciones: {},
-                campos_personalizados: {}
-            };
+            this.customConfig = defaultConfig;
         }
+    }
+    
+    private deepMerge(target: any, source: any): any {
+        const result = { ...target };
+        
+        for (const key in source) {
+            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+                result[key] = this.deepMerge(result[key] || {}, source[key]);
+            } else {
+                result[key] = source[key];
+            }
+        }
+        
+        return result;
     }
 
     public updateColumnConfig(columnName: string, enabled: boolean) {
@@ -680,15 +710,39 @@ export class EmpresaComponent implements OnInit {
 
     // Método para obtener configuración específica
     public getCustomConfig(section: string, key?: string, defaultValue?: any) {
-        if (!this.customConfig[section]) {
+        if (!this.customConfig[section] || Array.isArray(this.customConfig[section])) {
             return defaultValue;
         }
         
         if (key) {
-            return this.customConfig[section][key] || defaultValue;
+            return this.customConfig[section][key] !== undefined ? this.customConfig[section][key] : defaultValue;
         }
         
         return this.customConfig[section];
+    }
+
+    // Método para verificar si ticket en PDF está habilitado
+    public isTicketEnPdfEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'ticket_en_pdf', false);
+    }
+
+    // Método para cambiar la configuración de ticket en PDF
+    public updateTicketEnPdf(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'ticket_en_pdf', enabled);
+        
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada', 
+                `Ticket en PDF ${enabled ? 'habilitado' : 'deshabilitado'} correctamente`
+            );
+        });
+    }
+
+    // Método para alternar ticket en PDF
+    public toggleTicketEnPdf() {
+        const currentValue = this.isTicketEnPdfEnabled();
+        this.updateTicketEnPdf(!currentValue);
     }
 
 }
