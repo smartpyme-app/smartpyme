@@ -1,8 +1,8 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { AlertService } from '@services/alert.service';
-import { ApiService } from '@services/api.service';
-import { PlanillaConstants } from '../../constants/planilla.constants';
+import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
+import {AlertService} from '@services/alert.service';
+import {ApiService} from '@services/api.service';
+import {PlanillaConstants} from '../../constants/planilla.constants';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -311,22 +311,37 @@ export class PlanillasComponent implements OnInit {
     }
   }
 
-  public eliminarPlanilla(planilla: any) {
-    if (!confirm('¿Está seguro de eliminar esta planilla?')) {
-      return;
-    }
+  public puedeEliminarPlanilla(planilla: any): boolean {
+    // Por ahora usamos directamente el valor 2 (PLANILLA_BORRADOR) hasta verificar las constantes dinámicas
+    return planilla.estado === 2;
+  }
 
-    this.procesando = true;
-    this.apiService.store(`planillas/${planilla.id}`, {}).subscribe({
-      next: (response) => {
-        this.alertService.success('Exito', 'Planilla eliminada exitosamente');
-        this.loadPlanillas();
-        this.procesando = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.procesando = false;
-      },
+  public eliminarPlanilla(planilla: any) {
+    Swal.fire({
+      title: '¿Está seguro?',
+      text: `¿Desea eliminar la planilla ${planilla.codigo}? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procesando = true;
+
+        this.apiService.delete('planillas/', planilla.id).subscribe({
+          next: (response) => {
+            this.alertService.success('Éxito', 'Planilla eliminada exitosamente');
+            this.loadPlanillas();
+            this.procesando = false;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+            this.procesando = false;
+          },
+        });
+      }
     });
   }
 
@@ -425,7 +440,7 @@ export class PlanillasComponent implements OnInit {
     this.procesando = true;
     this.apiService.download(`planillas/${planilla.id}/pdf`).subscribe({
       next: (response) => {
-        const blob = new Blob([response], { type: 'application/pdf' });
+        const blob = new Blob([response], {type: 'application/pdf'});
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
