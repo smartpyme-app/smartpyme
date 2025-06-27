@@ -745,41 +745,41 @@ class PlanillasController extends Controller
     {
         try {
             DB::beginTransaction();
-    
+
             $planilla = Planilla::with('detalles')->findOrFail($id);
-    
+
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'Solo se pueden aprobar planillas en estado borrador'
                 ], 422);
             }
-    
+
             // Actualizar el estado de la planilla principal
             $planilla->estado = PlanillaConstants::PLANILLA_APROBADA; // Aprobada
             $planilla->save();
-    
+
             // Inicializar contador de detalles actualizados
             $detallesActualizados = 0;
-    
+
             // Actualizar el estado de todos los detalles activos
             foreach ($planilla->detalles as $detalle) {
                 // Solo actualizamos los detalles que están en estado borrador o activo
-                if ($detalle->estado == PlanillaConstants::PLANILLA_BORRADOR || 
+                if ($detalle->estado == PlanillaConstants::PLANILLA_BORRADOR ||
                     $detalle->estado == PlanillaConstants::PLANILLA_ACTIVA) {
-                    
+
                     $detalle->estado = PlanillaConstants::PLANILLA_APROBADA;
                     $detalle->save();
                     $detallesActualizados++;
                 }
             }
-    
+
             DB::commit();
-    
+
             // Log::info('Planilla aprobada exitosamente', [
             //     'planilla_id' => $id,
             //     'detalles_actualizados' => $detallesActualizados
             // ]);
-    
+
             return response()->json([
                 'message' => 'Planilla aprobada exitosamente',
                 'detalles_actualizados' => $detallesActualizados
@@ -790,7 +790,7 @@ class PlanillasController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Error al aprobar la planilla: ' . $e->getMessage()
             ], 500);
@@ -1013,7 +1013,15 @@ class PlanillasController extends Controller
 
             $planilla = Planilla::findOrFail($id);
 
-            if ($planilla->estado != 1) {
+            // Verificar que la planilla pertenece a la empresa y sucursal del usuario
+            if ($planilla->id_empresa !== auth()->user()->id_empresa ||
+                $planilla->id_sucursal !== auth()->user()->id_sucursal) {
+                return response()->json([
+                    'error' => 'No tiene permisos para eliminar esta planilla'
+                ], 403);
+            }
+
+            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'Solo se pueden eliminar planillas en estado borrador'
                 ], 422);
@@ -1317,7 +1325,7 @@ class PlanillasController extends Controller
             //     'codigo' => $planilla->codigo,
             //     'total_detalles' => $planilla->detalles->count()
             // ]);
-    
+
             // Obtener o crear la categoría de gastos de planilla
             $categoria = Categoria::firstOrCreate(
                 [
@@ -1325,9 +1333,9 @@ class PlanillasController extends Controller
                     'id_empresa' => $planilla->id_empresa
                 ]
             );
-    
+
             // Log::info('Categoría de gastos obtenida', ['categoria_id' => $categoria->id]);
-    
+
             // Obtener o crear el proveedor para planillas
             $proveedor = Proveedor::firstOrCreate(
                 [
@@ -1342,24 +1350,24 @@ class PlanillasController extends Controller
                     'id_sucursal' => $planilla->id_sucursal
                 ]
             );
-    
+
             // Log::info('Proveedor para planillas obtenido', ['proveedor_id' => $proveedor->id]);
-    
+
             // Contador para detalles procesados
             $detallesProcesados = 0;
             $gastosCreados = 0;
-    
+
             // Totales para deducciones patronales
             $totalISSS_Patronal = 0;
             $totalAFP_Patronal = 0;
-    
+
             // Fecha de pago
             $fecha_pago = now();
-    
+
             // 1. Crear un gasto por cada empleado con su salario neto
             foreach ($planilla->detalles as $detalle) {
                 $detallesProcesados++;
-    
+
                 // Incluir detalles con estado 1, 2 o 4
                 if ($detalle->estado == 1 || $detalle->estado == 2 || $detalle->estado == 4) {
                     // Verificar si tiene empleado asociado
@@ -1367,27 +1375,27 @@ class PlanillasController extends Controller
                         Log::warning('Detalle sin empleado asociado', ['detalle_id' => $detalle->id]);
                         continue;
                     }
-    
+
                     // Obtener el nombre completo del empleado
                     $nombreEmpleado = $detalle->empleado->nombres . ' ' . $detalle->empleado->apellidos;
-                    
+
                     // Salario neto (después de deducciones)
                     $sueldoNeto = round(floatval($detalle->sueldo_neto ?? 0), 2);
-    
+
                     // Acumular totales para deducciones patronales
                     $isssPatronal = round(floatval($detalle->isss_patronal ?? 0), 2);
                     $afpPatronal = round(floatval($detalle->afp_patronal ?? 0), 2);
-                    
+
                     $totalISSS_Patronal += $isssPatronal;
                     $totalAFP_Patronal += $afpPatronal;
-    
+
                     // Solo crear gasto si el salario neto es mayor a cero
                     if ($sueldoNeto > 0) {
                         // Log::info('Creando gasto para salario neto de empleado', [
                         //     'empleado' => $nombreEmpleado,
                         //     'monto' => $sueldoNeto
                         // ]);
-    
+
                         $gastoEmpleado = Gasto::create([
                             'fecha' => $fecha_pago,
                             'fecha_pago' => $fecha_pago,
@@ -1405,18 +1413,18 @@ class PlanillasController extends Controller
                             'id_sucursal' => $planilla->id_sucursal,
                             'nota' => "Pago de salario neto a {$nombreEmpleado} - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                         ]);
-    
+
                         $gastosCreados++;
                     }
                 }
             }
-    
+
             // 2. Crear un gasto para el total de ISSS patronal
             if ($totalISSS_Patronal > 0) {
                 // Log::info('Creando gasto para total de ISSS patronal', [
                 //     'monto' => $totalISSS_Patronal
                 // ]);
-    
+
                 $gastoISSS = Gasto::create([
                     'fecha' => $fecha_pago,
                     'fecha_pago' => $fecha_pago,
@@ -1434,16 +1442,16 @@ class PlanillasController extends Controller
                     'id_sucursal' => $planilla->id_sucursal,
                     'nota' => "Aporte patronal total ISSS - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                 ]);
-    
+
                 $gastosCreados++;
             }
-    
+
             // 3. Crear un gasto para el total de AFP patronal
             if ($totalAFP_Patronal > 0) {
                 // Log::info('Creando gasto para total de AFP patronal', [
                 //     'monto' => $totalAFP_Patronal
                 // ]);
-    
+
                 $gastoAFP = Gasto::create([
                     'fecha' => $fecha_pago,
                     'fecha_pago' => $fecha_pago,
@@ -1461,17 +1469,17 @@ class PlanillasController extends Controller
                     'id_sucursal' => $planilla->id_sucursal,
                     'nota' => "Aporte patronal total AFP - Planilla {$planilla->codigo} - Período {$planilla->fecha_inicio} al {$planilla->fecha_fin}"
                 ]);
-    
+
                 $gastosCreados++;
             }
-    
+
             // Log::info('Finalizado registro de gastos de planilla', [
             //     'detalles_procesados' => $detallesProcesados,
             //     'gastos_creados' => $gastosCreados,
             //     'total_isss_patronal' => $totalISSS_Patronal,
             //     'total_afp_patronal' => $totalAFP_Patronal
             // ]);
-    
+
             return true;
         } catch (\Exception $e) {
             Log::error('Error registrando gastos de planilla', [
