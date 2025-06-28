@@ -36,6 +36,10 @@ class MHDTEController extends Controller
     public function generarDTE(Request $request){
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
+        if (!$this->venta->sucursal()->pluck('cod_estable_mh')->first()) {
+            return Response()->json(['error' => 'Falta configurar la sucursal.'], 400);
+        }
+
         if ($venta->nombre_documento == 'Crédito fiscal') {
             $mh = new MHCCF;
             $DTE = $mh->generarDTE($venta);
@@ -60,8 +64,10 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
-        if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
-            return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
+       // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
+        if (!$devolucion->venta) {
+            // return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
+            return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
         }
 
         if ($devolucion->nombre_documento == 'Nota de crédito') {
@@ -415,6 +421,10 @@ class MHDTEController extends Controller
            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura-Exportacion', compact('registro', 'DTE'));
 
         }
+        elseif ($DTE['identificacion']['tipoDte'] == '05') {
+           $pdf = PDF::loadView('reportes.facturacion.DTE-Nota-Credito', compact('registro', 'DTE'));
+
+        }
         elseif ($DTE['identificacion']['tipoDte'] == '14') {
            $pdf = PDF::loadView('reportes.facturacion.DTE-Sujeto-Excluido', compact('registro', 'DTE'));
 
@@ -426,7 +436,7 @@ class MHDTEController extends Controller
 
         $pdfContent = $pdf->output();
 
-        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11'){
+        if($DTE['identificacion']['tipoDte'] == '01' || $DTE['identificacion']['tipoDte'] == '05' || $DTE['identificacion']['tipoDte'] == '03' || $DTE['identificacion']['tipoDte'] == '11'){
             $nombre = $DTE['receptor']['nombre'];
         }
         if($DTE['identificacion']['tipoDte'] == '14'){

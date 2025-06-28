@@ -47,6 +47,8 @@ import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados
 
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
 
+import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
+
 
 
 @NgModule({
@@ -92,7 +94,8 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearImpuestoComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-    ThreedsModalComponent
+    ThreedsModalComponent,
+    AlertsHaciendaComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -125,7 +128,8 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
     CrearProyectoComponent,
     ThreedsModalComponent,
     VerHistorialButtonComponent,
-    SafeHtmlPipe
+    SafeHtmlPipe,
+    AlertsHaciendaComponent
   ],
   providers: [AlertService],
 })

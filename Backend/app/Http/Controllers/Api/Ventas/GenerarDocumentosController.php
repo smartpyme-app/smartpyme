@@ -77,7 +77,34 @@ class GenerarDocumentosController extends Controller
 
             $empresa = Empresa::findOrfail(Auth::user()->id_empresa);
 
-            return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            if (
+                isset($empresa->custom_empresa['configuraciones']) &&
+                $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true
+            ) {
+                $venta->pdf = true;
+                
+                $pdf = PDF::loadView('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+
+                // Estimar altura:
+                   $alto_base = 220; // mm (encabezado, totales, etc.)
+                   $alto_por_producto = 7; // mm por línea estimado
+
+                   $total_lineas = $venta->detalles()->count();
+                   $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
+
+                   // Convertir mm a puntos (1mm ≈ 2.83465 pt)
+                   $alto_total_pt = $alto_total_mm * 2.83465;
+                   $ancho_pt = 80 * 2.83465; // 80mm de ancho
+
+                   $pdf->setPaper([0, 0, $ancho_pt, $alto_total_pt]);
+
+                return $pdf->stream('ticket.pdf');
+
+            }else{
+                $venta->pdf = false;
+                return view('reportes.facturacion.ticket', compact('venta', 'empresa', 'documento'));
+            }
+
         }
 
 //        factura

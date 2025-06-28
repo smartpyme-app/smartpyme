@@ -532,8 +532,13 @@ export class VentasComponent implements OnInit {
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTE(this.venta).then((venta) => {
-            this.venta = venta;
+        this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
+            this.venta = { ...ventaActualizada };
+            const index = this.ventas.data.findIndex((v:any) => v.id === ventaActualizada.id);
+            if (index !== -1) {
+              this.ventas.data[index] = { ...ventaActualizada };
+            }
+            
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
             this.enviarDTE(this.venta);
@@ -542,8 +547,11 @@ export class VentasComponent implements OnInit {
             console.log(error);
             if(error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR'){
                 this.consultarDTE();
-            }else{
+            }
+            else if (error.status){
                 this.alertService.warning('Hubo un problema', error);
+            }else{
+                this.venta.errores = error;
             }
         });
     }
