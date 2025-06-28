@@ -209,7 +209,7 @@ export class DevolucionesVentasComponent implements OnInit {
 
     enviarDTE(venta:any){
         this.sending = true;
-        this.apiService.store('enviarDTENotaCredito', venta).subscribe(dte => {
+        this.apiService.store('enviarDTE', venta).subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
