@@ -40,7 +40,7 @@ class MHAnulacion extends Model
             $num_documento = $DTE['receptor']['numDocumento'];
         }
 
-        if ($DTE['receptor'] && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05')) {
+        if ($DTE['receptor'] && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
             $tipo_documento = '36';
             $num_documento = $DTE['receptor']['nit'];
         }

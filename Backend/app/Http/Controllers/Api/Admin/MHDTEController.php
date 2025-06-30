@@ -36,8 +36,8 @@ class MHDTEController extends Controller
     public function generarDTE(Request $request){
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
-        if (!$this->venta->sucursal()->pluck('cod_estable_mh')->first()) {
-            return Response()->json(['error' => 'Falta configurar la sucursal.'], 400);
+        if (!$venta->sucursal()->pluck('cod_estable_mh')->first()) {
+            return Response()->json(['error' => 'Falta configurar los datos de la sucursal.'], 400);
         }
 
         if ($venta->nombre_documento == 'Crédito fiscal') {
@@ -64,7 +64,7 @@ class MHDTEController extends Controller
     public function generarDTENotaCredito(Request $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
-       // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
+        // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
         if (!$devolucion->venta) {
             // return response()->json(['error' => 'La venta de este documento no ha sido emitida a hacienda.'], 400);
             return response()->json(['error' => 'La devolución no tiene una venta asignada.'], 400);
@@ -136,7 +136,7 @@ class MHDTEController extends Controller
 
     public function generarDTEAnulado(Request $request){
 
-        if ($request->tipo_dte == '05') {
+        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
             $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
         }else{
             $venta = Venta::where('id', $request->id)->firstOrFail();

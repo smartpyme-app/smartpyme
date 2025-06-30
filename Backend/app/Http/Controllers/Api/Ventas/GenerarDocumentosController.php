@@ -45,7 +45,7 @@ class GenerarDocumentosController extends Controller
 
                         // Estimar altura:
                            $alto_base = 220; // mm (encabezado, totales, etc.)
-                           $alto_por_producto = 7; // mm por línea estimado
+                           $alto_por_producto = 30; // mm por línea estimado
 
                            $total_lineas = $venta->detalles()->count();
                            $alto_total_mm = $alto_base + ($total_lineas * $alto_por_producto);
