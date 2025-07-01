@@ -17,13 +17,12 @@
             </div>
             <div class="form-group col-md-6 col-lg-4">
                 <label for="id_cuenta_padre">Cuenta padre:</label>
-                <input type="number" class="form-control" name="id_cuenta_padre" [(ngModel)]="cuenta.id_cuenta_padre"/>
-                <!-- <ng-select [(ngModel)]="cuenta.id_cuenta_padre" class="form-select p-0" name="id_cuenta_padre">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
-                        {{ cuenta.nombre }}
-                    </ng-option>
-                </ng-select> -->
+                <select class="form-select" name="id_cuenta_padre" [(ngModel)]="cuenta.id_cuenta_padre">
+                    <option [ngValue]="null">Sin cuenta padre</option>
+                    <option *ngFor="let c of cuentas" [ngValue]="c.id">
+                        {{ c.codigo }} - {{ c.nombre }}
+                    </option>
+                </select>
             </div>
             <div class="form-group col-md-6 col-lg-4">
                 <label for="naturaleza">Naturaleza:</label>

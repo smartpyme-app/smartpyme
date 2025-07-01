@@ -1,6 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
-    <button *ngIf="apiService.canCreate() ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+    <!-- <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button> -->
+    <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.validateRole('usuario_citas', true)" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -60,7 +61,7 @@
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
-                        <th class="text-center" *ngIf="apiService.canEdit()">Más</th>
+                        <th class="text-center" *ngIf="apiService.canEditTest('servicios.editar')">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -86,7 +87,7 @@
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>
                         <td class="text-right">{{ servicio.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (servicio.precio * 1) + (servicio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center" *ngIf="apiService.canEdit()">
+                        <td class="text-center" *ngIf="apiService.canEditTest('servicios.editar')">
                             <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

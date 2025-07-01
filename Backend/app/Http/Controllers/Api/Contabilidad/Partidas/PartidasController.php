@@ -158,7 +158,7 @@ class PartidasController extends Controller
         ]);
 
         $configuracion = Configuracion::first();
-        $ventas = Venta::where('estado', 'Pagada')
+        $ventas = Venta::where('estado','!=', 'Anulada')
                         ->where('fecha', $request->fecha)->get();
         $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
                         ->where('fecha', $request->fecha)->with('venta')->get();
@@ -624,7 +624,7 @@ class PartidasController extends Controller
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $egreso->correlativo, 'code' => 400], 400);
                             }
 
-                            $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_ingresos)->first();
+                            $cuenta = Cuenta::where('id', $cuenta_categoria_sucursal->id_cuenta_contable_inventario)->first();
 
                             if(!$cuenta){
                                 return  Response()->json(['titulo' => 'La categoria no tiene cuenta contable.', 'error' => 'Categoria: ' . $detalle->producto->nombre_categoria . '#' . $egreso->correlativo, 'code' => 400], 400);

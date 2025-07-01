@@ -94,6 +94,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 		require base_path('routes/modulos/admin/accesos.php');
 		require base_path('routes/modulos/admin/licencias.php');
 		require base_path('routes/modulos/admin/MH.php');
+		require base_path('routes/modulos/admin/roles-permissions.php');
 
 	// Super Admin
 		require base_path('routes/modulos/super-admin/usuarios.php');
@@ -101,6 +102,9 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 
 	// Ordenes de producción
 		require base_path('routes/modulos/ventas/orden_produccion.php');
+
+	// Autorizaciones
+		require base_path('routes/modulos/authorization/authorizations.php');
 
 
 });

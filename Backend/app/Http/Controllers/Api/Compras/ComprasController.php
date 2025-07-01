@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Compras;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Traits\Authorization\HasAutoAuthorization;
 
 use App\Models\Admin\Documento;
 use App\Models\Compras\Compra;
@@ -16,10 +17,12 @@ use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
+use App\Services\Authorization\AuthorizationService;
 
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
 use App\Models\OrdenCompra;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -27,14 +30,18 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ComprasController extends Controller
 {
+    use HasAutoAuthorization;
+    protected $authModule = 'compras';
 
     protected $transaccionesService;
     protected $chequesService;
+    protected $authorizationService;
 
-    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService,AuthorizationService $authorizationService)
     {
         $this->transaccionesService = $transaccionesService;
         $this->chequesService = $chequesService;
+        $this->authorizationService = $authorizationService;
     }
 
     public function index(Request $request)
@@ -149,11 +156,10 @@ class ComprasController extends Controller
     }
 
 
-
     public function store(Request $request)
     {
         DB::beginTransaction();
-        $request->validate([
+        $data = $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
             'forma_pago'        => 'required',
@@ -163,6 +169,12 @@ class ComprasController extends Controller
             'id_sucursal'       => 'required',
             'id_usuario'        => 'required',
         ]);
+        
+        if ($response = $this->checkAuth('store', $data)) {
+            return $response;
+        }
+
+
         $compra = Compra::where('id', $request->id)->with('detalles')->firstOrFail();
         $orden = null;
         if ($compra->num_orden_compra) {
@@ -239,23 +251,17 @@ class ComprasController extends Controller
         return Response()->json($compra, 201);
     }
 
-
     public function facturacion(Request $request)
     {
-
         $request->validate([
             'fecha'             => 'required',
             'estado'            => 'required',
             'tipo_documento'    => 'required',
-            // 'tipo_documento'    => 'required',
-            // 'condicion'         => 'required',
             'forma_pago'        => 'required',
             'id_proveedor'      => 'required',
             'detalles'          => 'required',
-            // 'cuotas'            => 'required_if:forma_pago,"Crédito"',
             'referencia'        => 'required_if:estado,"Pre-compra"',
             'tipo_documento'    => 'required_if:estado,"Pre-compra"',
-            // 'referencia'        => 'required',
             'id_usuario'        => 'required',
             'id_empresa'        => 'required',
         ], [
@@ -263,11 +269,29 @@ class ComprasController extends Controller
             'detalles.required' => 'Los detalles son obligatorios.'
         ]);
 
+        Log::info("Facturacion - iniciando proceso");
+    
+        // VERIFICAR AUTORIZACIÓN - Solo para compras nuevas sin id_authorization
+        if (!$request->id && !$request->id_authorization) {
+            $total = $this->calcularTotalCompra($request);
+            
+            if ($total > 3000) {
+                Log::info("Compra requiere autorización - Total: $" . $total);
+                
+                return response()->json([
+                    'ok' => false,
+                    'requires_authorization' => true,
+                    'authorization_type' => 'compras_altas',
+                    'message' => "Esta compra de $" . number_format($total, 2) . " requiere autorización (supera los $3,000)"
+                ], 403);
+            }
+        }
+    
+        Log::info("Procesando compra normal o autorizada");
+    
         DB::beginTransaction();
 
         try {
-
-
             // Compra
             if ($request->id)
                 $compra = Compra::findOrFail($request->id);
@@ -277,9 +301,7 @@ class ComprasController extends Controller
             $compra->fill($request->merge(["id_sucursal" => Auth::user()->id_sucursal])->all());
             $compra->save();
 
-
             // Detalles
-
             foreach ($request->detalles as $det) {
                 if (isset($det['id']))
                     $detalle = Detalle::findOrFail($det['id']);
@@ -321,10 +343,9 @@ class ComprasController extends Controller
                         $producto->costo_promedio   = $costo_promedio;
                         $producto->save();
                     }
-
                 }
-
             }
+
             //actualizar orden de compra
             if ($compra->num_orden_compra) {
                 $detCollection = collect($request->detalles);
@@ -349,8 +370,6 @@ class ComprasController extends Controller
                 $orden->save();
             }
 
-            // return $orden = OrdenCompra::where('id', $compra->num_orden_compra)->with("detalles")->first();
-
             // Crear transaccion bancaria
             if (!$request->id && $compra->cotizacion == 0 && $compra->forma_pago != 'Efectivo' && $compra->forma_pago != 'Cheque') {
                 $this->transaccionesService->crear($compra, 'Cargo', 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
@@ -361,13 +380,11 @@ class ComprasController extends Controller
                 $this->chequesService->crear($compra, $compra->nombre_proveedor, 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
             }
 
-
             // Incrementar el correlarivo de orden de compra
             if ($request->estado == 'Pre-compra') {
                 $documento = Documento::where('nombre', $compra->tipo_documento)->first();
                 $documento->increment('correlativo');
             }
-
 
             // Incrementar el correlarivo de Sujeto excluido
             if ($request->tipo_documento == 'Sujeto excluido') {
@@ -377,6 +394,7 @@ class ComprasController extends Controller
 
             DB::commit();
             return Response()->json($compra, 200);
+            
         } catch (\Exception $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
@@ -384,8 +402,6 @@ class ComprasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-
-        return Response()->json($compra, 200);
     }
 
     public function facturacionConsigna(Request $request)
@@ -570,5 +586,141 @@ class ComprasController extends Controller
             ->get();
 
         return Response()->json($compras, 200);
+    }
+
+    public function procesarCompraAutorizada($compraId)
+    {
+        Log::info("Procesando compra autorizada: " . $compraId);
+        
+        DB::beginTransaction();
+        
+        try {
+            $compra = Compra::findOrFail($compraId);
+            
+            // Cambiar estado a procesada
+            $compra->estado = 'Pagada';
+            $compra->save();
+            
+            // Actualizar inventarios (que no se hizo cuando estaba pendiente)
+            foreach ($compra->detalles as $detalle) {
+                if ($compra->cotizacion == 0) {
+                    $inventario = Inventario::where('id_producto', $detalle->id_producto)
+                                           ->where('id_bodega', $compra->id_bodega)
+                                           ->first();
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad, null, $detalle->costo);
+                    }
+                    
+                    // Actualizar costo del producto
+                    $producto = $detalle->producto()->with('inventarios')->first();
+                    if ($producto) {
+                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $detalle->cantidad;
+                        $stock_actual = $detalle->cantidad;
+                        $stock_total = $stock_anterior + $stock_actual;
+
+                        if ($stock_total > 0) {
+                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $detalle->costo)) / $stock_total;
+                        } else {
+                            $costo_promedio = $detalle->costo;
+                        }
+
+                        $producto->costo_anterior = $producto->costo;
+                        $producto->costo = $detalle->costo;
+                        $producto->costo_promedio = $costo_promedio;
+                        $producto->save();
+                    }
+                }
+            }
+            
+            // Crear transacciones bancarias si aplica
+            if ($compra->cotizacion == 0 && $compra->forma_pago != 'Efectivo' && $compra->forma_pago != 'Cheque') {
+                $this->transaccionesService->crear($compra, 'Cargo', 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
+            }
+
+            if ($compra->cotizacion == 0 && $compra->forma_pago == 'Cheque') {
+                $this->chequesService->crear($compra, $compra->nombre_proveedor, 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
+            }
+            
+            DB::commit();
+            
+            Log::info("Compra autorizada procesada exitosamente: " . $compraId);
+            
+            return $compra;
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error("Error procesando compra autorizada: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    protected function handlePendingAuthorization($data, $authorization)
+    {
+        Log::info("Creando compra pendiente de autorización");
+        
+        DB::beginTransaction();
+        
+        try {
+            // Crear compra en estado pendiente
+            $compraData = $data;
+            $compraData['estado'] = 'Pendiente Autorización';
+            $compraData['id_authorization'] = $authorization->id;
+            $compraData['id_sucursal'] = Auth::user()->id_sucursal;
+            
+            $compra = new Compra;
+            $compra->fill($compraData);
+            $compra->save();
+            
+            // Crear detalles de la compra pendiente (sin actualizar inventario)
+            foreach ($data['detalles'] as $det) {
+                $detalle = new Detalle;
+                $det['id_compra'] = $compra->id;
+                $detalle->fill($det);
+                $detalle->save();
+            }
+            
+            // Actualizar la autorización con el ID de la compra creada
+            $authorization->update([
+                'authorizeable_id' => $compra->id
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'ok' => true,
+                'data' => $compra,
+                'estado' => 'Pendiente Autorización',
+                'requires_authorization' => true,
+                'authorization_code' => $authorization->code,
+                'message' => 'Compra creada pendiente de autorización'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error("Error creando compra pendiente: " . $e->getMessage());
+            
+            return response()->json([
+                'ok' => false,
+                'requires_authorization' => true,
+                'authorization_type' => $authorization->authorizationType->name,
+                'message' => 'Error al crear compra pendiente: ' . $e->getMessage(),
+                'authorization_code' => $authorization->code
+            ], 403);
+        }
+    }
+
+    private function calcularTotalCompra($request)
+    {
+        $total = $request->total ?? $request->sub_total ?? 0;
+        
+        // Si no hay total, calcularlo de los detalles
+        if ($total == 0 && isset($request->detalles)) {
+            $total = collect($request->detalles)->sum('total');
+        }
+        
+        return $total;
     }
 }

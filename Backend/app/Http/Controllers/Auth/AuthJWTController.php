@@ -21,6 +21,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use JWTAuth;
 use Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
 use Illuminate\Support\Facades\Password;
@@ -31,38 +32,69 @@ class AuthJWTController extends Controller
     use SendsPasswordResetEmails;
 
 
-    public function login(Request $request){
-
+    public function login(Request $request)
+{
+    try {
         $credentials = $request->only('email', 'password');
-        $token = null;
-
         $token = JWTAuth::attempt($credentials);
         $user = auth()->user();
 
+        if (!$token) {
+            return response()->json([
+                'message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.',
+                'code' => 401
+            ], 401);
+        }
 
-        if (!$token)
-            return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
+        if (!$user->enable) {
+            return response()->json([
+                'message' => 'Lo sentimos, este usuario esta inactivo',
+                'code' => 401
+            ], 401);
+        }
 
-        if (!$user->enable)
-            return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);
-
-        if (!$user->empresa()->pluck('activo')->first())
-            return  Response()->json(['message' => 'Lo sentimos, la cuenta no esta activa', 'code' => 401], 401);
-
+        // Actualizar último login
         $user->ultimo_login = Carbon::now();
         $user->save();
 
+        // Registrar acceso
         $acceso = new Acceso;
         $acceso->id_usuario = $user->id;
         $acceso->fecha = $user->ultimo_login;
         $acceso->save();
 
-        $user->empresa = $user->empresa()->with('licencia')->first();
+        // Cargar datos adicionales
+        $user->load('empresa.licencia');
 
-        return response()->json(['token' => $token, 'user' => $user], 200);
+        // Cargar permisos
+        $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+        $directPermissions = $user->getDirectPermissions()->pluck('name');
+        $revokedPermissions = DB::table('permission_revocations')
+            ->where('user_id', $user->id)
+            ->pluck('permission_name');
 
+        $effectivePermissions = collect($rolePermissions)
+            ->merge($directPermissions)
+            ->diff($revokedPermissions);
 
+        return response()->json([
+            'token' => $token,
+            'user' => $user,
+            'permissions' => [
+                'rolePermissions' => $rolePermissions,
+                'directPermissions' => $directPermissions,
+                'revokedPermissions' => $revokedPermissions,
+                'effectivePermissions' => $effectivePermissions
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error en el servidor',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     public function logout(Request $request){
         $user = User::findOrFail($request->id_usuario);

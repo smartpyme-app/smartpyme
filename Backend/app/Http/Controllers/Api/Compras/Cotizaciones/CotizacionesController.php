@@ -18,6 +18,7 @@ use App\Models\OrdenCompra;
 use App\Models\OrdenCompraDetalle;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CotizacionesController extends Controller
@@ -125,6 +126,29 @@ class CotizacionesController extends Controller
             'id_proveedor.required' => 'El proveedor es requerido',
             'id_bodega.required' => 'La bodega es requerida',
         ]);
+
+        Log::info("Orden de Compra - iniciando proceso");
+    
+        // VERIFICAR AUTORIZACIÓN por niveles de monto
+        if (!$request->id && !$request->id_authorization) {
+            $total = $this->calcularTotalOrden($request);
+            $authType = $this->determinarTipoAutorizacion($total);
+            
+            if ($authType) {
+                Log::info("Orden de compra requiere autorización - Total: $" . $total . " - Tipo: " . $authType);
+                
+                return response()->json([
+                    'ok' => false,
+                    'requires_authorization' => true,
+                    'authorization_type' => $authType,
+                    'message' => "Esta orden de compra de $" . number_format($total, 2) . " requiere autorización"
+                ], 403);
+            }
+        }
+    
+        Log::info("Procesando orden de compra normal o autorizada");
+
+
         DB::beginTransaction();
 
         if ($request->id)
@@ -280,5 +304,111 @@ class CotizacionesController extends Controller
         $cotizaciones->filter($request);
 
         return Excel::download($cotizaciones, 'cotizaciones.xlsx');
+    }
+
+    public function procesarOrdenAutorizada($ordenId)
+    {
+        Log::info("Procesando orden de compra autorizada: " . $ordenId);
+        
+        DB::beginTransaction();
+        
+        try {
+            $orden = OrdenCompra::findOrFail($ordenId);
+            
+            // Cambiar estado a aprobada
+            $orden->estado = 'Aprobada';
+            $orden->save();
+            
+            DB::commit();
+            
+            Log::info("Orden de compra autorizada procesada exitosamente: " . $ordenId);
+            
+            return $orden;
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error("Error procesando orden de compra autorizada: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    protected function handlePendingAuthorization($data, $authorization)
+    {
+        Log::info("Creando orden de compra pendiente de autorización");
+        
+        DB::beginTransaction();
+        
+        try {
+            // Crear orden en estado pendiente
+            $ordenData = $data;
+            $ordenData['estado'] = 'Pendiente Autorización';
+            $ordenData['id_authorization'] = $authorization->id;
+            $ordenData['id_sucursal'] = Auth::user()->id_sucursal;
+            
+            $orden = new OrdenCompra;
+            $orden->fill($ordenData);
+            $orden->save();
+            
+            // Crear detalles de la orden pendiente
+            foreach ($data['detalles'] as $det) {
+                $detalle = new OrdenCompraDetalle;
+                $det['id_orden_compra'] = $orden->id;
+                $detalle->fill($det);
+                $detalle->save();
+            }
+            
+            // Actualizar la autorización con el ID de la orden creada
+            $authorization->update([
+                'authorizeable_id' => $orden->id
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'ok' => true,
+                'data' => $orden,
+                'estado' => 'Pendiente Autorización',
+                'requires_authorization' => true,
+                'authorization_code' => $authorization->code,
+                'message' => 'Orden de compra creada pendiente de autorización'
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error("Error creando orden pendiente: " . $e->getMessage());
+            
+            return response()->json([
+                'ok' => false,
+                'requires_authorization' => true,
+                'authorization_type' => $authorization->authorizationType->name,
+                'message' => 'Error al crear orden pendiente: ' . $e->getMessage(),
+                'authorization_code' => $authorization->code
+            ], 403);
+        }
+    }
+
+    private function calcularTotalOrden($request)
+    {
+        $total = $request->total ?? $request->sub_total ?? 0;
+        
+        // Si no hay total, calcularlo de los detalles
+        if ($total == 0 && isset($request->detalles)) {
+            $total = collect($request->detalles)->sum('total');
+        }
+        
+        return $total;
+    }
+
+    private function determinarTipoAutorizacion($total)
+    {
+        if ($total >= 5000) {
+            return 'orden_compra_nivel_3'; // Mayor a $5,000
+        } elseif ($total >= 300) {
+            return 'orden_compra_nivel_2'; // $300 - $4,999
+        } elseif ($total > 0) {
+            return 'orden_compra_nivel_1'; // $0 - $300
+        }
+        
+        return null; // No requiere autorización
     }
 }

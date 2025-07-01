@@ -183,11 +183,12 @@ class ApiController extends Controller
 
         try {
             $retaceoService = new RetaceoService();
-            $partida = $retaceoService->crearPartida($request->id_retaceo);
+            $resultado = $retaceoService->crearPartida($request->id_retaceo);
 
             return response()->json([
-                'message' => 'Partida contable generada correctamente',
-                'partida' => $partida
+                'message' => $resultado['mensaje'],
+                'partidas_creadas' => $resultado['partidas_creadas'],
+                'success' => $resultado['success']
             ], 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 400);

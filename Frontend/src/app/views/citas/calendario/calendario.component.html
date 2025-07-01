@@ -30,13 +30,17 @@
           [ngClass]="selectedPeriodType=='month'?'btn-primary':'btn-default'">
           Mes
         </button></div>
-      <div *ngIf="apiService.auth_user().tipo != 'Ventas'"> <button class="btn " (click)="setYearSelection()"
+      <!-- <div *ngIf="apiService.auth_user().tipo != 'Ventas'"> <button class="btn " (click)="setYearSelection()"
+          [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
+          Año
+        </button></div> -->
+        <div *ngIf="apiService.validateRole('usuario_ventas', false)"> <button class="btn " (click)="setYearSelection()"
           [ngClass]="selectedPeriodType=='year'?'btn-primary':'btn-default'">
           Año
         </button></div>
     </div>
     <div class="row col-6 justify-content-end">
-      <div *ngIf="apiService.auth_user().tipo != 'Ventas'" class="form-group col-12 col-md-4">
+      <div *ngIf="apiService.validateRole('usuario_contador', false)" class="form-group col-12 col-md-4">
         <ng-select name="id_usuario" [(ngModel)]="filtros.id_usuario" class="form-select p-0" placeholder="Encargado"
           (change)="loadAll()">
           <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
@@ -58,7 +62,7 @@
         </div>
       </div>
 
-      <div *ngIf="apiService.auth_user().tipo != 'Ventas'" class="form-group col-12 col-md-4">
+      <div *ngIf="apiService.validateRole('usuario_contador', false)" class="form-group col-12 col-md-4">
         <div class="input-group flex-nowrap">
           <ng-select name="id_sucursal" [(ngModel)]="filtros.id_sucursal" class="form-select p-0" placeholder="Sucursal"
             (change)="loadAll()">

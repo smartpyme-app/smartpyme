@@ -4,8 +4,10 @@
     <button (click)="openFilter(mclosepartidas)" tooltip="Generar reporte" class="btn btn-default"> Cerrar Partidas</button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
       src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
-    <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
-            class="btn btn-default"><i class="fa fa-plus"></i> Crear partida
+    <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
+            class="btn btn-default bn_mrgn"><i class="fa fa-plus"></i> Añadir partida
+    <!-- <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
+            class="btn btn-default"><i class="fa fa-plus"></i> Crear partida -->
     </button>
   </div>
 
@@ -123,20 +125,23 @@
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                 </a>
-                <a (click)="imprimirPartida(partida)"
-                   class="list-group-item list-group-item-action border-0 click">
-                  <i class="fa fa-fw fa-print"></i>Imprimir/Descargar
-                </a>
-                <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()"
+                <!-- <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()" -->
+                <a *ngIf="partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')"
+
                    (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Aplicar
                 </a>
-                <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')"
+                <a (click)="imprimirPartida(partida)"
+                    class="list-group-item list-group-item-action border-0 click">
+                  <i class="fa fa-fw fa-print"></i>Imprimir/Descargar
+                </a>
+                <!-- <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" -->
+                <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Anulada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-ban"></i> Anular
                 </a>
-                <a *ngIf="partida.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(partida, 'Aplicada')"
+                <a *ngIf="partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Aplicada')"
                    class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-check"></i> Revertir anulación
                 </a>

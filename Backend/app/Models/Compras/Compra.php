@@ -27,6 +27,7 @@ class Compra extends Model {
         // 'aplicada_inventario',
         'notas',
         'id_proveedor',
+        'id_authorization',
         'no_sujeta',
         'exenta',
         'percepcion',
@@ -48,10 +49,10 @@ class Compra extends Model {
         'dte_invalidacion',
         'no_sujeta',
         'es_retaceo',
-        'clasificacion',
         'tipo_operacion',
-        'sector',
-        'tipo_gasto'
+        'tipo_clasificacion',
+        'tipo_sector',
+        'tipo_costo_gasto',
 
     );
 

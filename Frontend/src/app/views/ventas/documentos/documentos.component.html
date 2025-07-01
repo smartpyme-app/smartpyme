@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Documentos</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mdetalle, {})"  tooltip="Crear documento (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir documento</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.documentos.crear')" (click)="openModal(mdetalle, {})"  tooltip="Crear documento (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir documento</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -42,7 +42,7 @@
                         <th>Correlativo</th>
                         <th>Predeterminado</th>
                         <th>Estado</th>
-                        <th *ngIf="apiService.canEdit()" class="text-center"><i class="fa fa-cog"></i></th>
+                        <th *ngIf="apiService.canEditTest('finanzas.documentos.editar')" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -73,8 +73,14 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
+                        <!-- <td *ngIf="apiService.canEditTest('finanzas.documentos.editar')" class="text-center">
+                            <a class="btn btn-light" (click)="openModal(mdetalle, documento)" tooltip="Ver y editar">
+                                <i class="fa fa-pencil-alt"></i>
+                            </a>
+                        </td> -->
 
-                        <td class="text-center" *ngIf="apiService.canEdit()">
+                        <!-- <td class="text-center" *ngIf="apiService.canEdit()"> -->
+                        <td class="text-center" *ngIf="apiService.canEditTest('finanzas.documentos.editar')">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>

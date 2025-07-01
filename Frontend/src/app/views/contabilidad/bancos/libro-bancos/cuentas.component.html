@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.cuentas.crear')" routerLink="/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

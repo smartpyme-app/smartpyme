@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Compras</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
+    <button *ngIf="apiService.canCreateTest('compras.crear')" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -85,7 +85,13 @@
                         <td><span title="{{ compra.detalle_banco }}">{{compra.forma_pago}}</span></td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{
+                                'bg-warning' : compra?.estado == 'Pendiente', 
+                                'bg-danger' : compra?.estado == 'Anulada', 
+                                'bg-info' : compra?.estado == 'Consigna', 
+                                'bg-success' : compra?.estado == 'Pagada', 
+                                'bg-primary' : compra?.estado == 'Pre-compra' || compra?.estado == 'Pendiente Autorización'
+                            }">
                                 {{ compra.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
                                     ✅
@@ -107,28 +113,28 @@
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
 
-                                    <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a  *ngIf="apiService.canEditTest('compras.editar')" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEdit()" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEditTest('compras.editar')" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
-                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEditTest('compras.editar')" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar compra
                                     </a>
-                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEditTest('compras.editar')" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular compra
                                     </a>
-                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEditTest('compras.editar')" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="compra.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.recurrente == 0 && apiService.canEditTest('compras.editar')" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
                                     <a routerLink="/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('compras.editar')" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
                                     <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">
@@ -314,28 +320,47 @@
                 </ng-select>
             </div>
             <div class="form-group col-sm-6">
-                <label for="filtro.tipo">Tipo:</label>
-                <select name="tipo" class="form-select" [(ngModel)]="compra.tipo">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
-                    <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
-                    <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
-                    <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
-                    <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
-                    <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
-                    <option value="Mano de obra">Mano de obra</option>
-                </select>
-            </div>
-            <div class="form-group col-sm-6">
-                <label for="filtro.sector">Sector:</label>
-                <select name="sector" class="form-select" [(ngModel)]="compra.sector">
-                    <option [ngValue]="null">Seleccione aquí</option>
-                    <option value="Industria">Industria</option>
-                    <option value="Comercio">Comercio</option>
-                    <option value="Agropecuaria">Agropecuaria</option>
-                    <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
-                </select>
-            </div>
+                            <label for="tipo_clasificacion">Clasificación:</label>
+                            <select name="tipo_clasificacion" class="form-select" [(ngModel)]="compra.tipo_clasificacion">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Costo">Costo</option>
+                                <option value="Gasto">Gasto</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_operacion">Tipo de operación:</label>
+                            <select name="tipo_operacion" class="form-select" [(ngModel)]="compra.tipo_operacion">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Gravada">Gravada</option>
+                                <option value="No Gravada">No Gravada</option>
+                                <option value="Excluido">Excluido</option>
+                                <option value="Mixta">Mixta</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_costo_gasto">Tipo:</label>
+                            <select name="tipo_costo_gasto" class="form-select" [(ngModel)]="compra.tipo_costo_gasto">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Gastos de venta sin donación">Gastos de venta sin donación</option>
+                                <option value="Gastos de administración sin donación">Gastos de administración sin donación</option>
+                                <option value="Gastos financieros sin donación">Gastos de financieros sin donación</option>
+                                <option value="Costo artículos producidos/comprados importaciones/internaciones">Costo artículos producidos/comprados importaciones/internaciones</option>
+                                <option value="Costo artículos producidos/comprados interno">Costo artículos producidos/comprados interno</option>
+                                <option value="Costos indirectos de fabricación">Costos indirectos de fabricación</option>
+                                <option value="Mano de obra">Mano de obra</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-sm-6">
+                            <label for="tipo_sector">Sector:</label>
+                            <select name="tipo_sector" class="form-select" [(ngModel)]="compra.tipo_sector">
+                                <option [ngValue]="null">Seleccione aquí</option>
+                                <option value="Industria">Industria</option>
+                                <option value="Comercio">Comercio</option>
+                                <option value="Agropecuaria">Agropecuaria</option>
+                                <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                            </select>
+                        </div>
+                        
           <div class="form-group col-md-6 without-label">
             <div class="form-switch border rounded">
               <label for="es_retaceo">Es para retaceo</label>

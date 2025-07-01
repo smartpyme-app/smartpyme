@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bancos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.cheques.crear')" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -91,16 +91,16 @@
                                     <a routerLink="/bancos/cheque/{{cheque.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="cheque.estado == 'Pendiente' && apiService.canEdit()" (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cheque.estado == 'Pendiente' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Aprobar
                                     </a>
-                                    <a *ngIf="cheque.estado != 'Anulado' && apiService.canEdit()" (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cheque.estado != 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular
                                     </a>
                                     <a *ngIf="cheque.id_referencia" routerLink="/{{cheque.ruta_referencia}}/{{cheque.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
                                     </a>
-                                    <a *ngIf="cheque.estado == 'Anulado' && apiService.canEdit()" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="cheque.estado == 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
                                     <a (click)="imprimir(cheque)" class="list-group-item list-group-item-action border-0 click">

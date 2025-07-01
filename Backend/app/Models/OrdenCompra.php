@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Authorization\Authorization;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ class OrdenCompra extends Model
         "tipo_documento",
         "id_proveedor",
         "id_proyecto",
+        "id_authorization",
         "observaciones",
         "referencia",
         "estado",
@@ -67,6 +69,11 @@ class OrdenCompra extends Model
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetalle::class, 'id_orden_compra');
+    }
+
+    public function authorization()
+    {
+        return $this->belongsTo(Authorization::class, 'id_authorization');
     }
 
     public function getSaldoAttribute()

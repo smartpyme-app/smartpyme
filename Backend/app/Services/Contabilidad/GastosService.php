@@ -18,6 +18,11 @@ class GastosService
         $configuracion = Configuracion::firstOrFail();
         $gasto->categoria = Gasto::with('categoria')->where('id', $gasto['id'])->firstOrFail()->categoria;
 
+        // Validar que la categoría del gasto exista y tenga cuenta contable configurada
+        if (!$gasto->categoria || !$gasto->categoria->id_cuenta_contable) {
+            throw new Exception('La categoría del gasto no tiene una cuenta contable configurada', 400);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -36,9 +41,21 @@ class GastosService
             // Haber
                 // Haber
                     if ($gasto->estado == 'Pendiente') {
+                        if (!$configuracion->id_cuenta_cxp) {
+                            throw new Exception('No se ha configurado la cuenta de cuentas por pagar', 400);
+                        }
                         $cuenta = Cuenta::where('id', $configuracion->id_cuenta_cxp)->firstOrFail();
-                    }else{
-                        $formapago = FormaDePago::with('banco')->where('nombre', $gasto->forma_pago)->firstOrFail();
+                    } else {
+                        $formapago = FormaDePago::with('banco')->where('nombre', $gasto->forma_pago)->first();
+
+                        if (!$formapago) {
+                            throw new Exception('No se encontró la forma de pago: ' . $gasto->forma_pago, 400);
+                        }
+
+                        if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
+                            throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada', 400);
+                        }
+
                         $cuenta = Cuenta::where('id', $formapago->banco->id_cuenta_contable)->firstOrFail();
                     }
 
@@ -67,6 +84,9 @@ class GastosService
                 ]);
 
                 if ($gasto->iva > 0) {
+                    if (!$configuracion->id_cuenta_iva_compras) {
+                        throw new Exception('No se ha configurado la cuenta de IVA compras', 400);
+                    }
                     $cuenta = Cuenta::where('id', $configuracion->id_cuenta_iva_compras)->firstOrFail();
                     Detalle::create([
                         'id_cuenta'         => $cuenta->id,
@@ -81,6 +101,9 @@ class GastosService
                 }
 
                 if ($gasto->iva_percibido > 0) {
+                    if (!$configuracion->id_cuenta_iva_retenido_compras) {
+                        throw new Exception('No se ha configurado la cuenta de IVA retenido compras', 400);
+                    }
                     $cuenta = Cuenta::where('id', $configuracion->id_cuenta_iva_retenido_compras)->firstOrFail();
                     Detalle::create([
                         'id_cuenta'         => $cuenta->id,
@@ -95,6 +118,9 @@ class GastosService
                 }
 
                 if ($gasto->renta_retenida > 0) {
+                    if (!$configuracion->id_cuenta_renta_retenida_compras) {
+                        throw new Exception('No se ha configurado la cuenta de renta retenida compras', 400);
+                    }
                     $cuenta = Cuenta::where('id', $configuracion->id_cuenta_renta_retenida_compras)->firstOrFail();
                     Detalle::create([
                         'id_cuenta'         => $cuenta->id,

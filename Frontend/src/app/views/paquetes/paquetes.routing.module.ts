@@ -4,6 +4,7 @@ import { LayoutComponent } from '../../layout/layout.component';
 
 import { PaquetesComponent } from '@views/paquetes/paquetes.component';
 import { PaqueteComponent } from '@views/paquetes/paquete/paquete.component';
+import { PermissionGuard } from '@guards/permission.guard';
 
 const routes: Routes = [
   {
@@ -11,17 +12,33 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Paquetes',
     children: [
-
-        { path: 'paquetes', component: PaquetesComponent, title: 'Paquetes' },
-        { path: 'paquete/crear', component: PaqueteComponent, title: 'Paquete' },
-        { path: 'paquete/editar/:id', component: PaqueteComponent, title: 'Paquete' },
-
-    ]
-  }
+      {
+        path: 'paquetes',
+        component: PaquetesComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'productos.paquetes.ver' },
+        title: 'Paquetes',
+      },
+      {
+        path: 'paquete/crear',
+        component: PaqueteComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'productos.paquetes.crear' },
+        title: 'Paquete',
+      },
+      {
+        path: 'paquete/editar/:id',
+        component: PaqueteComponent,
+        canActivate: [PermissionGuard],
+        data: { permission: 'productos.paquetes.editar' },
+        title: 'Paquete',
+      },
+    ],
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class PaquetesRoutingModule { }
+export class PaquetesRoutingModule {}

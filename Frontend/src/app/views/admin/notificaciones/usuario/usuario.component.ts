@@ -11,6 +11,8 @@ import { ApiService } from '../../../../services/api.service';
 export class UsuarioComponent implements OnInit {
 
 	public usuario: any = {};
+
+	public roles: any = [];
 	public cajas: any = [];
 	public sucursales: any = [];
     public empleados: any = [];
@@ -32,7 +34,8 @@ export class UsuarioComponent implements OnInit {
 	    
 	    if(isNaN(id)){
 	        this.usuario = {};
-	        this.usuario.tipo = 'Vendedor';
+	        this.usuario.tipo = 'Vendedor'
+			this.usuario.rol_id = 2;
 	        this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
             this.usuario.caja_id = 1;
 	        this.usuario.activo = true;
@@ -69,8 +72,23 @@ export class UsuarioComponent implements OnInit {
 
 	    this.apiService.read('usuario/', id).subscribe(usuario => { 
 	        this.usuario = usuario;
+			this.usuario.rol_id = usuario.roles[0].id;
+			this.usuario.rol_name = usuario.roles[0].name;
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); this.loading = false;});
+
+		this.apiService.getAll('roles').subscribe(roles => { 
+	        this.roles = roles;
+
+			this.roles.forEach((rol:any) => {
+				rol.name = rol.name.split('_')
+				.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+				.join(' ');
+			});
+
+			
+	        this.loading = false;
+	    }, error => {this.alertService.error(error); });
 
 
 	}
