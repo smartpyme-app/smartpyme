@@ -293,6 +293,12 @@ class MHCCF extends Model
 
             $tributos = NULL;
             $detalle->codTributo = NULL;
+            
+            if ($detalle->producto) {
+                $detalle->codigo = $detalle->producto->codigo;
+            } else {
+                $detalle->codigo = null;
+            }
 
             if ($this->venta->iva > 0) {
                 $tributos = collect();
