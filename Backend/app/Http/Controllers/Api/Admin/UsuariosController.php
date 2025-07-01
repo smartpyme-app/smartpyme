@@ -100,6 +100,7 @@ class UsuariosController extends Controller
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
             'id_bodega'     => 'required',
+            'telefono'      => 'sometimes|unique:users,telefono,'.$request->id,
             'password'      => [
                   'required_if:id,null',
                   'confirmed',
