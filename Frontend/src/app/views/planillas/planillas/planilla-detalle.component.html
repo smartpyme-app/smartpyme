@@ -239,12 +239,6 @@
           <th class="text-end">
             ${{ planilla.total_salarios | number : "1.2-2" }}
           </th>
-          <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
-            ${{ planilla.total_salarios / 2 | number : "1.2-2" }}
-          </th>
-          <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
-            ${{ planilla.total_salarios / 4.33 | number : "1.2-2" }}
-          </th>
           <th class="text-end">
             ${{ planilla.total_salarios | number : "1.2-2" }}
           </th>
