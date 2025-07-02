@@ -390,6 +390,7 @@
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
   <div class="modal-body">
+        <app-alerts-hacienda [errores]="venta.errores"></app-alerts-hacienda>
         <app-notificaciones-container></app-notificaciones-container>
         <div class="d-grid">
 

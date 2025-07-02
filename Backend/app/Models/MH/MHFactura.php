@@ -308,6 +308,12 @@ class MHFactura extends Model
 
             $detalle->codTributo = NULL;
 
+            if ($detalle->producto) {
+                $detalle->codigo = $detalle->producto->codigo;
+            } else {
+                $detalle->codigo = null;
+            }
+
             if ($this->venta->iva > 0) {
                 // Agregar IVA
                     $detalle->precio = round($detalle->precio * 1.13, 2);

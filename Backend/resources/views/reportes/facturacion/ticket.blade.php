@@ -36,12 +36,14 @@
 <body onload="javascript:print();">
 
     <div class="header">
-        <p class="no-print">
-            <button onClick="window.print();" autofocus>Imprimir</button>
-            <button onClick="window.close();" autofocus>Cerrar</button>
-            <br><br>
-        </p>
-        <br>
+        @if (!$venta->pdf)
+            <p class="no-print">
+                <button onClick="window.print();" autofocus>Imprimir</button>
+                <button onClick="window.close();" autofocus>Cerrar</button>
+                <br><br>
+            </p>
+            <br>
+        @endif
 {{--        @if ($empresa->logo)--}}
 {{--            <img src="{{ asset('img/'.$empresa->logo) }}" alt="Logo">--}}
 {{--        @endif--}}

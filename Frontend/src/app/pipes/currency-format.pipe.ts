@@ -40,7 +40,7 @@ export class CurrencyPipe implements PipeTransform {
     
      
       if (currencySymbol) {
-        formattedValue = `${currencySymbol} ${formattedValue}`;
+        formattedValue = `${currencySymbol}${formattedValue}`;
       }
     
       

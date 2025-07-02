@@ -32,7 +32,7 @@ export class AlertService {
         } else if (message?.message) {
             message = message.message;
         } else {
-            message = JSON.stringify(message);
+            message = message;
         }
 
         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': titulo, 'mensaje' : message});

@@ -27,6 +27,10 @@ export class MHService {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
         let formData:FormData = new FormData();
 
+        if (!user.empresa?.mh_usuario || !user.empresa?.mh_contrasena) {
+            return throwError(() => new Error("Configure el usuario y contraseña para conectarse a la API de hacienda"));
+        }
+
         formData.append('user', user.empresa.mh_usuario.replace(/-/g, ''));
         formData.append('pwd', user.empresa.mh_contrasena);
 
@@ -44,6 +48,18 @@ export class MHService {
     firmarDTE(DTE: any): Observable<any> {
         let user = JSON.parse(localStorage.getItem('SP_auth_user')!);
 
+        if (!user) {
+            return throwError(() => new Error('Usuario no autenticado, vuelva a iniciar sesión'));
+        }
+
+        if (!user.empresa?.nit) {
+            return throwError(() => new Error('NIT no configurado en la información de la cuenta'));
+        }
+
+        if (!user.empresa.mh_pwd_certificado) {
+            return throwError(() => new Error('Contraseña del certificado no configurada en los datos de facturación electrónica'));
+        }
+
         let formData:any = {};
         formData.nit = user.empresa.nit.replace(/-/g, '');
         formData.activo = true;
@@ -55,15 +71,15 @@ export class MHService {
 
     enviarDTE(venta: any, dteFirmado: any): Observable<any> {
         let token = JSON.parse(localStorage.getItem('SP_token_mh')!);
+        if (!token) {
+            return throwError(() => new Error('Token de MH no creado'));
+        }
 
         const headers = new HttpHeaders({
           'Content-Type': 'application/json',
           'User-Agent': 'Angular',
           'Authorization': token.token,
         });
-
-        console.log(venta);
-        console.log(dteFirmado);
 
         let formData:any = {};
         formData.ambiente = venta.dte.identificacion.ambiente;
@@ -72,7 +88,6 @@ export class MHService {
         formData.tipoDte = venta.dte.identificacion.tipoDte;
         formData.documento = dteFirmado;
         formData.codigoGeneracion = venta.dte.codigoGeneracion;
-        console.log(formData);
 
         return this.http.post<any>(`${localStorage.getItem('SP_mh_url_base') + this.url_recepciondte}`, formData, { headers, params: { saltarJWT: true } });
     }
