@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Http;
 use App\Models\MH\Unidad;
 use Luecano\NumeroALetras\NumeroALetras;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class MHCCF extends Model
 {
@@ -135,6 +136,10 @@ class MHCCF extends Model
 
     protected function receptor(){
 
+        // Log::info('Receptor:', [
+        //     'venta' => $this->venta,
+        //     'cliente' => $this->venta->cliente,
+        // ]);
         return [
               "nit" =>  $this->venta->cliente->nit ? str_replace('-', '', $this->venta->cliente->nit) : str_replace('-', '', $this->venta->cliente->dui),
               "nombreComercial" =>  $this->venta->cliente->nombre_empresa,

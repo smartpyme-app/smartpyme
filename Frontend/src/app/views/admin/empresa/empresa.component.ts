@@ -297,9 +297,9 @@ export class EmpresaComponent implements OnInit {
         const labels: { [key: string]: string } = {
           'facturas': 'Facturas',
           'creditosFiscales': 'CCF',
-        //   'notasCredito': 'Notas Crédito',
-        //   'notasDebito': 'Notas Débito',
-        //   'facturasExportacion': 'Exportación',
+          'notasCredito': 'Notas Crédito',
+          'notasDebito': 'Notas Débito',
+          'facturasExportacion': 'Exportación',
         //   'sujetoExcluido': 'Sujeto Excluido'
         };
         
@@ -321,6 +321,36 @@ export class EmpresaComponent implements OnInit {
         
         const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
         return Math.min(100, Math.round((emitidas / requeridas) * 100));
+      }
+
+      /** NUEVO: Verificar si se pueden generar notas */
+      puedeGenerarNotas(tipo: string): boolean {
+        if (!this.estadisticasPruebas) return false;
+        
+        // Solo permitir generar notas si hay CCF emitidos
+        if (tipo === 'notasCredito' || tipo === 'notasDebito') {
+            const ccfEmitidos = this.estadisticasPruebas['creditosFiscales']?.emitidas || 0;
+            return ccfEmitidos > 0;
+        }
+        
+        return true;
+      }
+
+      calcularCantidadFaltante(tipo: string): number {
+        if (!this.estadisticasPruebas || !this.estadisticasPruebas[tipo]) {
+            return 1;
+        }
+        
+        const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
+        
+        // Para notas, limitamos la cantidad a los CCF disponibles
+        if (tipo === 'notasCredito' || tipo === 'notasDebito') {
+            const ccfEmitidos = this.estadisticasPruebas['creditosFiscales']?.emitidas || 0;
+            const faltantes = Math.max(0, requeridas - emitidas);
+            return Math.min(faltantes, ccfEmitidos - emitidas);
+        }
+        
+        return Math.max(0, requeridas - emitidas);
       }
     
       getTotalProgress(): number {
@@ -353,74 +383,111 @@ export class EmpresaComponent implements OnInit {
     
       cargarDocumentosBase() {
         this.apiService.getAll('mh/pruebas-masivas/documentos-base').subscribe(
-          (data) => {
-            this.documentosBase = data;
-          },
-          (error) => {
-            console.error('Error al cargar documentos base:', error);
-            this.alertService.error('Error al cargar documentos base');
-          }
+            (data) => {
+                
+                this.documentosBase = data.filter((doc: any) => {
+                    if (this.tipoSeleccionado === 'facturas') return doc.tipo_dte === '01';
+                    if (this.tipoSeleccionado === 'creditosFiscales') return doc.tipo_dte === '03';
+                    if (this.tipoSeleccionado === 'notasCredito') return doc.tipo_dte === '03';
+                    if (this.tipoSeleccionado === 'notasDebito') return doc.tipo_dte === '03';
+                    if (this.tipoSeleccionado === 'facturasExportacion') return doc.tipo_dte === '11';
+                    // if (this.tipoSeleccionado === 'sujetoExcluido') return doc.tipo_dte === '14';
+                    
+                    return false;
+                });
+            },
+            (error) => {
+                console.error('Error al cargar documentos base:', error);
+                this.alertService.error('Error al cargar documentos base');
+            }
         );
-      }
+    }
       
       // Modifica este método para que abra el modal
       ejecutarPruebasMasivas(template: TemplateRef<any>, tipo: string) {
         this.tipoSeleccionado = tipo;
         
-        // Calcular cuántos documentos faltan
-        if (this.estadisticasPruebas && this.estadisticasPruebas[tipo]) {
-          const { emitidas, requeridas } = this.estadisticasPruebas[tipo];
-          
-          // Mostrar el modal usando el template pasado como parámetro
-          this.modalRef = this.modalService.show(template, {
-            class: 'modal-md'
-          });
+        // Verificar si se pueden generar notas
+        if ((tipo === 'notasCredito' || tipo === 'notasDebito') && !this.puedeGenerarNotas(tipo)) {
+            this.alertService.error(
+                'Debe tener al menos un Comprobante de Crédito Fiscal emitido para poder generar notas'
+            );
+            return;
         }
-      }
+        
+        this.cargarDocumentosBase();
+    
+
+        // Calcular cantidad considerando limitaciones
+        // this.cantidadFaltante = this.calcularCantidadFaltante(tipo);
+        
+        if (this.cantidadFaltante <= 0) {
+            this.alertService.info(
+                'Pruebas completadas', 
+                `Ya se han completado todas las pruebas requeridas para ${this.getLabelTipo(tipo)}`
+            );
+            return;
+        }
+        
+        // Mostrar el modal
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md'
+        });
+    }
       
-      // Método para confirmar y ejecutar la emisión
-      confirmarEjecucion() {
+    // Método para confirmar y ejecutar la emisión
+    confirmarEjecucion() {
         this.modalRef.hide();
         this.procesando = true;
         
         // Llamada al servicio para ejecutar las pruebas
         this.mhService.ejecutarPruebasMasivas(
-          this.tipoSeleccionado, 
-          this.cantidadFaltante, 
-          this.documentoBaseSeleccionado?.id,
-          this.correlativoInicial || undefined
+            this.tipoSeleccionado, 
+            this.cantidadFaltante, 
+            this.documentoBaseSeleccionado?.id,
+            this.correlativoInicial || undefined
         ).subscribe(
-          (response) => {
+            (response) => {
             this.procesando = false;
             
             if (response.success) {
-              // Mostrar un mensaje más específico cuando se encola el trabajo
-              if (response.queued) {
+                // Mostrar un mensaje más específico cuando se encola el trabajo
+                if (response.queued) {
                 this.alertService.success(
-                  'Proceso iniciado', 
-                  'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
+                    'Proceso iniciado', 
+                    'Las pruebas se están ejecutando en segundo plano. Recibirá una notificación por correo electrónico cuando el proceso finalice.'
                 );
-              } else {
+                } else {
                 this.alertService.success('Proceso completado', response.message);
-              }
-              
-              // Refrescar las estadísticas después de un breve retraso
-              setTimeout(() => {
+                }
+                
+                // Refrescar las estadísticas después de un breve retraso
+                setTimeout(() => {
                 this.cargarEstadisticasPruebas();
-              }, 2000);
+                }, 2000);
             } else {
-              this.alertService.error(response.message);
+                this.alertService.error(response.message);
             }
-          },
-          (error) => {
+            },
+            (error) => {
             this.procesando = false;
             this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
-          }
+            }
         );
     }
-
-
-
+    getMensajeConfirmacion(): string {
+        let mensaje = `<div class="alert alert-info mt-2">
+            <i class="fa fa-info-circle me-2"></i>
+            <strong>Proceso automático:</strong> Además de los ${this.cantidadFaltante} CCF, 
+            se generarán automáticamente ${this.cantidadFaltante} Notas de Crédito y 
+            ${this.cantidadFaltante} Notas de Débito relacionadas.
+        </div>
+        `;
+        
+        mensaje += `Está a punto de emitir <strong>${this.cantidadFaltante}</strong> documentos de tipo <strong>${this.getLabelTipo(this.tipoSeleccionado)}</strong> en el ambiente de pruebas.`;
+        
+        return mensaje;
+    }
 
     public copyToClipboard(text: string): void {
         const selBox = document.createElement('textarea');

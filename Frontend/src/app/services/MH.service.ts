@@ -369,24 +369,22 @@ export class MHService {
             correlativo_inicial: correlativoInicial
         };
         
-        // Usa apiService para la llamada HTTP
-        // El endpoint procesará la solicitud de forma asíncrona
         return this.apiService.store(this.url_pruebas_ejecutar, datos)
             .pipe(
                 map(response => {
-                    // Manejar la respuesta exitosa (ahora incluye el campo 'queued')
+                    // NUEVO: Mensaje personalizado para CCF con notas automáticas
+                    if (response.success && tipo === 'creditosFiscales') {
+                        response.message += ' Además, se generarán automáticamente las notas de crédito y débito correspondientes.';
+                    }
                     return response;
                 }),
                 catchError(error => {
-                    // Registrar y manejar errores
                     console.error('Error al ejecutar pruebas masivas:', error);
                     
-                    // Si hay un mensaje de error específico en la respuesta, úsalo
                     if (error.error && error.error.message) {
                         return throwError(error.error.message);
                     }
                     
-                    // De lo contrario, devolver un mensaje genérico o el error completo
                     return throwError('Error al ejecutar pruebas masivas. Por favor, intente nuevamente.');
                 })
             );
