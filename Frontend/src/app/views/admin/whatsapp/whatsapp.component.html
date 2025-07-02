@@ -90,13 +90,13 @@
 <div class="row" *ngIf="stats">
     <div class="col-lg-6 mb-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">
+     
+            
+            <div class="card-body">
+                <h5 class="ms-2">
                     <i class="fas fa-users me-2"></i>
                     Sesiones
                 </h5>
-            </div>
-            <div class="card-body">
                 <div class="row text-center">
                     <div class="col-6 border-end">
                         <h3 class="text-dark mb-1">{{ stats.sessions?.total || 0 }}</h3>
@@ -138,13 +138,13 @@
     
     <div class="col-lg-6 mb-4">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
+    
+            <div class="card-body">
+                <h5 class="ms-2">
                     <i class="fas fa-comment-dots me-2"></i>
                     Mensajes ({{ selectedPeriod }} días)
                 </h5>
-            </div>
-            <div class="card-body">
+     
                 <div class="row text-center">
                     <div class="col-4 border-end">
                         <h3 class="text-dark mb-1">{{ stats.messages?.total || 0 }}</h3>
