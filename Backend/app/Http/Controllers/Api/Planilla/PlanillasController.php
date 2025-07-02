@@ -249,16 +249,16 @@ class PlanillasController extends Controller
             // Recargar la planilla con sus relaciones
             $planilla = $planilla->fresh(['detalles']);
 
-            // Verificar los totales calculados
-            Log::info('Totales de planilla actualizados', [
-                'id_planilla' => $planilla->id,
-                'total_salarios' => $planilla->total_salarios,
-                'total_deducciones' => $planilla->total_deducciones,
-                'total_neto' => $planilla->total_neto,
-                'total_aportes_patronales' => $planilla->total_aportes_patronales,
-                'empleados_incluidos' => $empleadosIncluidos,
-                'empleados_omitidos' => $empleadosOmitidos
-            ]);
+            // // Verificar los totales calculados
+            // Log::info('Totales de planilla actualizados', [
+            //     'id_planilla' => $planilla->id,
+            //     'total_salarios' => $planilla->total_salarios,
+            //     'total_deducciones' => $planilla->total_deducciones,
+            //     'total_neto' => $planilla->total_neto,
+            //     'total_aportes_patronales' => $planilla->total_aportes_patronales,
+            //     'empleados_incluidos' => $empleadosIncluidos,
+            //     'empleados_omitidos' => $empleadosOmitidos
+            // ]);
 
             DB::commit();
 
