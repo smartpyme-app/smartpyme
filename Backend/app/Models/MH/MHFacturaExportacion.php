@@ -112,11 +112,11 @@ class MHFacturaExportacion extends Model
     protected function emisor(){
 
         // Tipo Item
-        if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
-            $tipo_item = 2;
-        }else{
-            $tipo_item = 1;
-        }
+        // if ($this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio'){
+        //     $tipo_item = 2;
+        // }else{
+        //     $tipo_item = 1;
+        // }
         
         return [
             "nit" => str_replace('-', '', $this->empresa->nit),
@@ -137,7 +137,8 @@ class MHFacturaExportacion extends Model
             "codPuntoVentaMH" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "codPuntoVenta" => $this->caja_codigo ? $this->caja_codigo : NULL,
             "correo" => $this->empresa->correo,
-            "tipoItemExpor" => (int) $this->venta->tipo_item_export,
+            "tipoItemExpor" => $this->venta->detalles()->first()->producto()->pluck('tipo')->first() == 'Servicio' ? 2 : 1,
+            // "tipoItemExpor" => (int) $this->venta->tipo_item_export,
             "recintoFiscal" => $this->venta->recinto_fiscal ?? NULL, //Punto de Aduana
             "regimen" => $this->venta->regimen ?? NULL,
         ];
@@ -170,12 +171,21 @@ class MHFacturaExportacion extends Model
               "complemento" => $this->venta->cliente->direccion ? $this->venta->cliente->direccion : $this->venta->cliente->empresa_direccion,
               "tipoPersona" => ($this->venta->cliente->tipo_persona == 'Persona Natural') ? 1 : 2,
               "telefono" => $this->venta->cliente->telefono,
-              "correo" => $this->venta->cliente->correo
+              "correo" => $this->venta->cliente->correo ?: ($this->venta->ambiente == '00' ? "prueba@ejemplo.com" : NULL)
             ];
     }
 
     public function generarFactura(){
         $tributos = NULL;
+
+        if ($this->venta->ambiente == '00') {
+            $totalGravada = 0;
+            foreach ($this->venta->detalles as $detalle) {
+                $totalGravada += $detalle->total;
+            }
+        } else {
+            $totalGravada = $this->venta->total;
+        }
 
         return 
             [
@@ -186,21 +196,21 @@ class MHFacturaExportacion extends Model
                 "ventaTercero" => NULL,
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
-                  "totalGravada" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalGravada" => floatval(number_format($totalGravada, 2, '.', '')),
                   "descuento" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "porcentajeDescuento" => 0,
                   "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
                   "seguro" => floatval(number_format($this->venta->seguro, 2, '.', '')),
                   "flete" => floatval(number_format($this->venta->flete, 2, '.', '')),
-                  "montoTotalOperacion" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "montoTotalOperacion" => floatval(number_format($totalGravada, 2, '.', '')),
                   "totalNoGravado" => 0,
-                  "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
+                  "totalPagar" => floatval(number_format($totalGravada, 2, '.', '')),
                   "totalLetras" => $this->venta->total_en_letras,
                   "condicionOperacion" => $this->venta->cod_condicion,
                   "pagos" => [
                     [
                       "codigo" => $this->venta->cod_metodo_pago,
-                      "montoPago" => floatval(number_format($this->venta->total, 2, '.', '')),
+                      "montoPago" => floatval(number_format($totalGravada, 2, '.', '')),
                       "referencia" => NULL,
                       "plazo" => $this->venta->cod_condicion == 2 ? $this->obtenerPlazo($this->venta->dias_credito) : NULL,
                       "periodo" => $this->venta->cod_condicion == 2 ? Carbon::parse($this->venta->fecha)->diffInDays(Carbon::parse($this->venta->fecha_pago), false) : NULL

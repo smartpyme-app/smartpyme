@@ -39,96 +39,96 @@ class ProcesarTrabajosPendientes extends Command
         $this->horaInicio = time();
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle(MHPruebasMasivasService $pruebasMasivasService)
+    public function handle()
     {
-
         $limite = $this->option('limite');
-        $duracionMaxima = $this->option('duracion');
-        
-        $this->info("Iniciando procesamiento de trabajos pendientes (límite: $limite, duración máxima: $duracionMaxima segundos)");
-        
-        if ($this->option('id')) {
-            $trabajos = TrabajosPendientes::pendientes()
-                ->where('id', $this->option('id'))
-                ->take(1)
-                ->get();
-        } else {
-            $trabajos = TrabajosPendientes::pendientes()
-                ->orderBy('fecha_creacion', 'asc')
-                ->limit($limite)
-                ->get();
+        $id = $this->option('id');
+
+        $query = TrabajosPendientes::where('estado', 'pendiente')
+            ->where('tipo', 'pruebas_masivas');
+
+        if ($id) {
+            $query->where('id', $id);
         }
-        
-        $this->info("Se encontraron " . count($trabajos) . " trabajos pendientes");
-        
-        $procesados = 0;
-        
+
+        $trabajos = $query->orderBy('fecha_creacion', 'asc')
+            ->limit($limite)
+            ->get();
+
+        if ($trabajos->isEmpty()) {
+            $this->info('No hay trabajos pendientes para procesar.');
+            return;
+        }
+
+        $this->info("Procesando {$trabajos->count()} trabajo(s) pendiente(s)...");
+
         foreach ($trabajos as $trabajo) {
-            // Verificar si hemos excedido el tiempo límite
-            if (time() - $this->horaInicio >= $duracionMaxima) {
-                $this->warn("Se alcanzó el tiempo máximo de ejecución ($duracionMaxima segundos). Terminando.");
-                break;
-            }
-            
-            $this->info("Procesando trabajo #{$trabajo->id} de tipo {$trabajo->tipo}");
-            
-            try {
-                // Marcar como en proceso
-                $trabajo->estado = 'procesando';
-                $trabajo->fecha_inicio = now();
-                $trabajo->save();
-                
-                // Procesar según el tipo de trabajo
-                if ($trabajo->tipo === 'pruebas_masivas') {
-                    $params = json_decode($trabajo->parametros, true);
-                    
-                    $this->info("Ejecutando pruebas masivas: {$params['tipo_dte']}, cantidad: {$params['cantidad']}");
-                    
-                    // Llamar a procesarPruebasMasivas en lugar de ejecutarPruebasMasivas
-                    $resultado = $pruebasMasivasService->procesarPruebasMasivas(
-                        $params['tipo_dte'],
-                        $params['cantidad'],
-                        $params['id_documento_base'],
-                        $params['id_usuario'],
-                        $params['correlativo_inicial'] ?? null
-                    );
-                    
-                    // Guardar resultado
-                    $trabajo->estado = 'completado';
-                    $trabajo->resultado = json_encode($resultado);
-                    $this->info("Pruebas masivas completadas exitosamente");
-                }
-                // Puedes añadir otros tipos de trabajos aquí
-                else {
-                    $this->warn("Tipo de trabajo no soportado: {$trabajo->tipo}");
-                    $trabajo->estado = 'fallido';
-                    $trabajo->resultado = json_encode(['error' => 'Tipo de trabajo no soportado']);
-                }
-            } catch (\Exception $e) {
-                $this->error("Error al procesar trabajo #{$trabajo->id}: " . $e->getMessage());
-                Log::error("Error al procesar trabajo #{$trabajo->id}: " . $e->getMessage());
-                
-                $trabajo->estado = 'fallido';
-                $trabajo->resultado = json_encode([
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-            }
-            
-            // Finalizar el trabajo
-            $trabajo->fecha_fin = now();
-            $trabajo->save();
-            
-            $procesados++;
+            $this->procesarTrabajo($trabajo);
         }
-        
-        $this->info("Procesamiento completado. Se procesaron $procesados trabajos.");
-        
-        return 0;
+
+        $this->info('Procesamiento completado.');
+    }
+
+    private function procesarTrabajo(TrabajosPendientes $trabajo)
+    {
+        try {
+            // Marcar como en proceso
+            $trabajo->update([
+                'estado' => 'procesando',
+                'fecha_inicio' => now()
+            ]);
+
+            $this->info("Procesando trabajo ID: {$trabajo->id}");
+
+            // Decodificar parámetros
+            $parametros = json_decode($trabajo->parametros, true);
+
+            // Crear instancia del servicio
+            $service = new MHPruebasMasivasService();
+
+            // EJECUTAR EL PROCESO ACTUALIZADO
+            $resultado = $service->procesarPruebasMasivas(
+                $parametros['tipo_dte'],
+                $parametros['cantidad'],
+                $parametros['id_documento_base'] ?? null,
+                $parametros['id_usuario'],
+                $parametros['correlativo_inicial'] ?? null
+            );
+
+            // Actualizar el trabajo según el resultado
+            if ($resultado['success']) {
+                $trabajo->update([
+                    'estado' => 'completado',
+                    'resultado' => json_encode($resultado),
+                    'fecha_fin' => now()
+                ]);
+
+                $this->info("✓ Trabajo {$trabajo->id} completado exitosamente");
+                
+                // Log adicional para CCF con notas automáticas
+                if ($parametros['tipo_dte'] === '03') {
+                    $this->info("  → CCF generados con notas automáticas incluidas");
+                }
+            } else {
+                $trabajo->update([
+                    'estado' => 'fallido',
+                    'resultado' => json_encode($resultado),
+                    'fecha_fin' => now()
+                ]);
+
+                $this->error("✗ Trabajo {$trabajo->id} falló: " . $resultado['message']);
+            }
+
+        } catch (\Exception $e) {
+            // Marcar como fallido en caso de excepción
+            $trabajo->update([
+                'estado' => 'fallido',
+                'resultado' => json_encode(['error' => $e->getMessage()]),
+                'fecha_fin' => now()
+            ]);
+
+            $this->error("✗ Error en trabajo {$trabajo->id}: " . $e->getMessage());
+            Log::error("Error procesando trabajo {$trabajo->id}: " . $e->getMessage());
+        }
     }
 }

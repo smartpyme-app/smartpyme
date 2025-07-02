@@ -57,7 +57,7 @@ class MHPruebasMasivasController extends Controller
     {
         try {
             $request->validate([
-                'tipo' => 'required|string|in:facturas,creditosFiscales,notasCredito,notasDebito,facturasExportacion,sujetoExcluido',
+                'tipo' => 'required|string|in:facturas,creditosFiscales,notasCredito,notasDebito,facturasExportacion',
                 'cantidad' => 'required|integer|min:1|max:100',
                 'id_documento_base' => 'nullable|integer|exists:ventas,id',
                 'correlativo_inicial' => 'nullable|integer|min:1'
@@ -84,7 +84,7 @@ class MHPruebasMasivasController extends Controller
                 'notasCredito' => '05',
                 'notasDebito' => '06',
                 'facturasExportacion' => '11',
-                'sujetoExcluido' => '14'
+                // 'sujetoExcluido' => '14'
             ];
     
             $tiposDescriptivos = [
@@ -93,12 +93,41 @@ class MHPruebasMasivasController extends Controller
                 '05' => 'Notas de Crédito',
                 '06' => 'Notas de Débito',
                 '11' => 'Facturas de Exportación',
-                '14' => 'Facturas de Sujeto Excluido'
+                // '14' => 'Facturas de Sujeto Excluido'
             ];
     
             $tipoDTE = $tiposDTE[$request->tipo];
             
-            // Verificar primero si la operación es viable
+            if (in_array($tipoDTE, ['05', '06'])) {
+                // Verificar que existan CCF emitidos para poder generar notas
+                $ccfEmitidos = Venta::where('tipo_dte', '03')
+                    ->where('sello_mh', '!=', null)
+                    ->where('id_empresa', $user->id_empresa)
+                    ->count();
+
+                if ($ccfEmitidos == 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se pueden generar notas sin tener al menos un Comprobante de Crédito Fiscal emitido'
+                    ], 400);
+                }
+
+                // Ajustar la cantidad si es mayor a los CCF disponibles
+                if ($request->cantidad > $ccfEmitidos) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Solo se pueden generar máximo {$ccfEmitidos} notas (número de CCF emitidos)"
+                    ], 400);
+                }
+            }
+
+            Log::info('Tipo DTE:', [
+                'tipoDTE' => $tipoDTE,
+                'cantidad' => $request->cantidad,
+                'idDocumentoBase' => $request->id_documento_base,
+                'idUsuario' => $user->id,
+            ]);
+            
             $verificacion = $this->pruebasMasivasService->ejecutarPruebasMasivas(
                 $tipoDTE,
                 $request->cantidad,
@@ -137,6 +166,16 @@ class MHPruebasMasivasController extends Controller
                 exec($command);
             }
 
+
+            // MENSAJE PERSONALIZADO PARA CCF CON NOTAS AUTOMÁTICAS
+            $mensaje = "Se ha programado la generación de {$request->cantidad} {$tiposDescriptivos[$tipoDTE]}.";
+            
+            if ($tipoDTE === '03' && $request->cantidad >= 1) {
+                $mensaje .= " Además, se generarán automáticamente {$request->cantidad} Notas de Crédito y {$request->cantidad} Notas de Débito relacionadas.";
+            }
+            
+            $mensaje .= " El proceso se ejecutará en segundo plano y recibirá una notificación por correo cuando finalice.";
+
             return response()->json([
                 'success' => true,
                 'queued' => true,
@@ -144,7 +183,9 @@ class MHPruebasMasivasController extends Controller
                 'message' => "Se ha programado la generación de {$request->cantidad} {$tiposDescriptivos[$tipoDTE]}. " .
                            "El proceso se ejecutará en segundo plano y recibirá una notificación por correo cuando finalice."
             ]);
+
         } catch (\Exception $e) {
+
             Log::error('Error al iniciar pruebas masivas: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
@@ -252,14 +293,23 @@ class MHPruebasMasivasController extends Controller
                 ], 403);
             }
 
-            // Eliminar documentos marcados como prueba_masiva
-            $eliminados = Venta::where('prueba_masiva', true)
+             // ACTUALIZADO: Eliminar tanto ventas como devoluciones de prueba
+            $eliminadosVentas = Venta::where('prueba_masiva', true)
                 ->where('id_empresa', $user->id_empresa)
-                ->delete();
+                ->count();
+
+            $eliminadosDevoluciones = \App\Models\Ventas\Devoluciones\Devolucion::where('prueba_masiva', true)
+                ->where('id_empresa', $user->id_empresa)
+                ->count();
+
+            // Ejecutar la eliminación usando el servicio
+            $this->pruebasMasivasService->eliminarPruebasMasivas($user->id_empresa);
+
+            $totalEliminados = $eliminadosVentas + $eliminadosDevoluciones;
 
             return response()->json([
                 'success' => true,
-                'message' => "Se han eliminado {$eliminados} documentos de prueba"
+                'message' => "Se han eliminado {$totalEliminados} documentos de prueba ({$eliminadosVentas} ventas y {$eliminadosDevoluciones} notas)"
             ]);
         } catch (\Exception $e) {
             Log::error('Error al limpiar documentos de prueba: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
