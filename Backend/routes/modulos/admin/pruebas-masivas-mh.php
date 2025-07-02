@@ -8,6 +8,7 @@ Route::group(['middleware' => ['jwt.auth'], 'prefix' => 'mh/pruebas-masivas'], f
     Route::post('ejecutar', [MHPruebasMasivasController::class, 'ejecutar']);
     Route::delete('limpiar', [MHPruebasMasivasController::class, 'limpiarDocumentosPrueba']);
     Route::delete('estadisticas/reiniciar', [MHPruebasMasivasController::class, 'reiniciarEstadisticas']);
+    
 });
 
 
