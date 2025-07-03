@@ -113,4 +113,10 @@ class User extends Authenticatable implements JWTSubject
         return $this->belongsTo('App\Models\Authorization\Authorization', 'id_authorization');
     }
 
+    public function role()
+    {
+        return $this->tipo;
+    }
+
+
 }
