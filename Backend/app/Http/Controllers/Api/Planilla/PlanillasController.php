@@ -1549,4 +1549,98 @@ class PlanillasController extends Controller
             return response()->json(['error' => 'Archivo no encontrado'], 404);
         }
     }
+
+    /*** Obtener descuentos patronales de una planilla específica */
+    public function obtenerDescuentosPatronales($id)
+    {
+        try {
+            // Obtener la planilla
+            $planilla = Planilla::with(['empresa', 'sucursal'])->find($id);
+            
+            if (!$planilla) {
+                return response()->json(['error' => 'Planilla no encontrada'], 404);
+            }
+
+            // Obtener los detalles de la planilla con empleados
+            $detalles = PlanillaDetalle::where('id_planilla', $planilla->id)
+                ->join('empleados', 'planilla_detalles.id_empleado', '=', 'empleados.id')
+                ->leftJoin('cargos_de_empresa', 'empleados.id_cargo', '=', 'cargos_de_empresa.id')
+                ->leftJoin('departamentos_empresa', 'empleados.id_departamento', '=', 'departamentos_empresa.id')
+                ->select(
+                    'planilla_detalles.*',
+                    'empleados.nombres',
+                    'empleados.apellidos',
+                    'empleados.codigo',
+                    'empleados.dui',
+                    'cargos_de_empresa.nombre as cargo_nombre',
+                    'departamentos_empresa.nombre as departamento_nombre'
+                )
+                ->where('planilla_detalles.estado', '!=', 0)
+                ->get();
+
+            // Calcular totales de descuentos patronales
+            $totalIsssPatronal = $detalles->sum('isss_patronal');
+            $totalAfpPatronal = $detalles->sum('afp_patronal');
+            $totalDescuentosPatronales = $totalIsssPatronal + $totalAfpPatronal;
+            $totalSalariosDevengados = $detalles->sum('salario_devengado');
+
+            // Formatear los datos para el frontend
+            $detallesFormateados = $detalles->map(function ($detalle) {
+                return [
+                    'id' => $detalle->id,
+                    'empleado' => [
+                        'nombres' => $detalle->nombres,
+                        'apellidos' => $detalle->apellidos,
+                        'codigo' => $detalle->codigo,
+                        'dui' => $detalle->dui,
+                        'cargo' => [
+                            'nombre' => $detalle->cargo_nombre
+                        ],
+                        'departamento' => [
+                            'nombre' => $detalle->departamento_nombre
+                        ]
+                    ],
+                    'salario_base' => round(floatval($detalle->salario_base), 2),
+                    'salario_devengado' => round(floatval($detalle->salario_devengado), 2),
+                    'isss_patronal' => round(floatval($detalle->isss_patronal), 2),
+                    'afp_patronal' => round(floatval($detalle->afp_patronal), 2),
+                    'total_aportes_patronales' => round(floatval($detalle->isss_patronal + $detalle->afp_patronal), 2),
+                    'porcentaje_sobre_salario' => $detalle->salario_devengado > 0 ? 
+                        round((($detalle->isss_patronal + $detalle->afp_patronal) / $detalle->salario_devengado) * 100, 2) : 0
+                ];
+            });
+
+            return response()->json([
+                'planilla' => [
+                    'id' => $planilla->id,
+                    'codigo' => $planilla->codigo,
+                    'fecha_inicio' => $planilla->fecha_inicio,
+                    'fecha_fin' => $planilla->fecha_fin,
+                    'tipo_planilla' => $planilla->tipo_planilla,
+                    'estado' => $planilla->estado
+                ],
+                'detalles' => $detallesFormateados,
+                'resumen' => [
+                    'total_isss_patronal' => round($totalIsssPatronal, 2),
+                    'total_afp_patronal' => round($totalAfpPatronal, 2),
+                    'total_descuentos_patronales' => round($totalDescuentosPatronales, 2),
+                    'total_salarios_devengados' => round($totalSalariosDevengados, 2),
+                    'porcentaje_total' => $totalSalariosDevengados > 0 ? 
+                        round(($totalDescuentosPatronales / $totalSalariosDevengados) * 100, 2) : 0,
+                    'cantidad_empleados' => $detalles->count()
+                ],
+                'detalle_porcentajes' => [
+                    'isss_patronal' => '7.5%',
+                    'afp_patronal' => '7.73%',
+                    'total_patronal' => '15.23%'
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo descuentos patronales: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al obtener los descuentos patronales: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

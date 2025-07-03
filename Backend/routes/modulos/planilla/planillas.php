@@ -7,6 +7,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
     Route::controller(PlanillasController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('{id}/boletas', 'generarBoletas');
+        Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales');
         Route::post('/generate', 'store');
         Route::get('/list', 'list');
         Route::get('/detalles', 'show');

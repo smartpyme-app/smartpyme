@@ -33,6 +33,9 @@ export class PlanillaDetalleComponent implements OnInit {
   public departamentos: any[] = [];
   public cargos: any[] = [];
   public cargosFiltrados: any[] = [];
+  public vistaActual: string = 'empleados';
+  public descuentosPatronales: any = null;
+  public mostrarTodos: boolean = false;
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
@@ -82,8 +85,12 @@ export class PlanillaDetalleComponent implements OnInit {
     }
   }
 
+  /*** Método para limpiar filtros y mostrar vista normal*/
   public limpiarFiltros() {
+    this.vistaActual = 'empleados';
+    this.mostrarTodos = false;
     this.filtros = {
+      buscador: '',
       fecha: '',
       estado: '',
       id_departamento: '',
@@ -797,5 +804,59 @@ export class PlanillaDetalleComponent implements OnInit {
           this.alertService.error(error);
         },
       });
+  }
+
+  /**
+   * Método para mostrar todos los registros (sin paginación)
+   */
+  public mostrarTodosRegistros() {
+    this.mostrarTodos = true;
+    this.filtros.paginate = 1000; // Número alto para mostrar todos
+    this.filtrarDetallePlanillas();
+  }
+
+  /**
+   * Método para mostrar vista de empleados con paginación normal
+   */
+  public mostrarDetallesEmpleados() {
+    this.vistaActual = 'empleados';
+    this.mostrarTodos = false;
+    this.filtros.paginate = 10; // Volver a paginación normal
+    this.filtrarDetallePlanillas();
+  }
+
+  /**
+   * Método para mostrar vista de descuentos patronales
+   */
+  public mostrarDescuentosPatronales() {
+    this.vistaActual = 'descuentos_patronales';
+    this.cargarDescuentosPatronales();
+  }
+
+  /**
+   * Cargar datos de descuentos patronales
+   */
+  private cargarDescuentosPatronales() {
+    this.loading = true;
+    this.apiService.read('planillas/descuentos-patronales/', this.planilla.id).subscribe({
+      next: (response) => {
+        this.descuentosPatronales = response;
+        this.loading = false;
+      },
+      error: (error) => {
+        this.alertService.error('Error al cargar los descuentos patronales');
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * Método para obtener el total de descuentos patronales
+   */
+  public getTotalDescuentosPatronales(): number {
+    if (!this.descuentosPatronales) return 0;
+    return this.descuentosPatronales.detalles?.reduce((total: number, detalle: any) => {
+      return total + (detalle.isss_patronal || 0) + (detalle.afp_patronal || 0);
+    }, 0) || 0;
   }
 }
