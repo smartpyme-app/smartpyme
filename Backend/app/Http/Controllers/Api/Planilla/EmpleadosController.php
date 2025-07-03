@@ -75,9 +75,9 @@ class EmpleadosController extends Controller
             'nombres' => 'required|string|max:100',
             'apellidos' => 'required|string|max:100',
             'dui' => 'required|string|unique:empleados,dui,' . $request->id,
-            'nit' => 'required|string',
-            'isss' => 'string',
-            'afp' => 'string',
+            'nit' => 'nullable|string',
+            'isss' => 'nullable|string',
+            'afp' => 'nullable|string',
             'fecha_nacimiento' => 'required|date',
             'direccion' => 'required|string',
             'telefono' => 'required|string',
@@ -89,9 +89,9 @@ class EmpleadosController extends Controller
             'id_departamento' => 'required|exists:departamentos_empresa,id',
             'id_cargo' => 'required|exists:cargos_de_empresa,id',
             'contacto_emergencia' => 'nullable|array',
-            'contacto_emergencia.nombre' => 'required_with:contacto_emergencia|string',
+            'contacto_emergencia.nombre' => 'nullable|string',
             'contacto_emergencia.relacion' => 'nullable|string',
-            'contacto_emergencia.telefono' => 'required_with:contacto_emergencia|string',
+            'contacto_emergencia.telefono' => 'nullable|string',
             'contacto_emergencia.direccion' => 'nullable|string'
         ]);
 
