@@ -106,14 +106,13 @@
       <label for="tipo_impuesto">Ganancia</label>
       <div class="input-group">
         <span class="input-group-text">$</span>
-        <input type="number" class="form-control" disabled value="{{ (producto.precio - producto.costo).toFixed(2)}}">
+        <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
       </div>
     </div>
     <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
       <label for="impuesto">Margen</label>
       <div class="input-group">
-        <input type="number" class="form-control" disabled
-          value="{{ ((producto.precio - producto.costo) / producto.precio * 100).toFixed(2) }}">
+        <input type="number" class="form-control" disabled value="{{ ((producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)) / producto.precio * 100).toFixed(2) }}">
         <span class="input-group-text">%</span>
       </div>
     </div>
