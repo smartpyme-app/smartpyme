@@ -43,7 +43,7 @@
 
     <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
     <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
-   
+
 
     <!-- codigo sku  -->
     <div class="form-group col-md-6 col-lg-3">
@@ -83,7 +83,7 @@
       <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod"
         placeholder="Escribe aquí" mask='0*'>
     </div>
-  
+
     <h5 class="my-3 font-weight-bold">Precio</h5>
 
     <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
@@ -95,10 +95,10 @@
       </div>
     </div>
     <div class="form-group col-md-4 col-lg-2">
-      <label for="costo">Costo</label>
+      <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
       <div class="input-group">
         <span class="input-group-text">$</span>
-        <input type="number" class="form-control" [(ngModel)]="producto.costo" [disabled]="this.producto.id"
+        <input type="number" class="form-control" [(ngModel)]="producto.costo_promedio" [disabled]="this.producto.id"
           name="costo" placeholder="Escribe aquí" required>
       </div>
     </div>
@@ -125,7 +125,7 @@
           (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
       </div>
     </div>
-    
+
     <!-- <div class="form-group col-md-4 col-lg-4 mb-3 mt-3">
       <div class="form-switch border rounded">
         <label>Opciones Avanzadas</label>
@@ -243,7 +243,7 @@
     <form (ngSubmit)="guardarAtributo()">
       <div class="form-group">
         <label [for]="tipoAtributoActual">{{tipoAtributoActual | titlecase}}</label>
-        <input type="text" class="form-control" [(ngModel)]="nuevoAtributo.valor" 
+        <input type="text" class="form-control" [(ngModel)]="nuevoAtributo.valor"
                [name]="tipoAtributoActual" required>
       </div>
       <div class="d-grid gap-2 mt-3">
