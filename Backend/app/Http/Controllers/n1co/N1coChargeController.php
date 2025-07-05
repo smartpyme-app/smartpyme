@@ -68,9 +68,28 @@ class N1coChargeController extends Controller
             $customerId = $request->input('customer.id');
             $metodoPago = MetodoPago::where('id_usuario', $customerId)->where('esta_activo', true)->where('es_predeterminado', true)->first();
 
-            if ($metodoPago && $request->input('updatePaymentMethod') == false && $request->input('showPaymentForm') == false) {
-                Log::channel('payments_success')->info('Método de pago encontrado', [
-                    'metodo_pago' => $metodoPago
+            // Verificar si la tarjeta enviada es diferente a la guardada
+            $tarjetaActual = preg_replace('/\s+/', '', $request->input('card.number'));
+            $ultimosCuatroNuevos = substr($tarjetaActual, -4);
+
+            $esMismaTarjeta = false;
+            if ($metodoPago) {
+                $esMismaTarjeta = ($metodoPago->ultimos_cuatro === $ultimosCuatroNuevos);
+            }
+
+            // Solo usar el método de pago existente si:
+            // 1. Existe un método de pago
+            // 2. No se está actualizando el método de pago
+            // 3. No se está mostrando el formulario de pago
+            // 4. Es la misma tarjeta (nueva condición)
+            if ($metodoPago && 
+                $request->input('updatePaymentMethod') == false && 
+                $request->input('showPaymentForm') == false && 
+                $esMismaTarjeta) {
+                
+                Log::channel('payments_success')->info('Método de pago encontrado - usando tarjeta existente', [
+                    'metodo_pago' => $metodoPago,
+                    'ultimos_cuatro' => $ultimosCuatroNuevos
                 ]);
 
                 $ordenPago = OrdenPago::where('id_usuario', $customerId)
@@ -235,6 +254,13 @@ class N1coChargeController extends Controller
                     ]);
                 }
             } else {
+                Log::info('Creando método de pago xv3', [
+                    'customer_id' => $request->input('customer.id'),
+                    'customer_name' => $request->input('customer.name'),
+                    'customer_email' => $request->input('customer.email'),
+                    'customer_phone' => $request->input('customer.phoneNumber')
+                ]);
+
                 $paymentData = [
                     'customer' => [
                         'id' => $request->input('customer.id'),
