@@ -19,5 +19,7 @@ Route::group(['prefix' => 'payment'], function () {
 	Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
 	Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
 
+	Route::get('methods/{userId}', [N1coChargeController::class, 'getExistingPaymentMethod']);
+    
 });
 ?>

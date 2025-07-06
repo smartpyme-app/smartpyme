@@ -39,7 +39,7 @@ export class AlertService {
     }
 
     info(titulo: any = null, message: any) {
-        console.log(message);
+        // console.log(message);
         this.alertSubject.next({'tipo': 'alert-info' ,'titulo': titulo, 'mensaje' : message});
     }
 

@@ -557,6 +557,7 @@ class EmpresasController extends Controller
         foreach ($usuarios as $usuario) {
             $pagosPorUsuario = $usuario->ordenesPago()
                 ->select('plan', 'divisa', 'monto', 'estado', 'fecha_transaccion')
+                ->whereIn('estado', ['completado', 'fallido', 'rechazado'])
                 ->latest()
                 ->get()
                 ->toArray();
@@ -568,19 +569,13 @@ class EmpresasController extends Controller
             return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
         });
         
-        // Obtener métodos de pago asociados a la empresa
+        // Obtener métodos de pago asociados a la empresa 
         $metodoPago = null;
-        foreach ($usuarios as $usuario) {
-            $metodo = $usuario->metodoPago()
-                ->where('es_predeterminado', true)
-                ->where('esta_activo', true)
-                ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
-            
-            if ($metodo) {
-                $metodoPago = $metodo;
-                break;
-            }
-        }
+        $usuarioAutenticado = JWTAuth::parseToken()->authenticate();
+        $metodoPago = $usuarioAutenticado->metodoPago()
+            ->where('es_predeterminado', true)
+            ->where('esta_activo', true)
+            ->first(['id', 'marca_tarjeta', 'ultimos_cuatro']);
         
         $dataResponse = [
             'suscripcion' => $suscripcion,

@@ -7,6 +7,7 @@ import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-paywall',
@@ -29,8 +30,14 @@ export class PaywallComponent implements OnInit {
   public estadoSeleccionado: any = null;
   public paises = [];
   public estados: Estado[] = [];
-  
+  public empresaId: number = 0;
+  showPaymentOptions: boolean = false;
   showCardForm: boolean = false;
+  paymentMethodExists: boolean = false;
+  existingPaymentMethod: any = null;
+  selectedPaymentOption: 'existing' | 'new' | null = null;
+
+  
   paymentData = {
     cardNumber: '',
     cardHolder: '',
@@ -67,11 +74,32 @@ export class PaywallComponent implements OnInit {
       this.planName = userData.plan;
       this.estadoSuscripcion = userData.estado_suscripcion;
       this.diasFaltantes = userData.dias_faltantes;
+      this.empresaId = userData.empresa.id;
       this.setPlanFeatures(userData.plan);
     }
 
+
     this.getPaises();
+    this.checkExistingPaymentMethod();
   }
+
+  async checkExistingPaymentMethod() {
+    try {
+      const userData = this.apiService.auth_user();
+      const response = await firstValueFrom(
+        this.n1coPaymentService.getExistingPaymentMethod(userData.id)
+      );
+      
+      if (response.success && response.data) {
+        this.paymentMethodExists = true;
+        this.existingPaymentMethod = response.data;
+      }
+    } catch (error) {
+      console.log('No hay método de pago existente');
+      this.paymentMethodExists = false;
+    }
+  }
+
 
   getPaises() {
     this.apiService.getAll('paises-suscripcion', this.paises).subscribe(paises => { 
@@ -165,6 +193,65 @@ export class PaywallComponent implements OnInit {
     return 'alert-danger';
   }
 
+  showPaymentOptionsModal() {
+    this.showPaymentOptions = true;
+    this.showAllPlans = false;
+  }
+
+  // ✅ Seleccionar opción de pago
+  selectPaymentOption(option: 'existing' | 'new') {
+    this.selectedPaymentOption = option;
+    
+    if (option === 'new') {
+      this.showCardForm = true;
+      this.showPaymentOptions = false;
+    } else if (option === 'existing') {
+      this.processPaymentWithExistingMethod();
+    }
+  }
+
+  // ✅ Procesar pago con método existente
+  async processPaymentWithExistingMethod() {
+    if (this.loading) return;
+    this.loading = true;
+
+    try {
+      const userData = this.apiService.auth_user();
+      const paymentData = {
+        metodo_pago_id: this.existingPaymentMethod.id,
+        id_usuario: userData.id,
+        empresa_id: userData.empresa.id,
+        plan_id: this.planId,
+        customer_name: userData.name,
+        customer_email: userData.email,
+        customer_phone: userData.telefono || ''
+      };
+
+      const result = await firstValueFrom(
+        this.n1coPaymentService.processChargeWithExistingMethod(paymentData)
+      );
+
+      if (result.requires_3ds) {
+        this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
+          result.authentication_url
+        );
+        this.mostrar3DSModal = true;
+        await this.handle3DSAuthentication(result);
+      } else if (result.success) {
+        this.alertService.success('Éxito', 'Pago procesado exitosamente');
+        this.n1coPaymentService.setPaymentResponse(result);
+        this.router.navigate(['/pago-exitoso-paywall']);
+      }
+
+    } catch (error: any) {
+      this.alertService.error('Error al procesar el pago: ' + 
+        (error.error?.message || error.message || 'Error desconocido'));
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  // ✅ Procesar pago con nuevo método
   async processPayment() {
     if (this.loading) return;
     this.loading = true;
@@ -196,25 +283,23 @@ export class PaywallComponent implements OnInit {
           id_plan: this.planId.toString(),
           plan_name: this.planName
         },
-        billingInfo: this.billingInfo
+        billingInfo: this.billingInfo,
+        forceNewPaymentMethod: true,
+        updatePaymentMethod: true
       };
 
-      console.log("Payment method data:", paymentMethodData);
-      
-
-      const result = await this.n1coPaymentService.createPaymentMethod(paymentMethodData).toPromise();
-
-      console.log("Payment result en processPayment:", result);
+      const result = await firstValueFrom(
+        this.n1coPaymentService.createPaymentMethod(paymentMethodData)
+      );
 
       if (result.requires_3ds) {
         this.urlAutenticacion = this.sanitizer.bypassSecurityTrustResourceUrl(
           result.authentication_url
         );
         this.mostrar3DSModal = true;
-        
         await this.handle3DSAuthentication(result);
       } else if (result.success) {
-        this.alertService.success('Exito','Pago procesado exitosamente');
+        this.alertService.success('Éxito','Pago procesado exitosamente');
         this.n1coPaymentService.setPaymentResponse(result);
         this.router.navigate(['/pago-exitoso-paywall']);
       }
@@ -297,7 +382,20 @@ export class PaywallComponent implements OnInit {
     this.showAllPlans = !this.showCardForm;
   }
   
-  
+  backToPaymentOptions() {
+    this.showCardForm = false;
+    this.showPaymentOptions = true;
+    this.selectedPaymentOption = null;
+  }
+
+  // ✅ Cancelar todo y volver al inicio
+  cancelPayment() {
+    this.showCardForm = false;
+    this.showPaymentOptions = false;
+    this.showAllPlans = true;
+    this.selectedPaymentOption = null;
+  }
+
 
   logout() {
     this.apiService.logout();
