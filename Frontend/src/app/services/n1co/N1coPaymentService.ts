@@ -131,6 +131,28 @@ import { environment } from '../../../environments/environment';
         this.paymentResponse = null;
     }
 
+    getExistingPaymentMethod(userId: number): Observable<any> {
+        return this.http.get(`${this.apiUrl}/payment/methods/${userId}`)
+          .pipe(
+            catchError(error => {
+              console.error('Error al obtener método de pago:', error);
+              return throwError(error);
+            })
+          );
+      }
+      
+      // Método para procesar pago con método existente
+      processChargeWithExistingMethod(paymentData: any): Observable<any> {
+        return this.http.post(`${this.apiUrl}/payment/process-ready`, paymentData)
+          .pipe(
+            catchError(error => {
+              console.error('Error al procesar pago con método existente:', error);
+              return throwError(error);
+            })
+          );
+      }
+              
+
       
   }
 

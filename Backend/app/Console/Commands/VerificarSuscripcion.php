@@ -138,13 +138,19 @@ class VerificarSuscripcion extends Command
         // Primera alerta (3 días)
         if ($diasVencidos >= self::DIAS_PRIMERA_ALERTA && $diasVencidos < self::DIAS_ALERTA_CRITICA) {
             $this->enviarNotificacionVencimiento($suscripcion, 'primera_alerta');
-            $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
+            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
         }
 
         // Alerta crítica (7 días)
         elseif ($diasVencidos >= self::DIAS_ALERTA_CRITICA && $diasVencidos < self::DIAS_DESACTIVACION) {
             $this->enviarNotificacionVencimiento($suscripcion, 'alerta_critica');
-            $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
+            // $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_PENDIENTE')]);
+        }
+
+        // Cambio a PENDIENTE (9 días)
+        elseif ($diasVencidos >= 9 && $diasVencidos < self::DIAS_DESACTIVACION) {
+            $this->enviarNotificacionVencimiento($suscripcion, 'cancelado');
+            $suscripcion->update(['estado' => config('constants.ESTADO_SUSCRIPCION_CANCELADO')]);
         }
 
         // Desactivación (10 días)
@@ -207,7 +213,8 @@ class VerificarSuscripcion extends Command
         $mensajes = [
             'primera_alerta' => 'Tu suscripción ha vencido. Por favor, realiza el pago para mantener el servicio activo.',
             'alerta_critica' => '¡IMPORTANTE! Tu cuenta será desactivada pronto por falta de pago.',
-            'desactivacion' => 'Tu cuenta ha sido desactivada por falta de pago. Contacta con soporte para reactivarla.'
+            'desactivacion' => 'Tu cuenta ha sido desactivada por falta de pago. Contacta con soporte para reactivarla.',
+            'cancelado' => 'Tu cuenta ha sido cancelada por falta de pago. Contacta con soporte para reactivarla.'
         ];
 
         Log::channel('suscripciones')->info("Enviando notificación de vencimiento para suscripción {$suscripcion->id}: {$mensajes[$tipo]}");
