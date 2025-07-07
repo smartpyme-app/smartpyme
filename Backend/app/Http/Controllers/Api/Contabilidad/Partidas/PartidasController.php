@@ -17,6 +17,8 @@ use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
+use App\Services\Contabilidad\CierreMesService;
+use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 
@@ -884,24 +886,21 @@ class PartidasController extends Controller
                 ], 400);
             }
 
-            // Calcular las fechas de inicio y fin del mes
-            $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-            $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+            $cierreMesService = new CierreMesService();
 
-            // Actualizar solo las partidas aplicadas del mes y año especificados
-            $partidas = Partida::whereBetween('fecha', [$startDate, $endDate])
-                ->where('estado', 'Aplicada')
-                ->where('id_empresa', auth()->user()->id_empresa)
-                ->update(['estado' => 'Cerrada']);
+            // Realizar cierre completo del mes
+            $resultado = $cierreMesService->cerrarMes(
+                $year,
+                $month,
+                auth()->user()->id,
+                auth()->user()->id_empresa
+            );
 
-            return response()->json([
-                'message' => 'Partidas aplicadas cerradas exitosamente',
-                'partidas_cerradas' => $partidas
-            ]);
+            return response()->json($resultado);
 
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al cerrar las partidas: ' . $e->getMessage()
+                'error' => 'Error al cerrar el período: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -949,5 +948,127 @@ class PartidasController extends Controller
             ], 500);
         }
     }
+
+    public function reabrirPeriodo(Request $request)
+    {
+        try {
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            // Validar que el mes y año sean válidos
+            if (!$month || !$year || $month < 1 || $month > 12) {
+                return response()->json([
+                    'error' => 'Mes y año inválidos'
+                ], 400);
+            }
+
+            $cierreMesService = new CierreMesService();
+
+            // Reabrir período
+            $resultado = $cierreMesService->reabrirPeriodo(
+                $year,
+                $month,
+                auth()->user()->id_empresa
+            );
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al reabrir el período: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verificarEstadoPeriodo(Request $request)
+    {
+        try {
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            if (!$month || !$year || $month < 1 || $month > 12) {
+                return response()->json([
+                    'error' => 'Mes y año inválidos'
+                ], 400);
+            }
+
+            $cierreMesService = new CierreMesService();
+
+            $cerrado = $cierreMesService->estaPeriodoCerrado(
+                $year,
+                $month,
+                auth()->user()->id_empresa
+            );
+
+            return response()->json([
+                'periodo' => "{$month}/{$year}",
+                'cerrado' => $cerrado,
+                'estado' => $cerrado ? 'Cerrado' : 'Abierto'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al verificar el estado del período: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+      public function obtenerBalanceComprobacion(Request $request)
+  {
+      try {
+          $month = $request->input('month');
+          $year = $request->input('year');
+
+          if (!$month || !$year || $month < 1 || $month > 12) {
+              return response()->json([
+                  'error' => 'Mes y año inválidos'
+              ], 400);
+          }
+
+          $cierreMesService = new CierreMesService();
+
+          $balance = $cierreMesService->obtenerBalanceComprobacion(
+              $year,
+              $month,
+              auth()->user()->id_empresa
+          );
+
+          return response()->json($balance);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'error' => 'Error al obtener el balance de comprobación: ' . $e->getMessage()
+          ], 500);
+      }
+  }
+
+  public function simularCierreMes(Request $request)
+  {
+      try {
+          $month = $request->input('month');
+          $year = $request->input('year');
+
+          if (!$month || !$year || $month < 1 || $month > 12) {
+              return response()->json([
+                  'error' => 'Mes y año inválidos'
+              ], 400);
+          }
+
+          $simulacionService = new SimulacionCierreService();
+
+          $resultadoSimulacion = $simulacionService->simularCierreMes(
+              $year,
+              $month,
+              auth()->user()->id_empresa
+          );
+
+          return response()->json($resultadoSimulacion);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'error' => 'Error al simular el cierre: ' . $e->getMessage()
+          ], 500);
+      }
+  }
 
 }

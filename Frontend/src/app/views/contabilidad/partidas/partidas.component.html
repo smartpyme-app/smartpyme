@@ -1,7 +1,10 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Partidas</h2>
   <div class="d-flex gap-2">
-    <button (click)="openFilter(mclosepartidas)" tooltip="Generar reporte" class="btn btn-default"> Cerrar Partidas</button>
+        <button (click)="openCierreModal(mclosepartidas)" tooltip="Cierre de mes contable" class="btn btn-primary">
+      <i class="fa fa-lock me-1"></i>
+      Cierre de Mes
+    </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
       src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
     <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
@@ -491,43 +494,466 @@
   </div>
 </ng-template>
 
-<!-- cerrar partidas -->
+<!-- ============ MODAL MEJORADO DE CIERRE DE MES ============ -->
 <ng-template #mclosepartidas>
-  <div class="modal-header">
-    <div class="modal-title text-center">
-      <h2 class="text-center">Cerrar Partidas</h2>
+  <div class="modal-header bg-primary text-white">
+    <div class="modal-title">
+      <h4 class="mb-0">
+        <i class="fa fa-lock me-2"></i>
+        Cierre de Mes Contable
+      </h4>
     </div>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close btn-close-white" (click)="modalRef.hide(); resetearFormularioCierre()" aria-label="Close"></button>
   </div>
+
   <div class="modal-body">
     <app-notificaciones-container></app-notificaciones-container>
-    <form autocomplete="off" (ngSubmit)="cerrarPartidas()">
-      <div class="row">
-        <div class="form-group col-sm-6">
-          <label for="month">Mes:</label>
-          <select class="form-select" name="month" [(ngModel)]="selectedMonth" [disabled]="saving">
-            <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
-          </select>
-        </div>
-        <div class="form-group col-sm-6">
-          <label for="year">Año:</label>
-          <select class="form-select" name="year" [(ngModel)]="selectedYear" [disabled]="saving">
-            <option *ngFor="let year of years" [value]="year">{{year}}</option>
-          </select>
+
+    <!-- Selección de Período -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">📅 Selección de Período</h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <label for="month" class="form-label">Mes:</label>
+            <select class="form-select" name="month" [(ngModel)]="selectedMonth"
+                    (change)="onCambiarPeriodo()" [disabled]="procesandoCierre">
+              <option value="">Seleccione mes</option>
+              <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="year" class="form-label">Año:</label>
+            <select class="form-select" name="year" [(ngModel)]="selectedYear"
+                    (change)="onCambiarPeriodo()" [disabled]="procesandoCierre">
+              <option value="">Seleccione año</option>
+              <option *ngFor="let year of years" [value]="year">{{year}}</option>
+            </select>
+          </div>
         </div>
       </div>
-      <div class="d-flex justify-content-between mt-3">
-        <button type="button" class="btn btn-secondary" (click)="modalRef.hide()" [disabled]="saving">
-          Cancelar
+    </div>
+
+    <!-- Estado del Período -->
+    <div class="card border-0 shadow-sm mb-3" *ngIf="estadoPeriodo">
+      <div class="card-header" [ngClass]="{
+        'bg-success text-white': estadoPeriodo.cerrado,
+        'bg-warning': !estadoPeriodo.cerrado
+      }">
+        <h6 class="mb-0">
+          <i class="fa" [ngClass]="{
+            'fa-lock': estadoPeriodo.cerrado,
+            'fa-unlock': !estadoPeriodo.cerrado
+          }" class="me-2"></i>
+          Estado del Período
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center">
+              <span class="badge me-3" [ngClass]="{
+                'bg-success': estadoPeriodo.cerrado,
+                'bg-warning': !estadoPeriodo.cerrado
+              }" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+                {{estadoPeriodo.estado}}
+              </span>
+              <div>
+                <strong>Período:</strong> {{estadoPeriodo.periodo}}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary btn-sm me-2"
+                    (click)="verificarValidacionesPrevias()"
+                    [disabled]="loading || procesandoCierre">
+              <i class="fa fa-chart-line me-1"></i>
+              Ver Balance
+            </button>
+            <button class="btn btn-warning btn-sm"
+                    (click)="reabrirPeriodo()"
+                    *ngIf="estadoPeriodo.cerrado && !procesandoCierre"
+                    [disabled]="saving">
+              <i class="fa fa-unlock me-1"></i>
+              Reabrir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Balance de Comprobación -->
+    <div class="card border-0 shadow-sm mb-3" *ngIf="mostrandoBalance && balanceComprobacion">
+      <div class="card-header" [ngClass]="{
+        'bg-success text-white': balanceComprobacion.totales?.cuadra,
+        'bg-danger text-white': !balanceComprobacion.totales?.cuadra
+      }">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="fa fa-balance-scale me-2"></i>
+            Balance de Comprobación
+          </h6>
+          <button class="btn btn-sm"
+                  [ngClass]="{
+                    'btn-outline-light': balanceComprobacion.totales?.cuadra,
+                    'btn-outline-light': !balanceComprobacion.totales?.cuadra
+                  }"
+                  (click)="descargarBalanceComprobacion()">
+            <i class="fa fa-download me-1"></i>
+            Descargar
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-4">
+            <div class="border-end">
+              <h5 class="text-primary mb-1">{{balanceComprobacion.totales?.deudor | currency:'USD':'symbol':'1.2-2'}}</h5>
+              <small class="text-muted">Total Deudor</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="border-end">
+              <h5 class="text-danger mb-1">{{balanceComprobacion.totales?.acreedor | currency:'USD':'symbol':'1.2-2'}}</h5>
+              <small class="text-muted">Total Acreedor</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <h5 class="mb-1" [ngClass]="{
+              'text-success': balanceComprobacion.totales?.cuadra,
+              'text-danger': !balanceComprobacion.totales?.cuadra
+            }">
+              {{balanceComprobacion.totales?.diferencia | currency:'USD':'symbol':'1.2-2'}}
+            </h5>
+            <small class="text-muted">Diferencia</small>
+          </div>
+        </div>
+
+        <div class="mt-3 p-3 rounded" [ngClass]="{
+          'bg-success bg-opacity-10 border border-success': balanceComprobacion.totales?.cuadra,
+          'bg-danger bg-opacity-10 border border-danger': !balanceComprobacion.totales?.cuadra
+        }">
+          <div class="text-center">
+            <i class="fa fa-2x mb-2" [ngClass]="{
+              'fa-check-circle text-success': balanceComprobacion.totales?.cuadra,
+              'fa-exclamation-triangle text-danger': !balanceComprobacion.totales?.cuadra
+            }"></i>
+            <h6 [ngClass]="{
+              'text-success': balanceComprobacion.totales?.cuadra,
+              'text-danger': !balanceComprobacion.totales?.cuadra
+            }">
+              {{balanceComprobacion.totales?.cuadra ? '✅ Balance Cuadrado' : '❌ Balance Descuadrado'}}
+            </h6>
+            <p class="mb-0 small" *ngIf="!balanceComprobacion.totales?.cuadra">
+              Se recomienda revisar las partidas antes de continuar con el cierre
+            </p>
+          </div>
+        </div>
+
+        <!-- Tabla resumen de cuentas principales -->
+        <div class="mt-3" *ngIf="balanceComprobacion.balance?.length > 0">
+          <h6 class="mb-2">Resumen de Cuentas (Primeras 5)</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Cuenta</th>
+                  <th class="text-end">Saldo Final</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let cuenta of balanceComprobacion.balance.slice(0, 5)">
+                  <td><small>{{cuenta.codigo}}</small></td>
+                  <td><small>{{cuenta.nombre | slice:0:30}}{{cuenta.nombre.length > 30 ? '...' : ''}}</small></td>
+                  <td class="text-end">
+                    <small [ngClass]="{
+                      'text-primary': cuenta.naturaleza === 'Deudor',
+                      'text-danger': cuenta.naturaleza === 'Acreedor'
+                    }">
+                      {{cuenta.saldo_final | currency:'USD':'symbol':'1.2-2'}}
+                    </small>
+                  </td>
+                  <td>
+                    <span class="badge badge-sm" [ngClass]="{
+                      'bg-success': cuenta.estado === 'Cerrado',
+                      'bg-warning': cuenta.estado === 'Abierto'
+                    }">
+                      {{cuenta.estado}}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <small class="text-muted" *ngIf="balanceComprobacion.balance?.length > 5">
+            Mostrando 5 de {{balanceComprobacion.balance.length}} cuentas
+          </small>
+        </div>
+      </div>
+    </div>
+
+         <!-- Simulación de Cierre -->
+     <div class="card border-0 shadow-sm mb-3" *ngIf="cargandoSimulacion">
+       <div class="card-header bg-info text-white">
+         <h6 class="mb-0">
+           <i class="fa fa-flask me-2"></i>
+           Ejecutando Simulación
+         </h6>
+       </div>
+       <div class="card-body text-center">
+         <div class="spinner-border text-primary mb-3" role="status">
+           <span class="visually-hidden">Simulando...</span>
+         </div>
+         <p class="mb-0">Analizando impacto del cierre sin modificar datos...</p>
+         <small class="text-muted">Esto no afecta los datos reales</small>
+       </div>
+     </div>
+
+     <!-- Resultados de la Simulación -->
+     <div class="card border-0 shadow-sm mb-3" *ngIf="mostrandoSimulacion && resultadoSimulacion">
+       <div class="card-header" [ngClass]="{
+         'bg-success text-white': resultadoSimulacion.simulacion_exitosa,
+         'bg-danger text-white': !resultadoSimulacion.simulacion_exitosa
+       }">
+         <div class="d-flex justify-content-between align-items-center">
+           <h6 class="mb-0">
+             <i class="fa fa-flask me-2"></i>
+             Resultados de la Simulación
+           </h6>
+           <div class="d-flex gap-2">
+             <button class="btn btn-sm btn-outline-light" (click)="descargarReporteSimulacion()">
+               <i class="fa fa-download me-1"></i>
+               Descargar
+             </button>
+             <button class="btn btn-sm btn-outline-light" (click)="limpiarSimulacion()">
+               <i class="fa fa-times me-1"></i>
+               Limpiar
+             </button>
+           </div>
+         </div>
+       </div>
+
+       <div class="card-body" *ngIf="resultadoSimulacion.simulacion_exitosa">
+         <!-- Métricas Principales -->
+         <div class="row text-center mb-4">
+           <div class="col-md-3">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1" [ngClass]="{
+                 'text-success': resultadoSimulacion.metricas?.puntuacion_calidad >= 80,
+                 'text-warning': resultadoSimulacion.metricas?.puntuacion_calidad >= 60 && resultadoSimulacion.metricas?.puntuacion_calidad < 80,
+                 'text-danger': resultadoSimulacion.metricas?.puntuacion_calidad < 60
+               }">
+                 {{resultadoSimulacion.metricas?.puntuacion_calidad || 0}}/100
+               </h4>
+               <small class="text-muted">Puntuación de Calidad</small>
+             </div>
+           </div>
+           <div class="col-md-3">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1 text-primary">{{resultadoSimulacion.metricas?.tiempo_estimado_cierre || 0}}s</h4>
+               <small class="text-muted">Tiempo Estimado</small>
+             </div>
+           </div>
+           <div class="col-md-3">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1" [ngClass]="{
+                 'text-success': resultadoSimulacion.metricas?.nivel_riesgo === 'bajo',
+                 'text-warning': resultadoSimulacion.metricas?.nivel_riesgo === 'medio',
+                 'text-danger': resultadoSimulacion.metricas?.nivel_riesgo === 'alto'
+               }">
+                 {{resultadoSimulacion.metricas?.nivel_riesgo || 'N/A' | titlecase}}
+               </h4>
+               <small class="text-muted">Nivel de Riesgo</small>
+             </div>
+           </div>
+           <div class="col-md-3">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1 text-info">{{resultadoSimulacion.metricas?.cuentas_activas || 0}}</h4>
+               <small class="text-muted">Cuentas Activas</small>
+             </div>
+           </div>
+         </div>
+
+         <!-- Balance Proyectado -->
+         <div class="row mb-4" *ngIf="resultadoSimulacion.balance_proyectado">
+           <div class="col-md-12">
+             <h6 class="mb-3">📊 Balance Proyectado</h6>
+             <div class="row text-center">
+               <div class="col-md-4">
+                 <div class="p-3" [ngClass]="{
+                   'bg-success bg-opacity-10 border border-success': resultadoSimulacion.balance_proyectado.cuadra,
+                   'bg-danger bg-opacity-10 border border-danger': !resultadoSimulacion.balance_proyectado.cuadra
+                 }">
+                   <h5 class="text-primary mb-1">
+                     {{resultadoSimulacion.balance_proyectado.total_deudor | currency:'USD':'symbol':'1.2-2'}}
+                   </h5>
+                   <small class="text-muted">Total Deudor</small>
+                 </div>
+               </div>
+               <div class="col-md-4">
+                 <div class="p-3" [ngClass]="{
+                   'bg-success bg-opacity-10 border border-success': resultadoSimulacion.balance_proyectado.cuadra,
+                   'bg-danger bg-opacity-10 border border-danger': !resultadoSimulacion.balance_proyectado.cuadra
+                 }">
+                   <h5 class="text-danger mb-1">
+                     {{resultadoSimulacion.balance_proyectado.total_acreedor | currency:'USD':'symbol':'1.2-2'}}
+                   </h5>
+                   <small class="text-muted">Total Acreedor</small>
+                 </div>
+               </div>
+               <div class="col-md-4">
+                 <div class="p-3" [ngClass]="{
+                   'bg-success bg-opacity-10 border border-success': resultadoSimulacion.balance_proyectado.cuadra,
+                   'bg-danger bg-opacity-10 border border-danger': !resultadoSimulacion.balance_proyectado.cuadra
+                 }">
+                   <h5 class="mb-1" [ngClass]="{
+                     'text-success': resultadoSimulacion.balance_proyectado.cuadra,
+                     'text-danger': !resultadoSimulacion.balance_proyectado.cuadra
+                   }">
+                     {{resultadoSimulacion.balance_proyectado.diferencia | currency:'USD':'symbol':'1.2-2'}}
+                   </h5>
+                   <small class="text-muted">Diferencia</small>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+
+         <!-- Advertencias -->
+         <div class="mb-4" *ngIf="resultadoSimulacion.advertencias?.length > 0">
+           <h6 class="mb-3">⚠️ Advertencias</h6>
+           <div class="alert"
+                *ngFor="let advertencia of resultadoSimulacion.advertencias"
+                [ngClass]="{
+                  'alert-danger': advertencia.tipo === 'error',
+                  'alert-warning': advertencia.tipo === 'warning',
+                  'alert-info': advertencia.tipo === 'info'
+                }">
+             <strong>{{advertencia.mensaje}}</strong><br>
+             <small>{{advertencia.accion}}</small>
+           </div>
+         </div>
+
+         <!-- Recomendaciones -->
+         <div class="mb-4" *ngIf="resultadoSimulacion.recomendaciones?.length > 0">
+           <h6 class="mb-3">💡 Recomendaciones</h6>
+           <ul class="list-group list-group-flush">
+             <li class="list-group-item border-0 px-0" *ngFor="let recomendacion of resultadoSimulacion.recomendaciones">
+               <i class="fa fa-check-circle text-success me-2"></i>
+               {{recomendacion}}
+             </li>
+           </ul>
+         </div>
+
+         <!-- Reporte de Impacto (resumen) -->
+         <div class="mb-4" *ngIf="resultadoSimulacion.reporte_impacto">
+           <h6 class="mb-3">📈 Impacto del Cierre</h6>
+           <div class="row">
+             <div class="col-md-6">
+               <div class="card border-0 bg-light">
+                 <div class="card-body text-center">
+                   <h4 class="text-primary">{{resultadoSimulacion.reporte_impacto.total_cuentas_afectadas || 0}}</h4>
+                   <small>Cuentas que serán afectadas</small>
+                 </div>
+               </div>
+             </div>
+             <div class="col-md-6">
+               <div class="card border-0 bg-light">
+                 <div class="card-body text-center">
+                   <h4 class="text-success">
+                     {{resultadoSimulacion.reporte_impacto.monto_total_movimientos | currency:'USD':'symbol':'1.0-0'}}
+                   </h4>
+                   <small>Total de movimientos</small>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+
+         <!-- Botón para ejecutar cierre real -->
+         <div class="text-center" *ngIf="resultadoSimulacion.simulacion_exitosa">
+           <button class="btn btn-success btn-lg"
+                   (click)="ejecutarCierreDespuesDeSimulacion()"
+                   [disabled]="procesandoCierre">
+             <i class="fa fa-rocket me-2"></i>
+             Ejecutar Cierre Real
+           </button>
+         </div>
+       </div>
+
+       <!-- Error en simulación -->
+       <div class="card-body text-center" *ngIf="!resultadoSimulacion.simulacion_exitosa">
+         <i class="fa fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+         <h5 class="text-danger">Error en la Simulación</h5>
+         <p class="text-muted">{{resultadoSimulacion.error}}</p>
+         <button class="btn btn-outline-primary" (click)="ejecutarSimulacion()">
+           <i class="fa fa-redo me-1"></i>
+           Reintentar Simulación
+         </button>
+       </div>
+     </div>
+
+     <!-- Progreso del Cierre -->
+     <div class="card border-0 shadow-sm mb-3" *ngIf="procesandoCierre">
+       <div class="card-header bg-info text-white">
+         <h6 class="mb-0">
+           <i class="fa fa-cog fa-spin me-2"></i>
+           Procesando Cierre de Mes
+         </h6>
+       </div>
+       <div class="card-body text-center">
+         <div class="spinner-border text-primary mb-3" role="status">
+           <span class="visually-hidden">Procesando...</span>
+         </div>
+         <p class="mb-0">Por favor espere mientras se procesa el cierre del período...</p>
+         <small class="text-muted">Este proceso puede tomar unos minutos</small>
+       </div>
+     </div>
+
+    <!-- Acciones -->
+    <div class="d-flex justify-content-between align-items-center" *ngIf="!procesandoCierre">
+      <button type="button" class="btn btn-secondary"
+              (click)="modalRef.hide(); resetearFormularioCierre()"
+              [disabled]="saving">
+        <i class="fa fa-times me-1"></i>
+        Cancelar
+      </button>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-info"
+                (click)="verificarValidacionesPrevias()"
+                [disabled]="!selectedMonth || !selectedYear || loading || saving">
+          <i class="fa fa-search me-1"></i>
+          Validar Período
         </button>
-        <button type="submit" [disabled]="saving" class="btn btn-primary">
-          <span *ngIf="!saving">Cerrar Partidas</span>
+
+        <button type="button" class="btn btn-outline-warning"
+                (click)="ejecutarSimulacion()"
+                [disabled]="!selectedMonth || !selectedYear || cargandoSimulacion || saving">
+          <i class="fa fa-flask me-1"></i>
+          <span *ngIf="!cargandoSimulacion">🧪 Simular</span>
+          <span *ngIf="cargandoSimulacion">
+            <i class="fa fa-spinner fa-spin me-1"></i>
+            Simulando...
+          </span>
+        </button>
+
+        <button type="button" class="btn btn-success"
+                (click)="confirmarCierreMes()"
+                [disabled]="!selectedMonth || !selectedYear || estadoPeriodo?.cerrado || saving"
+                *ngIf="!estadoPeriodo?.cerrado">
+          <i class="fa fa-lock me-1"></i>
+          <span *ngIf="!saving">🔒 Cerrar Mes</span>
           <span *ngIf="saving">
             <i class="fa fa-spinner fa-spin me-1"></i>
             Cerrando...
           </span>
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </ng-template>
