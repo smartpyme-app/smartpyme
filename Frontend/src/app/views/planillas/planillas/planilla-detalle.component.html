@@ -162,12 +162,7 @@
             ${{ detalle.salario_devengado | number : "1.2-2" }}
           </td>
           <td class="text-end">
-            ${{
-            detalle.bonificaciones +
-            detalle.comisiones +
-            detalle.monto_horas_extra +
-            detalle.otros_ingresos | number : "1.2-2"
-            }}
+            ${{ getIngresosAdicionales(detalle) | number : "1.2-2" }}
           </td>
           <td class="text-end">
             ${{ detalle.total_ingresos | number : "1.2-2" }}
@@ -273,7 +268,7 @@
           <h3 class="mb-0">
             ${{ descuentosPatronales.resumen?.total_afp_patronal | number : "1.2-2" }}
           </h3>
-          <small>7.73% del salario</small>
+          <small>8.75% del salario</small>
         </div>
       </div>
     </div>
@@ -299,7 +294,7 @@
           <th class="text-end">Salario Base</th>
           <th class="text-end">Salario Devengado</th>
           <th class="text-end">ISSS Patronal (7.5%)</th>
-          <th class="text-end">AFP Patronal (7.73%)</th>
+          <th class="text-end">AFP Patronal (8.75%)</th>
           <th class="text-end">Total Aportes</th>
           <th class="text-end">% sobre Salario</th>
         </tr>
@@ -436,16 +431,23 @@
                   <div class="mb-3">
                     <label>Horas Extra:</label>
                     <div class="input-group">
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.horas_extra"
-                        (input)="calcularTotales()" name="horas_extra" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input 
+                        type="number" 
+                        class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.horas_extra"
+                        (input)="calcularTotales()" 
+                        (change)="calcularTotales()" 
+                        name="horas_extra" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                        min="0"
+                        step="0.5" />
                       <span class="input-group-text">hrs</span>
                     </div>
                     <small class="text-muted">
-                      Monto: ${{
-                      detalleSeleccionado.monto_horas_extra | number : "1.2-2"
-                      }}
+                      Monto: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                      <span *ngIf="detalleSeleccionado.horas_extra > 0" class="text-info">
+                        (Valor hora: ${{ calcularValorHora() | number : "1.2-2" }})
+                      </span>
                     </small>
                   </div>
 

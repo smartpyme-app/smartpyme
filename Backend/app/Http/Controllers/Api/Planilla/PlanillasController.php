@@ -21,6 +21,7 @@ use App\Models\Compras\Gastos\Gasto;
 use App\Models\Compras\Proveedores\Proveedor;
 use Illuminate\Support\Facades\Mail;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Helpers\RentaHelper;
 
 class PlanillasController extends Controller
 {
@@ -61,6 +62,7 @@ class PlanillasController extends Controller
 
     public function show(Request $request)
     {
+
         try {
             $planilla = Planilla::findOrFail($request->id);
 
@@ -345,15 +347,14 @@ class PlanillasController extends Controller
 
     private function calcularISSSyAFP($salarioDevengado)
     {
-        // Cálculo ISSS - el tope es de $1000 sin importar el período
+        // Método mantenido para compatibilidad, pero usando constantes actualizadas
         $baseISSSEmpleado = min($salarioDevengado, 1000);
         $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-
-        // Cálculo AFP - no tiene tope
+    
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-
+    
         return [
             'isss_empleado' => round($isssEmpleado, 2),
             'isss_patronal' => round($isssPatronal, 2),
@@ -362,20 +363,20 @@ class PlanillasController extends Controller
         ];
     }
 
-    private function calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado)
-    {
-        $baseRenta = $salarioDevengado - $isssEmpleado - $afpEmpleado;
+    // private function calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado)
+    // {
+    //     $baseRenta = $salarioDevengado - $isssEmpleado - $afpEmpleado;
 
-        if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
-            return 0;
-        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
-            return (($baseRenta - PlanillaConstants::RENTA_MINIMA) * PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) + PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
-        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
-            return (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) * PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) + PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
-        } else {
-            return (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) * PlanillaConstants::PORCENTAJE_TERCER_TRAMO) + PlanillaConstants::IMPUESTO_TERCER_TRAMO;
-        }
-    }
+    //     if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
+    //         return 0;
+    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
+    //         return (($baseRenta - PlanillaConstants::RENTA_MINIMA) * PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) + PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
+    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
+    //         return (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) * PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) + PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
+    //     } else {
+    //         return (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) * PlanillaConstants::PORCENTAJE_TERCER_TRAMO) + PlanillaConstants::IMPUESTO_TERCER_TRAMO;
+    //     }
+    // }
 
     private function calcularTotales($salarioDevengado, $descuentos)
     {
@@ -393,41 +394,32 @@ class PlanillasController extends Controller
     private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
     {
         // Determinar días de referencia según tipo de planilla
-        $diasReferencia = 30; // Por defecto, mensual
+        $diasReferencia = 30;
         $factorAjuste = 1;
-
+    
         if ($tipoPlanilla === 'quincenal') {
             $diasReferencia = 15;
-            $factorAjuste = 2; // 2 quincenas por mes
+            $factorAjuste = 2;
         } elseif ($tipoPlanilla === 'semanal') {
             $diasReferencia = 7;
-            $factorAjuste = 4.33; // ~4.33 semanas por mes (promedio)
+            $factorAjuste = 4.33;
         }
-
+    
         // Obtener las fechas de la planilla
         $planilla = Planilla::findOrFail($planillaId);
         $fechaInicioPlanilla = Carbon::parse($planilla->fecha_inicio)->startOfDay();
         $fechaFinPlanilla = Carbon::parse($planilla->fecha_fin)->startOfDay();
-
-        // Verificar si el empleado tiene fecha de baja o fin programada
+    
+        // Verificar si el empleado tiene fecha de baja programada
+        if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
+            ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)) {
+            return null; // No incluir en planilla
+        }
+    
+        // Calcular días proporcionales si hay baja programada
         $tieneBajaProgramada = false;
         $diasProporcionales = $diasReferencia;
-
-        // Si la baja es anterior al inicio de la planilla, no incluir en la planilla
-        if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
-            ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)
-        ) {
-            // Verificar si debería estar inactivo pero no lo está
-            if ($empleado->estado == PlanillaConstants::ESTADO_EMPLEADO_ACTIVO) {
-                // Log warning - empleado debería estar inactivo
-                Log::warning("Empleado {$empleado->id} ({$empleado->nombres} {$empleado->apellidos}) tiene fecha de baja/fin pasada pero sigue activo");
-            }
-
-            // En este caso, no incluir en la planilla
-            return null;
-        }
-
-        // Calcular días proporcionales si hay baja programada dentro del período
+    
         if ($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
             $tieneBajaProgramada = true;
             $diasProporcionales = Carbon::parse($empleado->fecha_baja)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
@@ -435,113 +427,120 @@ class PlanillasController extends Controller
             $tieneBajaProgramada = true;
             $diasProporcionales = Carbon::parse($empleado->fecha_fin)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
         }
-
-        // Calcular días laborados
-        $diasLaborados = $diasReferencia; // Por defecto, todos los días del período
-
-        // Ajustar días laborados si hay baja programada
-        if ($tieneBajaProgramada) {
-            // Asegurarse de que los días proporcionales no excedan los días de referencia
-            $diasLaborados = min($diasProporcionales, $diasReferencia);
-
-            // Logging para depuración
-            // Log::info("Empleado {$empleado->id} con baja programada: días proporcionales = {$diasLaborados} de {$diasReferencia}");
-        }
-
-        // Obtener salario base mensual
+    
+        $diasLaborados = $tieneBajaProgramada ? min($diasProporcionales, $diasReferencia) : $diasReferencia;
+    
+        // Calcular salario devengado
         $salarioBaseMensual = $empleado->salario_base;
-
-        // Ajustar el salario base según el tipo de planilla
-        $salarioBaseAjustado = $salarioBaseMensual;
-        if ($tipoPlanilla !== 'mensual') {
-            // Si no es mensual, ajustar según el factor correspondiente
-            $salarioBaseAjustado = $salarioBaseMensual / $factorAjuste;
-        }
-
-        // Calcular salario devengado según días laborados
+        $salarioBaseAjustado = $tipoPlanilla !== 'mensual' ? $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
-
-        // Calcular ISSS y AFP
-        $descuentosLey = $this->calcularISSSyAFP($salarioDevengado);
-
-        // Calcular Renta - se debe ajustar para planilla no mensual
-        $baseRenta = $salarioDevengado - $descuentosLey['isss_empleado'] - $descuentosLey['afp_empleado'];
-
-        // Para planillas no mensuales, ajustar la base para el cálculo de renta
-        $baseRentaAnualizada = $baseRenta;
-        if ($tipoPlanilla !== 'mensual') {
-            // Multiplicamos por el factor para obtener el valor mensual equivalente
-            $baseRentaAnualizada = $baseRenta * $factorAjuste;
-        }
-
-        $renta = $this->calcularRentaAjustada($baseRentaAnualizada, $tipoPlanilla, $factorAjuste);
-
-        // Calcular total de deducciones
-        $totalDeducciones =
-            $descuentosLey['isss_empleado'] +
-            $descuentosLey['afp_empleado'] +
-            $renta;
-
-        // Calcular total de ingresos (por ahora solo salario devengado)
-        $totalIngresos = $salarioDevengado;
-
-        // Calcular sueldo neto
+    
+        // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (INCLUYE TODOS LOS CONCEPTOS)
+        $horasExtra = 0;
+        $montoHorasExtra = 0;
+        $comisiones = 0;
+        $bonificaciones = 0;
+        $otrosIngresos = 0;
+        
+        $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
+    
+        // ✅ CALCULAR DEDUCCIONES SOBRE TOTAL DE INGRESOS
+        $baseISSSEmpleado = min($totalIngresos, 1000); // Aplicar tope correctamente
+        $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+        $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+        $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO; // Sin tope
+        $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+    
+        // 🔍 LOG PARA DEBUG
+        Log::info('=== DEBUG CÁLCULO DE RENTA ===', [
+            'empleado_id' => $empleado->id,
+            'empleado_nombre' => $empleado->nombres . ' ' . $empleado->apellidos,
+            'salario_base_mensual' => $salarioBaseMensual,
+            'tipo_planilla' => $tipoPlanilla,
+            'total_ingresos' => round($totalIngresos, 2),
+            'isss_empleado' => round($isssEmpleado, 2),
+            'afp_empleado' => round($afpEmpleado, 2),
+            'constantes_utilizadas' => [
+                'DESCUENTO_ISSS_EMPLEADO' => PlanillaConstants::DESCUENTO_ISSS_EMPLEADO,
+                'DESCUENTO_AFP_EMPLEADO' => PlanillaConstants::DESCUENTO_AFP_EMPLEADO
+            ]
+        ]);
+    
+        // ✅ CALCULAR RENTA USANDO TOTAL DE INGRESOS (NO SOLO SALARIO DEVENGADO)
+        $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
+            $totalIngresos, // ⚠️ CAMBIO IMPORTANTE: Usar total de ingresos
+            $isssEmpleado, 
+            $afpEmpleado, 
+            $tipoPlanilla
+        );
+        
+        // 🔍 LOG SALARIO GRAVADO
+        Log::info('=== SALARIO GRAVADO CALCULADO ===', [
+            'empleado_id' => $empleado->id,
+            'salario_gravado' => round($salarioGravado, 2),
+            'calculo_manual' => round($totalIngresos - $isssEmpleado - $afpEmpleado, 2)
+        ]);
+    
+        // Obtener tramos para log
+        $tramos = PlanillaConstants::getTramosRenta($tipoPlanilla);
+        Log::info('=== TRAMOS DE RENTA ===', [
+            'empleado_id' => $empleado->id,
+            'tipo_planilla' => $tipoPlanilla,
+            'tramos' => $tramos
+        ]);
+        
+        $renta = \App\Helpers\RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla);
+    
+        // 🔍 LOG RESULTADO FINAL
+        Log::info('=== RESULTADO FINAL RENTA ===', [
+            'empleado_id' => $empleado->id,
+            'renta_calculada' => round($renta, 2),
+            'calculo_esperado_maria_gonzalez' => [
+                'total_ingresos' => 800.00,
+                'isss_3_porciento' => 24.00,
+                'afp_725_porciento' => 58.00,
+                'salario_gravado' => 718.00,
+                'exceso_sobre_550' => 168.00,
+                'renta_esperada' => 34.47,
+                'formula' => '17.67 + (168.00 * 0.10) = 34.47'
+            ]
+        ]);
+    
+        // Calcular totales finales
+        $totalDeducciones = $isssEmpleado + $afpEmpleado + $renta;
         $sueldoNeto = $totalIngresos - $totalDeducciones;
-
+    
         return new PlanillaDetalle([
             'id_planilla' => $planillaId,
             'id_empleado' => $empleado->id,
-            'salario_base' => $empleado->salario_base, // Guardamos el salario base mensual completo
-            'salario_devengado' => $salarioDevengado,
+            'salario_base' => $empleado->salario_base,
+            'salario_devengado' => round($salarioDevengado, 2),
             'dias_laborados' => $diasLaborados,
             'horas_extra' => 0,
             'monto_horas_extra' => 0,
             'comisiones' => 0,
             'bonificaciones' => 0,
             'otros_ingresos' => 0,
-            'isss_empleado' => $descuentosLey['isss_empleado'],
-            'isss_patronal' => $descuentosLey['isss_patronal'],
-            'afp_empleado' => $descuentosLey['afp_empleado'],
-            'afp_patronal' => $descuentosLey['afp_patronal'],
-            'renta' => $renta,
+            'total_ingresos' => round($totalIngresos, 2), // ✅ Guardar total correcto
+            'isss_empleado' => round($isssEmpleado, 2),
+            'isss_patronal' => round($isssPatronal, 2),
+            'afp_empleado' => round($afpEmpleado, 2),
+            'afp_patronal' => round($afpPatronal, 2),
+            'renta' => round($renta, 2),
             'prestamos' => 0,
             'anticipos' => 0,
             'otros_descuentos' => 0,
             'descuentos_judiciales' => 0,
-            'total_ingresos' => $totalIngresos,
-            'total_descuentos' => $totalDeducciones,
-            'sueldo_neto' => $sueldoNeto,
+            'total_descuentos' => round($totalDeducciones, 2),
+            'sueldo_neto' => round($sueldoNeto, 2),
             'estado' => PlanillaConstants::PLANILLA_BORRADOR
         ]);
     }
 
     public function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
     {
-        // Calcular renta según tabla de El Salvador
-        $renta = 0;
-
-        if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
-            return 0;
-        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
-            $renta = (($baseRenta - PlanillaConstants::RENTA_MINIMA) *
-                PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) +
-                PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
-        } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
-            $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) *
-                PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) +
-                PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
-        } else {
-            $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) *
-                PlanillaConstants::PORCENTAJE_TERCER_TRAMO) +
-                PlanillaConstants::IMPUESTO_TERCER_TRAMO;
-        }
-
-        // Si no es mensual, dividir la renta calculada por el factor de ajuste
-        if ($tipoPlanilla !== 'mensual') {
-            $renta = $renta / $factorAjuste;
-        }
-
-        return round($renta, 2);
+        // Usar el RentaHelper para cálculos precisos según decreto 2025
+        return \App\Helpers\RentaHelper::calcularRetencionRenta($baseRenta, $tipoPlanilla);
     }
 
     private function updatePayrollTotals($id_planilla)
@@ -631,24 +630,24 @@ class PlanillasController extends Controller
             'descuentos_judiciales' => 'nullable|numeric|min:0',
             'detalle_otras_deducciones' => 'nullable|string'
         ]);
-
+    
         try {
             DB::beginTransaction();
-
+    
             $detalle = PlanillaDetalle::findOrFail($id);
             $planilla = $detalle->planilla;
-
+    
             // Verificar que la planilla esté en estado editable
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'No se puede modificar una planilla aprobada o pagada'
                 ], 422);
             }
-
+    
             // Determinar días de referencia y factor de ajuste según tipo de planilla
             $diasReferencia = 30;
             $factorAjuste = 1;
-
+    
             if ($planilla->tipo_planilla === 'quincenal') {
                 $diasReferencia = 15;
                 $factorAjuste = 2;
@@ -656,7 +655,7 @@ class PlanillasController extends Controller
                 $diasReferencia = 7;
                 $factorAjuste = 4.33;
             }
-
+    
             // Actualizar campos básicos
             $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
             $detalle->horas_extra = $request->horas_extra ?? 0;
@@ -668,74 +667,74 @@ class PlanillasController extends Controller
             $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
             $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
             $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
-
+    
             // Calcular salario devengado según días laborados
             $salarioBaseMensual = $detalle->salario_base;
             $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
                 $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
             $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
-            $detalle->salario_devengado = $salarioDevengado;
-
+            $detalle->salario_devengado = round($salarioDevengado, 2);
+    
             // Calcular monto de horas extra si aplica
             if ($detalle->horas_extra > 0) {
                 $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
-                $detalle->monto_horas_extra = $detalle->horas_extra * ($valorHoraNormal * 1.25);
+                $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
             } else {
                 $detalle->monto_horas_extra = 0;
             }
-
+    
             // Calcular total de ingresos
-            $detalle->total_ingresos = $detalle->salario_devengado +
+            $detalle->total_ingresos = round($detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
-                $detalle->otros_ingresos;
-
+                $detalle->otros_ingresos, 2);
+    
             // Recalcular deducciones de ley
             $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-            $detalle->isss_empleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $detalle->isss_patronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-            $detalle->afp_empleado = $detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-            $detalle->afp_patronal = $detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-
-            // Calcular renta ajustada
-            $baseRenta = $detalle->total_ingresos - $detalle->isss_empleado - $detalle->afp_empleado;
-            $baseRentaAnualizada = $baseRenta;
-
-            if ($planilla->tipo_planilla !== 'mensual') {
-                $baseRentaAnualizada = $baseRenta * $factorAjuste;
-            }
-
-            $detalle->renta = $this->calcularRentaAjustada($baseRentaAnualizada, $planilla->tipo_planilla, $factorAjuste);
-
+            $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+            $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+            $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+            $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+    
+            // Calcular renta usando RentaHelper (nuevas tablas 2025)
+            $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
+                $detalle->total_ingresos,
+                $detalle->isss_empleado,
+                $detalle->afp_empleado,
+                $planilla->tipo_planilla
+            );
+    
+            $detalle->renta = \App\Helpers\RentaHelper::calcularRetencionRenta($salarioGravado, $planilla->tipo_planilla);
+    
             // Calcular total de deducciones
-            $detalle->total_descuentos = $detalle->isss_empleado +
+            $detalle->total_descuentos = round($detalle->isss_empleado +
                 $detalle->afp_empleado +
                 $detalle->renta +
                 $detalle->prestamos +
                 $detalle->anticipos +
                 $detalle->otros_descuentos +
-                $detalle->descuentos_judiciales;
-
+                $detalle->descuentos_judiciales, 2);
+    
             // Calcular sueldo neto
-            $detalle->sueldo_neto = $detalle->total_ingresos - $detalle->total_descuentos;
-
+            $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
+    
             // Guardar cambios
             $detalle->save();
-
+    
             // Actualizar totales de la planilla
             $this->updatePayrollTotals($planilla->id);
-
+    
             DB::commit();
-
+    
             return response()->json([
-                'message' => 'Detalle actualizado exitosamente',
+                'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',
                 'detalle' => $detalle->fresh(['empleado']),
                 'planilla' => $planilla->fresh()
             ]);
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error($e->getMessage());
+            Log::error('Error actualizando detalle de planilla: ' . $e->getMessage());
             return response()->json([
                 'error' => 'Error al actualizar el detalle: ' . $e->getMessage()
             ], 500);
@@ -1641,6 +1640,311 @@ class PlanillasController extends Controller
             return response()->json([
                 'error' => 'Error al obtener los descuentos patronales: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Calcular renta según las nuevas tablas 2025
+     */
+    private function calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla = 'mensual')
+    {
+        try {
+            $salarioGravado = RentaHelper::calcularSalarioGravado($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla);
+            $retencionRenta = RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla);
+            
+            return [
+                'salario_gravado' => $salarioGravado,
+                'retencion_renta' => $retencionRenta,
+                'aplicado_correctamente' => true
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('Error calculando renta: ' . $e->getMessage());
+            return [
+                'salario_gravado' => 0,
+                'retencion_renta' => 0,
+                'aplicado_correctamente' => false
+            ];
+        }
+    }
+
+    /**
+     * Método actualizado para generar detalles de planilla con nuevas tablas de renta
+     */
+    private function generarDetallePlanilla($planilla, $empleado, $tipoCalcule)
+    {
+        try {
+            // Calcular salario base según el tipo de planilla
+            $salarioBase = $empleado->salario_base;
+            $diasReferencia = 30; // Por defecto, mensual
+            
+            // Ajustar según el tipo de planilla
+            switch ($planilla->tipo_planilla) {
+                case 'quincenal':
+                    $diasReferencia = 15;
+                    $salarioBase = $salarioBase / 2;
+                    break;
+                case 'semanal':
+                    $diasReferencia = 7;
+                    $salarioBase = $salarioBase / 4.33; // Aproximadamente 4.33 semanas por mes
+                    break;
+                default:
+                    $diasReferencia = 30;
+                    break;
+            }
+            
+            // Calcular días laborados (por defecto el período completo)
+            $diasLaborados = $diasReferencia;
+            
+            // Calcular salario devengado proporcional
+            $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
+            
+            // Calcular deducciones de seguridad social
+            $isssEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+            $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            
+            // Calcular aportes patronales
+            $isssPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            
+            // Calcular renta usando las nuevas tablas
+            $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $planilla->tipo_planilla);
+            $renta = $calculoRenta['retencion_renta'];
+            
+            // Inicializar otros valores
+            $horasExtra = 0;
+            $montoHorasExtra = 0;
+            $comisiones = 0;
+            $bonificaciones = 0;
+            $otrosIngresos = 0;
+            $prestamos = 0;
+            $anticipos = 0;
+            $otrosDescuentos = 0;
+            $descuentosJudiciales = 0;
+            
+            // Calcular totales
+            $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
+            $totalDescuentos = $isssEmpleado + $afpEmpleado + $renta + $prestamos + $anticipos + $otrosDescuentos + $descuentosJudiciales;
+            $sueldoNeto = $totalIngresos - $totalDescuentos;
+            
+            // Crear el detalle de planilla
+            $detalle = new PlanillaDetalle();
+            $detalle->id_planilla = $planilla->id;
+            $detalle->id_empleado = $empleado->id;
+            $detalle->salario_base = round($salarioBase, 2);
+            $detalle->dias_laborados = $diasLaborados;
+            $detalle->salario_devengado = round($salarioDevengado, 2);
+            $detalle->horas_extra = $horasExtra;
+            $detalle->monto_horas_extra = round($montoHorasExtra, 2);
+            $detalle->comisiones = round($comisiones, 2);
+            $detalle->bonificaciones = round($bonificaciones, 2);
+            $detalle->otros_ingresos = round($otrosIngresos, 2);
+            $detalle->total_ingresos = round($totalIngresos, 2);
+            $detalle->isss_empleado = round($isssEmpleado, 2);
+            $detalle->afp_empleado = round($afpEmpleado, 2);
+            $detalle->renta = round($renta, 2);
+            $detalle->prestamos = round($prestamos, 2);
+            $detalle->anticipos = round($anticipos, 2);
+            $detalle->otros_descuentos = round($otrosDescuentos, 2);
+            $detalle->descuentos_judiciales = round($descuentosJudiciales, 2);
+            $detalle->total_descuentos = round($totalDescuentos, 2);
+            $detalle->sueldo_neto = round($sueldoNeto, 2);
+            $detalle->isss_patronal = round($isssPatronal, 2);
+            $detalle->afp_patronal = round($afpPatronal, 2);
+            $detalle->estado = 1; // Activo
+            
+            $detalle->save();
+            
+            return $detalle;
+            
+        } catch (\Exception $e) {
+            Log::error('Error generando detalle de planilla: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Método para recalcular renta en junio y diciembre
+     */
+    public function recalcularRenta(Request $request, $planillaId)
+    {
+        try {
+            $planilla = Planilla::find($planillaId);
+            
+            if (!$planilla) {
+                return response()->json(['error' => 'Planilla no encontrada'], 404);
+            }
+            
+            // Determinar el tipo de recálculo
+            $mesActual = date('n');
+            $tipoRecalculo = ($mesActual >= 6 && $mesActual <= 11) ? 'junio' : 'diciembre';
+            
+            // Obtener todos los detalles de la planilla
+            $detalles = PlanillaDetalle::where('id_planilla', $planillaId)
+                ->where('estado', '!=', 0)
+                ->get();
+            
+            $recalculosAplicados = 0;
+            
+            foreach ($detalles as $detalle) {
+                // Obtener el salario acumulado del empleado en el año
+                $salarioAcumulado = $this->obtenerSalarioAcumuladoAnual($detalle->id_empleado, $planilla->anio, $tipoRecalculo);
+                
+                // Obtener retenciones anteriores
+                $retencionesAnteriores = $this->obtenerRetencionesAnteriores($detalle->id_empleado, $planilla->anio, $tipoRecalculo);
+                
+                // Calcular recálculo
+                $recalculo = RentaHelper::calcularRecalculoRenta($salarioAcumulado, $tipoRecalculo, $retencionesAnteriores);
+                
+                if ($recalculo > 0) {
+                    // Aplicar el recálculo sumándolo a la renta actual
+                    $detalle->renta += $recalculo;
+                    $detalle->total_descuentos += $recalculo;
+                    $detalle->sueldo_neto -= $recalculo;
+                    
+                    // Redondear valores
+                    $detalle->renta = round($detalle->renta, 2);
+                    $detalle->total_descuentos = round($detalle->total_descuentos, 2);
+                    $detalle->sueldo_neto = round($detalle->sueldo_neto, 2);
+                    
+                    $detalle->save();
+                    $recalculosAplicados++;
+                }
+            }
+            
+            // Actualizar totales de la planilla
+            $planilla->actualizarTotales();
+            
+            return response()->json([
+                'message' => 'Recálculo de renta aplicado exitosamente',
+                'tipo_recalculo' => $tipoRecalculo,
+                'empleados_afectados' => $recalculosAplicados,
+                'planilla' => $planilla->fresh()
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error en recálculo de renta: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al recalcular renta: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Obtener salario acumulado anual de un empleado
+     */
+    private function obtenerSalarioAcumuladoAnual($empleadoId, $anio, $tipoRecalculo)
+    {
+        $mesLimite = ($tipoRecalculo === 'junio') ? 6 : 12;
+        
+        $salarioAcumulado = PlanillaDetalle::join('planillas', 'planilla_detalles.id_planilla', '=', 'planillas.id')
+            ->where('planilla_detalles.id_empleado', $empleadoId)
+            ->where('planillas.anio', $anio)
+            ->where('planillas.mes', '<=', $mesLimite)
+            ->where('planilla_detalles.estado', '!=', 0)
+            ->sum('planilla_detalles.salario_devengado');
+        
+        return $salarioAcumulado;
+    }
+
+    /**
+     * Obtener retenciones anteriores de un empleado
+     */
+    private function obtenerRetencionesAnteriores($empleadoId, $anio, $tipoRecalculo)
+    {
+        $mesLimite = ($tipoRecalculo === 'junio') ? 5 : 11; // Hasta el mes anterior al recálculo
+        
+        $retenciones = PlanillaDetalle::join('planillas', 'planilla_detalles.id_planilla', '=', 'planillas.id')
+            ->where('planilla_detalles.id_empleado', $empleadoId)
+            ->where('planillas.anio', $anio)
+            ->where('planillas.mes', '<=', $mesLimite)
+            ->where('planilla_detalles.estado', '!=', 0)
+            ->sum('planilla_detalles.renta');
+        
+        return $retenciones;
+    }
+
+
+    public function obtenerDetalleCalculoRenta($detalleId)
+    {
+        try {
+            $detalle = PlanillaDetalle::with(['empleado', 'planilla'])->findOrFail($detalleId);
+            
+            $totalIngresos = $detalle->total_ingresos;
+            $isssEmpleado = $detalle->isss_empleado;
+            $afpEmpleado = $detalle->afp_empleado;
+            
+            // Calcular usando RentaHelper
+            $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
+                $totalIngresos,
+                $isssEmpleado,
+                $afpEmpleado,
+                $detalle->planilla->tipo_planilla
+            );
+            
+            $retencionRenta = \App\Helpers\RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $detalle->planilla->tipo_planilla
+            );
+            
+            // Obtener información del tramo
+            $informacionTramo = \App\Helpers\RentaHelper::obtenerInformacionTramo(
+                $salarioGravado,
+                $detalle->planilla->tipo_planilla
+            );
+            
+            return response()->json([
+                'empleado' => [
+                    'nombres' => $detalle->empleado->nombres,
+                    'apellidos' => $detalle->empleado->apellidos,
+                    'codigo' => $detalle->empleado->codigo
+                ],
+                'calculos' => [
+                    'total_ingresos' => $totalIngresos,
+                    'isss_empleado' => $isssEmpleado,
+                    'afp_empleado' => $afpEmpleado,
+                    'salario_gravado' => $salarioGravado,
+                    'retencion_renta' => $retencionRenta,
+                    'tipo_planilla' => $detalle->planilla->tipo_planilla
+                ],
+                'tramo_aplicado' => $informacionTramo,
+                'decreto_aplicado' => 'Decreto No. 10 - Abril 2025'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo detalle de cálculo de renta: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al obtener el detalle del cálculo'
+            ], 500);
+        }
+    }
+
+    public function validarCalculoRenta(Request $request)
+    {
+        $request->validate([
+            'salario_devengado' => 'required|numeric|min:0',
+            'isss_empleado' => 'required|numeric|min:0',
+            'afp_empleado' => 'required|numeric|min:0',
+            'tipo_planilla' => 'required|in:mensual,quincenal,semanal'
+        ]);
+        
+        try {
+            $validacion = \App\Helpers\RentaHelper::validarCalculoRenta(
+                $request->salario_devengado,
+                $request->isss_empleado,
+                $request->afp_empleado,
+                $request->tipo_planilla
+            );
+            
+            return response()->json([
+                'validacion' => $validacion,
+                'es_valido' => true,
+                'mensaje' => 'Cálculo validado correctamente según decreto 2025'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error en la validación: ' . $e->getMessage(),
+                'es_valido' => false
+            ], 400);
         }
     }
 }

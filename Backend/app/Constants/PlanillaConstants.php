@@ -65,26 +65,24 @@ class PlanillaConstants
     const DESCUENTO_ISSS_EMPLEADO = 0.03;
     const DESCUENTO_ISSS_PATRONO = 0.075;
     const DESCUENTO_AFP_EMPLEADO = 0.0725;
-    const DESCUENTO_AFP_PATRONO = 0.0773;
+    const DESCUENTO_AFP_PATRONO = 0.0875;
     const PORCENTAJE_HORAS_EXTRA = 1.25;
     const HORAS_DIA = 8;
     const DIAS_LABORADOS = 30;
 
 
-    const RENTA_MINIMA = 472.00;
+    const RENTA_MINIMA = 550.00;
     const RENTA_MAXIMA_PRIMER_TRAMO = 895.24;
     const RENTA_MAXIMA_SEGUNDO_TRAMO = 2038.10;
     const PORCENTAJE_PRIMER_TRAMO = 0.1;
     const PORCENTAJE_SEGUNDO_TRAMO = 0.2;
     const PORCENTAJE_TERCER_TRAMO = 0.3;
-    const IMPUESTO_PRIMER_TRAMO = 17.67;
-    const IMPUESTO_SEGUNDO_TRAMO = 60.00;
-    const IMPUESTO_TERCER_TRAMO = 288.57;
+    const IMPUESTO_PRIMER_TRAMO = 0.00;    // Tramo I - Sin retención
+    const IMPUESTO_SEGUNDO_TRAMO = 17.67;  // Tramo II
+    const IMPUESTO_TERCER_TRAMO = 60.00;   // Tramo III
+    const IMPUESTO_CUARTO_TRAMO = 288.57;
 
-    // NUEVAS CONSTANTES DE RENTA 2025 - DECRETO No. 10
-    // Tablas de retención vigentes a partir de abril 2025
 
-    // === REMUNERACIONES MENSUALES ===
     const RENTA_MENSUAL_TRAMO_1_DESDE = 0.01;
     const RENTA_MENSUAL_TRAMO_1_HASTA = 550.00;
     const RENTA_MENSUAL_TRAMO_1_PORCENTAJE = 0.00; // Sin retención
@@ -159,8 +157,6 @@ class PlanillaConstants
     const RENTA_SEMANAL_TRAMO_4_SOBRE_EXCESO = 509.52;
     const RENTA_SEMANAL_TRAMO_4_CUOTA_FIJA = 72.14;
 
-    // === TABLAS DE RECÁLCULO ===
-    // Para mes de junio (Primer recálculo)
     const RENTA_RECALCULO_JUNIO_TRAMO_1_DESDE = 0.01;
     const RENTA_RECALCULO_JUNIO_TRAMO_1_HASTA = 3300.00;
     const RENTA_RECALCULO_JUNIO_TRAMO_1_PORCENTAJE = 0.00; // Sin retención
@@ -270,5 +266,109 @@ class PlanillaConstants
             self::ESTADO_EMPLEADO_INCAPACIDAD => 'Incapacitado',
             self::ESTADO_EMPLEADO_SUSPENDIDO => 'Suspendido'
         ];
+    }
+
+    /**
+     * Obtiene los tramos de renta según el tipo de planilla
+     */
+    public static function getTramosRenta($tipoPlanilla = 'mensual')
+    {
+        switch ($tipoPlanilla) {
+            case 'quincenal':
+                return [
+                    [
+                        'desde' => self::RENTA_QUINCENAL_TRAMO_1_DESDE,
+                        'hasta' => self::RENTA_QUINCENAL_TRAMO_1_HASTA,
+                        'porcentaje' => self::RENTA_QUINCENAL_TRAMO_1_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_QUINCENAL_TRAMO_1_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_QUINCENAL_TRAMO_1_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_QUINCENAL_TRAMO_2_DESDE,
+                        'hasta' => self::RENTA_QUINCENAL_TRAMO_2_HASTA,
+                        'porcentaje' => self::RENTA_QUINCENAL_TRAMO_2_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_QUINCENAL_TRAMO_2_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_QUINCENAL_TRAMO_2_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_QUINCENAL_TRAMO_3_DESDE,
+                        'hasta' => self::RENTA_QUINCENAL_TRAMO_3_HASTA,
+                        'porcentaje' => self::RENTA_QUINCENAL_TRAMO_3_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_QUINCENAL_TRAMO_3_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_QUINCENAL_TRAMO_3_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_QUINCENAL_TRAMO_4_DESDE,
+                        'hasta' => self::RENTA_QUINCENAL_TRAMO_4_HASTA,
+                        'porcentaje' => self::RENTA_QUINCENAL_TRAMO_4_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_QUINCENAL_TRAMO_4_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_QUINCENAL_TRAMO_4_CUOTA_FIJA
+                    ]
+                ];
+
+            case 'semanal':
+                return [
+                    [
+                        'desde' => self::RENTA_SEMANAL_TRAMO_1_DESDE,
+                        'hasta' => self::RENTA_SEMANAL_TRAMO_1_HASTA,
+                        'porcentaje' => self::RENTA_SEMANAL_TRAMO_1_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_SEMANAL_TRAMO_1_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_SEMANAL_TRAMO_1_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_SEMANAL_TRAMO_2_DESDE,
+                        'hasta' => self::RENTA_SEMANAL_TRAMO_2_HASTA,
+                        'porcentaje' => self::RENTA_SEMANAL_TRAMO_2_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_SEMANAL_TRAMO_2_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_SEMANAL_TRAMO_2_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_SEMANAL_TRAMO_3_DESDE,
+                        'hasta' => self::RENTA_SEMANAL_TRAMO_3_HASTA,
+                        'porcentaje' => self::RENTA_SEMANAL_TRAMO_3_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_SEMANAL_TRAMO_3_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_SEMANAL_TRAMO_3_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_SEMANAL_TRAMO_4_DESDE,
+                        'hasta' => self::RENTA_SEMANAL_TRAMO_4_HASTA,
+                        'porcentaje' => self::RENTA_SEMANAL_TRAMO_4_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_SEMANAL_TRAMO_4_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_SEMANAL_TRAMO_4_CUOTA_FIJA
+                    ]
+                ];
+
+            default: // mensual
+                return [
+                    [
+                        'desde' => self::RENTA_MENSUAL_TRAMO_1_DESDE,
+                        'hasta' => self::RENTA_MENSUAL_TRAMO_1_HASTA,
+                        'porcentaje' => self::RENTA_MENSUAL_TRAMO_1_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_MENSUAL_TRAMO_1_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_MENSUAL_TRAMO_1_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_MENSUAL_TRAMO_2_DESDE,
+                        'hasta' => self::RENTA_MENSUAL_TRAMO_2_HASTA,
+                        'porcentaje' => self::RENTA_MENSUAL_TRAMO_2_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_MENSUAL_TRAMO_2_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_MENSUAL_TRAMO_2_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_MENSUAL_TRAMO_3_DESDE,
+                        'hasta' => self::RENTA_MENSUAL_TRAMO_3_HASTA,
+                        'porcentaje' => self::RENTA_MENSUAL_TRAMO_3_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_MENSUAL_TRAMO_3_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_MENSUAL_TRAMO_3_CUOTA_FIJA
+                    ],
+                    [
+                        'desde' => self::RENTA_MENSUAL_TRAMO_4_DESDE,
+                        'hasta' => self::RENTA_MENSUAL_TRAMO_4_HASTA,
+                        'porcentaje' => self::RENTA_MENSUAL_TRAMO_4_PORCENTAJE,
+                        'sobre_exceso' => self::RENTA_MENSUAL_TRAMO_4_SOBRE_EXCESO,
+                        'cuota_fija' => self::RENTA_MENSUAL_TRAMO_4_CUOTA_FIJA
+                    ]
+                ];
+        }
     }
 }
