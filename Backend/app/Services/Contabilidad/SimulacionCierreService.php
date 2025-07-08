@@ -85,6 +85,7 @@ class SimulacionCierreService
             'periodo_anterior_cerrado' => false,
             'partidas_pendientes' => 0,
             'partidas_aplicadas' => 0,
+            'total_partidas' => 0,
             'balance_cuadra' => false,
             'diferencia_balance' => 0,
             'cuentas_sin_movimiento' => 0,
@@ -115,8 +116,13 @@ class SimulacionCierreService
             ->where('estado', 'Aplicada')
             ->count();
 
+        $totalPartidas = Partida::where('id_empresa', $empresa_id)
+            ->whereBetween('fecha', [$startDate, $endDate])
+            ->count();
+
         $validaciones['partidas_pendientes'] = $partidasPendientes;
         $validaciones['partidas_aplicadas'] = $partidasAplicadas;
+        $validaciones['total_partidas'] = $totalPartidas;
 
         // Simular balance
         $saldosTemp = $this->simularCalculoSaldos($year, $month, $empresa_id);

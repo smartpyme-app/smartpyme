@@ -740,7 +740,7 @@
        <div class="card-body" *ngIf="resultadoSimulacion.simulacion_exitosa">
          <!-- Métricas Principales -->
          <div class="row text-center mb-4">
-           <div class="col-md-3">
+           <div class="col-lg-2 col-md-4 col-sm-6">
              <div class="p-3 border rounded">
                <h4 class="mb-1" [ngClass]="{
                  'text-success': resultadoSimulacion.metricas?.puntuacion_calidad >= 80,
@@ -752,13 +752,13 @@
                <small class="text-muted">Puntuación de Calidad</small>
              </div>
            </div>
-           <div class="col-md-3">
+           <div class="col-lg-2 col-md-4 col-sm-6">
              <div class="p-3 border rounded">
                <h4 class="mb-1 text-primary">{{resultadoSimulacion.metricas?.tiempo_estimado_cierre || 0}}s</h4>
                <small class="text-muted">Tiempo Estimado</small>
              </div>
            </div>
-           <div class="col-md-3">
+           <div class="col-lg-2 col-md-4 col-sm-6">
              <div class="p-3 border rounded">
                <h4 class="mb-1" [ngClass]="{
                  'text-success': resultadoSimulacion.metricas?.nivel_riesgo === 'bajo',
@@ -770,10 +770,27 @@
                <small class="text-muted">Nivel de Riesgo</small>
              </div>
            </div>
-           <div class="col-md-3">
+           <div class="col-lg-2 col-md-4 col-sm-6">
              <div class="p-3 border rounded">
                <h4 class="mb-1 text-info">{{resultadoSimulacion.metricas?.cuentas_activas || 0}}</h4>
                <small class="text-muted">Cuentas Activas</small>
+             </div>
+           </div>
+           <div class="col-lg-2 col-md-4 col-sm-6">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1 text-secondary">{{resultadoSimulacion.validaciones?.total_partidas || 0}}</h4>
+               <small class="text-muted">Total Partidas</small>
+             </div>
+           </div>
+           <div class="col-lg-2 col-md-4 col-sm-6">
+             <div class="p-3 border rounded">
+               <h4 class="mb-1" [ngClass]="{
+                 'text-success': resultadoSimulacion.validaciones?.partidas_pendientes === 0,
+                 'text-warning': resultadoSimulacion.validaciones?.partidas_pendientes > 0
+               }">
+                 {{resultadoSimulacion.validaciones?.partidas_pendientes || 0}}
+               </h4>
+               <small class="text-muted">Partidas Pendientes</small>
              </div>
            </div>
          </div>

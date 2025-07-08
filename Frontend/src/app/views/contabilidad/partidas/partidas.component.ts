@@ -604,10 +604,19 @@ export class PartidasComponent implements OnInit {
 
   public descargarBalanceComprobacion() {
     if (this.balanceComprobacion) {
-      window.open(
-        `${this.apiService.baseUrl}/api/reportes/balance/comprobacion/${this.selectedMonth}/${this.selectedYear}/all/pdf?token=${this.apiService.auth_token()}`,
-        '_blank'
-      );
+      this.apiService.export(`reportes/balance/comprobacion/${this.selectedMonth}/${this.selectedYear}/all/excel`, {}).subscribe((data: Blob) => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `balance_comprobacion_${this.selectedMonth}_${this.selectedYear}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, (error) => {
+        this.alertService.error(error);
+      });
     }
   }
 
