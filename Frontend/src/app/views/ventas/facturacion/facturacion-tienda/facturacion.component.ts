@@ -354,6 +354,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.correlativo = null;
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';
+            this.venta.impuestos = this.impuestos;
             this.venta.observaciones = '';
             this.venta.cotizacion = 0;
             this.venta.num_cotizacion = this.venta.id;
@@ -361,6 +362,7 @@ export class FacturacionComponent implements OnInit {
             this.venta.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
+            this.sumTotal();
 
             // Para proyectos
             if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
