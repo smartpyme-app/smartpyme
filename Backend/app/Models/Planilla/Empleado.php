@@ -110,4 +110,22 @@ class Empleado extends Model
     {
         return Carbon::parse($this->fecha_ingreso)->diffInYears(Carbon::now());
     }
+
+    public function getTipoContratoNombreAttribute()
+    {
+        switch ($this->tipo_contrato) {
+            case 1: return 'Permanente';
+            case 2: return 'Temporal';
+            case 3: return 'Por obra';
+            case 4: return 'Servicios Profesionales';
+            default: return 'Desconocido';
+        }
+    }
+
+    public function esServiciosProfesionales()
+    {
+        return $this->tipo_contrato == 4;
+    }
+
+
 }

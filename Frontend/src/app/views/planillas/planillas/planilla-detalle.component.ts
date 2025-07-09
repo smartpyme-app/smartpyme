@@ -35,6 +35,7 @@ export class PlanillaDetalleComponent implements OnInit {
   public vistaActual: string = 'empleados';
   public descuentosPatronales: any = null;
   public mostrarTodos: boolean = false;
+  public downloading: boolean = false;
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
@@ -730,9 +731,6 @@ export class PlanillaDetalleComponent implements OnInit {
     return null;
   }
 
-  /**
-   * Método actualizado para calcular totales con las nuevas tablas
-   */
   public calcularTotales() {
     if (!this.detalleSeleccionado) {
       return;
@@ -749,7 +747,7 @@ export class PlanillaDetalleComponent implements OnInit {
     // Calcular salario devengado
     const salarioDevengado = (salarioBase / 30) * diasLaborados;
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
-
+  
     let montoHorasExtra = 0;
     if (horasExtra > 0) {
       const valorHoraNormal = salarioBase / 30 / 8; // Valor hora normal
@@ -761,22 +759,46 @@ export class PlanillaDetalleComponent implements OnInit {
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
     this.detalleSeleccionado.total_ingresos = Number(totalIngresos.toFixed(2));
   
-    const baseISSSEmpleado = Math.min(totalIngresos, 1000.00); // Tope de $1,000
-    const isssEmpleado = baseISSSEmpleado * 0.03; // 3%
+    // ✅ NUEVO: VERIFICAR TIPO DE CONTRATO
+    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1; // Default: Permanente
+    const esServiciosProfesionales = tipoContrato === 4; // TIPO_CONTRATO_SERVICIOS_PROFESIONALES
+  
+    // ✅ NUEVO: CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+    let isssEmpleado = 0;
+    let afpEmpleado = 0;
+    let isssPatronal = 0;
+    let afpPatronal = 0;
+  
+    if (esServiciosProfesionales) {
+      // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+      isssEmpleado = 0;
+      afpEmpleado = 0;
+      isssPatronal = 0;
+      afpPatronal = 0;
+    } else {
+      // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+      const baseISSSEmpleado = Math.min(totalIngresos, 1000.00); // Tope de $1,000
+      isssEmpleado = baseISSSEmpleado * 0.03; // 3%
+      afpEmpleado = totalIngresos * 0.0725; // 7.25%
+      isssPatronal = baseISSSEmpleado * 0.075; // 7.5% sobre base con tope
+      afpPatronal = totalIngresos * 0.0875; // ✅ CORREGIDO: 8.75% (antes era 0.0773)
+    }
+  
     this.detalleSeleccionado.isss_empleado = Number(isssEmpleado.toFixed(2));
-  
-    // AFP sobre total de ingresos (sin tope)
-    const afpEmpleado = totalIngresos * 0.0725; // 7.25%
     this.detalleSeleccionado.afp_empleado = Number(afpEmpleado.toFixed(2));
-  
-    // Calcular aportes patronales
-    const isssPatronal = baseISSSEmpleado * 0.075; // 7.5% sobre base con tope
-    const afpPatronal = totalIngresos * 0.0773; // 7.73%
     this.detalleSeleccionado.isss_patronal = Number(isssPatronal.toFixed(2));
     this.detalleSeleccionado.afp_patronal = Number(afpPatronal.toFixed(2));
   
-    // ✅ CORRECCIÓN 2: Usar constantes del backend para calcular renta
-    const renta = this.calcularRentaConConstantesBackend(totalIngresos, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
+    // ✅ NUEVO: CALCULAR RENTA SEGÚN TIPO DE CONTRATO
+    let renta = 0;
+    if (esServiciosProfesionales) {
+      // SERVICIOS PROFESIONALES: 10% fijo sobre total de ingresos
+      renta = totalIngresos * 0.10;
+    } else {
+      // EMPLEADOS ASALARIADOS: Usar tablas de renta normales
+      renta = this.calcularRentaConConstantesBackend(totalIngresos, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
+    }
+  
     this.detalleSeleccionado.renta = Number(renta.toFixed(2));
   
     // Calcular otros descuentos
@@ -792,11 +814,27 @@ export class PlanillaDetalleComponent implements OnInit {
     // Calcular sueldo neto
     const sueldoNeto = totalIngresos - totalDescuentos;
     this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
-
-    // Actualizar renta
-    this.actualizarRenta();
+  
+    // ✅ CONDICIONAL: Solo actualizar renta si es empleado asalariado
+    if (!esServiciosProfesionales) {
+      this.actualizarRenta();
+    }
   }
 
+  public getTipoContratoNombre(tipoContrato: number): string {
+    switch (tipoContrato) {
+      case 1: return 'Permanente';
+      case 2: return 'Temporal';
+      case 3: return 'Por obra';
+      case 4: return 'Servicios Profesionales';
+      default: return 'Desconocido';
+    }
+  }
+
+  public esServiciosProfesionales(): boolean {
+    return this.detalleSeleccionado?.empleado?.tipo_contrato === 4;
+  }
+  
   // Agregar después de calcularTotales()
   private actualizarRenta() {
     if (!this.detalleSeleccionado) return;
@@ -1270,6 +1308,43 @@ export class PlanillaDetalleComponent implements OnInit {
     
     return Number(valorHoraExtra.toFixed(2));
   }
+
+  
+  public exportarVistaActual() {
+    this.downloading = true;
+    
+    const filtrosExport = {
+        id_planilla: this.planilla.id,
+        vista: this.vistaActual, // 'empleados' o 'descuentos_patronales'
+        ...this.filtros // Incluir todos los filtros actuales
+    };
+
+    this.apiService.export('planillas/detalles/exportar', filtrosExport).subscribe(
+        (data: Blob) => {
+            const blob = new Blob([data], { 
+                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Generar nombre del archivo basado en la vista actual
+            const tipoExport = this.vistaActual === 'descuentos_patronales' ? 'patronales' : 'empleados';
+            a.download = `planilla_${this.planilla.codigo}_${tipoExport}.xlsx`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloading = false;
+        },
+        (error) => {
+            this.alertService.error(error);
+            this.downloading = false;
+        }
+    );
+}
+
 
 
 }

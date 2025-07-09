@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Planilla;
 
 use App\Constants\PlanillaConstants;
+use App\Exports\Planillas\DescuentosPatronalesExport;
 use App\Exports\PlanillaExport;
 use App\Exports\PlanillaExportTemplate;
+use App\Exports\Planillas\PlanillaDetallesExport;
 use App\Http\Controllers\Controller;
 use App\Models\Planilla\Planilla;
 use App\Models\Planilla\PlanillaDetalle;
@@ -393,7 +395,6 @@ class PlanillasController extends Controller
 
     private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
     {
-        // Determinar días de referencia según tipo de planilla
         $diasReferencia = 30;
         $factorAjuste = 1;
     
@@ -443,70 +444,36 @@ class PlanillasController extends Controller
         $otrosIngresos = 0;
         
         $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
-    
-        // ✅ CALCULAR DEDUCCIONES SOBRE TOTAL DE INGRESOS
-        $baseISSSEmpleado = min($totalIngresos, 1000); // Aplicar tope correctamente
+
+        $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+
+        if ($esServiciosProfesionales) {
+            // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            $baseISSSEmpleado = 0;
+            $isssEmpleado = 0;
+            $isssPatronal = 0;
+            $afpEmpleado = 0;
+            $afpPatronal = 0;
+        } else {
+            // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+        $baseISSSEmpleado = min($totalIngresos, 1000); 
         $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-        $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO; // Sin tope
+        $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+        }
     
-        // 🔍 LOG PARA DEBUG
-        Log::info('=== DEBUG CÁLCULO DE RENTA ===', [
-            'empleado_id' => $empleado->id,
-            'empleado_nombre' => $empleado->nombres . ' ' . $empleado->apellidos,
-            'salario_base_mensual' => $salarioBaseMensual,
-            'tipo_planilla' => $tipoPlanilla,
-            'total_ingresos' => round($totalIngresos, 2),
-            'isss_empleado' => round($isssEmpleado, 2),
-            'afp_empleado' => round($afpEmpleado, 2),
-            'constantes_utilizadas' => [
-                'DESCUENTO_ISSS_EMPLEADO' => PlanillaConstants::DESCUENTO_ISSS_EMPLEADO,
-                'DESCUENTO_AFP_EMPLEADO' => PlanillaConstants::DESCUENTO_AFP_EMPLEADO
-            ]
-        ]);
-    
-        // ✅ CALCULAR RENTA USANDO TOTAL DE INGRESOS (NO SOLO SALARIO DEVENGADO)
-        $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
-            $totalIngresos, // ⚠️ CAMBIO IMPORTANTE: Usar total de ingresos
+        // CALCULAR RENTA USANDO TOTAL DE INGRESOS (NO SOLO SALARIO DEVENGADO)
+        $salarioGravado = RentaHelper::calcularSalarioGravado(
+            $totalIngresos,
             $isssEmpleado, 
             $afpEmpleado, 
-            $tipoPlanilla
+            $tipoPlanilla,
+            $tipoContrato
         );
-        
-        // 🔍 LOG SALARIO GRAVADO
-        Log::info('=== SALARIO GRAVADO CALCULADO ===', [
-            'empleado_id' => $empleado->id,
-            'salario_gravado' => round($salarioGravado, 2),
-            'calculo_manual' => round($totalIngresos - $isssEmpleado - $afpEmpleado, 2)
-        ]);
     
-        // Obtener tramos para log
-        $tramos = PlanillaConstants::getTramosRenta($tipoPlanilla);
-        Log::info('=== TRAMOS DE RENTA ===', [
-            'empleado_id' => $empleado->id,
-            'tipo_planilla' => $tipoPlanilla,
-            'tramos' => $tramos
-        ]);
-        
-        $renta = \App\Helpers\RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla);
-    
-        // 🔍 LOG RESULTADO FINAL
-        Log::info('=== RESULTADO FINAL RENTA ===', [
-            'empleado_id' => $empleado->id,
-            'renta_calculada' => round($renta, 2),
-            'calculo_esperado_maria_gonzalez' => [
-                'total_ingresos' => 800.00,
-                'isss_3_porciento' => 24.00,
-                'afp_725_porciento' => 58.00,
-                'salario_gravado' => 718.00,
-                'exceso_sobre_550' => 168.00,
-                'renta_esperada' => 34.47,
-                'formula' => '17.67 + (168.00 * 0.10) = 34.47'
-            ]
-        ]);
-    
-        // Calcular totales finales
+        $renta = RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla, $tipoContrato);
         $totalDeducciones = $isssEmpleado + $afpEmpleado + $renta;
         $sueldoNeto = $totalIngresos - $totalDeducciones;
     
@@ -521,7 +488,7 @@ class PlanillasController extends Controller
             'comisiones' => 0,
             'bonificaciones' => 0,
             'otros_ingresos' => 0,
-            'total_ingresos' => round($totalIngresos, 2), // ✅ Guardar total correcto
+            'total_ingresos' => round($totalIngresos, 2),
             'isss_empleado' => round($isssEmpleado, 2),
             'isss_patronal' => round($isssPatronal, 2),
             'afp_empleado' => round($afpEmpleado, 2),
@@ -689,23 +656,41 @@ class PlanillasController extends Controller
                 $detalle->comisiones +
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos, 2);
-    
-            // Recalcular deducciones de ley
-            $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-            $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-            $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-            $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-            $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
-    
-            // Calcular renta usando RentaHelper (nuevas tablas 2025)
-            $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
+
+            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
+            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+            if ($esServiciosProfesionales) {
+                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+                $detalle->isss_empleado = 0;
+                $detalle->isss_patronal = 0;
+                $detalle->afp_empleado = 0;
+                $detalle->afp_patronal = 0;
+            } else {
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+            }
+
+            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
                 $detalle->total_ingresos,
                 $detalle->isss_empleado,
                 $detalle->afp_empleado,
-                $planilla->tipo_planilla
+                $planilla->tipo_planilla,
+                $tipoContrato
             );
-    
-            $detalle->renta = \App\Helpers\RentaHelper::calcularRetencionRenta($salarioGravado, $planilla->tipo_planilla);
+
+            $detalle->renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado, 
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
     
             // Calcular total de deducciones
             $detalle->total_descuentos = round($detalle->isss_empleado +
@@ -1945,6 +1930,104 @@ class PlanillasController extends Controller
                 'error' => 'Error en la validación: ' . $e->getMessage(),
                 'es_valido' => false
             ], 400);
+        }
+    }
+
+    public function exportarDetallesPlanilla(Request $request)
+    {
+        try {
+            $idPlanilla = $request->input('id_planilla');
+            $vista = $request->input('vista', 'empleados');
+            
+            if (!$idPlanilla) {
+                return response()->json(['error' => 'ID de planilla requerido'], 400);
+            }
+    
+            $planilla = Planilla::with(['empresa', 'sucursal'])->findOrFail($idPlanilla);
+            
+            // Verificar permisos
+            if ($planilla->id_empresa !== auth()->user()->id_empresa ||
+                $planilla->id_sucursal !== auth()->user()->id_sucursal) {
+                return response()->json(['error' => 'No tiene permisos para exportar esta planilla'], 403);
+            }
+    
+            // Construir query base
+            $query = PlanillaDetalle::where('id_planilla', $planilla->id)
+                ->join('empleados', 'planilla_detalles.id_empleado', '=', 'empleados.id')
+                ->leftJoin('cargos_de_empresa', 'empleados.id_cargo', '=', 'cargos_de_empresa.id')
+                ->leftJoin('departamentos_empresa', 'empleados.id_departamento', '=', 'departamentos_empresa.id')
+                ->where('planilla_detalles.estado', '!=', 0); // Solo empleados activos
+    
+            // Aplicar filtros del frontend
+            if ($request->filled('buscador')) {
+                $buscador = $request->input('buscador');
+                $query->where(function($q) use ($buscador) {
+                    $q->where('empleados.nombres', 'LIKE', "%{$buscador}%")
+                      ->orWhere('empleados.apellidos', 'LIKE', "%{$buscador}%")
+                      ->orWhere('empleados.codigo', 'LIKE', "%{$buscador}%")
+                      ->orWhere('empleados.dui', 'LIKE', "%{$buscador}%");
+                });
+            }
+    
+            if ($request->filled('id_departamento')) {
+                $query->where('empleados.id_departamento', $request->input('id_departamento'));
+            }
+    
+            if ($request->filled('id_cargo')) {
+                $query->where('empleados.id_cargo', $request->input('id_cargo'));
+            }
+    
+            if ($request->filled('estado')) {
+                $query->where('planilla_detalles.estado', $request->input('estado'));
+            }
+    
+            // Seleccionar campos según la vista
+            if ($vista === 'descuentos_patronales') {
+                $query->select([
+                    'planilla_detalles.id',
+                    'planilla_detalles.salario_base',
+                    'planilla_detalles.salario_devengado', 
+                    'planilla_detalles.isss_patronal',
+                    'planilla_detalles.afp_patronal',
+                    'empleados.codigo as empleado_codigo',
+                    'empleados.nombres',
+                    'empleados.apellidos',
+                    'empleados.dui',
+                    'empleados.nit',
+                    'empleados.isss as empleado_isss',
+                    'empleados.afp as empleado_afp',
+                    'cargos_de_empresa.nombre as cargo_nombre',
+                    'departamentos_empresa.nombre as departamento_nombre'
+                ]);
+                
+                $exportClass = new DescuentosPatronalesExport($planilla, $query->orderBy('empleados.nombres')->get());
+                $filename = 'descuentos_patronales_' . $planilla->codigo . '.xlsx';
+                
+            } else {
+                $query->select([
+                    'planilla_detalles.*',
+                    'empleados.codigo as empleado_codigo',
+                    'empleados.nombres',
+                    'empleados.apellidos',
+                    'empleados.dui',
+                    'empleados.nit',
+                    'empleados.isss as empleado_isss',
+                    'empleados.afp as empleado_afp',
+                    'cargos_de_empresa.nombre as cargo_nombre',
+                    'departamentos_empresa.nombre as departamento_nombre'
+                ]);
+                
+                $exportClass = new PlanillaDetallesExport($planilla, $query->orderBy('empleados.nombres')->get());
+                $filename = 'planilla_empleados_' . $planilla->codigo . '.xlsx';
+            }
+    
+            return Excel::download($exportClass, $filename);
+    
+        } catch (\Exception $e) {
+            Log::error('Error exportando detalles de planilla: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al exportar: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

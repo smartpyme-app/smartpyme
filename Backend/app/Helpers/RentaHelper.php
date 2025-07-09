@@ -14,8 +14,15 @@ class RentaHelper
      * @param string $tipoPlanilla Tipo de planilla (mensual, quincenal, semanal)
      * @return float Monto de retención calculado
      */
-    public static function calcularRetencionRenta($salarioGravado, $tipoPlanilla = 'mensual')
+    public static function calcularRetencionRenta($salarioGravado, $tipoPlanilla = 'mensual', $tipoContrato = null)
     {
+
+        // ✅ SI ES SERVICIOS PROFESIONALES, aplicar 10% fijo
+        if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
+            return round($salarioGravado * 0.10, 2); // 10% fijo sobre salario total
+        }
+        
+
         // Obtener los tramos según el tipo de planilla
         $tramos = PlanillaConstants::getTramosRenta($tipoPlanilla);
         
@@ -90,43 +97,30 @@ class RentaHelper
      * @param string $tipoPlanilla Tipo de planilla
      * @return float Salario gravado para renta
      */
-    public static function calcularSalarioGravado($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla = 'mensual')
+    public static function calcularSalarioGravado($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla = 'mensual', $tipoContrato = null)
     {
+
+        // ✅ SI ES SERVICIOS PROFESIONALES, el salario gravado es el total
+        if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
+            return round($salarioDevengado, 2); // Sin descuentos de seguridad social
+        }
+        
+        
         // ✅ PASO 1: Calcular salario gravado básico (salario - seguridad social)
         $salarioGravado = $salarioDevengado - $isssEmpleado - $afpEmpleado;
         
         // ✅ PASO 2: La deducción de $1,600 se aplica SOLO cuando el SALARIO BRUTO ANUAL <= $9,100
         // NO cuando el salario gravado es <= $9,100
         $salarioBrutoAnual = self::extrapolarSalarioAnual($salarioDevengado, $tipoPlanilla);
-        
-        // 🔍 LOG PARA DEBUG
-        Log::info('=== DEBUG calcularSalarioGravado ===', [
-            'salario_devengado' => $salarioDevengado,
-            'isss_empleado' => $isssEmpleado,
-            'afp_empleado' => $afpEmpleado,
-            'salario_gravado_basico' => $salarioGravado,
-            'salario_bruto_anual' => $salarioBrutoAnual,
-            'califica_deduccion' => $salarioBrutoAnual <= 9100.00
-        ]);
+
         
         // ✅ APLICAR DEDUCCIÓN SOLO SI EL SALARIO BRUTO ANUAL <= $9,100
         if ($salarioBrutoAnual <= 9100.00) {
             $deduccionProporcional = self::calcularDeduccionProporcional($tipoPlanilla);
             $salarioGravadoConDeduccion = max(0, $salarioGravado - $deduccionProporcional);
             
-            Log::info('=== APLICANDO DEDUCCIÓN DE $1,600 ===', [
-                'deduccion_proporcional' => $deduccionProporcional,
-                'salario_gravado_antes' => $salarioGravado,
-                'salario_gravado_despues' => $salarioGravadoConDeduccion
-            ]);
-            
             return round($salarioGravadoConDeduccion, 2);
         }
-        
-        // ✅ NO APLICA DEDUCCIÓN
-        Log::info('=== NO APLICA DEDUCCIÓN (salario bruto anual > $9,100) ===', [
-            'salario_gravado_final' => $salarioGravado
-        ]);
         
         return round($salarioGravado, 2);
     }

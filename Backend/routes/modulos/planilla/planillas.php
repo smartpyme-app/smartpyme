@@ -26,6 +26,8 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
         // NUEVAS RUTAS PARA DECRETO 2025
         Route::get('detalle-calculo-renta/{detalleId}', 'obtenerDetalleCalculoRenta');
         Route::post('validar-calculo-renta', 'validarCalculoRenta');
+
+        Route::get('detalles/exportar', 'exportarDetallesPlanilla');
         
         Route::post('/aprobar/{id}', 'approvePayroll');
         Route::post('/duplicate', 'store');

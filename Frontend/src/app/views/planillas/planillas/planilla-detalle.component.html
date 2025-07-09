@@ -72,17 +72,32 @@
     </div>
 
     <div class="col-md-6 mb-3">
-      <div class="d-flex gap-2">
-        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarDetallePlanillas()" autocomplete="off">
-          <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar por código o empleado"
-            [(ngModel)]="filtros.buscador" />
-        </form>
-        <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default">
-          <img src="/assets/icons/filter.png" class="icon" />
-        </button>
+      <div class="d-flex gap-2 justify-content-end">
+          <!-- Un solo botón inteligente para exportar -->
+          <button 
+              [disabled]="downloading" 
+              tooltip="Exportar {{ vistaActual === 'descuentos_patronales' ? 'descuentos patronales' : 'detalles de empleados' }}" 
+              (click)="exportarVistaActual()" 
+              class="btn btn-default tcla-F6">
+              <span *ngIf="!downloading">
+                  <img src="/assets/icons/download.png" class="icon">
+              </span>
+              <span *ngIf="downloading">
+                  <i class="fa fa-spinner fa-spin"></i> Exportando...
+              </span>
+          </button>
+
+          <!-- Controles de búsqueda existentes -->
+          <form class="d-flex input-group" name="form" (ngSubmit)="filtrarDetallePlanillas()" autocomplete="off">
+              <input type="text" name="search" class="form-control pull-right" placeholder="Buscar empleado" [(ngModel)]="filtros.buscador">
+          </form>
+          <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> 
+              <img src="/assets/icons/filter.png" class="icon"> 
+          </button>
       </div>
-    </div>
   </div>
+  </div>
+
 
   <!-- <div class="row">
     <div class="col-md-2 mb-3">
@@ -366,7 +381,24 @@
             {{ detalleSeleccionado?.empleado?.apellidos }}
             <br />
             <strong>Código:</strong> {{ detalleSeleccionado?.empleado?.codigo }}
-          </div>
+            <br />
+            <strong>Tipo de Contrato:</strong> 
+            <span [ngClass]="{
+                'badge bg-primary': detalleSeleccionado?.empleado?.tipo_contrato === 4,
+                'badge bg-secondary': detalleSeleccionado?.empleado?.tipo_contrato !== 4
+            }">
+                {{ getTipoContratoNombre(detalleSeleccionado?.empleado?.tipo_contrato) }}
+            </span>
+        </div>
+
+        <!-- ✅ Mostrar advertencia para servicios profesionales -->
+        <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+          <i class="fa fa-info-circle"></i>
+          <strong>Servicios Profesionales:</strong> 
+          Este empleado tiene contrato de servicios profesionales. 
+          Solo se aplica retención de renta del 10% sobre el total de ingresos.
+          No aplican descuentos de ISSS ni AFP.
+        </div>
 
           <div class="row">
             <!-- Sección de Ingresos -->
@@ -505,39 +537,64 @@
                   <div class="mb-3">
                     <label>ISSS (3%):</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
-                        name="isss_empleado" (input)="calcularTotales()" disabled />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.isss_empleado"
+                            name="isss_empleado" 
+                            [disabled]="true"
+                            [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                     </div>
-                    <small class="text-muted">
-                      Patronal (7.5%): ${{
-                      detalleSeleccionado.isss_patronal | number : "1.2-2"
-                      }}
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
                     </small>
-                  </div>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                    </small>
+                </div>
 
-                  <div class="mb-3">
+                <div class="mb-3">
                     <label>AFP (7.25%):</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
-                        name="afp_empleado" (input)="calcularTotales()" disabled />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.afp_empleado"
+                            name="afp_empleado" 
+                            [disabled]="true"
+                            [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                     </div>
-                    <small class="text-muted">
-                      Patronal (7.75%): ${{
-                      detalleSeleccionado.afp_patronal | number : "1.2-2"
-                      }}
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
                     </small>
-                  </div>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                    </small>
+                </div>
 
                   <div class="mb-3">
-                    <label>ISR:</label>
+                    <label>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">ISR:</span>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">ISR (10% fijo):</span>
+                    </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
-                        (input)="calcularTotales()" disabled />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.renta" 
+                            name="renta"
+                            [disabled]="true" />
                     </div>
-                  </div>
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Según tablas de renta vigentes
+                    </small>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        10% fijo sobre total de ingresos
+                    </small>
+                </div>
 
                   <div class="mb-3">
                     <label>Préstamos:</label>

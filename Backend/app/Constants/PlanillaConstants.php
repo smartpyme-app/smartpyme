@@ -12,6 +12,7 @@ class PlanillaConstants
     const TIPO_CONTRATO_PERMANENTE = 1;
     const TIPO_CONTRATO_TEMPORAL = 2;
     const TIPO_CONTRATO_POR_OBRA = 3;
+    const TIPO_CONTRATO_SERVICIOS_PROFESIONALES = 4;
 
     // Tipos de Jornada
     const TIPO_JORNADA_TIEMPO_COMPLETO = 1;
@@ -214,7 +215,8 @@ class PlanillaConstants
         return [
             self::TIPO_CONTRATO_PERMANENTE => 'Permanente',
             self::TIPO_CONTRATO_TEMPORAL => 'Temporal',
-            self::TIPO_CONTRATO_POR_OBRA => 'Por obra'
+            self::TIPO_CONTRATO_POR_OBRA => 'Por obra',
+            self::TIPO_CONTRATO_SERVICIOS_PROFESIONALES => 'Servicios profesionales'
         ];
     }
 
@@ -370,5 +372,10 @@ class PlanillaConstants
                     ]
                 ];
         }
+    }
+
+    public static function esContratoServiciosProfesionales($tipoContrato)
+    {
+        return $tipoContrato == self::TIPO_CONTRATO_SERVICIOS_PROFESIONALES;
     }
 }
