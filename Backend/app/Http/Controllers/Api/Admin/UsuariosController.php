@@ -49,7 +49,8 @@ class UsuariosController extends Controller
         $usuario = JWTAuth::parseToken()->authenticate();
 
         if ($usuario->tipo == 'Administrador') {
-            $usuarios = Usuario::where('enable', true)->orderBy('name','asc')->get();
+            $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                                ->where('enable', true)->orderBy('name','asc')->get();
         }else{
             $usuarios = Usuario::where('id_sucursal', $usuario->id_sucursal)
                                 ->where('enable', true)
