@@ -284,6 +284,16 @@
                     @endif
                 </td>
             </tr>
+            @if (isset($DTE['apendice']))
+                @foreach ($DTE['apendice'] as $atributo)
+                <tr>
+                    <td colspan="2">
+                        <b>{{ $atributo['etiqueta'] }}:</b>
+                        {{ $atributo['valor'] }}
+                    </td>
+                </tr>
+                @endforeach
+            @endif
         </tbody>
     </table>
 
