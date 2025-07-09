@@ -45,6 +45,7 @@ Route::get('/inventariostock', function(){
 
 });
 
+
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
