@@ -50,11 +50,11 @@ export class UsuariosComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
@@ -65,11 +65,11 @@ export class UsuariosComponent implements OnInit {
         this.loading = true;
         if(!this.filtros.id_sucursal){
             this.filtros.id_sucursal = '';
-        }      
+        }
         // Guardar filtros en localStorage
         localStorage.setItem('usuarios_filtros', JSON.stringify(this.filtros));
-        
-        this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => { 
+
+        this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => {
             this.usuarios = usuarios;
             this.contarActivos();
             this.loading = false;
@@ -90,14 +90,14 @@ export class UsuariosComponent implements OnInit {
         }
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
-    
+
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-    }  
-    
+    }
+
     public mostrarPassword2(){
         this.showpassword2 = !this.showpassword2;
-    }  
+    }
 
     public onSubmit() {
         this.saving = true;
@@ -113,7 +113,7 @@ export class UsuariosComponent implements OnInit {
     }
 
     public setEstado(usuario:any){
-        this.apiService.store('usuario', usuario).subscribe(usuario => { 
+        this.apiService.store('usuario', usuario).subscribe(usuario => {
             if(usuario.enable == '1'){
                 this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
             }else{
@@ -126,12 +126,12 @@ export class UsuariosComponent implements OnInit {
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('usuario/', id) .subscribe(data => {
-                for (let i = 0; i < this.usuarios.data.length; i++) { 
+                for (let i = 0; i < this.usuarios.data.length; i++) {
                     if (this.usuarios.data[i].id == data.id )
                         this.usuarios.data.splice(i, 1);
                 }
             }, error => {this.alertService.error(error); this.loading = false;});
-                   
+
         }
     }
 
@@ -144,8 +144,8 @@ export class UsuariosComponent implements OnInit {
         this.loading = true;
         // Guardar filtros en localStorage antes de aplicarlos
         localStorage.setItem('usuarios_filtros', JSON.stringify(this.filtros));
-        
-        this.apiService.store('usuarios/filtrar', this.filtros).subscribe(usuarios => { 
+
+        this.apiService.store('usuarios/filtrar', this.filtros).subscribe(usuarios => {
             this.usuarios = usuarios;
             this.loading = false;;
             this.modalRef?.hide();
@@ -162,10 +162,10 @@ export class UsuariosComponent implements OnInit {
             direccion: 'desc',
             paginate: 30
         };
-        
+
 
         localStorage.removeItem('usuarios_filtros');
-        
+
 
         this.loadAll();
     }
@@ -173,5 +173,5 @@ export class UsuariosComponent implements OnInit {
     public usuarioLogueado() {
       this.authUser = this.apiService.auth_user();
     }
-  
+
 }

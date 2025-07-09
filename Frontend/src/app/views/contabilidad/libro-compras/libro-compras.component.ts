@@ -172,5 +172,14 @@ export class LibroComprasComponent implements OnInit {
         this.filtros.id_sucursal = id;
         this.loadAll();
     }
+    public descargarLibroPDF(): void {
+        this.filtros.formato = 'pdf';
+        const filtros = new URLSearchParams(this.filtros).toString();
+        const token = this.apiService.auth_token();
+
+        const url = `${this.apiService.baseUrl}/api/libro-iva/compras?${filtros}&token=${token}`;
+        window.open(url, '_blank');
+      }
+
 
 }

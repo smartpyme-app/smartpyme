@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -20,14 +21,26 @@ export class ServiciosComponent implements OnInit {
   public categorias: any = [];
   modalRef!: BsModalRef;
 
-  constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
-    private modalService: BsModalService
-  ) {}
+    constructor(public apiService: ApiService, private alertService: AlertService,
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    ){}
 
-  ngOnInit() {
-    this.loadAll();
+    ngOnInit() {
+
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_categoria: +params['id_categoria'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            this.filtrarServicios();
+        });
 
     this.apiService.getAll('categorias/list').subscribe(
       (categorias) => {

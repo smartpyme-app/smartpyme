@@ -1,5 +1,5 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-  <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
+    <h2 class="page-heading" (click)="loadAll()">Cuenta</h2>
 </section>
 
 <tabset>
@@ -230,16 +230,16 @@
                                 <label for="columna_proyecto" class="form-label">
                                     <strong>Mostrar columna proyecto</strong>
                                 </label>
-                                <input 
-                                    class="form-check-input float-end" 
-                                    type="checkbox" 
-                                    role="switch" 
+                                <input
+                                    class="form-check-input float-end"
+                                    type="checkbox"
+                                    role="switch"
                                     id="columna_proyecto"
                                     [checked]="isColumnEnabled('columna_proyecto')"
                                     (change)="toggleColumn('columna_proyecto')"
                                     name="columna_proyecto">
                             </div>
-                        </div> 
+                        </div>
                     </div>
 
                     <hr>
@@ -352,7 +352,7 @@
                         <a routerLink="/eliminar-datos" class="btn btn-link">Ingresa acá</a>
                     </p>
                 </div>
-               
+
             </section>
             <div class="bg-white rounded p-3 mb-3">
                 <div class="form-group col-sm-12 pt-2 pb-4">

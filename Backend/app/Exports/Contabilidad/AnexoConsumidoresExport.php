@@ -40,6 +40,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     }
 
     public function map($venta): array{
+            setlocale(LC_NUMERIC, 'C');
 
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
@@ -50,27 +51,35 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $tipo = '11';
             }
 
+            if ($venta->iva > 0) {
+                $venta->exenta = 0;
+                $venta->gravada = $venta->total;
+            }else{
+                $venta->gravada = 0;
+                $venta->exenta = $venta->total;
+            }
+
            $fields = [
                 \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha
                 $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso,
                 '01', //C Tipo
-                $venta->dte['identificacion']['numeroControl'] ?? '', //D Resolucion
-                $venta->dte['sello'] ?? '', //E Serie
-                $venta->dte['identificacion']['codigoGeneracion'] ?? '', //F Numero Interno del
-                $venta->dte['identificacion']['codigoGeneracion'] ?? '', //G Numero Interno al
+                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['numeroControl'] ?? '') : '', //D Resolucion
+                $venta->sello_mh ?? '', //E Serie
+                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion'] ?? '') : '', //F Numero Interno del
+                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion'] ?? '') : '', //G Numero Interno al
                 trim($venta->correlativo), //H Numero Control
                 trim($venta->correlativo), //I Numero Control
                 NULL, //J Caja registradora
-                $venta->exenta ? $venta->exenta : '0.00', //K Exentas
+                $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
-                $venta->no_sujeta ? $venta->no_sujeta : '0.00', //M No Sujetas
-                $venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total, //N Gravadas'
+                $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
+                $venta->documento->nombre === 'Factura de exportación' ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
                 '0.00', //O Exportacion interna'
-                $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0', //P Exportacion externa'
+                $venta->documento->nombre === 'Factura de exportación' ? number_format($venta->total, 2, '.', ''): '0', //P Exportacion externa'
                 '0.00', //Q Exportacion servicios'
                 '0.00', //R Ventas zonas francas'
                 '0.00', //S Ventas a terceros
-                $venta->total ? $venta->total : '0.00', //T Total
+                $venta->total ? number_format($venta->total, 2, '.', '') : '0.00', //T Total
                 $this->tipoOperacion($venta->tipo_operacion), //U Tipo operacion renta 1 Gravada 2 Exenta
                 $this->tipoRenta($venta->tipo_renta), //V Tipo ingreso renta
                 2, //W num de Anexo

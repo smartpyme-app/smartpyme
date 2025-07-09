@@ -68,7 +68,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
     }
 
     public function map($compra): array{
-
+            setlocale(LC_NUMERIC, 'C');
             $proveedor = optional($compra->proveedor()->first());
 
             $data = [
@@ -77,9 +77,9 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
                 $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
                 $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-                $compra->referencia,  // F - NUMERO DE DOCUMENTO
-                $compra->total,  // G - MONTO DE LA OPERACIÖN
-                $compra->iva,  // H - MONTO DE LA RETENCIÖN IVA 13%
+                str_replace('-', '', $compra->referencia),  // F - NUMERO DE DOCUMENTO
+                number_format($compra->total, 2, '.', ''),  // G - MONTO DE LA OPERACIÖN
+                number_format($compra->iva, 2, '.', ''),  // H - MONTO DE LA RETENCIÖN IVA 13%
                 $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
                 $this->tipoClasificacion($compra->tipo_clasificacion),  // R - CLASIFICACI Costo gasto
                 $this->tipoSector($compra->tipo_sector),  // S - SECTOR

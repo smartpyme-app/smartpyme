@@ -37,7 +37,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
     }
 
     public function map($venta): array{
-
+            setlocale(LC_NUMERIC, 'C');
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
 
@@ -57,7 +57,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
                 $venta->sello_mh ? $venta->dte['sello'] : '', // G serie
                 $venta->sello_mh ? '0' : trim($venta->correlativo), // H desde
                 $venta->sello_mh ? '0' : trim($venta->correlativo), // I hasta
-                $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : '', // J codigo de generacion
+                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) : '', // J codigo de generacion
          ];
         return $fields;
     }

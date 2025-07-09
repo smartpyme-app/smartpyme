@@ -18,6 +18,7 @@ class Empresa extends Model
     protected $table = 'empresas';
     protected $fillable = [
         'nombre',
+        'codigo',
         'nombre_propietario',
         'sector',
         'giro',
@@ -113,7 +114,7 @@ class Empresa extends Model
         'custom_empresa' => 'json',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce','currency_symbol'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol'];
 
     public function limiteUsuarios()
     {
@@ -264,6 +265,17 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
+    public function whatsappSessions()
+    {
+        return $this->hasMany('App\Models\WhatsApp\WhatsAppSession', 'id_empresa');
+    }
+
+    public function whatsappMessages()
+    {
+        return $this->hasMany('App\Models\WhatsApp\WhatsAppMessage', 'id_empresa');
+    }
+
+
     public function currency()
     {
         return $this->belongsTo(Currency::class, 'moneda', 'currency_code');
@@ -308,15 +320,15 @@ class Empresa extends Model
     public function departamentos()
     {
         return $this->belongsToMany(DepartamentoEmpresa::class, 'empresa_departamento')
-                    ->withPivot('estado')
-                    ->withTimestamps();
+            ->withPivot('estado')
+            ->withTimestamps();
     }
 
     public function cargos()
     {
         return $this->belongsToMany(CargoEmpresa::class, 'empresa_cargo')
-                    ->withPivot('estado')
-                    ->withTimestamps();
+            ->withPivot('estado')
+            ->withTimestamps();
     }
 
 
@@ -411,7 +423,7 @@ class Empresa extends Model
         if (empty($this->custom_empresa)) {
             return $this->initializeCustomConfig();
         }
-        
+
         return $this->custom_empresa;
     }
 
@@ -431,10 +443,10 @@ class Empresa extends Model
                 // Para futuros campos personalizados
             ]
         ];
-        
+
         $this->custom_empresa = $defaultConfig;
         $this->save();
-        
+
         return $defaultConfig;
     }
 
@@ -444,15 +456,15 @@ class Empresa extends Model
     public function updateCustomConfig($section, $key, $value)
     {
         $config = $this->custom_config;
-        
+
         if (!isset($config[$section])) {
             $config[$section] = [];
         }
-        
+
         $config[$section][$key] = $value;
         $this->custom_empresa = $config;
         $this->save();
-        
+
         return $this;
     }
 
@@ -462,15 +474,15 @@ class Empresa extends Model
     public function getCustomConfigValue($section, $key = null, $default = null)
     {
         $config = $this->custom_config;
-        
+
         if (!isset($config[$section])) {
             return $default;
         }
-        
+
         if ($key === null) {
             return $config[$section];
         }
-        
+
         return $config[$section][$key] ?? $default;
     }
 
@@ -490,7 +502,7 @@ class Empresa extends Model
         if ($enabled === null) {
             $enabled = !$this->isColumnEnabled($columnName);
         }
-        
+
         return $this->updateCustomConfig('columnas', $columnName, $enabled);
     }
 
@@ -503,7 +515,7 @@ class Empresa extends Model
         $config[$section] = $data;
         $this->custom_empresa = $config;
         $this->save();
-        
+
         return $this;
     }
 

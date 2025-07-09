@@ -131,10 +131,11 @@ export class GastoComponent implements OnInit {
       this.impuestos = impuestos;
       this.loading = false;
 
-      if (this.gasto && this.gasto.otros_impuestos) {
+      if (this.gasto && this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
           this.cargarImpuestosSeleccionados();
+          this.mostrar_otros_impuestos = true;
       }
-  }, error => {this.alertService.error(error); this.loading = false;});
+    }, error => {this.alertService.error(error); this.loading = false;});
 
   }
 
@@ -154,7 +155,7 @@ export class GastoComponent implements OnInit {
             this.gasto.id_area_empresa = this.gasto.id_area_empresa.toString();
           }
 
-          if (this.gasto.iva > 0) this.iva_active = true;
+          if (this.gasto.iva > 0) this.gasto.impuesto = true;
 
           if (this.gasto.iva_percibido > 0) this.percepcion_active = true;
 
@@ -163,11 +164,26 @@ export class GastoComponent implements OnInit {
 
           if (this.gasto.otros_impuestos) {
             if (typeof this.gasto.otros_impuestos === 'object' &&
-                  this.gasto.otros_impuestos.seleccionados) {
+              this.gasto.otros_impuestos.seleccionados) {
 
-                  this.gasto.otros_impuestos = this.gasto.otros_impuestos.seleccionados;
-                  this.gasto.impuestos_valores = this.gasto.otros_impuestos.valores;
-              }
+              const valoresGuardados = this.gasto.otros_impuestos.valores || [];
+              this.gasto.otros_impuestos = this.gasto.otros_impuestos.seleccionados;
+              this.gasto.impuestos_valores = valoresGuardados;
+            }
+
+            // Activar switch SIEMPRE que hay otros_impuestos (aunque sea array simple)
+            if (this.gasto.otros_impuestos && this.gasto.otros_impuestos.length > 0) {
+              this.mostrar_otros_impuestos = true;
+              // console.log('Switch activado para:', this.gasto.otros_impuestos);
+            }
+          }
+
+          if (Array.isArray(this.gasto.otros_impuestos) && this.gasto.otros_impuestos.length > 0) {
+            this.mostrar_otros_impuestos = true;
+            // console.log('Switch activado:', this.mostrar_otros_impuestos);
+            // console.log('otros_impuestos:', this.gasto.otros_impuestos);
+            // console.log('impuestos_valores:', this.gasto.impuestos_valores);
+            // console.log('impuestos disponibles:', this.impuestos.length);
           }
 
           if (this.tieneOtrosImpuestos(this.gasto.otros_impuestos)) {
@@ -277,7 +293,25 @@ export class GastoComponent implements OnInit {
           }
       });
 
+    // Si no hay impuestos_valores, crearlos
+    if (!this.gasto.impuestos_valores || this.gasto.impuestos_valores.length === 0) {
+      this.gasto.impuestos_valores = [];
+      this.impuestos_seleccionados.forEach(impuesto => {
+        const subtotal = parseFloat(this.gasto.sub_total) || 0;
+        const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
+
+        this.gasto.impuestos_valores.push({
+          id_impuesto: impuesto.id,
+          nombre: impuesto.nombre,
+          porcentaje: impuesto.porcentaje,
+          valor: valor
+        });
+      });
+    }
+
+    if (!this.gasto.impuestos_valores || this.gasto.impuestos_valores.length === 0) {
       this.calcularValoresImpuestos();
+    }
     }
 
     private calcularValoresImpuestos() {
@@ -411,7 +445,6 @@ export class GastoComponent implements OnInit {
   // }
 
   public setTotal(){
-    // Asegurarse de que subtotal sea un número
     const subtotal = parseFloat(this.gasto.sub_total) || 0;
     let total = subtotal;
 
@@ -441,7 +474,7 @@ export class GastoComponent implements OnInit {
         this.gasto.iva_percibido = 0;
     }
 
-    // Calcular otros impuestos si están habilitados
+    // USAR calcularTotalConImpuestosEditados en lugar de calcularValoresImpuestos
     if (this.mostrar_otros_impuestos && Array.isArray(this.gasto.otros_impuestos) && this.gasto.otros_impuestos.length > 0) {
         // Recalcular valores de impuestos
         this.calcularValoresImpuestos();
@@ -477,7 +510,7 @@ export class GastoComponent implements OnInit {
       let documento = this.documentos.find(
         (x: any) => x.nombre == this.gasto.tipo_documento
       );
-      console.log(documento);
+      // console.log(documento);
       this.gasto.referencia = documento.correlativo;
     }
   }
@@ -499,9 +532,9 @@ export class GastoComponent implements OnInit {
       };
 
       this.gasto.otros_impuestos = datosImpuestos;
-  } else {
-      this.gasto.otros_impuestos = [];
-  }
+    } else if (!this.mostrar_otros_impuestos) {
+        this.gasto.otros_impuestos = [];
+    }
 
     this.apiService.store('gasto', this.gasto).subscribe(
       (gasto) => {
@@ -562,11 +595,41 @@ export class GastoComponent implements OnInit {
                 this.impuestos_seleccionados.push(impuesto);
             }
         });
+      // Solo agregar valores para impuestos nuevos, no recalcular existentes
+      this.agregarValoresImpuestosNuevos();
     } else {
         this.gasto.impuestos_valores = [];
     }
 
     this.setTotal();
+  }
+
+  private agregarValoresImpuestosNuevos() {
+      if (!this.gasto.impuestos_valores) {
+          this.gasto.impuestos_valores = [];
+      }
+
+      this.impuestos_seleccionados.forEach(impuesto => {
+          // Solo agregar si no existe ya
+          const existe = this.gasto.impuestos_valores.find((iv: any) => iv.id_impuesto === impuesto.id);
+
+          if (!existe) {
+              const subtotal = parseFloat(this.gasto.sub_total) || 0;
+              const valor = (subtotal * (impuesto.porcentaje / 100)).toFixed(2);
+
+              this.gasto.impuestos_valores.push({
+                  id_impuesto: impuesto.id,
+                  nombre: impuesto.nombre,
+                  porcentaje: impuesto.porcentaje,
+                  valor: valor
+              });
+          }
+      });
+
+      // Eliminar valores de impuestos deseleccionados
+      this.gasto.impuestos_valores = this.gasto.impuestos_valores.filter((iv: any) =>
+          this.gasto.otros_impuestos.includes(iv.id_impuesto)
+      );
   }
 
   public setImpuesto(impuesto:any) {
@@ -671,14 +734,13 @@ export class GastoComponent implements OnInit {
 
         // Tipo de documento
         if (jsonData.identificacion.tipoDte) {
-          // Convertir el código de tipo DTE a un nombre de documento
           const tiposDte: { [key: string]: string } = {
             '01': 'Factura',
-            '03': 'Comprobante de Crédito Fiscal',
-            '05': 'Nota de Débito',
-            '06': 'Nota de Crédito',
-            '07': 'Comprobante de Retención',
-            '11': 'Factura de Exportación',
+            '03': 'Crédito fiscal',
+            '05': 'Nota de débito',
+            '06': 'Nota de crédito',
+            '07': 'Comprobante de retención',
+            '11': 'Factura de exportación',
             '14': 'Sujeto excluido',
           };
 
@@ -985,7 +1047,51 @@ public setArea(area: any) {
     this.opciones_avanzadas_active = !this.opciones_avanzadas_active;
   }
 
+  public onImpuestoValorChange() {
+    this.calcularTotalConImpuestosEditados();
+  }
+
+  private calcularTotalConImpuestosEditados() {
+    const subtotal = parseFloat(this.gasto.sub_total) || 0;
+    let total = subtotal;
+
+    // IVA
+    if (this.gasto.impuesto) {
+      const ivaRate = this.apiService.auth_user().empresa.iva / 100;
+      const ivaValue = subtotal * ivaRate;
+      this.gasto.iva = ivaValue.toFixed(2);
+      total += ivaValue;
+    } else {
+      this.gasto.iva = 0;
+    }
+
+    // Renta
+    if (this.gasto.renta) {
+      this.gasto.renta_retenida = (subtotal * 0.10).toFixed(2);
+      total -= parseFloat(this.gasto.renta_retenida);
+    } else {
+      this.gasto.renta_retenida = 0;
+    }
+
+    // Percepción
+    if (this.gasto.percepcion) {
+      this.gasto.iva_percibido = (subtotal * 0.01).toFixed(2);
+      total += parseFloat(this.gasto.iva_percibido);
+    } else {
+      this.gasto.iva_percibido = 0;
+    }
+
+    // Sumar otros impuestos (valores editados)
+    if (this.gasto.impuestos_valores && this.gasto.impuestos_valores.length > 0) {
+      this.gasto.impuestos_valores.forEach((impValue: any) => {
+        total += parseFloat(impValue.valor) || 0;
+      });
+    }
+
+    this.gasto.total = total.toFixed(2);
+  }
+
   public isColumnEnabled(columnName: string): boolean {
-    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+      return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 }
