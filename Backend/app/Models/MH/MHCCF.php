@@ -150,7 +150,7 @@ class MHCCF extends Model
               "direccion" => [
                 "departamento" => $this->venta->cliente->cod_departamento,
                 "municipio" => $this->venta->cliente->cod_departamento,
-                "complemento" => $this->venta->cliente->empresa_direccion,
+                "complemento" => $this->venta->cliente->empresa_direccion ?? $this->venta->cliente->direccion,
               ],
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
@@ -161,7 +161,13 @@ class MHCCF extends Model
 
         $tributos = NULL;
 
-        if ($this->venta->iva > 0) {
+        $apendice = NULL;
+        
+        if ($this->venta->observaciones ) {
+            $apendice = collect();
+            if ($this->venta->observaciones) {
+                $apendice->push(['etiqueta' => 'Observaciones', 'campo' => 'Observaciones', 'valor'=> $this->venta->observaciones]);
+            }
         }
 
         if ($this->venta->iva > 0) {
@@ -220,13 +226,7 @@ class MHCCF extends Model
                   "numPagoElectronico" => ""
                 ],
                 "extension" => NULL,
-                "apendice" => [
-                    [
-                    "campo" => "empleado",
-                    "etiqueta" => "nombre",
-                    "valor" => $this->venta->nombre_usuario
-                    ]
-                ]
+                "apendice" => $apendice
             ];
     }
 

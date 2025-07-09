@@ -176,7 +176,7 @@ class MHFactura extends Model
               ) ? [
                   "departamento" => $this->venta->cliente->cod_departamento,
                   "municipio" => $this->venta->cliente->cod_municipio,
-                  "complemento" => $this->venta->cliente->direccion ?: $this->venta->cliente->empresa_direccion,
+                  "complemento" => $this->venta->cliente->direccion ?? $this->venta->cliente->empresa_direccion,
               ] : null,
               "telefono" => $this->venta->cliente->telefono,
               "correo" => $this->venta->cliente->correo
@@ -185,6 +185,15 @@ class MHFactura extends Model
 
     public function generarFactura(){
         $tributos = NULL;
+
+        $apendice = NULL;
+        
+        if ($this->venta->observaciones ) {
+            $apendice = collect();
+            if ($this->venta->observaciones) {
+                $apendice->push(['etiqueta' => 'Observaciones', 'campo' => 'Observaciones', 'valor'=> $this->venta->observaciones]);
+            }
+        }
 
         if ($this->venta->iva > 0) {
             $this->venta->gravada = $this->venta->sub_total;
@@ -237,13 +246,7 @@ class MHFactura extends Model
                   "numPagoElectronico" => ""
                 ],
                 "extension" => NULL,
-                "apendice" => [
-                    [
-                    "campo" => "empleado",
-                    "etiqueta" => "nombre",
-                    "valor" => $this->venta->nombre_usuario
-                    ]
-                ]
+                "apendice" => $apendice
             ];
     }
 
