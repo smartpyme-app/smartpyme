@@ -143,7 +143,7 @@
                         <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                             <p><b>Dirección:</b> 
-                                @if ($registro->cliente_id)
+                                @if (isset($DTE['receptor']['direccion']['complemento']))
                                     {{ $DTE['receptor']['direccion']['complemento'] }}
                                     {{ $registro->cliente()->pluck('municipio')->first(); }}
                                     {{ $registro->cliente()->pluck('departamento')->first(); }}
