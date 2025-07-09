@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Empresa extends Model
 {
@@ -114,7 +115,7 @@ class Empresa extends Model
         'custom_empresa' => 'json',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol', 'acces_chatbot_whatsapp'];
 
     public function limiteUsuarios()
     {
@@ -419,7 +420,7 @@ class Empresa extends Model
         if (empty($this->custom_empresa)) {
             return $this->initializeCustomConfig();
         }
-        
+
         return $this->custom_empresa;
     }
 
@@ -430,18 +431,18 @@ class Empresa extends Model
                 'columna_proyecto' => false
                 // Para futuras columnas
             ],
-            'modulos' => (object)[], 
+            'modulos' => (object)[],
             'configuraciones' => (object)[
                 'ticket_en_pdf' => false
                 // Para futuras configuraciones generales
             ],
-            'campos_personalizados' => (object)[] 
+            'campos_personalizados' => (object)[]
             // Para futuros campos personalizados
         ];
-        
+
         $this->custom_empresa = $defaultConfig;
         $this->save();
-        
+
         return $defaultConfig;
     }
 
@@ -451,15 +452,15 @@ class Empresa extends Model
     public function updateCustomConfig($section, $key, $value)
     {
         $config = $this->custom_config;
-        
+
         if (!isset($config[$section])) {
             $config[$section] = [];
         }
-        
+
         $config[$section][$key] = $value;
         $this->custom_empresa = $config;
         $this->save();
-        
+
         return $this;
     }
 
@@ -469,15 +470,15 @@ class Empresa extends Model
     public function getCustomConfigValue($section, $key = null, $default = null)
     {
         $config = $this->custom_config;
-        
+
         if (!isset($config[$section])) {
             return $default;
         }
-        
+
         if ($key === null) {
             return $config[$section];
         }
-        
+
         return $config[$section][$key] ?? $default;
     }
 
@@ -497,7 +498,7 @@ class Empresa extends Model
         if ($enabled === null) {
             $enabled = !$this->isColumnEnabled($columnName);
         }
-        
+
         return $this->updateCustomConfig('columnas', $columnName, $enabled);
     }
 
@@ -510,7 +511,7 @@ class Empresa extends Model
         $config[$section] = $data;
         $this->custom_empresa = $config;
         $this->save();
-        
+
         return $this;
     }
 
@@ -604,5 +605,16 @@ class Empresa extends Model
     {
         $actualValue = $this->ticketEnPdf();
         return $this->setTicketEnPdf(!$actualValue);
+    }
+
+    public function empresaFuncionalidad()
+    {
+        return $this->hasMany('App\Models\Admin\EmpresaFuncionalidad', 'id_empresa');
+    }
+
+    public function getAccesChatbotWhatsappAttribute()
+    {
+        $funcionalidad = $this->empresaFuncionalidad()->where('id_funcionalidad', 2)->first();
+        return $funcionalidad ? $funcionalidad->activo : false;
     }
 }

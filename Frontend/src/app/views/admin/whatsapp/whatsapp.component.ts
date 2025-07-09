@@ -13,6 +13,7 @@ import Swal from 'sweetalert2';
 export class WhatsAppComponent implements OnInit, OnDestroy {
 
   public stats: any = null;
+  public executiveSummary: any = null;
   public sessions: any = {
     data: [],
     total: 0,
@@ -21,7 +22,8 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   };
   public loading: boolean = false;
   public refreshing: boolean = false;
-
+  public error: string = '';
+  public selectedPeriod: number = 30;
 
   public filtros: any = {
     search: '',
@@ -82,9 +84,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   loadInitialData() {
     this.loading = true;
 
-    
     Promise.all([
       this.loadStats(),
+      this.loadExecutiveSummary(),
       this.loadSessions(),
       this.loadUsuarios()
     ]).finally(() => {
@@ -141,6 +143,32 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadExecutiveSummary(): Promise<void> {
+    return new Promise((resolve) => {
+      console.log('📋 Cargando resumen ejecutivo...');
+      
+      const params = {
+        days: this.selectedPeriod
+      };
+
+      this.apiService.getAll('admin/whatsapp/executive-summary', params).subscribe(
+        (response) => {
+          if (response && response.success) {
+            this.executiveSummary = response.data;
+          } else {
+            this.executiveSummary = response;
+          }
+          resolve();
+        },
+        (error) => {
+          console.error('Error cargando resumen ejecutivo:', error);
+          this.executiveSummary = null;
+          resolve();
+        }
+      );
+    });
+  }
+
   loadSessions(): Promise<void> {
     return new Promise((resolve) => {
       
@@ -164,7 +192,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     });
   }
 
-
   loadUsuarios(): Promise<void> {
     return new Promise((resolve) => {
   
@@ -181,6 +208,40 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
         }
       );
     });
+  }
+
+  onPeriodChange() {
+    console.log('📅 Cambiando período a:', this.selectedPeriod, 'días');
+    Promise.all([
+      this.loadStats(),
+      this.loadExecutiveSummary()
+    ]).then(() => {
+      console.log('✅ Estadísticas actualizadas');
+    });
+  }
+
+  getConnectionPercentage(): number {
+    if (!this.stats?.sessions?.total || this.stats.sessions.total === 0) return 0;
+    return Math.round((this.stats.sessions.connected / this.stats.sessions.total) * 100);
+  }
+
+  getIncomingPercentage(): number {
+    if (!this.stats?.messages?.total || this.stats.messages.total === 0) return 0;
+    return Math.round((this.stats.messages.incoming / this.stats.messages.total) * 100);
+  }
+
+  getOutgoingPercentage(): number {
+    if (!this.stats?.messages?.total || this.stats.messages.total === 0) return 0;
+    return Math.round((this.stats.messages.outgoing / this.stats.messages.total) * 100);
+  }
+
+  getPeriodLabel(): string {
+    switch (this.selectedPeriod) {
+      case 7: return 'Última semana';
+      case 30: return 'Último mes';
+      case 90: return 'Últimos 3 meses';
+      default: return `Últimos ${this.selectedPeriod} días`;
+    }
   }
 
   // Métodos de filtrado y ordenamiento
