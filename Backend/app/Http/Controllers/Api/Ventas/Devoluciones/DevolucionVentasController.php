@@ -157,6 +157,57 @@ class DevolucionVentasController extends Controller
 
     }
 
+    public function update(Request $request)
+    {
+        $request->validate([
+            'fecha' => 'required|date',
+            'id_documento' => 'nullable|exists:documentos,id',
+            'correlativo' => 'nullable|string|max:255',
+            'id_usuario' => 'required|exists:users,id',
+            'observaciones' => 'required|string|max:255',
+        ], [
+            'fecha.required' => 'La fecha es requerida.',
+            'fecha.date' => 'La fecha debe tener un formato válido.',
+            'id_usuario.required' => 'El usuario es requerido.',
+            'id_usuario.exists' => 'El usuario seleccionado no existe.',
+            'observaciones.required' => 'Las observaciones son requeridas.',
+            'observaciones.max' => 'Las observaciones no pueden exceder los 255 caracteres.',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $devolucion = Devolucion::findOrFail($request->id);
+            
+            // Solo actualizar los campos permitidos
+            $devolucion->fecha = $request->fecha;
+            $devolucion->id_documento = $request->id_documento;
+            $devolucion->correlativo = $request->correlativo;
+            $devolucion->id_usuario = $request->id_usuario;
+            $devolucion->observaciones = $request->observaciones;
+            
+            $devolucion->save();
+
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'Devolución actualizada correctamente',
+                'data' => $devolucion
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'error' => 'Error al actualizar la devolución: ' . $e->getMessage()
+            ], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return response()->json([
+                'error' => 'Error inesperado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function delete($id)
     {
         $venta = Devolucion::findOrFail($id);
