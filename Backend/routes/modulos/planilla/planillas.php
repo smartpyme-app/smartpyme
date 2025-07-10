@@ -7,6 +7,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
     Route::controller(PlanillasController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('{id}/boletas', 'generarBoletas');
+        Route::get('descuentos-patronales/{id}', 'obtenerDescuentosPatronales');
         Route::post('/generate', 'store');
         Route::get('/list', 'list');
         Route::get('/detalles', 'show');
@@ -20,6 +21,14 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
         Route::post('detalles/editar/{id}', 'updateDetailsPayroll');
         Route::post('detalles/retirar/{id}', 'withdrawPayroll');
         Route::post('detalles/incluir/{id}', 'includePayroll');
+        Route::post('recalculo-renta/{id}', 'recalcularRenta');
+        
+        // NUEVAS RUTAS PARA DECRETO 2025
+        Route::get('detalle-calculo-renta/{detalleId}', 'obtenerDetalleCalculoRenta');
+        Route::post('validar-calculo-renta', 'validarCalculoRenta');
+
+        Route::get('detalles/exportar', 'exportarDetallesPlanilla');
+        
         Route::post('/aprobar/{id}', 'approvePayroll');
         Route::post('/duplicate', 'store');
         Route::post('/importar', 'importar');

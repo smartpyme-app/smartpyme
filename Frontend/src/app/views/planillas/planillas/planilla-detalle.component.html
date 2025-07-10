@@ -13,7 +13,7 @@
   </button>
 </section>
 
-<section class="bg-white p-4 rounded mb-4" *ngIf="!notValue">
+<section class="bg-white p-4 rounded mb-1" *ngIf="!notValue">
   <!-- Cards de Resumen -->
   <div class="row">
     <div class="col-md-3">
@@ -60,12 +60,8 @@
     <div class="col-md-6 mb-3">
       <span class="text-muted d-flex align-items-center gap-2" *ngIf="detalles">
         Mostrando
-        <select
-          name="paginate"
-          class="form-select w-auto"
-          (change)="filtrarDetallePlanillas()"
-          [(ngModel)]="filtros.paginate"
-        >
+        <select name="paginate" class="form-select w-auto" (change)="filtrarDetallePlanillas()"
+          [(ngModel)]="filtros.paginate">
           <option value="10">10</option>
           <option value="25">25</option>
           <option value="50">50</option>
@@ -76,41 +72,61 @@
     </div>
 
     <div class="col-md-6 mb-3">
-      <div class="d-flex gap-2">
-        <form
-          class="d-flex input-group"
-          name="form"
-          (ngSubmit)="filtrarDetallePlanillas()"
-          autocomplete="off"
-        >
-          <input
-            type="text"
-            name="buscador"
-            class="form-control pull-right"
-            placeholder="Buscar por código o empleado"
-            [(ngModel)]="filtros.buscador"
-          />
-        </form>
-        <button
-          tooltip="Filtrar"
-          (click)="openFilter(mfilter)"
-          class="btn btn-default"
-        >
-          <img src="/assets/icons/filter.png" class="icon" />
-        </button>
+      <div class="d-flex gap-2 justify-content-end">
+          <!-- Un solo botón inteligente para exportar -->
+          <button 
+              [disabled]="downloading" 
+              tooltip="Exportar {{ vistaActual === 'descuentos_patronales' ? 'descuentos patronales' : 'detalles de empleados' }}" 
+              (click)="exportarVistaActual()" 
+              class="btn btn-default tcla-F6">
+              <span *ngIf="!downloading">
+                  <img src="/assets/icons/download.png" class="icon">
+              </span>
+              <span *ngIf="downloading">
+                  <i class="fa fa-spinner fa-spin"></i> Exportando...
+              </span>
+          </button>
+
+          <!-- Controles de búsqueda existentes -->
+          <form class="d-flex input-group" name="form" (ngSubmit)="filtrarDetallePlanillas()" autocomplete="off">
+              <input type="text" name="search" class="form-control pull-right" placeholder="Buscar empleado" [(ngModel)]="filtros.buscador">
+          </form>
+          <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> 
+              <img src="/assets/icons/filter.png" class="icon"> 
+          </button>
       </div>
-    </div>
+  </div>
   </div>
 
-  <div class="row">
+
+  <!-- <div class="row">
     <div class="col-md-2 mb-3">
       <button class="btn btn-primary" (click)="limpiarFiltros()">Todos</button>
     </div>
+  </div> -->
+
+  <div class="row">
+    <div class="col-md-8 d-flex gap-2 mb-3">
+      <button class="tcla-F3 btn " tooltip="Actualizar (F5)"
+        routerLinkActive="btn-primary"
+        (click)="limpiarFiltros()">Todos</button>
+      <button class="btn " routerLinkActive="btn-primary"
+        [class.btn-primary]="vistaActual === 'empleados' && !mostrarTodos"
+        (click)="mostrarDetallesEmpleados()">Detalle empleados</button>
+      <button class="btn " routerLinkActive="btn-primary"
+        [class.btn-primary]="vistaActual === 'descuentos_patronales'"
+        (click)="mostrarDescuentosPatronales()">Detalles patronales</button>
+    </div>
   </div>
 
   <!-- Tabla de Detalles -->
-
-  <!-- Tabla de Detalles -->
+  <section class="bg-white p-2 rounded mb-3" *ngIf="vistaActual === 'empleados'">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h5><i class="fa fa-user"></i> Detalle de Empleados</h5>
+        <p class="text-muted">Resumen de los salarios y descuentos por empleado</p>
+      </div>
+    </div>
   <div class="table-responsive">
     <table class="table table-borderless table-hover">
       <thead>
@@ -161,12 +177,7 @@
             ${{ detalle.salario_devengado | number : "1.2-2" }}
           </td>
           <td class="text-end">
-            ${{
-              detalle.bonificaciones +
-                detalle.comisiones +
-                detalle.monto_horas_extra +
-                detalle.otros_ingresos | number : "1.2-2"
-            }}
+            ${{ getIngresosAdicionales(detalle) | number : "1.2-2" }}
           </td>
           <td class="text-end">
             ${{ detalle.total_ingresos | number : "1.2-2" }}
@@ -182,49 +193,28 @@
             ${{ detalle.sueldo_neto | number : "1.2-2" }}
           </td>
           <td class="text-center">
-            <span
-              class="btn"
-              [popover]="accionesTemplate"
-              [outsideClick]="true"
-              tooltip="Acciones"
-            >
+            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
               <i class="fa fa-ellipsis-vertical fa-fw"></i>
             </span>
             <ng-template #accionesTemplate>
               <div class="list-group border-0">
-                <a
-                  (click)="editarDetalle(detalle)"
-                  class="list-group-item list-group-item-action border-0 click"
-                >
+                <a (click)="editarDetalle(detalle)" class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-edit"></i> Editar
                 </a>
-                <a
-                  (click)="withdrawPayroll(detalle)"
-                  *ngIf="detalle.estado !== 0"
-                  class="list-group-item list-group-item-action border-0 click"
-                >
+                <a (click)="withdrawPayroll(detalle)" *ngIf="detalle.estado !== 0"
+                  class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-trash"></i> Retirar de la planilla
                 </a>
-                <a
-                  (click)="includePayroll(detalle)"
-                  *ngIf="detalle.estado == 0"
-                  class="list-group-item list-group-item-action border-0 click"
-                >
+                <a (click)="includePayroll(detalle)" *ngIf="detalle.estado == 0"
+                  class="list-group-item list-group-item-action border-0 click">
                   <i class="fa fa-fw fa-plus"></i> Incluir en la planilla
                 </a>
-                <a
-                  (click)="downloadInvoice(detalle)"
-                  *ngIf="detalle.estado != 0"
-                  class="list-group-item list-group-item-action border-0 click"
-                  [class.disabled]="procesando"
-                >
-                  <i
-                    class="fa"
-                    [ngClass]="{
+                <a (click)="downloadInvoice(detalle)" *ngIf="detalle.estado != 0"
+                  class="list-group-item list-group-item-action border-0 click" [class.disabled]="procesando">
+                  <i class="fa" [ngClass]="{
                       'fa-money-bill': !procesando,
                       'fa-spinner fa-spin': procesando
-                    }"
-                  ></i>
+                    }"></i>
                   {{ procesando ? "Generando..." : "Descargar Boleta de Pago" }}
                 </a>
               </div>
@@ -244,8 +234,8 @@
           </th>
           <th class="text-end">
             ${{
-              planilla.bonificaciones_total + planilla.comisiones_total
-                | number : "1.2-2"
+            planilla.bonificaciones_total + planilla.comisiones_total
+            | number : "1.2-2"
             }}
           </th>
           <th class="text-end">
@@ -262,20 +252,122 @@
       </tfoot>
     </table>
   </div>
+  </section>
 
-  <div
-    *ngIf="detalleSeleccionado"
-    class="mt-4 animate__animated animate__fadeIn"
-  >
+  <!-- Nueva vista para descuentos patronales -->
+<section class="bg-white p-4 rounded mb-3" *ngIf="vistaActual === 'descuentos_patronales'">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h5><i class="fa fa-percentage"></i> Descuentos Patronales</h5>
+      <p class="text-muted">Resumen de las contribuciones patronales por empleado</p>
+    </div>
+  </div>
+
+  <!-- Cards de resumen de descuentos patronales -->
+  <div class="row mb-4" *ngIf="descuentosPatronales">
+    <div class="col-md-4">
+      <div class="card bg-warning text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total ISSS Patronal</h6>
+          <h3 class="mb-0">
+            ${{ descuentosPatronales.resumen?.total_isss_patronal | number : "1.2-2" }}
+          </h3>
+          <small>7.5% del salario</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-info text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total AFP Patronal</h6>
+          <h3 class="mb-0">
+            ${{ descuentosPatronales.resumen?.total_afp_patronal | number : "1.2-2" }}
+          </h3>
+          <small>8.75% del salario</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card bg-danger text-white">
+        <div class="card-body">
+          <h6 class="card-title">Total Descuentos Patronales</h6>
+          <h3 class="mb-0">
+            ${{ getTotalDescuentosPatronales() | number : "1.2-2" }}
+          </h3>
+          <small>ISSS + AFP Patronal</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de descuentos patronales por empleado -->
+  <div class="table-responsive">
+    <table class="table table-borderless table-hover">
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th class="text-end">Salario Base</th>
+          <th class="text-end">Salario Devengado</th>
+          <th class="text-end">ISSS Patronal (7.5%)</th>
+          <th class="text-end">AFP Patronal (8.75%)</th>
+          <th class="text-end">Total Aportes</th>
+          <th class="text-end">% sobre Salario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let detalle of descuentosPatronales?.detalles" class="table-row">
+          <td>
+            <div class="d-flex align-items-center">
+              <div>
+                <strong>{{ detalle.empleado?.nombres }} {{ detalle.empleado?.apellidos }}</strong>
+                <br />
+                <small class="text-muted">
+                  {{ detalle.empleado?.codigo }} | {{ detalle.empleado?.cargo?.nombre }}
+                </small>
+              </div>
+            </div>
+          </td>
+          <td class="text-end">
+            ${{ detalle.salario_base | number : "1.2-2" }}
+          </td>
+          <td class="text-end">
+            ${{ detalle.salario_devengado | number : "1.2-2" }}
+          </td>
+          <td class="text-end">
+            <span class="badge bg-warning text-dark">
+              ${{ detalle.isss_patronal | number : "1.2-2" }}
+            </span>
+          </td>
+          <td class="text-end">
+            <span class="badge bg-info">
+              ${{ detalle.afp_patronal | number : "1.2-2" }}
+            </span>
+          </td>
+          <td class="text-end">
+            <strong class="text-danger">
+              ${{ (detalle.isss_patronal + detalle.afp_patronal) | number : "1.2-2" }}
+            </strong>
+          </td>
+          <td class="text-end">
+            <small class="text-muted">
+              {{ ((detalle.isss_patronal + detalle.afp_patronal) / detalle.salario_devengado * 100) | number : "1.2-2" }}%
+            </small>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="text-center p-4" *ngIf="!descuentosPatronales?.detalles || descuentosPatronales.detalles.length === 0">
+    <p class="text-muted">No hay descuentos patronales disponibles para esta planilla.</p>
+  </div>
+</section>
+
+  <div *ngIf="detalleSeleccionado" class="mt-4 animate__animated animate__fadeIn">
     <div class="card">
       <div class="card-header bg-light">
         <div class="d-flex justify-content-between align-items-center">
           <h4 class="mb-0">Editar Detalle de Empleado</h4>
-          <button
-            type="button"
-            class="btn btn-outline-secondary"
-            (click)="cancelarEdicion()"
-          >
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelarEdicion()">
             <i class="fa fa-times"></i>
           </button>
         </div>
@@ -289,16 +381,31 @@
             {{ detalleSeleccionado?.empleado?.apellidos }}
             <br />
             <strong>Código:</strong> {{ detalleSeleccionado?.empleado?.codigo }}
-          </div>
+            <br />
+            <strong>Tipo de Contrato:</strong> 
+            <span [ngClass]="{
+                'badge bg-primary': detalleSeleccionado?.empleado?.tipo_contrato === 4,
+                'badge bg-secondary': detalleSeleccionado?.empleado?.tipo_contrato !== 4
+            }">
+                {{ getTipoContratoNombre(detalleSeleccionado?.empleado?.tipo_contrato) }}
+            </span>
+        </div>
+
+        <!-- ✅ Mostrar advertencia para servicios profesionales -->
+        <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+          <i class="fa fa-info-circle"></i>
+          <strong>Servicios Profesionales:</strong> 
+          Este empleado tiene contrato de servicios profesionales. 
+          Solo se aplica retención de renta del 10% sobre el total de ingresos.
+          No aplican descuentos de ISSS ni AFP.
+        </div>
 
           <div class="row">
             <!-- Sección de Ingresos -->
             <!-- Sección de Ingresos (Actualizada con soporte semanal) -->
             <div class="col-md-6">
               <div class="card mb-3">
-                <div
-                  class="card-header bg-light d-inline-flex justify-content-between align-items-center"
-                >
+                <div class="card-header bg-light d-inline-flex justify-content-between align-items-center">
                   <h5 class="card-title mb-0">
                     <i class="fa fa-cash-register"></i> Ingresos
                   </h5>
@@ -308,29 +415,18 @@
                     <label>Salario Base Mensual:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.salario_base"
-                        name="salario_base"
-                        disabled
-                      />
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_base"
+                        name="salario_base" disabled />
                     </div>
-                    <small
-                      class="text-info"
-                      *ngIf="planilla.tipo_planilla === 'quincenal'"
-                    >
+                    <small class="text-info" *ngIf="planilla.tipo_planilla === 'quincenal'">
                       Salario quincenal: ${{
-                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                      detalleSeleccionado.salario_base / 2 | number : "1.2-2"
                       }}
                     </small>
-                    <small
-                      class="text-info"
-                      *ngIf="planilla.tipo_planilla === 'semanal'"
-                    >
+                    <small class="text-info" *ngIf="planilla.tipo_planilla === 'semanal'">
                       Salario semanal: ${{
-                        detalleSeleccionado.salario_base / 4.33
-                          | number : "1.2-2"
+                      detalleSeleccionado.salario_base / 4.33
+                      | number : "1.2-2"
                       }}
                     </small>
                   </div>
@@ -338,30 +434,17 @@
                   <div class="mb-3">
                     <label>Días Laborados:</label>
                     <div class="input-group">
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.dias_laborados"
-                        (input)="calcularTotales()"
-                        name="dias_laborados"
-                        (change)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.dias_laborados"
+                        (input)="calcularTotales()" name="dias_laborados" (change)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                       <span class="input-group-text">días</span>
                     </div>
                     <small class="text-muted">
                       De
-                      <span *ngIf="planilla.tipo_planilla === 'mensual'"
-                        >30 días mensuales</span
-                      >
-                      <span *ngIf="planilla.tipo_planilla === 'quincenal'"
-                        >15 días quincenales</span
-                      >
-                      <span *ngIf="planilla.tipo_planilla === 'semanal'"
-                        >7 días semanales</span
-                      >
+                      <span *ngIf="planilla.tipo_planilla === 'mensual'">30 días mensuales</span>
+                      <span *ngIf="planilla.tipo_planilla === 'quincenal'">15 días quincenales</span>
+                      <span *ngIf="planilla.tipo_planilla === 'semanal'">7 días semanales</span>
                     </small>
                   </div>
 
@@ -369,13 +452,8 @@
                     <label>Salario Devengado:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.salario_devengado"
-                        name="salario_devengado"
-                        disabled
-                      />
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_devengado"
+                        name="salario_devengado" disabled />
                     </div>
                     <small class="text-muted">
                       Calculado en base a días laborados
@@ -385,23 +463,23 @@
                   <div class="mb-3">
                     <label>Horas Extra:</label>
                     <div class="input-group">
-                      <input
-                        type="number"
-                        class="form-control"
+                      <input 
+                        type="number" 
+                        class="form-control" 
                         [(ngModel)]="detalleSeleccionado.horas_extra"
-                        (input)="calcularTotales()"
-                        name="horas_extra"
-                        (change)="calcularTotales()"
-                        [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        (input)="calcularTotales()" 
+                        (change)="calcularTotales()" 
+                        name="horas_extra" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                        min="0"
+                        step="0.5" />
                       <span class="input-group-text">hrs</span>
                     </div>
                     <small class="text-muted">
-                      Monto: ${{
-                        detalleSeleccionado.monto_horas_extra | number : "1.2-2"
-                      }}
+                      Monto: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
+                      <span *ngIf="detalleSeleccionado.horas_extra > 0" class="text-info">
+                        (Valor hora: ${{ calcularValorHora() | number : "1.2-2" }})
+                      </span>
                     </small>
                   </div>
 
@@ -409,17 +487,10 @@
                     <label>Comisiones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.comisiones"
-                        name="comisiones"
-                        (input)="calcularTotales()"
-                        (change)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.comisiones"
+                        name="comisiones" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                     </div>
                   </div>
 
@@ -427,17 +498,10 @@
                     <label>Bonificaciones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.bonificaciones"
-                        name="bonificaciones"
-                        (input)="calcularTotales()"
-                        (change)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.bonificaciones"
+                        name="bonificaciones" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                     </div>
                   </div>
 
@@ -445,23 +509,16 @@
                     <label>Otros Ingresos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.otros_ingresos"
-                        name="otros_ingresos"
-                        (input)="calcularTotales()"
-                        (change)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.otros_ingresos"
+                        name="otros_ingresos" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                     </div>
                   </div>
 
                   <div class="alert alert-primary">
                     <strong>Total Ingresos:</strong> ${{
-                      detalleSeleccionado.total_ingresos | number : "1.2-2"
+                    detalleSeleccionado.total_ingresos | number : "1.2-2"
                     }}
                   </div>
                 </div>
@@ -480,73 +537,73 @@
                   <div class="mb-3">
                     <label>ISSS (3%):</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.isss_empleado"
-                        name="isss_empleado"
-                        (input)="calcularTotales()"
-                        disabled
-                      />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.isss_empleado"
+                            name="isss_empleado" 
+                            [disabled]="true"
+                            [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                     </div>
-                    <small class="text-muted">
-                      Patronal (7.5%): ${{
-                        detalleSeleccionado.isss_patronal | number : "1.2-2"
-                      }}
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
                     </small>
-                  </div>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                    </small>
+                </div>
 
-                  <div class="mb-3">
+                <div class="mb-3">
                     <label>AFP (7.25%):</label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.afp_empleado"
-                        name="afp_empleado"
-                        (input)="calcularTotales()"
-                        disabled
-                      />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.afp_empleado"
+                            name="afp_empleado" 
+                            [disabled]="true"
+                            [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                     </div>
-                    <small class="text-muted">
-                      Patronal (7.75%): ${{
-                        detalleSeleccionado.afp_patronal | number : "1.2-2"
-                      }}
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
                     </small>
-                  </div>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                    </small>
+                </div>
 
                   <div class="mb-3">
-                    <label>ISR:</label>
+                    <label>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">ISR:</span>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">ISR (10% fijo):</span>
+                    </label>
                     <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.renta"
-                        name="renta"
-                        (input)="calcularTotales()"
-                        disabled
-                      />
+                        <span class="input-group-text">$</span>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            [(ngModel)]="detalleSeleccionado.renta" 
+                            name="renta"
+                            [disabled]="true" />
                     </div>
-                  </div>
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Según tablas de renta vigentes
+                    </small>
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        10% fijo sobre total de ingresos
+                    </small>
+                </div>
 
                   <div class="mb-3">
                     <label>Préstamos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.prestamos"
-                        name="prestamos"
-                        (input)="calcularTotales()"
-                        (change)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.prestamos"
+                        name="prestamos" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                     </div>
                   </div>
 
@@ -554,23 +611,16 @@
                     <label>Anticipos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input
-                        type="number"
-                        class="form-control"
-                        [(ngModel)]="detalleSeleccionado.anticipos"
-                        name="anticipos"
-                        (change)="calcularTotales()"
-                        (input)="calcularTotales()"
-                        [disabled]="
+                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.anticipos"
+                        name="anticipos" (change)="calcularTotales()" (input)="calcularTotales()" [disabled]="
                           planilla.estado !== 2 && planilla.estado !== 3
-                        "
-                      />
+                        " />
                     </div>
                   </div>
 
                   <div class="alert alert-warning">
                     <strong>Total Descuentos:</strong> ${{
-                      detalleSeleccionado.total_descuentos | number : "1.2-2"
+                    detalleSeleccionado.total_descuentos | number : "1.2-2"
                     }}
                   </div>
                 </div>
@@ -581,7 +631,7 @@
             <div class="col-12">
               <div class="alert alert-success">
                 <strong>Sueldo Neto:</strong> ${{
-                  detalleSeleccionado.sueldo_neto | number : "1.2-2"
+                detalleSeleccionado.sueldo_neto | number : "1.2-2"
                 }}
               </div>
             </div>
@@ -589,20 +639,12 @@
 
           <!-- Botones -->
           <div class="d-flex justify-content-end gap-2 mt-3">
-            <button
-              type="button"
-              class="btn btn-light"
-              (click)="cancelarEdicion()"
-            >
+            <button type="button" class="btn btn-light" (click)="cancelarEdicion()">
               Cancelar
             </button>
-            <button
-              type="submit"
-              class="btn btn-primary"
-              [disabled]="
+            <button type="submit" class="btn btn-primary" [disabled]="
                 saving || (planilla.estado !== 2 && planilla.estado !== 3)
-              "
-            >
+              ">
               <span *ngIf="!saving">
                 <i class="fa fa-save"></i> Guardar Cambios
               </span>
@@ -622,12 +664,7 @@
     <div class="modal-title">
       <h4 class="mb-0">Filtrar Detalles de Planilla</h4>
     </div>
-    <button
-      type="button"
-      class="btn-close"
-      (click)="modalRef.hide()"
-      aria-label="Close"
-    ></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="filtrarDetallePlanillas()">
@@ -635,22 +672,13 @@
         <!-- Fecha -->
         <div class="form-group col-12 mb-3">
           <label>Fecha:</label>
-          <input
-            type="date"
-            class="form-control"
-            [(ngModel)]="filtros.fecha"
-            name="fecha"
-          />
+          <input type="date" class="form-control" [(ngModel)]="filtros.fecha" name="fecha" />
         </div>
 
         <!-- Estado -->
         <div class="form-group col-12 mb-3">
           <label>Estado:</label>
-          <select
-            [(ngModel)]="filtros.estado"
-            name="estado"
-            class="form-select"
-          >
+          <select [(ngModel)]="filtros.estado" name="estado" class="form-select">
             <option value="">Todos</option>
             <option value="1">Borrador</option>
             <option value="2">Aprobada</option>
@@ -661,12 +689,8 @@
         <!-- Departamento -->
         <div class="form-group col-md-6 mb-3">
           <label>Departamento:</label>
-          <select
-            [(ngModel)]="filtros.id_departamento"
-            (ngModelChange)="onDepartamentoChange()"
-            name="id_departamento"
-            class="form-select"
-          >
+          <select [(ngModel)]="filtros.id_departamento" (ngModelChange)="onDepartamentoChange()" name="id_departamento"
+            class="form-select">
             <option value="">Todos los departamentos</option>
             <option *ngFor="let depto of departamentos" [value]="depto.id">
               {{ depto.nombre }}
@@ -677,12 +701,8 @@
         <!-- Cargo -->
         <div class="form-group col-md-6 mb-3">
           <label>Cargo:</label>
-          <select
-            [(ngModel)]="filtros.id_cargo"
-            name="id_cargo"
-            class="form-select"
-            [disabled]="!filtros.id_departamento"
-          >
+          <select [(ngModel)]="filtros.id_cargo" name="id_cargo" class="form-select"
+            [disabled]="!filtros.id_departamento">
             <option value="">Todos los cargos</option>
             <option *ngFor="let cargo of cargosFiltrados" [value]="cargo.id">
               {{ cargo.nombre }}
