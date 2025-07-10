@@ -730,8 +730,24 @@ export class EmpresaComponent implements OnInit {
         if (key) {
             return this.customConfig[section][key] || defaultValue;
         }
-
+        
         return this.customConfig[section];
+    }
+
+    public setCamposRenta(){
+        this.onSubmit().then(() => {
+            this.mhService.auth().subscribe(response => {
+
+                this.apiService.getAll('set-campos-nuevos').subscribe((usuario) => {
+                    this.alertService.success(
+                      'Usuario guardado',
+                      'El usuario fue guardado exitosamente.'
+                    );
+                  }, (error) => {this.alertService.error(error); this.saving = false; }
+                );
+                
+            },error => {this.alertService.error(error); this.cheking = false; });
+        });
     }
 
 }
