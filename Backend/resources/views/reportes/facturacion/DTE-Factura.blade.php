@@ -25,6 +25,25 @@
         .table.bordered th, .table.bordered td{
             border: 1px solid #aaa;
         }
+
+        /* Propiedades para permitir división de tabla entre páginas */
+        .table.bordered {
+            page-break-inside: auto;
+        }
+        
+        .table.bordered tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+        
+        .table.bordered thead {
+            display: table-header-group;
+        }
+        
+        .table.bordered tfoot {
+            display: table-footer-group;
+        }
+        
         .text-right{
             text-align: right !important;
         }
