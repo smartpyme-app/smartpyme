@@ -818,22 +818,29 @@ class RolePermissionController extends Controller
     public function roles()
     {
         $user = auth()->user();
-        
-        $roles = Role::where(function($q) use ($user) {
+
+        $rolesQuery = Role::where(function($q) use ($user) {
             $q->where('id_empresa', $user->id_empresa)
               ->orWhereNull('id_empresa');
-        })
-        ->orderBy('name')
-        ->get()
-        ->map(function($role) {
-            return [
-                'id' => $role->id,
-                'name' => $role->name,
-                'display_name' => $this->formatRoleName($role->name),
-                'is_global' => is_null($role->id_empresa),
-                'permissions_count' => $role->permissions()->count()
-            ];
         });
+
+        // Si NO es super admin, no mostrar el rol de super_admin
+        if (!$this->isSuperAdmin($user)) {
+            $rolesQuery->where('name', '!=', 'super_admin');
+        }
+
+        $roles = $rolesQuery
+            ->orderBy('name')
+            ->get()
+            ->map(function($role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'display_name' => $this->formatRoleName($role->name),
+                    'is_global' => is_null($role->id_empresa),
+                    'permissions_count' => $role->permissions()->count()
+                ];
+            });
 
         return response()->json($roles, 200);
     }
