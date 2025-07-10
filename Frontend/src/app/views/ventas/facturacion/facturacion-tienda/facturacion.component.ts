@@ -231,6 +231,8 @@ export class FacturacionComponent implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
+    this.venta.tipo_operacion = 'Gravada';
+    this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
     this.venta.id_cliente = '';
     this.venta.detalles = [];
@@ -520,6 +522,24 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido)
     ).toFixed(4);
+
+
+    // Asignar tipoOperacion según los detalles
+    if (this.venta.cobrar_impuestos) {
+      this.venta.tipo_operacion = 'Gravada'; // Aplica IVA
+    } else {
+      this.venta.tipo_operacion = 'No Gravada'; // No aplica IVA
+    }
+
+    // Asignar tipo renta
+    if (this.venta.detalles.length > 0) {
+        if (this.venta.detalles[0].tipo == 'Servicio'){
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
+        }else{
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
+        }
+    }
+
   }
 
   // Cliente

@@ -107,6 +107,11 @@ class Empresa extends Model
 
         //Personalización
         'custom_empresa'
+        //Renta
+        'tipo_renta_servicios',
+        'tipo_renta_productos',
+        'tipo_sector',
+
     ];
 
     protected $casts = [

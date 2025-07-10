@@ -171,7 +171,7 @@
                         <input type="text" class="form-control" [(ngModel)]="empresa.descripcion" name="descripcion" placeholder="Escriba aquí">
                     </div> -->
                 </div>
-            </section>
+
             <div class="bg-white rounded p-3 mb-3">
                 <div class="form-group col-sm-12 pt-2 pb-4">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
@@ -180,6 +180,73 @@
                     </button>
                 </div>
             </div>
+
+            <div class="row">
+                <h6 class="my-3">Configuraciones de renta</h6>
+                <div class="alert alert-info">
+                    <p>
+                        Los campos seleccionados se aplicarán automáticamente a todos los registros actuales de ventas, compras y gastos para completar la información faltante.
+                        <br>
+                        También se usarán como valores predeterminados en los nuevos registros, aunque siempre podrá ajustarlos manualmente cuando sea necesario.
+                    </p>
+                </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="tipo_renta_servicios">Tipo de renta para servicios:</label>
+                    <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_servicios" name="tipo_renta_servicios">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                        <option value="Actividades de Servicios">Actividades de Servicios</option>
+                        <option value="Actividades Comerciales">Actividades Comerciales</option>
+                        <option value="Actividades Industriales">Actividades Industriales</option>
+                        <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                        <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                        <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                        <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
+                        <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                        <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                        <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
+                        <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="tipo_renta_productos">Tipo de renta para productos:</label>
+                    <select class="form-control form-select" [(ngModel)]="empresa.tipo_renta_productos" name="tipo_renta_productos">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option value="Profesiones, Artes y Oficios">Profesiones, Artes y Oficios</option>
+                        <option value="Actividades de Servicios">Actividades de Servicios</option>
+                        <option value="Actividades Comerciales">Actividades Comerciales</option>
+                        <option value="Actividades Industriales">Actividades Industriales</option>
+                        <option value="Actividades Agropecuarias">Actividades Agropecuarias</option>
+                        <option value="Utilidades y Dividendos">Utilidades y Dividendos</option>
+                        <option value="Exportaciones de bienes">Exportaciones de bienes</option>
+                        <option value="Servicios Realizados en el Exterior y Utilizados en El Salvador">Servicios Realizados en el Exterior y Utilizados en El Salvador</option>
+                        <option value="Exportaciones de servicios">Exportaciones de servicios</option>
+                        <option value="Otras Rentas Gravables">Otras Rentas Gravables</option>
+                        <option value="Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910">Ingresos que ya fueron sujetos de retención informados en el F14 y consolidados en F910</option>
+                        <option value="Sujetos pasivos excluidos">Sujetos pasivos excluidos</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="tipo_sector">Sector:</label>
+                    <select name="tipo_sector" class="form-select" [(ngModel)]="empresa.tipo_sector">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option value="Industria">Industria</option>
+                        <option value="Comercio">Comercio</option>
+                        <option value="Agropecuaria">Agropecuaria</option>
+                        <option value="Servicios, profesiones, artes y oficios">Servicios profesiones, artes y oficios</option>
+                    </select>
+                </div>
+            </div>
+            <div class="bg-white rounded p-3 mb-5">
+                <div class="form-group col-sm-12 pt-2 pb-4">
+                    <button type="button" (click)="setCamposRenta()" [disabled]="saving || !empresa.tipo_sector || !empresa.tipo_renta_servicios || !empresa.tipo_renta_productos" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                        <span *ngIf="!saving">Guardar <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        <span *ngIf="saving">Guardando...</span>
+                    </button>
+                </div>
+            </div>
+            </section>
         </form>
     </tab>
     <tab heading="Preferencias del sistema">
