@@ -252,10 +252,10 @@ class MHCCF extends Model
             if ($this->venta->iva > 0) {
                 $tributos = collect();
                 $tributos = ['20'];
-                $this->venta->gravada = $this->venta->total;
+                $this->venta->gravada = $this->venta->detalles()->sum('total');
             }else{
                 $this->venta->gravada = 0;
-                $this->venta->exenta = $this->venta->total;
+                $this->venta->exenta = $this->venta->detalles()->sum('total');
             }
 
             $detalles->push([

@@ -53,7 +53,7 @@ export class SucursalesComponent implements OnInit {
             this.sucursal.activo = 1;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
     }
 
     closeModal(){
