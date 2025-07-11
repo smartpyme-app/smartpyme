@@ -11,6 +11,7 @@ class MHSujetoExcluidoGasto extends Model
 
     public $gasto;
     public $empresa;
+    public $caja_codigo;
     public $sucursal;
 
     public function generarDTE($gasto){
@@ -19,7 +20,8 @@ class MHSujetoExcluidoGasto extends Model
         $this->sucursal = $this->gasto->sucursal()->first();
 
         $this->gasto->tipo_dte = '14';
-        $this->gasto->numero_control = 'DTE-'. $this->gasto->tipo_dte . '-' . $this->sucursal->cod_estable_mh . '0001-' .str_pad($this->gasto->referencia, 15, '0', STR_PAD_LEFT);
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
+        $this->gasto->numero_control = 'DTE-'. $this->gasto->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->gasto->referencia, 15, '0', STR_PAD_LEFT);
 
         if (!$this->gasto->codigo_generacion) {
             $this->gasto->codigo_generacion = strtoupper(Uuid::uuid4()->toString());

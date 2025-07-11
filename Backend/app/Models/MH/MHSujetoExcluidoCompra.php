@@ -11,6 +11,7 @@ class MHSujetoExcluidoCompra extends Model
 
     public $compra;
     public $empresa;
+    public $caja_codigo;
     public $sucursal;
 
     public function generarDTE($compra){
@@ -18,8 +19,10 @@ class MHSujetoExcluidoCompra extends Model
         $this->empresa = $this->compra->empresa()->first();
         $this->sucursal = $this->compra->sucursal()->first();
         
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
+
         $this->compra->tipo_dte = '14';
-        $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->sucursal->cod_estable_mh . '0001-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
+        $this->compra->numero_control = 'DTE-'. $this->compra->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->compra->referencia, 15, '0', STR_PAD_LEFT);
 
         if (!$this->compra->codigo_generacion) {
             $this->compra->codigo_generacion = strtoupper(Uuid::uuid4()->toString());

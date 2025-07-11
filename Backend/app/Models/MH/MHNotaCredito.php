@@ -23,7 +23,7 @@ class MHNotaCredito extends Model
         $this->empresa = $this->devolucion->empresa()->first();
         $this->sucursal = $this->devolucion->usuario()->first()->sucursal()->first();
 
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = $this->sucursal->codigo_punto_venta ?? 'P001';
         $this->devolucion->tipo_dte = '05';
         $this->devolucion->numero_control = 'DTE-'. $this->devolucion->tipo_dte . '-' . $this->sucursal->cod_estable_mh . $this->caja_codigo . '-' .str_pad($this->devolucion->correlativo, 15, '0', STR_PAD_LEFT);
 
