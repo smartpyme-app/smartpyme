@@ -1,0 +1,503 @@
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { AlertService } from '@services/alert.service';
+import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
+
+@Component({
+  selector: 'app-cierre-mes',
+  templateUrl: './cierre-mes.component.html',
+  styleUrls: ['./cierre-mes.component.scss']
+})
+export class CierreMesComponent implements OnInit {
+
+  // Propiedades para el período seleccionado
+  public selectedMonth: number = new Date().getMonth() + 1;
+  public selectedYear: number = new Date().getFullYear();
+  public months: Array<{ value: number; label: string }> = [];
+  public years: number[] = [];
+
+  // Estados del proceso de cierre
+  public estadoPeriodo: any = null;
+  public balanceComprobacion: any = null;
+  public validacionesPrevias: any = {
+    partidasPendientes: 0,
+    balanceCuadra: false,
+    periodoAnteriorCerrado: false
+  };
+  public procesandoCierre: boolean = false;
+  public mostrandoBalance: boolean = false;
+  public confirmacionFinal: boolean = false;
+
+  // Simulación de cierre
+  public simulacionActiva: boolean = false;
+  public resultadoSimulacion: any = null;
+  public cargandoSimulacion: boolean = false;
+  public mostrandoSimulacion: boolean = false;
+
+  // Estados de carga
+  public cargandoPeriodo: boolean = false;
+  public cargandoBalance: boolean = false;
+  public cargandoValidaciones: boolean = false;
+
+  // Datos del catálogo
+  public catalogo: any = [];
+
+  constructor(
+    public apiService: ApiService,
+    private alertService: AlertService,
+    private router: Router
+  ) {}
+
+  ngOnInit(): void {
+    this.initializeDates();
+    this.loadCatalogo();
+    this.onCambiarPeriodo();
+  }
+
+  /**
+   * Inicializar fechas disponibles
+   */
+  private initializeDates(): void {
+    // Generar meses
+    this.months = [
+      { value: 1, label: 'Enero' },
+      { value: 2, label: 'Febrero' },
+      { value: 3, label: 'Marzo' },
+      { value: 4, label: 'Abril' },
+      { value: 5, label: 'Mayo' },
+      { value: 6, label: 'Junio' },
+      { value: 7, label: 'Julio' },
+      { value: 8, label: 'Agosto' },
+      { value: 9, label: 'Septiembre' },
+      { value: 10, label: 'Octubre' },
+      { value: 11, label: 'Noviembre' },
+      { value: 12, label: 'Diciembre' }
+    ];
+
+    // Generar años (5 años hacia atrás y 2 hacia adelante)
+    const currentYear = new Date().getFullYear();
+    for (let i = currentYear - 5; i <= currentYear + 2; i++) {
+      this.years.push(i);
+    }
+  }
+
+  /**
+   * Cargar catálogo de cuentas
+   */
+  private loadCatalogo(): void {
+    this.apiService.getAll('catalogo/cuentas').subscribe(
+      (catalogo: any) => {
+        this.catalogo = catalogo;
+      },
+      (error: any) => {
+        this.alertService.error(error);
+      }
+    );
+  }
+
+  /**
+   * Al cambiar el período seleccionado
+   */
+  public onCambiarPeriodo(): void {
+    if (this.selectedMonth && this.selectedYear) {
+      this.resetearEstados();
+      this.cargarEstadoPeriodo();
+    }
+  }
+
+  /**
+   * Resetear todos los estados
+   */
+  private resetearEstados(): void {
+    this.estadoPeriodo = null;
+    this.balanceComprobacion = null;
+    this.validacionesPrevias = {
+      partidasPendientes: 0,
+      balanceCuadra: false,
+      periodoAnteriorCerrado: false
+    };
+    this.simulacionActiva = false;
+    this.resultadoSimulacion = null;
+    this.mostrandoSimulacion = false;
+    this.mostrandoBalance = false;
+    this.confirmacionFinal = false;
+  }
+
+  /**
+   * Cargar estado del período seleccionado
+   */
+  private cargarEstadoPeriodo(): void {
+    this.cargandoPeriodo = true;
+
+    this.apiService.getAll(`partidas/estado-periodo?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+      (estado: any) => {
+        this.estadoPeriodo = estado;
+        this.cargandoPeriodo = false;
+
+        // Si el período no está cerrado, cargar validaciones
+        if (!estado.cerrado) {
+          this.cargarValidacionesPrevias();
+        }
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.cargandoPeriodo = false;
+      }
+    );
+  }
+
+  /**
+   * Cargar validaciones previas al cierre
+   */
+  private cargarValidacionesPrevias(): void {
+    this.cargandoValidaciones = true;
+
+    // Las validaciones se obtienen de la simulación de cierre
+    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+      (resultado: any) => {
+        if (resultado.validaciones) {
+          this.validacionesPrevias = {
+            partidasPendientes: resultado.validaciones.partidas_pendientes || 0,
+            balanceCuadra: resultado.validaciones.balance_cuadra || false,
+            periodoAnteriorCerrado: resultado.validaciones.periodo_anterior_cerrado || false
+          };
+        }
+        this.cargandoValidaciones = false;
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.cargandoValidaciones = false;
+      }
+    );
+  }
+
+  /**
+   * Simular cierre de mes
+   */
+  public simularCierre(): void {
+    this.cargandoSimulacion = true;
+    this.simulacionActiva = true;
+
+    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+      (simulacion: any) => {
+        this.resultadoSimulacion = simulacion;
+        this.mostrandoSimulacion = true;
+        this.cargandoSimulacion = false;
+
+        if (simulacion.simulacion_exitosa) {
+          this.alertService.success(
+            '✅ Simulación Exitosa',
+            'El cierre puede realizarse sin problemas'
+          );
+        } else {
+          this.alertService.warning(
+            '⚠️ Simulación con Advertencias',
+            'Revise las observaciones antes de continuar'
+          );
+        }
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.cargandoSimulacion = false;
+        this.simulacionActiva = false;
+      }
+    );
+  }
+
+  /**
+   * Mostrar balance de comprobación
+   */
+  public mostrarBalance(): void {
+    this.cargandoBalance = true;
+    this.mostrandoBalance = true;
+
+    this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+      (balance: any) => {
+        this.balanceComprobacion = balance;
+        this.cargandoBalance = false;
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.cargandoBalance = false;
+        this.mostrandoBalance = false;
+      }
+    );
+  }
+
+  /**
+   * Ocultar balance de comprobación
+   */
+  public ocultarBalance(): void {
+    this.mostrandoBalance = false;
+    this.balanceComprobacion = null;
+  }
+
+  /**
+   * Preparar confirmación final
+   */
+  public prepararConfirmacion(): void {
+    if (!this.puedeRealizarCierre()) {
+      this.alertService.warning(
+        'Cierre no disponible',
+        'Debe resolver todas las validaciones antes de continuar'
+      );
+      return;
+    }
+
+    this.confirmacionFinal = true;
+  }
+
+  /**
+   * Cancelar confirmación
+   */
+  public cancelarConfirmacion(): void {
+    this.confirmacionFinal = false;
+  }
+
+  /**
+   * Realizar cierre definitivo
+   */
+  public realizarCierre(): void {
+    Swal.fire({
+      title: '🔒 Confirmar Cierre de Mes',
+      html: `
+        <div class="text-start">
+          <p><strong>Período:</strong> ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}</p>
+          <p><strong>⚠️ Esta acción no se puede deshacer</strong></p>
+          <p>El sistema:</p>
+          <ul class="text-start">
+            <li>✅ Cerrará todas las partidas del período</li>
+            <li>✅ Calculará saldos finales</li>
+            <li>✅ Actualizará saldos iniciales del siguiente período</li>
+            <li>✅ Generará respaldo automático</li>
+          </ul>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Cerrar Período',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ejecutarCierre();
+      }
+    });
+  }
+
+  /**
+   * Ejecutar el cierre definitivo
+   */
+  private ejecutarCierre(): void {
+    this.procesandoCierre = true;
+
+    const params = {
+      year: this.selectedYear,
+      month: this.selectedMonth
+    };
+
+    this.apiService.store('partidas/cerrar', params).subscribe(
+      (resultado: any) => {
+        this.procesandoCierre = false;
+
+        if (resultado.success) {
+          // Obtener balance final para mostrar en el mensaje de éxito
+          this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+            (balanceFinal: any) => {
+              Swal.fire({
+                title: '🎉 Cierre Completado',
+                html: `
+                  <div class="text-start">
+                    <p><strong>Período:</strong> ${resultado.periodo}</p>
+                    <p><strong>Cuentas procesadas:</strong> ${resultado.cuentas_procesadas}</p>
+                    <p><strong>Fecha:</strong> ${new Date(resultado.fecha_cierre).toLocaleString()}</p>
+                    <hr>
+                                         <h6>Balance Final:</h6>
+                     <p><strong>Total Debe (Movimientos):</strong> ${balanceFinal.totales?.debe.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                     <p><strong>Total Haber (Movimientos):</strong> ${balanceFinal.totales?.haber.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                     <p><strong>Diferencia Movimientos:</strong>
+                       <span class="${balanceFinal.totales?.cuadra_movimientos ? 'text-success' : 'text-danger'}">
+                         ${balanceFinal.totales?.diferencia_movimientos.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                       </span>
+                     </p>
+                     <hr>
+                     <p><strong>Total Deudor (Saldos):</strong> ${balanceFinal.totales?.deudor.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                     <p><strong>Total Acreedor (Saldos):</strong> ${balanceFinal.totales?.acreedor.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                     <p><strong>Diferencia Saldos:</strong>
+                       <span class="${balanceFinal.totales?.cuadra ? 'text-success' : 'text-danger'}">
+                         ${balanceFinal.totales?.diferencia.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                       </span>
+                     </p>
+                  </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'Continuar'
+              }).then(() => {
+                // Recargar estado del período
+                this.cargarEstadoPeriodo();
+                this.confirmacionFinal = false;
+              });
+            },
+            (error: any) => {
+              // Si no se puede obtener el balance, mostrar mensaje básico
+              Swal.fire({
+                title: '🎉 Cierre Completado',
+                html: `
+                  <div class="text-start">
+                    <p><strong>Período:</strong> ${resultado.periodo}</p>
+                    <p><strong>Cuentas procesadas:</strong> ${resultado.cuentas_procesadas}</p>
+                    <p><strong>Fecha:</strong> ${new Date(resultado.fecha_cierre).toLocaleString()}</p>
+                  </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'Continuar'
+              }).then(() => {
+                // Recargar estado del período
+                this.cargarEstadoPeriodo();
+                this.confirmacionFinal = false;
+              });
+            }
+          );
+        } else {
+          this.alertService.error(resultado.message || 'Error desconocido en el cierre');
+        }
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.procesandoCierre = false;
+      }
+    );
+  }
+
+  /**
+   * Reabrir período cerrado
+   */
+  public reabrirPeriodo(): void {
+    Swal.fire({
+      title: '🔓 Reabrir Período',
+      html: `
+        <div class="text-start">
+          <p><strong>Período:</strong> ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}</p>
+          <p><strong>⚠️ Esta acción permitirá modificar partidas del período</strong></p>
+          <p>¿Está seguro de continuar?</p>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, Reabrir',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.ejecutarReapertura();
+      }
+    });
+  }
+
+  /**
+   * Ejecutar reapertura del período
+   */
+  private ejecutarReapertura(): void {
+    this.procesandoCierre = true;
+
+    const params = {
+      year: this.selectedYear,
+      month: this.selectedMonth
+    };
+
+    this.apiService.store('partidas/reabrir', params).subscribe(
+      (resultado: any) => {
+        this.procesandoCierre = false;
+
+        if (resultado.success) {
+          this.alertService.success('Período reabierto', resultado.message);
+          this.cargarEstadoPeriodo();
+        } else {
+          this.alertService.error(resultado.message || 'Error desconocido en la reapertura');
+        }
+      },
+      (error: any) => {
+        this.alertService.error(error);
+        this.procesandoCierre = false;
+      }
+    );
+  }
+
+  /**
+   * Verificar si se puede realizar el cierre
+   */
+  public puedeRealizarCierre(): boolean {
+    return this.validacionesPrevias.periodoAnteriorCerrado &&
+           this.validacionesPrevias.balanceCuadra &&
+           this.validacionesPrevias.partidasPendientes === 0;
+  }
+
+  /**
+   * Verificar si hay advertencias
+   */
+  public hayAdvertencias(): boolean {
+    return this.resultadoSimulacion?.advertencias?.length > 0;
+  }
+
+  /**
+   * Obtener nombre del mes
+   */
+  public getMonthName(month: number | string): string {
+    // Convertir a número para asegurar compatibilidad
+    const monthNumber = Number(month);
+    const monthObj = this.months.find(m => m.value === monthNumber);
+    return monthObj ? monthObj.label : monthNumber.toString();
+  }
+
+  /**
+   * Volver a partidas
+   */
+  public volverAPartidas(): void {
+    this.router.navigate(['/contabilidad/partidas']);
+  }
+
+  /**
+   * Navegar a catálogo de cuentas
+   */
+  public irACatalogo(): void {
+    this.router.navigate(['/catalogo/cuentas']);
+  }
+
+  /**
+   * Navegar a partidas
+   */
+  public irAPartidas(): void {
+    this.router.navigate(['/contabilidad/partidas']);
+  }
+
+  /**
+   * Descargar reporte de cierre
+   */
+  public descargarReporte(): void {
+    if (!this.resultadoSimulacion) {
+      this.alertService.warning('Sin datos', 'Debe realizar primero la simulación');
+      return;
+    }
+
+    // Usar la descarga genérica de partidas con un ID específico o crear reporte personalizado
+    this.alertService.success('Generando reporte...', 'El reporte se está preparando');
+
+    // Por ahora, mostrar la información de la simulación
+    const reporteTexto = `
+      Reporte de Simulación de Cierre - ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}
+
+      Validaciones:
+      - Período anterior cerrado: ${this.resultadoSimulacion.validaciones?.periodo_anterior_cerrado ? 'Sí' : 'No'}
+      - Balance cuadra: ${this.resultadoSimulacion.validaciones?.balance_cuadra ? 'Sí' : 'No'}
+      - Partidas pendientes: ${this.resultadoSimulacion.validaciones?.partidas_pendientes || 0}
+
+      Fecha de simulación: ${new Date(this.resultadoSimulacion.fecha_simulacion).toLocaleString()}
+    `;
+
+    console.log('Reporte de cierre:', reporteTexto);
+    this.alertService.info('Reporte generado', 'Revise la consola del navegador para ver el reporte detallado');
+  }
+}

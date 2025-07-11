@@ -124,13 +124,12 @@ class SimulacionCierreService
         $validaciones['partidas_aplicadas'] = $partidasAplicadas;
         $validaciones['total_partidas'] = $totalPartidas;
 
-        // Simular balance
+        // Simular balance correctamente
         $saldosTemp = $this->simularCalculoSaldos($year, $month, $empresa_id);
-        $totalDeudor = collect($saldosTemp)->where('naturaleza', 'Deudor')->sum('saldo_final');
-        $totalAcreedor = collect($saldosTemp)->where('naturaleza', 'Acreedor')->sum('saldo_final');
-        $diferencia = abs($totalDeudor - $totalAcreedor);
+        $balanceSimulado = $this->simularBalanceComprobacion($saldosTemp);
+        $diferencia = abs($balanceSimulado['diferencia']);
 
-        $validaciones['balance_cuadra'] = $diferencia < 0.01;
+        $validaciones['balance_cuadra'] = $balanceSimulado['cuadra'];
         $validaciones['diferencia_balance'] = $diferencia;
 
         // Contar cuentas
@@ -222,16 +221,29 @@ class SimulacionCierreService
      */
     private function simularBalanceComprobacion($saldosSimulados)
     {
+        // ✅ CORRECCIÓN: Sumar movimientos debe/haber del período
+        $totalDebe = collect($saldosSimulados)->sum('debe');
+        $totalHaber = collect($saldosSimulados)->sum('haber');
+        $diferencia = $totalDebe - $totalHaber;
+
+        // También calcular totales por naturaleza para validación adicional
         $totalDeudor = collect($saldosSimulados)->where('naturaleza', 'Deudor')->sum('saldo_final');
         $totalAcreedor = collect($saldosSimulados)->where('naturaleza', 'Acreedor')->sum('saldo_final');
-        $diferencia = $totalDeudor - $totalAcreedor;
+        $diferenciaSaldos = $totalDeudor - $totalAcreedor;
 
         return [
-            'total_deudor' => $totalDeudor,
-            'total_acreedor' => $totalAcreedor,
+            // Totales de movimientos del período (lo que realmente importa para el balance)
+            'total_debe' => $totalDebe,
+            'total_haber' => $totalHaber,
             'diferencia' => $diferencia,
             'cuadra' => abs($diferencia) < 0.01,
-            'porcentaje_error' => $totalDeudor != 0 ? abs($diferencia / $totalDeudor) * 100 : 0,
+            'porcentaje_error' => $totalDebe != 0 ? abs($diferencia / $totalDebe) * 100 : 0,
+
+            // Totales por naturaleza de cuentas (para validación adicional)
+            'total_deudor' => $totalDeudor,
+            'total_acreedor' => $totalAcreedor,
+            'diferencia_saldos' => $diferenciaSaldos,
+            'cuadra_saldos' => abs($diferenciaSaldos) < 0.01,
         ];
     }
 

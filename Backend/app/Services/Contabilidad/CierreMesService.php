@@ -339,6 +339,8 @@ class CierreMesService
         $balance = [];
         $totalDeudor = 0;
         $totalAcreedor = 0;
+        $totalDebe = 0;
+        $totalHaber = 0;
 
         foreach ($saldos as $saldo) {
             $balance[] = [
@@ -352,6 +354,11 @@ class CierreMesService
                 'estado' => $saldo->estado,
             ];
 
+            // Sumar movimientos del período (debe/haber)
+            $totalDebe += $saldo->debe;
+            $totalHaber += $saldo->haber;
+
+            // Sumar saldos finales por naturaleza
             if ($saldo->naturaleza == 'Deudor') {
                 $totalDeudor += $saldo->saldo_final;
             } else {
@@ -362,6 +369,13 @@ class CierreMesService
         return [
             'balance' => $balance,
             'totales' => [
+                // Totales de movimientos del período
+                'debe' => $totalDebe,
+                'haber' => $totalHaber,
+                'diferencia_movimientos' => $totalDebe - $totalHaber,
+                'cuadra_movimientos' => abs($totalDebe - $totalHaber) < 0.01,
+
+                // Totales por naturaleza de cuentas
                 'deudor' => $totalDeudor,
                 'acreedor' => $totalAcreedor,
                 'diferencia' => $totalDeudor - $totalAcreedor,
