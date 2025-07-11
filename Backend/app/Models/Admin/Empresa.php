@@ -106,11 +106,12 @@ class Empresa extends Model
         'woocommerce_canal_id',
 
         //Personalización
-        'custom_empresa'
+        'custom_empresa',
+
         //Renta
         'tipo_renta_servicios',
         'tipo_renta_productos',
-        'tipo_sector',
+        'tipo_sector'
 
     ];
 
