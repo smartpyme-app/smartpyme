@@ -29,17 +29,17 @@ class CierreMesService
             // 3. Calcular saldos del período
             $saldos = $this->calcularSaldosPeriodo($year, $month, $empresa_id);
 
-            // 4. Guardar saldos mensuales
+            // 4. Validar cuadre del balance ANTES de guardar
+            $this->validarCuadreBalance($saldos);
+
+            // 5. Guardar saldos mensuales
             $this->guardarSaldosMensuales($saldos, $year, $month, $usuario_id, $empresa_id);
 
-            // 5. Cerrar partidas del período
+            // 6. Cerrar partidas del período
             $this->cerrarPartidasPeriodo($year, $month, $empresa_id);
 
-            // 6. Actualizar saldos iniciales del siguiente período
+            // 7. Actualizar saldos iniciales del siguiente período
             $this->actualizarSaldosInicialesSiguientePeriodo($year, $month, $empresa_id);
-
-            // 7. Validar cuadre del balance
-            $this->validarCuadreBalance($year, $month, $empresa_id);
 
             DB::commit();
 
@@ -123,9 +123,15 @@ class CierreMesService
 
         $saldos = [];
         foreach ($cuentas as $cuenta) {
-            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial;
+            // Asegurar que saldo_inicial nunca sea null
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
             $debe = $movimientos[$cuenta->id]->total_debe ?? 0;
             $haber = $movimientos[$cuenta->id]->total_haber ?? 0;
+
+            // Convertir a float para asegurar tipos numéricos
+            $saldoInicial = (float)$saldoInicial;
+            $debe = (float)$debe;
+            $haber = (float)$haber;
 
             // Calcular saldo final según naturaleza
             if ($cuenta->naturaleza == 'Deudor') {
@@ -164,7 +170,8 @@ class CierreMesService
 
         $saldosIniciales = [];
         foreach ($saldosAnteriores as $saldo) {
-            $saldosIniciales[$saldo->id_cuenta] = $saldo->saldo_final;
+            // Asegurar que el saldo final nunca sea null
+            $saldosIniciales[$saldo->id_cuenta] = (float)($saldo->saldo_final ?? 0);
         }
 
         return $saldosIniciales;
@@ -254,20 +261,18 @@ class CierreMesService
     }
 
     /**
-     * Validar cuadre del balance
+     * Validar cuadre del balance usando movimientos debe/haber
      */
-    private function validarCuadreBalance($year, $month, $empresa_id)
+    private function validarCuadreBalance($saldos)
     {
-        $saldos = SaldoMensual::where('year', $year)
-            ->where('month', $month)
-            ->where('id_empresa', $empresa_id)
-            ->get();
+        // Sumar movimientos del período (debe vs haber)
+        $totalDebe = collect($saldos)->sum('debe');
+        $totalHaber = collect($saldos)->sum('haber');
+        $diferencia = abs($totalDebe - $totalHaber);
 
-        $totalDeudor = $saldos->where('naturaleza', 'Deudor')->sum('saldo_final');
-        $totalAcreedor = $saldos->where('naturaleza', 'Acreedor')->sum('saldo_final');
-
-        if (abs($totalDeudor - $totalAcreedor) > 0.01) {
-            throw new Exception("El balance no cuadra. Deudor: {$totalDeudor}, Acreedor: {$totalAcreedor}");
+        // Permitir diferencias de hasta $1.00
+        if ($diferencia > 1.00) {
+            throw new Exception("El balance no cuadra. Diferencia: $" . number_format($diferencia, 2) . ". Debe: $" . number_format($totalDebe, 2) . ", Haber: $" . number_format($totalHaber, 2));
         }
     }
 
@@ -366,7 +371,7 @@ class CierreMesService
             }
         }
 
-        return [
+                return [
             'balance' => $balance,
             'totales' => [
                 // Totales de movimientos del período
@@ -374,12 +379,14 @@ class CierreMesService
                 'haber' => $totalHaber,
                 'diferencia_movimientos' => $totalDebe - $totalHaber,
                 'cuadra_movimientos' => abs($totalDebe - $totalHaber) < 0.01,
+                'cuadra_movimientos_con_tolerancia' => abs($totalDebe - $totalHaber) <= 1.00,
 
                 // Totales por naturaleza de cuentas
                 'deudor' => $totalDeudor,
                 'acreedor' => $totalAcreedor,
                 'diferencia' => $totalDeudor - $totalAcreedor,
                 'cuadra' => abs($totalDeudor - $totalAcreedor) < 0.01,
+                'cuadra_con_tolerancia' => abs($totalDeudor - $totalAcreedor) <= 1.00,
             ],
             'periodo' => "{$month}/{$year}",
         ];

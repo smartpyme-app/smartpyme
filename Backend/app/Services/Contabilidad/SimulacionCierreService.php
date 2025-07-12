@@ -130,7 +130,9 @@ class SimulacionCierreService
         $diferencia = abs($balanceSimulado['diferencia']);
 
         $validaciones['balance_cuadra'] = $balanceSimulado['cuadra'];
+        $validaciones['balance_cuadra_con_tolerancia'] = $balanceSimulado['cuadra_con_tolerancia'];
         $validaciones['diferencia_balance'] = $diferencia;
+        $validaciones['requiere_confirmacion_diferencia'] = $diferencia > 0.01 && $diferencia <= 1.00;
 
         // Contar cuentas
         $saldosCollection = collect($saldosTemp);
@@ -179,7 +181,8 @@ class SimulacionCierreService
 
         $saldosSimulados = [];
         foreach ($cuentas as $cuenta) {
-            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial;
+            // Asegurar que saldo_inicial nunca sea null
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
             $movimiento = $movimientos->get($cuenta->id);
             $debe = $movimiento ? (float)$movimiento->total_debe : 0;
             $haber = $movimiento ? (float)$movimiento->total_haber : 0;
@@ -237,6 +240,7 @@ class SimulacionCierreService
             'total_haber' => $totalHaber,
             'diferencia' => $diferencia,
             'cuadra' => abs($diferencia) < 0.01,
+            'cuadra_con_tolerancia' => abs($diferencia) <= 1.00, // Permitir diferencias de hasta $1
             'porcentaje_error' => $totalDebe != 0 ? abs($diferencia / $totalDebe) * 100 : 0,
 
             // Totales por naturaleza de cuentas (para validación adicional)
@@ -244,6 +248,7 @@ class SimulacionCierreService
             'total_acreedor' => $totalAcreedor,
             'diferencia_saldos' => $diferenciaSaldos,
             'cuadra_saldos' => abs($diferenciaSaldos) < 0.01,
+            'cuadra_saldos_con_tolerancia' => abs($diferenciaSaldos) <= 1.00,
         ];
     }
 
@@ -348,11 +353,21 @@ class SimulacionCierreService
         }
 
         if (!$balance['cuadra']) {
-            $advertencias[] = [
-                'tipo' => 'error',
-                'mensaje' => "Balance descuadrado por " . number_format($balance['diferencia'], 2),
-                'accion' => 'Revise las partidas que causan el descuadre'
-            ];
+            if ($balance['cuadra_con_tolerancia']) {
+                // Diferencia menor a $1 - Solo advertencia
+                $advertencias[] = [
+                    'tipo' => 'warning',
+                    'mensaje' => "Diferencia menor de $" . number_format(abs($balance['diferencia']), 2) . " en el balance",
+                    'accion' => 'Esta diferencia está dentro del rango permitido. Confirme si desea proceder con el cierre.'
+                ];
+            } else {
+                // Diferencia mayor a $1 - Error que impide el cierre
+                $advertencias[] = [
+                    'tipo' => 'error',
+                    'mensaje' => "Balance descuadrado por $" . number_format(abs($balance['diferencia']), 2),
+                    'accion' => 'Debe corregir las partidas que causan este descuadre antes del cierre'
+                ];
+            }
         }
 
         if ($validaciones['cuentas_sin_movimiento'] > ($validaciones['cuentas_con_movimiento'] * 0.8)) {
@@ -408,7 +423,8 @@ class SimulacionCierreService
 
         $saldosIniciales = [];
         foreach ($saldosAnteriores as $saldo) {
-            $saldosIniciales[$saldo->id_cuenta] = $saldo->saldo_final;
+            // Asegurar que el saldo final nunca sea null
+            $saldosIniciales[$saldo->id_cuenta] = (float)($saldo->saldo_final ?? 0);
         }
 
         return $saldosIniciales;

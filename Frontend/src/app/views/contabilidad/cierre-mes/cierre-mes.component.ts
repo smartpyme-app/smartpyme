@@ -23,7 +23,10 @@ export class CierreMesComponent implements OnInit {
   public validacionesPrevias: any = {
     partidasPendientes: 0,
     balanceCuadra: false,
-    periodoAnteriorCerrado: false
+    balanceCuadraConTolerancia: false,
+    periodoAnteriorCerrado: false,
+    requiereConfirmacionDiferencia: false,
+    diferenciaBalance: 0
   };
   public procesandoCierre: boolean = false;
   public mostrandoBalance: boolean = false;
@@ -115,7 +118,10 @@ export class CierreMesComponent implements OnInit {
     this.validacionesPrevias = {
       partidasPendientes: 0,
       balanceCuadra: false,
-      periodoAnteriorCerrado: false
+      balanceCuadraConTolerancia: false,
+      periodoAnteriorCerrado: false,
+      requiereConfirmacionDiferencia: false,
+      diferenciaBalance: 0
     };
     this.simulacionActiva = false;
     this.resultadoSimulacion = null;
@@ -160,7 +166,10 @@ export class CierreMesComponent implements OnInit {
           this.validacionesPrevias = {
             partidasPendientes: resultado.validaciones.partidas_pendientes || 0,
             balanceCuadra: resultado.validaciones.balance_cuadra || false,
-            periodoAnteriorCerrado: resultado.validaciones.periodo_anterior_cerrado || false
+            balanceCuadraConTolerancia: resultado.validaciones.balance_cuadra_con_tolerancia || false,
+            periodoAnteriorCerrado: resultado.validaciones.periodo_anterior_cerrado || false,
+            requiereConfirmacionDiferencia: resultado.validaciones.requiere_confirmacion_diferencia || false,
+            diferenciaBalance: resultado.validaciones.diferencia_balance || 0
           };
         }
         this.cargandoValidaciones = false;
@@ -259,11 +268,30 @@ export class CierreMesComponent implements OnInit {
    * Realizar cierre definitivo
    */
   public realizarCierre(): void {
+    // Preparar mensaje diferente si hay diferencia menor
+    let tituloModal = '🔒 Confirmar Cierre de Mes';
+    let iconoModal = 'warning';
+    let mensajeAdicional = '';
+
+    if (this.requiereConfirmacionPorDiferencia()) {
+      tituloModal = '⚠️ Cierre con Diferencia Menor';
+      iconoModal = 'question';
+      mensajeAdicional = `
+        <div class="alert alert-warning" style="text-align: left; margin: 10px 0;">
+          <h6><i class="fa fa-exclamation-triangle"></i> Diferencia Detectada</h6>
+          <p><strong>Diferencia en balance:</strong> $${this.validacionesPrevias.diferenciaBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p>Esta diferencia es menor a $1.00 y está dentro del rango permitido.</p>
+          <p><strong>¿Desea proceder con el cierre?</strong></p>
+        </div>
+      `;
+    }
+
     Swal.fire({
-      title: '🔒 Confirmar Cierre de Mes',
+      title: tituloModal,
       html: `
         <div class="text-start">
           <p><strong>Período:</strong> ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}</p>
+          ${mensajeAdicional}
           <p><strong>⚠️ Esta acción no se puede deshacer</strong></p>
           <p>El sistema:</p>
           <ul class="text-start">
@@ -274,11 +302,11 @@ export class CierreMesComponent implements OnInit {
           </ul>
         </div>
       `,
-      icon: 'warning',
+      icon: iconoModal as any,
       showCancelButton: true,
-      confirmButtonText: 'Sí, Cerrar Período',
+      confirmButtonText: this.requiereConfirmacionPorDiferencia() ? 'Sí, Cerrar con Diferencia' : 'Sí, Cerrar Período',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33',
+      confirmButtonColor: this.requiereConfirmacionPorDiferencia() ? '#ff9800' : '#d33',
       cancelButtonColor: '#3085d6'
     }).then((result) => {
       if (result.isConfirmed) {
@@ -314,22 +342,29 @@ export class CierreMesComponent implements OnInit {
                     <p><strong>Cuentas procesadas:</strong> ${resultado.cuentas_procesadas}</p>
                     <p><strong>Fecha:</strong> ${new Date(resultado.fecha_cierre).toLocaleString()}</p>
                     <hr>
-                                         <h6>Balance Final:</h6>
-                     <p><strong>Total Debe (Movimientos):</strong> ${balanceFinal.totales?.debe.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                     <p><strong>Total Haber (Movimientos):</strong> ${balanceFinal.totales?.haber.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                     <p><strong>Diferencia Movimientos:</strong>
-                       <span class="${balanceFinal.totales?.cuadra_movimientos ? 'text-success' : 'text-danger'}">
-                         ${balanceFinal.totales?.diferencia_movimientos.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                       </span>
-                     </p>
-                     <hr>
-                     <p><strong>Total Deudor (Saldos):</strong> ${balanceFinal.totales?.deudor.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                     <p><strong>Total Acreedor (Saldos):</strong> ${balanceFinal.totales?.acreedor.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                     <p><strong>Diferencia Saldos:</strong>
-                       <span class="${balanceFinal.totales?.cuadra ? 'text-success' : 'text-danger'}">
-                         ${balanceFinal.totales?.diferencia.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                       </span>
-                     </p>
+                    <h6 class="text-success">
+                      <i class="fa fa-check-circle me-2"></i>
+                      Balance de Movimientos:
+                    </h6>
+                    <div class="bg-light p-3 rounded">
+                      <p><strong>✅ Total Debe:</strong> ${balanceFinal.totales?.debe.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                      <p><strong>✅ Total Haber:</strong> ${balanceFinal.totales?.haber.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                      <p><strong>✅ Diferencia:</strong>
+                        <span class="${balanceFinal.totales?.cuadra_movimientos ? 'text-success' : balanceFinal.totales?.cuadra_movimientos_con_tolerancia ? 'text-warning' : 'text-danger'}">
+                          ${balanceFinal.totales?.diferencia_movimientos.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                        </span>
+                        ${balanceFinal.totales?.cuadra_movimientos ?
+                          '<i class="fa fa-check-circle text-success ms-2"></i>' :
+                          balanceFinal.totales?.cuadra_movimientos_con_tolerancia ?
+                          '<i class="fa fa-exclamation-triangle text-warning ms-2"></i>' :
+                          '<i class="fa fa-times-circle text-danger ms-2"></i>'
+                        }
+                      </p>
+                    </div>
+                    <p class="text-success mt-3">
+                      <i class="fa fa-shield-alt me-2"></i>
+                      <strong>Balance cuadrado correctamente</strong>
+                    </p>
                   </div>
                 `,
                 icon: 'success',
@@ -431,8 +466,15 @@ export class CierreMesComponent implements OnInit {
    */
   public puedeRealizarCierre(): boolean {
     return this.validacionesPrevias.periodoAnteriorCerrado &&
-           this.validacionesPrevias.balanceCuadra &&
+           (this.validacionesPrevias.balanceCuadra || this.validacionesPrevias.balanceCuadraConTolerancia) &&
            this.validacionesPrevias.partidasPendientes === 0;
+  }
+
+  /**
+   * Verificar si requiere confirmación por diferencia menor
+   */
+  public requiereConfirmacionPorDiferencia(): boolean {
+    return this.validacionesPrevias.requiereConfirmacionDiferencia || false;
   }
 
   /**

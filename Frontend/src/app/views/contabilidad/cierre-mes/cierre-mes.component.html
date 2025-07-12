@@ -160,13 +160,26 @@
 
     <div class="col-md-4">
       <div class="card border-0 h-100"
-           [ngClass]="validacionesPrevias.balanceCuadra ? 'bg-light-success' : 'bg-light-danger'">
+           [ngClass]="{
+             'bg-light-success': validacionesPrevias.balanceCuadra,
+             'bg-light-warning': !validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia,
+             'bg-light-danger': !validacionesPrevias.balanceCuadraConTolerancia
+           }">
         <div class="card-body text-center">
           <i class="fa fa-3x mb-3"
-             [ngClass]="validacionesPrevias.balanceCuadra ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'"></i>
+             [ngClass]="{
+               'fa-check-circle text-success': validacionesPrevias.balanceCuadra,
+               'fa-exclamation-triangle text-warning': !validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia,
+               'fa-times-circle text-danger': !validacionesPrevias.balanceCuadraConTolerancia
+             }"></i>
           <h6 class="card-title">Balance</h6>
           <p class="card-text text-muted">
-            {{ validacionesPrevias.balanceCuadra ? 'Cuadrado' : 'Descuadrado' }}
+            <span *ngIf="validacionesPrevias.balanceCuadra">Cuadrado</span>
+            <span *ngIf="!validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia">
+              Diferencia menor<br>
+              <small>${{ validacionesPrevias.diferenciaBalance | number:'1.2-2' }}</small>
+            </span>
+            <span *ngIf="!validacionesPrevias.balanceCuadraConTolerancia">Descuadrado</span>
           </p>
         </div>
       </div>
@@ -250,13 +263,21 @@
               <div class="col-md-3">
                 <div class="border-end">
                   <div class="display-6 fw-bold"
-                       [ngClass]="resultadoSimulacion.balance_proyectado.cuadra ? 'text-success' : 'text-danger'">
+                       [ngClass]="{
+                         'text-success': resultadoSimulacion.balance_proyectado.cuadra,
+                         'text-warning': !resultadoSimulacion.balance_proyectado.cuadra && resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia,
+                         'text-danger': !resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia
+                       }">
                     {{ resultadoSimulacion.balance_proyectado.diferencia | currency:'USD':'symbol':'1.2-2' }}
                   </div>
                   <div class="text-muted">
                     Diferencia
                     <i class="fa ms-1"
-                       [ngClass]="resultadoSimulacion.balance_proyectado.cuadra ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'"></i>
+                       [ngClass]="{
+                         'fa-check-circle text-success': resultadoSimulacion.balance_proyectado.cuadra,
+                         'fa-exclamation-triangle text-warning': !resultadoSimulacion.balance_proyectado.cuadra && resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia,
+                         'fa-times-circle text-danger': !resultadoSimulacion.balance_proyectado.cuadra_con_tolerancia
+                       }"></i>
                   </div>
                 </div>
               </div>
@@ -411,6 +432,20 @@
     </button>
   </div>
 
+  <!-- Nota explicativa -->
+  <div class="alert alert-info">
+    <div class="d-flex align-items-start">
+      <i class="fa fa-info-circle me-2 mt-1"></i>
+      <div>
+        <strong>Entendiendo el Balance:</strong>
+        <ul class="mb-0 mt-1">
+          <li><strong>Totales Movimientos:</strong> Suma de todos los movimientos del período (debe vs haber) - <em>Estos deben cuadrar</em></li>
+          <li><strong>Totales por Naturaleza:</strong> Suma de saldos finales por tipo de cuenta - <em>Solo para información</em></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- Cargando balance -->
   <div *ngIf="cargandoBalance" class="text-center py-4">
     <div class="spinner-border text-primary me-2" role="status"></div>
@@ -441,23 +476,45 @@
           <td class="text-end fw-bold">{{ cuenta.saldo_final | currency:'USD':'symbol':'1.2-2' }}</td>
         </tr>
       </tbody>
-      <tfoot class="table-dark">
-        <tr>
-          <th colspan="3">TOTALES MOVIMIENTOS</th>
-          <th class="text-end">{{ balanceComprobacion.totales?.debe | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end">{{ balanceComprobacion.totales?.haber | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end"
-              [ngClass]="balanceComprobacion.totales?.cuadra_movimientos ? 'text-success' : 'text-danger'">
+      <tfoot>
+        <!-- Totales de Movimientos (Principal) -->
+        <tr class="table-success">
+          <th colspan="3">
+            <i class="fa fa-check-circle me-2"></i>
+            <strong>TOTALES MOVIMIENTOS</strong>
+            <small class="text-muted ms-2">(Lo que debe cuadrar)</small>
+          </th>
+          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.debe | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end fw-bold fs-6">{{ balanceComprobacion.totales?.haber | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end fw-bold fs-6"
+              [ngClass]="{
+                'text-success': balanceComprobacion.totales?.cuadra_movimientos,
+                'text-warning': !balanceComprobacion.totales?.cuadra_movimientos && balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia,
+                'text-danger': !balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia
+              }">
             {{ balanceComprobacion.totales?.diferencia_movimientos | currency:'USD':'symbol':'1.2-2' }}
+            <i class="fa ms-1"
+               [ngClass]="{
+                 'fa-check-circle': balanceComprobacion.totales?.cuadra_movimientos,
+                 'fa-exclamation-triangle': !balanceComprobacion.totales?.cuadra_movimientos && balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia,
+                 'fa-times-circle': !balanceComprobacion.totales?.cuadra_movimientos_con_tolerancia
+               }"></i>
           </th>
         </tr>
-        <tr>
-          <th colspan="3">TOTALES POR NATURALEZA</th>
-          <th class="text-end">{{ balanceComprobacion.totales?.deudor | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end">{{ balanceComprobacion.totales?.acreedor | currency:'USD':'symbol':'1.2-2' }}</th>
-          <th class="text-end"
-              [ngClass]="balanceComprobacion.totales?.cuadra ? 'text-success' : 'text-danger'">
+
+        <!-- Totales por Naturaleza (Secundario) -->
+        <tr class="table-secondary">
+          <th colspan="3">
+            <i class="fa fa-info-circle me-2"></i>
+            <small>Totales por Naturaleza</small>
+            <small class="text-muted ms-2">(Solo informativo)</small>
+          </th>
+          <th class="text-end text-muted">{{ balanceComprobacion.totales?.deudor | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end text-muted">{{ balanceComprobacion.totales?.acreedor | currency:'USD':'symbol':'1.2-2' }}</th>
+          <th class="text-end text-muted">
             {{ balanceComprobacion.totales?.diferencia | currency:'USD':'symbol':'1.2-2' }}
+            <i class="fa fa-info-circle ms-1 text-muted"
+               title="Esta diferencia es normal y no indica error"></i>
           </th>
         </tr>
       </tfoot>
