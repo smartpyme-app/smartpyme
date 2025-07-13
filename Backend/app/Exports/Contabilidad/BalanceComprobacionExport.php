@@ -29,6 +29,7 @@ class BalanceComprobacionExport implements FromView, WithStyles
             'month_name' => $this->data['month_name'],
             'year' => $this->data['year'],
             'balanceComprobacion' => $this->data['balanceComprobacion'],
+            'totales' => $this->data['totales'] ?? null,
         ]);
     }
 

@@ -515,31 +515,5 @@ export class CierreMesComponent implements OnInit {
     this.router.navigate(['/contabilidad/partidas']);
   }
 
-  /**
-   * Descargar reporte de cierre
-   */
-  public descargarReporte(): void {
-    if (!this.resultadoSimulacion) {
-      this.alertService.warning('Sin datos', 'Debe realizar primero la simulación');
-      return;
-    }
 
-    // Usar la descarga genérica de partidas con un ID específico o crear reporte personalizado
-    this.alertService.success('Generando reporte...', 'El reporte se está preparando');
-
-    // Por ahora, mostrar la información de la simulación
-    const reporteTexto = `
-      Reporte de Simulación de Cierre - ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}
-
-      Validaciones:
-      - Período anterior cerrado: ${this.resultadoSimulacion.validaciones?.periodo_anterior_cerrado ? 'Sí' : 'No'}
-      - Balance cuadra: ${this.resultadoSimulacion.validaciones?.balance_cuadra ? 'Sí' : 'No'}
-      - Partidas pendientes: ${this.resultadoSimulacion.validaciones?.partidas_pendientes || 0}
-
-      Fecha de simulación: ${new Date(this.resultadoSimulacion.fecha_simulacion).toLocaleString()}
-    `;
-
-    console.log('Reporte de cierre:', reporteTexto);
-    this.alertService.info('Reporte generado', 'Revise la consola del navegador para ver el reporte detallado');
-  }
 }

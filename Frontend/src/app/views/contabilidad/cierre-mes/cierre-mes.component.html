@@ -8,12 +8,6 @@
     <p class="text-muted mb-0">Gestión avanzada del cierre de períodos contables</p>
   </div>
   <div class="d-flex gap-2">
-    <button (click)="descargarReporte()"
-            [disabled]="!resultadoSimulacion"
-            class="btn btn-outline-primary">
-      <i class="fa fa-download me-1"></i>
-      Descargar Reporte
-    </button>
     <button (click)="volverAPartidas()" class="btn btn-light">
       <i class="fa fa-arrow-left me-1"></i>
       Volver a Partidas
@@ -99,20 +93,12 @@
           {{ estadoPeriodo.cerrado ? 'Cerrado' : 'Abierto' }}
         </span>
       </div>
-      <div *ngIf="estadoPeriodo.cerrado" class="d-flex align-items-center">
-        <span class="fw-bold me-2">Cerrado por:</span>
-        <span>{{ estadoPeriodo.usuario_cierre }}</span>
-      </div>
     </div>
 
     <div class="col-md-6">
       <div *ngIf="estadoPeriodo.cerrado" class="d-flex align-items-center mb-2">
         <span class="fw-bold me-2">Fecha de cierre:</span>
         <span>{{ estadoPeriodo.fecha_cierre | date:'dd/MM/yyyy HH:mm' }}</span>
-      </div>
-      <div class="d-flex align-items-center">
-        <span class="fw-bold me-2">Cuentas procesadas:</span>
-        <span>{{ estadoPeriodo.cuentas_procesadas || 0 }}</span>
       </div>
     </div>
   </div>
@@ -542,7 +528,6 @@
           <li>Todas las partidas del período están aplicadas</li>
           <li>El balance de comprobación está cuadrado</li>
           <li>Ha generado los reportes necesarios</li>
-          <li>Tiene respaldo de la base de datos</li>
         </ul>
       </div>
     </div>

@@ -16,7 +16,6 @@ use Carbon\Carbon;
 use App\Models\Contabilidad\Catalogo\CuentaMayorizada;
 use App\Models\Contabilidad\Catalogo\CuentaReporte;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Monolog\Handler\ZendMonitorHandler;
 
@@ -430,6 +429,13 @@ class GenerarReportesController extends Controller
             }
         }
 
+        // Variables para totales
+        $total_saldo_inicial = 0;
+        $total_debe = 0;
+        $total_haber = 0;
+        $total_saldo_actual = 0;
+        $total_saldo_acumulado = 0;
+
         $balance = [];
         foreach ($cuentas as $cuenta) {
             $codigo = $cuenta->codigo;
@@ -438,6 +444,15 @@ class GenerarReportesController extends Controller
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
             $saldo_actual = $debe - $haber; // Movimiento neto del período
             $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
+            // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
+            if ($cuenta->nivel == 0) {
+                $total_saldo_inicial += $saldo_inicial;
+                $total_debe += $debe;
+                $total_haber += $haber;
+                $total_saldo_actual += $saldo_actual;
+                $total_saldo_acumulado += $saldo_acumulado;
+            }
 
             $balance[] = [
                 'codigo' => $codigo,
@@ -450,10 +465,21 @@ class GenerarReportesController extends Controller
                 'saldo_actual' => $saldo_actual,
                 'saldo_acumulado' => $saldo_acumulado,
                 'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
+                'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
         }
 
-        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year'));
+        // Crear array de totales
+        $totales = [
+            'saldo_inicial' => $total_saldo_inicial,
+            'debe' => $total_debe,
+            'haber' => $total_haber,
+            'saldo_actual' => $total_saldo_actual,
+            'saldo_acumulado' => $total_saldo_acumulado,
+            'diferencia' => $total_debe - $total_haber
+        ];
+
+        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year', 'totales'));
         $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream();
@@ -521,6 +547,13 @@ class GenerarReportesController extends Controller
             }
         }
 
+        // Variables para totales
+        $total_saldo_inicial = 0;
+        $total_debe = 0;
+        $total_haber = 0;
+        $total_saldo_actual = 0;
+        $total_saldo_acumulado = 0;
+
         $balance = [];
         foreach ($cuentas as $cuenta) {
             $codigo = $cuenta->codigo;
@@ -529,6 +562,15 @@ class GenerarReportesController extends Controller
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
             $saldo_actual = $debe - $haber; // Movimiento neto del período
             $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
+            // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
+            if ($cuenta->nivel == 0) {
+                $total_saldo_inicial += $saldo_inicial;
+                $total_debe += $debe;
+                $total_haber += $haber;
+                $total_saldo_actual += $saldo_actual;
+                $total_saldo_acumulado += $saldo_acumulado;
+            }
 
             $balance[] = [
                 'codigo' => $codigo,
@@ -541,14 +583,24 @@ class GenerarReportesController extends Controller
                 'saldo_actual' => $saldo_actual,
                 'saldo_acumulado' => $saldo_acumulado,
                 'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
+                'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
         }
 
+        // Agregar los totales a la data para mostrar en el Excel
         $data = [
             'empresa' => $empresa,
             'month_name' => $month_name,
             'year' => $year,
             'balanceComprobacion' => $balance,
+            'totales' => [
+                'saldo_inicial' => $total_saldo_inicial,
+                'debe' => $total_debe,
+                'haber' => $total_haber,
+                'saldo_actual' => $total_saldo_actual,
+                'saldo_acumulado' => $total_saldo_acumulado,
+                'diferencia' => $total_debe - $total_haber
+            ]
         ];
 
         // Exportar a Excel
