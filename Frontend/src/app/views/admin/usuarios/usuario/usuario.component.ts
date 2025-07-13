@@ -3,7 +3,6 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
-
 interface Permission {
   id: number;
   name: string;
@@ -28,7 +27,6 @@ export class UsuarioComponent implements OnInit {
   public searchTerm: string = '';
   public filterModules: any[] = [];
 
-
   // Img Upload
   public file?: File;
   public preview = false;
@@ -41,49 +39,28 @@ export class UsuarioComponent implements OnInit {
   public newPassword: string = '';
   public nuevoCodigoAuth: string = '';
 
-  
   public confirmPassword: string = '';
   public confirmarCodigoAuth: string = '';
   public showPassword: boolean = false;
   public showAuthCode: boolean = false;
   public showConfirmPassword: boolean = false;
   public showConfirmAuthCode: boolean = false;
-  public rolePermissions: string[] = [];
-  public directPermissions: string[] = [];
-  public allPermissions: Permission[] = [];
-  public permissionsLoading: boolean = false;
-  public modulePermissions: { [key: string]: Permission[] } = {};
   public Object = Object;
   public modules: any[] = [];
   public searchText: string = '';
-  public selectedPermissions: string[] = [];
-  public addedPermissions: string[] = []; // Permisos que se añadirán
-  public removedPermissions: string[] = []; // Permisos que se quitarán
-  public revokedPermissions: string[] = []; // Permisos que se revocan
-  public effectivePermissions: string[] = []; // Permisos efectivos
 
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router,
+    private router: Router
   ) {}
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     const idNum = parseInt(id);
-  
-    if (idNum === 0 || isNaN(idNum)) {
-      // Nuevo usuario
-      this.usuario = {};
-      this.usuario.rol_id = 2;
-      this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
-      this.usuario.caja_id = 1;
-      this.usuario.activo = true;
-    } else {
-      // Usuario existente
-      this.loadAll(idNum);
-    }
+
+    this.loadAll(idNum);
 
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
@@ -101,6 +78,7 @@ export class UsuarioComponent implements OnInit {
     this.apiService.read('usuario/', id).subscribe(
       (usuario) => {
         this.usuario = usuario;
+        this.nuevoCodigoAuth = usuario.codigo_autorizacion;
 
         this.loading = false;
       },
@@ -109,52 +87,32 @@ export class UsuarioComponent implements OnInit {
         this.loading = false;
       }
     );
-
   }
 
   public onSubmit() {
     this.loading = true;
-    
-    if (this.usuario.rol_id == 2) {
-      this.usuario.caja_id = null;
-    }
-  
+
+
+
     let formData: FormData = new FormData();
-    
-    for (var key in this.usuario) {
-      if (key == 'activo' || key == 'empleado') {
-        this.usuario[key] = this.usuario[key] ? 1 : 0;
-      }
-      
-      // CORRECCIÓN: Manejar objetos complejos
-      let value = this.usuario[key];
-      
-      if (value === null || value === undefined) {
-        formData.append(key, '');
-      } else if (typeof value === 'object') {
-        // Para objetos (como roles), serializar a JSON string
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, value.toString());
-      }
-    }
-  
-    console.log('=== FORM DATA DEBUG ===');
-    formData.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
-    });
-  
-    // Save the user
-    this.apiService.store('usuario', formData).subscribe(
+	formData.append('id', this.usuario.id);
+	formData.append('name', this.usuario.name);
+	formData.append('telefono', this.usuario.telefono);
+	formData.append('tipo', this.usuario.tipo);
+	formData.append('codigo', this.usuario.codigo);
+	formData.append('id_sucursal', this.usuario.id_sucursal);
+
+
+	console.log(formData);
+    this.apiService.store('usuario/informacion', formData).subscribe(
       (usuario) => {
         console.log('✅ Usuario guardado exitosamente:', usuario);
-        
+
         if (!this.usuario.id) {
           this.router.navigate(['/usuarios']);
         }
         this.usuario = usuario;
-  
-  
+
         this.loading = false;
         this.preview = false;
         this.alertService.success(
@@ -165,14 +123,16 @@ export class UsuarioComponent implements OnInit {
       (error) => {
         console.log('❌ Error en onSubmit:', error);
         this.loading = false;
-        
+
         if (error.status === 403 && error.error?.requires_authorization) {
-          console.log('🔐 Se requiere autorización - el interceptor manejará esto');
+          console.log(
+            '🔐 Se requiere autorización - el interceptor manejará esto'
+          );
           return;
         }
-        
+
         let errorMessage = 'Ha ocurrido un error al guardar el usuario';
-        
+
         if (error?.error?.message) {
           errorMessage = error.error.message;
         } else if (error?.message) {
@@ -180,10 +140,10 @@ export class UsuarioComponent implements OnInit {
         } else if (typeof error === 'string') {
           errorMessage = error;
         }
-        
+
         this.alertService.error(errorMessage);
       }
-    );
+     );
   }
 
   setFile(event: any) {
@@ -223,58 +183,6 @@ export class UsuarioComponent implements OnInit {
     }
   }
 
-  guardarCambiosContrasena() {
-    // Validate that the passwords match
-    if (this.usuario.password !== this.usuario.password_confirmation) {
-      this.alertService.error('Las contraseñas no coinciden');
-      return;
-    }
-  
-    if (!this.usuario.password || !this.usuario.password_confirmation) {
-      this.alertService.error('Todos los campos son requeridos');
-      return;
-    }
-  
-    this.loading = true;
-  
-    // Save the password changes
-    this.apiService
-      .update('usuario', this.usuario.id, {
-        password: this.usuario.password,
-      })
-      .subscribe(
-        (response) => {
-          console.log('Respuesta del servidor:', response);
-          
-          this.loading = false;
-          this.mostrarCambioContrasena = false;
-          
-          // Limpiar los campos de contraseña
-          this.usuario.password = '';
-          this.usuario.password_confirmation = '';
-          this.usuario.password_show = false;
-          this.usuario.password_confirmation_show = false;
-          
-          // Si la respuesta contiene información de autorización pendiente
-          if (response && response.status === 'pending') {
-            this.alertService.success(
-              'Solicitud de autorización creada',
-              `Se ha creado una solicitud de autorización con código: ${response.code}. La contraseña se actualizará una vez aprobada.`
-            );
-          } else {
-            this.alertService.success(
-              'Contraseña actualizada',
-              'La contraseña se ha actualizado correctamente.'
-            );
-          }
-        },
-        (error) => {
-          console.error('Error al actualizar contraseña:', error);
-          this.loading = false;
-          this.alertService.error(error);
-        }
-      );
-  }
 
   editarEmail() {
     this.editandoEmail = true;
@@ -331,48 +239,47 @@ export class UsuarioComponent implements OnInit {
   }
 
   guardarCodigoAuth() {
-
     if (!this.nuevoCodigoAuth) {
-        this.alertService.error('El código de autorización es requerido');
-        return;
+      this.alertService.error('El código de autorización es requerido');
+      return;
     }
 
     if (this.nuevoCodigoAuth.length < 3 || this.nuevoCodigoAuth.length > 80) {
-        this.alertService.error('El código debe tener entre 3 y 80 caracteres');
-        return;
+      this.alertService.error('El código debe tener entre 3 y 80 caracteres');
+      return;
     }
 
     if (!/^\d+$/.test(this.nuevoCodigoAuth)) {
-        this.alertService.error('El código debe ser numérico');
-        return;
+      this.alertService.error('El código debe ser numérico');
+      return;
     }
 
     if (this.nuevoCodigoAuth !== this.confirmarCodigoAuth) {
-        this.alertService.error('Los códigos no coinciden');
-        return;
+      this.alertService.error('Los códigos no coinciden');
+      return;
     }
 
     this.apiService
-        .update('usuario/codigo-autorizacion', this.usuario.id, {
-            codigo_autorizacion: this.nuevoCodigoAuth
-        })
-        .subscribe(
-            () => {
-                this.usuario.codigo_autorizacion = this.nuevoCodigoAuth;
-                this.editandoCodigoAuth = false;
-                this.nuevoCodigoAuth = '';
-                this.confirmarCodigoAuth = '';
-                this.showAuthCode = false;
-                this.showConfirmAuthCode = false;
-                this.alertService.success(
-                    'Código de autorización actualizado correctamente',
-                    'El código de autorización se ha actualizado correctamente.'
-                );
-            },
-            (error) => {
-                this.alertService.error(error);
-            }
-        );
+      .update('usuario/codigo-autorizacion', this.usuario.id, {
+        codigo_autorizacion: this.nuevoCodigoAuth,
+      })
+      .subscribe(
+        () => {
+          this.usuario.codigo_autorizacion = this.nuevoCodigoAuth;
+          this.editandoCodigoAuth = false;
+          this.nuevoCodigoAuth = '';
+          this.confirmarCodigoAuth = '';
+          this.showAuthCode = false;
+          this.showConfirmAuthCode = false;
+          this.alertService.success(
+            'Código de autorización actualizado correctamente',
+            'El código de autorización se ha actualizado correctamente.'
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
   }
 
   cancelarPassword() {
@@ -388,14 +295,14 @@ export class UsuarioComponent implements OnInit {
       this.alertService.error('Todos los campos son requeridos');
       return;
     }
-    
+
     if (this.newPassword !== this.confirmPassword) {
       this.alertService.error('Las contraseñas no coinciden');
       return;
     }
-    
-    this.loading = true; // Agregar loading state
-    
+
+    this.loading = true; 
+
     this.apiService
       .update('usuario/password', this.usuario.id, {
         password: this.newPassword,
@@ -403,37 +310,29 @@ export class UsuarioComponent implements OnInit {
       .subscribe(
         (response: any) => {
           console.log('Respuesta exitosa:', response);
-          
+
           this.loading = false;
           this.editandoPassword = false;
           this.newPassword = '';
           this.confirmPassword = '';
           this.showPassword = false;
           this.showConfirmPassword = false;
-          
-          if (response && response.status === 'pending') {
-            this.alertService.success(
-              'Solicitud de autorización creada',
-              `Se ha creado una solicitud de autorización con código: ${response.code}. La contraseña se actualizará una vez aprobada.`
-            );
-          } else {
-            this.alertService.success(
-              'Contraseña actualizada correctamente',
-              'La contraseña se ha actualizado correctamente.'
-            );
-          }
+
+          this.alertService.success(
+            'Contraseña actualizada correctamente',
+            'La contraseña se ha actualizado correctamente.'
+          );
         },
         (error) => {
           console.error('Error completo:', error);
           console.error('Tipo de error:', typeof error);
           console.error('Error.message:', error?.message);
           console.error('Error.error:', error?.error);
-          
+
           this.loading = false;
-          
-          // Manejo mejorado del error
+
           let errorMessage = 'Ha ocurrido un error al actualizar la contraseña';
-          
+
           if (error?.error?.message) {
             errorMessage = error.error.message;
           } else if (error?.message) {
@@ -441,14 +340,13 @@ export class UsuarioComponent implements OnInit {
           } else if (typeof error === 'string') {
             errorMessage = error;
           } else if (error?.error) {
-            // Si error.error es un objeto, intentar extraer información útil
             if (typeof error.error === 'object') {
               errorMessage = JSON.stringify(error.error);
             } else {
               errorMessage = error.error;
             }
           }
-          
+
           this.alertService.error(errorMessage);
         }
       );
@@ -458,39 +356,4 @@ export class UsuarioComponent implements OnInit {
     module.expanded = !module.expanded;
   }
 
-  getSimplePermissionName(fullName: string): string {
-    const parts = fullName.split('.');
-    return parts[parts.length - 1];
-  }
-
-
-
-
-
-  getTotalPermissions(module: any): number {
-    let total = module.permissions?.length || 0;
-    module.submodules?.forEach((submodule: any) => {
-      total += submodule.permissions?.length || 0;
-    });
-    return total;
-  }
-
-  get moduleKeys(): string[] {
-    return Object.keys(this.modulePermissions);
-  }
-
-  filterModule(module: any): void {
-    if (!module || !module.name) {
-      console.error('Módulo inválido:', module);
-      return;
-    }
-  
-
-    this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
-
-     
-  }
-
-
-  
 }

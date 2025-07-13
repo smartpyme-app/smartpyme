@@ -117,7 +117,7 @@ class UsuariosController extends Controller
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
             'id_bodega'     => 'required',
-            'telefono'      => 'sometimes|unique:users,telefono,' . $request->id,
+            'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
             'password'      => [
                 'required_if:id,null',
                 'confirmed',
@@ -137,7 +137,7 @@ class UsuariosController extends Controller
 
 
         if ($request->password) {
-            $request['password'] = \Hash::make($request->password);
+            $request['password'] = Hash::make($request->password);
         }
 
         // if (!$request->id) {
@@ -350,12 +350,12 @@ class UsuariosController extends Controller
 
     public function updatePassword(Request $request, $id)
     {
-        if ($response = $this->checkAuth('change_password', [
-            'id_usuario' => $id,
-            'password' => $request->password
-        ])) {
-            return $response;
-        }
+        // if ($response = $this->checkAuth('change_password', [
+        //     'id_usuario' => $id,
+        //     'password' => $request->password
+        // ])) {
+        //     return $response;
+        // }
 
         $user = Usuario::findOrFail($id);
         $user->password = Hash::make($request->password);
@@ -367,9 +367,9 @@ class UsuariosController extends Controller
     public function updateAuthCode(Request $request, $id)
     {
 
-        if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
-            return $response;
-        }
+        // if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
+        //     return $response;
+        // }
 
         $request->validate([
             'codigo_autorizacion' => 'required|numeric|digits_between:3,10'
@@ -389,5 +389,21 @@ class UsuariosController extends Controller
             'requires_authorization' => true,
             'message' => 'Esta acción requiere autorización'
         ], 403);
+    }
+
+    public function updateInfo(Request $request)
+    {
+        Log::info('updateInfo', $request->all());
+        $request->validate([
+            'name' => 'required',
+            'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
+            'tipo' => 'required',
+            'codigo' => 'required',
+            'id_sucursal' => 'required',
+        ]);
+        $user = Usuario::findOrFail($request->id);
+        $user->fill($request->all());
+        $user->save();
+        return Response()->json($user, 200);
     }
 }
