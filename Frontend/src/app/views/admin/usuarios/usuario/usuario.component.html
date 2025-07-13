@@ -1,102 +1,182 @@
 <div class="container-fluid py-4">
+  <section class="header-section mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-6 mb-3 mb-lg-0">
+        <h2 class="h3 mb-0">
+          Usuario
+          <small class="text-muted fs-6 ms-2">Detalle</small>
+        </h2>
+      </div>
+      <div class="col-lg-6">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-lg-end mb-0">
+            <li class="breadcrumb-item">
+              <a class="text-decoration-none" routerLink="/">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+              <a class="text-decoration-none" routerLink="/usuarios"
+                >Usuarios</a
+              >
+            </li>
+            <li class="breadcrumb-item active">Usuario</li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </section>
 
-    <section class="header-section mb-4">
+  <!-- Main Content -->
+  <section class="main-content">
+    <div class="card shadow-sm border-0">
+      <!-- User Header -->
+      <div class="card-header bg-white py-4">
         <div class="row align-items-center">
-            <div class="col-lg-6 mb-3 mb-lg-0">
-                <h2 class="h3  mb-0">
-                    Usuario
-                    <small class="text-muted fs-6 ms-2">Detalle</small>
-                </h2>
+          <div class="col-auto">
+            <div class="position-relative">
+              <figure
+                class="img-thumbnail rounded-circle file-upload d-flex justify-content-center align-items-center m-0 overflow-hidden"
+                style="width: 120px; height: 120px"
+                tooltip="Cambiar imagen"
+              >
+                <i
+                  *ngIf="!usuario.avatar && !preview"
+                  class="fa fa-user fa-2x text-muted"
+                ></i>
+                <img
+                  *ngIf="usuario.avatar && !preview"
+                  [src]="apiService.baseUrl + '/img/' + usuario.avatar"
+                  class="img-fluid"
+                />
+                <img
+                  *ngIf="url_img_preview && preview"
+                  [src]="url_img_preview"
+                  class="img-fluid"
+                />
+                <input
+                  type="file"
+                  class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer"
+                  name="img"
+                  (change)="setFile($event)"
+                  accept="image/png, image/jpeg, image/jpg"
+                />
+              </figure>
             </div>
-            <div class="col-lg-6">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb justify-content-lg-end mb-0">
-                        <li class="breadcrumb-item"><a class="text-decoration-none" routerLink="/">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a class="text-decoration-none" routerLink="/usuarios">Usuarios</a></li>
-                        <li class="breadcrumb-item active">Usuario</li>
-                    </ol>
-                </nav>
-            </div>
+          </div>
+          <div class="col">
+            <h3 class="h4 mb-1">{{ usuario.name }}</h3>
+            <p class="text-muted mb-0 fs-6">{{ rol.name }}</p>
+          </div>
+          <div class="col-auto">
+            <span
+              class="badge rounded-pill px-3 py-2"
+              [ngClass]="
+                usuario.enable
+                  ? 'bg-success-subtle text-success'
+                  : 'bg-danger-subtle text-danger'
+              "
+            >
+              <i
+                class="fa"
+                [ngClass]="
+                  usuario.enable ? 'fa-check-circle' : 'fa-times-circle'
+                "
+              ></i>
+              {{ usuario.enable ? "Activo" : "Inactivo" }}
+            </span>
+          </div>
         </div>
-    </section>
+      </div>
 
-    <!-- Main Content -->
-    <section class="main-content">
-        <div class="card shadow-sm border-0">
-            <!-- User Header -->
-            <div class="card-header bg-white py-4">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <div class="position-relative">
-                            <figure class="img-thumbnail rounded-circle file-upload d-flex justify-content-center align-items-center m-0 overflow-hidden" 
-                                    style="width: 120px; height: 120px;" tooltip="Cambiar imagen">
-                                <i *ngIf="!usuario.avatar && !preview" class="fa fa-user fa-2x text-muted"></i>
-                                <img *ngIf="usuario.avatar && !preview" [src]="apiService.baseUrl + '/img/' + usuario.avatar" class="img-fluid">
-                                <img *ngIf="url_img_preview && preview" [src]="url_img_preview" class="img-fluid">
-                                <input type="file" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" 
-                                       name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
-                            </figure>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <h3 class="h4  mb-1">{{usuario.name}}</h3>
-                        <p class="text-muted mb-0 fs-6">{{rol.name}}</p>
-                    </div>
-                    <div class="col-auto">
-                        <span class="badge rounded-pill px-3 py-2" 
-                              [ngClass]="usuario.enable ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'">
-                            <i class="fa" [ngClass]="usuario.enable ? 'fa-check-circle' : 'fa-times-circle'"></i>
-                            {{usuario.enable ? 'Activo' : 'Inactivo'}}
-                        </span>
-                    </div>
+      <!-- Form Content -->
+      <form class="needs-validation" novalidate>
+        <div class="card-body p-4">
+          <!-- Tabs Navigation -->
+          <nav class="nav-tabs-wrapper mb-4 border-bottom">
+            <ul class="nav nav-tabs border-0 gap-1" role="tablist">
+              <li class="nav-item">
+                <a
+                  class="nav-link active px-4 py-3 border-0 border-bottom rounded-0"
+                  data-bs-toggle="tab"
+                  href="#info"
+                  role="tab"
+                >
+                  <i class="fa fa-user me-2 text-primary"></i>Información
+                  Personal
+                </a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link px-4 py-3 border-0 border-bottom rounded-0"
+                  data-bs-toggle="tab"
+                  href="#security"
+                  role="tab"
+                >
+                  <i class="fa fa-shield me-2 text-primary"></i>Seguridad
+                </a>
+              </li>
+            </ul>
+          </nav>
+
+          <!-- Tabs Content -->
+          <div class="tab-content">
+            <!-- Info Tab -->
+            <div class="tab-pane fade show active" id="info" role="tabpanel">
+              <div class="row g-4">
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      [(ngModel)]="usuario.name"
+                      name="nombre"
+                      placeholder="Nombre"
+                      focus="true"
+                      required
+                    />
+                    <label>Nombre</label>
+                  </div>
                 </div>
-            </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <div class="input-group">
+                        <select
+                          class="form-select country-select"
+                          (change)="onCountrySelectChange($event)"
+                          style="
+                            max-width: 130px;
+                            border-radius: 0.375rem 0 0 0.375rem;
+                            border-right: none;
+                            flex: 0 0 130px;
+                          "
+                        >
+                          <option
+                            *ngFor="let country of countries"
+                            [value]="country.code"
+                            [selected]="country.code === selectedCountry.code"
+                          >
+                            {{ country.flag }} {{ country.dial }}
+                          </option>
+                        </select>
+                        <input
+                          type="tel"
+                          class="form-control"
+                          [(ngModel)]="usuario.telefono"
+                          name="telefono"
+                          [placeholder]="getPlaceholder()"
+                          [maxlength]="selectedCountry.maxLength"
+                          (input)="formatPhone($event)"
+                          style="
+                            border-radius: 0 0.375rem 0.375rem 0;
+                            border-left: none;
+                          "
+                        />
+    
+                    </div>
+                  </div>
+                </div>
 
-            <!-- Form Content -->
-            <form class="needs-validation" novalidate>
-                <div class="card-body p-4">
-                    <!-- Tabs Navigation -->
-                    <nav class="nav-tabs-wrapper mb-4 border-bottom">
-                        <ul class="nav nav-tabs border-0 gap-1" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active px-4 py-3 border-0 border-bottom rounded-0" 
-                                   data-bs-toggle="tab" href="#info" role="tab">
-                                    <i class="fa fa-user me-2 text-primary"></i>Información Personal
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link px-4 py-3 border-0 border-bottom rounded-0" 
-                                   data-bs-toggle="tab" href="#security" role="tab">
-                                    <i class="fa fa-shield me-2 text-primary"></i>Seguridad
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-
-                    <!-- Tabs Content -->
-                    <div class="tab-content">
-                        <!-- Info Tab -->
-                        <div class="tab-pane fade show active" id="info" role="tabpanel">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" 
-                                               [(ngModel)]="usuario.name" name="nombre" 
-                                               placeholder="Nombre" focus="true" required>
-                                        <label>Nombre</label>
-                                    </div>
-                                </div>
-                                <!--agregar telefono-->
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" 
-                                               [(ngModel)]="usuario.telefono" name="telefono" 
-                                               placeholder="Telefono" required>
-                                        <label>Telefono</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <!-- <div class="form-floating">
+                <div class="col-md-6">
+                  <!-- <div class="form-floating">
                                         <select name="tipo" [(ngModel)]="usuario.tipo" 
                                                 class="form-select" required>
                                             <option value="Administrador">Administrador</option>
@@ -107,288 +187,395 @@
                                         </select>
                                         <label>Tipo</label>
                                     </div> -->
-                                    <div class="form-floating">
-                                        <select name="tipo" [(ngModel)]="usuario.tipo" class="form-control form-select">
-                                            <option value="">Todos</option>
-                                            <option value="Administrador">Administrador</option>
-                                            <option value="Supervisor">Supervisor</option>
-                                            <option value="Vendedor">Vendedor</option>
-                                            <option value="Cajero">Cajero</option>
-                                        </select>
-                                        <label>Tipo</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <input type="text" class="form-control" 
-                                               [(ngModel)]="usuario.codigo" name="codigo" 
-                                               placeholder="Código interno" required>
-                                        <label>Código interno</label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-floating">
-                                        <select [(ngModel)]="usuario.id_sucursal" 
-                                                class="form-select" name="id_sucursal" required>
-                                            <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                                                {{ sucursal.nombre }}
-                                            </option>
-                                        </select>
-                                        <label>Sucursal</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="text-end mt-4">
-                                <button type="button" class="btn btn-primary px-4" (click)="onSubmit()">
-                                    <i class="fa fa-save me-2"></i>Guardar Información Personal
-                                </button>
-                            </div>
+                  <div class="form-floating">
+                    <select
+                      name="tipo"
+                      [(ngModel)]="usuario.tipo"
+                      class="form-control form-select"
+                    >
+                      <option value="">Todos</option>
+                      <option value="Administrador">Administrador</option>
+                      <option value="Supervisor">Supervisor</option>
+                      <option value="Vendedor">Vendedor</option>
+                      <option value="Cajero">Cajero</option>
+                    </select>
+                    <label>Tipo</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <input
+                      type="text"
+                      class="form-control"
+                      [(ngModel)]="usuario.codigo"
+                      name="codigo"
+                      placeholder="Código interno"
+                      required
+                    />
+                    <label>Código interno</label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-floating">
+                    <select
+                      [(ngModel)]="usuario.id_sucursal"
+                      class="form-select"
+                      name="id_sucursal"
+                      required
+                    >
+                      <option
+                        *ngFor="let sucursal of sucursales"
+                        [value]="sucursal.id"
+                      >
+                        {{ sucursal.nombre }}
+                      </option>
+                    </select>
+                    <label>Sucursal</label>
+                  </div>
+                </div>
+              </div>
+              <div class="text-end mt-4">
+                <button
+                  type="button"
+                  class="btn btn-primary px-4"
+                  (click)="onSubmit()"
+                >
+                  <i class="fa fa-save me-2"></i>Guardar Información Personal
+                </button>
+              </div>
+            </div>
+
+            <!-- Security Tab -->
+            <div class="tab-pane fade" id="security" role="tabpanel">
+              <div class="row g-4">
+                <!-- Email Section -->
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                      <div
+                        class="d-flex justify-content-between align-items-center mb-4"
+                      >
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                          <i class="fa fa-envelope me-2 text-primary"></i>
+                          Correo Electrónico
+                        </h5>
+                        <button
+                          *ngIf="!editandoEmail"
+                          class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                          (click)="editarEmail()"
+                        >
+                          <i class="fa fa-edit me-1"></i> Cambiar
+                        </button>
+                      </div>
+
+                      <div *ngIf="!editandoEmail">
+                        <p class="mb-0 fs-5">{{ usuario.email }}</p>
+                      </div>
+
+                      <div *ngIf="editandoEmail" class="mt-3">
+                        <div class="form-floating mb-3">
+                          <input
+                            type="email"
+                            class="form-control"
+                            [(ngModel)]="nuevoEmail"
+                            name="nuevoEmail"
+                            placeholder="Nuevo correo electrónico"
+                          />
+                          <label>Nuevo correo electrónico</label>
+                        </div>
+                        <div class="d-flex gap-2">
+                          <button
+                            class="btn btn-primary px-4"
+                            (click)="guardarEmail()"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            class="btn btn-light px-4"
+                            (click)="cancelarEmail()"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Password Section -->
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                      <div
+                        class="d-flex justify-content-between align-items-center mb-4"
+                      >
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                          <i class="fa fa-key me-2 text-primary"></i>
+                          Contraseña
+                        </h5>
+                        <button
+                          *ngIf="!editandoPassword"
+                          class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                          (click)="editarPassword()"
+                        >
+                          <i class="fa fa-edit me-1"></i> Cambiar
+                        </button>
+                      </div>
+
+                      <div *ngIf="editandoPassword">
+                        <div class="form-floating mb-3">
+                          <div class="input-group">
+                            <input
+                              [type]="showPassword ? 'text' : 'password'"
+                              class="form-control"
+                              [(ngModel)]="newPassword"
+                              name="newPassword"
+                              placeholder="Nueva contraseña"
+                            />
+                            <button
+                              class="btn btn-outline-secondary"
+                              type="button"
+                              (click)="showPassword = !showPassword"
+                            >
+                              <i
+                                class="fa"
+                                [ngClass]="
+                                  showPassword ? 'fa-eye-slash' : 'fa-eye'
+                                "
+                              ></i>
+                            </button>
+                          </div>
                         </div>
 
-                        <!-- Security Tab -->
-                        <div class="tab-pane fade" id="security" role="tabpanel">
-                            <div class="row g-4">
-                                <!-- Email Section -->
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm h-100">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                                <h5 class="card-title mb-0 d-flex align-items-center">
-                                                    <i class="fa fa-envelope me-2 text-primary"></i>
-                                                    Correo Electrónico
-                                                </h5>
-                                                <button *ngIf="!editandoEmail" 
-                                                        class="btn btn-outline-primary btn-sm rounded-pill px-3"
-                                                        (click)="editarEmail()">
-                                                    <i class="fa fa-edit me-1"></i> Cambiar
-                                                </button>
-                                            </div>
+                        <div class="form-floating mb-4">
+                          <div class="input-group">
+                            <input
+                              [type]="showConfirmPassword ? 'text' : 'password'"
+                              class="form-control"
+                              [(ngModel)]="confirmPassword"
+                              name="confirmPassword"
+                              placeholder="Confirmar contraseña"
+                            />
+                            <button
+                              class="btn btn-outline-secondary"
+                              type="button"
+                              (click)="
+                                showConfirmPassword = !showConfirmPassword
+                              "
+                            >
+                              <i
+                                class="fa"
+                                [ngClass]="
+                                  showConfirmPassword
+                                    ? 'fa-eye-slash'
+                                    : 'fa-eye'
+                                "
+                              ></i>
+                            </button>
+                          </div>
+                        </div>
 
-                                            <div *ngIf="!editandoEmail">
-                                                <p class="mb-0 fs-5">{{usuario.email}}</p>
-                                            </div>
+                        <div class="d-flex gap-2 mb-3">
+                          <button
+                            class="btn btn-primary px-4"
+                            (click)="guardarPassword()"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            class="btn btn-light px-4"
+                            (click)="cancelarPassword()"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
 
-                                            <div *ngIf="editandoEmail" class="mt-3">
-                                                <div class="form-floating mb-3">
-                                                    <input type="email" 
-                                                           class="form-control" 
-                                                           [(ngModel)]="nuevoEmail" 
-                                                           name="nuevoEmail" 
-                                                           placeholder="Nuevo correo electrónico">
-                                                    <label>Nuevo correo electrónico</label>
-                                                </div>
-                                                <div class="d-flex gap-2">
-                                                    <button class="btn btn-primary px-4" 
-                                                            (click)="guardarEmail()">
-                                                        Guardar
-                                                    </button>
-                                                    <button class="btn btn-light px-4" 
-                                                            (click)="cancelarEmail()">
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="alert alert-info d-flex align-items-center">
+                          <i class="fa fa-info-circle me-2"></i>
+                          <small>
+                            La contraseña debe tener al menos 8 caracteres,
+                            incluyendo mayúsculas, minúsculas, números y
+                            símbolos.
+                          </small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Authorization Code Section -->
+                <div class="col-md-6">
+                  <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-4">
+                      <div
+                        class="d-flex justify-content-between align-items-center mb-4"
+                      >
+                        <h5 class="card-title mb-0 d-flex align-items-center">
+                          <i class="fa fa-shield-alt me-2 text-primary"></i>
+                          Código de Autorización
+                        </h5>
+                        <button
+                          *ngIf="!editandoCodigoAuth"
+                          class="btn btn-outline-primary btn-sm rounded-pill px-3"
+                          (click)="editarCodigoAuth()"
+                        >
+                          <i class="fa fa-edit me-1"></i> Cambiar
+                        </button>
+                      </div>
 
-                                <!-- Password Section -->
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm h-100">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                                <h5 class="card-title mb-0 d-flex align-items-center">
-                                                    <i class="fa fa-key me-2 text-primary"></i>
-                                                    Contraseña
-                                                </h5>
-                                                <button *ngIf="!editandoPassword" 
-                                                        class="btn btn-outline-primary btn-sm rounded-pill px-3"
-                                                        (click)="editarPassword()">
-                                                    <i class="fa fa-edit me-1"></i> Cambiar
-                                                </button>
-                                            </div>
+                      <div *ngIf="!editandoCodigoAuth">
+                        <div class="d-flex align-items-center">
+                          <span class="fs-5 me-3">••••••</span>
+                          <small class="text-muted">Código configurado</small>
+                        </div>
+                        <div class="mt-2">
+                          <small class="text-info">
+                            <i class="fa fa-info-circle me-1"></i>
+                            Este código se utiliza para autorizar operaciones
+                            importantes
+                          </small>
+                        </div>
+                      </div>
 
-                                            <div *ngIf="editandoPassword">
-                                                <div class="form-floating mb-3">
-                                                    <div class="input-group">
-                                                        <input [type]="showPassword ? 'text' : 'password'" 
-                                                               class="form-control" 
-                                                               [(ngModel)]="newPassword" 
-                                                               name="newPassword" 
-                                                               placeholder="Nueva contraseña">
-                                                        <button class="btn btn-outline-secondary" 
-                                                                type="button"
-                                                                (click)="showPassword = !showPassword">
-                                                            <i class="fa" [ngClass]="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
+                      <div *ngIf="editandoCodigoAuth" class="mt-3">
+                        <div class="form-floating mb-3">
+                          <div class="input-group">
+                            <input
+                              [type]="showAuthCode ? 'text' : 'password'"
+                              class="form-control"
+                              [(ngModel)]="nuevoCodigoAuth"
+                              name="nuevoCodigoAuth"
+                              placeholder="Nuevo código de autorización"
+                              maxlength="10"
+                            />
+                            <button
+                              class="btn btn-outline-secondary"
+                              type="button"
+                              (click)="showAuthCode = !showAuthCode"
+                            >
+                              <i
+                                class="fa"
+                                [ngClass]="
+                                  showAuthCode ? 'fa-eye-slash' : 'fa-eye'
+                                "
+                              ></i>
+                            </button>
+                          </div>
+                        </div>
 
-                                                <div class="form-floating mb-4">
-                                                    <div class="input-group">
-                                                        <input [type]="showConfirmPassword ? 'text' : 'password'" 
-                                                               class="form-control" 
-                                                               [(ngModel)]="confirmPassword" 
-                                                               name="confirmPassword" 
-                                                               placeholder="Confirmar contraseña">
-                                                        <button class="btn btn-outline-secondary" 
-                                                                type="button"
-                                                                (click)="showConfirmPassword = !showConfirmPassword">
-                                                            <i class="fa" [ngClass]="showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="d-flex gap-2 mb-3">
-                                                    <button class="btn btn-primary px-4" 
-                                                            (click)="guardarPassword()">
-                                                        Guardar
-                                                    </button>
-                                                    <button class="btn btn-light px-4" 
-                                                            (click)="cancelarPassword()">
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-
-                                                <div class="alert alert-info d-flex align-items-center">
-                                                    <i class="fa fa-info-circle me-2"></i>
-                                                    <small>
-                                                        La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, 
-                                                        minúsculas, números y símbolos.
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Authorization Code Section -->
-                                <div class="col-md-6">
-                                    <div class="card border-0 shadow-sm h-100">
-                                        <div class="card-body p-4">
-                                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                                <h5 class="card-title mb-0 d-flex align-items-center">
-                                                    <i class="fa fa-shield-alt me-2 text-primary"></i>
-                                                    Código de Autorización
-                                                </h5>
-                                                <button *ngIf="!editandoCodigoAuth" 
-                                                        class="btn btn-outline-primary btn-sm rounded-pill px-3"
-                                                        (click)="editarCodigoAuth()">
-                                                    <i class="fa fa-edit me-1"></i> Cambiar
-                                                </button>
-                                            </div>
-
-                                            <div *ngIf="!editandoCodigoAuth">
-                                                <div class="d-flex align-items-center">
-                                                    <span class="fs-5 me-3">••••••</span>
-                                                    <small class="text-muted">Código configurado</small>
-                                                </div>
-                                                <div class="mt-2">
-                                                    <small class="text-info">
-                                                        <i class="fa fa-info-circle me-1"></i>
-                                                        Este código se utiliza para autorizar operaciones importantes
-                                                    </small>
-                                                </div>
-                                            </div>
-
-                                            <div *ngIf="editandoCodigoAuth" class="mt-3">
-                                                <div class="form-floating mb-3">
-                                                    <div class="input-group">
-                                                        <input [type]="showAuthCode ? 'text' : 'password'" 
-                                                            class="form-control" 
-                                                            [(ngModel)]="nuevoCodigoAuth" 
-                                                            name="nuevoCodigoAuth" 
-                                                            placeholder="Nuevo código de autorización"
-                                                            maxlength="10">
-                                                        <button class="btn btn-outline-secondary" 
-                                                                type="button"
-                                                                (click)="showAuthCode = !showAuthCode">
-                                                            <i class="fa" [ngClass]="showAuthCode ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="form-floating mb-4">
-                                                    <div class="input-group">
-                                                        <!-- Input field for confirming authorization code. 
+                        <div class="form-floating mb-4">
+                          <div class="input-group">
+                            <!-- Input field for confirming authorization code. 
                                                              Displays text when showConfirmAuthCode is true, 
                                                              otherwise hides it as a password. 
                                                              Binds the value to confirmarCodigoAuth and 
                                                              limits input to a maximum of 10 characters. -->
-                                                        <input [type]="showConfirmAuthCode ? 'text' : 'password'" 
-                                                            class="form-control" 
-                                                            [(ngModel)]="confirmarCodigoAuth" 
-                                                            name="confirmarCodigoAuth" 
-                                                            placeholder="Confirmar código de autorización"
-                                                            maxlength="10">
-                                                        <button class="btn btn-outline-secondary" 
-                                                                type="button"
-                                                                (click)="showConfirmAuthCode = !showConfirmAuthCode">
-                                                            <i class="fa" [ngClass]="showConfirmAuthCode ? 'fa-eye-slash' : 'fa-eye'"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="d-flex gap-2 mb-3">
-                                                    <button class="btn btn-primary px-4" 
-                                                            (click)="guardarCodigoAuth()"
-                                                            [disabled]="!nuevoCodigoAuth || nuevoCodigoAuth !== confirmarCodigoAuth">
-                                                        Guardar
-                                                    </button>
-                                                    <button class="btn btn-light px-4" 
-                                                            (click)="cancelarCodigoAuth()">
-                                                        Cancelar
-                                                    </button>
-                                                </div>
-
-                                                <div class="alert alert-warning d-flex align-items-center">
-                                                    <i class="fa fa-exclamation-triangle me-2"></i>
-                                                    <small>
-                                                        Mantén el  código de autorización debe ser numérico y tener entre 3 y 10 dígitos. 
-                                                         seguro ya que se requiere para aprobar operaciones importantes.
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <input
+                              [type]="showConfirmAuthCode ? 'text' : 'password'"
+                              class="form-control"
+                              [(ngModel)]="confirmarCodigoAuth"
+                              name="confirmarCodigoAuth"
+                              placeholder="Confirmar código de autorización"
+                              maxlength="10"
+                            />
+                            <button
+                              class="btn btn-outline-secondary"
+                              type="button"
+                              (click)="
+                                showConfirmAuthCode = !showConfirmAuthCode
+                              "
+                            >
+                              <i
+                                class="fa"
+                                [ngClass]="
+                                  showConfirmAuthCode
+                                    ? 'fa-eye-slash'
+                                    : 'fa-eye'
+                                "
+                              ></i>
+                            </button>
+                          </div>
                         </div>
 
-                        
-                    </div>
-                </div>
-            </form>
-        </div>
-    </section>
+                        <div class="d-flex gap-2 mb-3">
+                          <button
+                            class="btn btn-primary px-4"
+                            (click)="guardarCodigoAuth()"
+                            [disabled]="
+                              !nuevoCodigoAuth ||
+                              nuevoCodigoAuth !== confirmarCodigoAuth
+                            "
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            class="btn btn-light px-4"
+                            (click)="cancelarCodigoAuth()"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
 
-    <!-- System Info Section -->
-    <section class="info-adicional mt-4" *ngIf="usuario.ultimo_login">
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
-                <h5 class="card-title mb-4 ">
-                    <i class="fa fa-info-circle me-2 text-primary"></i>
-                    Información del Sistema
-                </h5>
-                <div class="row g-4">
-                    <div class="col-md-4" *ngIf="usuario.created_at">
-                        <label class="text-muted small text-uppercase mb-2">Creado</label>
-                        <p class="mb-0 fs-5">{{ usuario.created_at | date:'d/M/y h:m:s a' }}</p>
+                        <div
+                          class="alert alert-warning d-flex align-items-center"
+                        >
+                          <i class="fa fa-exclamation-triangle me-2"></i>
+                          <small>
+                            Mantén el código de autorización debe ser numérico y
+                            tener entre 3 y 10 dígitos. seguro ya que se
+                            requiere para aprobar operaciones importantes.
+                          </small>
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-md-4" *ngIf="usuario.updated_at">
-                        <label class="text-muted small text-uppercase mb-2">Actualizado</label>
-                        <p class="mb-0 fs-5">{{ usuario.updated_at | date:'d/M/y h:m:s a' }}</p>
-                    </div>
-                    <div class="col-md-4" *ngIf="usuario.ultimo_login">
-                        <label class="text-muted small text-uppercase mb-2">Último acceso</label>
-                        <p class="mb-0 fs-5">
-                            {{ usuario.ultimo_login | date:'d/M/y h:m:s a' }}
-                            <br>
-                            <small class="text-muted">({{ usuario.ultimo_login_human}})</small>
-                        </p>
-                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
-    </section>
+      </form>
+    </div>
+  </section>
+
+  <!-- System Info Section -->
+  <section class="info-adicional mt-4" *ngIf="usuario.ultimo_login">
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="card-title mb-4">
+          <i class="fa fa-info-circle me-2 text-primary"></i>
+          Información del Sistema
+        </h5>
+        <div class="row g-4">
+          <div class="col-md-4" *ngIf="usuario.created_at">
+            <label class="text-muted small text-uppercase mb-2">Creado</label>
+            <p class="mb-0 fs-5">
+              {{ usuario.created_at | date : "d/M/y h:m:s a" }}
+            </p>
+          </div>
+          <div class="col-md-4" *ngIf="usuario.updated_at">
+            <label class="text-muted small text-uppercase mb-2"
+              >Actualizado</label
+            >
+            <p class="mb-0 fs-5">
+              {{ usuario.updated_at | date : "d/M/y h:m:s a" }}
+            </p>
+          </div>
+          <div class="col-md-4" *ngIf="usuario.ultimo_login">
+            <label class="text-muted small text-uppercase mb-2"
+              >Último acceso</label
+            >
+            <p class="mb-0 fs-5">
+              {{ usuario.ultimo_login | date : "d/M/y h:m:s a" }}
+              <br />
+              <small class="text-muted"
+                >({{ usuario.ultimo_login_human }})</small
+              >
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
+
 

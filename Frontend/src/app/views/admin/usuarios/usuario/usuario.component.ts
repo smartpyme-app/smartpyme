@@ -9,6 +9,7 @@ interface Permission {
   fromRole: boolean;
   selected: boolean;
 }
+
 @Component({
   selector: 'app-usuario',
   templateUrl: './usuario.component.html',
@@ -24,8 +25,20 @@ export class UsuarioComponent implements OnInit {
   public rol: any = {};
   public loading = false;
   public mostrarCambioContrasena = false;
+  public countries = [
+    { code: 'SV', name: 'El Salvador', dial: '+503', flag: '🇸🇻', mask: '####-####', maxLength: 9 },
+    { code: 'GT', name: 'Guatemala', dial: '+502', flag: '🇬🇹', mask: '####-####', maxLength: 8 },
+    { code: 'HN', name: 'Honduras', dial: '+504', flag: '🇭🇳', mask: '####-####', maxLength: 8 },
+    { code: 'NI', name: 'Nicaragua', dial: '+505', flag: '🇳🇮', mask: '####-####', maxLength: 8 },
+    { code: 'CR', name: 'Costa Rica', dial: '+506', flag: '🇨🇷', mask: '####-####', maxLength: 8 },
+    { code: 'PA', name: 'Panamá', dial: '+507', flag: '🇵🇦', mask: '####-####', maxLength: 8 },
+    { code: 'US', name: 'Estados Unidos', dial: '+1', flag: '🇺🇸', mask: '(###) ###-####', maxLength: 14 },
+    { code: 'CA', name: 'Canadá', dial: '+1', flag: '🇨🇦', mask: '(###) ###-####', maxLength: 14 },
+    { code: 'MX', name: 'México', dial: '+52', flag: '🇲🇽', mask: '### ### ####', maxLength: 12 }
+  ];
   public searchTerm: string = '';
   public filterModules: any[] = [];
+  public selectedCountry = this.countries[0];
 
   // Img Upload
   public file?: File;
@@ -79,7 +92,9 @@ export class UsuarioComponent implements OnInit {
       (usuario) => {
         this.usuario = usuario;
         this.nuevoCodigoAuth = usuario.codigo_autorizacion;
-
+        if (usuario.telefono) {
+          this.detectCountryFromPhone(usuario.telefono);
+        }
         this.loading = false;
       },
       (error) => {
@@ -92,18 +107,17 @@ export class UsuarioComponent implements OnInit {
   public onSubmit() {
     this.loading = true;
 
-
-
     let formData: FormData = new FormData();
-	formData.append('id', this.usuario.id);
-	formData.append('name', this.usuario.name);
-	formData.append('telefono', this.usuario.telefono);
-	formData.append('tipo', this.usuario.tipo);
-	formData.append('codigo', this.usuario.codigo);
-	formData.append('id_sucursal', this.usuario.id_sucursal);
+    formData.append('id', this.usuario.id);
+    formData.append('name', this.usuario.name);
+    formData.append('telefono', this.getFullPhoneNumber());
+    formData.append('tipo', this.usuario.tipo);
+    formData.append('codigo', this.usuario.codigo);
+    formData.append('id_sucursal', this.usuario.id_sucursal);
 
+    console.log('Teléfono completo a guardar:', this.getFullPhoneNumber());
+    console.log(formData);
 
-	console.log(formData);
     this.apiService.store('usuario/informacion', formData).subscribe(
       (usuario) => {
         console.log('✅ Usuario guardado exitosamente:', usuario);
@@ -121,29 +135,10 @@ export class UsuarioComponent implements OnInit {
         );
       },
       (error) => {
-        console.log('❌ Error en onSubmit:', error);
+        this.alertService.error(error);
         this.loading = false;
-
-        if (error.status === 403 && error.error?.requires_authorization) {
-          console.log(
-            '🔐 Se requiere autorización - el interceptor manejará esto'
-          );
-          return;
-        }
-
-        let errorMessage = 'Ha ocurrido un error al guardar el usuario';
-
-        if (error?.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        } else if (typeof error === 'string') {
-          errorMessage = error;
-        }
-
-        this.alertService.error(errorMessage);
       }
-     );
+    );
   }
 
   setFile(event: any) {
@@ -157,6 +152,7 @@ export class UsuarioComponent implements OnInit {
       this.preview = true;
     };
     reader.readAsDataURL(this.file!);
+    this.sendFile(this.file!);
   }
 
   mostrarPassword(campo: string): boolean {
@@ -168,21 +164,16 @@ export class UsuarioComponent implements OnInit {
   }
 
   confirmarCambioEmail() {
-    // Add logic to request confirmation from the user
-    // before allowing to edit the email
     if (confirm('¿Está seguro que desea cambiar el correo electrónico?')) {
       this.usuario.email_editable = true;
     }
   }
 
   confirmarCambioContrasena() {
-    // Add logic to request confirmation from the user
-    // before allowing to edit the password
     if (confirm('¿Está seguro que desea cambiar la contraseña?')) {
       this.mostrarCambioContrasena = true;
     }
   }
-
 
   editarEmail() {
     this.editandoEmail = true;
@@ -219,7 +210,6 @@ export class UsuarioComponent implements OnInit {
       );
   }
 
-  // Password
   editarPassword() {
     this.editandoPassword = true;
     this.newPassword = '';
@@ -228,14 +218,14 @@ export class UsuarioComponent implements OnInit {
 
   editarCodigoAuth() {
     this.editandoCodigoAuth = true;
-    this.newPassword = '';
-    this.confirmPassword = '';
+    this.nuevoCodigoAuth = '';
+    this.confirmarCodigoAuth = '';
   }
 
   cancelarCodigoAuth() {
     this.editandoCodigoAuth = false;
-    this.newPassword = '';
-    this.confirmPassword = '';
+    this.nuevoCodigoAuth = '';
+    this.confirmarCodigoAuth = '';
   }
 
   guardarCodigoAuth() {
@@ -301,7 +291,7 @@ export class UsuarioComponent implements OnInit {
       return;
     }
 
-    this.loading = true; 
+    this.loading = true;
 
     this.apiService
       .update('usuario/password', this.usuario.id, {
@@ -325,14 +315,9 @@ export class UsuarioComponent implements OnInit {
         },
         (error) => {
           console.error('Error completo:', error);
-          console.error('Tipo de error:', typeof error);
-          console.error('Error.message:', error?.message);
-          console.error('Error.error:', error?.error);
-
           this.loading = false;
 
           let errorMessage = 'Ha ocurrido un error al actualizar la contraseña';
-
           if (error?.error?.message) {
             errorMessage = error.error.message;
           } else if (error?.message) {
@@ -356,4 +341,126 @@ export class UsuarioComponent implements OnInit {
     module.expanded = !module.expanded;
   }
 
+  sendFile(file: File) {
+    let formData: FormData = new FormData();
+    formData.append('file', file);
+    formData.append('id', this.usuario.id);
+    this.apiService.store('usuario/avatar', formData).subscribe(
+      (response: any) => {
+        console.log('Respuesta exitosa:', response);
+      },
+      (error) => {
+        console.error('Error completo:', error);
+      }
+    );
+  }
+
+  // Métodos para el teléfono
+  onCountryChange(country: any) {
+    this.selectedCountry = country;
+    this.usuario.telefono = '';
+  }
+
+  formatPhone(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+
+    if (this.selectedCountry.code === 'SV') {
+      if (value.length >= 4) {
+        value = value.substring(0, 4) + '-' + value.substring(4, 8);
+      }
+    } else if (['GT', 'HN', 'NI', 'CR', 'PA'].includes(this.selectedCountry.code)) {
+      if (value.length >= 4) {
+        value = value.substring(0, 4) + '-' + value.substring(4, 8);
+      }
+    } else if (['US', 'CA'].includes(this.selectedCountry.code)) {
+      if (value.length >= 6) {
+        value = '(' + value.substring(0, 3) + ') ' + value.substring(3, 6) + '-' + value.substring(6, 10);
+      } else if (value.length >= 3) {
+        value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
+      }
+    } else if (this.selectedCountry.code === 'MX') {
+      if (value.length >= 6) {
+        value = value.substring(0, 3) + ' ' + value.substring(3, 6) + ' ' + value.substring(6, 10);
+      } else if (value.length >= 3) {
+        value = value.substring(0, 3) + ' ' + value.substring(3);
+      }
+    }
+
+    this.usuario.telefono = value;
+    event.target.value = value;
+  }
+
+  getFullPhoneNumber(): string {
+    if (!this.usuario.telefono) return '';
+    const cleanPhone = this.usuario.telefono.replace(/\D/g, '');
+    return this.selectedCountry.dial + cleanPhone;
+  }
+
+  detectCountryFromPhone(phone: string) {
+    if (!phone) return;
+
+    if (phone.startsWith('+')) {
+      for (let country of this.countries) {
+        if (phone.startsWith(country.dial)) {
+          this.selectedCountry = country;
+          this.usuario.telefono = phone.substring(country.dial.length);
+          this.formatPhoneDisplay();
+          return;
+        }
+      }
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length <= 9) {
+      this.selectedCountry = this.countries.find(c => c.code === 'SV') || this.countries[0];
+    } else if (cleanPhone.length === 10) {
+      this.selectedCountry = this.countries.find(c => c.code === 'US') || this.countries[0];
+    }
+    this.formatPhoneDisplay();
+  }
+
+  formatPhoneDisplay() {
+    if (!this.usuario.telefono) return;
+    
+    const cleanPhone = this.usuario.telefono.replace(/\D/g, '');
+    let formattedPhone = '';
+
+    if (this.selectedCountry.code === 'SV' || ['GT', 'HN', 'NI', 'CR', 'PA'].includes(this.selectedCountry.code)) {
+      if (cleanPhone.length >= 4) {
+        formattedPhone = cleanPhone.substring(0, 4) + '-' + cleanPhone.substring(4, 8);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    } else if (['US', 'CA'].includes(this.selectedCountry.code)) {
+      if (cleanPhone.length >= 6) {
+        formattedPhone = '(' + cleanPhone.substring(0, 3) + ') ' + cleanPhone.substring(3, 6) + '-' + cleanPhone.substring(6, 10);
+      } else if (cleanPhone.length >= 3) {
+        formattedPhone = '(' + cleanPhone.substring(0, 3) + ') ' + cleanPhone.substring(3);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    } else if (this.selectedCountry.code === 'MX') {
+      if (cleanPhone.length >= 6) {
+        formattedPhone = cleanPhone.substring(0, 3) + ' ' + cleanPhone.substring(3, 6) + ' ' + cleanPhone.substring(6, 10);
+      } else if (cleanPhone.length >= 3) {
+        formattedPhone = cleanPhone.substring(0, 3) + ' ' + cleanPhone.substring(3);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    }
+
+    this.usuario.telefono = formattedPhone;
+  }
+
+  getPlaceholder(): string {
+    return this.selectedCountry.mask;
+  }
+
+onCountrySelectChange(event: any) {
+	const selectedCode = event.target.value;
+	const country = this.countries.find(c => c.code === selectedCode);
+	if (country) {
+	  this.onCountryChange(country);
+	}
+  }
 }

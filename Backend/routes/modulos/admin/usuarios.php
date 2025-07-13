@@ -30,6 +30,6 @@ use Illuminate\Support\Facades\Route;
     Route::put('/usuario/codigo-autorizacion/{id}',       [UsuariosController::class, 'updateAuthCode']);
     //usuario/informacion
     Route::post('/usuario/informacion',       [UsuariosController::class, 'updateInfo']);
-
+    Route::post('/usuario/avatar',       [UsuariosController::class, 'updateAvatar']);
 
 ?>

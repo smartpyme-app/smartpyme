@@ -398,11 +398,35 @@ class UsuariosController extends Controller
             'name' => 'required',
             'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
             'tipo' => 'required',
-            'codigo' => 'required',
+            'codigo' => 'sometimes|nullable|numeric|digits_between:3,10',
             'id_sucursal' => 'required',
         ]);
+
+        
         $user = Usuario::findOrFail($request->id);
         $user->fill($request->all());
+        $user->save();
+        return Response()->json($user, 200);
+    }
+
+    public function updateAvatar(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg'
+        ]);
+        $user = Usuario::findOrFail($request->id);
+
+        if ($request->hasFile('file')) {
+            if ($request->id && $user->avatar && $user->avatar != 'usuarios/default.jpg') {
+                Storage::delete($user->avatar);
+            }
+            $path   = $request->file('file');
+            $resize = Image::make($path)->resize(350, 350)->encode('jpg', 75);
+            $hash = md5($resize->__toString());
+            $path = "usuarios/{$hash}.jpg";
+            $resize->save(public_path('img/' . $path), 50);
+            $user->avatar = "/" . $path;
+        }
         $user->save();
         return Response()->json($user, 200);
     }
