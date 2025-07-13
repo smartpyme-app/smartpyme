@@ -398,7 +398,7 @@ class UsuariosController extends Controller
             'name' => 'required',
             'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
             'tipo' => 'required',
-            'codigo' => 'sometimes|nullable|numeric|digits_between:3,10',
+            'codigo' => 'sometimes|nullable',
             'id_sucursal' => 'required',
         ]);
 
