@@ -89,8 +89,13 @@
 <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
                                 <i class="fa fa-trash"></i>
                             </a> -->
+
                             <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
                                 <i class="fa fa-pencil-alt"></i>
+                            </a>
+                            <!-- ir a usuario -->
+                            <a class="btn btn-default" [routerLink]="['/usuario', usuario.id]" data-toggle="tooltip" title="Ver">
+                                <i class="fa fa-arrow-right"></i>
                             </a>
                         </div>  
                     </td>
