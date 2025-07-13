@@ -249,7 +249,10 @@
                   data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab"
                   aria-controls="v-pills-balance-comprobacion" aria-selected="false">Balance de comprobación
           </button>
-          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Balance general</button>-->
+          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-general-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-balance-general" type="button" role="tab"
+                  aria-controls="v-pills-balance-general" aria-selected="false">Balance general
+          </button>
           <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>-->
         </div>
         <div class="tab-content" id="v-pills-tabContent">
@@ -486,6 +489,57 @@
               </div>
             </form>
 
+          </div>
+          <!-- tab 6 formulario BALANCE GENERAL -->
+          <div class="tab-pane fade" id="v-pills-balance-general" role="tabpanel"
+               aria-labelledby="v-pills-balance-general-tab">
+            <form (ngSubmit)="imprimirBalanceGeneral()" #balanceGeneralForm="ngForm">
+              <div class="row">
+                <div class="form-group col-md-6">
+                  <label for="month">Mes:</label>
+                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="year">Año:</label>
+                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="form-group col-md-6">
+                  <div class="mt-4 pt-2">
+                    <p class="text-muted small mb-0">
+                      <i class="fas fa-info-circle me-1"></i>
+                      El Balance General agrupa automáticamente las cuentas por rubros contables
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="form-group col-md-12 mt-3">
+                  <button type="submit" [disabled]="!balanceGeneralForm.form.valid || saving"
+                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span *ngIf="saving">Guardando...</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       </div>

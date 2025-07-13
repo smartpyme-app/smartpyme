@@ -330,6 +330,28 @@ export class PartidasComponent implements OnInit {
     }
   }
 
+  public imprimirBalanceGeneral() {
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/balance/general/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
   public abrirPartida(partida: any) {
     this.apiService.store('partidas/abrir', { id: partida.id }).subscribe({
       next: (response) => {
