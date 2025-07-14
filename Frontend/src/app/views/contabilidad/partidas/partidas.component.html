@@ -221,187 +221,58 @@
 <!-- generacion de documentos -->
 <ng-template #mdocgenerate>
   <div class="modal-header">
-    <div class="modal-title text-center">
-      <h2 class="text-center">Generar reporte</h2>
+    <div class="modal-title">
+      <h4 class="mb-0">Generar reporte contable</h4>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
-  <div class="modal-body">
+  <div class="modal-body" style="min-height: 400px;">
 
     <app-notificaciones-container></app-notificaciones-container>
 
-    <div>
-      <div class="d-flex align-items-start">
-        <div class="nav flex-column nav-pills me-3 px-2 py-2 border rounded" id="v-pills-tab" role="tablist"
-             aria-orientation="vertical">
-          <button class="nav-link text-nowrap text-start text-dark active" id="v-pills-libro-diario-tab"
+    <div class="row">
+      <!-- Sidebar de navegación -->
+      <div class="col-md-4">
+        <div class="nav flex-column nav-pills bg-light p-3 rounded" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+          <button class="nav-link text-start text-dark active mb-2" id="v-pills-libro-diario-tab"
                   data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario" type="button" role="tab"
-                  aria-controls="v-pills-home" aria-selected="true">Libro diario
+                  aria-controls="v-pills-libro-diario" aria-selected="true">
+            <i class="fas fa-book me-2"></i>Libro diario
           </button>
-          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-mayor-tab" data-bs-toggle="pill" data-bs-target="#v-pills-libro-mayor" type="button" role="tab" aria-controls="v-pills-libro-mayor" aria-selected="false">Libro mayor</button>-->
-          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-libro-diario-mayor-tab"
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-libro-diario-mayor-tab"
                   data-bs-toggle="pill" data-bs-target="#v-pills-libro-diario-mayor" type="button" role="tab"
-                  aria-controls="v-pills-libro-diario-mayor" aria-selected="false">Libro diario mayor
+                  aria-controls="v-pills-libro-diario-mayor" aria-selected="false">
+            <i class="fas fa-book-open me-2"></i>Libro diario mayor
           </button>
-          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-monthsages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Libro auxiliar</button>-->
-          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-messages-tab" data-bs-toggle="pill" data-bs-target="#" type="button" role="tab" aria-controls="v-pills-messages" aria-selected="false">Estado de resultados</button>-->
-          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-comprobacion-tab"
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-balance-comprobacion-tab"
                   data-bs-toggle="pill" data-bs-target="#v-pills-balance-comprobacion" type="button" role="tab"
-                  aria-controls="v-pills-balance-comprobacion" aria-selected="false">Balance de comprobación
+                  aria-controls="v-pills-balance-comprobacion" aria-selected="false">
+            <i class="fas fa-balance-scale me-2"></i>Balance de comprobación
           </button>
-          <button class="nav-link text-nowrap text-start text-dark" id="v-pills-balance-general-tab"
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-balance-general-tab"
                   data-bs-toggle="pill" data-bs-target="#v-pills-balance-general" type="button" role="tab"
-                  aria-controls="v-pills-balance-general" aria-selected="false">Balance general
+                  aria-controls="v-pills-balance-general" aria-selected="false">
+            <i class="fas fa-chart-pie me-2"></i>Balance general
           </button>
-          <!--              <button class="nav-link text-nowrap text-start text-dark" id="v-pills-settings-tab" data-bs-toggle="pill" data-bs-target="#v-pills-settings" type="button" role="tab" aria-controls="v-pills-settings" aria-selected="false">Movimiento de cuenta</button>-->
+          <button class="nav-link text-start text-dark mb-2" id="v-pills-estado-resultados-tab"
+                  data-bs-toggle="pill" data-bs-target="#v-pills-estado-resultados" type="button" role="tab"
+                  aria-controls="v-pills-estado-resultados" aria-selected="false">
+            <i class="fas fa-chart-line me-2"></i>Estado de resultados
+          </button>
         </div>
-        <div class="tab-content" id="v-pills-tabContent">
+      </div>
+
+      <!-- Contenido de los tabs -->
+      <div class="col-md-8">
+        <div class="tab-content bg-white p-4 rounded border" id="v-pills-tabContent">
           <!-- tab 1 formulario LIBRO DIARIO-->
           <div class="tab-pane fade show active" id="v-pills-libro-diario" role="tabpanel"
                aria-labelledby="v-pills-libro-diario-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-book me-2"></i>Libro Diario</h5>
             <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
-              <div class="row">
-                <div class="form-group col-md-6">
-                  <label for="month">Mes:</label>
-                  <select class="form-select" name="month" [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="year">Año:</label>
-                  <select class="form-select" name="year" [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="" selected>Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de reporte:</label>
-                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="">Seleccione tipo de reporte</option>
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todos</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="!auxForm.form.valid || saving"
-                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-          <!-- tab 2 formulario LIBRO MAYOR -->
-          <div class="tab-pane fade" id="v-pills-libro-mayor" role="tabpanel" aria-labelledby="v-pills-libro-mayor-tab">
-
-            <form (ngSubmit)="imprimirMayor()" #mayorForm="ngForm">
-              <div class="row">
-                <!--                        <div class="form-group col-md-9">-->
-                <!--                            <label for="nombre">Concepto:</label>-->
-                <!--                            <input type="text" class="form-control" name="nombre" required [(ngModel)]="reporte.concepto">-->
-                <!--                        </div>-->
-                <div class="form-group col-md-4">
-                  <label for="month">Mes:</label>
-                  <input type='date' class="form-control" name="reporte.desde" required [(ngModel)]="reporte.month"/>
-                </div>
-                <div class="form-group col-md-4">
-                  <label for="year">Año:</label>
-                  <input type='date' class="form-control" name="reporte.hasta" required [(ngModel)]="reporte.year"/>
-                </div>
-                <div class="form-group col-md-5">
-                  <label for="nombre">Centro de costo:</label>
-                  <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                </div>
-
-              </div>
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="reporteForm.invalid || saving"
-                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span>Generar documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-
-          </div>
-          <!-- tab 3 formulario LIBRO DIARIO MAYOR -->
-          <div class="tab-pane fade" id="v-pills-libro-diario-mayor" role="tabpanel"
-               aria-labelledby="v-pills-libro-diario-mayor-tab">
-            <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor()" novalidate>
-              <div class="row">
-                <div class="form-group col-md-6">
-                  <label for="month">Mes:</label>
-                  <select class="form-select" name="month" [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="year">Año:</label>
-                  <select class="form-select" name="year" [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de reporte:</label>
-                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="">Seleccione tipo de reporte</option>
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todos</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
-                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-          <!-- tab 4 formulario BALANCE COMPROBACION-->
-          <div class="tab-pane fade" id="v-pills-balance-comprobacion" role="tabpanel"
-               aria-labelledby="v-pills-balance-comprobacion-tab">
-            <form (ngSubmit)="imprimirBalanceComprobacion()" #auxForm="ngForm">
-              <div class="row">
-                <div class="form-group col-md-6">
-                  <label for="month">Mes:</label>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
                     <option *ngFor="let month of months" [value]="month.value">
@@ -409,103 +280,8 @@
                     </option>
                   </select>
                 </div>
-                <div class="form-group col-md-6">
-                  <label for="year">Año:</label>
-                  <select class="form-select" name="year" require [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de reporte:</label>
-                  <select name="tipo_descarga" class="form-select" [(ngModel)]="reporte.tipo_descarga">
-                    <option value="">Seleccione tipo de reporte</option>
-                    <option value="pdf">PDF</option>
-                    <option value="excel">Excel</option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de cuenta:</label>
-                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
-                    <option value="all" selected>Todos</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="!auxForm.form.valid || saving"
-                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-          <!-- tab 5 formulario LIBRO MAYOR -->
-          <div class="tab-pane fade" id="v-pills-settings" role="tabpanel" aria-labelledby="v-pills-settings-tab">
-
-            <form (ngSubmit)="imprimirMovCuenta()">
-              <div class="row">
-                <div class="form-group col-md-6">
-                  <label for="">Desde:</label>
-                  <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.desde"/>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="">Hasta:</label>
-                  <input type='date' class="form-control" name="fecha_fin" required [(ngModel)]="reporte.hasta"/>
-                </div>
-                <div class="form-group col-md-8">
-                  <label for="nombre">Cuenta desde:</label>
-                  <ng-select [(ngModel)]="reporte.cuenta" (change)="selectCuenta()" class="form-select p-0"
-                             name="detalle.id_cuenta">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.codigo">
-                      <div class="d-flex align-items-center">
-                        <span class="col-4">{{ cuenta.codigo }} </span>
-                        <span class="col-8"> - {{ cuenta.nombre | truncate:20 }}</span>
-                      </div>
-                    </ng-option>
-                  </ng-select>
-                </div>
-                <div class="form-group col-md-8">
-                  <label for="nombre">Centro de costo:</label>
-                  <input type="text" class="form-control" name="nombre" [(ngModel)]="reporte.nombre">
-                </div>
-
-              </div>
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary float-end">
-                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-
-          </div>
-          <!-- tab 6 formulario BALANCE GENERAL -->
-          <div class="tab-pane fade" id="v-pills-balance-general" role="tabpanel"
-               aria-labelledby="v-pills-balance-general-tab">
-            <form (ngSubmit)="imprimirBalanceGeneral()" #balanceGeneralForm="ngForm">
-              <div class="row">
-                <div class="form-group col-md-6">
-                  <label for="month">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
-                </div>
-                <div class="form-group col-md-6">
-                  <label for="year">Año:</label>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
                     <option *ngFor="let year of years" [value]="year">
@@ -513,37 +289,285 @@
                     </option>
                   </select>
                 </div>
-                <div class="form-group col-md-6">
-                  <label for="">Tipo de reporte:</label>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
                   <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
                     <option value="">Seleccione tipo de reporte</option>
                     <option value="pdf">PDF</option>
                     <option value="excel">Excel</option>
                   </select>
                 </div>
-                <div class="form-group col-md-6">
-                  <div class="mt-4 pt-2">
-                    <p class="text-muted small mb-0">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todas las cuentas</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
                       <i class="fas fa-info-circle me-1"></i>
-                      El Balance General agrupa automáticamente las cuentas por rubros contables
-                    </p>
+                      Genera el registro cronológico de todas las transacciones
+                    </small>
+                    <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
                   </div>
                 </div>
               </div>
-              <div class="row">
-                <div class="form-group col-md-12 mt-3">
-                  <button type="submit" [disabled]="!balanceGeneralForm.form.valid || saving"
-                          class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span>Generar Documento <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
-                  </button>
+            </form>
+          </div>
+
+          <!-- tab 2 formulario LIBRO DIARIO MAYOR -->
+          <div class="tab-pane fade" id="v-pills-libro-diario-mayor" role="tabpanel"
+               aria-labelledby="v-pills-libro-diario-mayor-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-book-open me-2"></i>Libro Diario Mayor</h5>
+            <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor()" novalidate>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Mes:</label>
+                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Año:</label>
+                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todas las cuentas</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Combina libro diario y mayor en un solo reporte
+                    </small>
+                    <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 3 formulario BALANCE COMPROBACION-->
+          <div class="tab-pane fade" id="v-pills-balance-comprobacion" role="tabpanel"
+               aria-labelledby="v-pills-balance-comprobacion-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-balance-scale me-2"></i>Balance de Comprobación</h5>
+            <form (ngSubmit)="imprimirBalanceComprobacion()" #balanceForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Mes:</label>
+                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Año:</label>
+                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de cuenta:</label>
+                  <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
+                    <option value="all" selected>Todas las cuentas</option>
+                    <option *ngFor="let cat of catalogo" [value]="cat.id">
+                      {{cat.nombre}}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Verifica el cuadre contable con saldos iniciales y movimientos
+                    </small>
+                    <button type="submit" [disabled]="!balanceForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 4 formulario BALANCE GENERAL -->
+          <div class="tab-pane fade" id="v-pills-balance-general" role="tabpanel"
+               aria-labelledby="v-pills-balance-general-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-chart-pie me-2"></i>Balance General</h5>
+            <form (ngSubmit)="imprimirBalanceGeneral()" #balanceGeneralForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Mes:</label>
+                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Año:</label>
+                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="d-flex align-items-end h-100">
+                    <div class="alert alert-info mb-0 w-100">
+                      <small>
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Se agrupan automáticamente por rubros contables
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Muestra la situación financiera: Activos, Pasivos y Patrimonio
+                    </small>
+                    <button type="submit" [disabled]="!balanceGeneralForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- tab 5 formulario ESTADO DE RESULTADOS -->
+          <div class="tab-pane fade" id="v-pills-estado-resultados" role="tabpanel"
+               aria-labelledby="v-pills-estado-resultados-tab">
+            <h5 class="mb-3 text-primary"><i class="fas fa-chart-line me-2"></i>Estado de Resultados</h5>
+            <form (ngSubmit)="imprimirEstadoResultados()" #estadoResultadosForm="ngForm">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Mes:</label>
+                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
+                    <option value="">Seleccione un mes</option>
+                    <option *ngFor="let month of months" [value]="month.value">
+                      {{ month.label }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Año:</label>
+                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
+                    <option value="">Seleccione un año</option>
+                    <option *ngFor="let year of years" [value]="year">
+                      {{ year }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Tipo de reporte:</label>
+                  <select name="tipo_descarga" class="form-select" required [(ngModel)]="reporte.tipo_descarga">
+                    <option value="">Seleccione tipo de reporte</option>
+                    <option value="pdf">PDF</option>
+                    <option value="excel">Excel</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="d-flex align-items-end h-100">
+                    <div class="alert alert-success mb-0 w-100">
+                      <small>
+                        <i class="fas fa-chart-line me-1"></i>
+                        Calcula automáticamente utilidad/pérdida
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Muestra ingresos, costos y gastos para determinar la rentabilidad
+                    </small>
+                    <button type="submit" [disabled]="!estadoResultadosForm.form.valid || saving" class="btn btn-primary">
+                      <i class="fas fa-download me-2"></i>
+                      <span *ngIf="!saving">Generar Documento</span>
+                      <span *ngIf="saving">Generando...</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </form>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </ng-template>

@@ -10,5 +10,6 @@ use Illuminate\Support\Facades\Route;
     Route::get('/reportes/balance/comprobacion/{month}/{year}/{cuenta}/{type}',[GenerarReportesController::class, 'generarRepBalanceComprobacion']);
     Route::get('/reportes/mayorizacion',                                     [GenerarReportesController::class, 'mayorizacion']);
     Route::get('/reportes/balance/general/{month}/{year}/{type}',            [GenerarReportesController::class, 'generarBalanceGeneral']);
+    Route::get('/reportes/estado/resultados/{month}/{year}/{type}',          [GenerarReportesController::class, 'generarEstadoResultados']);
 
 ?>

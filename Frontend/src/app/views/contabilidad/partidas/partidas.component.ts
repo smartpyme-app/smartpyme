@@ -69,6 +69,11 @@ export class PartidasComponent implements OnInit {
     }
   }
 
+  public onYearChange() {
+    // Método llamado cuando cambia el año en los formularios
+    // Puede implementarse lógica adicional aquí si es necesario
+  }
+
   public setOrden(columna: string) {
     if (this.filtros.columna == columna) {
       this.filtros.orden = this.filtros.orden == 'asc' ? 'desc' : 'asc';
@@ -119,9 +124,11 @@ export class PartidasComponent implements OnInit {
   }
 
   public openFilter(template: TemplateRef<any>) {
+    // Configuración específica para el modal de reportes
     this.modalRef = this.modalService.show(template, {
-      class: 'modal-md',
-      backdrop: 'static',
+      class: 'modal-xl',
+      backdrop: 'static' as 'static',
+      keyboard: false
     });
   }
 
@@ -339,6 +346,28 @@ export class PartidasComponent implements OnInit {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/balance/general/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
+  }
+
+  public imprimirEstadoResultados() {
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/estado/resultados/' +
           this.reporte.month +
           '/' +
           this.reporte.year +

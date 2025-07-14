@@ -6,6 +6,7 @@ use App\Exports\Contabilidad\BalanceComprobacionExport;
 use App\Exports\Contabilidad\DiarioAuxiliarExport;
 use App\Exports\Contabilidad\DiarioMayorExport;
 use App\Exports\Contabilidad\BalanceGeneralExport;
+use App\Exports\Contabilidad\EstadoResultadosExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\Contabilidad\Catalogo\Cuenta;
@@ -907,6 +908,193 @@ class GenerarReportesController extends Controller
         ];
 
         return Excel::download(new BalanceGeneralExport($data), 'balance_general.xlsx');
+    }
+
+    public function generarEstadoResultados($month, $year, $type)
+    {
+        if ($type === 'pdf') {
+            return $this->generarEstadoResultadosPDF($month, $year);
+        } else {
+            return $this->generarEstadoResultadosExcel($month, $year);
+        }
+    }
+
+    public function generarEstadoResultadosPDF($month, $year)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $month_name = Carbon::createFromDate($year, $month)->monthName;
+
+        // Obtener todas las cuentas padre (nivel 0) con sus saldos consolidados
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)
+            ->where('nivel', 0) // Solo cuentas padre
+            ->orderBy('codigo')
+            ->get();
+
+        // Obtener los movimientos del mes filtrado para todas las cuentas
+        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
+            ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
+            ->whereYear('fecha', $year)
+            ->whereMonth('fecha', $month)
+            ->select(
+                'partida_detalles.id_cuenta',
+                DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                DB::raw('SUM(partida_detalles.haber) as total_haber')
+            )
+            ->groupBy('partida_detalles.id_cuenta')
+            ->get()
+            ->keyBy('id_cuenta');
+
+        $estado_resultados = [
+            'ingresos' => [],
+            'costos_gastos' => [],
+            'totales' => [
+                'ingresos' => 0,
+                'costos_gastos' => 0,
+                'utilidad_perdida' => 0
+            ]
+        ];
+
+        // Procesar cada cuenta
+        foreach ($cuentas as $cuenta) {
+            $movimientos = $partida_detalles->get($cuenta->id);
+
+            if (!$movimientos) {
+                $debe = 0;
+                $haber = 0;
+            } else {
+                $debe = $movimientos->total_debe ?? 0;
+                $haber = $movimientos->total_haber ?? 0;
+            }
+
+            // Calcular saldo según naturaleza de la cuenta
+            if ($cuenta->naturaleza === 'Deudor') {
+                $saldo_final = $debe - $haber;
+            } else {
+                $saldo_final = $haber - $debe;
+            }
+
+            // Solo incluir cuentas con saldo diferente de cero
+            if ($saldo_final != 0) {
+                $cuenta_info = [
+                    'codigo' => $cuenta->codigo,
+                    'nombre' => $cuenta->nombre,
+                    'saldo_final' => $saldo_final,
+                    'naturaleza' => $cuenta->naturaleza,
+                    'rubro' => $cuenta->rubro
+                ];
+
+                // Clasificar según el rubro
+                if ($cuenta->rubro === 'Ingresos') {
+                    $estado_resultados['ingresos'][] = $cuenta_info;
+                    $estado_resultados['totales']['ingresos'] += abs($saldo_final);
+                } elseif ($cuenta->rubro === 'Costos y gastos') {
+                    $estado_resultados['costos_gastos'][] = $cuenta_info;
+                    $estado_resultados['totales']['costos_gastos'] += abs($saldo_final);
+                }
+            }
+        }
+
+        // Calcular utilidad/pérdida
+        $estado_resultados['totales']['utilidad_perdida'] =
+            $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
+
+        $pdf = PDF::loadView('reportes.contabilidad.estado_resultados', compact(
+            'estado_resultados',
+            'empresa',
+            'month_name',
+            'month',
+            'year'
+        ));
+
+        $pdf->setPaper('US Letter', 'portrait');
+
+        return $pdf->stream();
+    }
+
+    public function generarEstadoResultadosExcel($month, $year)
+    {
+        $empresa_id = auth()->user()->id_empresa;
+        $empresa = Empresa::findOrFail($empresa_id);
+        $month_name = Carbon::createFromDate($year, $month)->monthName;
+
+        // Obtener todas las cuentas padre (nivel 0) con sus saldos consolidados
+        $cuentas = Cuenta::where('id_empresa', $empresa_id)
+            ->where('nivel', 0) // Solo cuentas padre
+            ->orderBy('codigo')
+            ->get();
+
+        // Obtener los movimientos del mes filtrado para todas las cuentas
+        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
+            ->where('partidas.id_empresa', $empresa_id)
+            ->where('partidas.estado', 'Aplicada')
+            ->whereYear('fecha', $year)
+            ->whereMonth('fecha', $month)
+            ->select(
+                'partida_detalles.id_cuenta',
+                DB::raw('SUM(partida_detalles.debe) as total_debe'),
+                DB::raw('SUM(partida_detalles.haber) as total_haber')
+            )
+            ->groupBy('partida_detalles.id_cuenta')
+            ->get()
+            ->keyBy('id_cuenta');
+
+        $estado_resultados = [
+            'ingresos' => [],
+            'costos_gastos' => [],
+            'totales' => [
+                'ingresos' => 0,
+                'costos_gastos' => 0,
+                'utilidad_perdida' => 0
+            ]
+        ];
+
+        // Procesar cada cuenta
+        foreach ($cuentas as $cuenta) {
+            $movimientos = $partida_detalles->get($cuenta->id);
+
+            if (!$movimientos) {
+                $debe = 0;
+                $haber = 0;
+            } else {
+                $debe = $movimientos->total_debe ?? 0;
+                $haber = $movimientos->total_haber ?? 0;
+            }
+
+            // Calcular saldo según naturaleza de la cuenta
+            if ($cuenta->naturaleza === 'Deudor') {
+                $saldo_final = $debe - $haber;
+            } else {
+                $saldo_final = $haber - $debe;
+            }
+
+            // Solo incluir cuentas con saldo diferente de cero
+            if ($saldo_final != 0) {
+                $cuenta_info = [
+                    'codigo' => $cuenta->codigo,
+                    'nombre' => $cuenta->nombre,
+                    'saldo_final' => $saldo_final,
+                    'naturaleza' => $cuenta->naturaleza,
+                    'rubro' => $cuenta->rubro
+                ];
+
+                // Clasificar según el rubro
+                if ($cuenta->rubro === 'Ingresos') {
+                    $estado_resultados['ingresos'][] = $cuenta_info;
+                    $estado_resultados['totales']['ingresos'] += abs($saldo_final);
+                } elseif ($cuenta->rubro === 'Costos y gastos') {
+                    $estado_resultados['costos_gastos'][] = $cuenta_info;
+                    $estado_resultados['totales']['costos_gastos'] += abs($saldo_final);
+                }
+            }
+        }
+
+        // Calcular utilidad/pérdida
+        $estado_resultados['totales']['utilidad_perdida'] =
+            $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
+
+        return (new EstadoResultadosExport($estado_resultados, $empresa, $month_name, $month, $year))->download('estado_resultados_' . $month . '_' . $year . '.xlsx');
     }
 
     /**
