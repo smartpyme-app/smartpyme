@@ -56,15 +56,45 @@
                     <!-- <a routerLink="/gastos/categorias" class="btn btn-default"><i class="fa fa-cog"></i></a> -->
                 </div>
             </div>
-            <div class="form-group col-md-4 col-lg-3">
-                <label for="area_empresa">Area empresa:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="gasto.area_empresa" 
-                name="area_empresa" 
-                class="form-control" 
-                id="area_empresa" 
-                placeholder="Ingrese el área de la empresa">
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="id_departamento">Departamento:</label>
+                <div class="input-group flex-nowrap">
+                    <select 
+                        [(ngModel)]="gasto.id_departamento" 
+                        name="id_departamento" 
+                        class="form-select" 
+                        id="id_departamento"
+                        (change)="onDepartamentoChangeGasto()">
+                        <option value="">Seleccione departamento</option>
+                        <option *ngFor="let departamento of departamentos" [value]="departamento.id" [selected]="gasto.id_departamento == departamento.id">
+                            {{ departamento.nombre }}
+                        </option>
+                    </select>
+                    <app-crear-departamento [id_departamento]="gasto.id_departamento" (update)="setDepartamento($event)"></app-crear-departamento>
+                </div>
+            </div>
+            
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="id_area_empresa">Área empresa:</label>
+                <div class="input-group flex-nowrap">
+                    <select 
+                        [(ngModel)]="gasto.id_area_empresa" 
+                        name="id_area_empresa" 
+                        class="form-select" 
+                        id="id_area_empresa"
+                        [disabled]="!gasto.id_departamento || loadingAreas">
+                        <option value="">{{ !gasto.id_departamento ? 'Primero seleccione departamento' : 'Seleccione área' }}</option>
+                        <option *ngFor="let area of areasDisponibles" [value]="area.id" [selected]="gasto.id_area_empresa == area.id">
+                            {{ area.nombre }}
+                        </option>
+                    </select>
+                    <app-crear-area-empresa 
+                        [id_area]="gasto.id_area_empresa" 
+                        [id_departamento_preselected]="gasto.id_departamento"
+                        (update)="setArea($event)">
+                    </app-crear-area-empresa>
+                </div>
+                <small class="text-muted" *ngIf="loadingAreas">Cargando áreas...</small>
             </div>
             <div class="form-group col-md-4 col-lg-3">
                 <label for="tipo_documento">Documento</label>

@@ -45,6 +45,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AuthorizationRequestModalComponent } from './authorization/authorization-request/authorization-request-modal.component';
 import { AuthorizationViewComponent } from './authorization/authorization-view/authorization-view.component';
 
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -86,7 +89,9 @@ import { AuthorizationViewComponent } from './authorization/authorization-view/a
     CrearEventoComponent,
     CrearProyectoComponent,
     AuthorizationRequestModalComponent,
-    AuthorizationViewComponent
+    AuthorizationViewComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -115,7 +120,10 @@ import { AuthorizationViewComponent } from './authorization/authorization-view/a
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
-    AuthorizationRequestModalComponent
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   providers: [AlertService],
 })

@@ -33,6 +33,8 @@ import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias
 import { RetaceoComponent } from './retaceo/retaceo.component';
 import { RetaceosListComponent } from './retaceo/retaceos-list.component';
 import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
 
 import { RoleGuard } from '../../guards/role.guard';
 import { PermissionGuard } from '../../guards/permission.guard';
@@ -245,6 +247,9 @@ const routes: Routes = [
       { path: 'retaceos', component: RetaceosListComponent, title: 'Retaceos' },
       { path: 'retaceo/crear', component: RetaceoComponent, title: 'Retaceo' },
       { path: 'retaceo/:id', component: RetaceoComponent, title: 'Retaceo' },
+
+      { path: 'departamentos-empresa', component: DepartamentoEmpresaComponent, title:'Departamentos de empresa' },
+      { path: 'areas-empresa', component: AreaEmpresaComponent, title:'Áreas de empresa' },
 
     ]
   }

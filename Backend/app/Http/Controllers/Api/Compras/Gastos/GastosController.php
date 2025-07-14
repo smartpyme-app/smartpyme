@@ -37,6 +37,9 @@ class GastosController extends Controller
                     ->when($request->recurrente !== null, function($q) use ($request){
                         $q->where('recurrente', !!$request->recurrente);
                     })
+                    ->when($request->id_area_empresa, function($query) use ($request){
+                        return $query->where('id_area_empresa', $request->id_area_empresa);
+                    })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })
@@ -142,7 +145,7 @@ class GastosController extends Controller
             'id_usuario'    => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
-            'area_empresa'   => 'nullable',
+            'id_area_empresa'   => 'nullable',
         ],[
             'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
@@ -155,7 +158,11 @@ class GastosController extends Controller
         else
             $gasto = new Gasto;
         
-        $gasto->fill($request->all());
+        $data = $request->all();
+        if (isset($data['otros_impuestos']) && empty($data['otros_impuestos'])) {
+            $data['otros_impuestos'] = null;
+        }
+        $gasto->fill($data);
         $gasto->save();
 
         // Incrementar el correlarivo de Sujeto excluido

@@ -96,6 +96,7 @@
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li *ngIf="apiService.hasPermission('gastos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
                     <li *ngIf="apiService.hasPermission('gastos.categorias.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
+                    <li *ngIf="apiService.hasPermission('gastos.departamentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
                   </ul>
                 </div>
             </li>
