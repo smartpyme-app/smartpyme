@@ -50,6 +50,14 @@
                 <label class="fw-medium">Sucursal</label>
                 <p>{{ compra.nombre_sucursal }}</p>
             </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Giro</label>
+                <p>{{ compra?.proveedor?.giro  || 'N/A' }}</p>
+            </div>
+            <div class="form-group col-lg-3">
+                <label class="fw-medium">Nit</label>
+                <p>{{ compra?.proveedor?.nit || 'N/A' }}</p>
+            </div>
         </div>
     </div>
 

@@ -53,11 +53,11 @@
                         <p>{{ $compra->empresa()->pluck('direccion')->first() }}</p>
                         <p>{{ $compra->empresa()->pluck('telefono')->first() }}</p>
                     </td>
-                    <td class="text-right">
+                    <!-- <td class="text-right">
                         @if ($compra->empresa()->pluck('logo')->first())
                             <img width="150" height="150" src="{{ asset('img/'.$compra->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
-                    </td>
+                    </td> -->
                 </tr>
             </tbody>
         </table>
@@ -96,6 +96,7 @@
             <thead>
                 <tr>
                     <th class="border-bottom">Descripción</th>
+                    <th class="border-bottom">Código</th>
                     <th class="border-bottom text-right">Cantidad</th>
                     <th class="border-bottom text-right">Precio</th>
                     <th class="border-bottom text-right">Total</th>
@@ -105,6 +106,7 @@
                 @foreach($compra->detalles as $detalle)
                 <tr>
                     <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom">   {{ $detalle->codigo }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
                     <td class="border-bottom text-right">    {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->costo , 2) }}</td>
                     <td class="border-bottom text-right">   {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>

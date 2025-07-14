@@ -21,7 +21,7 @@ class Detalle extends Model {
 
     );
 
-    protected $appends = ['nombre_producto', 'img'];
+    protected $appends = ['nombre_producto', 'img', 'codigo'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->withoutGlobalScopes()->pluck('nombre')->first();
@@ -29,6 +29,10 @@ class Detalle extends Model {
 
     public function getImgAttribute(){
         return $this->producto()->withoutGlobalScopes()->first()->img;
+    }
+
+    public function getcodigoAttribute(){
+        return $this->producto()->withoutGlobalScopes()->pluck('codigo')->first();
     }
 
     public function producto(){
