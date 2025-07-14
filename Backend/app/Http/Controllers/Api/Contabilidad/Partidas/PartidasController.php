@@ -19,7 +19,6 @@ use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
-use Illuminate\Support\Facades\Log;
 
 class PartidasController extends Controller
 {
