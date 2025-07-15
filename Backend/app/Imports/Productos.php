@@ -103,7 +103,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         }
 
 
-        $bodegas = Bodega::all();
+        $bodegas = Bodega::where('id_empresa', $usuario->id_empresa)->where('activo', true)->get();
 
         if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
             
@@ -115,7 +115,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
             $inventario->id_producto = $producto->id;
             $inventario->id_bodega = $bodegas[0]->id;
-            $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
+            $inventario->stock = $row['sucursal_1_stock'];
             $inventario->save(); 
 
 
@@ -147,7 +147,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
             $inventario->id_producto = $producto->id;
             $inventario->id_bodega = $bodegas[1]->id;
-            $inventario->stock = isset($row['sucursal_2_stock']) ? $row['sucursal_2_stock'] : 0;
+            $inventario->stock = $row['sucursal_2_stock'];
             $inventario->save();
 
 
@@ -178,7 +178,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
             $inventario->id_producto = $producto->id;
             $inventario->id_bodega = $bodegas[2]->id;
-            $inventario->stock = isset($row['sucursal_3_stock']) ? $row['sucursal_3_stock'] : 0;
+            $inventario->stock = $row['sucursal_3_stock'];
             $inventario->save();
 
 
@@ -199,8 +199,9 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             }
         }
 
+        // Procesar bodegas adicionales (desde la 4ta en adelante)
         if ($bodegas->count() > 3) {
-           for ($i=2; $i < $bodegas->count(); $i++) { 
+           for ($i=3; $i < $bodegas->count(); $i++) { 
                
                $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[$i]->id)->first();
 
@@ -210,7 +211,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
                $inventario->id_producto = $producto->id;
                $inventario->id_bodega = $bodegas[$i]->id;
-               $inventario->stock = 0;
+               $inventario->stock = 0; // Stock inicial en 0 para bodegas adicionales
                $inventario->save();
 
 
