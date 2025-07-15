@@ -168,7 +168,38 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             }
         }
 
-        if ($bodegas->count() > 2) {
+        if (isset($bodegas[2]) && isset($row['sucursal_3_stock'])) {
+            
+            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[2]->id)->first();
+
+            if (!$inventario) {
+                $inventario = new Inventario();
+            }
+
+            $inventario->id_producto = $producto->id;
+            $inventario->id_bodega = $bodegas[2]->id;
+            $inventario->stock = isset($row['sucursal_3_stock']) ? $row['sucursal_3_stock'] : 0;
+            $inventario->save();
+
+
+            $ajuste = Ajuste::create([
+                'concepto' => 'Ajuste inicial',
+                'id_producto' => $producto->id,
+                'id_bodega' => $bodegas[2]->id,
+                'stock_actual' => 0,
+                'stock_real' => $inventario->stock,
+                'ajuste' => $inventario->stock,
+                'estado' => 'Confirmado',
+                'id_empresa' => $usuario->id_empresa,
+                'id_usuario' => $usuario->id,
+            ]);
+
+            if ($inventario) {
+                $inventario->kardex($ajuste, $ajuste->ajuste);
+            }
+        }
+
+        if ($bodegas->count() > 3) {
            for ($i=2; $i < $bodegas->count(); $i++) { 
                
                $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[$i]->id)->first();
