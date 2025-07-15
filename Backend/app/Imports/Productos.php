@@ -16,18 +16,35 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use JWTAuth;
 
-class Productos implements ToModel, WithHeadingRow, WithValidation
+class Productos implements ToModel, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading
 {
     // use Importable;
 
     private $numRows = 0;
+    private $bodegas = null;
+    private $stockColumns = [];
     
+    public function __construct()
+    {
+        // Las bodegas se cargarán dinámicamente en el método model
+        $this->bodegas = null;
+    }
+
     public function model(array $row)
     {
-
         $usuario = JWTAuth::parseToken()->authenticate();
+
+        // Cargar bodegas si no están cargadas
+        if ($this->bodegas === null) {
+            $this->bodegas = Bodega::where('id_empresa', $usuario->id_empresa)
+                                   ->where('activo', true)
+                                   ->orderBy('id')
+                                   ->get();
+        }
 
         $id_categoria = Categoria::where('nombre', $row['categoria'])
                                 ->where('id_empresa', $usuario->id_empresa)
@@ -80,11 +97,15 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             ++$this->numRows;
         }
 
+        // Calcular stock total sumando todas las bodegas
+        $stockColumns = $this->detectarColumnasStock($row);
+        $stockTotal = array_sum($stockColumns);
+
         $producto->nombre = $row['nombre'];
         $producto->precio = $row['precio'];
         $producto->costo = $row['costo'];
         $producto->costo_promedio = $row['costo'];
-        $producto->stock = $row['sucursal_1_stock'];
+        $producto->stock = $stockTotal; // Stock total de todas las bodegas
         $producto->id_categoria = $id_categoria;
         $producto->codigo = $row['codigo'];
         $producto->descripcion = $row['descripcion'];
@@ -102,122 +123,105 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             ]);
         }
 
-
-        $bodegas = Bodega::all();
-
-        if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
-            
-            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[0]->id)->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-            }
-
-            $inventario->id_producto = $producto->id;
-            $inventario->id_bodega = $bodegas[0]->id;
-            $inventario->stock = isset($row['sucursal_1_stock']) ? $row['sucursal_1_stock'] : 0;
-            $inventario->save(); 
-
-
-            $ajuste = Ajuste::create([
-                'concepto' => 'Ajuste inicial',
-                'id_producto' => $producto->id,
-                'id_bodega' => $bodegas[0]->id,
-                'stock_actual' => 0,
-                'stock_real' => $inventario->stock,
-                'ajuste' => $inventario->stock,
-                'estado' => 'Confirmado',
-                'id_empresa' => $usuario->id_empresa,
-                'id_usuario' => $usuario->id,
-            ]);
-            
-            if (!$inventario) {
-                $inventario->kardex($ajuste, $ajuste->ajuste);
-            }
-
-        }
-
-        if (isset($bodegas[1]) && isset($row['sucursal_2_stock'])) {
-            
-            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[1]->id)->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-            }
-
-            $inventario->id_producto = $producto->id;
-            $inventario->id_bodega = $bodegas[1]->id;
-            $inventario->stock = isset($row['sucursal_2_stock']) ? $row['sucursal_2_stock'] : 0;
-            $inventario->save();
-
-
-            $ajuste = Ajuste::create([
-                'concepto' => 'Ajuste inicial',
-                'id_producto' => $producto->id,
-                'id_bodega' => $bodegas[1]->id,
-                'stock_actual' => 0,
-                'stock_real' => $inventario->stock,
-                'ajuste' => $inventario->stock,
-                'estado' => 'Confirmado',
-                'id_empresa' => $usuario->id_empresa,
-                'id_usuario' => $usuario->id,
-            ]);
-
-            if ($inventario) {
-                $inventario->kardex($ajuste, $ajuste->ajuste);
-            }
-        }
-
-        if ($bodegas->count() > 2) {
-           for ($i=2; $i < $bodegas->count(); $i++) { 
-               
-               $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[$i]->id)->first();
-
-               if (!$inventario) {
-                    $inventario = new Inventario();
-               }
-
-               $inventario->id_producto = $producto->id;
-               $inventario->id_bodega = $bodegas[$i]->id;
-               $inventario->stock = 0;
-               $inventario->save();
-
-
-               $ajuste = Ajuste::create([
-                   'concepto' => 'Ajuste inicial',
-                   'id_producto' => $producto->id,
-                   'id_bodega' => $bodegas[$i]->id,
-                   'stock_actual' => 0,
-                   'stock_real' => $inventario->stock,
-                   'ajuste' => $inventario->stock,
-                   'estado' => 'Confirmado',
-                   'id_empresa' => $usuario->id_empresa,
-                   'id_usuario' => $usuario->id,
-               ]);
-
-               if ($inventario) {
-                   $inventario->kardex($ajuste, $ajuste->ajuste);
-               }
-           }
-        }
+        // Procesar stock para cada bodega de forma dinámica
+        $this->procesarStockPorBodegas($producto, $row, $usuario);
 
         return $producto;
+    }
 
+    /**
+     * Procesa el stock para cada bodega de forma dinámica
+     */
+    private function procesarStockPorBodegas($producto, $row, $usuario)
+    {
+        // Detectar columnas de stock disponibles en el Excel
+        $stockColumns = $this->detectarColumnasStock($row);
+        
+        foreach ($this->bodegas as $index => $bodega) {
+            $columnName = 'sucursal_' . ($index + 1) . '_stock';
+            $stockValue = isset($stockColumns[$columnName]) ? $stockColumns[$columnName] : 0;
+            
+            // Buscar o crear inventario para esta bodega
+            $inventario = Inventario::where('id_producto', $producto->id)
+                                   ->where('id_bodega', $bodega->id)
+                                   ->first();
+
+            if (!$inventario) {
+                $inventario = new Inventario();
+            }
+
+            $inventario->id_producto = $producto->id;
+            $inventario->id_bodega = $bodega->id;
+            $inventario->stock = $stockValue;
+            $inventario->save();
+
+            // Crear ajuste inicial si hay stock
+            if ($stockValue > 0) {
+                $ajuste = Ajuste::create([
+                    'concepto' => 'Ajuste inicial',
+                    'id_producto' => $producto->id,
+                    'id_bodega' => $bodega->id,
+                    'stock_actual' => 0,
+                    'stock_real' => $inventario->stock,
+                    'ajuste' => $inventario->stock,
+                    'estado' => 'Confirmado',
+                    'id_empresa' => $usuario->id_empresa,
+                    'id_usuario' => $usuario->id,
+                ]);
+
+                // Actualizar kardex si el método existe
+                if (method_exists($inventario, 'kardex')) {
+                    $inventario->kardex($ajuste, $ajuste->ajuste);
+                }
+            }
+        }
+    }
+
+    /**
+     * Detecta las columnas de stock disponibles en el Excel
+     */
+    private function detectarColumnasStock($row)
+    {
+        $stockColumns = [];
+        
+        // Buscar todas las columnas que sigan el patrón sucursal_X_stock
+        foreach ($row as $columnName => $value) {
+            if (preg_match('/^sucursal_(\d+)_stock$/', $columnName, $matches)) {
+                $stockNumber = (int)$matches[1];
+                $stockValue = is_numeric($value) ? (float)$value : 0;
+                $stockColumns[$columnName] = $stockValue;
+            }
+        }
+        
+        return $stockColumns;
     }
 
     public function rules(): array
     {
-        return [
+        $rules = [
             'nombre' => 'required|string',
             'precio' => 'required|numeric',
             'costo' => 'required|numeric',
-            'sucursal_1_stock' => 'required|numeric',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
-            // 'codigo_de_barra' => 'sometimes|string',
         ];
+
+        // Agregar reglas dinámicas para las columnas de stock
+        // Como las bodegas se cargan dinámicamente, usamos un patrón más flexible
+        $rules['sucursal_*_stock'] = 'nullable|numeric|min:0';
+
+        return $rules;
     }
 
+    public function batchSize(): int
+    {
+        return 100;
+    }
+
+    public function chunkSize(): int
+    {
+        return 100;
+    }
 
     public function getRowCount(): int
     {
