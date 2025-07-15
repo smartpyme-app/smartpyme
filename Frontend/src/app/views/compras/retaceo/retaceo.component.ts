@@ -408,8 +408,24 @@ export class RetaceoComponent implements OnInit {
     this.apiService.store('retaceo', datosRetaceo).subscribe(
       (response) => {
         this.alertService.success('Retaceo aplicado correctamente', 'Retaceo');
+        
+        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+            this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: this.retaceo.id })
+          .subscribe(
+            (response) => {
+              this.retaceo.contabilizado = true;
+              this.loading = false;
+            },
+            (error) => {
+              this.alertService.error(error);
+              this.loading = false;
+            }
+          );
+        }
+        
         this.router.navigate(['/retaceos']);
         this.saving = false;
+
       },
       (error) => {
         this.alertService.error(error);
