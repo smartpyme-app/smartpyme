@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Presupuestos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.presupuestos.crear')" routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -78,16 +78,16 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="apiService.canEdit()" routerLink="/presupuesto/editar/{{presupuesto.id}}" class="btn">
+                                    <a *ngIf="apiService.canEditTest('finanzas.presupuestos.editar')" routerLink="/presupuesto/editar/{{presupuesto.id}}" class="btn">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
                                     <a routerLink="/presupuesto/detalles/{{presupuesto.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="!presupuesto.enable && apiService.canEdit()" (click)="setAnulacion(presupuesto, true)" class="btn">
+                                    <a *ngIf="!presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')" (click)="setAnulacion(presupuesto, true)" class="btn">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="presupuesto.enable && apiService.canEdit()" (click)="setAnulacion(presupuesto, false)" class="btn text-danger">
+                                    <a *ngIf="presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')" (click)="setAnulacion(presupuesto, false)" class="btn text-danger">
                                         <i class="fa fa-fw fa-ban"></i> Anular
                                     </a>
                                 </div>

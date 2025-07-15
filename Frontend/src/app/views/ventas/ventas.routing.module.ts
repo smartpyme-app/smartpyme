@@ -32,6 +32,16 @@ import { DetalleVentasComponent } from '@views/reportes/ventas/detalle/detalle-v
 import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/categorias-ventas.component';
 import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotizacion-form/cotizacion-form.component';
 
+import { PermissionGuard } from '../../guards/permission.guard';
+
+import { RoleGuard } from '../../guards/role.guard';
+
+export const GUARD_TYPES = {
+  ADMIN: 'admin',
+  CITAS: 'citas',
+  SUPER_ADMIN: 'superAdmin',
+} as const;
+
 import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
 import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component';
 const routes: Routes = [
@@ -40,61 +50,239 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Ventas',
     children: [
-
-      { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas' },
-      { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación' },
-      { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna' },
+      {
+        path: 'ventas',
+        //canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'ventas.ver',
+        },
+        component: VentasComponent,
+        title: 'Ventas',
+      },
+      {
+        path: 'venta/crear',
+        //canActivate: [PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'ventas.crear',
+        },
+        component: FacturacionComponent,
+        title: 'Facturación',
+      },
+      {
+        path: 'venta/consigna/revisar/:id',
+        component: FacturacionConsignaComponent,
+        title: 'Facturación consigna',
+      },
       // { path: 'venta/:id', component: VentaComponent, title: 'Venta' },
       // { path: 'cotizacion/:id', component: VentaComponent, title: 'Cotización' },
-      { path: 'venta/:id', component: VentaComponent, data: { type: 'venta' }, title: 'Venta' },
-    
+      {
+        path: 'venta/:id',
+        component: VentaComponent,
+        canActivate: [PermissionGuard],
+        data: { type: 'venta', permission: 'ventas.ver' },
+        title: 'Venta',
+      },
 
-      { path: 'ventas/recurrentes', canActivate: [AdminGuard], component: RecurrentesComponent, title: 'Abonos de ventas' },
-      { path: 'ventas/abonos', canActivate: [AdminGuard], component: AbonosVentasComponent, title: 'Abonos de ventas' },
+      {
+        path: 'ventas/recurrentes',
+        // canActivate: [AdminGuard],
+        canActivate: [RoleGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+        },
+        component: RecurrentesComponent,
+        title: 'Abonos de ventas',
+      },
+      {
+        path: 'ventas/abonos',
+        // canActivate: [AdminGuard],
+        canActivate: [RoleGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+        },
+        component: AbonosVentasComponent,
+        title: 'Abonos de ventas',
+      },
 
-      { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
-    //  { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
-      { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
+      {
+        path: 'cotizaciones',
+        component: CotizacionesComponent,
+        title: 'Cotizaciones',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.cotizaciones.ver' },
+      },
+      //  { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
+      {
+        path: 'cotizacion/crear',
+        component: FacturacionComponent,
+        title: 'Cotización',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.cotizaciones.crear' },
+      },
 
-      { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
-      { path: 'cotizacion/ver/:id', component: CotizacionFormComponent, title: 'Cotización' },
-      { path: 'cotizacion/:id', component: VentaComponent, data: { type: 'cotizacion' }, title: 'Cotización' },
+      {
+        path: 'cotizacion/editar/:id',
+        component: FacturacionComponent,
+        title: 'Cotización',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.cotizaciones.editar' },
+      },
+      {
+        path: 'cotizacion/ver/:id',
+        component: CotizacionFormComponent,
+        title: 'Cotización',
+      },
+      {
+        path: 'cotizacion/:id',
+        component: VentaComponent,
+        data: { type: 'cotizacion' },
+        title: 'Cotización',
+      },
       //
-      { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta' },
-      { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago' },
-      { path: 'impuestos', canActivate: [AdminGuard], component: ImpuestosComponent, title: 'Impuestos' },
-      { path: 'documentos', canActivate: [AdminGuard], component: DocumentosComponent, title: 'Documentos' },
+      {
+        path: 'canales',
+        //  canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'ventas.canales_venta.ver',
+        },
+        component: CanalesComponent,
+        title: 'Canales de venta',
+      },
+      {
+        path: 'formas-de-pago',
+        // canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'ventas.formas_pago.ver',
+        },
+        component: FormasDePagoComponent,
+        title: 'Formas de pago',
+      },
+      {
+        path: 'impuestos',
+        // canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'finanzas.impuestos.ver',
+        },
+        component: ImpuestosComponent,
+        title: 'Impuestos',
+      },
+      {
+        path: 'documentos',
+        // canActivate: [AdminGuard, PermissionGuard],
+        canActivate: [RoleGuard, PermissionGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+          permission: 'finanzas.documentos.ver',
+        },
+        component: DocumentosComponent,
+        title: 'Documentos',
+      },
 
-      { path: 'devoluciones/ventas', component: DevolucionesVentasComponent, title: 'Devoluciones de ventas' },
-      { path: 'devolucion/venta/:id', component: DevolucionVentaComponent, title: 'Devolución de venta' },
-      { path: 'devolucion-venta/nueva', component: DevolucionVentaNuevaComponent, title: 'Devolución de venta' },
+      {
+        path: 'devoluciones/ventas',
+        component: DevolucionesVentasComponent,
+        title: 'Devoluciones de ventas',
+      },
+      {
+        path: 'devolucion/venta/:id',
+        component: DevolucionVentaComponent,
+        title: 'Devolución de venta',
+      },
+      {
+        path: 'devolucion-venta/nueva',
+        component: DevolucionVentaNuevaComponent,
+        title: 'Devolución de venta',
+      },
 
       // Clientes
-      { path: 'clientes', component: ClientesComponent, title: 'Clientes' },
-      { path: 'cliente/detalles/:id', component: ClienteDetallesComponent, title: 'Cliente' },
-      { path: 'cliente/crear', component: ClienteComponent, title: 'Cliente' },
-      { path: 'cliente/editar/:id', component: ClienteComponent, title: 'Cliente' },
+      {
+        path: 'clientes',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.clientes.ver' },
+        component: ClientesComponent,
+        title: 'Clientes',
+      },
+      {
+        path: 'cliente/detalles/:id',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.clientes.ver' },
+        component: ClienteDetallesComponent,
+        title: 'Cliente',
+      },
+      {
+        path: 'cliente/crear',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.clientes.crear' },
+        component: ClienteComponent,
+        title: 'Cliente',
+      },
+      {
+        path: 'cliente/editar/:id',
+        canActivate: [PermissionGuard],
+        data: { permission: 'ventas.clientes.editar' },
+        component: ClienteComponent,
+        title: 'Cliente',
+      },
       { path: 'clientes/cuentas-cobrar', component: CuentasCobrarComponent },
       { path: 'clientes/crm', component: ClientesDashComponent },
 
       // Reportes
-      { path: 'reporte/ventas/historial', canActivate: [AdminGuard], component: HistorialVentasComponent },
-      { path: 'reporte/ventas/detalle', canActivate: [AdminGuard], component: DetalleVentasComponent },
-      { path: 'reporte/ventas/categorias', canActivate: [AdminGuard], component: CategoriasVentasComponent },
-      // Ordenes de producción
-      { path: 'ordenes/produccion', component: OrdenesProduccionComponent, title: 'Ordenes de producción' },
-      { path: 'orden-produccion/crear/:id', component: CrearOrdenProduccionComponent, title: 'Crear Orden de Producción' },
+      {
+        path: 'reporte/ventas/historial',
+        // canActivate: [AdminGuard],
+        canActivate: [RoleGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+        },
+        component: HistorialVentasComponent,
+      },
+      {
+        path: 'reporte/ventas/detalle',
+        // canActivate: [AdminGuard],
+        canActivate: [RoleGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+        },
+        component: DetalleVentasComponent,
+      },
+      {
+        path: 'reporte/ventas/categorias',
+        // canActivate: [AdminGuard],
+        canActivate: [RoleGuard],
+        data: {
+          guardType: GUARD_TYPES.ADMIN,
+        },
+        component: CategoriasVentasComponent,
+      },
+      {
+        path: 'ordenes/produccion',
+        component: OrdenesProduccionComponent,
+        title: 'Ordenes de producción',
+      },
+      {
+        path: 'orden-produccion/crear/:id',
+        component: CrearOrdenProduccionComponent,
+        title: 'Crear Orden de Producción',
+      },
       //{ path: 'orden-produccion/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
       { path: 'orden-produccion/detalles/:id', component: CrearOrdenProduccionComponent, title: 'Ver Orden de Producción' },
       { path: 'orden-produccion/editar/:id', component: CrearOrdenProduccionComponent, title: 'Editar Orden de Producción' },
-
-
     ]
   }
 ];
 
 @NgModule({
   imports: [RouterModule.forChild(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-export class VentasRoutingModule { }
+export class VentasRoutingModule {}

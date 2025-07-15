@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Compras</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
+    <button *ngIf="apiService.canCreateTest('compras.crear')" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -85,7 +85,13 @@
                         <td><span title="{{ compra.detalle_banco }}">{{compra.forma_pago}}</span></td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{
+                                'bg-warning' : compra?.estado == 'Pendiente', 
+                                'bg-danger' : compra?.estado == 'Anulada', 
+                                'bg-info' : compra?.estado == 'Consigna', 
+                                'bg-success' : compra?.estado == 'Pagada', 
+                                'bg-primary' : compra?.estado == 'Pre-compra' || compra?.estado == 'Pendiente Autorización'
+                            }">
                                 {{ compra.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
                                     ✅
@@ -107,28 +113,28 @@
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
 
-                                    <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a  *ngIf="apiService.canEditTest('compras.editar')" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEdit()" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEditTest('compras.editar')" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
-                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEditTest('compras.editar')" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar compra
                                     </a>
-                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEditTest('compras.editar')" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular compra
                                     </a>
-                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEditTest('compras.editar')" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="compra.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.recurrente == 0 && apiService.canEditTest('compras.editar')" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
                                     <a routerLink="/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('compras.editar')" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
                                     <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">

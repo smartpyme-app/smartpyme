@@ -1,6 +1,7 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading mb-0">Campos Personalizados</h2>
-    <button *ngIf="apiService.canCreate()"
+    <button 
+       *ngIf="apiService.canCreateTest('productos.campos_personalizados.crear')"
             (click)="openModal(modalField, {})"
             tooltip="Crear campo"
             class="btn btn-primary">

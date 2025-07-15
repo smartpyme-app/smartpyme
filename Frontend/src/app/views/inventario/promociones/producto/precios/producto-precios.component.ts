@@ -34,7 +34,14 @@ export class ProductoPreciosComponent implements OnInit {
     ngOnInit() {
 
         this.producto.id = +this.route.snapshot.paramMap.get('id')!;
-        if (this.apiService.auth_user().tipo == 'Administrador') { 
+        // if (this.apiService.auth_user().tipo == 'Administrador') { 
+        //     this.filtro.producto_id = this.producto.id;
+        //     this.filtro.fecha_ini = this.apiService.date();
+        //     this.filtro.hora_ini = '00:00';
+        //     this.filtro.hora_fin = '23:59';
+        //     this.filtro.fecha_fin = this.apiService.date();
+        // }
+        if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.filtro.producto_id = this.producto.id;
             this.filtro.fecha_ini = this.apiService.date();
             this.filtro.hora_ini = '00:00';

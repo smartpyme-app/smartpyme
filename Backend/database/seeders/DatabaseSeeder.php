@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Contracts\Permission;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,7 +15,10 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call([
-            MHTableSeeder::class,
+            //MHTableSeeder::class,
+            PermissionSeeder::class,
+            RoleSeeder::class,
+            UserRoleSeeder::class,
             // PaquetesTableSeeder::class,
             // EmpresaTableSeeder::class,
             // UsersTableSeeder::class,

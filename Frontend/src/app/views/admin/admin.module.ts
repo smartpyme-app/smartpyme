@@ -69,7 +69,8 @@ import { DocsComponent } from './docs/docs.component';
     UsuarioComponent,
     ReportesComponent,
     NotificacionesComponent,
-    DocsComponent
+    DocsComponent,
   ]
 })
 export class AdminModule { }
+

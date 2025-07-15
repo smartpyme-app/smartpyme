@@ -1,0 +1,130 @@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">
+      <i class="fa fa-clock text-warning me-2"></i>
+      Autorizaciones Pendientes
+    </h5>
+    <button class="btn btn-outline-primary btn-sm" (click)="loadPendingAuthorizations()">
+      <i class="fa fa-refresh me-1"></i> Actualizar
+    </button>
+  </div>
+
+  <div class="card-body">
+    <div *ngIf="loading" class="text-center py-4">
+      <div class="spinner-border text-primary"></div>
+      <p class="mt-2">Cargando autorizaciones...</p>
+    </div>
+
+    <div *ngIf="!loading && authorizations.length === 0" class="text-center py-4">
+      <i class="fa fa-check-circle fa-3x text-success mb-3"></i>
+      <h6>No hay autorizaciones pendientes</h6>
+      <p class="text-muted">Todas las autorizaciones están al día</p>
+    </div>
+
+    <div *ngIf="!loading && authorizations.length > 0">
+      <div class="row g-3">
+        <div class="col-12" *ngFor="let auth of authorizations">
+          <div class="card border-warning">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <h6 class="card-title mb-1">
+                    {{auth.authorization_type.display_name}}
+                    <span class="badge bg-warning ms-2">{{getStatusText(auth.status)}}</span>
+                  </h6>
+                  <p class="card-text text-muted mb-2">{{auth.description}}</p>
+                  <small class="text-muted">
+                    <i class="fa fa-user me-1"></i> Solicitado por: {{auth.requester.name}}
+                    <br>
+                    <i class="fa fa-clock me-1"></i> Expira: {{auth.expires_at | date:'dd/MM/yyyy HH:mm'}}
+                    <br>
+                    <i class="fa fa-code me-1"></i> Código: <strong>{{auth.code}}</strong>
+                  </small>
+                </div>
+                <div class="col-md-4 text-end">
+                  <div class="btn-group-vertical d-grid gap-2">
+                    <button 
+                      class="btn btn-success btn-sm"
+                      (click)="openApprovalModal(auth, 'approve')">
+                      <i class="fa fa-check me-1"></i> Aprobar
+                    </button>
+                    <button 
+                      class="btn btn-danger btn-sm"
+                      (click)="openApprovalModal(auth, 'reject')">
+                      <i class="fa fa-times me-1"></i> Rechazar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" [class.d-block]="showApprovalModal" *ngIf="showApprovalModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa" [class.fa-check]="processingAction === 'approve'" 
+               [class.fa-times]="processingAction === 'reject'" 
+               [class.text-success]="processingAction === 'approve'"
+               [class.text-danger]="processingAction === 'reject'" class="me-2"></i>
+          {{processingAction === 'approve' ? 'Aprobar' : 'Rechazar'}} Autorización
+        </h5>
+        <button type="button" class="btn-close" (click)="closeApprovalModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert" [class.alert-success]="processingAction === 'approve'" 
+             [class.alert-danger]="processingAction === 'reject'">
+          <strong>{{selectedAuthorization?.authorization_type.display_name}}</strong>
+          <br>{{selectedAuthorization?.description}}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Tu código de autorización *</label>
+          <input 
+            type="password" 
+            class="form-control" 
+            [(ngModel)]="authorizationCode"
+            placeholder="Ingresa tu código personal"
+            [disabled]="loading">
+          <small class="text-muted">Este es tu código personal configurado en tu perfil</small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Notas (opcional)</label>
+          <textarea 
+            class="form-control" 
+            rows="3" 
+            [(ngModel)]="notes"
+            placeholder="Comentarios adicionales..."
+            [disabled]="loading">
+          </textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeApprovalModal()" [disabled]="loading">
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          class="btn"
+          [class.btn-success]="processingAction === 'approve'"
+          [class.btn-danger]="processingAction === 'reject'"
+          (click)="processAuthorization()" 
+          [disabled]="loading">
+          <i class="fa" [class.fa-check]="processingAction === 'approve'" 
+               [class.fa-times]="processingAction === 'reject'" class="me-2"></i>
+          <span *ngIf="!loading">{{processingAction === 'approve' ? 'Aprobar' : 'Rechazar'}}</span>
+          <span *ngIf="loading">Procesando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

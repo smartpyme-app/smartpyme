@@ -18,4 +18,9 @@ use App\Http\Controllers\Api\Admin\UsuariosMetaController;
     Route::post('/usuario-validar',       [UsuariosController::class, 'validar']);
     Route::post('/usuario-auth',       [UsuariosController::class, 'auth']);
 
+    Route::put('/usuario/email/{id}',       [UsuariosController::class, 'updateEmail']);
+    Route::put('/usuario/password/{id}',       [UsuariosController::class, 'updatePassword']);
+
+    Route::put('/usuario/codigo-autorizacion/{id}',       [UsuariosController::class, 'updateAuthCode']);
+
 ?>

@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/proyecto/crear" tooltip="Crear proyecto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proyecto</button>
+    <button *ngIf="apiService.canCreateTest('ventas.proyectos.crear')" routerLink="/proyecto/crear" tooltip="Crear proyecto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proyecto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -139,12 +139,12 @@
                                         <img src="/assets/icons/trending-up.png" class="icon me-2"> Facturar
                                     </a>
                                 </div>
-                                <div *ngIf="proyecto.estado != 'Anulado' && proyecto.estado != 'Facturado' && apiService.canEdit()" class="list-group border-0">
+                                <div *ngIf="proyecto.estado != 'Anulado' && proyecto.estado != 'Facturado' && apiService.canEditTest('ventas.proyectos.editar')" class="list-group border-0">
                                     <a (click)="setEstado(proyecto, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
                                         <img src="/assets/icons/stop-circle.png" class="icon me-2"> Anular proyecto
                                     </a>
                                 </div>
-                                <div *ngIf="proyecto.estado == 'Anulado' && apiService.canEdit()" class="list-group border-0">
+                                <div *ngIf="proyecto.estado == 'Anulado' && apiService.canEditTest('ventas.proyectos.editar')" class="list-group border-0">
                                     <a (click)="setEstado(proyecto, 'En proceso')" class="list-group-item list-group-item-action border-0 click">
                                         <img src="/assets/icons/check.png" class="icon me-2"> Revertir anulación
                                     </a>

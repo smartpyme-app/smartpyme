@@ -16,6 +16,7 @@ export class SidebarOrganizacionesComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
+    public modules: any[] = [];
 
     constructor(private apiService: ApiService) {}
 
@@ -52,6 +53,7 @@ export class SidebarOrganizacionesComponent implements OnInit {
         }
         
         this.usuario = this.apiService.auth_user();
+        this.loadModules();
     }
 
 
@@ -141,6 +143,16 @@ export class SidebarOrganizacionesComponent implements OnInit {
             this.sidebarCollapsed = false;
             localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed.toString());
         };
+    }
+
+    canShowOption(permission: string): boolean {
+        return this.apiService.hasPermission(permission);
+    }
+
+    loadModules() {
+        this.apiService.getModules().subscribe(modules => {
+            this.modules = modules;
+        });
     }
 
 }

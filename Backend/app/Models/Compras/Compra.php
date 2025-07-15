@@ -27,6 +27,7 @@ class Compra extends Model {
         // 'aplicada_inventario',
         'notas',
         'id_proveedor',
+        'id_authorization',
         'no_sujeta',
         'exenta',
         'percepcion',

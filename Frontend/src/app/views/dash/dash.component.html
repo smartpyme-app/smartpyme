@@ -1,6 +1,16 @@
-<app-admin-dash *ngIf="apiService.isAdmin() && !usuario.empresa.licencia"></app-admin-dash>
+<!-- <app-admin-dash *ngIf="apiService.isAdmin() && !usuario.empresa.licencia"></app-admin-dash>
 <app-caja-dash *ngIf="usuario.tipo == 'Ventas'"></app-caja-dash>
 <app-vendedor-dash *ngIf="usuario.tipo == 'Vendedor'"></app-vendedor-dash>
 
 <app-organizaciones-dash *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"></app-organizaciones-dash>
+ -->
+
+
+
+ <app-admin-dash *ngIf="apiService.isAdminRole() && !usuario.empresa.licencia"></app-admin-dash>
+<app-caja-dash *ngIf="apiService.validateRole('usuario_ventas', true)"></app-caja-dash>
+<app-vendedor-dash *ngIf="apiService.validateRole('usuario_vendedor', true)"></app-vendedor-dash>
+
+<app-organizaciones-dash *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-organizaciones-dash>
+
 
