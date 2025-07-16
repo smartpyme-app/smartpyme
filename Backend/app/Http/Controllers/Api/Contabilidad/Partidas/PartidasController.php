@@ -63,14 +63,20 @@ class PartidasController extends Controller
                      'partidas.concepto', 'partidas.estado', 'partidas.referencia', 
                      'partidas.id_referencia', 'partidas.id_usuario', 'partidas.id_empresa',
                      'partidas.created_at', 'partidas.updated_at');
-    
-        // NO mostrar partidas anuladas por defecto
-        if (!$request->has('incluir_anuladas') || 
-            $request->incluir_anuladas === false || 
-            $request->incluir_anuladas === 'false' || 
-            $request->incluir_anuladas === '0') {
+
+        if ($request->has('incluir_anuladas') && 
+            ($request->incluir_anuladas === true || 
+            $request->incluir_anuladas === 'true' || 
+            $request->incluir_anuladas === '1' ||
+            $request->incluir_anuladas === 1)) {
+            
+            //mostrara solo anuladas
+            $query->where('partidas.estado', 'Anulada');
+        } else {
+            // mostrara todas excepto anuladas
             $query->where('partidas.estado', '!=', 'Anulada');
         }
+             
     
         // Filtros existentes
         $query->when($request->buscador, function($q) use ($request){

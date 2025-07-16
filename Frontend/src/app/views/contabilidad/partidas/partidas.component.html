@@ -52,6 +52,13 @@
       <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary"
         [routerLinkActiveOptions]="{exact: true}" (click)="limpiarFiltros()" routerLink="/contabilidad/partidas">Todas
       </button>
+      <button class="btn" 
+            [class]="filtros.incluir_anuladas ? 'btn btn-primary' : 'btn bg-default'"
+            (click)="toggleAnuladas()">
+      Anuladas
+      <span class="badge bg-danger text-white" *ngIf="partidas.total_anuladas">{{ partidas.total_anuladas }}</span>
+      </button>
+
       <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
         (click)="filtros.estado = 'Pendiente'; filtrarPartidas();">Por revisar <span
           class="badge bg-warning text-dark">{{ partidas.total_pendientes }}</span></button>
@@ -78,13 +85,6 @@
       <option value="Anulada">Anulada</option>
       <option value="Cerrada">Cerrada</option>
     </select> -->
-
-
-      <label class="form-switch d-flex align-items-center gap-2 m-0" style="font-weight: normal; cursor: pointer;">
-        <input type="checkbox" class="form-check-input m-0" style="position: static;" id="mostrarAnuladas"
-          [(ngModel)]="filtros.incluir_anuladas" (change)="filtrarPartidas()" tooltip="Mostrar anuladas" role="switch">
-      </label>
-
     </div>
   </div>
 

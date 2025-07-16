@@ -549,5 +549,14 @@ export class PartidasComponent implements OnInit {
     });
   }
 
+  public toggleAnuladas() {
+    this.filtros.incluir_anuladas = !this.filtros.incluir_anuladas;
+
+    if (this.filtros.incluir_anuladas) {
+      this.filtros.estado = '';
+    }
+    
+    this.filtrarPartidas();
+  }
   
 }
