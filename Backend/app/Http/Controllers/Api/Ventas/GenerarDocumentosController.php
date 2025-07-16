@@ -37,6 +37,7 @@ class GenerarDocumentosController extends Controller
 
                     if (
                         isset($empresa->custom_empresa['configuraciones']) &&
+                        isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
                         $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true
                     ) {
                         $venta->pdf = true;
@@ -79,6 +80,7 @@ class GenerarDocumentosController extends Controller
 
             if (
                 isset($empresa->custom_empresa['configuraciones']) &&
+                isset($empresa->custom_empresa['configuraciones']['ticket_en_pdf']) &&
                 $empresa->custom_empresa['configuraciones']['ticket_en_pdf'] == true
             ) {
                 $venta->pdf = true;
