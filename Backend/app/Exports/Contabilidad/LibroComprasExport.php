@@ -79,7 +79,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
-            ->where('estado', '!=', 'Anulada')
+            ->where('estado', '!=', 'Cancelado')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })

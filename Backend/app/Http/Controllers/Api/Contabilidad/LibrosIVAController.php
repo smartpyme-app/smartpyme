@@ -333,7 +333,7 @@ class LibrosIVAController extends Controller
 
         // Obtener los gastos
         $gastos = Gasto::with(['proveedor'])
-            ->where('estado', '!=', 'Anulada')
+            ->where('estado', '!=', 'Cancelado')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })

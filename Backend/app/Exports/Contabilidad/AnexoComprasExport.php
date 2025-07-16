@@ -45,7 +45,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
 
         $gastos = Gasto::with('proveedor')
             ->where('iva' , '>', 0)
-            ->where('estado', '!=', 'Anulada')
+            ->where('estado', '!=', 'Cancelado')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
