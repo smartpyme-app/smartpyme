@@ -141,8 +141,11 @@ class LibrosIVAController extends Controller
             ];
         });
 
-        $devoluciones = DevolucionVenta::with(['cliente'])
+        $devoluciones = DevolucionVenta::with(['cliente', 'venta'])
             ->where('enable', true)
+            ->whereHas('venta', function ($query) {
+                $query->where('estado', '!=', 'Anulada');
+            })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
