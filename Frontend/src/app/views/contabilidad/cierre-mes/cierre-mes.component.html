@@ -1,18 +1,6 @@
-<!-- Header -->
-<section class="d-flex justify-content-between align-items-center bg-white p-4 rounded mb-4 shadow-sm">
-  <div>
-    <h1 class="mb-1">
-      <i class="fa fa-lock me-2 text-primary"></i>
-      Cierre de Mes Contable
-    </h1>
-    <p class="text-muted mb-0">Gestión avanzada del cierre de períodos contables</p>
-  </div>
-  <div class="d-flex gap-2">
-    <button (click)="volverAPartidas()" class="btn btn-light">
-      <i class="fa fa-arrow-left me-1"></i>
-      Volver a Partidas
-    </button>
-  </div>
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Cierre de Mes</h2>
+  <button class="btn btn-light text-danger" routerLink="/contabilidad/partidas"><i class="fa fa-arrow-left"></i> Regresar</button>
 </section>
 
 <!-- Selección de Período -->
@@ -53,11 +41,11 @@
 
     <div class="col-md-6 d-flex align-items-end">
       <div class="d-flex gap-2">
-        <button (click)="irAPartidas()" class="btn btn-outline-secondary">
+        <button (click)="irAPartidas()" class="btn btn-default ng-star-inserted">
           <i class="fa fa-list me-1"></i>
           Ver Partidas
         </button>
-        <button (click)="irACatalogo()" class="btn btn-outline-secondary">
+        <button (click)="irACatalogo()" class="btn btn-default ng-star-inserted">
           <i class="fa fa-book me-1"></i>
           Catálogo
         </button>
@@ -130,7 +118,7 @@
 
   <!-- Resultados de validaciones -->
   <div *ngIf="!cargandoValidaciones" class="row">
-    <div class="col-md-4">
+    <!-- <div class="col-md-4">
       <div class="card border-0 h-100"
            [ngClass]="validacionesPrevias.periodoAnteriorCerrado ? 'bg-light-success' : 'bg-light-danger'">
         <div class="card-body text-center">
@@ -142,9 +130,9 @@
           </p>
         </div>
       </div>
-    </div>
+    </div> -->
 
-    <div class="col-md-4">
+    <div class="col-md-6">
       <div class="card border-0 h-100"
            [ngClass]="{
              'bg-light-success': validacionesPrevias.balanceCuadra,
@@ -171,7 +159,7 @@
       </div>
     </div>
 
-    <div class="col-md-4">
+    <div class="col-md-6">
       <div class="card border-0 h-100"
            [ngClass]="validacionesPrevias.partidasPendientes === 0 ? 'bg-light-success' : 'bg-light-warning'">
         <div class="card-body text-center">
@@ -208,12 +196,12 @@
           Simulando...
         </span>
       </button>
-      <button (click)="mostrarBalance()"
+      <!-- <button (click)="mostrarBalance()"
               [disabled]="cargandoBalance || procesandoCierre"
               class="btn btn-outline-primary">
         <i class="fa fa-table me-1"></i>
         Ver Balance
-      </button>
+      </button> -->
     </div>
   </div>
 
@@ -281,7 +269,7 @@
 
     <div class="row">
       <!-- Métricas principales -->
-      <div class="col-md-3">
+      <div class="col-md-6">
         <div class="card border-0 bg-light-success h-100">
           <div class="card-body text-center">
             <i class="fa fa-file-alt text-success fa-2x mb-2"></i>
@@ -292,7 +280,7 @@
         </div>
       </div>
 
-      <div class="col-md-3">
+      <!-- <div class="col-md-3">
         <div class="card border-0 bg-light-primary h-100">
           <div class="card-body text-center">
             <i class="fa fa-clock text-primary fa-2x mb-2"></i>
@@ -300,9 +288,9 @@
             <p class="card-text fw-bold">{{ resultadoSimulacion.metricas?.tiempo_estimado_cierre || 0 }}s</p>
           </div>
         </div>
-      </div>
+      </div> -->
 
-      <div class="col-md-3">
+      <!-- <div class="col-md-4">
         <div class="card border-0 h-100"
              [ngClass]="resultadoSimulacion.metricas?.nivel_riesgo === 'bajo' ? 'bg-light-success' :
                         resultadoSimulacion.metricas?.nivel_riesgo === 'medio' ? 'bg-light-warning' : 'bg-light-danger'">
@@ -314,32 +302,9 @@
             <p class="card-text fw-bold text-capitalize">{{ resultadoSimulacion.metricas?.nivel_riesgo || 'N/A' }}</p>
           </div>
         </div>
-      </div>
+      </div> -->
 
-      <div class="col-md-3">
-        <div class="card border-0 bg-light-info h-100">
-          <div class="card-body text-center">
-            <i class="fa fa-star text-info fa-2x mb-2"></i>
-            <h6 class="card-title">Calidad</h6>
-            <p class="card-text fw-bold">{{ resultadoSimulacion.metricas?.puntuacion_calidad || 0 }}/100</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Segunda fila de métricas -->
-    <div class="row mt-3">
-      <div class="col-md-3">
-        <div class="card border-0 bg-light-secondary h-100">
-          <div class="card-body text-center">
-            <i class="fa fa-list text-secondary fa-2x mb-2"></i>
-            <h6 class="card-title">Cuentas Activas</h6>
-            <p class="card-text fw-bold">{{ resultadoSimulacion.metricas?.cuentas_activas || 0 }}</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-3">
+      <div class="col-md-6">
         <div class="card border-0 bg-light-warning h-100">
           <div class="card-body text-center">
             <i class="fa fa-exclamation-triangle text-warning fa-2x mb-2"></i>
@@ -350,7 +315,30 @@
         </div>
       </div>
 
-      <div class="col-md-3">
+      <!-- <div class="col-md-3">
+        <div class="card border-0 bg-light-info h-100">
+          <div class="card-body text-center">
+            <i class="fa fa-star text-info fa-2x mb-2"></i>
+            <h6 class="card-title">Calidad</h6>
+            <p class="card-text fw-bold">{{ resultadoSimulacion.metricas?.puntuacion_calidad || 0 }}/100</p>
+          </div>
+        </div>
+      </div> -->
+    </div>
+
+    <!-- Segunda fila de métricas -->
+    <div class="row mt-3">
+      <!-- <div class="col-md-3">
+        <div class="card border-0 bg-light-secondary h-100">
+          <div class="card-body text-center">
+            <i class="fa fa-list text-secondary fa-2x mb-2"></i>
+            <h6 class="card-title">Cuentas Activas</h6>
+            <p class="card-text fw-bold">{{ resultadoSimulacion.metricas?.cuentas_activas || 0 }}</p>
+          </div>
+        </div>
+      </div> -->
+
+      <div class="col-md-6">
         <div class="card border-0 bg-light-dark h-100">
           <div class="card-body text-center">
             <i class="fa fa-calculator text-dark fa-2x mb-2"></i>
@@ -361,7 +349,7 @@
         </div>
       </div>
 
-      <div class="col-md-3">
+      <div class="col-md-6">
         <div class="card border-0 bg-light-info h-100">
           <div class="card-body text-center">
             <i class="fa fa-chart-line text-info fa-2x mb-2"></i>

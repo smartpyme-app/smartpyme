@@ -336,13 +336,13 @@ class SimulacionCierreService
     {
         $advertencias = [];
 
-        if (!$validaciones['periodo_anterior_cerrado']) {
-            $advertencias[] = [
-                'tipo' => 'error',
-                'mensaje' => 'El período anterior no está cerrado',
-                'accion' => 'Debe cerrar primero el período anterior'
-            ];
-        }
+//        if (!$validaciones['periodo_anterior_cerrado']) {
+//            $advertencias[] = [
+//                'tipo' => 'error',
+//                'mensaje' => 'El período anterior no está cerrado',
+//                'accion' => 'Debe cerrar primero el período anterior'
+//            ];
+//        }
 
         if ($validaciones['partidas_pendientes'] > 0) {
             $advertencias[] = [
@@ -373,7 +373,7 @@ class SimulacionCierreService
         if ($validaciones['cuentas_sin_movimiento'] > ($validaciones['cuentas_con_movimiento'] * 0.8)) {
             $advertencias[] = [
                 'tipo' => 'info',
-                'mensaje' => 'Muchas cuentas sin movimiento en el período',
+                'mensaje' => 'Cuentas sin movimiento en el período',
                 'accion' => 'Revise si todas las transacciones están registradas'
             ];
         }
@@ -396,7 +396,6 @@ class SimulacionCierreService
             $recomendaciones[] = 'El balance tiene una precisión excelente';
         }
 
-        $recomendaciones[] = 'Genere un respaldo de la base de datos antes del cierre';
         $recomendaciones[] = 'Descargue todos los reportes necesarios del período';
 
         return $recomendaciones;
