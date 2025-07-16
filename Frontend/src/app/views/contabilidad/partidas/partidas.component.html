@@ -97,10 +97,10 @@
             <th>Fecha</th>
             <th>Concepto</th>
             <th>Correlativo</th>
+            <th>Tipo</th>
             <th class="text-end">Debe</th>
             <th class="text-end">Haber</th>
-            <th>Estado</th>
-            <th>Tipo</th>
+            <th class="text-center">Estado</th>
             <th class="text-center">Más</th>
           </tr>
         </thead>
@@ -122,12 +122,15 @@
             <!-- Numero partida -->
             <!-- <td>{{ partida.id }}</td> -->
             <td>{{ partida.correlativo || 'Sin correlativo' }}</td>
-            <!-- Debe -->
-            <td class="text-end">{{ partida.total_debe | currency:'USD':'symbol':'1.2-2' }}</td>
-            <!-- Haber -->
-            <td class="text-end">{{ partida.total_haber | currency:'USD':'symbol':'1.2-2' }}</td>
+            <!-- Tipo -->
+            <td>{{ partida.tipo }}</td>
             <!-- Estado -->
-            <td>
+             <!-- Debe -->
+             <td class="text-end">{{ partida.total_debe | currency:'USD':'symbol':'1.2-2' }}</td>
+             <!-- Haber -->
+             <td class="text-end">{{ partida.total_haber | currency:'USD':'symbol':'1.2-2' }}</td>
+             <!-- Estado -->
+             <td class="text-center">
               <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{
                     'bg-warning' : partida?.estado == 'Pendiente',
                     'bg-danger' : partida?.estado == 'Anulada',
@@ -140,8 +143,6 @@
                  <option value="Anulada">Anulada</option>
              </select> -->
             </td>
-            <!-- Tipo -->
-            <td>{{ partida.tipo }}</td>
             <!-- Más -->
             <td class="text-center">
               <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
