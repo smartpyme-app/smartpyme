@@ -313,8 +313,17 @@
                 </select>
             </div>
             <div class="form-group col-md-6">
-                <label for="referencia">Referencia:</label><br>
+                <label for="referencia">Referencia:</label>
                 <input type="number" class="form-control" [(ngModel)]="compra.referencia" name="referencia">
+            </div>
+            <div class="form-group col-md-6">
+                <label for="referencia">Estado:</label>
+                <select name="estado"[(ngModel)]="compra.estado" class="form-select">
+                    <option value="">Estado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Anulada">Anulada</option>
+                    <option value="Pagada">Pagada</option>
+                </select>
             </div>
             <div class="form-group col-md-6">
                 <label for="id_usuario">Usuario:</label>
