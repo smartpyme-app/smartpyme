@@ -150,10 +150,10 @@ class MHDTEController extends Controller
     }
 
     public function generarDTEAnuladoSujetoExcluidoCompra(Request $request){
-        $compra = Gasto::where('id', $request->id)->firstOrFail();
+        $compra = Compra::where('id', $request->id)->firstOrFail();
         
-        $mh = new MH;
-        $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($compra, $compra->dte);
+        $mh = new MHAnulacion;
+        $DTEAnular = $mh->generarDTE($compra, $compra->dte);
 
         return Response()->json($DTEAnular, 200);
 
@@ -162,8 +162,8 @@ class MHDTEController extends Controller
     public function generarDTEAnuladoSujetoExcluido(Request $request){
         $gasto = Gasto::where('id', $request->id)->firstOrFail();
         
-        $mh = new MH;
-        $DTEAnular = $mh->generarDTEAnuladoSujetoExcluido($gasto, $gasto->dte);
+        $mh = new MHAnulacion;
+        $DTEAnular = $mh->generarDTE($gasto, $gasto->dte);
 
         return Response()->json($DTEAnular, 200);
 
@@ -307,6 +307,14 @@ class MHDTEController extends Controller
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
+        // Si esta anulado
+        if ($registro->dte_invalidacion) {
+            $DTE = $registro->dte_invalidacion;
+            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdf->setPaper('US Letter', 'portrait');
+            return $pdf->stream($DTE['identificacion']['codigoGeneracion'] . '.pdf');
+        }
+
         if ($DTE['identificacion']['tipoDte'] == '01') {
             $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
             $pdf->setPaper('US Letter', 'portrait');
@@ -414,6 +422,32 @@ class MHDTEController extends Controller
 
         $registro->qr = 'https://admin.factura.gob.sv/consultaPublica?ambiente='. $DTE['identificacion']['ambiente'] .'&codGen=' . $DTE['identificacion']['codigoGeneracion'] . '&fechaEmi=' . $DTE['identificacion']['fecEmi'];
 
+
+        if ($registro->dte_invalidacion) {
+            $DTE = $registro->dte_invalidacion;
+            $nombre = $DTE['documento']['nombre'];
+
+            $pdf = PDF::loadView('reportes.facturacion.DTE-Anulado', compact('registro', 'DTE'));
+            $pdfContent = $pdf->output();
+
+            if ($correo) {
+                Mail::send('mails.DTE-Anulado', ['DTE' => $DTE, 'nombre' => $nombre ], function ($m) use ($pdfContent, $DTE, $correo, $nombre) {
+                    $m->from('noreply@smartpyme.sv', $DTE['emisor']['nombre'] )
+                    ->to($correo, $nombre)
+                    ->attachData($pdfContent, $DTE['identificacion']['codigoGeneracion'] . '.pdf', [
+                        'mime' => 'application/pdf',
+                    ])
+                    ->attachData(json_encode($DTE), $DTE['identificacion']['codigoGeneracion'] . '.json', [
+                                'mime' => 'application/json',
+                    ])
+                    ->subject('Documento Tributario Electrónico Anulado');
+                });
+
+                return Response()->json($DTE, 200);
+            }
+            return Response()->json(['error' => 'El cliente no tienen correo'], 400);
+        }
+        
         if ($DTE['identificacion']['tipoDte'] == '01') {
            $pdf = PDF::loadView('reportes.facturacion.DTE-Factura', compact('registro', 'DTE'));
         }

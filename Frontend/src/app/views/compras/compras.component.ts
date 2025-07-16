@@ -334,6 +334,7 @@ export class ComprasComponent implements OnInit {
             this.compra = compra;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
+            this.enviarDTE();
         }).catch((error) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);

@@ -21,7 +21,7 @@ class MHAnulacion extends Model
         $this->sucursal = $this->venta->sucursal()->first();
 
         $codigoGeneracion = strtoupper(Uuid::uuid4()->toString());
-        $this->caja_codigo = '0001';
+        $this->caja_codigo = 'P001';
 
         $identificacion = [
             "version" => 2,
@@ -33,16 +33,34 @@ class MHAnulacion extends Model
 
         $tipo_documento = NULL;
         $num_documento = NULL;
+        $nombre = NULL;
+        $correo = NULL;
+        $telefono = NULL;
 
 
-        if ($DTE['receptor'] && $DTE['identificacion']['tipoDte'] == '01') {
+        if (isset($DTE['receptor']) && $DTE['identificacion']['tipoDte'] == '01') {
             $tipo_documento = $DTE['receptor']['tipoDocumento'];
             $num_documento = $DTE['receptor']['numDocumento'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
         }
 
-        if ($DTE['receptor'] && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
+
+        if (isset($DTE['sujetoExcluido']) && $DTE['identificacion']['tipoDte'] == '14') {
+            $tipo_documento = $DTE['sujetoExcluido']['tipoDocumento'];
+            $num_documento = $DTE['sujetoExcluido']['numDocumento'];
+            $nombre = $DTE['sujetoExcluido']['nombre'];
+            $correo = $DTE['sujetoExcluido']['correo'];
+            $telefono = $DTE['sujetoExcluido']['telefono'];
+        }
+
+        if (isset($DTE['receptor']) && (($DTE['identificacion']['tipoDte'] == '03') || $DTE['identificacion']['tipoDte'] == '05') || $DTE['identificacion']['tipoDte'] == '06') {
             $tipo_documento = '36';
             $num_documento = $DTE['receptor']['nit'];
+            $nombre = $DTE['receptor']['nombre'];
+            $correo = $DTE['receptor']['correo'];
+            $telefono = $DTE['receptor']['telefono'];
         }
 
         $documento = [
@@ -55,9 +73,9 @@ class MHAnulacion extends Model
             "codigoGeneracionR" => NULL, // Solo si el motivo es error, hay que mandar el que sustituye
             "tipoDocumento" => $tipo_documento,
             "numDocumento" => $num_documento,
-            "nombre" => $DTE['receptor'] ? $DTE['receptor']['nombre'] : NULL,
-            "correo" => $DTE['receptor'] ? $DTE['receptor']['correo'] : NULL,
-            "telefono" => $DTE['receptor'] ? $DTE['receptor']['telefono'] : NULL,
+            "nombre" => $nombre,
+            "correo" => $correo,
+            "telefono" => $telefono,
         ];
 
         // 1. Error en la Información del Documento Tributario Electrónico a invalidar.

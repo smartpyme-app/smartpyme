@@ -232,6 +232,7 @@ export class GastosComponent implements OnInit {
             this.gasto = gasto;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
+            this.enviarDTE();
         }).catch((error) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);

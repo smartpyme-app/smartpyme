@@ -125,7 +125,7 @@
                                     <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar compra
                                     </a>
-                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEdit()" (click)="anularDTE(compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular compra
                                     </a>
                                     <a *ngIf="compra.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">

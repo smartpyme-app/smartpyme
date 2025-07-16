@@ -9,7 +9,7 @@
 <body style="font-family: arial, helvetica; color: #555; background-color: #eee;" bgcolor="#eee">
     
     <section style="width: 95%; text-align: center; border-radius: 15px; background-color: #fff; margin: auto; padding: 10px;">
-        <header>
+    <header>
             <img src="{{ asset('img/logo.png') }}" width="150" alt="Logo SmartPyme">
         </header>
         <div class="margin" style="width: 75%; margin: 30px auto; border: .1px solid #eee;"></div>
@@ -19,23 +19,22 @@
                 {{ $nombre }}
             </p>
 
-            <p>Adjuntamos el Documento Tributario Electrónico con el siguiente detalle:</p>
+            <p>Adjuntamos el Documento Tributario Electrónico Invalidado con el siguiente detalle:</p>
 
             <p><b>Tipo de documento:</b> <br>
-                @if($DTE['identificacion']['tipoDte'] == '01')
+                @if($DTE['documento']['tipoDte'] == '01')
                     Factura
                 @endif
-                @if($DTE['identificacion']['tipoDte'] == '03')
+                @if($DTE['documento']['tipoDte'] == '03')
                     Crédito Fiscal
                 @endif
-                @if($DTE['identificacion']['tipoDte'] == '14')
+                @if($DTE['documento']['tipoDte'] == '14')
                     Factura Sujeto Excluido
                 @endif
             </p>
             <p><b>Código de Generación:</b><br> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
-            <p><b>Número de Control:</b><br> {{ $DTE['identificacion']['numeroControl'] }}</p>
             <p><b>Sello de Recepción:</b><br> {{ $DTE['sello'] }}</p>
-            <p><b>Fecha y Hora de Generación:</b><br> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}</p>
+            <p><b>Fecha y Hora de Generación:</b><br> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecAnula'] . ' ' . $DTE['identificacion']['horAnula'])->format('d/m/Y H:i:s') }}</p>
 
             <br><br>
             <p>Este correo electrónico ha sido enviado automáticamente por favor no responder a esta cuenta, de requerir cualquier aclaratoria o información adicional debe comunicarse directamente a la dirección de correo electrónico o teléfono de nuestra empresa.</p>

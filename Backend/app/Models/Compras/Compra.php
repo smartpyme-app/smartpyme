@@ -72,6 +72,11 @@ class Compra extends Model {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
+    public function getDteInvalidacionAttribute($value) 
+    {
+        return is_string($value) ? json_decode($value,true) : $value;
+    }
+
     public function getSaldoAttribute(){
         return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
     }
