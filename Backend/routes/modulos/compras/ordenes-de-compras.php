@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Compras\Cotizaciones\CotizacionesController;
 use App\Http\Controllers\Api\Compras\Cotizaciones\DetallesController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/ordenes-de-compras',                    [CotizacionesController::class, 'index']);
     Route::get('/orden-de-compra/{id}',                [CotizacionesController::class, 'read']);

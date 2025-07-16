@@ -1,6 +1,7 @@
 <?php 
 
 use App\Http\Controllers\Api\Contabilidad\ProyectosController;
+use Illuminate\Support\Facades\Route;
 
     Route::get('/proyectos',             [ProyectosController::class, 'index']);
     Route::get('/proyectos/list',        [ProyectosController::class, 'list']);
