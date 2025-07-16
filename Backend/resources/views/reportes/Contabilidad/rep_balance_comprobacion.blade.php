@@ -60,16 +60,20 @@
 
         .codigo {
             width: 2cm;
-            text-align: left;
         }
 
         .nombre {
-            width: 6cm;
-            text-align: left;
+            width: 5cm;
         }
 
-        .sal_inic, .cargo, .abono, .sal_actual, .sal_acumulado, .sal_fin {
-            width: 2cm;
+        .naturaleza {
+            width: 1.5cm;
+            text-align: center;
+            font-size: 9px;
+        }
+
+        .sal_inic, .cargo, .abono, .sal_fin {
+            width: 2.5cm;
             text-align: right;
         }
 
@@ -138,11 +142,10 @@
                 <tr>
                     <th>Código</th>
                     <th>Nombre</th>
+                    <th>Naturaleza</th>
                     <th>Saldo Inicial</th>
                     <th>Cargos</th>
                     <th>Abonos</th>
-                    <th>Saldo Actual</th>
-                    <th>Saldo Acumulado</th>
                     <th>Saldo Final</th>
                 </tr>
             </thead>
@@ -151,11 +154,10 @@
                     <tr class="{{ $detalle_par['es_cuenta_padre'] ? 'cuentas-padre' : '' }}">
                         <td class="codigo">{{ $detalle_par['codigo'] }}{{ $detalle_par['es_cuenta_padre'] ? ' (P)' : '' }}</td>
                         <td class="nombre">{{ $detalle_par['nombre'] }}</td>
+                        <td class="naturaleza">{{ $detalle_par['naturaleza'] ?? 'N/A' }}</td>
                         <td class="sal_inic">{{ number_format($detalle_par['saldo_inicial'], 2) }}</td>
                         <td class="cargo">{{ number_format($detalle_par['debe'], 2) }}</td>
                         <td class="abono">{{ number_format($detalle_par['haber'], 2) }}</td>
-                        <td class="sal_actual">{{ number_format($detalle_par['saldo_actual'], 2) }}</td>
-                        <td class="sal_acumulado">{{ number_format($detalle_par['saldo_acumulado'], 2) }}</td>
                         <td class="sal_fin">{{ number_format($detalle_par['saldo_final'], 2) }}</td>
                     </tr>
 
@@ -178,11 +180,10 @@
                                 <tr>
                                     <th>Código</th>
                                     <th>Nombre</th>
+                                    <th>Naturaleza</th>
                                     <th>Saldo Inicial</th>
                                     <th>Cargos</th>
                                     <th>Abonos</th>
-                                    <th>Saldo Actual</th>
-                                    <th>Saldo Acumulado</th>
                                     <th>Saldo Final</th>
                                 </tr>
                             </thead>
@@ -192,31 +193,29 @@
 
                 @if(isset($totales))
                     <tr>
-                        <td colspan="8"></td>
+                        <td colspan="7"></td>
                     </tr>
                     <tr class="nota-explicativa">
-                        <td colspan="8" style="text-align: center;">NOTA: Los totales solo incluyen cuentas padre (nivel = 0)</td>
+                        <td colspan="7" style="text-align: center;">NOTA: Los totales solo incluyen cuentas padre (nivel = 0)</td>
                     </tr>
                     <tr class="nota-explicativa">
-                        <td colspan="8" style="text-align: center;">Las cuentas padre (P) consolidan los valores de sus subcuentas</td>
+                        <td colspan="7" style="text-align: center;">Las cuentas padre (P) consolidan los valores de sus subcuentas</td>
                     </tr>
                     <tr style="border-top: 2px solid black;">
-                        <td colspan="8"></td>
+                        <td colspan="7"></td>
                     </tr>
                     <tr class="totales">
-                        <td colspan="2" style="text-align: center; font-weight: bold;">TOTALES</td>
+                        <td colspan="3" style="text-align: center; font-weight: bold;">TOTALES</td>
                         <td style="text-align: right; font-weight: bold;">{{ number_format($totales['saldo_inicial'], 2) }}</td>
                         <td style="text-align: right; font-weight: bold;">{{ number_format($totales['debe'], 2) }}</td>
                         <td style="text-align: right; font-weight: bold;">{{ number_format($totales['haber'], 2) }}</td>
-                        <td style="text-align: right; font-weight: bold;">{{ number_format($totales['saldo_actual'], 2) }}</td>
-                        <td style="text-align: right; font-weight: bold;">{{ number_format($totales['saldo_acumulado'], 2) }}</td>
-                        <td style="text-align: right; font-weight: bold;">{{ number_format($totales['saldo_acumulado'], 2) }}</td>
+                        <td style="text-align: right; font-weight: bold;">{{ number_format($totales['saldo_final'], 2) }}</td>
                     </tr>
                     <tr>
-                        <td colspan="8"></td>
+                        <td colspan="7"></td>
                     </tr>
                     <tr class="diferencia">
-                        <td colspan="6" style="text-align: center; font-weight: bold;">DIFERENCIA (Debe - Haber)</td>
+                        <td colspan="5" style="text-align: center; font-weight: bold;">DIFERENCIA (Debe - Haber)</td>
                         <td style="text-align: right; font-weight: bold;">{{ number_format($totales['diferencia'], 2) }}</td>
                         <td></td>
                     </tr>

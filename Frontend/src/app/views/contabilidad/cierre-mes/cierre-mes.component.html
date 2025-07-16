@@ -84,9 +84,19 @@
     </div>
 
     <div class="col-md-6">
-      <div *ngIf="estadoPeriodo.cerrado" class="d-flex align-items-center mb-2">
-        <span class="fw-bold me-2">Fecha de cierre:</span>
-        <span>{{ estadoPeriodo.fecha_cierre | date:'dd/MM/yyyy HH:mm' }}</span>
+      <div *ngIf="estadoPeriodo.cerrado" class="mb-3">
+        <div class="d-flex align-items-center mb-2">
+          <span class="fw-bold me-2">Fecha de cierre:</span>
+          <span>
+            {{ estadoPeriodo.fecha_cierre | date:'dd/MM/yyyy' }}
+          </span>
+        </div>
+        <div *ngIf="estadoPeriodo.usuario_cierre" class="d-flex align-items-center mb-2">
+          <span class="fw-bold me-2">Cerrado por:</span>
+          <span>
+            {{ estadoPeriodo.usuario_cierre }}
+          </span>
+        </div>
       </div>
     </div>
   </div>

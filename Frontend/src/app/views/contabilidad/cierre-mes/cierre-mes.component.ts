@@ -411,7 +411,7 @@ export class CierreMesComponent implements OnInit {
    */
   public reabrirPeriodo(): void {
     Swal.fire({
-      title: '🔓 Reabrir Período',
+      title: 'Reabrir Período',
       html: `
         <div class="text-start">
           <p><strong>Período:</strong> ${this.getMonthName(this.selectedMonth)} ${this.selectedYear}</p>

@@ -386,7 +386,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->where('partidas.estado', 'Aplicada') // ✅ CORREGIDO: Usar 'Aplicada' consistentemente
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -435,7 +435,7 @@ class GenerarReportesController extends Controller
         $total_saldo_inicial = 0;
         $total_debe = 0;
         $total_haber = 0;
-        $total_saldo_actual = 0;
+        // ❌ ELIMINADO: $total_saldo_actual (no tiene sentido contable)
         $total_saldo_acumulado = 0;
 
         $balance = [];
@@ -444,16 +444,21 @@ class GenerarReportesController extends Controller
             $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
-            $saldo_actual = $debe - $haber; // Movimiento neto del período
-            $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
+            // ✅ CORREGIDO: Calcular saldo final según naturaleza de la cuenta
+            if ($cuenta->naturaleza == 'Deudor') {
+                $saldo_final = $saldo_inicial + $debe - $haber;
+            } else {
+                $saldo_final = $saldo_inicial + $haber - $debe;
+            }
 
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
                 $total_saldo_inicial += $saldo_inicial;
                 $total_debe += $debe;
                 $total_haber += $haber;
-                $total_saldo_actual += $saldo_actual;
-                $total_saldo_acumulado += $saldo_acumulado;
+                // ❌ ELIMINADO: total_saldo_actual (no tiene sentido contable)
+                $total_saldo_acumulado += $saldo_final; // ✅ Usar saldo_final directamente
             }
 
             $balance[] = [
@@ -461,12 +466,12 @@ class GenerarReportesController extends Controller
                 'nombre' => $cuenta->nombre,
                 'nivel' => $cuenta->nivel,
                 'nivel_visual' => $cuenta->nivel_visual ?? 0,
+                'naturaleza' => $cuenta->naturaleza, // ✅ AGREGADO: Naturaleza en cada cuenta
                 'saldo_inicial' => $saldo_inicial,
                 'debe' => $debe,
                 'haber' => $haber,
-                'saldo_actual' => $saldo_actual,
-                'saldo_acumulado' => $saldo_acumulado,
-                'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
+                // ❌ ELIMINADO: 'saldo_actual' (problemático)
+                'saldo_final' => $saldo_final, // ✅ Solo este campo
                 'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
         }
@@ -476,8 +481,10 @@ class GenerarReportesController extends Controller
             'saldo_inicial' => $total_saldo_inicial,
             'debe' => $total_debe,
             'haber' => $total_haber,
-            'saldo_actual' => $total_saldo_actual,
+            // ❌ ELIMINADO: 'naturaleza' => $cuenta->naturaleza, (no pertenece aquí)
+            // ❌ ELIMINADO: 'saldo_actual' => $total_saldo_actual,
             'saldo_acumulado' => $total_saldo_acumulado,
+            'saldo_final' => $total_saldo_acumulado, // ✅ Mismo valor, para compatibilidad
             'diferencia' => $total_debe - $total_haber
         ];
 
@@ -504,7 +511,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->where('partidas.estado', 'Aplicada') // ✅ CORREGIDO: Usar 'Aplicada' consistentemente
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -553,7 +560,7 @@ class GenerarReportesController extends Controller
         $total_saldo_inicial = 0;
         $total_debe = 0;
         $total_haber = 0;
-        $total_saldo_actual = 0;
+        // ❌ ELIMINADO: $total_saldo_actual (no tiene sentido contable)
         $total_saldo_acumulado = 0;
 
         $balance = [];
@@ -562,16 +569,21 @@ class GenerarReportesController extends Controller
             $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
-            $saldo_actual = $debe - $haber; // Movimiento neto del período
-            $saldo_acumulado = $saldo_inicial + $saldo_actual; // Saldo final
+
+            // ✅ CORREGIDO: Calcular saldo final según naturaleza de la cuenta
+            if ($cuenta->naturaleza == 'Deudor') {
+                $saldo_final = $saldo_inicial + $debe - $haber;
+            } else {
+                $saldo_final = $saldo_inicial + $haber - $debe;
+            }
 
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
                 $total_saldo_inicial += $saldo_inicial;
                 $total_debe += $debe;
                 $total_haber += $haber;
-                $total_saldo_actual += $saldo_actual;
-                $total_saldo_acumulado += $saldo_acumulado;
+                // ❌ ELIMINADO: total_saldo_actual (no tiene sentido contable)
+                $total_saldo_acumulado += $saldo_final; // ✅ Usar saldo_final directamente
             }
 
             $balance[] = [
@@ -579,12 +591,11 @@ class GenerarReportesController extends Controller
                 'nombre' => $cuenta->nombre,
                 'nivel' => $cuenta->nivel,
                 'nivel_visual' => $cuenta->nivel_visual ?? 0,
+                'naturaleza' => $cuenta->naturaleza, // ✅ AGREGADO: Naturaleza en cada cuenta
                 'saldo_inicial' => $saldo_inicial,
                 'debe' => $debe,
                 'haber' => $haber,
-                'saldo_actual' => $saldo_actual,
-                'saldo_acumulado' => $saldo_acumulado,
-                'saldo_final' => $saldo_acumulado, // Por compatibilidad con vistas existentes
+                'saldo_final' => $saldo_final,
                 'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
         }
@@ -599,8 +610,10 @@ class GenerarReportesController extends Controller
                 'saldo_inicial' => $total_saldo_inicial,
                 'debe' => $total_debe,
                 'haber' => $total_haber,
-                'saldo_actual' => $total_saldo_actual,
+                // ❌ ELIMINADO: 'naturaleza' => $cuenta->naturaleza, (no pertenece aquí)
+                // ❌ ELIMINADO: 'saldo_actual' => $total_saldo_actual,
                 'saldo_acumulado' => $total_saldo_acumulado,
+                'saldo_final' => $total_saldo_acumulado, // ✅ Mismo valor, para compatibilidad
                 'diferencia' => $total_debe - $total_haber
             ]
         ];

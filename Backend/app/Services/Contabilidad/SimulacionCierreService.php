@@ -31,11 +31,22 @@ class SimulacionCierreService
 
             // 2. Simular cálculos de saldos
             $saldosSimulados = $this->simularCalculoSaldos($year, $month, $empresa_id);
-            Log::info("Saldos simulados calculados", ['count' => count($saldosSimulados)]);
+            Log::info("Saldos simulados calculados", [
+                'count' => count($saldosSimulados),
+                'cuentas_padre' => collect($saldosSimulados)->where('nivel', 0)->count(),
+                'cuentas_hijas' => collect($saldosSimulados)->where('nivel', '>', 0)->count()
+            ]);
 
             // 3. Simular balance de comprobación
             $balanceSimulado = $this->simularBalanceComprobacion($saldosSimulados);
-            Log::info("Balance simulado", $balanceSimulado);
+            Log::info("Balance simulado CORREGIDO", [
+                'total_debe' => $balanceSimulado['total_debe'],
+                'total_haber' => $balanceSimulado['total_haber'],
+                'diferencia' => $balanceSimulado['diferencia'],
+                'cuentas_padre_procesadas' => $balanceSimulado['cuentas_padre_procesadas'],
+                'cuentas_hijas_excluidas' => $balanceSimulado['cuentas_hijas_excluidas'],
+                'cuadra' => $balanceSimulado['cuadra']
+            ]);
 
             // 4. Generar reporte de impacto
             $reporteImpacto = $this->generarReporteImpacto($saldosSimulados, $year, $month, $empresa_id);
@@ -179,24 +190,59 @@ class SimulacionCierreService
         // Obtener saldos iniciales
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
-        $saldosSimulados = [];
+        // ✅ CORREGIDO: Usar la misma lógica de consolidación que el balance de comprobación
+        // Inicializar array de saldos por código de cuenta
+        $cuentas_saldos = [];
+        $idACodigo = [];
+
         foreach ($cuentas as $cuenta) {
-            // Asegurar que saldo_inicial nunca sea null
+            $idACodigo[$cuenta->id] = $cuenta->codigo;
+        }
+
+        // Asignar valores iniciales
+        foreach ($cuentas as $cuenta) {
+            $id = $cuenta->id;
+            $codigo = $cuenta->codigo;
             $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
             $movimiento = $movimientos->get($cuenta->id);
             $debe = $movimiento ? (float)$movimiento->total_debe : 0;
             $haber = $movimiento ? (float)$movimiento->total_haber : 0;
 
-            // Convertir a float para asegurar tipos numéricos
-            $saldoInicial = (float)$saldoInicial;
-            $debe = (float)$debe;
-            $haber = (float)$haber;
+            $cuentas_saldos[$codigo] = [
+                'id_cuenta' => $cuenta->id,
+                'codigo_cuenta' => $cuenta->codigo,
+                'nombre_cuenta' => $cuenta->nombre,
+                'naturaleza' => $cuenta->naturaleza,
+                'nivel' => $cuenta->nivel,
+                'id_cuenta_padre' => $cuenta->id_cuenta_padre,
+                'saldo_inicial' => (float)$saldoInicial,
+                'debe' => $debe,
+                'haber' => $haber,
+            ];
+        }
+
+        // ✅ CONSOLIDAR: Sumar subcuentas a cuentas padre (misma lógica que balance de comprobación)
+        foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
+            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
+                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
+                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
+                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
+                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
+            }
+        }
+
+        $saldosSimulados = [];
+        foreach ($cuentas as $cuenta) {
+            $codigo = $cuenta->codigo;
+            $saldoInicial = $cuentas_saldos[$codigo]['saldo_inicial'];
+            $debe = $cuentas_saldos[$codigo]['debe'];
+            $haber = $cuentas_saldos[$codigo]['haber'];
 
             // Calcular saldo final según naturaleza
             if ($cuenta->naturaleza == 'Deudor') {
                 $saldoFinal = $saldoInicial + $debe - $haber;
             } else {
-                $saldoFinal = $saldoInicial - $debe + $haber;
+                $saldoFinal = $saldoInicial + $haber - $debe;
             }
 
             $variacion = $saldoFinal - $saldoInicial;
@@ -207,6 +253,7 @@ class SimulacionCierreService
                 'codigo_cuenta' => $cuenta->codigo,
                 'nombre_cuenta' => $cuenta->nombre,
                 'naturaleza' => $cuenta->naturaleza,
+                'nivel' => $cuenta->nivel, // ✅ AGREGADO: Nivel para el filtrado posterior
                 'saldo_inicial' => $saldoInicial,
                 'debe' => $debe,
                 'haber' => $haber,
@@ -224,14 +271,18 @@ class SimulacionCierreService
      */
     private function simularBalanceComprobacion($saldosSimulados)
     {
-        // ✅ CORRECCIÓN: Sumar movimientos debe/haber del período
-        $totalDebe = collect($saldosSimulados)->sum('debe');
-        $totalHaber = collect($saldosSimulados)->sum('haber');
+        // ✅ CORREGIDO: Filtrar solo cuentas padre (nivel 0) para evitar doble conteo
+        $saldosCollection = collect($saldosSimulados);
+        $cuentasPadre = $saldosCollection->where('nivel', 0);
+
+        // Sumar movimientos debe/haber del período (solo cuentas padre)
+        $totalDebe = $cuentasPadre->sum('debe');
+        $totalHaber = $cuentasPadre->sum('haber');
         $diferencia = $totalDebe - $totalHaber;
 
-        // También calcular totales por naturaleza para validación adicional
-        $totalDeudor = collect($saldosSimulados)->where('naturaleza', 'Deudor')->sum('saldo_final');
-        $totalAcreedor = collect($saldosSimulados)->where('naturaleza', 'Acreedor')->sum('saldo_final');
+        // También calcular totales por naturaleza para validación adicional (solo cuentas padre)
+        $totalDeudor = $cuentasPadre->where('naturaleza', 'Deudor')->sum('saldo_final');
+        $totalAcreedor = $cuentasPadre->where('naturaleza', 'Acreedor')->sum('saldo_final');
         $diferenciaSaldos = $totalDeudor - $totalAcreedor;
 
         return [
@@ -249,6 +300,11 @@ class SimulacionCierreService
             'diferencia_saldos' => $diferenciaSaldos,
             'cuadra_saldos' => abs($diferenciaSaldos) < 0.01,
             'cuadra_saldos_con_tolerancia' => abs($diferenciaSaldos) <= 1.00,
+
+            // ✅ AGREGADO: Información de depuración
+            'cuentas_totales' => $saldosCollection->count(),
+            'cuentas_padre_procesadas' => $cuentasPadre->count(),
+            'cuentas_hijas_excluidas' => $saldosCollection->where('nivel', '>', 0)->count(),
         ];
     }
 

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
+use App\Models\Contabilidad\SaldoMensual;
+use App\Models\User;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Ventas\Abono as AbonoVenta;
@@ -992,19 +994,41 @@ class PartidasController extends Controller
                 ], 400);
             }
 
-            $cierreMesService = new CierreMesService();
+            $empresa_id = auth()->user()->id_empresa;
 
-            $cerrado = $cierreMesService->estaPeriodoCerrado(
-                $year,
-                $month,
-                auth()->user()->id_empresa
-            );
+            // Obtener información del período desde la tabla saldos_mensuales
+            $saldoMensual = SaldoMensual::where('year', $year)
+                ->where('month', $month)
+                ->where('id_empresa', $empresa_id)
+                ->first();
 
-            return response()->json([
+            $cerrado = false;
+            $fechaCierre = null;
+            $usuarioCierre = null;
+
+            if ($saldoMensual) {
+                $cerrado = $saldoMensual->estado === 'Cerrado';
+                $fechaCierre = $saldoMensual->fecha_cierre;
+
+                if ($saldoMensual->id_usuario_cierre) {
+                    $usuarioCierre = User::withoutGlobalScopes()
+                        ->find($saldoMensual->id_usuario_cierre);
+                }
+            }
+
+            $response = [
                 'periodo' => "{$month}/{$year}",
                 'cerrado' => $cerrado,
                 'estado' => $cerrado ? 'Cerrado' : 'Abierto'
-            ]);
+            ];
+
+            // Agregar información adicional si está cerrado
+            if ($cerrado && $fechaCierre) {
+                $response['fecha_cierre'] = $fechaCierre;
+                $response['usuario_cierre'] = $usuarioCierre ? $usuarioCierre->name : null;
+            }
+
+            return response()->json($response);
 
         } catch (\Exception $e) {
             return response()->json([

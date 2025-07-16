@@ -221,7 +221,8 @@ class CierreMesService
     }
 
     /**
-     * Actualizar saldos iniciales del siguiente período
+     * Crear registros para el siguiente período en saldos_mensuales
+     * NOTA: No actualiza el catálogo de cuentas para preservar saldos originales del cliente
      */
     private function actualizarSaldosInicialesSiguientePeriodo($year, $month, $empresa_id)
     {
@@ -233,12 +234,12 @@ class CierreMesService
             ->get();
 
         foreach ($saldosActuales as $saldo) {
-            // Actualizar saldo inicial en el catálogo de cuentas
-            Cuenta::where('id', $saldo->id_cuenta)
-                ->where('id_empresa', $empresa_id)
-                ->update(['saldo_inicial' => $saldo->saldo_final]);
+            // ❌ COMENTADO: No actualizar el catálogo, mantener saldos originales del cliente
+            // Cuenta::where('id', $saldo->id_cuenta)
+            //     ->where('id_empresa', $empresa_id)
+            //     ->update(['saldo_inicial' => $saldo->saldo_final]);
 
-            // Crear registro para el siguiente período si no existe
+            // ✅ Solo crear registro para el siguiente período en saldos_mensuales
             SaldoMensual::firstOrCreate(
                 [
                     'id_cuenta' => $saldo->id_cuenta,
