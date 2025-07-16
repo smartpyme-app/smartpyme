@@ -87,6 +87,12 @@
                         <p class="text-right">Válido hasta: {{ \Carbon\Carbon::parse($compra->fecha_expiracion)->format('d/m/Y') }}</p>
                     </td>
                 </tr>
+                <tr>
+                    <td><h4>Proyecto</h4></td>
+                </tr>
+                <tr>
+                    <td>{{ $compra->nombre_proyecto ?? 'N/A' }}</td>
+                </tr>
             </tbody>
         </table>
 
