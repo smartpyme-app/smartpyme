@@ -401,6 +401,9 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
+        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+
         // Crear un mapa de ID a código para facilitar las búsquedas
         $idACodigo = [];
         foreach ($cuentas as $cuenta) {
@@ -411,9 +414,13 @@ class GenerarReportesController extends Controller
         foreach ($cuentas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
+
+            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
+
             $cuentas_saldos[$codigo] = [
                 'padre' => $cuenta->id_cuenta_padre ?? 0,
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
+                'saldo_inicial' => (float)$saldoInicial, // ✅ CORREGIDO
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
                 'saldoFinal' => ($partida_detalles[$id]->total_debe ?? 0) - ($partida_detalles[$id]->total_haber ?? 0),
@@ -526,6 +533,9 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
+        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+
         // Crear un mapa de ID a código para facilitar las búsquedas
         $idACodigo = [];
         foreach ($cuentas as $cuenta) {
@@ -536,9 +546,13 @@ class GenerarReportesController extends Controller
         foreach ($cuentas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
+
+            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
+
             $cuentas_saldos[$codigo] = [
                 'padre' => $cuenta->id_cuenta_padre ?? 0,
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
+                'saldo_inicial' => (float)$saldoInicial, // ✅ CORREGIDO
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
                 'saldoFinal' => ($partida_detalles[$id]->total_debe ?? 0) - ($partida_detalles[$id]->total_haber ?? 0),
@@ -692,9 +706,8 @@ class GenerarReportesController extends Controller
         $empresa = Empresa::findOrFail($empresa_id);
         $month_name = Carbon::createFromDate($year, $month)->monthName;
 
-        // Obtener todas las cuentas padre (nivel 0) con sus saldos consolidados
-        $cuentas = Cuenta::where('id_empresa', $empresa_id)
-            ->where('nivel', 0) // Solo cuentas padre
+        // Obtener todas las cuentas con jerarquía completa
+        $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
@@ -713,14 +726,14 @@ class GenerarReportesController extends Controller
             ->get()
             ->keyBy('id_cuenta');
 
-        // Obtener todas las cuentas (padre e hijas) para hacer consolidación
-        $todasLasCuentas = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo')->get();
-        $cuentasJerarquicas = collect($this->ordenarJerarquicamente($todasLasCuentas));
+        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Calcular saldos consolidados similar al balance de comprobación
         $cuentas_saldos = [];
-        $idACodigo = [];
 
+        // Crear mapa de ID a código
+        $idACodigo = [];
         foreach ($cuentasJerarquicas as $cuenta) {
             $idACodigo[$cuenta->id] = $cuenta->codigo;
         }
@@ -729,8 +742,12 @@ class GenerarReportesController extends Controller
         foreach ($cuentasJerarquicas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
+
+            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
+
             $cuentas_saldos[$codigo] = [
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
+                'saldo_inicial' => (float)$saldoInicial, // ✅ CORREGIDO
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
             ];
@@ -833,8 +850,13 @@ class GenerarReportesController extends Controller
             ->get()
             ->keyBy('id_cuenta');
 
-        $todasLasCuentas = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo')->get();
-        $cuentasJerarquicas = collect($this->ordenarJerarquicamente($todasLasCuentas));
+        // Obtener todas las cuentas con jerarquía completa
+        $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
+            ->orderBy('codigo')
+            ->get();
+
+        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         $cuentas_saldos = [];
         $idACodigo = [];
@@ -846,13 +868,18 @@ class GenerarReportesController extends Controller
         foreach ($cuentasJerarquicas as $cuenta) {
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
+
+            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
+
             $cuentas_saldos[$codigo] = [
-                'saldo_inicial' => $cuenta->saldo_inicial ?: 0,
+                'saldo_inicial' => (float)$saldoInicial, // ✅ CORREGIDO
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
             ];
         }
 
+        // Consolidar hacia cuentas padre
         foreach ($cuentasJerarquicas->sortByDesc('nivel') as $cuenta) {
             if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
                 $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
@@ -862,6 +889,7 @@ class GenerarReportesController extends Controller
             }
         }
 
+        // Clasificar por rubros del Balance General
         $balance_general = [
             'activos' => [],
             'pasivos' => [],
@@ -879,6 +907,7 @@ class GenerarReportesController extends Controller
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
 
+            // Calcular saldo final según naturaleza de la cuenta
             if ($cuenta->naturaleza == 'Deudor') {
                 $saldo_final = $saldo_inicial + $debe - $haber;
             } else {
@@ -1130,5 +1159,57 @@ class GenerarReportesController extends Controller
             }
         }
         return $resultado;
+    }
+
+    /**
+     * Obtener saldos iniciales del período (igual que CierreMesService)
+     */
+    private function obtenerSaldosIniciales($year, $month, $empresa_id)
+    {
+        // Si es enero del primer año, usar catálogo
+        if ($month == 1) {
+            // Verificar si existe algún período anterior en cualquier año
+            $hayPeriodoAnterior = \App\Models\Contabilidad\SaldoMensual::where('id_empresa', $empresa_id)
+                ->where(function($q) use ($year, $month) {
+                    $q->where('year', '<', $year)
+                      ->orWhere(function($q2) use ($year, $month) {
+                          $q2->where('year', $year)->where('month', '<', $month);
+                      });
+                })
+                ->exists();
+
+            if (!$hayPeriodoAnterior) {
+                // Primer período de la empresa - usar catálogo
+                return [];
+            }
+        }
+
+        // Obtener período anterior
+        $periodoAnterior = $this->obtenerPeriodoAnterior($year, $month);
+
+        $saldosAnteriores = \App\Models\Contabilidad\SaldoMensual::where('year', $periodoAnterior['year'])
+            ->where('month', $periodoAnterior['month'])
+            ->where('id_empresa', $empresa_id)
+            ->get()
+            ->keyBy('id_cuenta');
+
+        $saldosIniciales = [];
+        foreach ($saldosAnteriores as $saldo) {
+            // Asegurar que el saldo final nunca sea null
+            $saldosIniciales[$saldo->id_cuenta] = (float)($saldo->saldo_final ?? 0);
+        }
+
+        return $saldosIniciales;
+    }
+
+    /**
+     * Obtener período anterior
+     */
+    private function obtenerPeriodoAnterior($year, $month)
+    {
+        if ($month == 1) {
+            return ['year' => $year - 1, 'month' => 12];
+        }
+        return ['year' => $year, 'month' => $month - 1];
     }
 }
