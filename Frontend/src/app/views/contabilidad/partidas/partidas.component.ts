@@ -95,7 +95,14 @@ export class PartidasComponent implements OnInit {
 
   generateYears() {
     const currentYear = new Date().getFullYear();
-    this.years = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
+    for (let i = currentYear - 5; i <= currentYear + 2; i++) {
+      this.years.push(i);
+    }
+  }
+
+  public onYearChange() {
+    // Método llamado cuando cambia el año en los formularios
+    // Puede implementarse lógica adicional aquí si es necesario
   }
 
   /**
@@ -142,14 +149,12 @@ export class PartidasComponent implements OnInit {
   }
 
   public setOrden(columna: string) {
-    if (this.filtros.orden === columna) {
-      this.filtros.direccion =
-        this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    if (this.filtros.columna == columna) {
+      this.filtros.orden = this.filtros.orden == 'asc' ? 'desc' : 'asc';
     } else {
-      this.filtros.orden = columna;
-      this.filtros.direccion = 'asc';
+      this.filtros.orden = 'asc';
     }
-
+    this.filtros.columna = columna;
     this.filtrarPartidas();
   }
 
@@ -157,7 +162,7 @@ export class PartidasComponent implements OnInit {
     if (!this.filtros.orden) {
       this.inicializarFiltrosDefault();
     }
-    
+
     this.filtrarPartidas();
 
     this.reporte.month = new Date().getMonth() + 1;
@@ -169,21 +174,21 @@ export class PartidasComponent implements OnInit {
 
   public filtrarPartidas() {
     this.loading = true;
-    
+
     console.log('Filtros enviados al backend:', this.filtros);
     this.guardarFiltros();
-    
+
     this.apiService.getAll('partidas', this.filtros).subscribe(
       (response) => {
         this.partidas = response;
-        
+
         // NUEVO: Guardar totales generales
         this.totalesGenerales = response.totales_generales || {
           gran_total_debe: 0,
           gran_total_haber: 0,
           total_registros_filtrados: 0
         };
-        
+
         this.loading = false;
         if (this.modalRef) {
           this.modalRef.hide();
@@ -198,7 +203,6 @@ export class PartidasComponent implements OnInit {
 
   public openModal(template: TemplateRef<any>, partida: any) {
     this.partida = partida;
-    this.alertService.modal = true;
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
       backdrop: 'static',
@@ -206,10 +210,11 @@ export class PartidasComponent implements OnInit {
   }
 
   public openFilter(template: TemplateRef<any>) {
-    this.alertService.modal = true;
+    // Configuración específica para el modal de reportes
     this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static',
+      class: 'modal-xl',
+      backdrop: 'static' as 'static',
+      keyboard: false
     });
   }
 
@@ -257,10 +262,10 @@ export class PartidasComponent implements OnInit {
       .subscribe(
         (partidas) => {
           this.partidas = partidas;
-          
+
           // NUEVO: Actualizar totales al paginar
           this.totalesGenerales = partidas.totales_generales || this.totalesGenerales;
-          
+
           this.loading = false;
         },
         (error) => {
@@ -291,6 +296,8 @@ export class PartidasComponent implements OnInit {
             this.alertService.error(error);
           }
         );
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
       }
     });
   }
@@ -329,7 +336,7 @@ export class PartidasComponent implements OnInit {
    */
   public reordenarCorrelativos() {
     this.saving = true;
-    
+
     this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento).subscribe({
       next: (response) => {
         this.saving = false;
@@ -478,24 +485,48 @@ export class PartidasComponent implements OnInit {
     }
   }
 
-  public cerrarPartidas() {
-    if (!this.selectedMonth || !this.selectedYear) {
-      this.alertService.error('Por favor seleccione un mes y año');
-      return;
+  public imprimirBalanceGeneral() {
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/balance/general/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
     }
+  }
 
-    this.saving = true;
-    this.apiService.store('partidas/cerrar', { month: this.selectedMonth, year: this.selectedYear }).subscribe({
-      next: (response) => {
-        this.saving = false;
-        this.alertService.success('Partidas cerradas', 'Las partidas han sido cerradas exitosamente');
-        this.filtrarPartidas();
-      },
-      error: (error) => {
-        this.saving = false;
-        this.alertService.error(error.error.error || 'Error al cerrar las partidas');
-      }
-    });
+  public imprimirEstadoResultados() {
+    if (
+      this.reporte.month &&
+      this.reporte.year &&
+      this.reporte.tipo_descarga
+    ) {
+      window.open(
+        this.apiService.baseUrl +
+          '/api/reportes/estado/resultados/' +
+          this.reporte.month +
+          '/' +
+          this.reporte.year +
+          '/' +
+          this.reporte.tipo_descarga +
+          '?token=' +
+          this.apiService.auth_token()
+      );
+    } else {
+      alert('Por favor, llenar los campos requeridos.');
+    }
   }
 
   public abrirPartida(partida: any) {
@@ -516,7 +547,7 @@ export class PartidasComponent implements OnInit {
       '_blank'
     );
   }
-  
+
   public reordenarTodosLosCorrelativos() {
     Swal.fire({
       title: '¿Estás seguro?',
@@ -529,7 +560,7 @@ export class PartidasComponent implements OnInit {
     }).then((result) => {
       if (result.isConfirmed) {
         this.saving = true;
-        
+
         this.apiService.store('partidas/reordenar-correlativos', { todos: true }).subscribe({
           next: (response) => {
             this.saving = false;
@@ -555,8 +586,8 @@ export class PartidasComponent implements OnInit {
     if (this.filtros.incluir_anuladas) {
       this.filtros.estado = '';
     }
-    
+
     this.filtrarPartidas();
   }
-  
+
 }

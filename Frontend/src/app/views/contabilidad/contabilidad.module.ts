@@ -36,6 +36,7 @@ import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.c
 import { PartidaDetallesComponent } from '@views/contabilidad/partidas/partida/detalles/partida-detalles.component';
 import { ParditasDatosComponent } from './partidas/datos-partidas/datos-partida.component';
 import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
+import { CierreMesComponent } from '@views/contabilidad/cierre-mes/cierre-mes.component';
 
 import { ComprasModule } from '@views/compras/compras.module';
 
@@ -79,6 +80,7 @@ import { ComprasModule } from '@views/compras/compras.module';
     ConciliacionComponent,
     ParditasDatosComponent,
     ContabilidadConfiguracionComponent,
+    CierreMesComponent,
 
   ],
   exports: [
@@ -105,6 +107,7 @@ import { ComprasModule } from '@views/compras/compras.module';
     ConciliacionComponent,
     ParditasDatosComponent,
     ContabilidadConfiguracionComponent,
+    CierreMesComponent,
   ]
 })
 export class ContabilidadModule { }

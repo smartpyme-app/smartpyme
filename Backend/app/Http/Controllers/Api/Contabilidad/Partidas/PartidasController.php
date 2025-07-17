@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Partidas\Partida;
 use App\Models\Contabilidad\Partidas\Detalle;
+use App\Models\Contabilidad\SaldoMensual;
+use App\Models\User;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Ventas\Abono as AbonoVenta;
@@ -17,6 +19,8 @@ use App\Models\Admin\FormaDePago;
 use App\Models\Contabilidad\Configuracion;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
+use App\Services\Contabilidad\CierreMesService;
+use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade as PDF;
 
@@ -59,25 +63,25 @@ class PartidasController extends Controller
                 DB::raw('COALESCE(SUM(partida_detalles.haber), 0) as total_haber')
             ])
             ->leftJoin('partida_detalles', 'partidas.id', '=', 'partida_detalles.id_partida')
-            ->groupBy('partidas.id', 'partidas.fecha', 'partidas.tipo', 'partidas.correlativo', 
-                     'partidas.concepto', 'partidas.estado', 'partidas.referencia', 
+            ->groupBy('partidas.id', 'partidas.fecha', 'partidas.tipo', 'partidas.correlativo',
+                     'partidas.concepto', 'partidas.estado', 'partidas.referencia',
                      'partidas.id_referencia', 'partidas.id_usuario', 'partidas.id_empresa',
                      'partidas.created_at', 'partidas.updated_at');
 
-        if ($request->has('incluir_anuladas') && 
-            ($request->incluir_anuladas === true || 
-            $request->incluir_anuladas === 'true' || 
+        if ($request->has('incluir_anuladas') &&
+            ($request->incluir_anuladas === true ||
+            $request->incluir_anuladas === 'true' ||
             $request->incluir_anuladas === '1' ||
             $request->incluir_anuladas === 1)) {
-            
+
             //mostrara solo anuladas
             $query->where('partidas.estado', 'Anulada');
         } else {
             // mostrara todas excepto anuladas
             $query->where('partidas.estado', '!=', 'Anulada');
         }
-             
-    
+
+
         // Filtros existentes
         $query->when($request->buscador, function($q) use ($request){
             return $q->where(function($subQ) use ($request) {
@@ -98,25 +102,25 @@ class PartidasController extends Controller
         ->when($request->tipo, function($q) use ($request){
             return $q->where('partidas.tipo', $request->tipo);
         });
-    
+
         // Ordenamiento por correlativo por defecto
         $orden = $request->orden ?: 'correlativo';
         $direccion = $request->direccion ?: 'desc';
-        
+
         $partidas = $query->orderBy($orden, $direccion)->paginate($request->paginate ?: 10);
-    
+
         // Calcular totales generales
         $totalesGenerales = $this->calcularTotalesGenerales($request);
-    
+
         $response = $partidas->toArray();
         $response['total_pendientes'] = Partida::where('estado', 'Pendiente')->count();
         $response['totales_generales'] = $totalesGenerales;
-    
+
         return Response()->json($response, 200);
     }
-    
+
     public function list() {
-        $partidas = Partida::orderby('correlativo', 'desc') 
+        $partidas = Partida::orderby('correlativo', 'desc')
                                 ->where('estado', '!=', 'Anulada')
                                 ->get();
 
@@ -151,48 +155,48 @@ class PartidasController extends Controller
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);
-    
+
         DB::beginTransaction();
-    
+
         try {
-    
+
             if($request->id)
                 $partida = Partida::findOrFail($request->id);
             else
                 $partida = new Partida;
-    
+
             $estadoOriginal = $partida->estado;
-    
+
             $partida->fill($request->all());
             $partida->save();
-    
+
             if (isset($request->estado)) {
                 $estadoNuevo = $request->estado;
-                
+
                 // Si cambió a "Anulada", quitar correlativo
                 if ($estadoOriginal !== 'Anulada' && $estadoNuevo === 'Anulada') {
                     $partida->correlativo = null;
                     $partida->save();
-                    
+
                     // Reordenar automáticamente ese mes/tipo
                     $año = date('Y', strtotime($partida->fecha));
                     $mes = date('m', strtotime($partida->fecha));
                     Partida::reordenarCorrelativos($año, $mes, $partida->tipo, $partida->id_empresa);
                 }
-                
+
                 // Si cambió de "Anulada" a otro estado, regenerar correlativo
                 if ($estadoOriginal === 'Anulada' && $estadoNuevo !== 'Anulada') {
                     // Regenerar correlativo
                     $partida->correlativo = $partida->generarCorrelativo();
                     $partida->save();
-                    
+
                     // Reordenar automáticamente ese mes/tipo
                     $año = date('Y', strtotime($partida->fecha));
                     $mes = date('m', strtotime($partida->fecha));
                     Partida::reordenarCorrelativos($año, $mes, $partida->tipo, $partida->id_empresa);
                 }
             }
-    
+
             foreach ($request->detalles as $det) {
                 if(isset($det['id'])) {
                     $detalle = Detalle::findOrFail($det['id']);
@@ -201,28 +205,28 @@ class PartidasController extends Controller
                     $detalle = new Detalle;
                     $cuenta = Cuenta::findOrFail($det['id_cuenta']);
                 }
-    
+
                 $detalle['id_partida'] = $partida->id;
                 $detalle->fill($det);
                 $detalle['codigo'] = $cuenta->codigo;
                 $detalle['nombre_cuenta'] = $cuenta->nombre;
                 $detalle->save();
-    
+
                 $debe = $detalle->debe ? $detalle->debe : 0;
                 $haber = $detalle->haber ? $detalle->haber : 0;
-    
+
                 // Aplicar partida
                 if(($request['estado'] == 'Aplicada') && ($estadoOriginal != 'Aplicada')){
                     $detalle->cuenta->increment('cargo', $debe);
                     $detalle->cuenta->increment('abono', $haber);
-    
+
                     if($detalle->cuenta->naturaleza == 'Deudor'){
                         $detalle->cuenta->increment('saldo', $debe - $haber);
                     }else{
                         $detalle->cuenta->increment('saldo', $haber - $debe);
                     }
                 }
-    
+
                 // Anular aplicacion
                 if(($request['estado'] != 'Aplicada') && ($estadoOriginal == 'Aplicada')){
                     $detalle->cuenta->decrement('cargo', $debe);
@@ -234,10 +238,10 @@ class PartidasController extends Controller
                     }
                 }
             }
-    
+
             DB::commit();
             return Response()->json($partida, 200);
-    
+
         } catch (\Exception $e) {
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
@@ -258,7 +262,7 @@ class PartidasController extends Controller
                 // Usar Opción 2: reutilizar método existente
                 $tipos = ['Ingreso', 'Egreso', 'Diario', 'CxC', 'CxP', 'Cierre'];
                 $totalReordenadas = 0;
-                
+
                 foreach ($tipos as $tipo) {
                     // Obtener todos los meses/años que tienen partidas de este tipo
                     $mesesConPartidas = DB::table('partidas')
@@ -1054,24 +1058,21 @@ class PartidasController extends Controller
                 ], 400);
             }
 
-            // Calcular las fechas de inicio y fin del mes
-            $startDate = Carbon::create($year, $month, 1)->startOfMonth();
-            $endDate = Carbon::create($year, $month, 1)->endOfMonth();
+            $cierreMesService = new CierreMesService();
 
-            // Actualizar solo las partidas aplicadas del mes y año especificados
-            $partidas = Partida::whereBetween('fecha', [$startDate, $endDate])
-                ->where('estado', 'Aplicada')
-                ->where('id_empresa', auth()->user()->id_empresa)
-                ->update(['estado' => 'Cerrada']);
+            // Realizar cierre completo del mes
+            $resultado = $cierreMesService->cerrarMes(
+                $year,
+                $month,
+                auth()->user()->id,
+                auth()->user()->id_empresa
+            );
 
-            return response()->json([
-                'message' => 'Partidas aplicadas cerradas exitosamente',
-                'partidas_cerradas' => $partidas
-            ]);
+            return response()->json($resultado);
 
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al cerrar las partidas: ' . $e->getMessage()
+                'error' => 'Error al cerrar el período: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1120,6 +1121,150 @@ class PartidasController extends Controller
         }
     }
 
+    public function reabrirPeriodo(Request $request)
+    {
+        try {
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            // Validar que el mes y año sean válidos
+            if (!$month || !$year || $month < 1 || $month > 12) {
+                return response()->json([
+                    'error' => 'Mes y año inválidos'
+                ], 400);
+            }
+
+            $cierreMesService = new CierreMesService();
+
+            // Reabrir período
+            $resultado = $cierreMesService->reabrirPeriodo(
+                $year,
+                $month,
+                auth()->user()->id_empresa
+            );
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al reabrir el período: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verificarEstadoPeriodo(Request $request)
+    {
+        try {
+            $month = $request->input('month');
+            $year = $request->input('year');
+
+            if (!$month || !$year || $month < 1 || $month > 12) {
+                return response()->json([
+                    'error' => 'Mes y año inválidos'
+                ], 400);
+            }
+
+            $empresa_id = auth()->user()->id_empresa;
+
+            // Obtener información del período desde la tabla saldos_mensuales
+            $saldoMensual = SaldoMensual::where('year', $year)
+                ->where('month', $month)
+                ->where('id_empresa', $empresa_id)
+                ->first();
+
+            $cerrado = false;
+            $fechaCierre = null;
+            $usuarioCierre = null;
+
+            if ($saldoMensual) {
+                $cerrado = $saldoMensual->estado === 'Cerrado';
+                $fechaCierre = $saldoMensual->fecha_cierre;
+
+                if ($saldoMensual->id_usuario_cierre) {
+                    $usuarioCierre = User::withoutGlobalScopes()
+                        ->find($saldoMensual->id_usuario_cierre);
+                }
+            }
+
+            $response = [
+                'periodo' => "{$month}/{$year}",
+                'cerrado' => $cerrado,
+                'estado' => $cerrado ? 'Cerrado' : 'Abierto'
+            ];
+
+            // Agregar información adicional si está cerrado
+            if ($cerrado && $fechaCierre) {
+                $response['fecha_cierre'] = $fechaCierre;
+                $response['usuario_cierre'] = $usuarioCierre ? $usuarioCierre->name : null;
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al verificar el estado del período: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+      public function obtenerBalanceComprobacion(Request $request)
+  {
+      try {
+          $month = $request->input('month');
+          $year = $request->input('year');
+
+          if (!$month || !$year || $month < 1 || $month > 12) {
+              return response()->json([
+                  'error' => 'Mes y año inválidos'
+              ], 400);
+          }
+
+          $cierreMesService = new CierreMesService();
+
+          $balance = $cierreMesService->obtenerBalanceComprobacion(
+              $year,
+              $month,
+              auth()->user()->id_empresa
+          );
+
+          return response()->json($balance);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'error' => 'Error al obtener el balance de comprobación: ' . $e->getMessage()
+          ], 500);
+      }
+  }
+
+  public function simularCierreMes(Request $request)
+  {
+      try {
+          $month = $request->input('month');
+          $year = $request->input('year');
+
+          if (!$month || !$year || $month < 1 || $month > 12) {
+              return response()->json([
+                  'error' => 'Mes y año inválidos'
+              ], 400);
+          }
+
+          $simulacionService = new SimulacionCierreService();
+
+          $resultadoSimulacion = $simulacionService->simularCierreMes(
+              $year,
+              $month,
+              auth()->user()->id_empresa
+          );
+
+          return response()->json($resultadoSimulacion);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'error' => 'Error al simular el cierre: ' . $e->getMessage()
+          ], 500);
+      }
+  }
+
     /**
      * Calcular totales generales con los mismos filtros aplicados
      */
@@ -1129,10 +1274,10 @@ class PartidasController extends Controller
             ->leftJoin('partida_detalles', 'partidas.id', '=', 'partida_detalles.id_partida')
             ->where('partidas.id_empresa', auth()->user()->id_empresa);
 
-        
-        if (!$request->has('incluir_anuladas') || 
-            $request->incluir_anuladas === false || 
-            $request->incluir_anuladas === 'false' || 
+
+        if (!$request->has('incluir_anuladas') ||
+            $request->incluir_anuladas === false ||
+            $request->incluir_anuladas === 'false' ||
             $request->incluir_anuladas === '0') {
             $query->where('partidas.estado', '!=', 'Anulada');
         }

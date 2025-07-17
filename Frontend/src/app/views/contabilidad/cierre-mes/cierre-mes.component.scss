@@ -1,0 +1,419 @@
+// Variables de colores
+$primary-color: #007bff;
+$success-color: #28a745;
+$danger-color: #dc3545;
+$warning-color: #ffc107;
+$info-color: #17a2b8;
+$light-color: #f8f9fa;
+$secondary-color: #6c757d;
+
+// Estilos generales del componente
+.cierre-mes-container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  padding: 1rem;
+}
+
+// Efectos de sombra y hover
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Estilos para las tarjetas de validación
+.card {
+  border: none;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Fondos de colores personalizados
+.bg-light-success {
+  background-color: rgba($success-color, 0.1);
+  border-left: 4px solid $success-color;
+}
+
+.bg-light-danger {
+  background-color: rgba($danger-color, 0.1);
+  border-left: 4px solid $danger-color;
+}
+
+.bg-light-warning {
+  background-color: rgba($warning-color, 0.1);
+  border-left: 4px solid $warning-color;
+}
+
+.bg-light-info {
+  background-color: rgba($info-color, 0.1);
+  border-left: 4px solid $info-color;
+}
+
+.bg-light-primary {
+  background-color: rgba($primary-color, 0.1);
+  border-left: 4px solid $primary-color;
+}
+
+.bg-light-secondary {
+  background-color: rgba($secondary-color, 0.1);
+  border-left: 4px solid $secondary-color;
+}
+
+// Animaciones para spinners
+.spinner-border {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Animaciones para aparición de elementos
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Estilos para los badges
+.badge {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+// Estilos para botones
+.btn {
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+
+  // &:hover {
+  //   transform: translateY(-1px);
+  //   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  // }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+// Efectos especiales para botones críticos
+.btn-danger {
+  background: linear-gradient(135deg, #dc3545, #b02a37);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #b02a37, #8e1f2e);
+  }
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ffc107, #e0a800);
+  color: #212529;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e0a800, #c69500);
+  }
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0056b3, #004085);
+  }
+}
+
+// Estilos para iconos
+.fa {
+  transition: all 0.3s ease;
+}
+
+.card-body .fa {
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+// Estilos para la tabla de balance
+.table-responsive {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.table {
+  margin-bottom: 0;
+
+  thead {
+    background: linear-gradient(135deg, #343a40, #495057);
+    color: white;
+  }
+
+  tfoot {
+    background: linear-gradient(135deg, #343a40, #495057);
+    color: white;
+    font-weight: bold;
+  }
+
+  tbody tr {
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.05);
+      transform: scale(1.01);
+    }
+  }
+}
+
+// Estilos para alertas
+.alert {
+  border: none;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+
+  &.alert-warning {
+    background: linear-gradient(135deg, rgba($warning-color, 0.1), rgba($warning-color, 0.2));
+    border-left: 4px solid $warning-color;
+  }
+
+  &.alert-info {
+    background: linear-gradient(135deg, rgba($info-color, 0.1), rgba($info-color, 0.2));
+    border-left: 4px solid $info-color;
+  }
+
+  &.alert-danger {
+    background: linear-gradient(135deg, rgba($danger-color, 0.1), rgba($danger-color, 0.2));
+    border-left: 4px solid $danger-color;
+  }
+}
+
+// Estilos para secciones
+section {
+  margin-bottom: 2rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Estilos para formularios
+.form-select, .form-control {
+  border-radius: 0.5rem;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 0.2rem rgba($primary-color, 0.25);
+  }
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+// // Estilos para títulos de sección
+// h1, h2, h3, h4, h5, h6 {
+//   color: #2c3e50;
+//   font-weight: 700;
+// }
+
+// h1 {
+//   font-size: 2.5rem;
+//   margin-bottom: 1rem;
+// }
+
+h4 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+// Estilos para el progreso visual
+.progress-indicator {
+  height: 4px;
+  background-color: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, $primary-color, $info-color);
+    transition: width 0.6s ease;
+  }
+}
+
+// Estilos para estados de carga
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  z-index: 10;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .cierre-mes-container {
+    padding: 0.5rem;
+  }
+
+  section {
+    margin-bottom: 1rem;
+  }
+
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 576px) {
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+  }
+
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+// Efectos de hover para elementos interactivos
+.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Estilos para validaciones exitosas
+.validation-success {
+  background: linear-gradient(135deg, rgba($success-color, 0.1), rgba($success-color, 0.2));
+  border: 2px solid $success-color;
+  color: $success-color;
+}
+
+.validation-error {
+  background: linear-gradient(135deg, rgba($danger-color, 0.1), rgba($danger-color, 0.2));
+  border: 2px solid $danger-color;
+  color: $danger-color;
+}
+
+.validation-warning {
+  background: linear-gradient(135deg, rgba($warning-color, 0.1), rgba($warning-color, 0.2));
+  border: 2px solid $warning-color;
+  color: #856404;
+}
+
+// Animaciones para elementos que aparecen dinámicamente
+.slide-in {
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Estilos para los iconos de las métricas
+.metric-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+
+  &:hover {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+// Estilos para las listas
+ul {
+  padding-left: 1.5rem;
+
+  li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+}
+
+// Estilos para pequeños textos informativos
+small {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+// Estilos para el footer
+.footer-help {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
+  margin-top: 2rem;
+}

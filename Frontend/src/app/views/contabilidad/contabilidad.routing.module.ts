@@ -29,6 +29,7 @@ import { PartidasComponent } from '@views/contabilidad/partidas/partidas.compone
 import { PartidaComponent } from '@views/contabilidad/partidas/partida/partida.component';
 
 import { ContabilidadConfiguracionComponent } from '@views/contabilidad/configuracion/contabilidad-configuracion.component';
+import { CierreMesComponent } from '@views/contabilidad/cierre-mes/cierre-mes.component';
 
 const routes: Routes = [
   {
@@ -62,9 +63,10 @@ const routes: Routes = [
 
         { path: 'catalogo/cuentas', component: CatalogoCuentasComponent, title: 'Catálogo de cuentas' },
         { path: 'catalogo/cuenta/:id', component: CatalogoCuentaComponent, title: 'Catálogo cuenta' },
-        
+
         { path: 'contabilidad/partidas', component: PartidasComponent, title: 'Partidas' },
         { path: 'contabilidad/partida/:id', component: PartidaComponent, title: 'Partida' },
+        { path: 'contabilidad/cierre-mes', component: CierreMesComponent, title: 'Cierre de Mes' },
 
         { path: 'contabilidad/configuracion', component: ContabilidadConfiguracionComponent, title: 'Configuración' },
 

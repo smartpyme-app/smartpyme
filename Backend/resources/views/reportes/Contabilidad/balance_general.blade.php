@@ -1,216 +1,177 @@
 <!DOCTYPE html>
 <html>
 <head>
-    {{-- revisar--}}
-    <title>Balance de General</title>
+    <title>Balance General</title>
     <style>
-
-        *{ font-size: 13px; margin: 0; padding: 0;}
-        html, body{
-            width: 19.5cm; height: 20cm;
-            font-family: serif;
-            /*            border: 1px solid red;*/
+        * {
+            font-size: 11px;
+            margin: 0;
+            padding: 0;
         }
 
-        #factura{
-            margin-left: 0cm;
-            margin-top: 0cm;
+        html, body {
+            width: 19.5cm;
+            height: 26cm;
+            font-family: Arial, sans-serif;
+        }
+
+        #balance {
+            margin: 1cm;
             position: relative;
         }
 
-        .header > *, #totales > *{
-            position: absolute;
-            margin: 10px;
+        .header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
         }
 
-        .header{
-            border: 1px solid black;
+        .header h1 {
+            font-size: 16px;
+            margin-bottom: 8px;
         }
 
-
-        #logo          {top: 0.5cm; left: 0.5cm }
-        #empresa_nombre      {top: 0.5cm; left: 7.1cm; font-size: medium; font-weight: bold;}
-        #c_costos      {top: 1cm; left: 6.2cm; font-size: small; font-weight: bold;}
-        #us_doll      {top: 1.5cm; left: 5.5cm; font-size:small; font-weight: normal; font-style: italic; }
-
-        table   {position: absolute; top: 3cm; left: 1cm; text-align: left; border-collapse: collapse; }
-        table td{height: 0.5cm; text-align: left;}
-
-        .detalles{ width: 13cm; text-align: left;}
-        .notas{ width: 2cm; text-align: center;}
-        .año1{ width: 3cm; text-align: center;}
-        .año2{ width: 3cm; text-align: center;}
-        .abono{ width: 2cm; text-align: center;}
-        .sal_fin{ width: 2cm; text-align: center;}
-
-
-        .no-print{position: absolute;}
-
-        /*para el brake page */
-
-        .page-break {
-            page-break-before: always;
+        .header h2 {
+            font-size: 14px;
+            margin-bottom: 5px;
         }
 
-        .invoice-articles-table {
-            padding-bottom: 50px; //height of your footer
+        .header h3 {
+            font-size: 12px;
+            margin-bottom: 3px;
         }
 
-        th {
-            border-top: 5px solid black;
-            padding: 5px;
-            /*margin-bottom: 10px;*/
+        .balance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
         }
 
+        .balance-table td {
+            vertical-align: top;
+            width: 50%;
+            padding: 0 10px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 10px;
+            text-decoration: underline;
+            text-align: center;
+        }
+
+        .account-line {
+            margin-bottom: 3px;
+            padding: 2px 0;
+        }
+
+        .account-name {
+            display: inline-block;
+            width: 70%;
+            text-align: left;
+        }
+
+        .account-amount {
+            display: inline-block;
+            width: 28%;
+            text-align: right;
+        }
+
+        .total-line {
+            border-top: 2px solid black;
+            border-bottom: 2px solid black;
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 5px 0;
+        }
+
+        .subtotal-line {
+            border-top: 1px solid black;
+            font-weight: bold;
+            margin-top: 8px;
+            padding: 3px 0;
+        }
+
+        .section-break {
+            margin-bottom: 20px;
+        }
     </style>
-
-    <style media="print"> .no-print{display: none; } </style>
-
 </head>
 <body>
-<body>
 
-<section id="factura">
+<section id="balance">
     <div class="header">
-
-        {{--        al centro del documento --}}
-        <p id="empresa_nombre"> NOMBRE DE LA EMPRESA S.A de C.V </p> {{-- aqui se debe colocar el mes --}}
-        <p id="c_costos">Estado de Situación Financiera al -dia- de -mes- de -año-</p>
-        <p id="us_doll">(Cifras Expresadas en Dólares de los Estados Unidos de America US $)</p>
-
+        <h1>{{ $empresa->nombre }}</h1>
+        <h2>BALANCE GENERAL</h2>
+        <h3>Al {{ $month_name }} de {{ $year }}</h3>
+        <h3>(Expresado en US Dólares)</h3>
     </div>
 
-    <div style="page-break-after:auto;">
-        <table>
-            {{--            titulo de la cuenta--}}
-            {{--            <tr>Cuenta: {{ $num_cuenta }} - {{$nom_cuenta}}</tr>--}}
+    <table class="balance-table">
+        <tr>
+            <!-- COLUMNA IZQUIERDA: ACTIVOS -->
+            <td>
+                <div class="section-title">ACTIVOS</div>
 
-            <tr>
-                <th></th>
-                <th>NOTAS</th>
-                <th>AÑO 2023</th>
-                <th>AÑO 2022</th>
-            </tr>
-            <tr>
-                <td class="detalles">ACTIVOS</td>
-                <td class="notas"></td>
-                <td class="año1"></td>
-                <td class="año2"></td>
-            </tr>
-            <tr>
-                <td class="detalles">ACTIVOS CORRIENTES</td>
-                <td class="notas"></td>
-                <td class="año1"></td>
-                <td class="año2"></td>
-            </tr>
-            <tr>
-                <td class="detalles">EFECTIVOS Y EQUIVALENTES</td>
-                <td class="notas"></td>
-                <td class="año1">710,679.48</td>
-                <td class="año2">395,895.10</td>
-            </tr>
+                @foreach($balance_general['activos'] as $activo)
+                    <div class="account-line">
+                        <span class="account-name">{{ $activo['nombre'] }}</span>
+                        <span class="account-amount">{{ number_format(abs($activo['saldo_final']), 2) }}</span>
+                    </div>
+                @endforeach
 
-            {{--            ACTIVOS Y GASTOS--}}
+                <div class="total-line account-line">
+                    <span class="account-name">TOTAL ACTIVOS</span>
+                    <span class="account-amount">{{ number_format(abs($balance_general['totales']['activos']), 2) }}</span>
+                </div>
+            </td>
 
-{{--            @foreach($mayorizadas_deudoras as $detalle_par)--}}
-{{--                <tr>--}}
-{{--                    <td class="codigo">     {{$detalle_par['codigo']}}    </td>--}}
-{{--                    <td class="nombre">  {{$detalle_par['nombre']}}    </td>--}}
-{{--                    <td class="sal_inic">       {{$detalle_par['naturaleza_saldo']}}    </td>--}}
-{{--                    <td class="cargo">          {{$detalle_par['cargo']}}   </td>--}}
-{{--                    <td class="abono">          {{$detalle_par['abono']}}    </td>--}}
-{{--                    <td class="sal_fin">          {{$detalle_par['saldo']}}   </td>--}}
-{{--                </tr>--}}
+            <!-- COLUMNA DERECHA: PASIVOS Y PATRIMONIO -->
+            <td>
+                <!-- PASIVOS -->
+                <div class="section-title">PASIVOS</div>
 
-{{--                --}}{{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
+                @foreach($balance_general['pasivos'] as $pasivo)
+                    <div class="account-line">
+                        <span class="account-name">{{ $pasivo['nombre'] }}</span>
+                        <span class="account-amount">{{ number_format(abs($pasivo['saldo_final']), 2) }}</span>
+                    </div>
+                @endforeach
 
-{{--                @if($loop->iteration % 40 === 0 or $loop->last == true)--}}
+                @if(count($balance_general['pasivos']) > 0)
+                    <div class="subtotal-line account-line">
+                        <span class="account-name">TOTAL PASIVOS</span>
+                        <span class="account-amount">{{ number_format(abs($balance_general['totales']['pasivos']), 2) }}</span>
+                    </div>
+                @endif
 
-{{--        </table>--}}
-{{--        <div class="page-break"></div>--}}
-{{--        <div class="header">--}}
-{{--            --}}{{--        a la derecha del documento --}}
-{{--            <p id="logo">{{$empresa->logo}}</p>--}}
+                <div class="section-break"></div>
 
-{{--            --}}{{--        al centro del documento --}}
-{{--            <p id="empresa_nombre">{{$empresa->nombre}}</p>--}}
-{{--            <p id="titulo_balance">Balance de Comprobación a finde mes</p> --}}{{-- aqui se debe colocar el mes --}}
-{{--            <p id="c_costos">Todos los Centros de Costos</p>--}}
-{{--            <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>--}}
-{{--            <p id="naturaleza">ACTIVOS Y GASTOS</p>--}}
+                <!-- PATRIMONIO -->
+                <div class="section-title">PATRIMONIO</div>
 
+                @foreach($balance_general['patrimonio'] as $patrimonio)
+                    <div class="account-line">
+                        <span class="account-name">{{ $patrimonio['nombre'] }}</span>
+                        <span class="account-amount">{{ number_format(abs($patrimonio['saldo_final']), 2) }}</span>
+                    </div>
+                @endforeach
 
-{{--        </div>--}}
-{{--        <table class="table invoice-articles-table">--}}
+                @if(count($balance_general['patrimonio']) > 0)
+                    <div class="subtotal-line account-line">
+                        <span class="account-name">TOTAL PATRIMONIO</span>
+                        <span class="account-amount">{{ number_format(abs($balance_general['totales']['patrimonio']), 2) }}</span>
+                    </div>
+                @endif
 
-{{--            --}}{{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
-{{--            @if($loop->last == false)--}}
-{{--                <thead>--}}
-{{--                <tr>--}}
-{{--                    <th>Codigo</th>--}}
-{{--                    <th>Nombre</th>--}}
-{{--                    <th>Saldo Inicial</th>--}}
-{{--                    <th>Cargo</th>--}}
-{{--                    <th>Abono</th>--}}
-{{--                    <th>Saldo Final</th>--}}
-{{--                    ...--}}
-{{--                </thead>--}}
-{{--            @endif--}}
-{{--            @endif--}}
-{{--            @endforeach--}}
-
-
-            {{--            PASIVOS Y PRODUCTOS --}}
-{{--            @foreach($mayorizadas_acreedoras as $detalle_par)--}}
-{{--                <tr>--}}
-{{--                    <td class="codigo">     {{$detalle_par['codigo']}}    </td>--}}
-{{--                    <td class="nombre">  Nombre de la cuenta    </td>--}}
-{{--                    --}}{{--                    <td class="nombre">  {{$detalle_par->nombre}}    </td>--}}
-{{--                    <td class="sal_inic">       {{$detalle_par['naturaleza_saldo']}}    </td>--}}
-{{--                    <td class="cargo">          {{$detalle_par['cargo']}}   </td>--}}
-{{--                    <td class="abono">          {{$detalle_par['abono']}}    </td>--}}
-{{--                    <td class="sal_fin">          {{$detalle_par['saldo']}}   </td>--}}
-{{--                </tr>--}}
-
-{{--                --}}{{--                    si el loop es multiplo de 30 ( es el numero que cabe dentro de la pagina) o si es el ultimo a iterar de la cuenta que le corresponde, aqui hace el salto de linea--}}
-
-{{--                @if($loop->iteration % 40 === 0 or $loop->last == true)--}}
-
-{{--        </table>--}}
-{{--        <div class="page-break"></div>--}}
-{{--        <div class="header">--}}
-{{--            --}}{{--        a la derecha del documento --}}
-{{--            <p id="logo">{{$empresa->logo}}</p>--}}
-
-{{--            --}}{{--        al centro del documento --}}
-{{--            <p id="empresa_nombre">{{$empresa->nombre}}</p>--}}
-{{--            <p id="titulo_balance">Balance de Comprobación a finde mes</p> --}}{{-- aqui se debe colocar el mes --}}
-{{--            <p id="c_costos">Todos los Centros de Costos</p>--}}
-{{--            <p id="us_doll">VALORES EXPRESADOS EN US DOLARES</p>--}}
-{{--            <p id="naturaleza">ACTIVOS Y GASTOS</p>--}}
-
-
-{{--        </div>--}}
-{{--        <table class="table invoice-articles-table">--}}
-
-{{--            --}}{{-- para que esto no aparezaca si es la ultima iteracion de las cuentas, si se coloca arriba del table da un error en dompdf--}}
-{{--            @if($loop->last == false)--}}
-{{--                <thead>--}}
-{{--                <tr>--}}
-{{--                    <th>Codigo</th>--}}
-{{--                    <th>Nombre</th>--}}
-{{--                    <th>Saldo Inicial</th>--}}
-{{--                    <th>Cargo</th>--}}
-{{--                    <th>Abono</th>--}}
-{{--                    <th>Saldo Final</th>--}}
-{{--                    ...--}}
-{{--                </thead>--}}
-{{--            @endif--}}
-{{--            @endif--}}
-{{--            @endforeach--}}
-
-
-        </table>
+                <div class="total-line account-line">
+                    <span class="account-name">TOTAL PASIVOS + PATRIMONIO</span>
+                    <span class="account-amount">{{ number_format(abs($balance_general['totales']['pasivos'] + $balance_general['totales']['patrimonio']), 2) }}</span>
+                </div>
+            </td>
+        </tr>
+    </table>
 
 </section>
 
