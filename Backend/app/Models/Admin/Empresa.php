@@ -111,7 +111,12 @@ class Empresa extends Model
         //Renta
         'tipo_renta_servicios',
         'tipo_renta_productos',
-        'tipo_sector'
+        'tipo_sector',
+
+        //Sello y firma
+        'sello',
+        'firma',
+        'mostrar_sello_firma'
 
     ];
 

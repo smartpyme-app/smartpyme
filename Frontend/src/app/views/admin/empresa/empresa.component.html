@@ -316,6 +316,68 @@
                             </small>
                         </div> 
                     </div>
+      
+                    <div class="row">
+                        <h4 class="mb-0 fw-bold">Ajustes en ordenes de compra</h4>
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="mostrar_sello_firma" class="form-label">
+                                    <strong>Mostrar sello y firma en ordenes de compra</strong>
+                                </label>
+                                <input 
+                                    class="form-check-input float-end" 
+                                    type="checkbox" 
+                                    role="switch" 
+                                    id="mostrar_sello_firma"
+                                    [(ngModel)]="empresa.mostrar_sello_firma"
+                                    (change)="onSubmit()"
+                                    name="mostrar_sello_firma">
+                            </div>
+                            <small class="text-muted">
+                                Los sello y firma se generarán en formato PDF.
+                            </small>
+                        </div> 
+                    </div>
+
+                    <div class="row" *ngIf="empresa.mostrar_sello_firma">
+                        <div class="col-md-6 mb-4">
+                            <h6 class="mb-3">Subir sello</h6>
+                            <div class="form-group">
+                                <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" 
+                                        style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
+                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.sello }}" 
+                                         alt="sello" *ngIf="empresa.sello != null">
+                                    <span class="text-muted" *ngIf="empresa.sello == null">Arrastra y suelta o haz clic para subir</span>
+                                    <input type="file" name="sello" 
+                                           (change)="setFile($event, 'sello')" 
+                                           accept="image/png, image/jpeg, image/jpg">
+                                </figure>
+                                <small class="text-muted d-block mt-2">
+                                    Formatos aceptados: PNG, JPEG, JPG. Máximo 2MB
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <h6 class="mb-3">Subir firma</h6>
+                            <div class="form-group">
+                                <figure class="img-thumbnail file-upload d-flex justify-content-center align-items-center" 
+                                        style="min-height: 100px; border: 1px dashed #ccc; padding: 10px;">
+                                    <img class="img-fluid" src="{{ apiService.baseUrl + '/img/' + empresa.firma }}" 
+                                         alt="firma" *ngIf="empresa.firma != null">
+                                    <span class="text-muted" *ngIf="empresa.firma == null">Arrastra y suelta o haz clic para subir</span>
+                                    <input type="file" name="firma" 
+                                           (change)="setFile($event, 'firma')" 
+                                           accept="image/png, image/jpeg, image/jpg">
+                                </figure>
+                                <small class="text-muted d-block mt-2">
+                                    Formatos aceptados: PNG, JPEG, JPG. Máximo 2MB
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    
                     <h4 class="mb-0 fw-bold">Facturación</h4>
                     <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Calcular el IVA por defecto.</p>
