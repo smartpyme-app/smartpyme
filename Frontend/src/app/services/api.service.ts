@@ -331,4 +331,13 @@ export class ApiService {
             catchError(this.handleError)
         );
     }
+
+    getActividadesEconomicas() {
+        return this.http.get<any>(`${this.apiUrl}actividades-economicas/excel`).pipe(
+            map((response: any) => {
+                return response;
+            }),
+            catchError(this.handleError)
+        );
+    }
 }
