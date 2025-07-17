@@ -24,4 +24,12 @@ use Illuminate\Support\Facades\Route;
     //usuario/disconnect-woocommerce
     Route::post('/usuario/disconnect-woocommerce', [UsuariosController::class, 'disconnectWooCommerce']);
 
+    Route::put('/usuario/email/{id}',       [UsuariosController::class, 'updateEmail']);
+    Route::put('/usuario/password/{id}',       [UsuariosController::class, 'updatePassword']);
+
+    Route::put('/usuario/codigo-autorizacion/{id}',       [UsuariosController::class, 'updateAuthCode']);
+    //usuario/informacion
+    Route::post('/usuario/informacion',       [UsuariosController::class, 'updateInfo']);
+    Route::post('/usuario/avatar',       [UsuariosController::class, 'updateAvatar']);
+
 ?>
