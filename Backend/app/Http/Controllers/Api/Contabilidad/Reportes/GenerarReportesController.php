@@ -379,10 +379,10 @@ class GenerarReportesController extends Controller
         $todasLasCuentas = $cuentasQuery->get();
         $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
-        // Obtener los movimientos del mes filtrado
+        // Obtener los movimientos del mes filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada') // ✅ CORREGIDO: Usar 'Aplicada' consistentemente
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -505,10 +505,10 @@ class GenerarReportesController extends Controller
         $todasLasCuentas = $cuentasQuery->get();
         $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
-        // Obtener los movimientos del mes filtrado
+        // Obtener los movimientos del mes filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -1197,4 +1197,6 @@ class GenerarReportesController extends Controller
         }
         return ['year' => $year, 'month' => $month - 1];
     }
+
+
 }
