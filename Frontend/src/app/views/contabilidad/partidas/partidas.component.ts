@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { Router, ActivatedRoute } from '@angular/router';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -31,12 +32,31 @@ export class PartidasComponent implements OnInit {
   public selectedMonth: number = new Date().getMonth() + 1;
   public selectedYear: number = new Date().getFullYear();
 
+  // NUEVO: Para funcionalidad de reordenamiento
+  public reordenamiento = {
+    anio: new Date().getFullYear(), // Cambiar año por anio
+    mes: new Date().getMonth() + 1,
+    tipo: 'Ingreso'
+  };
+
+  // NUEVO: Para mostrar totales
+  public totalesGenerales: any = {
+    gran_total_debe: 0,
+    gran_total_haber: 0,
+    total_registros_filtrados: 0
+  };
+
   modalRef!: BsModalRef;
+
+  // NUEVO: Clave para persistir filtros
+  private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
 
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
@@ -49,6 +69,8 @@ export class PartidasComponent implements OnInit {
       }
     );
 
+    // NUEVO: Cargar filtros persistidos antes de loadAll
+    this.cargarFiltrosPersistidos();
     this.loadAll();
     this.generateMonths();
     this.generateYears();
@@ -76,6 +98,49 @@ export class PartidasComponent implements OnInit {
     this.years = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
   }
 
+  /**
+   * NUEVO: Cargar filtros desde sessionStorage
+   */
+  private cargarFiltrosPersistidos() {
+    try {
+      const filtrosGuardados = sessionStorage.getItem(this.FILTROS_STORAGE_KEY);
+      if (filtrosGuardados) {
+        this.filtros = JSON.parse(filtrosGuardados);
+      } else {
+        this.inicializarFiltrosDefault();
+      }
+    } catch (error) {
+      console.error('Error cargando filtros:', error);
+      this.inicializarFiltrosDefault();
+    }
+  }
+
+  /**
+   * NUEVO: Guardar filtros en sessionStorage
+   */
+  private guardarFiltros() {
+    try {
+      sessionStorage.setItem(this.FILTROS_STORAGE_KEY, JSON.stringify(this.filtros));
+    } catch (error) {
+      console.error('Error guardando filtros:', error);
+    }
+  }
+
+  /**
+   * NUEVO: Filtros por defecto
+   */
+  private inicializarFiltrosDefault() {
+    this.filtros = {
+      tipo: '',
+      buscador: '',
+      orden: 'correlativo', // NUEVO: Orden por correlativo por defecto
+      direccion: 'desc',
+      paginate: 10,
+      estado: '',
+      incluir_anuladas: false // NUEVO: No mostrar anuladas por defecto
+    };
+  }
+
   public setOrden(columna: string) {
     if (this.filtros.orden === columna) {
       this.filtros.direccion =
@@ -89,12 +154,10 @@ export class PartidasComponent implements OnInit {
   }
 
   public loadAll() {
-    this.filtros.tipo = '';
-    this.filtros.buscador = '';
-    this.filtros.orden = 'id';
-    this.filtros.direccion = 'desc';
-    this.filtros.paginate = 10;
-    this.filtros.estado = '';
+    if (!this.filtros.orden) {
+      this.inicializarFiltrosDefault();
+    }
+    
     this.filtrarPartidas();
 
     this.reporte.month = new Date().getMonth() + 1;
@@ -106,9 +169,21 @@ export class PartidasComponent implements OnInit {
 
   public filtrarPartidas() {
     this.loading = true;
+    
+    console.log('Filtros enviados al backend:', this.filtros);
+    this.guardarFiltros();
+    
     this.apiService.getAll('partidas', this.filtros).subscribe(
-      (partidas) => {
-        this.partidas = partidas;
+      (response) => {
+        this.partidas = response;
+        
+        // NUEVO: Guardar totales generales
+        this.totalesGenerales = response.totales_generales || {
+          gran_total_debe: 0,
+          gran_total_haber: 0,
+          total_registros_filtrados: 0
+        };
+        
         this.loading = false;
         if (this.modalRef) {
           this.modalRef.hide();
@@ -138,10 +213,27 @@ export class PartidasComponent implements OnInit {
     });
   }
 
+  /**
+   * NUEVO: Modal para reordenar correlativos
+   */
+  public openReordenarModal(template: TemplateRef<any>) {
+    this.alertService.modal = true;
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-md',
+      backdrop: 'static',
+    });
+  }
+
   public setEstado(partida: any, estado: any) {
-    this.partida = partida;
-    this.partida.estado = estado;
-    this.onSubmit();
+    this.apiService.read('partida/', partida.id).subscribe(
+      (partidaCompleta) => {
+        partidaCompleta.estado = estado;
+        this.onSubmit(partidaCompleta);
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
   }
 
   public setEstadoChange(partida: any) {
@@ -165,6 +257,10 @@ export class PartidasComponent implements OnInit {
       .subscribe(
         (partidas) => {
           this.partidas = partidas;
+          
+          // NUEVO: Actualizar totales al paginar
+          this.totalesGenerales = partidas.totales_generales || this.totalesGenerales;
+          
           this.loading = false;
         },
         (error) => {
@@ -195,16 +291,13 @@ export class PartidasComponent implements OnInit {
             this.alertService.error(error);
           }
         );
-        4;
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
       }
     });
   }
 
-  public onSubmit() {
+  public onSubmit(partidaData?: any) {
     this.saving = true;
-    this.apiService.store('partida', this.partida).subscribe(
+    this.apiService.store('partida', partidaData || this.partida).subscribe(
       (partida) => {
         if (!this.partida.id) {
           this.loadAll();
@@ -231,6 +324,47 @@ export class PartidasComponent implements OnInit {
     );
   }
 
+  /**
+   * NUEVO: Reordenar correlativos
+   */
+  public reordenarCorrelativos() {
+    this.saving = true;
+    
+    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento).subscribe({
+      next: (response) => {
+        this.saving = false;
+        this.alertService.success(
+          'Correlativos reordenados',
+          `Se reordenaron ${response.partidas_reordenadas} partidas exitosamente`
+        );
+        this.filtrarPartidas(); // Refrescar listado
+        this.modalRef?.hide();
+      },
+      error: (error) => {
+        this.saving = false;
+        this.alertService.error(error.error?.error || 'Error al reordenar correlativos');
+      }
+    });
+  }
+
+  /**
+   * NUEVO: Limpiar filtros y resetear
+   */
+  public limpiarFiltros() {
+    sessionStorage.removeItem(this.FILTROS_STORAGE_KEY);
+    this.inicializarFiltrosDefault();
+    this.filtrarPartidas();
+  }
+
+  /**
+   * NUEVO: Toggle para mostrar/ocultar anuladas
+   */
+  public toggleMostrarAnuladas() {
+    this.filtros.incluir_anuladas = !this.filtros.incluir_anuladas;
+    this.filtrarPartidas();
+  }
+
+  // Métodos existentes sin cambios...
   public imprimirDiarioAux() {
     if (
       this.reporte.month &&
@@ -382,4 +516,47 @@ export class PartidasComponent implements OnInit {
       '_blank'
     );
   }
+  
+  public reordenarTodosLosCorrelativos() {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esto reordenará TODAS las partidas de la empresa. Esta acción puede tomar varios minutos.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, reordenar todo',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f39c12'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.saving = true;
+        
+        this.apiService.store('partidas/reordenar-correlativos', { todos: true }).subscribe({
+          next: (response) => {
+            this.saving = false;
+            this.alertService.success(
+              'Reordenamiento completo',
+              `Se reordenaron ${response.partidas_reordenadas} partidas de toda la empresa`
+            );
+            this.filtrarPartidas();
+            this.modalRef?.hide();
+          },
+          error: (error) => {
+            this.saving = false;
+            this.alertService.error(error.error?.error || 'Error al reordenar todos los correlativos');
+          }
+        });
+      }
+    });
+  }
+
+  public toggleAnuladas() {
+    this.filtros.incluir_anuladas = !this.filtros.incluir_anuladas;
+
+    if (this.filtros.incluir_anuladas) {
+      this.filtros.estado = '';
+    }
+    
+    this.filtrarPartidas();
+  }
+  
 }
