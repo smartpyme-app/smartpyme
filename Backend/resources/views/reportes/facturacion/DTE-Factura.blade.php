@@ -101,14 +101,18 @@
             <tbody>
                 <tr>
                     <td style="width: 50%;">
-                        <p><b>Código de Generación:</b> {{ $DTE['identificacion']['codigoGeneracion'] }}</p>
-                        <p><b>Número de Control:</b> {{ $DTE['identificacion']['numeroControl'] }}</p>
-                        <p><b>Sello de Recepción:</b> {{ $DTE['sello'] }}</p>
+                        <p><b>Código de Generación:</b> {{ isset($DTE['identificacion']['codigoGeneracion']) ? $DTE['identificacion']['codigoGeneracion'] : '' }}</p>
+                        <p><b>Número de Control:</b> {{ isset($DTE['identificacion']['numeroControl']) ? $DTE['identificacion']['numeroControl'] : '' }}</p>
+                        <p><b>Sello de Recepción:</b> {{ isset($DTE['sello']) ? $DTE['sello'] : '' }}</p>
                     </td>
                     <td style="width: 50%;">
-                        <p><b>Modelo de Facturación:</b> {{ $tipoModelo[$DTE['identificacion']['tipoModelo'] - 1] }}</p>
-                        <p><b>Tipo de Transmisión:</b> {{ $tipoOperacion[$DTE['identificacion']['tipoOperacion'] - 1] }}</p>
-                        <p><b>Fecha y Hora de Generación:</b> {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}</p>
+                        <p><b>Modelo de Facturación:</b> {{ isset($DTE['identificacion']['tipoModelo']) ? $tipoModelo[$DTE['identificacion']['tipoModelo'] - 1] : '' }}</p>
+                        <p><b>Tipo de Transmisión:</b> {{ isset($DTE['identificacion']['tipoOperacion']) ? $tipoOperacion[$DTE['identificacion']['tipoOperacion'] - 1] : '' }}</p>
+                        <p><b>Fecha y Hora de Generación:</b> 
+                            @if (isset($DTE['identificacion']['fecEmi']) && isset($DTE['identificacion']['horEmi']))
+                                {{ \Carbon\Carbon::parse($DTE['identificacion']['fecEmi'] . ' ' . $DTE['identificacion']['horEmi'])->format('d/m/Y H:i:s') }}
+                            @endif
+                        </p>
                     </td>
                 </tr>
             </tbody>
@@ -131,7 +135,10 @@
                     <p><b>NIT:</b> {{ $DTE['emisor']['nit'] }}</p>
                     <p><b>NRC:</b> {{ $DTE['emisor']['nrc'] }}</p>
                     <p><b>Act. económica:</b> {{ $DTE['emisor']['descActividad'] }}</p>
-                    <p><b>Dirección:</b> {{ $DTE['emisor']['direccion']['complemento'] }}
+                    <p><b>Dirección:</b> 
+                        @if (isset($DTE['emisor']['direccion']['complemento']))
+                            {{ $DTE['emisor']['direccion']['complemento'] }}
+                        @endif
                         {{ $registro->empresa()->pluck('municipio')->first(); }}
                         {{ $registro->empresa()->pluck('departamento')->first(); }}
                     </p>
@@ -163,7 +170,9 @@
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                             <p><b>Dirección:</b> 
                                 @if ($registro->id_cliente)
-                                    {{ $DTE['receptor']['direccion']['complemento'] }}
+                                    @if (isset($DTE['receptor']['direccion']['complemento']))
+                                        {{ $DTE['receptor']['direccion']['complemento'] }}
+                                    @endif
                                     {{ $registro->cliente()->pluck('municipio')->first(); }}
                                     {{ $registro->cliente()->pluck('departamento')->first(); }}
                                 @endif
