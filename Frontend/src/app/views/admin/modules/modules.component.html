@@ -1,0 +1,108 @@
+<!-- modules.component.html -->
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Módulos</h2>
+    <!-- Reemplazar el botón existente por: -->
+        <!-- <button *ngIf="apiService.canCreate()" 
+            (click)="openModal(moduleModal)" 
+            class="btn btn-default">
+            <i class="fa fa-plus"></i> Añadir módulo
+        </button> -->
+        <!-- <a routerLink="/modulos/crear" 
+            *ngIf="apiService.canCreateTest('administracion.modules.crear')" 
+            class="btn btn-primary">
+                <i class="fa fa-plus me-2"></i> Nuevo Módulo
+        </a> -->
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row mb-3">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="modules?.total">
+                Mostrando 
+                <select name="paginate" 
+                        class="form-select w-auto" 
+                        (change)="filtrarModulos()" 
+                        [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ modules?.total }} registros
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <form class="d-flex input-group" name="form" autocomplete="off">
+                    <div class="input-group">
+                        <div class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-search text-muted"></i>
+                        </div>
+                        <input type="search" 
+                               name="buscador" 
+                               class="form-control pull-right border-start-0" 
+                               placeholder="Buscar" 
+                               [(ngModel)]="filtros.buscador"
+                               (ngModelChange)="filtrarModulos()">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div *ngIf="loading" class="text-center p-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+        
+        <div *ngIf="!loading" class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <!-- <th (click)="setOrden('name')" 
+                            [ngClass]="{'sorted-asc': filtros.orden == 'name' && filtros.direccion == 'asc', 
+                                      'sorted-desc': filtros.orden == 'name' && filtros.direccion == 'desc'}" 
+                            class="click">Nombre</th> -->
+                        <th (click)="setOrden('display_name')" 
+                            [ngClass]="{'sorted-asc': filtros.orden == 'display_name' && filtros.direccion == 'asc', 
+                                      'sorted-desc': filtros.orden == 'display_name' && filtros.direccion == 'desc'}" 
+                            class="click">Nombre a mostrar</th>
+                        <th>Estado</th>
+                        <th>Submódulos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let module of modules?.data">
+                        <td>{{module.display_name}}</td>
+                        <td>
+                            <span class="badge" [ngClass]="module.status ? 'bg-success' : 'bg-danger'">
+                                {{module.status ? 'Activo' : 'Inactivo'}}
+                            </span>
+                        </td>
+                        <td>{{module.submodules_count || 0}}</td>
+                        <td style="width: 15%" class="text-end">
+                            <button routerLink="/modulos/editar/{{module.id}}" 
+                                    class="btn btn-sm btn-primary"
+                                    tooltip="Editar módulo">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="modules?.data.length == 0">
+                        <td colspan="5" class="text-center">No se encontraron resultados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-4" *ngIf="modules?.last_page > 1">
+            <app-pagination [items]="modules"
+                           (setPagination)="setPagination($event)">
+            </app-pagination>
+        </div>
+    </div>
+</section>
+

@@ -1,0 +1,45 @@
+<div *ngIf="show">
+  <p>Modal está visible: {{show}}</p>
+</div>
+<div class="modal" [class.d-block]="show" [class.fade]="!show" *ngIf="show" (click)="closeModal()">
+  <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa fa-shield-alt text-warning me-2"></i>
+          Solicitar Autorización
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="alert alert-info">
+          <i class="fa fa-info-circle me-2"></i>
+          Esta acción requiere autorización de un administrador.
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Descripción de la solicitud *</label>
+          <textarea 
+            class="form-control" 
+            rows="4" 
+            [(ngModel)]="description"
+            placeholder="Describe por qué necesitas esta autorización..."
+            [disabled]="loading">
+          </textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="loading">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="requestAuthorization()" [disabled]="loading">
+          <i class="fa fa-paper-plane me-2"></i>
+          <span *ngIf="!loading">Solicitar Autorización</span>
+          <span *ngIf="loading">Enviando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

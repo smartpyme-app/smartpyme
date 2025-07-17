@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
@@ -41,6 +42,8 @@ import { NotFoundComponent } from './404/not-found.component';
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { PopoverModule } from 'ngx-bootstrap/popover';
+import { AuthorizationRequestModalComponent } from './authorization/authorization-request/authorization-request-modal.component';
+import { AuthorizationViewComponent } from './authorization/authorization-view/authorization-view.component';
 
 import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
 import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
@@ -85,6 +88,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent
   ],
@@ -115,6 +120,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearAbonoCompraComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent
   ],

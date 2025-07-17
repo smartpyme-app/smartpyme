@@ -61,7 +61,10 @@ export class AdminFacturacionComponent implements OnInit {
 
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
-            if(this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor'){
+            // if(this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor'){
+            //     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
+            // }
+            if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false)){
                 this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
             }
         }, error => {this.alertService.error(error);});

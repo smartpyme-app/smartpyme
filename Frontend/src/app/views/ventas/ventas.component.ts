@@ -72,9 +72,13 @@ export class VentasComponent implements OnInit {
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
 
-        if(this.apiService.auth_user().tipo != 'Administrador'){
+        // if(this.apiService.auth_user().tipo != 'Administrador'){
+        //     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+        // }
+        if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) ){
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }
+
 
         this.filtrarVentas();
     }

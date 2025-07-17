@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Cotizaciones</h2>
-  <button *ngIf="apiService.canCreate()" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
+  <button *ngIf="apiService.canCreateTest('ventas.cotizaciones.crear')" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -103,7 +103,8 @@
                           </span>
                           <ng-template #accionesTemplate>
                               <div class="d-flex flex-column align-items-start">
-                                  <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
+                                <!-- <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn"> -->
+                                  <a *ngIf="venta.estado == 'Pendiente' || venta.estado == 'enviada' && apiService.canEditTest('ventas.cotizaciones.editar')" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
                                       <i class="fa fa-fw fa-edit"></i> Editar
                                   </a>
                                   <a *ngIf="venta.estado == 'enviada' && apiService.canEdit()" (click)="duplicarCotizacion(venta.id)" class="btn">

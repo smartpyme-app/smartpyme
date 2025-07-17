@@ -13,9 +13,9 @@ class AddAreaEmpresaToEgresosTable extends Migration
      */
     public function up()
     {
-        Schema::table('egresos', function (Blueprint $table) {
-            $table->text('area_empresa')->after('nota')->nullable();
-        });
+//        Schema::table('egresos', function (Blueprint $table) {
+//            $table->text('area_empresa')->after('nota')->nullable();
+//        });
     }
 
     /**

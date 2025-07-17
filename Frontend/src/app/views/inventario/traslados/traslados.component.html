@@ -1,7 +1,11 @@
 
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+  <h2 class="page-heading">Inventario</h2>
+  <div class="d-flex gap-2">
+    <!-- <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button> -->
+    <button *ngIf="apiService.canCreateTest('productos.traslados.crear')" [routerLink]="['/traslado/nuevo']" tooltip="Crear traslado (F7)"
+      class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+  </div>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">

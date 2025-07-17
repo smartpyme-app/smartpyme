@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Bancos\ChequesExport;
 use Barryvdh\DomPDF\Facade as PDF;
+use Luecano\NumeroALetras\NumeroALetras;
 use Auth;
 
 class ChequesController extends Controller
@@ -159,10 +160,17 @@ class ChequesController extends Controller
     public function generarDoc($id){
         $cheque = Cheque::where('id', $id)->firstOrFail();
 
+        // Convertir el monto a palabras
+        $formatter = new NumeroALetras();
+        $n = explode(".", number_format($cheque->total, 2));
+
+        $dolares = $formatter->toWords(floatval(str_replace(',', '', $n[0])));
+        $centavos = $formatter->toWords($n[1]);
+
         if(Auth::user()->id_empresa == 415){ //415
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque', 'dolares', 'centavos'));
         }else{
-            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque'));
+            $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.Cheque-Fumigadora-Vector', compact('cheque', 'dolares', 'centavos'));
         }
         $pdf->setPaper('US Letter', 'portrait');
 

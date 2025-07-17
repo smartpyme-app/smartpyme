@@ -104,10 +104,15 @@ export class MateriasPrimaComponent implements OnInit {
     }
 
     openModalPrecio(template: TemplateRef<any>, producto:any) {
-        if(this.apiService.auth_user().tipo == 'Administrador') {
+        if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.producto = producto;
             this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
         }
+
+        // if(this.apiService.auth_user().tipo == 'Administrador') {
+        //     this.producto = producto;
+        //     this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        // }
 
     }
 

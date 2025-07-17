@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Cuentas</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+    <button *ngIf="apiService.canCreateTest('finanzas.cuentas.crear')" routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -60,7 +60,7 @@
                         <td>{{cuenta.numero}}</td>
                         <td>{{cuenta.tipo}}</td>
                         <td class="text-end">{{cuenta.saldo | currency}}</td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('finanzas.cuentas.editar')" class="text-center">
                             <a class="btn btn-light" routerLink="/bancos/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

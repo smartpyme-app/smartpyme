@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Inventario</h2>
-  <button *ngIf="apiService.canCreate()" [routerLink]="['/producto/combo/crear']" tooltip="Crear ajuste (F7)"
+  <button *ngIf="apiService.canCreateTest('productos.combos.crear')" [routerLink]="['/producto/combo/crear']" tooltip="Crear ajuste (F7)"
     class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir combo</button>
 </section>
 
@@ -113,7 +113,7 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="d-flex flex-column align-items-start">
-                  <a *ngIf="combo.estado == 'Activo' && apiService.canEdit()"
+                  <a *ngIf="combo.estado == 'Activo' && apiService.canEditTest('productos.combos.editar')"
                     routerLink="/producto/combo/editar/{{combo.id}}" class="btn">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
