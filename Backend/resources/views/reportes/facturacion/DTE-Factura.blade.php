@@ -162,7 +162,7 @@
                         <p><b>Núm de Documento:</b> {{ $DTE['receptor']['numDocumento'] }}</p>
                         <p><b>Act. económica:</b> {{ $DTE['receptor']['descActividad'] }}</p>
                             <p><b>Dirección:</b> 
-                                @if (isset($DTE['receptor']['direccion']['complemento']))
+                                @if ($registro->id_cliente)
                                     {{ $DTE['receptor']['direccion']['complemento'] }}
                                     {{ $registro->cliente()->pluck('municipio')->first(); }}
                                     {{ $registro->cliente()->pluck('departamento')->first(); }}
@@ -303,16 +303,6 @@
                     @endif
                 </td>
             </tr>
-            @if (isset($DTE['apendice']))
-                @foreach ($DTE['apendice'] as $atributo)
-                <tr>
-                    <td colspan="2">
-                        <b>{{ $atributo['etiqueta'] }}:</b>
-                        {{ $atributo['valor'] }}
-                    </td>
-                </tr>
-                @endforeach
-            @endif
         </tbody>
     </table>
 
