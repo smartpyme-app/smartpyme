@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
+
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
@@ -120,6 +121,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     CrearEventoComponent,
     CrearProyectoComponent,
     AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
     CrearDepartamentoComponent,
     CrearAreaEmpresaComponent
   ],

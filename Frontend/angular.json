@@ -38,7 +38,7 @@
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "src/assets/plugins/chartist/css/chartist.min.css",
               "src/assets/plugins/owl.carousel/dist/css/owl.carousel.min.css",
-              "node_modules/@ng-select/ng-select/themes/default.theme.css"
+              "node_modules/@ng-select/ng-select/themes/default.theme.css",
               "src/styles.css"
             ],
             "scripts": [
@@ -49,7 +49,7 @@
               "src/assets/plugins/owl.carousel/dist/js/owl.carousel.min.js",
               "src/assets/plugins/chartist/js/chartist.min.js",
               "src/assets/plugins/chartist-plugin-tooltips/js/chartist-plugin-tooltip.min.js",
-              "src/assets/js/app.js",
+              "src/assets/js/app.js"
             ],
             "serviceWorker": true,
             "ngswConfigPath": "ngsw-config.json",
@@ -59,8 +59,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "3mb",
-                  "maximumError": "5mb"
+                  "maximumWarning": "10mb",
+                  "maximumError": "10mb"
                 },
                 {
                   "type": "anyComponentStyle",

@@ -22,9 +22,15 @@ use App\Http\Controllers\Api\Ventas\GenerarDocumentosController; //aplicado como
     Route::post('/partidas/generar/cxp',        [PartidasController::class, 'generarCxP']);
 
     Route::post('/partidas/cerrar',             [PartidasController::class, 'cerrarPartidas']);
+    Route::post('/partidas/reabrir',            [PartidasController::class, 'reabrirPeriodo']);
+    Route::get('/partidas/estado-periodo',      [PartidasController::class, 'verificarEstadoPeriodo']);
+    Route::get('/partidas/balance-comprobacion', [PartidasController::class, 'obtenerBalanceComprobacion']);
+    Route::get('/partidas/simular-cierre',      [PartidasController::class, 'simularCierreMes']);
 
     Route::post('/partidas/abrir', [PartidasController::class, 'abrirPartida']);
 
     Route::get('/partidas/descargar/{id}',  [PartidasController::class, 'generarPDF']);
+
+    Route::post('/partidas/reordenar-correlativos', [PartidasController::class, 'reordenarCorrelativos']);
 
 ?>

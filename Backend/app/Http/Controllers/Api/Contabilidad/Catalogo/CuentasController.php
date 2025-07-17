@@ -79,15 +79,39 @@ class CuentasController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'codigo'        => 'required|max:255',
-            'nombre'        => 'required|max:255',
-            'naturaleza'    => 'required|max:255',
-            'id_cuenta_padre'   => 'required',
-            'rubro'         => 'required|max:255',
-            'nivel'         => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
+        $empresa_id = $request->id_empresa ?? auth()->user()->id_empresa;
+
+        // ✅ VALIDACIÓN MEJORADA: Incluir unicidad por empresa
+        $rules = [
+            'codigo' => [
+                'required',
+                'max:50',
+                'unique:catalogo_cuentas,codigo,' . ($request->id ?? 'NULL') . ',id,id_empresa,' . $empresa_id
+            ],
+            'nombre' => 'required|max:255',
+            'naturaleza' => 'required|max:255|in:Deudor,Acreedor',
+            'id_cuenta_padre' => 'nullable',
+            'rubro' => 'required|max:255',
+            'nivel' => 'required|numeric|min:0|max:10',
+            'id_empresa' => 'required|numeric',
+        ];
+
+        $messages = [
+            'codigo.required' => 'El código es obligatorio',
+            'codigo.unique' => 'Ya existe una cuenta con este código en la empresa',
+            'codigo.max' => 'El código no puede exceder 50 caracteres',
+            'nombre.required' => 'El nombre es obligatorio',
+            'naturaleza.required' => 'La naturaleza es obligatoria',
+            'naturaleza.in' => 'La naturaleza debe ser Deudor o Acreedor',
+            'rubro.required' => 'El rubro es obligatorio',
+            'nivel.required' => 'El nivel es obligatorio',
+            'nivel.numeric' => 'El nivel debe ser numérico',
+            'nivel.min' => 'El nivel no puede ser menor a 0',
+            'nivel.max' => 'El nivel no puede exceder 10',
+            'id_empresa.required' => 'La empresa es obligatoria',
+        ];
+
+        $request->validate($rules, $messages);
 
         if($request->id)
             $cuenta = Cuenta::findOrFail($request->id);
@@ -96,30 +120,43 @@ class CuentasController extends Controller
 
         $data = $request->all();
 
-        // Buscar el id real de la cuenta padre si se envía un código en vez de un id
+        // ✅ SEGURO: Buscar el id real de la cuenta padre SOLO en la empresa actual
         if (!empty($data['id_cuenta_padre'])) {
             // Si el valor es numérico y existe como id, lo dejamos; si no, buscamos por código
             $cuentaPadre = Cuenta::where('id', $data['id_cuenta_padre'])
-                ->where('id_empresa', $data['id_empresa'])
+                ->where('id_empresa', $empresa_id) // ✅ FILTRO CRÍTICO
                 ->first();
 
             if (!$cuentaPadre) {
                 // Si no existe como id, intentamos buscarlo como código
                 $cuentaPadre = Cuenta::where('codigo', $data['id_cuenta_padre'])
-                    ->where('id_empresa', $data['id_empresa'])
+                    ->where('id_empresa', $empresa_id) // ✅ FILTRO CRÍTICO
                     ->first();
             }
 
-            $data['id_cuenta_padre'] = $cuentaPadre ? $cuentaPadre->id : null;
+            if (!$cuentaPadre) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La cuenta padre especificada no existe en esta empresa'
+                ], 422);
+            }
+
+            $data['id_cuenta_padre'] = $cuentaPadre->id;
         } else {
             $data['id_cuenta_padre'] = null;
         }
 
+        // ✅ SEGURO: Asegurar que siempre se asigne la empresa correcta
+        $data['id_empresa'] = $empresa_id;
+
         $cuenta->fill($data);
         $cuenta->save();
 
-        return Response()->json($cuenta, 200);
-
+        return Response()->json([
+            'success' => true,
+            'message' => $request->id ? 'Cuenta actualizada exitosamente' : 'Cuenta creada exitosamente',
+            'data' => $cuenta
+        ], 200);
     }
 
     public function delete($id)
@@ -131,18 +168,56 @@ class CuentasController extends Controller
 
     }
 
-    public function importCuentas(Request $request){
-
+    public function importCuentas(Request $request)
+    {
         $request->validate([
-            'file'          => 'required',
-        ],[
-            'file.required' => 'El documento es obligatorio.'
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Máximo 10MB
+        ], [
+            'file.required' => 'El archivo es obligatorio.',
+            'file.file' => 'Debe ser un archivo válido.',
+            'file.mimes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV.',
+            'file.max' => 'El archivo no puede exceder 10MB.'
         ]);
 
-        $import = new CatalogoImport();
-        Excel::import($import, $request->file);
+        try {
+            $import = new CatalogoImport();
+            Excel::import($import, $request->file);
 
-        return Response()->json($import->getRowCount(), 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Catálogo importado exitosamente',
+                'filas_procesadas' => $import->getRowCount(),
+                'empresa_id' => auth()->user()->id_empresa
+            ], 200);
 
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            // Errores de validación de Laravel Excel
+            $failures = $e->failures();
+            $errores_detallados = [];
+
+            foreach ($failures as $failure) {
+                $errores_detallados[] = [
+                    'fila' => $failure->row(),
+                    'columna' => $failure->attribute(),
+                    'errores' => $failure->errors(),
+                    'valores' => $failure->values()
+                ];
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Errores de validación en el archivo',
+                'errores' => $errores_detallados
+            ], 422);
+
+        } catch (\Exception $e) {
+            // Otros errores (duplicados, cuenta padre no encontrada, etc.)
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al importar catálogo',
+                'error' => $e->getMessage(),
+                'errores_adicionales' => method_exists($import, 'getErrores') ? $import->getErrores() : []
+            ], 400);
+        }
     }
 }
