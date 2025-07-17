@@ -128,7 +128,7 @@
 
   <!-- Resultados de validaciones -->
   <div *ngIf="!cargandoValidaciones" class="row">
-    <!-- <div class="col-md-4">
+    <div class="col-md-4">
       <div class="card border-0 h-100"
            [ngClass]="validacionesPrevias.periodoAnteriorCerrado ? 'bg-light-success' : 'bg-light-danger'">
         <div class="card-body text-center">
@@ -140,9 +140,9 @@
           </p>
         </div>
       </div>
-    </div> -->
+    </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
       <div class="card border-0 h-100"
            [ngClass]="{
              'bg-light-success': validacionesPrevias.balanceCuadra,
@@ -169,7 +169,7 @@
       </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
       <div class="card border-0 h-100"
            [ngClass]="validacionesPrevias.partidasPendientes === 0 ? 'bg-light-success' : 'bg-light-warning'">
         <div class="card-body text-center">

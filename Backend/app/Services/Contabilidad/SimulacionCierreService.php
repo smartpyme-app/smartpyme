@@ -190,7 +190,6 @@ class SimulacionCierreService
         // Obtener saldos iniciales
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
-        // ✅ CORREGIDO: Usar la misma lógica de consolidación que el balance de comprobación
         // Inicializar array de saldos por código de cuenta
         $cuentas_saldos = [];
         $idACodigo = [];
@@ -221,7 +220,7 @@ class SimulacionCierreService
             ];
         }
 
-        // ✅ CONSOLIDAR: Sumar subcuentas a cuentas padre (misma lógica que balance de comprobación)
+        // Sumar subcuentas a cuentas padre (misma lógica que balance de comprobación)
         foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
             if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
                 $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
@@ -253,7 +252,7 @@ class SimulacionCierreService
                 'codigo_cuenta' => $cuenta->codigo,
                 'nombre_cuenta' => $cuenta->nombre,
                 'naturaleza' => $cuenta->naturaleza,
-                'nivel' => $cuenta->nivel, // ✅ AGREGADO: Nivel para el filtrado posterior
+                'nivel' => $cuenta->nivel,
                 'saldo_inicial' => $saldoInicial,
                 'debe' => $debe,
                 'haber' => $haber,
@@ -271,7 +270,7 @@ class SimulacionCierreService
      */
     private function simularBalanceComprobacion($saldosSimulados)
     {
-        // ✅ CORREGIDO: Filtrar solo cuentas padre (nivel 0) para evitar doble conteo
+        // Filtrar solo cuentas padre (nivel 0) para evitar doble conteo
         $saldosCollection = collect($saldosSimulados);
         $cuentasPadre = $saldosCollection->where('nivel', 0);
 
@@ -300,8 +299,6 @@ class SimulacionCierreService
             'diferencia_saldos' => $diferenciaSaldos,
             'cuadra_saldos' => abs($diferenciaSaldos) < 0.01,
             'cuadra_saldos_con_tolerancia' => abs($diferenciaSaldos) <= 1.00,
-
-            // ✅ AGREGADO: Información de depuración
             'cuentas_totales' => $saldosCollection->count(),
             'cuentas_padre_procesadas' => $cuentasPadre->count(),
             'cuentas_hijas_excluidas' => $saldosCollection->where('nivel', '>', 0)->count(),
@@ -392,13 +389,13 @@ class SimulacionCierreService
     {
         $advertencias = [];
 
-//        if (!$validaciones['periodo_anterior_cerrado']) {
-//            $advertencias[] = [
-//                'tipo' => 'error',
-//                'mensaje' => 'El período anterior no está cerrado',
-//                'accion' => 'Debe cerrar primero el período anterior'
-//            ];
-//        }
+        if (!$validaciones['periodo_anterior_cerrado']) {
+            $advertencias[] = [
+                'tipo' => 'error',
+                'mensaje' => 'El período anterior no está cerrado',
+                'accion' => 'Debe cerrar primero el período anterior'
+            ];
+        }
 
         if ($validaciones['partidas_pendientes'] > 0) {
             $advertencias[] = [

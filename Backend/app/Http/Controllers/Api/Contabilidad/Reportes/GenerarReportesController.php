@@ -77,7 +77,6 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioPDF($month, $year, $cuenta = null)
     {
-        // Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
@@ -99,7 +98,6 @@ class GenerarReportesController extends Controller
 
         if ($cuenta && $cuenta !== 'all') {
             $query->whereHas('detalles', function ($query) use ($cuenta) {
-                // Log::info('Cuenta: ' . $cuenta);
                 $query->where('id_cuenta', $cuenta);
             });
         }
@@ -131,7 +129,6 @@ class GenerarReportesController extends Controller
 
     public function generarRepLibroDiarioExcel($month, $year, $cuenta = null)
     {
-        //Log::info(['month' => $month, 'year' => $year, 'cuenta' => $cuenta]);
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
@@ -153,7 +150,6 @@ class GenerarReportesController extends Controller
 
         if ($cuenta && $cuenta !== 'all') {
             $query->whereHas('detalles', function ($query) use ($cuenta) {
-                //Log::info('Cuenta: ' . $cuenta);
                 $query->where('id_cuenta', $cuenta);
             });
         }
@@ -401,7 +397,7 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
-        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        // Obtener saldos iniciales correctos (del período anterior o catálogo)
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Crear un mapa de ID a código para facilitar las búsquedas
@@ -415,7 +411,6 @@ class GenerarReportesController extends Controller
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
 
-            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
             $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
 
             $cuentas_saldos[$codigo] = [
@@ -442,7 +437,6 @@ class GenerarReportesController extends Controller
         $total_saldo_inicial = 0;
         $total_debe = 0;
         $total_haber = 0;
-        // ❌ ELIMINADO: $total_saldo_actual (no tiene sentido contable)
         $total_saldo_acumulado = 0;
 
         $balance = [];
@@ -452,7 +446,7 @@ class GenerarReportesController extends Controller
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
 
-            // ✅ CORREGIDO: Calcular saldo final según naturaleza de la cuenta
+            // Calcular saldo final según naturaleza de la cuenta
             if ($cuenta->naturaleza == 'Deudor') {
                 $saldo_final = $saldo_inicial + $debe - $haber;
             } else {
@@ -464,8 +458,7 @@ class GenerarReportesController extends Controller
                 $total_saldo_inicial += $saldo_inicial;
                 $total_debe += $debe;
                 $total_haber += $haber;
-                // ❌ ELIMINADO: total_saldo_actual (no tiene sentido contable)
-                $total_saldo_acumulado += $saldo_final; // ✅ Usar saldo_final directamente
+                $total_saldo_acumulado += $saldo_final;
             }
 
             $balance[] = [
@@ -473,12 +466,11 @@ class GenerarReportesController extends Controller
                 'nombre' => $cuenta->nombre,
                 'nivel' => $cuenta->nivel,
                 'nivel_visual' => $cuenta->nivel_visual ?? 0,
-                'naturaleza' => $cuenta->naturaleza, // ✅ AGREGADO: Naturaleza en cada cuenta
+                'naturaleza' => $cuenta->naturaleza,
                 'saldo_inicial' => $saldo_inicial,
                 'debe' => $debe,
                 'haber' => $haber,
-                // ❌ ELIMINADO: 'saldo_actual' (problemático)
-                'saldo_final' => $saldo_final, // ✅ Solo este campo
+                'saldo_final' => $saldo_final,
                 'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
         }
@@ -488,10 +480,8 @@ class GenerarReportesController extends Controller
             'saldo_inicial' => $total_saldo_inicial,
             'debe' => $total_debe,
             'haber' => $total_haber,
-            // ❌ ELIMINADO: 'naturaleza' => $cuenta->naturaleza, (no pertenece aquí)
-            // ❌ ELIMINADO: 'saldo_actual' => $total_saldo_actual,
             'saldo_acumulado' => $total_saldo_acumulado,
-            'saldo_final' => $total_saldo_acumulado, // ✅ Mismo valor, para compatibilidad
+            'saldo_final' => $total_saldo_acumulado,
             'diferencia' => $total_debe - $total_haber
         ];
 
@@ -518,7 +508,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada') // ✅ CORREGIDO: Usar 'Aplicada' consistentemente
+            ->where('partidas.estado', 'Aplicada')
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -533,7 +523,7 @@ class GenerarReportesController extends Controller
         // Inicializamos un array para almacenar los saldos por cuenta
         $cuentas_saldos = [];
 
-        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        // Obtener saldos iniciales correctos (del período anterior o catálogo)
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Crear un mapa de ID a código para facilitar las búsquedas
@@ -547,7 +537,6 @@ class GenerarReportesController extends Controller
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
 
-            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
             $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
 
             $cuentas_saldos[$codigo] = [
@@ -574,7 +563,6 @@ class GenerarReportesController extends Controller
         $total_saldo_inicial = 0;
         $total_debe = 0;
         $total_haber = 0;
-        // ❌ ELIMINADO: $total_saldo_actual (no tiene sentido contable)
         $total_saldo_acumulado = 0;
 
         $balance = [];
@@ -584,7 +572,7 @@ class GenerarReportesController extends Controller
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
 
-            // ✅ CORREGIDO: Calcular saldo final según naturaleza de la cuenta
+            // Calcular saldo final según naturaleza de la cuenta
             if ($cuenta->naturaleza == 'Deudor') {
                 $saldo_final = $saldo_inicial + $debe - $haber;
             } else {
@@ -596,8 +584,7 @@ class GenerarReportesController extends Controller
                 $total_saldo_inicial += $saldo_inicial;
                 $total_debe += $debe;
                 $total_haber += $haber;
-                // ❌ ELIMINADO: total_saldo_actual (no tiene sentido contable)
-                $total_saldo_acumulado += $saldo_final; // ✅ Usar saldo_final directamente
+                $total_saldo_acumulado += $saldo_final;
             }
 
             $balance[] = [
@@ -624,10 +611,8 @@ class GenerarReportesController extends Controller
                 'saldo_inicial' => $total_saldo_inicial,
                 'debe' => $total_debe,
                 'haber' => $total_haber,
-                // ❌ ELIMINADO: 'naturaleza' => $cuenta->naturaleza, (no pertenece aquí)
-                // ❌ ELIMINADO: 'saldo_actual' => $total_saldo_actual,
                 'saldo_acumulado' => $total_saldo_acumulado,
-                'saldo_final' => $total_saldo_acumulado, // ✅ Mismo valor, para compatibilidad
+                'saldo_final' => $total_saldo_acumulado,
                 'diferencia' => $total_debe - $total_haber
             ]
         ];
@@ -726,7 +711,7 @@ class GenerarReportesController extends Controller
             ->get()
             ->keyBy('id_cuenta');
 
-        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        // Obtener saldos iniciales correctos (del período anterior o catálogo)
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Calcular saldos consolidados similar al balance de comprobación
@@ -743,11 +728,11 @@ class GenerarReportesController extends Controller
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
 
-            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            // Usar lógica correcta para saldo inicial
             $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
 
             $cuentas_saldos[$codigo] = [
-                'saldo_inicial' => (float)$saldoInicial, // ✅ CORREGIDO
+                'saldo_inicial' => (float)$saldoInicial,
                 'debe' => $partida_detalles[$id]->total_debe ?? 0,
                 'haber' => $partida_detalles[$id]->total_haber ?? 0,
             ];
@@ -855,7 +840,7 @@ class GenerarReportesController extends Controller
             ->orderBy('codigo')
             ->get();
 
-        // ✅ CORREGIDO: Obtener saldos iniciales correctos (del período anterior o catálogo)
+        // Obtener saldos iniciales correctos (del período anterior o catálogo)
         $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         $cuentas_saldos = [];
@@ -869,7 +854,7 @@ class GenerarReportesController extends Controller
             $id = $cuenta->id;
             $codigo = $cuenta->codigo;
 
-            // ✅ CORREGIDO: Usar lógica correcta para saldo inicial
+            // Usar lógica correcta para saldo inicial
             $saldoInicial = $saldosIniciales[$cuenta->id] ?? $cuenta->saldo_inicial ?? 0;
 
             $cuentas_saldos[$codigo] = [
