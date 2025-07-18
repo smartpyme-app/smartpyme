@@ -14,8 +14,9 @@ use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 
-class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation
+class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
     private $numRows = 0;
 
@@ -26,13 +27,24 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation
             return null;
         } 
 
-        Log::info("Datos recibidos:", $row);
-
         ++$this->numRows;
 
-        $codigos = $this->buscarCodigos($row);
+        $ncrNormalizado = $this->normalizarNcr($row['ncr']);
+    
+        if (!empty($ncrNormalizado)) {
+            $existeNcr = Cliente::where('id_empresa', FacadesAuth::user()->id_empresa)
+                ->where(function($query) use ($row, $ncrNormalizado) {
+                    $query->where('ncr', $row['ncr']) // NCR original
+                          ->orWhere('ncr', $ncrNormalizado); // NCR normalizado
+                })
+                ->exists();
+            
+            if ($existeNcr) {
+                throw new \Exception("Ya existe una empresa con el NCR: {$row['ncr']}");
+            }
+        }
 
-        Log::info("Codigos encontrados:", $row);
+        $codigos = $this->buscarCodigos($row);
 
         $cliente = new Cliente();
         $cliente->nombre_empresa   = $row['nombre_empresa'];
@@ -43,13 +55,14 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation
         $cliente->tipo_contribuyente   = $row['tipo_contribuyente'];
         $cliente->dui   = $row['dui'];
         $cliente->nit   = $row['nit'];
-        $cliente->direccion = $row['direccion'];
+        $cliente->empresa_direccion = $row['direccion'];
         $cliente->departamento  = $row['departamento'];
         $cliente->cod_departamento = $codigos['departamento'] ? $codigos['departamento']->cod : null;
         $cliente->municipio = $row['municipio'];
         $cliente->cod_municipio = $codigos['municipio'] ? $codigos['municipio']->cod : null;
         $cliente->distrito = $row['distrito'];
         $cliente->cod_distrito = $codigos['distrito'] ? $codigos['distrito']->cod : null;
+        $cliente->empresa_telefono  = $row['telefono'];
         $cliente->telefono  = $row['telefono'];
         $cliente->correo    = $row['correo'];
 
@@ -58,6 +71,17 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation
         // $cliente->save();
 
         return $cliente;
+    }
+
+    private function normalizarNcr($ncr)
+    {
+        $ncr = preg_replace('/[^0-9]/', '', $ncr);
+        
+        if (strlen($ncr) == 14 && is_numeric($ncr)) {
+            return $ncr;
+        }
+        
+        return $ncr;
     }
 
     public function rules(): array
