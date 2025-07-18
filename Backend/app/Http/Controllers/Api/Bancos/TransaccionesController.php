@@ -12,10 +12,10 @@ use App\Exports\Bancos\TransaccionesExport;
 
 class TransaccionesController extends Controller
 {
-    
+
 
     public function index(Request $request) {
-       
+
         $transacciones = Transaccion::with('cuenta')->when($request->buscador, function($query) use ($request){
                                     return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
                                 })
@@ -43,7 +43,7 @@ class TransaccionesController extends Controller
     }
 
     public function list() {
-       
+
         $transacciones = Transaccion::orderby('nombre')
                                 // ->where('activo', true)
                                 ->get();
@@ -51,7 +51,7 @@ class TransaccionesController extends Controller
         return Response()->json($transacciones, 200);
 
     }
-    
+
     public function read($id) {
 
         $transaccion = Transaccion::where('id', $id)->firstOrFail();
@@ -88,12 +88,15 @@ class TransaccionesController extends Controller
                     //Actualizar saldo de cuanta
                         $cuenta = $transaccion->cuenta()->first();
 
+                        // Normalizar valor decimal
+                        $total = $this->normalizeDecimal($transaccion->total);
+
                         if ($transaccion->tipo == 'Cargo') {
-                            $cuenta->saldo = $cuenta->saldo - $transaccion->total;
+                            $cuenta->saldo = $cuenta->saldo - $total;
                         }
 
                         if ($transaccion->tipo == 'Abono') {
-                            $cuenta->saldo = $cuenta->saldo + $transaccion->total;
+                            $cuenta->saldo = $cuenta->saldo + $total;
                         }
 
                         $cuenta->save();
@@ -138,6 +141,23 @@ class TransaccionesController extends Controller
         $transacciones->filter($request);
 
         return Excel::download($transacciones, 'transacciones.xlsx');
+    }
+
+    /**
+     * Normalizar valores decimales: convertir comas a puntos
+     * Para evitar errores de sintaxis SQL con formatos de números europeos
+     */
+    private function normalizeDecimal($value)
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        // Convertir a string y reemplazar comas por puntos
+        $normalized = str_replace(',', '.', (string)$value);
+
+        // Convertir a float y luego formatear con 2 decimales usando punto
+        return number_format((float)$normalized, 2, '.', '');
     }
 
 }

@@ -212,31 +212,32 @@ class PartidasController extends Controller
                 $detalle['nombre_cuenta'] = $cuenta->nombre;
                 $detalle->save();
 
-                $debe = $detalle->debe ? $detalle->debe : 0;
-                $haber = $detalle->haber ? $detalle->haber : 0;
+                // Normalizar valores decimales (convertir comas a puntos)
+                $debe = $detalle->debe ? $this->normalizeDecimal($detalle->debe) : 0;
+                $haber = $detalle->haber ? $this->normalizeDecimal($detalle->haber) : 0;
 
                 // Aplicar partida
-                if(($request['estado'] == 'Aplicada') && ($estadoOriginal != 'Aplicada')){
-                    $detalle->cuenta->increment('cargo', $debe);
-                    $detalle->cuenta->increment('abono', $haber);
+                // if(($request['estado'] == 'Aplicada') && ($estadoOriginal != 'Aplicada')){
+                //     $detalle->cuenta->increment('cargo', $debe);
+                //     $detalle->cuenta->increment('abono', $haber);
 
-                    if($detalle->cuenta->naturaleza == 'Deudor'){
-                        $detalle->cuenta->increment('saldo', $debe - $haber);
-                    }else{
-                        $detalle->cuenta->increment('saldo', $haber - $debe);
-                    }
-                }
+                //     if($detalle->cuenta->naturaleza == 'Deudor'){
+                //         $detalle->cuenta->increment('saldo', $debe - $haber);
+                //     }else{
+                //         $detalle->cuenta->increment('saldo', $haber - $debe);
+                //     }
+                // }
 
                 // Anular aplicacion
-                if(($request['estado'] != 'Aplicada') && ($estadoOriginal == 'Aplicada')){
-                    $detalle->cuenta->decrement('cargo', $debe);
-                    $detalle->cuenta->decrement('abono', $haber);
-                    if($detalle->cuenta->naturaleza == 'Deudor'){
-                        $detalle->cuenta->decrement('saldo', $debe - $haber);
-                    }else{
-                        $detalle->cuenta->decrement('saldo', $haber - $debe);
-                    }
-                }
+                // if(($request['estado'] != 'Aplicada') && ($estadoOriginal == 'Aplicada')){
+                //     $detalle->cuenta->decrement('cargo', $debe);
+                //     $detalle->cuenta->decrement('abono', $haber);
+                //     if($detalle->cuenta->naturaleza == 'Deudor'){
+                //         $detalle->cuenta->decrement('saldo', $debe - $haber);
+                //     }else{
+                //         $detalle->cuenta->decrement('saldo', $haber - $debe);
+                //     }
+                // }
             }
 
             DB::commit();
@@ -1308,6 +1309,23 @@ class PartidasController extends Controller
             COALESCE(SUM(partida_detalles.haber), 0) as gran_total_haber,
             COUNT(DISTINCT partidas.id) as total_registros_filtrados
         ')->first();
+    }
+
+    /**
+     * Normalizar valores decimales: convertir comas a puntos
+     * Para evitar errores de sintaxis SQL con formatos de números europeos
+     */
+    private function normalizeDecimal($value)
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        // Convertir a string y reemplazar comas por puntos
+        $normalized = str_replace(',', '.', (string)$value);
+
+        // Convertir a float y luego formatear con 2 decimales usando punto
+        return number_format((float)$normalized, 2, '.', '');
     }
 
 }
