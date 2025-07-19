@@ -202,26 +202,54 @@ export class EmpresaComponent implements OnInit {
     }
      
 
-    setFile(event:any) {
-        this.empresa.file = event.target.files[0];
+    setFile(event: any, type: string = 'logo') {
+        const file = event.target.files[0];
         
-        let formData:FormData = new FormData();
-        for (let key in this.empresa) {
-            if (this.empresa.hasOwnProperty(key)) {
-                let value = this.empresa[key];
-                if (typeof value === 'boolean') {
-                    formData.append(key, value ? '1' : '0');
-                } else {
-                    formData.append(key, value == null ? '' : value);
-                }
-            }
+ 
+        if (file && file.size > 2 * 1024 * 1024) {
+            this.alertService.error('El archivo es demasiado grande. Máximo permitido: 2MB');
+            event.target.value = '';
+            return;
         }
+
+     
+        if (type === 'sello') {
+            this.empresa.sello_file = file;
+        } else if (type === 'firma') {
+            this.empresa.firma_file = file;
+        } else {
+            this.empresa.file = file;
+        }
+
+        let formData: FormData = new FormData();
+        formData.append('file', file);
+        formData.append('type', type);
+        formData.append('id', this.empresa.id);
+
         this.loading = true;
-        this.apiService.store('empresa', formData).subscribe(empresa => {
-            this.empresa.logo = empresa.logo;
-            this.loading = false;
-            this.alertService.success('Logo actualizo', 'Tu logo fue guardado exitosamente.');
-        }, error => {this.alertService.error(error); this.loading = false; this.empresa = {};});
+   
+        let endpoint = 'empresa/imagenes';
+       
+
+        this.apiService.store(endpoint, formData).subscribe(
+            (response: any) => {
+                if (type === 'sello') {
+                    this.empresa.sello = response.path;
+                    this.alertService.success('Sello actualizado', 'Tu sello fue guardado exitosamente.');
+                } else if (type === 'firma') {
+                    this.empresa.firma = response.path;
+                    this.alertService.success('Firma actualizada', 'Tu firma fue guardada exitosamente.');
+                }else{
+                    this.empresa.logo = response.path;
+                    this.alertService.success('Logo actualizado', 'Tu logo fue guardado exitosamente.');
+                }
+                this.loading = false;
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+        );
     }
 
     public onCheckMH():void {

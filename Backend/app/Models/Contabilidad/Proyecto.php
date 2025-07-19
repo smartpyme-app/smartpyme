@@ -71,7 +71,7 @@ class Proyecto extends Model {
     }
 
     public function cotizaciones(){
-        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 1);
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 1)->where('estado', '!=', 'Anulada');
     }
 
     public function presupuesto(){
@@ -83,15 +83,15 @@ class Proyecto extends Model {
     }
 
     public function gastos(){
-        return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_proyecto');
+        return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_proyecto')->where('estado', '!=', 'Anulada');
     }
-
     public function compras(){
-        return $this->hasMany('App\Models\Compras\Compra', 'id_proyecto');
+        return $this->hasMany('App\Models\Compras\Compra', 'id_proyecto')->where('estado', '!=', 'Anulada')
+            ->where('tipo_documento', '!=', 'Orden de compra');
     }
 
     public function ventas(){
-        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 0);
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 0)->where('estado', '!=', 'Anulada');
     }
 
     public function cliente(){
