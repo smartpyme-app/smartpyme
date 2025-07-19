@@ -58,6 +58,7 @@
                         <th class="d-none d-md-table-cell">DUI</th>
                         <th class="d-none d-md-table-cell">NCR</th>
                         <th class="d-none d-lg-table-cell">Tipo</th>
+                        <th class="d-none d-lg-table-cell">Estado</th>
                         <th class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
@@ -80,6 +81,11 @@
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente?.tipo == 'Empresa', 'bg-info' : cliente?.tipo == 'Persona', 'bg-dark' : cliente?.tipo == 'Extranjero'}">
                                     {{ cliente.tipo}}
                             </span>
+                        </td>
+                        <td class="d-none d-lg-table-cell">
+                          <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-success' : cliente.enable, 'bg-danger' : !cliente.enable}">
+                            {{ cliente.enable ? 'Activo' : 'Inactivo' }}
+                          </span>
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -132,6 +138,7 @@
                     <option value="">Todos</option>
                     <option value="Persona">Persona</option>
                     <option value="Empresa">Empresa</option>
+                    <option value="Extranjero">Extranjero</option>
                 </select>
             </div>
             <div class="form-group col-sm-6">
