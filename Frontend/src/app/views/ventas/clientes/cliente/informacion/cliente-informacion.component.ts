@@ -26,6 +26,7 @@ export class ClienteInformacionComponent implements OnInit {
   //loading
   public loading_contacto = false;
   public esNuevo = false;
+  public tipoAnterior = '';
 
   modalRef?: BsModalRef;
 
@@ -56,6 +57,7 @@ export class ClienteInformacionComponent implements OnInit {
         this.apiService.read('cliente/', params.id).subscribe(
           (cliente) => {
             this.cliente = cliente;
+            this.tipoAnterior = cliente.tipo;
             this.loading = false;
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
@@ -401,5 +403,131 @@ export class ClienteInformacionComponent implements OnInit {
         }
       }
     });
+  }
+
+  onTipoChange() {
+      if (this.esNuevo) {
+          // Creando: limpiar todo
+          this.limpiarTodosSinTipo();
+      } else {
+          // Editando: mapeo inteligente
+          const tipoAnterior = this.tipoAnterior;
+          const nuevoTipo = this.cliente.tipo;
+          this.mapearCamposEntreTipos(tipoAnterior, nuevoTipo);
+      }
+      
+      this.tipoAnterior = this.cliente.tipo;
+  }
+
+  limpiarTodosSinTipo() {
+    // Campos comunes
+    this.cliente.codigo_cliente = '';
+    this.cliente.nombre = '';
+    this.cliente.apellido = '';
+    this.cliente.correo = '';
+    this.cliente.telefono = '';
+    this.cliente.direccion = '';
+    this.cliente.pais = '';
+    this.cliente.departamento = '';
+    this.cliente.municipio = '';
+    this.cliente.distrito = '';
+    
+    // Campos de persona
+    this.cliente.dui = '';
+    this.cliente.fecha_cumpleanos = '';
+    this.cliente.red_social = '';
+    this.cliente.etiquetas = [];
+    this.cliente.nota = '';
+    
+    // Campos de empresa
+    this.cliente.nombre_empresa = '';
+    this.cliente.nit = '';
+    this.cliente.ncr = '';
+    this.cliente.tipo_contribuyente = '';
+    this.cliente.giro = '';
+    this.cliente.empresa_telefono = '';
+    this.cliente.empresa_direccion = '';
+    
+    // Campos de extranjero
+    this.cliente.tipo_documento = '';
+    this.cliente.tipo_persona = '';
+    
+    // Códigos de ubicación
+    this.cliente.cod_pais = '';
+    this.cliente.cod_departamento = '';
+    this.cliente.cod_municipio = '';
+    this.cliente.cod_distrito = '';
+    this.cliente.cod_giro = '';
+  }
+
+  mapearCamposEntreTipos(desde: string, hacia: string) {
+    const datosComunes = {
+        codigo_cliente: this.cliente.codigo_cliente,
+        nombre: this.cliente.nombre,
+        apellido: this.cliente.apellido,
+        correo: this.cliente.correo,
+        telefono: this.cliente.telefono,
+        direccion: this.cliente.direccion,
+        pais: this.cliente.pais,
+        departamento: this.cliente.departamento,
+        municipio: this.cliente.municipio,
+        distrito: this.cliente.distrito
+    };
+ 
+    const mapeos: any = {
+        'Persona->Empresa': {
+            ...datosComunes,
+            nombre_empresa: [this.cliente.nombre, this.cliente.apellido]
+            .filter(Boolean)
+            .join(' ') || this.cliente.nombre_empresa || '',
+            empresa_telefono: this.cliente.telefono,
+            empresa_direccion: this.cliente.direccion
+        },
+        'Empresa->Persona': {
+            ...datosComunes,
+            telefono: this.cliente.empresa_telefono || this.cliente.telefono,
+            direccion: this.cliente.empresa_direccion || this.cliente.direccion
+        },
+        'Persona->Extranjero': {
+            ...datosComunes,
+            tipo_persona: 'Persona Natural',
+            tipo_documento: '13', // DUI
+            dui: this.cliente.dui
+        },
+        'Empresa->Extranjero': {
+            ...datosComunes,
+            nombre_empresa: this.cliente.nombre_empresa,
+            tipo_persona: 'Persona Juridica',
+            tipo_documento: '36', // NIT
+            giro: this.cliente.giro,
+            telefono: this.cliente.empresa_telefono || this.cliente.telefono
+        },
+        'Extranjero->Persona': {
+            ...datosComunes,
+            dui: this.cliente.dui
+        },
+        'Extranjero->Empresa': {
+            ...datosComunes,
+            nombre_empresa: this.cliente.nombre_empresa || this.cliente.nombre + ' ' + this.cliente.apellido,
+            giro: this.cliente.giro,
+            empresa_telefono: this.cliente.telefono
+        }
+    };
+ 
+    const clave = `${desde}->${hacia}`;
+    const mapeo = mapeos[clave];
+ 
+    if (mapeo) {
+        this.limpiarTodosSinTipo();
+        Object.assign(this.cliente, mapeo);
+        
+        this.alertService.info(
+            'Datos adaptados',
+            'Los campos se han adaptado automáticamente al nuevo tipo de cliente.'
+        );
+    } else {
+        this.limpiarTodosSinTipo();
+        Object.assign(this.cliente, datosComunes);
+    }
   }
 }

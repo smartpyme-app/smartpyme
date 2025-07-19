@@ -2,6 +2,7 @@
 
 namespace App\Models\Ventas\Clientes;
 
+use App\Models\MH\ActividadEconomica;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Auth;
@@ -67,6 +68,11 @@ class Cliente extends Model {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
     }
 
+    public function getNombreActividadEconomicaAttribute()
+    {
+        return $this->actividadEconomica ? $this->actividadEconomica->nombre : null;
+    }
+
     public function getEtiquetasAttribute($value) 
     {
         return is_string($value) ? json_decode($value) : $value;
@@ -111,5 +117,10 @@ class Cliente extends Model {
     {
         return $this->hasMany(ContactoCliente::class, 'id_cliente')
                     ->where('estado', 1);
+    }
+    
+    public function actividadEconomica()
+    {
+        return $this->belongsTo(ActividadEconomica::class, 'cod_giro', 'cod');
     }
 }

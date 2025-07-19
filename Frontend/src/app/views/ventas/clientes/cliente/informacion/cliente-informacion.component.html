@@ -1,17 +1,19 @@
 
 <form (ngSubmit)="onSubmit()">
     <div class="row mb-3">
-        <div class="col d-grid">
-            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option1" (change)="setTipo('Persona')">
-            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Persona', 'btn-light' : cliente.tipo != 'Persona' }" for="option1">Persona</label>
-        </div>
-        <div class="col d-grid">
-            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option2" (change)="setTipo('Empresa')">
-            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Empresa', 'btn-light' : cliente.tipo != 'Empresa' }" for="option2">Empresa</label>
-        </div>
-        <div class="col d-grid">
-            <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option3" (change)="setTipo('Extranjero')">
-            <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Extranjero', 'btn-light' : cliente.tipo != 'Extranjero' }" for="option3">Extranjero</label>
+        <div class="col-12 col-md-6">
+            <label for="tipo" class="form-label">Tipo de Cliente</label>
+            <select class="form-select" name="tipo" [(ngModel)]="cliente.tipo" (change)="onTipoChange()">
+                <option selected value="Persona">Persona</option>
+                <option value="Empresa">Empresa</option>
+                <option value="Extranjero">Extranjero</option>
+            </select>
+            <small class="form-text text-muted" *ngIf="!esNuevo">
+                Los datos relevantes se adaptarán automáticamente al nuevo tipo de cliente.
+              </small>
+              <small class="form-text text-muted" *ngIf="esNuevo">
+                Si cambias el tipo de cliente, los campos se limpiarán automáticamente.
+              </small>
         </div>
     </div>
     <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
