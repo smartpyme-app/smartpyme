@@ -116,7 +116,8 @@ class Empresa extends Model
         //Sello y firma
         'sello',
         'firma',
-        'mostrar_sello_firma'
+        'mostrar_sello_firma',
+        'mostrar_sello_firma_cotizacion'
 
     ];
 
