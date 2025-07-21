@@ -20,9 +20,10 @@
             <i class="fa fa-search"></i>
             <!-- <img src="/assets/icons/search.png" class="icon"> -->
         </button>
-        <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto(createProductModal)">
+        <!-- <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto(createProductModal)">
             <i class="fa fa-plus"></i>
-        </button>
+        </button> -->
+        <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
     </div>
 </div>
 
