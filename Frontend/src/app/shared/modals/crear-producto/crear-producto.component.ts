@@ -11,73 +11,134 @@ import { ApiService } from '@services/api.service';
   templateUrl: './crear-producto.component.html'
 })
 export class CrearProductoComponent implements OnInit {
-
-    public producto: any = {};
+    @Input() producto: any = {};
     @Output() update = new EventEmitter();
-    public categoria:any = {};
-    public subcategorias:any = [];
-    public categorias:any[] = [];
-    public bodegas:any[] = [];
+    public categorias: any[] = [];
+    public medidas: any[] = [];
     public loading = false;
+    public guardar = false;
+    public usuario: any;
 
     modalRef?: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+        private apiService: ApiService, 
+        private alertService: AlertService,
+        private route: ActivatedRoute, 
+        private router: Router,
+        private modalService: BsModalService
     ) {
-        this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        this.usuario = this.apiService.auth_user();
     }
 
     ngOnInit() {
-        
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
-
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        
+        this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
-        this.apiService.getAll('bodegas').subscribe(bodegas => {
-            this.bodegas = bodegas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        }, error => { this.alertService.error(error); });
 
+        this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
     }
 
     openModal(template: TemplateRef<any>) {
         this.producto = {};
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.modalRef = this.modalService.show(template, { 
+            class: 'modal-lg', 
+            backdrop: 'static',
+            keyboard: false,
+            ignoreBackdropClick: true
+        });
     }
 
-    public onSelectCategoria(categoria_id:any){
-        this.categoria = this.categorias.find(item => item.id == categoria_id);
-        this.subcategorias = this.categoria.subcategorias;
-    }
-
-    public setCategoria(categoria:any){
+    public setCategoria(categoria: any) {
         this.categorias.push(categoria);
-        this.producto.categoria_id = categoria.id;
+        this.producto.id_categoria = categoria.id;
     }
 
-    public setSubCategoria(subcategoria:any){
-        this.subcategorias.push(subcategoria);
-        this.producto.subcategoria_id = subcategoria.id;
+    public setCompuesto() {
+        if (this.producto.tipo == 'Producto') {
+            this.producto.tipo = 'Compuesto';
+        } else {
+            this.producto.tipo = 'Producto';
+        }
+    }
+
+    public actualizarCostoPromedio() {
+        this.producto.costo_promedio = this.producto.costo;
+    }
+
+    public actualizarCosto() {
+        this.producto.costo = this.producto.costo_promedio;
+    }
+
+    public calPrecioBase() {
+        if (this.usuario.empresa.iva > 0) {
+            this.producto.impuesto = this.usuario.empresa.iva / 100;
+            this.producto.precio = (this.producto.precio_final / (1 + (this.producto.impuesto * 1))).toFixed(4);
+        }
+    }
+
+    public calPrecioFinal() {
+        if (this.usuario.empresa.iva > 0) {
+            this.producto.impuesto = this.usuario.empresa.iva / 100;
+            this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
+        }
     }
 
     public onSubmit() {
-        this.loading = true;
+        this.guardar = true;
+        if (!this.producto.id) {
+            if (!this.producto.costo) {
+                this.producto.costo = this.producto.costo_promedio;
+            }
+            if (!this.producto.costo_promedio) {
+                this.producto.costo_promedio = this.producto.costo;
+            }
+        }
+
         this.producto.tipo = 'Producto';
-        this.producto.empresa_id = this.apiService.auth_user().empresa_id;
-        this.apiService.store('compra/guardar-producto', this.producto).subscribe(producto => {
+        // this.producto.empresa_id = this.apiService.auth_user().empresa_id;
+        this.producto.id_empresa = this.apiService.auth_user().id_empresa;
+
+        this.apiService.store('producto', this.producto).subscribe(producto => {
+            this.guardar = false;
+            this.producto = producto;
             this.update.emit(producto);
             this.modalRef?.hide();
-            this.alertService.success('Producto creado', 'Tu producto fue añadido exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.alertService.success('Producto creado', 'El producto fue añadido exitosamente.');
+        }, error => {
+            this.alertService.error(error);
+            this.guardar = false;
+        });
     }
 
-    public barcode(){
-        var ventana = window.open(this.apiService.baseUrl + "/api/producto/barcode/" + this.producto.id + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");
+    public barcode() {
+        var ventana = window.open(
+            this.apiService.baseUrl + "/api/barcode/" + this.producto.codigo + "?token=" + this.apiService.auth_token(),
+            "_new",
+            "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900"
+        );
     }
 
-    
-
+    public verificarSiExiste() {
+        if (this.producto.nombre) {
+            this.apiService.getAll('productos', { 
+                nombre: this.producto.nombre, 
+                estado: 1 
+            }).subscribe(productos => { 
+                if (productos.data[0]) {
+                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
+                        'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + 
+                        this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. ' + 
+                        '<br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+                    );
+                }
+                this.loading = false;
+            }, error => {
+                this.alertService.error(error);
+                this.loading = false;
+            });
+        }
+    }
 }

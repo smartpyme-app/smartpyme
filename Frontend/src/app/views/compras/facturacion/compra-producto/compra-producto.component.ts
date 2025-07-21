@@ -18,6 +18,7 @@ export class CompraProductoComponent implements OnInit {
     @Input() compra: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
+    modalCreateProductRef?: BsModalRef;
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -27,13 +28,16 @@ export class CompraProductoComponent implements OnInit {
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
-
+    public search:any = '';
+    // private apiService: ApiService, private alertService: AlertService,
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        private modalService: BsModalService, private sumPipe:SumPipe,
+        
     ) { }
 
     ngOnInit() {
+        this.alertService.modal = false;
 
         this.searchControl.valueChanges
               .pipe(
@@ -120,6 +124,19 @@ export class CompraProductoComponent implements OnInit {
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
+    crearProducto(template: TemplateRef<any>) {
+        this.modalCreateProductRef = this.modalService.show(template, {
+            class: 'modal-lg',
+            backdrop: 'static',
+            keyboard: false,
+            ignoreBackdropClick: true
+        });
+    }
+
+    onProductoCreated(producto: any) {
+        // Aquí puedes manejar el producto creado si es necesario
+        console.log('Producto creado:', producto);
+    }
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
