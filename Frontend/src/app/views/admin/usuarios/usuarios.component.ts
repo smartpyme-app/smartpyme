@@ -36,6 +36,7 @@ export class UsuariosComponent implements OnInit {
     CountryISO.CostaRica,
     CountryISO.Panama
   ];
+  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
 
   modalRef?: BsModalRef;
 
@@ -210,8 +211,6 @@ openModal(template: TemplateRef<any>, usuario: any) {
   public usuarioLogueado() {
     this.authUser = this.apiService.auth_user();
   }
-
-
 
 public changePhoneNumber(event: any) {
   console.log('Evento completo:', event);
