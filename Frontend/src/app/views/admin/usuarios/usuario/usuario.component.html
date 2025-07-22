@@ -192,8 +192,9 @@
                       <option value="">Todos</option>
                       <option value="Administrador">Administrador</option>
                       <option value="Supervisor">Supervisor</option>
-                      <option value="Vendedor">Vendedor</option>
+                      <option value="Ventas">Ventas</option>
                       <option value="Cajero">Cajero</option>
+                      <option value="Supervisor Limitado" *ngIf="empresas_supervisor_limitado.includes(authUser?.id_empresa)">Supervisor Limitado</option>
                     </select>
                     <label>Tipo</label>
                   </div>

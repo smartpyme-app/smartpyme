@@ -131,6 +131,9 @@ export class UsuarioComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router
   ) {}
+  public authUser: any = {};
+  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
+
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
@@ -147,6 +150,8 @@ export class UsuarioComponent implements OnInit {
         this.alertService.error(error);
       }
     );
+
+    this.usuarioLogueado();
   }
 
   public loadAll(id: number) {
@@ -585,5 +590,9 @@ export class UsuarioComponent implements OnInit {
     if (country) {
       this.onCountryChange(country);
     }
+  }
+
+  public usuarioLogueado() {
+    this.authUser = this.apiService.auth_user();
   }
 }
