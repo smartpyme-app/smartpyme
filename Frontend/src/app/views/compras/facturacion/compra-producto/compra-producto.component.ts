@@ -135,7 +135,19 @@ export class CompraProductoComponent implements OnInit {
 
     onProductoCreated(producto: any) {
         // Aquí puedes manejar el producto creado si es necesario
+        producto.id_producto    = producto.id;
+        producto.nombre_producto = producto.nombre;
+        producto.img            = producto.img;
+        producto.precio         = parseFloat(producto.precio);
+        producto.costo          = parseFloat(producto.costo);
+        producto.inventarios        = producto?.inventarios?.filter((item:any) => item.id_sucursal == this.compra.id_sucursal) || [];
+        producto.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        producto.cantidad       = 1;
+        producto.descuento      = 0;
+        
         console.log('Producto creado:', producto);
+        
+        this.productoSelect.emit(producto);
     }
 
     selectProducto(producto:any){
@@ -172,6 +184,7 @@ export class CompraProductoComponent implements OnInit {
     }
 
     onSubmit(){
+        console.log(this.detalle);
         this.productos = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
