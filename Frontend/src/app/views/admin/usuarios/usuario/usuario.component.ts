@@ -70,6 +70,9 @@ export class UsuarioComponent implements OnInit {
     private router: Router,
     public encryptService: EncryptService
   ) {}
+  public authUser: any = {};
+  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
+
 
   ngOnInit() {
     const encryptedId = this.route.snapshot.paramMap.get('id')!;
@@ -97,6 +100,7 @@ export class UsuarioComponent implements OnInit {
       }
     );
 
+    this.usuarioLogueado();
     this.loadPermissions(id);
   }
 
@@ -641,4 +645,7 @@ export class UsuarioComponent implements OnInit {
       console.log('Usuario rol_id:', this.usuario.rol_id, typeof this.usuario.rol_id);
   }
 
+  public usuarioLogueado() {
+    this.authUser = this.apiService.auth_user();
+  }
 }
