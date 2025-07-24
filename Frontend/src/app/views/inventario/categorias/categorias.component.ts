@@ -12,7 +12,9 @@ export class CategoriasComponent implements OnInit {
 
     public categorias:any = [];
     public categoria:any = {};
-    public filtro:any = {};
+    public sucursales:any = [];
+    public catalogo:any = [];
+    public filtros:any = {};
     public loading:boolean = false;
 
     modalRef?: BsModalRef;
@@ -23,12 +25,29 @@ export class CategoriasComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
+
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.sucursales = sucursales;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
+
+        
     }
 
     public loadAll() {
         this.loading = true;
-        this.filtro.estado = '';
-        this.apiService.getAll('categorias').subscribe(categorias => { 
+        this.filtros.estado = '';
+        this.filtros.id_sucursal = '';
+
+        this.filtrarCategorias();
+    }
+
+    public filtrarCategorias() {
+        this.loading = true;
+        this.apiService.getAll('categorias', this.filtros).subscribe(categorias => { 
             this.categorias = categorias;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -42,7 +61,7 @@ export class CategoriasComponent implements OnInit {
             this.categoria.enable = true;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
     public setEstado(categoria:any){
@@ -81,13 +100,6 @@ export class CategoriasComponent implements OnInit {
 
     }
 
-    public onFiltrar() {
-        this.loading = true;
-        this.apiService.store('categorias/filtrar', this.filtro).subscribe(categorias => { 
-            this.categorias = categorias;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
-    }
 
     public verificarSiExiste(){
         if(this.categoria.nombre){

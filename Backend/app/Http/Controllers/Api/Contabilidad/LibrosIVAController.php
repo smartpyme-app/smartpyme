@@ -73,7 +73,7 @@ class LibrosIVAController extends Controller
         $libroconsumidores = $ivas->sortByDesc(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
             })->values()->all();
-        
+
 
         $formato = $request->query('formato') ?? 'json';
 
@@ -591,17 +591,17 @@ class LibrosIVAController extends Controller
         try {
             $dttes = new GlobalDttesExport();
             $dttes->filter($request);
-            
+
             $result = $dttes->generateZip();
-            
+
             if (!$result['success']) {
                 Log::error('Error al generar ZIP: ' . $result['message']);
-                
+
                 // Devolver texto plano en lugar de JSON
                 return response($result['message'], 400)
                     ->header('Content-Type', 'text/plain');
             }
-            
+
             return response()->download(
                 storage_path('app/' . $result['path']),
                 $result['filename'],
@@ -613,7 +613,7 @@ class LibrosIVAController extends Controller
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             // Devolver texto plano en lugar de JSON
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');

@@ -39,7 +39,7 @@ export class ComprasComponent implements OnInit {
     };
     public numeros_ids:any = [];
     public downloadingRentabilidad:boolean = false;
-    
+
 
     public filtros:any = {};
 
@@ -72,7 +72,7 @@ export class ComprasComponent implements OnInit {
         });
 
         this.getNumsIds();
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
     }
@@ -105,7 +105,7 @@ export class ComprasComponent implements OnInit {
         });
 
         this.loading = true;
-        
+
         if(!this.filtros.id_proveedor){
             this.filtros.id_proveedor = '';
         }
@@ -114,7 +114,7 @@ export class ComprasComponent implements OnInit {
             this.filtros.id_usuario = '';
         }
 
-        this.apiService.getAll('compras', this.filtros).subscribe(compras => { 
+        this.apiService.getAll('compras', this.filtros).subscribe(compras => {
             this.compras = compras;
             this.loading = false;
             if(this.modalRef){
@@ -151,16 +151,16 @@ export class ComprasComponent implements OnInit {
         }
 
     }
-    
+
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('compra/', id) .subscribe(data => {
-                for (let i = 0; i < this.compras['data'].length; i++) { 
+                for (let i = 0; i < this.compras['data'].length; i++) {
                     if (this.compras['data'][i].id == data.id )
                         this.compras['data'].splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
 
     }
@@ -169,7 +169,7 @@ export class ComprasComponent implements OnInit {
         this.compra = compra;
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
                 this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
         }
@@ -179,13 +179,13 @@ export class ComprasComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
@@ -196,7 +196,7 @@ export class ComprasComponent implements OnInit {
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('compras/filtrar/' + filtro + '/', txt).subscribe(compras => { 
+        this.apiService.read('compras/filtrar/' + filtro + '/', txt).subscribe(compras => {
             this.compras = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -204,7 +204,7 @@ export class ComprasComponent implements OnInit {
     }
 
     public onSubmit() {
-        this.saving = true;            
+        this.saving = true;
         this.apiService.store('compra', this.compra).subscribe(compra => {
             this.compra = {};
             this.saving = false;
@@ -221,7 +221,7 @@ export class ComprasComponent implements OnInit {
     public setRecurrencia(compra:any){
         this.compra = compra;
         this.compra.recurrente = true;
-        
+
         this.apiService.store('compra', this.compra).subscribe(compra => {
             this.compra = {};
             this.alertService.success('Compra guardada', 'La compra se marco como recurrente exitosamente.');
@@ -275,6 +275,7 @@ export class ComprasComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 
@@ -285,25 +286,25 @@ export class ComprasComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.sucursales.length){
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
                 this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
         }
@@ -366,7 +367,7 @@ export class ComprasComponent implements OnInit {
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
                         this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
                         // this.alertService.success('DTE firmado.');
-                        
+
                         this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.compra.dte_invalidacion.sello = dte.selloRecibido;
@@ -400,10 +401,10 @@ export class ComprasComponent implements OnInit {
         }
     }
 
-   
+
 
     public abrirModalFiltrosRentabilidad(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
@@ -412,7 +413,7 @@ export class ComprasComponent implements OnInit {
         });
       }
 
-      
+
   public descargarReporteRentabilidad() {
     this.downloadingRentabilidad = true;
     this.saving = true;
@@ -442,7 +443,7 @@ export class ComprasComponent implements OnInit {
         this.downloadingRentabilidad = false;
         this.saving = false;
 
-     
+
         this.filtrosRentabilidad = {
           inicio: '',
           fin: '',
@@ -464,10 +465,15 @@ export class ComprasComponent implements OnInit {
   }
 
   getNumsIds(){
-    this.apiService.getAll('compras/nums-ids').subscribe(numsIds => { 
+    this.apiService.getAll('compras/nums-ids').subscribe(numsIds => {
         this.numeros_ids = numsIds;
     }, error => {this.alertService.error(error); });
-  } 
+  }
 
+  generarPartidaContable(compra:any){
+    this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
+      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+    },error => {this.alertService.error(error);});
+  }
 
 }

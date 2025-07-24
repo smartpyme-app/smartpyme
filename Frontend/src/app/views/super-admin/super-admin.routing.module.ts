@@ -15,6 +15,9 @@ import { AdminSucursalesComponent } from './sucursales/admin-sucursales.componen
 import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
 import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
 import { EmpresasFuncionalidadesComponent } from '@views/super-admin/funcionalidades/empresas-funcionalidades.component';
+import { RolesPermisosComponent } from '@views/admin/roles-permisos/roles-permisos.component';
+import { ModulesComponent } from '@views/admin/modules/modules.component';
+import { ModuleFormComponent } from '@views/admin/modules/create/module-form.component';
 
 
 const routes: Routes = [
@@ -38,6 +41,10 @@ const routes: Routes = [
 
         { path: 'suscripciones', component: AdminSuscripcionesComponent, title: 'Suscripciones' },
         { path: 'funcionalidades', component: EmpresasFuncionalidadesComponent, title: 'Funcionalidades' },
+        { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
+        { path: 'modulos', component: ModulesComponent, title: 'Módulos'},
+        { path: 'modulos/crear', component: ModuleFormComponent, title: 'Crear módulo'},
+        { path: 'modulos/editar/:id', component: ModuleFormComponent, title: 'Editar módulo'}
     ]
   }
 ];

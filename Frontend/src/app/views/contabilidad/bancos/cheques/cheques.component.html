@@ -1,0 +1,171 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Bancos</h2>
+    <button *ngIf="apiService.canCreateTest('finanzas.cheques.crear')" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="cheques?.total">
+                Mostrando {{ cheques?.to }} de {{ cheques?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <button [disabled]="downloading" tooltip="Descargar cheques" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCheques()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"routerLink="/bancos/conciliaciones">Conciliaciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/transacciones']">Transacciones</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarCheques()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Anulado">Anulado</option>
+                <option value="Aprobado">Aprobado</option>
+            </select>
+            <select name="id_cuenta" (change)="filtrarCheques()" [(ngModel)]="filtros.id_cuenta" class="form-select bg-default w-auto">
+                <option value="">Cuenta</option>
+                <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
+                    {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
+                </option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Cuenta</th>
+                        <th>Correlativo</th>
+                        <th>A nombre de</th>
+                        <th>Concepto</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="cheques?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene cheques registrados</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let cheque of cheques?.data">
+                        <td>{{cheque.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{cheque.nombre_usuario}}</td>
+                        <td>{{cheque.nombre_cuenta}}</td>
+                        <td>{{cheque.correlativo}}</td>
+                        <td>{{cheque.anombrede}}</td>
+                        <td>{{cheque.concepto}}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : cheque?.estado == 'Pendiente', 'bg-danger' : cheque?.estado == 'Anulado', 'bg-success' : cheque?.estado == 'Aprobado'}">{{ cheque.estado }}</span>
+                        </td>
+                        <td class="text-end">{{cheque.total | currency}}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/bancos/cheque/{{cheque.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="cheque.estado == 'Pendiente' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Aprobar
+                                    </a>
+                                    <a *ngIf="cheque.estado != 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular
+                                    </a>
+                                    <a *ngIf="cheque.id_referencia" routerLink="/{{cheque.ruta_referencia}}/{{cheque.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                    </a>
+                                    <a *ngIf="cheque.estado == 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a (click)="imprimir(cheque)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="cheques?.last_page > 1">
+            <app-pagination [items]="cheques" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarCheques()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Anulado">Anulado</option>
+                    <option value="Aprobado">Aprobado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_cuenta">Cuenta:</label>
+                <select name="id_cuenta" [(ngModel)]="filtros.id_cuenta" class="form-control form-select">
+                    <option value="">Todos</option>
+                    <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
+                        {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
+                    </option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

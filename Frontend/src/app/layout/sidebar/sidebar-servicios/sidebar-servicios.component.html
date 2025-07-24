@@ -1,4 +1,4 @@
-<div  id="tour.sidebar"  class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
+<div style="z-index: 1050;" id="tour.sidebar"  class="sidebar shadow-sm" [ngClass]="{'collapsed': sidebarCollapsed}">
     <div class="click d-flex justify-content-start align-items-center ps-2 pb-2 mb-2 border-bottom position-relative" style="min-height: 7vh;">
         <img src="assets/img/icon.png" (click)="toggleSidebar()" height="25px">
         <a routerLink="/" tooltip="Dashboard"> <img src="assets/img/logo.png" class="logo" height="25px"> </a>
@@ -20,27 +20,27 @@
     </div>
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('ventas.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/vendedor/ventas']" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('servicios.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/tool.png" class="icon me-2">Servicios
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('citas.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Citas
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('ventas.clientes.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/clientes']" tooltip="Clientes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/users.png" class="icon me-2">Clientes
                 </a>
             </li>
-            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+            <li *ngIf="canShowOption('finanzas.cierre_caja.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/cierre-de-caja']" tooltip="Cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja
                 </a>

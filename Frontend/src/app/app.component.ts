@@ -111,7 +111,15 @@ export class AppComponent implements OnInit {
             }
         ];
 
-        if (this.usuario.tour_bienvenida == '0' && this.usuario.tipo == 'Administrador') {
+        // if (this.usuario.tour_bienvenida == '0' && this.usuario.tipo == 'Administrador') {
+
+        //     setTimeout(() => {
+        //         if(!localStorage.getItem('sp_tour_iniciado')){
+        //             this.modalRefStarTour = this.modalService.show(this.tourTemplate, {class: 'modal-md', backdrop: 'static', keyboard: false});
+        //         }
+        //     }, 1000);
+        // }
+        if (this.usuario.tour_bienvenida == '0' && this.apiService.validateRole('admin', true) || this.apiService.validateRole('super_admin', true)) {
 
             setTimeout(() => {
                 if(!localStorage.getItem('sp_tour_iniciado')){

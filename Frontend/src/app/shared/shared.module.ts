@@ -33,23 +33,21 @@ import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abo
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
-
 import { PaginationComponent } from './parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from './parts/notificaciones/notificaciones-container.component';
 import { TimerComponent } from './parts/timer/timer.component';
-
 import { NotFoundComponent } from './404/not-found.component';
-
 import { ImportarExcelComponent } from './parts/importar-excel/importar-excel.component';
 import { DescargarExcelComponent } from './parts/descargar-excel/descargar-excel.component';
 import { DescargarInventarioComponent } from './parts/descargar-inventario/descargar-inventario.component';
 import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
-
 import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
-
 import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
-
-
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { AuthorizationRequestModalComponent } from './authorization/authorization-request/authorization-request-modal.component';
+import { AuthorizationViewComponent } from './authorization/authorization-view/authorization-view.component';
+import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
 
 @NgModule({
   imports: [
@@ -61,7 +59,8 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    PopoverModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
@@ -95,7 +94,11 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent,
-    AlertsHaciendaComponent
+    AlertsHaciendaComponent,
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -129,7 +132,11 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     ThreedsModalComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-    AlertsHaciendaComponent
+    AlertsHaciendaComponent,
+    AuthorizationRequestModalComponent,
+    AuthorizationViewComponent,
+    CrearDepartamentoComponent,
+    CrearAreaEmpresaComponent
   ],
   providers: [AlertService],
 })

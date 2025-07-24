@@ -126,7 +126,7 @@ class Empresa extends Model
         'custom_empresa' => 'json',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol', 'acces_chatbot_whatsapp'];
+    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol', 'acces_chatbot_whatsapp', 'generar_partidas'];
 
     public function limiteUsuarios()
     {
@@ -162,6 +162,14 @@ class Empresa extends Model
         return $this->pagos->count();
     }
 
+    public function getGenerarPartidasAttribute(){
+        return $this->contabilidad()->pluck('generar_partidas')->first();
+    }
+
+
+    public function contabilidad(){
+        return $this->hasOne('App\Models\Contabilidad\Configuracion', 'id_empresa');
+    }
 
     public function usuarios()
     {

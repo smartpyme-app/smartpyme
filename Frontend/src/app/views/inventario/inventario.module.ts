@@ -14,6 +14,7 @@ import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
+import { ReactiveFormsModule } from '@angular/forms';
 
 import { InventarioRoutingModule } from './inventario.routing.module';
 
@@ -31,6 +32,9 @@ import { ProductoComprasComponent } from './productos/producto/historial/compras
 import { ProductoAjustesComponent } from './productos/producto/historial/ajustes/producto-ajustes.component';
 import { ProductoVentasComponent } from './productos/producto/historial/ventas/producto-ventas.component';
 import { PromocionesComponent } from './promociones/promociones.component';
+import { ProductoComboComponent } from './productos/producto/combo/producto-combo.component';
+import { ComboDetallesComponent } from './productos/producto/combo/detalles/combo-detalles.component';
+import { BuscadorProductoComponent } from './productos/producto/combo/buscador-producto/buscador-producto.component';
 
 import { ProductosConsignasComponent } from './consignas/productos-consignas.component';
 
@@ -47,14 +51,18 @@ import { AjusteComponent } from './ajustes/ajuste/ajuste.component';
 import { ServiciosComponent } from './servicios/servicios.component';
 
 import { CategoriasComponent } from './categorias/categorias.component';
+import { CategoriaCuentasComponent } from './categorias/cuentas/categoria-cuentas.component';
 import { SubCategoriasComponent } from './categorias/subcategorias/subcategorias.component';
 
 import { BodegaComponent } from './bodegas/bodega/bodega.component';
 import { BodegasComponent } from './bodegas/bodegas.component';
 import { TrasladoMasivoComponent } from './productos/producto/traslado/traslado-masivo.component';
-import { ReactiveFormsModule } from '@angular/forms';
 
 import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
+
+import { ComboIndexComponent } from './productos/producto/combo/combo-index/combo-index.component';
+import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
+import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
 
 @NgModule({
   imports: [
@@ -69,15 +77,15 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     TourNgxBootstrapModule,
     NgxMaskDirective, NgxMaskPipe,
     InventarioRoutingModule,
+    ReactiveFormsModule,
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     PopoverModule.forRoot(),
     FocusModule.forRoot(),
-    ReactiveFormsModule
   ],
   declarations: [
-  	ProductosComponent,
+    ProductosComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
@@ -102,6 +110,16 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
+    CategoriaCuentasComponent,
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent,
+    ProductoComboComponent,
+    ComboDetallesComponent,
+    BuscadorProductoComponent,
+    ComboIndexComponent,
+    VerProductoComponent,
+    CustomFieldsComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
@@ -109,7 +127,7 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     AjusteMasivoComponent
   ],
   exports: [
-  	ProductosComponent,
+    ProductosComponent,
     ProductoComponent,
     KardexComponent,
     PromocionesComponent,
@@ -134,6 +152,14 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     AjusteComponent,
     ServiciosComponent,
     CategoriasComponent,
+    CategoriaCuentasComponent,
+    SubCategoriasComponent,
+    BodegaComponent,
+    BodegasComponent,
+    ProductoComboComponent,
+    ComboDetallesComponent,
+    BuscadorProductoComponent,
+    CustomFieldsComponent,
     SubCategoriasComponent,
     BodegaComponent,
     BodegasComponent,
@@ -142,3 +168,4 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
   ]
 })
 export class InventarioModule { }
+

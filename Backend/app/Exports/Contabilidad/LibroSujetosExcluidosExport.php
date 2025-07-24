@@ -103,7 +103,7 @@ class LibroSujetosExcluidosExport implements FromCollection, WithMapping, WithHe
     public function map($compra): array
     {
         $proveedor = optional($compra->proveedor()->first());
-        
+
         $data = [
             'tipo_documento' => $proveedor->nit ? 'NIT' : 'DUI',  // A - TIPO DE DOCUMENTO
             'num_documento' => $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO

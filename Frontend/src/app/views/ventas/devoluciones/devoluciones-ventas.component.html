@@ -7,7 +7,7 @@
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -77,7 +77,7 @@
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
-                        
+
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
@@ -90,7 +90,7 @@
                             <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
                                 {{ venta.enable == '1' ? 'Confirmada' : 'Anulada' }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -107,8 +107,8 @@
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, venta)" tooltip="Ver DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
-                                    <a *ngIf="venta.enable == '1' && apiService.canEdit()" 
-                                    (click)="editarDevolucion(mEditarDevolucion, venta)" 
+                                    <a *ngIf="venta.enable == '1' && apiService.canEditTest('ventas.devoluciones.editar')"
+                                    (click)="editarDevolucion(mEditarDevolucion, venta)"
                                     class="list-group-item list-group-item-action border-0 click">
                                      <i class="fa fa-fw fa-edit"></i> Editar devolución
                                  </a>
@@ -118,10 +118,10 @@
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.enable == '0' && apiService.canEdit()" (click)="setEstado(venta, '1')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.enable == '0' && apiService.canEditTest('ventas.devoluciones.editar')" (click)="setEstado(venta, '1')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.devoluciones.editar')" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                 </div>
@@ -196,7 +196,7 @@
                 </ng-select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>
@@ -271,29 +271,29 @@
         <h5 class="modal-title mb-0">Editar Devolución</h5>
         <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
-    
+
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        
+
         <form #editarForm="ngForm" (ngSubmit)="actualizarDevolucion()">
-            
+
             <!-- Fecha -->
             <div class="mb-3">
                 <label for="fecha" class="form-label">Fecha <span class="text-danger">*</span></label>
-                <input 
-                    type="date" 
-                    class="form-control" 
+                <input
+                    type="date"
+                    class="form-control"
                     id="fecha"
                     name="fecha"
-                    [(ngModel)]="devolucionEditar.fecha" 
+                    [(ngModel)]="devolucionEditar.fecha"
                     required>
             </div>
 
             <!-- Documento -->
             <div class="mb-3">
                 <label for="documento" class="form-label">Documento</label>
-                <select 
-                    class="form-select" 
+                <select
+                    class="form-select"
                     id="documento"
                     name="id_documento"
                     [(ngModel)]="devolucionEditar.id_documento">
@@ -307,9 +307,9 @@
             <!-- Correlativo -->
             <div class="mb-3">
                 <label for="correlativo" class="form-label">Correlativo</label>
-                <input 
-                    type="number" 
-                    class="form-control" 
+                <input
+                    type="number"
+                    class="form-control"
                     id="correlativo"
                     name="correlativo"
                     [(ngModel)]="devolucionEditar.correlativo"
@@ -319,11 +319,11 @@
             <!-- Usuario -->
             <div class="mb-3">
                 <label for="usuario" class="form-label">Usuario <span class="text-danger">*</span></label>
-                <select 
-                    class="form-select" 
+                <select
+                    class="form-select"
                     id="usuario"
                     name="id_usuario"
-                    [(ngModel)]="devolucionEditar.id_usuario" 
+                    [(ngModel)]="devolucionEditar.id_usuario"
                     required>
                     <option value="">Seleccionar usuario</option>
                     <option *ngFor="let usuario of usuarios" [value]="usuario.id">
@@ -335,12 +335,12 @@
             <!-- Observaciones -->
             <div class="mb-3">
                 <label for="observaciones" class="form-label">Observaciones <span class="text-danger">*</span></label>
-                <textarea 
-                    class="form-control" 
+                <textarea
+                    class="form-control"
                     id="observaciones"
                     name="observaciones"
                     rows="3"
-                    [(ngModel)]="devolucionEditar.observaciones" 
+                    [(ngModel)]="devolucionEditar.observaciones"
                     required
                     maxlength="255"
                     placeholder="Ingrese las observaciones"></textarea>
@@ -349,9 +349,9 @@
 
             <!-- Botones -->
             <div class="d-grid gap-2">
-                <button 
-                    type="submit" 
-                    class="btn btn-primary" 
+                <button
+                    type="submit"
+                    class="btn btn-primary"
                     [disabled]="!editarForm.valid || saving">
                     <span *ngIf="!saving">Actualizar Devolución</span>
                     <span *ngIf="saving">
@@ -359,10 +359,10 @@
                         Actualizando...
                     </span>
                 </button>
-                
-                <button 
-                    type="button" 
-                    class="btn btn-secondary" 
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
                     (click)="modalRef.hide(); alertService.modal = false;">
                     Cancelar
                 </button>

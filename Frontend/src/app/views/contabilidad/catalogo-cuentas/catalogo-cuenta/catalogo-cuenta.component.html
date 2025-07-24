@@ -1,0 +1,78 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ cuenta.id ? 'Editar ' : 'Crear ' }} Cuenta</h3>
+    <button class="btn btn-light text-danger" routerLink="/catalogo/cuentas"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+
+            <div class="form-group col-md-12 col-lg-4">
+                <label for="codigo">Código:</label>
+                <input type="number" class="form-control" name="codigo" [(ngModel)]="cuenta.codigo"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="nombre">Nombre:</label>
+                <input type="text" class="form-control" name="nombre" [(ngModel)]="cuenta.nombre"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="id_cuenta_padre">Cuenta padre:</label>
+                <select class="form-select" name="id_cuenta_padre" [(ngModel)]="cuenta.id_cuenta_padre">
+                    <option [ngValue]="null">Sin cuenta padre</option>
+                    <option *ngFor="let c of cuentas" [ngValue]="c.id">
+                        {{ c.codigo }} - {{ c.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="naturaleza">Naturaleza:</label>
+                <select class="form-select" name="naturaleza" [(ngModel)]="cuenta.naturaleza">
+                    <option value="Deudor">Deudor</option>
+                    <option value="Acreedor">Acreedor</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="nivel">Nivel:</label>
+                <input type="number" class="form-control" name="nivel" [(ngModel)]="cuenta.nivel"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-4 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="acepta_datos">Acepta datos</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="cuenta.acepta_datos" name="venta.acepta_datos">
+                </div>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="rubro">Rubro:</label>
+                <select class="form-select" name="rubro" [(ngModel)]="cuenta.rubro">
+                    <option value="Activos">Activos </option>
+                    <option value="Pasivos">Pasivos</option>
+                    <option value="Capital">Capital</option>
+                    <option value="Costos y gastos">Costos y gastos</option>
+                    <option value="Ingresos">Ingresos</option>
+                    <option value="Resultados">Resultados</option>
+                    <option value="Contingencia">Contingencia</option>
+                    <option value="Presupuestos">Presupuestos</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            </div>
+            <div class="form-group col-md-12 col-lg-4">
+            <label for="saldo_inicial">Saldo Inicial:</label>
+            <input type="number" class="form-control" id="saldo_inicial" name="saldo_inicial" [(ngModel)]="cuenta.saldo_inicial"/>
+          </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar cuenta  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+

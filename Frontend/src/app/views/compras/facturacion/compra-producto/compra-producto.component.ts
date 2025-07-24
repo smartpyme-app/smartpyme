@@ -28,24 +28,33 @@ export class CompraProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
 
-    constructor( 
+    constructor(
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
     ) { }
 
     ngOnInit() {
-
+        console.log(this.compra);
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
                 filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+                switchMap((query: any) =>
+                  this.apiService.getAll(`productos/buscar/${encodeURIComponent(query)}`).pipe(
+                    catchError(error => {
+                      console.error('Error en la búsqueda:', error);
+                      this.productos = []; // Limpiar resultados en caso de error.
+                      this.loading = false; // Asegurar que el estado de carga se actualice.
+                      return of([]); // Retornar un observable vacío para que el flujo continúe.
+                    })
+                  )
+                )
               )
               .subscribe((results: any[]) => {
                 this.productos = Array.isArray(results) ? results : [];
                 this.loading = false;
 
-                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
+                if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) {
                     this.selectProducto(results[0]);
                 }
               });
@@ -66,7 +75,7 @@ export class CompraProductoComponent implements OnInit {
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -85,7 +94,7 @@ export class CompraProductoComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
+        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -112,7 +121,7 @@ export class CompraProductoComponent implements OnInit {
         }
 
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

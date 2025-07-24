@@ -43,54 +43,83 @@ class AuthJWTController extends Controller
         $this->suscripcionService = $suscripcionService;
     }
 
+    public function login(Request $request){
 
-    public function login(Request $request)
-    {
+        try {
+            $credentials = $request->only('email', 'password');
+            $token = null;
 
-        $credentials = $request->only('email', 'password');
-        $token = null;
-
-        $token = JWTAuth::attempt($credentials);
-        $user = auth()->user();
+            $token = JWTAuth::attempt($credentials);
+            $user = auth()->user();
 
 
-        if (!$token)
-            return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
+            if (!$token)
+                return  Response()->json(['message' => 'Datos incorrectos, asegúrate de que tu usuario y contraseña estén escritos correctamente.', 'code' => 401], 401);
 
-        if (!$user->enable)
-            return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);
+            if (!$user->enable)
+                return  Response()->json(['message' => 'Lo sentimos, este usuario esta inactivo', 'code' => 401], 401);
 
-        if (!$user->empresa()->pluck('activo')->first())
-            return  Response()->json(['message' => 'Lo sentimos, la cuenta no esta activa', 'code' => 401], 401);
+            if (!$user->empresa()->pluck('activo')->first())
+                return  Response()->json(['message' => 'Lo sentimos, la cuenta no esta activa', 'code' => 401], 401);
 
-        $user->ultimo_login = Carbon::now();
-        $user->save();
+            $user->ultimo_login = Carbon::now();
+            $user->save();
 
-        $acceso = new Acceso;
-        $acceso->id_usuario = $user->id;
-        $acceso->fecha = $user->ultimo_login;
-        $acceso->save();
+            $acceso = new Acceso;
+            $acceso->id_usuario = $user->id;
+            $acceso->fecha = $user->ultimo_login;
+            $acceso->save();
 
-        $user->empresa = $user->empresa()->with('licencia')->first();
-        $suscripcion = $user->empresa->suscripcion()
-            ->whereNotIn('estado', [
-                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
-                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
-            ])
-            ->latest()
-            ->first();
-        $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
-        $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
-        $user->tiene_suscripcion = !is_null($suscripcion);
-        $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
-        $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
+            // Cargar datos adicionales
+            //$user->load('empresa.licencia');
 
-        $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
-        $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
-        $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
-        $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+            $user->empresa = $user->empresa()->with('licencia')->first();
+            $suscripcion = $user->empresa->suscripcion()
+                ->whereNotIn('estado', [
+                    config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+                    config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+                ])
+                ->latest()
+                ->first();
+            $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
+            $user->dias_faltantes_prueba = $suscripcion ? $suscripcion->diasFaltantesPrueba() : null;
+            $user->tiene_suscripcion = !is_null($suscripcion);
+            $user->ordenes_pagos = $suscripcion && $suscripcion->ordenesPago()->exists() ? true : false;
+            $user->tiene_metodo_pago_activo = $user->metodoPago()->where('esta_activo', true)->exists();
 
-        return response()->json(['token' => $token, 'user' => $user], 200);
+            $user->plan = $suscripcion && $suscripcion->plan_id ? $this->getPlan($suscripcion->plan_id)->nombre : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->nombre;
+            $user->estado_suscripcion = $suscripcion && $suscripcion->estado ? $suscripcion->estado : 'No tiene suscripción';
+            $user->plan_id = $suscripcion && $suscripcion->plan_id ? $suscripcion->plan_id : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->id;
+            $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
+
+            // Cargar permisos
+            $rolePermissions = $user->getPermissionsViaRoles()->pluck('name');
+            $directPermissions = $user->getDirectPermissions()->pluck('name');
+            $revokedPermissions = DB::table('permission_revocations')
+                ->where('user_id', $user->id)
+                ->pluck('permission_name');
+
+            $effectivePermissions = collect($rolePermissions)
+                ->merge($directPermissions)
+                ->diff($revokedPermissions);
+
+            return response()->json([
+                'token' => $token,
+                'user' => $user,
+                'permissions' => [
+                    'rolePermissions' => $rolePermissions,
+                    'directPermissions' => $directPermissions,
+                    'revokedPermissions' => $revokedPermissions,
+                    'effectivePermissions' => $effectivePermissions
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error en el servidor',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function logout(Request $request)
@@ -100,6 +129,7 @@ class AuthJWTController extends Controller
         $user->save();
 
         return response()->json(['user' => $user], 200);
+
     }
 
     public function register(Request $request)

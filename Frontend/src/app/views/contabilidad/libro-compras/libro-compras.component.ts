@@ -20,12 +20,12 @@ export class LibroComprasComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-    ngOnInit() {   
+    ngOnInit() {
         const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
         // Crear un array con el año actual y los 10 años anteriores
@@ -39,10 +39,10 @@ export class LibroComprasComponent implements OnInit {
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
-        
+
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -51,7 +51,7 @@ export class LibroComprasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => { 
+        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

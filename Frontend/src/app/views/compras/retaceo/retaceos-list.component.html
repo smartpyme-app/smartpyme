@@ -1,0 +1,166 @@
+
+<div class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Retaceos</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/retaceo/crear" tooltip="Crear retaceo (F4)" class="btn btn-default tcla-F4">
+      <i class="fa fa-plus"></i> Añadir retaceo
+    </button>
+  </div>
+
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+          <span class="text-muted d-flex align-items-center gap-2" *ngIf="retaceos?.total">
+              Mostrando
+              <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+              </select>
+               de {{ retaceos?.total + ' registros' }}
+          </span>
+      </div>
+
+      <div class="col-md-6 mb-3">
+          <div class="d-flex gap-2">
+              <form class="d-flex input-group" name="form" (ngSubmit)="filtrarRetaceos()" autocomplete="off">
+                  <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.busqueda">
+              </form>
+              <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+              <button tooltip="Limpiar filtros" (click)="limpiarFiltros()" class="btn btn-default">
+                  <i class="fa fa-refresh"></i>
+                </button>
+          </div>
+      </div>
+  </div>
+    <div class="row">
+      <div class="table-responsive">
+        <table class="table table-borderless table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Compra</th>
+              <th>Fecha Elaboración</th>
+              <th>Monto Total</th>
+              <th>Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="10" class="text-center" *ngIf="retaceos?.total < 1 && !loading">
+                <span class="badge bg-primary">No tiene retaceos registrados</span>
+              </td>
+              <td colspan="10" class="text-center" *ngIf="loading">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+            <tr *ngFor="let retaceo of retaceos?.data">
+              <td>{{ retaceo.codigo }}</td>
+              <td>
+                <strong>{{ retaceo.compra?.nombre_proveedor || 'N/A' }}</strong>
+                <br>
+                <small>Ref: {{ retaceo.compra?.referencia || 'N/A' }}</small>
+              </td>
+              <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
+              <td>{{ retaceo.total_retaceado | currency:'USD':'symbol':'1.2' }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': retaceo.estado === 'Aplicado',
+                  'bg-warning': retaceo.estado === 'Pendiente',
+                  'bg-danger': retaceo.estado === 'Anulado'
+                }">
+                  {{ retaceo.estado }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                  <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                </span>
+                <ng-template #accionesTemplate>
+                  <div class="list-group border-0">
+                    <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                    </a>
+                    <a *ngIf="apiService.canEdit()" (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-trash"></i>Eliminar
+                    </a>
+                    <a *ngIf="apiService.canEdit()" (click)="generarPartidaContable(retaceo)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-file"></i>Generar partida contable
+                    </a>
+                  </div>
+                </ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="col-12" *ngIf="retaceos?.last_page > 1">
+        <app-pagination [items]="retaceos" (setPagination)="setPagination($event)"></app-pagination>
+      </div>
+    </div>
+  </section>
+
+
+  <ng-template #mfilter>
+  <div class="modal-header">
+      <div class="modal-title text-center">
+        <h2 class="text-center">
+          Filtrar
+          <!-- <span *ngIf="filtrosActivos()" class="badge bg-primary ms-2">Filtros activos</span> -->
+        </h2>
+      </div>
+      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <app-notificaciones-container></app-notificaciones-container>
+      <form autocomplete="off" (ngSubmit)="filtrarRetaceos()">
+          <div class="row">
+
+              <div class="form-group col-sm-6">
+                  <label for="">Del:</label>
+                  <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+              </div>
+              <div class="form-group col-sm-6">
+                  <label for="">Al:</label>
+                  <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+              </div>
+              <div class="form-group col-sm-6">
+                  <label for="filtros.estado">Estado:</label>
+                  <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                      <option value="">Todos</option>
+                      <option value="Aplicado">Aplicados</option>
+                      <option value="Pendiente">Pendientes</option>
+                      <option value="Anulada">Anuladas</option>
+                  </select>
+              </div>
+              <div class="form-group col-sm-6">
+                  <label for="filtros.sucursal">Sucursal:</label>
+                  <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
+                      <option value="">Todos</option>
+                      <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                          {{ sucursal.nombre }}
+                      </option>
+                  </select>
+              </div>
+              <div class="form-group col-md-6">
+                  <label for="filtros.id_usuario">Usuario:</label>
+                  <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
+                      <ng-option value="">Todos</ng-option>
+                      <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                          {{ usuario.name }}
+                      </ng-option>
+                  </ng-select>
+              </div>
+          </div>
+
+          <div class="d-grid mt-3">
+              <button type="submit" [disabled]="loading" class="btn btn-primary">
+                  <span *ngIf="!loading">Filtrar</span>
+                  <span *ngIf="loading">Filtrando...</span>
+              </button>
+          </div>
+      </form>
+    </div>
+  </ng-template>

@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Categorias</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir categoria</button>
+    <button *ngIf="apiService.canCreateTest('productos.categorias.crear')" (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir categoria</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,7 +13,7 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <input type="search" placeholder="Buscar..." class="form-control" [(ngModel)]="filtro.buscador">
+                <input type="search" placeholder="Buscar..." class="form-control" [(ngModel)]="filtros.buscador">
             </div>
         </div>
     </div>
@@ -22,10 +22,16 @@
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="filtro.estado" [(ngModel)]="filtro.estado" class="form-select bg-default w-auto">
+            <select name="filtros.estado" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
+            </select>
+            <select name="id_sucursal" (change)="filtrarCategorias()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+                <option value="">Sucursal</option>
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    {{sucursal.nombre}}
+                </option>
             </select>
         </div>
     </div>
@@ -50,7 +56,7 @@
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-                    <tr *ngFor=" let categoria of categorias | filter:['nombre','descripcion']:filtro.buscador | filter:['enable']:filtro.estado">
+                    <tr *ngFor=" let categoria of categorias | filter:['nombre','descripcion']:filtros.buscador | filter:['enable']:filtros.estado">
                         <td>{{ categoria.nombre }}</td>
                         <td class="d-none d-md-table-cell">{{ categoria.descripcion }}</td>
                         <td class="d-none d-lg-table-cell">
@@ -82,22 +88,28 @@
     <form autocomplete="off" (ngSubmit)="onSubmit()">
         <app-notificaciones-container></app-notificaciones-container>
         <div class="row mb-3">
-            <div class="form-group col-12">
+            <div class="form-group col-lg-8">
                 <label for="categoria.nombre">Nombre</label>
                 <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="categoria.nombre" name="categoria.nombre" focus="true">
             </div>
-            <div class="form-group col-12">
+            <div class="form-group col-lg-4 pt-lg-4">
                 <div class="form-switch bg-light-info rounded">
                   <label for="activo">Activo</label>
                   <input class="form-check-input ms-3" type="checkbox" role="switch" id="activo" [(ngModel)]="categoria.enable" name="categoria.enable">
                 </div>
             </div>
+
+
             <div class="form-group col-12">
                 <label for="categoria.descripcion">Descripción</label>
                 <textarea name="categoria.descripcion" class="form-control" cols="30" rows="2" [(ngModel)]="categoria.descripcion"></textarea>
             </div>
+
         </div>
-        <div class="d-grid">
+
+        <app-categoria-cuentas [categoria]="categoria" *ngIf="categoria?.id"></app-categoria-cuentas>
+
+        <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
                 <span *ngIf="!loading">Guardar</span>
                 <span *ngIf="loading">Guardando...</span>

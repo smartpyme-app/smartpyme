@@ -3,6 +3,7 @@
 namespace App\Models\Planilla;
 
 use App\Constants\PlanillaConstants;
+use App\Models\Compras\Gastos\AreaEmpresa;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,7 @@ class Empleado extends Model
 
     protected $fillable = [
         'codigo',
-        'nombres', 
+        'nombres',
         'apellidos',
         'dui',
         'nit',
@@ -77,6 +78,11 @@ class Empleado extends Model
     public function empresa()
     {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(AreaEmpresa::class, 'id_area');
     }
 
     // Accessors

@@ -5,7 +5,7 @@ namespace App\Models\Admin;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class Notificacion extends Model
 {
@@ -21,6 +21,7 @@ class Notificacion extends Model
         'id_referencia',
         'id_empresa',
         'id_sucursal',
+        'id_orden_produccion'
     ];
 
     protected $casts = ['leido' => 'string'];

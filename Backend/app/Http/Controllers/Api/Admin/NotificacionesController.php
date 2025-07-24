@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Notificacion;
+use Illuminate\Support\Facades\Log;
 
 class NotificacionesController extends Controller
 {
     
 
     public function index(Request $request) {
+      
        
         $notificaciones = Notificacion::when($request->tipo, function($q) use ($request){
                                 $q->where('tipo', $request->tipo);

@@ -64,7 +64,7 @@
                     </tr>
                     <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">
                             {{ producto.nombre }}
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>

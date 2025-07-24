@@ -1,52 +1,88 @@
 <form name="form" (ngSubmit)="onSubmit()">
-    <div class="row">
-        <h6 class="mb-3 font-weight-bold">Detalles</h6>
-        <div class="form-group col-md-12 col-lg-4">
-            <label for="nombre">Nombre</label>
-            <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
-        </div>
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="codigo">Código</label>
-            <div class="input-group">
-                <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
-                <span class="input-group-text" *ngIf="producto.codigo">
-                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
-                </span>
-            </div>
-        </div>
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="barcode">Código de barras</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
-        </div>
-        <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
-            <label for="medida">U. de Medida</label>
-            <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
-                <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
-                    {{ medida.nombre }}
-                </ng-option>
-            </ng-select>
-        </div>
+  <div class="row">
+    <h5 class="mb-3 font-weight-bold">Detalles</h5>
+    <!-- nombre  -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="nombre">Nombre</label>
+      <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre"
+        placeholder="Escribe aquí" required>
+    </div>
+    <!-- categoria -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="id_categoria" class="w-100">Categoría</label>
+      <div class="input-group">
+        <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0"
+          (change)="updateInputValue($event)">
+          <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+            {{categoria.nombre}}
+          </ng-option>
+        </ng-select>
+        <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+      </div>
+    </div>
 
-        <h6 class="my-3 font-weight-bold">Organización</h6>
-        <div class="form-group col-md-6 col-lg-3">
-            <label for="subcategoria_id" class="w-100">Categoria</label>
-            <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0">
-                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                        {{categoria.nombre}}
-                    </ng-option>
-                </ng-select>
-                <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
-            </div>
-        </div>
-        <div class="form-group col-md-6 col-lg-2">
-            <label for="marca">Marca</label>
-            <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
-        </div>
-        <div class="form-group col-md-12 col-lg-7">
-            <label for="etiquetas">Etiquetas</label>
-            <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
-        </div>
+
+    <!-- subcategoria -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="id_subcategoria" class="w-100">Subcategoría</label>
+      <div class="input-group">
+        <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0"
+          (change)="updateInputValue($event)">
+          <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
+            {{subcategoria.nombre}}
+          </ng-option>
+        </ng-select>
+        <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
+      </div>
+    </div>
+    <!-- marca -->
+    <div class="form-group col-md-12 col-lg-3">
+      <label for="marca">Marca</label>
+      <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+    </div>
+
+    <!-- <h6 class="my-3 font-weight-bold">Organización</h6> -->
+    <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+
+
+    <!-- codigo sku  -->
+    <div class="form-group col-md-6 col-lg-3">
+      <label for="codigo">Código</label>
+      <div class="input-group">
+        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" [disabled]="true"
+          placeholder="Se genera con las categorias">
+        <!-- <span class="input-group-text" *ngIf="producto.codigo">
+                    <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                </span> -->
+      </div>
+    </div>
+     <!-- unidad de medida -->
+     <div class="form-group col-md-4 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
+      <label for="medida">U. de Medida</label>
+      <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+        <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+          {{ medida.nombre }}
+        </ng-option>
+      </ng-select>
+    </div>
+    <!-- codigo de barra  -->
+    <div class="form-group col-md-6 col-lg-3">
+      <label for="barcode">Código de barras</label>
+      <div class="input-group">
+        <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí"
+          mask='0*'>
+        <span class="input-group-text" *ngIf="producto.barcode">
+          <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+        </span>
+      </div>
+    </div>
+
+    <!-- codigo de proveedor  -->
+    <div class="form-group col-md-6 col-lg-3">
+      <label for="cod_proveed_prod">Código de proveedor</label>
+      <input type="text" class="form-control" [(ngModel)]="producto.cod_proveed_prod" name="cod_proveed_prod"
+        placeholder="Escribe aquí" mask='0*'>
+    </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
         <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
@@ -97,43 +133,132 @@
             </div>
         </div>
 
-<!--         <div class="row" *ngIf="producto.id">
-            <h6 class="my-3 font-weight-bold">Costo</h6>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                <label for="costo_anterior">Costo anterior</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_anterior" name="costo_anterior" placeholder="$0.00" required>
-                </div>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
-                <label for="costo_promedio">Costo promedio</label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" disabled class="form-control" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
-                </div>
-            </div>
-        </div> -->
+    <!-- <div class="form-group col-md-4 col-lg-4 mb-3 mt-3">
+      <div class="form-switch border rounded">
+        <label>Opciones Avanzadas</label>
+        <input class="form-check-input float-end" type="checkbox" role="switch" (click)="toggleDiv()"
+               [(ngModel)]="opAvanzadas" name="opciones_ava_detalles">
+      </div>
+    </div> -->
 
+    <div class="row">
+
+      <div class="row" *ngIf="producto.tipo != 'Servicio'">
+        <h5 class="my-3 font-weight-bold">Organización</h5>
+            <!-- talla -->
+
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="talla" class="w-100">Talla</label>
+          <div class="input-group">
+            <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" name="producto.talla" placeholder="Selecciona o agrega una talla">
+              <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
+                {{ talla.valor }}
+              </ng-option>
+            </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- color -->
+
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="color" class="w-100">Color</label>
+          <div class="input-group">
+          <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" name="producto.color" placeholder="Selecciona o agrega un color">
+            <ng-option *ngFor="let color of colores" [value]="color.valor">
+              {{ color.valor }}
+            </ng-option>
+          </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <!-- material -->
+
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="material" class="w-100">Material</label>
+          <div class="input-group">
+          <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" name="producto.material" placeholder="Selecciona o agrega un material">
+            <ng-option *ngFor="let material of materiales" [value]="material.valor">
+              {{ material.valor }}
+            </ng-option>
+          </ng-select>
+            <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- dimensiones -->
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="dimensiones">Dimensiones</label>
+          <input type="text" class="form-control" [(ngModel)]="producto.dimensiones" name="dimensiones"
+            placeholder="Escribe aquí">
+        </div>
+      </div>
+
+    <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
+
+    <!-- etiquetas   -->
+
+    <div class="form-group col-md-12 col-lg-6">
+      <label for="etiquetas">Etiquetas</label>
+      <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí"
+        [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+    </div>
+    <!-- Descripcion  -->
+    <div class="form-group col-md-12 col-lg-6">
+      <label for="descripcion">Descripción</label>
+      <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí"
+        cols="30" rows="1"></textarea>
+    </div>
+    </div>
+    <!--
         <h6 class="my-3 font-weight-bold w-100">Descripción</h6>
 
         <div class="form-group col-lg-12">
             <label for="descripcion">Agrega alguna información adicional</label>
             <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Escribe aquí" cols="30" rows="2"></textarea>
-        </div>
+        </div> -->
 
-        <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
+    <!-- <div class="form-group col-md-6 col-lg-5 without-label " *ngIf="producto.tipo != 'Servicio'">
             <div class="form-switch bg-light-info rounded">
               <label>¿Es producto compuesto?</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
             </div>
-        </div>
+        </div>    -->
 
-        <div class="form-group col-lg-12 mt-3">
-            <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                <span *ngIf="!guardar">Guardar</span>
-                <span *ngIf="guardar">Guardando...</span>
-            </button>
-        </div>
+
+    <div class="form-group col-lg-12 mt-3">
+      <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+        <span *ngIf="!guardar">Guardar</span>
+        <span *ngIf="guardar">Guardando...</span>
+      </button>
     </div>
+  </div>
 </form>
+
+<ng-template #modalAtributo>
+  <div class="modal-header">
+    <h4 class="modal-title">Agregar {{tipoAtributoActual | titlecase}}</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="guardarAtributo()">
+      <div class="form-group">
+        <label [for]="tipoAtributoActual">{{tipoAtributoActual | titlecase}}</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoAtributo.valor"
+               [name]="tipoAtributoActual" required>
+      </div>
+      <div class="d-grid gap-2 mt-3">
+        <button type="submit" class="btn btn-primary" [disabled]="!nuevoAtributo.valor">
+          <span *ngIf="!guardandoAtributo">Guardar</span>
+          <span *ngIf="guardandoAtributo">Guardando...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

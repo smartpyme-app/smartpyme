@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Compras</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
+    <button *ngIf="apiService.canCreateTest('compras.crear')" routerLink="/compra/crear" tooltip="Crear compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="compras?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarCompras()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -80,7 +80,7 @@
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
-                        
+
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td *ngIf="isColumnEnabled('columna_proyecto')">
                             <div class="d-flex flex-column align-items-center">
@@ -91,13 +91,13 @@
                         </td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a *ngIf="compra.id_proveedor" class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
-                        <td>{{compra.forma_pago}}</td>
+                        <td><span title="{{ compra.detalle_banco }}">{{compra.forma_pago}}</span></td>
                         <td>{{compra.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">
                                 {{ compra.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -108,7 +108,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    
+
                                     <a *ngIf="apiService.auth_user().empresa.facturacion_electronica && compra.tipo_documento == 'Sujeto excluido' && compra.estado != 'Anulada' && !compra.sello_mh" class="list-group-item list-group-item-action border-0 click" (click)="openDTE(mDTE, compra)" tooltip="Emitir DTE">
                                         <i class="fa fa-fw fa-file-invoice"></i> Emitir DTE
                                     </a>
@@ -116,28 +116,28 @@
                                         <i class="fa fa-fw fa-file-invoice"></i> Ver DTE
                                     </a>
 
-                                    <a  *ngIf="apiService.canEdit()" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a  *ngIf="apiService.canEditTest('compras.editar')" (click)="openModalEdit(mcompra, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEdit()" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Consigna' && apiService.canEditTest('compras.editar')" routerLink="/compra/consigna/revisar/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
-                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEditTest('compras.editar')" (click)="openAbono(mabono, compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar compra
                                     </a>
-                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEdit()" (click)="anularDTE(compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado != 'Anulada' && apiService.canEditTest('compras.editar')" (click)="anularDTE(compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular compra
                                     </a>
-                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.estado == 'Anulada' && apiService.canEditTest('compras.editar')" (click)="setEstado(compra, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="compra.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="compra.recurrente == 0 && apiService.canEditTest('compras.editar')" (click)="setRecurrencia(compra)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
                                     <a routerLink="/compra/{{compra.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('compras.editar')" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
                                     <a *ngIf="apiService.canEdit() && compra.tipo_documento == 'Crédito fiscal'" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
@@ -145,6 +145,9 @@
                                     </a>
                                     <a *ngIf="apiService.canEdit() && compra.tipo_documento == 'Crédito fiscal'" routerLink="/devolucion-compra/nueva" [queryParams]="{ id_compra: compra.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-plus"></i> Hacer nota de débito
+                                    </a>
+                                    <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">
+                                      <i class="fa fa-edit"></i> Generar partida contable
                                     </a>
                                 </div>
                             </ng-template>
@@ -196,7 +199,7 @@
 <ng-template #mabono>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">Recibo de pago </h5>
-    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-crear-abono-compra [compra]="compra" (update)="filtrarCompras()"></app-crear-abono-compra>
@@ -239,6 +242,16 @@
                     <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.forma_pago">Método de pago:</label>
+                <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
+                    <option value="">Todos</option>
+                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
+                        {{ formaPago.nombre }}
+                    </option>
+                    <option value="Multiple">Multiple</option>
                 </select>
             </div>
             <div class="form-group col-md-6">
@@ -385,12 +398,12 @@
             </div>
             <div class="form-group col-md-6 col-lg-6" *ngIf="isColumnEnabled('columna_proyecto')">
                 <label for="num_identificacion">Número identificación:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="compra.num_identificacion" 
-                name="num_identificacion" 
-                class="form-control" 
-                id="num_identificacion" 
+                <input
+                type="text"
+                [(ngModel)]="compra.num_identificacion"
+                name="num_identificacion"
+                class="form-control"
+                id="num_identificacion"
                 placeholder="Número de identificación">
             </div>
             <div class="form-group col-md-12">
@@ -448,7 +461,7 @@
     </div>
     <div class="modal-body">
       <app-notificaciones-container></app-notificaciones-container>
-      
+
       <form (ngSubmit)="descargarReporteRentabilidad()">
         <div class="row">
           <!-- Fechas -->
@@ -460,7 +473,7 @@
             <label>Al:</label>
             <input type="date" class="form-control" [(ngModel)]="filtrosRentabilidad.fin" name="fin">
           </div>
-  
+
           <!-- Sucursales -->
           <div class="form-group col-12 mt-3">
             <label>Sucursales:</label>
@@ -474,7 +487,7 @@
             </ng-select>
           </div>
         </div>
-  
+
         <div class="d-grid mt-4">
           <button type="submit" class="btn btn-primary" [disabled]="downloadingRentabilidad">
             <span *ngIf="!downloadingRentabilidad">Descargar Reporte</span>

@@ -41,7 +41,7 @@
                     <td>
                         <div class="d-flex gap-3" *ngIf="!usuario.empresa.editar_descripcion_venta">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
                             </div>
                             <div>
                                 {{ detalle.descripcion }} <br>
@@ -137,7 +137,7 @@
   <div class="modal-body">
     <div class="row">
         <div class="col-12">
-            
+
             <p>Seleccione el sustituto de <b>{{ composicion.nombre_compuesto }}</b>:</p>
             <br>
             <div *ngIf="composicion.opciones.length > 0" style="max-height: 300px; overflow: auto;">

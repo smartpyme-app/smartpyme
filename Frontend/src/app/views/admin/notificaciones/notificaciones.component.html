@@ -32,6 +32,7 @@
                 <option value="Cuentas por pagar">Cuentas por pagar</option>
                 <option value="Cuentas por cobrar">Cuentas por cobrar</option>
                 <option value="Inventario bajo">Inventario bajo</option>
+                <option value="Orden de Producción">Orden de Producción</option>
             </select>
         </div>
     </div>
@@ -110,7 +111,9 @@
                 <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'compra' "> Ir a la compra </span>
                 <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'gasto' "> Ir al gasto </span>
                 <span *ngIf="notificacion.tipo == 'Inventario bajo' "> Ver inventario </span>
+                <span *ngIf="notificacion.tipo == 'Orden de Producción' "> Ver orden de producción </span>
             </a>
+
             <button *ngIf="!notificacion.referencia && !notificacion.id_referencia" class="btn btn-primary"  (click)="modalRef.hide();">Entendido</button>
         </div>
   </div>

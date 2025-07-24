@@ -56,7 +56,7 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
     public function collection()
     {
         $request = $this->request;
-        
+
         $compras = Compra::with(['proveedor'])
                         ->where('estado', '!=', 'Anulada')
                         ->where('percepcion', '>', 0)
@@ -68,7 +68,7 @@ class LibroPercepcion1Export implements FromCollection, WithMapping, WithHeading
                         ->orderByDesc('fecha')
                         ->get();
         return $compras;
-        
+
     }
 
     public function map($compra): array{

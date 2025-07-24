@@ -51,18 +51,25 @@ export class ProductosComponent implements OnInit {
             this.filtrarProductos();
         });
 
+        if(this.route.snapshot.routeConfig?.path == 'producto-combos') this.verCombos();
+
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('productos/marca-productos').subscribe(marcas => { 
+        this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
             this.marcas = marcas;
         }, error => {this.alertService.error(error); });
-        
+
+    }
+
+    verCombos(){
+        this.filtros.tipo = 'Compuesto';
+        this.filtrarProductos();
     }
 
     public loadAll() {
@@ -78,6 +85,7 @@ export class ProductosComponent implements OnInit {
         this.filtros.sin_stock = '';
         this.filtros.paginate = 10;
         this.filtros.page = 1;
+        this.filtros.tipo = '';
 
         this.filtrarProductos();
     }
@@ -94,7 +102,6 @@ export class ProductosComponent implements OnInit {
         if(!this.filtros.sin_stock){
             this.filtros.sin_stock = '';
         }
-
         if(!this.filtros.id_categoria){
             this.filtros.id_categoria = '';
         }
@@ -103,17 +110,15 @@ export class ProductosComponent implements OnInit {
             this.filtros.marca = '';
         }
 
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            if(this.modalRef){ this.modalRef.hide(); }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setEstado(producto:any){
-        this.apiService.store('producto', producto).subscribe(producto => { 
+        this.apiService.store('producto', producto).subscribe(producto => {
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
@@ -121,12 +126,12 @@ export class ProductosComponent implements OnInit {
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('producto/', id) .subscribe(data => {
-                for (let i = 0; i < this.productos['data'].length; i++) { 
+                for (let i = 0; i < this.productos['data'].length; i++) {
                     if (this.productos['data'][i].id == data.id )
                         this.productos['data'].splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
 
     }
@@ -180,7 +185,7 @@ export class ProductosComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
 
@@ -201,7 +206,7 @@ export class ProductosComponent implements OnInit {
     public calAjuste(){
         this.ajuste.ajuste = parseFloat(this.ajuste.stock_real) - parseFloat(this.ajuste.stock_actual);
     }
-    
+
     public onSubmitAjuste() {
         this.loading = true;
         this.ajuste.id_producto = this.producto.id;

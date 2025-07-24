@@ -1,0 +1,249 @@
+
+<section class="bg-white p-4 rounded mb-3 d-flex justify-content-between">
+    <div>
+        <h2 (click)="loadAll()">Configuración</h2>
+    </div>
+    <div>
+        <!-- <app-descargar-excel *ngIf="ivas?.length > 0" [nombre]="'Libro de Compras'"></app-descargar-excel> -->
+        <!-- <button tooltip="Descargar compras" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button> -->
+    </div>
+</section>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+<div class="bg-white rounded p-3 my-3">
+    <div class="row">
+        <h6>Ventas</h6>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_ventas">Ventas:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_ventas" class="form-select p-0" name="configuracion.id_cuenta_ventas">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_devoluciones_ventas">Devoluciones de ventas:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_devoluciones_ventas" class="form-select p-0" name="configuracion.id_cuenta_devoluciones_ventas">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_ventas">IVA:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_ventas" class="form-select p-0" name="configuracion.id_cuenta_iva_ventas">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_retenido_ventas">IVA Retenido:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_retenido_ventas" class="form-select p-0" name="configuracion.id_cuenta_iva_retenido_ventas">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_renta_retenida_ventas">Renta Retenida:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_renta_retenida_ventas" class="form-select p-0" name="configuracion.id_cuenta_renta_retenida_ventas">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_cxc">Cuentas por cobrar:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_cxc" class="form-select p-0" name="configuracion.id_cuenta_cxc">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <!-- <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_devoluciones_clientes">Devoluciones de clientes:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_devoluciones_clientes" class="form-select p-0" name="configuracion.id_cuenta_devoluciones_clientes">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div> -->
+    </div>
+    <div class="row mt-3">
+        <h6>Inventario</h6>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_costo_venta">Costo de venta:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_costo_venta" class="form-select p-0" name="configuracion.id_cuenta_costo_venta">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_perdida_ajuste">Pérdidas por ajuste de inventario:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_perdida_ajuste" class="form-select p-0" name="configuracion.id_cuenta_perdida_ajuste">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_ganancia_ajuste">Ganancias por ajuste de inventario:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_ganancia_ajuste" class="form-select p-0" name="configuracion.id_cuenta_ganancia_ajuste">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <h6>Compras</h6>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_inventario">Inventario:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_inventario" class="form-select p-0" name="configuracion.id_cuenta_inventario">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_cxp">Cuentas por pagar:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_cxp" class="form-select p-0" name="configuracion.id_cuenta_cxp">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_devoluciones_proveedores">Devoluciones a proveedores:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_devoluciones_proveedores" class="form-select p-0" name="configuracion.id_cuenta_devoluciones_proveedores">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_compras">IVA:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_compras" class="form-select p-0" name="configuracion.id_cuenta_iva_compras">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_iva_retenido_compras">IVA Retenido:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_iva_retenido_compras" class="form-select p-0" name="configuracion.id_cuenta_iva_retenido_compras">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_renta_retenida_compras">Renta Retenida:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_renta_retenida_compras" class="form-select p-0" name="configuracion.id_cuenta_renta_retenida_compras">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_pedidos_transito">Pedido en Transito:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_pedidos_transito" class="form-select p-0" name="configuracion.id_cuenta_pedidos_transito">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.generar_partidas">Generar partidas:</label>
+            <select [(ngModel)]="configuracion.generar_partidas" class="form-select" name="configuracion.generar_partidas">
+                <option value="">Seleccione aquí</option>
+                <option value="Manual">Manual</option>
+                <option value="Auto">Automático</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded p-3 mb-3">
+    <div class="form-group col-sm-12 pt-2 pb-4">
+        <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+            <span *ngIf="!saving">Guardar configuración  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+            <span *ngIf="saving">Guardando...</span>
+        </button>
+    </div>
+</div>
+</form>
+
+
+<br>
+<app-gastos-categorias></app-gastos-categorias>

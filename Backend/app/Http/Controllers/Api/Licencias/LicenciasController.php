@@ -74,7 +74,7 @@ class LicenciasController extends Controller
         $licencia = Auth::user()->empresa()->first()->licencia()->first();
         $empresas = $licencia->empresas()->pluck('id_empresa')->toArray();;
 
-        $usuarios = Usuario::with('empresa')
+        $usuarios = Usuario::with('empresa','roles')
                                 ->whereIn('id_empresa', $empresas)
                                 ->when($request->estado !== null, function($q) use ($request){
                                     $q->where('enable', !!$request->estado);

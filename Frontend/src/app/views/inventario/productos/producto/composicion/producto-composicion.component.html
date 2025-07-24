@@ -14,8 +14,8 @@
                     <th>Producto</th>
                     <th>Categoria</th>
                     <th class="text-end">Precio</th>
+                    <th class="text-end">Costo</th>
                     <th class="text-end">Cantidad</th>
-                    <th class="text-end">Opciones</th>
                     <th width="100" class="text-center"><i class="fa fa-cog"></i> </th>
                 </tr>
             </thead>
@@ -32,11 +32,11 @@
                 </tr>  
 
                 <tr *ngFor=" let composicion of producto?.composiciones">
-                    <td>{{ composicion?.compuesto.nombre }}</td>
-                    <td>{{ composicion?.compuesto.nombre_categoria }}</td>
-                    <td class="text-end">{{ composicion?.compuesto.precio | currency }}</td>
+                    <td>{{ composicion?.nombre_producto }}</td>
+                    <td>{{ composicion?.nombre_categoria }}</td>
+                    <td class="text-end">{{ composicion.precio | currency }}</td>
+                    <td class="text-end">{{ composicion.costo | currency }}</td>
                     <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
-                    <td class="text-end">{{ composicion?.opciones?.length }}</td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
                             <a (click)="delete(composicion)" class="btn btn-light"><i class="fa fa-trash"></i></a>
@@ -108,14 +108,14 @@
             <table class="table table-bordered">
                 <tbody>
                     <tr>
-                        <td colspan="2" class="text-center" *ngIf="composicion?.opciones?.length < 1">
+                        <td colspan="2" class="text-center" *ngIf="composicion?.length < 1">
                             <span class="badge bg-primary">No tiene opciones registradas</span>
                         </td>
                         <td colspan="2" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-                    <tr *ngFor="let opcion of composicion.opciones">
+                    <tr *ngFor="let opcion of composicion">
                         <td>{{ opcion.nombre_producto }}</td>
                         <td class="text-center">
                             <a (click)="deleteOpcion(opcion)" class="btn btn-danger">Eliminar</a>

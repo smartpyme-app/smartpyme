@@ -8,9 +8,8 @@ use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Carbon\Carbon;
-
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
 use App\Models\Ventas\Detalle;
@@ -28,21 +27,36 @@ use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade as PDF;
-
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 use App\Exports\VentasExport;
 use App\Exports\VentasDetallesExport;
+use App\Models\ComboProducto;
+use App\Models\CotizacionVenta;
+use App\Models\CotizacionVentaDetalle;
+use App\Models\Inventario\CustomFields\ProductCustomField;
+use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Auth;
 // use Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth;
 
 class VentasController extends Controller
 {
+
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
 
     public function index(Request $request)
     {
@@ -1030,7 +1044,7 @@ class VentasController extends Controller
 
     /**
      * Genera el reporte diario de ventas por vendedor
-     * 
+     *
      * @param Request $request Solicitud HTTP
      * @return mixed Descarga del archivo Excel o ruta del archivo generado
      * @throws \Exception Si ocurre un error al generar el reporte
@@ -1336,12 +1350,12 @@ class VentasController extends Controller
                     ->where('cotizacion', 0)
                     ->where('estado', '!=', 'Anulada')
                     ->count();
-    
+
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
                     ->where('estado', '!=', 'Anulada')
                     ->sum('total');
-    
+
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
                     ->distinct('id_vendedor')
@@ -1451,7 +1465,7 @@ class VentasController extends Controller
             ->whereNotNull('num_identificacion')
             ->where('num_identificacion', '!=', '')
             ->get();
-        
+
         return Response()->json($numsIds, 200);
      }
 }

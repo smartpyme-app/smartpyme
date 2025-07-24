@@ -22,7 +22,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
             ->where('estado', 'Anulada')
             ->when($request->id_sucursal, function ($query) use ($request) {
@@ -33,7 +33,7 @@ class AnexoAnuladosExport implements FromCollection, WithMapping, WithCustomCsvS
             ->orderByDesc('fecha')
             ->get();
         return $ventas;
-        
+
     }
 
     public function map($venta): array{

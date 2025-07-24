@@ -207,6 +207,24 @@
                 </div>
             </div>
         </div>
+
+    </div>
+    <div class="row">
+        <div class="col-md-8 col-lg-6">
+            <h6>Configuración Contable</h6>
+            <div class="form-group col-md-12">
+                <label for="cliente.id_cuenta_contable">Cuenta contable:</label>
+                <ng-select [(ngModel)]="cliente.id_cuenta_contable" class="form-select p-0" name="cliente.id_cuenta_contable">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        <div class="d-flex align-items-center">
+                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                        </div>
+                    </ng-option>
+                </ng-select>
+            </div>
+        </div>
     </div>
     <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
         <!-- <div class="col-12 d-flex justify-content-between align-items-center mb-3">

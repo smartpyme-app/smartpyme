@@ -569,7 +569,7 @@ class EmpresasController extends Controller
             return strtotime($b['fecha_transaccion']) - strtotime($a['fecha_transaccion']);
         });
 
-        // Obtener métodos de pago asociados a la empresa 
+        // Obtener métodos de pago asociados a la empresa
         $metodoPago = null;
         $usuarioAutenticado = JWTAuth::parseToken()->authenticate();
         $metodoPago = $usuarioAutenticado->metodoPago()
@@ -592,7 +592,7 @@ class EmpresasController extends Controller
     //     $recibo = Transaccion::where('id', $id)->firstOrFail();
     //     // return $recibo;
     //     $pdf = PDF::loadView('reportes.recibo-suscripcion', compact('recibo'));
-    //     $pdf->setPaper('US Letter', 'portrait');  
+    //     $pdf->setPaper('US Letter', 'portrait');
 
 
     //     return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');

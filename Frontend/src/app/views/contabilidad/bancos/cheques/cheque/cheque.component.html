@@ -1,0 +1,62 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ cheque.id ? 'Editar ' : 'Crear ' }} Cheque</h3>
+    <button class="btn btn-light text-danger" routerLink="/bancos/cheques"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3">
+        <div class="row">
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" name="fecha" [(ngModel)]="cheque.fecha">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="id_cuenta">Cuenta bancaria: <span class="text-danger">*</span></label>
+                <select class="form-select" name="id_cuenta" [(ngModel)]="cheque.id_cuenta" required>
+                    <option value="">Seleccione una cuenta</option>
+                    <option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                        {{cuenta.nombre_banco}} - {{cuenta.numero}}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">Correlativo:</label>
+                <input type='text' class="form-control" name="correlativo" [(ngModel)]="cheque.correlativo"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">A nombre de:</label>
+                <input type='text' class="form-control" name="anombrede" [(ngModel)]="cheque.anombrede"/>
+            </div>
+            <!-- <div class="form-group col-md-4 col-lg-3">
+                <label for="estado">Estado:</label>
+                <select class="form-select" name="estado" [(ngModel)]="cheque.estado">
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Aprobado">Aprobado</option>
+                </select>
+            </div> -->
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="concepto">Concepto:</label><br>
+                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="cheque.concepto" name="concepto" cols="30" rows="3"></textarea>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">Total:</label>
+                <input type='number' class="form-control" name="total" [(ngModel)]="cheque.total"/>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar cheque  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+

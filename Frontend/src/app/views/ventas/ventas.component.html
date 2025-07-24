@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Registros</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    <button *ngIf="apiService.canCreateTest('ventas.crear')" routerLink="/venta/crear" tooltip="Crear venta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -83,7 +83,7 @@
                     </tr>
 
                     <tr *ngFor=" let venta of ventas?.data">
-                        
+
                         <td><span tooltip="{{ venta.created_at | date:'hh:mm a'}}">{{venta.fecha | date:'dd/MM/yyyy'}}</span></td>
                         <td *ngIf="isColumnEnabled('columna_proyecto')">
                             <div class="d-flex flex-column align-items-center">
@@ -98,17 +98,16 @@
                                 {{venta.nombre_documento}} #{{venta.correlativo}}
                             </a>
                         </td>
-                        <td>{{venta.forma_pago}}</td>
-                        <!-- <td>{{venta.estado != 'Pendiente' ? venta.forma_pago : 'Pendiente'}}</td> -->
+                        <td><span title="{{ venta.detalle_banco }}">{{venta.forma_pago}}</span></td>
                         <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td>
                         <td>
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">
                                 <span *ngIf="venta.estado != 'Pendiente'">{{ venta.estado }}</span>
-                                <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
+                                <a tooltip="Pagar venta" *ngIf="venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')" (click)="openAbono(mabono, venta)" class="text-decoration-none text-dark click">
                                     {{ venta.estado }}
                                 </a>
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -159,37 +158,40 @@
                                     <a routerLink="/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEdit()" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')" (click)="openAbono(mabono, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar venta
                                     </a>
-                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEdit()" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado != 'Anulada' && apiService.canEditTest('ventas.editar')" (click)="anularDTE(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
-                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEditTest('ventas.editar')" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar')" (click)="openModalEdit(mventa, venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="venta.estado == 'Consigna' && apiService.canEdit()" routerLink="/venta/consigna/revisar/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Consigna' && apiService.canEditTest('ventas.editar')" routerLink="/venta/consigna/revisar/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-hand-holding-usd"></i> Revisar consigna
                                     </a>
-                                    <a *ngIf="venta.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.recurrente == 0 && apiService.canEditTest('ventas.editar')" (click)="setRecurrencia(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar')" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
-                                    <a *ngIf="venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && apiService.canEdit()" (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.forma_pago == 'Wompi' && venta.estado == 'Pendiente' && apiService.canEditTest('ventas.editar')" (click)="linkWompi(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <img src="https://wompi.sv/img/icon.png" width="15px" class="img-fluid" alt=""> Generar enlace de pago
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar')" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id }" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-right-left"></i> Hacer devolucion
                                     </a>
-                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar')" (click)="generarPartidaContable(venta)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
+                                    </a>
+                                    <a *ngIf="apiService.canEditTest('ventas.editar') && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_credito'}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-minus"></i> Hacer nota de crédito
                                     </a>
-                                    <a *ngIf="apiService.canEdit() && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar') && venta.nombre_documento == 'Crédito fiscal'" routerLink="/devolucion-venta/nueva" [queryParams]="{ id_venta: venta.id, tipo_documento: 'nota_debito'}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                     </a>
                                 </div>
@@ -210,7 +212,7 @@
 <ng-template #mabono>
     <div class="modal-header d-block text-center">
         <h5 class="modal-title mb-0">Recibo de pago </h5>
-        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+        <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-crear-abono-venta [venta]="venta" (update)="filtrarVentas()"></app-crear-abono-venta>
@@ -349,12 +351,12 @@
             </div>
             <div class="form-group col-md-6 col-lg-6" *ngIf="isColumnEnabled('columna_proyecto')">
                 <label for="num_identificacion">Número identificación:</label>
-                <input 
-                type="text" 
-                [(ngModel)]="venta.num_identificacion" 
-                name="num_identificacion" 
-                class="form-control" 
-                id="num_identificacion" 
+                <input
+                type="text"
+                [(ngModel)]="venta.num_identificacion"
+                name="num_identificacion"
+                class="form-control"
+                id="num_identificacion"
                 placeholder="Número de identificación">
             </div>
             <div *ngIf="apiService.auth_user().empresa.editar_descripcion_venta">
@@ -553,7 +555,7 @@
                 </ng-select>
             </div>
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>
@@ -572,7 +574,7 @@
       </div>
       <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        
+
         <form (ngSubmit)="descargarAcumulado()">
           <div class="row">
             <!-- Fechas -->
@@ -584,7 +586,7 @@
               <label>Al:</label>
               <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
             </div>
-    
+
             <!-- Sucursales -->
             <div class="form-group col-12 mt-3">
               <label>Sucursales:</label>
@@ -597,7 +599,7 @@
                         name="sucursales">
               </ng-select>
             </div>
-    
+
             <!-- Categorías -->
             <div class="form-group col-12 mt-3">
               <label>Categorías:</label>
@@ -610,7 +612,7 @@
                         name="categorias">
               </ng-select>
             </div>
-    
+
             <!-- Marcas -->
             <div class="form-group col-12 mt-3">
               <label>Marcas:</label>
@@ -624,7 +626,7 @@
               </ng-select>
             </div>
           </div>
-    
+
           <div class="d-grid mt-4">
             <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
               <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>

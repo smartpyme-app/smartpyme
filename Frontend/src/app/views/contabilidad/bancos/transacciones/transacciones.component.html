@@ -1,0 +1,184 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+    <h2 class="page-heading">Bancos</h2>
+    <button *ngIf="apiService.canCreateTest('finanzas.transacciones.crear')" routerLink="/bancos/transaccion/crear" tooltip="Crear transacción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transacción</button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted" *ngIf="transacciones?.total">
+                Mostrando {{ transacciones?.to }} de {{ transacciones?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <button [disabled]="downloading" tooltip="Descargar transacciones" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTransacciones()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex">
+        <div class="col-md-6 d-flex gap-2 mb-3">
+
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/bancos/conciliaciones">Conciliaciones</button>
+            <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/transacciones']">Transacciones</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
+            <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
+        </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="estado" (change)="filtrarTransacciones()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+                <option value="">Estado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Anulada">Anulada</option>
+                <option value="Aprobada">Aprobada</option>
+            </select>
+            <select name="tipo" (change)="filtrarTransacciones()" [(ngModel)]="filtros.tipo" class="form-select bg-default w-auto">
+                <option value="">Tipo</option>
+                <option value="Abono">Abono</option>
+                <option value="Cargo">Cargo</option>
+            </select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Cuenta</th>
+                        <th>Concepto</th>
+                        <th>Tipo</th>
+                        <th>Operación</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="transacciones?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene transacciones registrados</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let transaccion of transacciones?.data">
+                        <td>{{transaccion.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{transaccion.nombre_usuario}}</td>
+                        <td>{{transaccion.cuenta.nombre_banco}} : {{transaccion.cuenta.numero}}</td>
+                        <td>{{transaccion.concepto}}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : transaccion?.tipo == 'Cargo', 'bg-success' : transaccion?.tipo == 'Abono'}">{{ transaccion.tipo }}</span>
+                        </td>
+                        <td>{{ transaccion.tipo_operacion }}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-success' : transaccion?.estado == 'Aprobada'}">{{ transaccion.estado }}</span>
+                        </td>
+                        <td class="text-end">{{transaccion.total | currency}}</td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/bancos/transaccion/{{transaccion.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Aprobar
+                                    </a>
+                                    <a *ngIf="transaccion.url_referencia" (click)="verDocumento(transaccion)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
+                                    </a>
+                                    <a *ngIf="transaccion.id_referencia" routerLink="/{{transaccion.ruta_referencia}}/{{transaccion.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                    </a>
+                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-ban"></i> Anular
+                                    </a>
+                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a (click)="generarPartidaContable(transaccion)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
+                                    </a>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="transacciones?.last_page > 1">
+            <app-pagination [items]="transacciones" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrarTransacciones()">
+        <div class="row">
+
+            <div class="form-group col-sm-6">
+                <label for="">Del:</label>
+                <input type='date' class="form-control" name="filtros.inicio" [(ngModel)]="filtros.inicio"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="">Al:</label>
+                <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="En bodega">En bodega</option>
+                    <option value="En proceso">En proceso</option>
+                    <option value="Entregado">Entregado</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.tipo">Tipo:</label>
+                <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
+                    <option value="">Todos</option>
+                    <option value="Abono">Abono</option>
+                    <option value="Cargo">Cargo</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.tipo_operacion">Operación:</label>
+                <select [(ngModel)]="filtros.tipo_operacion" class="form-control form-select" name="filtros.tipo_operacion">
+                    <option value="">Todos</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Depósito">Depósito</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>

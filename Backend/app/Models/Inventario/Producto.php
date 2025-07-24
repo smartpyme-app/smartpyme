@@ -5,7 +5,7 @@ namespace App\Models\Inventario;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 
 class Producto extends Model {
 
@@ -22,12 +22,19 @@ class Producto extends Model {
         'costo_anterior',
         'costo_promedio',
         'id_categoria',
+        'id_subcategoria',
         'marca',
         'etiquetas',
         'tipo',
         'enable',
         'id_empresa',
-        'woocommerce_id'
+        'woocommerce_id',
+        'cod_proveed_prod',
+        'talla',
+        'color',
+        'dimension',
+        'material',
+        'dimensiones'
     );
 
     protected $appends = ['nombre_categoria', 'img'];
@@ -42,10 +49,10 @@ class Producto extends Model {
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
-        
+
     }
 
-    public function getEtiquetasAttribute($value) 
+    public function getEtiquetasAttribute($value)
     {
         return is_string($value) ? json_decode($value) : $value;
     }
@@ -54,9 +61,9 @@ class Producto extends Model {
     {
         $this->attributes['etiquetas'] = json_encode($valor);
     }
-    
 
-    public function getImgAttribute() 
+
+    public function getImgAttribute()
     {
         if ($this->imagenes()->count() > 0) {
             return $this->imagenes->pluck('img')->first();
@@ -64,7 +71,7 @@ class Producto extends Model {
             return 'productos/default.jpg';
         }
     }
-    
+
     public function getNombreCategoriaAttribute()
     {
         return $this->categoria()->pluck('nombre')->first();

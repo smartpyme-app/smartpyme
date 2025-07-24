@@ -16,7 +16,14 @@ import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
 import { QuicklinkStrategy } from 'ngx-quicklink';
 import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
+import { RoleGuard } from './guards/role.guard';
 
+
+export const GUARD_TYPES = {
+  ADMIN: 'admin',
+  CITAS: 'citas',
+  SUPER_ADMIN: 'superAdmin',
+} as const;
 
 const routes: Routes = [
     { path: 'login', component: LoginComponent, title: 'Inicio de sesión' },
@@ -72,13 +79,19 @@ const routes: Routes = [
         // Compras
         {
           path: '',
-          canActivate: [AdminGuard,SupervisorLimitadoGuard],
+          canActivate: [AdminGuard,SupervisorLimitadoGuard, RoleGuard],
+          data: {
+            guardType: GUARD_TYPES.ADMIN,
+          },
           loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
         },
         // Contabilidad
         {
           path: '',
-          canActivate: [AdminGuard],
+          canActivate: [AdminGuard,AuthGuard, RoleGuard],
+          data: {
+            guardType: GUARD_TYPES.ADMIN,
+          },
           loadChildren: () => import('./views/contabilidad/contabilidad.module').then(m => m.ContabilidadModule),
         },
         // Citas
@@ -89,13 +102,19 @@ const routes: Routes = [
         // Admin
         {
           path: '',
-          canActivate: [AdminGuard],
+          canActivate: [AuthGuard, RoleGuard],
+          data: {
+            guardType: GUARD_TYPES.ADMIN,
+          },
           loadChildren: () => import('./views/admin/admin.module').then(m => m.AdminModule),
         },
         // Super Admin
         {
           path: '',
-          canActivate: [SuperAdminGuard],
+          canActivate: [AuthGuard, RoleGuard],
+          data: {
+            guardType: GUARD_TYPES.SUPER_ADMIN,
+          },
           loadChildren: () => import('./views/super-admin/super-admin.module').then(m => m.SuperAdminModule),
         },
         // Organizaciones Admin
@@ -106,16 +125,15 @@ const routes: Routes = [
       ]
     },
 
-    // Not Found
-    {
-      path: '**',
-      component: NotFoundComponent
-    }
+  // Not Found
+  {
+    path: '**',
+    component: NotFoundComponent,
+  },
 ];
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
-
-export class AppRoutingModule { }
+export class AppRoutingModule {}

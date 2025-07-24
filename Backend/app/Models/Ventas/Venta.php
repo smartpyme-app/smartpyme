@@ -20,7 +20,6 @@ class Venta extends Model {
         'num_identificacion',
         'estado',
         'detalle_banco',
-        // 'tipo',
         'id_canal',
         'id_documento',
         'forma_pago',
@@ -29,7 +28,6 @@ class Venta extends Model {
         'num_orden',
         'condicion',
         'referencia',
-        // 'nombre',
         'fecha_pago',
         'fecha_expiracion',
         'monto_pago',
@@ -76,7 +74,7 @@ class Venta extends Model {
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
     protected $casts = ['recurrente' => 'string'];
-    
+
     protected static function boot()
     {
         parent::boot();
@@ -96,12 +94,12 @@ class Venta extends Model {
         return 'Consumidor Final';
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }

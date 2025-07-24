@@ -6,13 +6,15 @@ use App\Constants\PlanillaConstants;
 use App\Http\Controllers\Controller;
 use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DepartamentosEmpresaController extends Controller
 {
-  
+
     public function index(Request $request)
     {
-        $query = DepartamentoEmpresa::where('id_sucursal', $request->user()->id_sucursal)
+        //$query = DepartamentoEmpresa::where('id_sucursal', $request->user()->id_sucursal)
+        $query = DepartamentoEmpresa::where('id_empresa', $request->user()->id_empresa)
             ->where('activo', true);
 
         if ($request->has('buscador')) {
@@ -23,6 +25,10 @@ class DepartamentosEmpresaController extends Controller
         if ($request->has('estado')) {
             $query->where('estado', $request->estado);
         }
+
+//        if ($request->has('id_sucursal')) {
+//            $query->where('id_sucursal', $request->id_sucursal);
+//        }
 
         // Ordenamiento
         $orden = $request->orden ?? 'nombre';
@@ -45,7 +51,33 @@ class DepartamentosEmpresaController extends Controller
             $request->all() + [
                 'id_sucursal' => auth()->user()->id_sucursal,
                 'id_empresa' => auth()->user()->id_empresa,
-                'estado' => PlanillaConstants::ESTADO_ACTIVO
+                'estado' => PlanillaConstants::ESTADO_ACTIVO,
+                'activo' => 1
+            ]
+        );
+
+        return $departamento;
+    }
+
+    public function update(Request $request)
+    {
+
+        $request->validate([
+            'id' => 'required|exists:departamentos_empresa,id',
+            'nombre' => 'required|string|max:100',
+            'descripcion' => 'nullable|string',
+            'estado' => 'required|integer|in:0,1'
+        ]);
+
+        $departamento = DepartamentoEmpresa::updateOrCreate(
+            ['id' => $request->id],
+            [
+                'nombre' => $request->nombre,
+                'descripcion' => $request->descripcion,
+                'activo' => $request->activo,
+                'estado' => $request->estado,
+                'id_sucursal' => auth()->user()->id_sucursal,
+                'id_empresa' => auth()->user()->id_empresa,
             ]
         );
 
@@ -63,5 +95,13 @@ class DepartamentosEmpresaController extends Controller
             ->where('activo', true)
             ->orderBy('nombre')
             ->get();
+    }
+
+    public function changeState($id)
+    {
+        $departamento = DepartamentoEmpresa::findOrFail($id);
+        $departamento->estado = $departamento->estado == PlanillaConstants::ESTADO_ACTIVO ? PlanillaConstants::ESTADO_INACTIVO : PlanillaConstants::ESTADO_ACTIVO;
+        $departamento->save();
+        return $departamento;
     }
 }

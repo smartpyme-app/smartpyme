@@ -22,7 +22,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function($q) {
@@ -36,7 +36,7 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                         ->orderByDesc('fecha')
                         ->get();
         return $ventas;
-        
+
     }
 
     public function map($venta): array{

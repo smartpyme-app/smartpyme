@@ -1,6 +1,7 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthorizationInterceptor } from '@services/Authorization/authorization.interceptor';
 
 import { AppRoutingModule } from './app.routing.module';
 import { JwtInterceptor } from '@services/JwtInterceptor';
@@ -27,7 +28,7 @@ import { AuthModule } from './auth/auth.module';
 
 import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
-
+import { ReactiveFormsModule } from '@angular/forms';
 // Super Admin
   import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
@@ -64,12 +65,15 @@ import { PlanillasModule } from '@views/planillas/planillas.module';
   import { AdminModule } from '@views/admin/admin.module';
   import { ReportesModule } from '@views/reportes/reportes.module';
   import { CitasModule } from '@views/citas/citas.module';
-import { ServiceWorkerModule } from '@angular/service-worker';
-
+  import { HasPermissionDirective } from './directives/has-permission.directive';
+  import { RoleGuard } from './guards/role.guard';
+  import { PermissionGuard } from './guards/permission.guard';
+  import { ServiceWorkerModule } from '@angular/service-worker';
 
 @NgModule({
   declarations: [
     AppComponent,
+    HasPermissionDirective
   ],
   imports: [
     BrowserModule,
@@ -97,6 +101,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     PaquetesModule,
     ProyectosModule,
     PlanillasModule,
+    ReactiveFormsModule ,
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: !isDevMode(),
       // Register the ServiceWorker as soon as the application is stable
@@ -105,7 +110,8 @@ import { ServiceWorkerModule } from '@angular/service-worker';
     }),
   ],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, AlertService, ApiService,
+                { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
+                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, AlertService, ApiService,
                 MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })

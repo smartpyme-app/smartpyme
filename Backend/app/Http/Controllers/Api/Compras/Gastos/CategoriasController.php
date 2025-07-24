@@ -12,7 +12,17 @@ class CategoriasController extends Controller
     
     public function index() {
        
-        $categorias = Categoria::orderBy('nombre', 'asc')->get();
+        $categorias = Categoria::with('cuenta')->orderBy('nombre', 'asc')->get();
+
+        return Response()->json($categorias, 200);
+
+    }
+
+    public function list() {
+       
+        $categorias = Categoria::orderby('nombre')
+                                // ->where('activo', true)
+                                ->get();
 
         return Response()->json($categorias, 200);
 

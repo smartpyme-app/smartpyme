@@ -26,6 +26,7 @@ export class SidebarAdminComponent implements OnInit {
     public filtros: any = {};
     public items: any = [];
     public notificaciones: any = [];
+    public modules: any[] = [];
 
     searchControl = new FormControl();
 
@@ -72,7 +73,7 @@ export class SidebarAdminComponent implements OnInit {
         }else{
             this.adminIsCollapsed = JSON.parse(localStorage.getItem('adminIsCollapsed')!);
         }
-        
+
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -88,6 +89,7 @@ export class SidebarAdminComponent implements OnInit {
           });
 
         this.loadNotificaciones();
+        this.loadModules();
     }
 
 
@@ -208,7 +210,7 @@ export class SidebarAdminComponent implements OnInit {
 
     public onSubmit(){
         this.loading = true;
-        this.apiService.getAll('buscador', this.filtros).subscribe(items => { 
+        this.apiService.getAll('buscador', this.filtros).subscribe(items => {
             this.items = items;
             this.loading = false;
         }, error => {this.alertService.error(error);this.loading = false; });
@@ -217,9 +219,19 @@ export class SidebarAdminComponent implements OnInit {
     public loadNotificaciones() {
         this.filtros.leido = 0;
         this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => {
             this.notificaciones = notificaciones;
         }, error => {this.alertService.error(error); });
+    }
+
+    canShowOption(permission: string): boolean {
+        return this.apiService.hasPermission(permission);
+    }
+
+    loadModules() {
+        this.apiService.getModules().subscribe(modules => {
+            this.modules = modules;
+        });
     }
 
 }

@@ -80,6 +80,9 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                $query->where('id_bodega', $request->id_bodega);
+            })
             ->when($request->id_cliente, function ($query) use ($request) {
                 return $query->where('id_cliente', $request->id_cliente);
             })
@@ -119,6 +122,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->get();
 
         return $ventas;
+
     }
 
     public function map($row): array

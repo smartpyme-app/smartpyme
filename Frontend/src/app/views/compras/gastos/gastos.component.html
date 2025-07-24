@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Gastos</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
+    <button *ngIf="apiService.canEditTest('gastos.crear')" routerLink="/gasto/crear" tooltip="Crear gasto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir gasto</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="gastos?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarGastos()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -97,7 +97,7 @@
                             <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
                                 {{ gasto.estado }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
@@ -118,20 +118,23 @@
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado == 'Pendiente' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fas fa-fw fa-credit-card"></i> Pagar
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('gastos.editar')" routerLink="/gasto/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a *ngIf="gasto.recurrente == 0 && apiService.canEdit()" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.recurrente == 0 && apiService.canEditTest('gastos.editar')" (click)="setRecurrencia(gasto)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-repeat"></i> Hacer recurrente
                                     </a>
-                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Cancelado'; anularDTE(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado != 'Cancelado' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Cancelado'; anularDTE(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Cancelar
                                     </a>
-                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEdit()" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="gasto.estado == 'Cancelado' && apiService.canEditTest('gastos.editar')" (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                    </a>
+                                    <a (click)="generarPartidaContable(gasto)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
                                     </a>
                                 </div>
                             </ng-template>
@@ -252,6 +255,15 @@
                     </ng-option>
                 </ng-select>
             </div>
+          <div class="form-group col-sm-6">
+            <label for="filtro.id_area_empresa">Area:</label>
+            <ng-select [(ngModel)]="filtros.id_area_empresa" class="form-select p-0" name="id_area_empresa">
+              <ng-option value="">Todos</ng-option>
+              <ng-option *ngFor="let area of areas" [value]="area.id">
+                {{ area.nombre }}
+              </ng-option>
+            </ng-select>
+          </div>
         </div>
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">

@@ -20,7 +20,7 @@ return [
     'TIPO_PAGO_MANUAL' => 'Manual',
 
     'DIAS_PRORROGA_SUSCRIPCION' => 10,
-    
+
     'ESTADO_SUSCRIPCION_ACTIVO' => 'Activo',
     'ESTADO_SUSCRIPCION_INACTIVO' => 'Inactivo',
     'ESTADO_SUSCRIPCION_CANCELADO' => 'Cancelado',
@@ -52,4 +52,23 @@ return [
 
     'MAIL_CC_ADDRESS_1' => 'gabrielaq@smartpyme.sv',
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
+
+    // Roles principales del JIRA
+    'ROL_SUPER_ADMIN'          => 'super_admin',          // Del SP-117
+    'ROL_ADMIN'                => 'admin',                // Del SP-117
+    'ROL_CONTADOR_SUPERIOR'    => 'usuario_contador',       // Del SP-118
+    'ROL_CONTADOR_AUXILIAR'    => 'auxiliar_contable',    // Del SP-118
+    'ROL_USUARIO_SUPERVISOR'   => 'usuario_supervisor',       // Del SP-119
+    'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',   // Del SP-119
+    'ROL_GERENTE_COMPRAS'     => 'gerente_compras',      // Del SP-119
+    'ROL_USUARIO'             => 'usuario',               // Del SP-120
+    'ROL_SUPERVISOR_LIMITADO' => 'supervisor_limitado',
+
+    // Roles adicionales según los nuevos requerimientos
+    'ROL_USUARIO_VENTAS'      => 'usuario_ventas',
+    'ROL_USUARIO_CITAS'       => 'usuario_citas',
+    'ROL_USUARIO_CONSULTAS'   => 'usuario_consultas',
+    'ROL_USUARIO_CAJERO'      => 'usuario_cajero',
+    'ROL_USUARIO_VENDEDOR'    => 'usuario_vendedor',
+    'ROL_USUARIO_COCINERO'    => 'usuario_cocinero',
 ];

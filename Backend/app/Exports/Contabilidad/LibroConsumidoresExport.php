@@ -56,7 +56,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->whereHas('documento', function ($q) {
@@ -72,7 +72,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
                         ->orderByDesc('correlativo')
                         ->get();
         return $ventas;
-        
+
     }
 
     public function map($venta): array{

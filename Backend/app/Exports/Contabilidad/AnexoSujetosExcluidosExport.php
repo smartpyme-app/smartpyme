@@ -28,7 +28,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -64,7 +64,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             });
 
         return $libroCompras;
-        
+
     }
 
     public function map($compra): array{

@@ -11,30 +11,30 @@ export class AdminGuard implements CanActivate {
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
-  		let user = this.apiService.auth_user()
-		const currentUrl = state.url;
+    let user = this.apiService.auth_user()
+    const currentUrl = state.url;
 
-		  const adminOnlyRoutes = [
-			'/suscripcion',
-			'/usuarios',
-			'/sucursales',
-			'/mi-cuenta'
-		  ];
-		  
-		  // Si la ruta actual es una de las restringidas, solo permitir acceso a administradores
-		  if (adminOnlyRoutes.some(route => currentUrl.includes(route))) {
-			
-			if (user.tipo === 'Administrador') {
-			  return true;
-			} else {
-			  this.router.navigate(['/']);
-			  return false;
-			}
-		  }
-		//Supervisor Limitado
-		if(user.tipo == 'Administrador' || user.tipo == 'Contador' || user.tipo == 'Supervisor' || user.tipo == 'Supervisor Limitado')
+    const adminOnlyRoutes = [
+      '/suscripcion',
+      '/usuarios',
+      '/sucursales',
+      '/mi-cuenta'
+    ];
+
+    // Si la ruta actual es una de las restringidas, solo permitir acceso a administradores
+    if (adminOnlyRoutes.some(route => currentUrl.includes(route))) {
+
+      if (user.tipo === 'Administrador') {
+        return true;
+      } else {
+        this.router.navigate(['/']);
+        return false;
+      }
+    }
+
+		if(user.tipo == 'Administrador' || user.tipo == 'Contador' || user.tipo == 'Supervisor')
 	        return true;
-	    
+
 	    this.router.navigate(['/']);
 	    return false;
   }

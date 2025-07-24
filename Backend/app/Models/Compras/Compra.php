@@ -4,8 +4,7 @@ namespace App\Models\Compras;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
-
+use Illuminate\Support\Facades\Auth;
 class Compra extends Model {
 
     protected $table = 'compras';
@@ -28,6 +27,7 @@ class Compra extends Model {
         // 'aplicada_inventario',
         'notas',
         'id_proveedor',
+        'id_authorization',
         'no_sujeta',
         'exenta',
         'percepcion',
@@ -48,10 +48,12 @@ class Compra extends Model {
         'dte',
         'dte_invalidacion',
         'no_sujeta',
+        'es_retaceo',
         'tipo_operacion',
         'tipo_clasificacion',
         'tipo_sector',
         'tipo_costo_gasto',
+
     );
 
     protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto'];
@@ -67,12 +69,12 @@ class Compra extends Model {
         }
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
@@ -139,10 +141,14 @@ class Compra extends Model {
     public function devoluciones(){
         return $this->hasMany('App\Models\Compras\Devoluciones\Devolucion', 'id_compra');
     }
-    
+
     public function proyecto()
     {
         return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
+    }
+
+    public function retaceo(){
+        return $this->hasOne('App\Models\Compras\Retaceo\Retaceo', 'id_compra');
     }
 
 

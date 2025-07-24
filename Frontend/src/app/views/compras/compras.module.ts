@@ -35,6 +35,12 @@ import { GastoComponent } from './gastos/gasto/gasto.component';
 import { GastoDetallesComponent } from './gastos/gasto-detalles/gasto-detalles.component';
 import { GastosCategoriasComponent } from './gastos/categorias/gastos-categorias.component';
 import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
+import { RetaceoComponent } from './retaceo/retaceo.component';
+import { OrdenCompraFormComponent } from './cotizaciones/components/orden-compra-form/orden-compra-form.component';
+import { RetaceosListComponent } from './retaceo/retaceos-list.component';
+
+import { AreaEmpresaComponent } from './gastos/area-empresa/area-empresa.component';
+import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/departamento-empresa.component';
 
 // import { HistorialComprasComponent } from './reportes/historial/historial-compras.component';
 // import { DetalleComprasComponent } from './reportes/detalle/detalle-compras.component';
@@ -55,7 +61,7 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     FocusModule.forRoot()
   ],
   declarations: [
-  	ComprasComponent,
+    ComprasComponent,
     CompraComponent,
     ComprasRecurrentesComponent,
     AbonosComprasComponent,
@@ -74,9 +80,14 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
+    RetaceoComponent,
+    OrdenCompraFormComponent,
+    RetaceosListComponent,
+    AreaEmpresaComponent,
+    DepartamentoEmpresaComponent
   ],
   exports: [
-  	ComprasComponent,
+    ComprasComponent,
     CompraComponent,
     ComprasRecurrentesComponent,
     AbonosComprasComponent,
@@ -95,6 +106,10 @@ import { GastosDashComponent } from './gastos/dash/gastos-dash.component';
     GastoDetallesComponent,
     GastosDashComponent,
     GastosCategoriasComponent,
+    RetaceoComponent,
+    RetaceosListComponent,
+    AreaEmpresaComponent,
+    DepartamentoEmpresaComponent
   ]
 })
 export class ComprasModule { }

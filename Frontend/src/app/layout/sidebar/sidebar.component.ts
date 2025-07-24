@@ -16,11 +16,14 @@ export class SidebarComponent implements OnInit {
     public productosIsCollapsed:boolean = true;
     public ventasIsCollapsed:boolean = true;
     public comprasIsCollapsed:boolean = true;
+    public gastosIsCollapsed:boolean = true;
     public preferenciasIsCollapsed:boolean = true;
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
 
+    public contabilidadIsCollapsed:boolean = true;
+    public bancosIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -28,6 +31,7 @@ export class SidebarComponent implements OnInit {
     public items: any = [];
     public notificaciones: any = [];
     public authUser: any = {};
+    public modules: any = [];
 
     searchControl = new FormControl();
 
@@ -54,6 +58,11 @@ export class SidebarComponent implements OnInit {
         }else{
             this.comprasIsCollapsed = JSON.parse(localStorage.getItem('comprasIsCollapsed')!);
         }
+        if (!localStorage.getItem('gastosIsCollapsed')) {
+            localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        }else{
+            this.gastosIsCollapsed = JSON.parse(localStorage.getItem('gastosIsCollapsed')!);
+        }
         if (!localStorage.getItem('preferenciasIsCollapsed')) {
             localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         }else{
@@ -74,7 +83,17 @@ export class SidebarComponent implements OnInit {
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
         }
-        
+        if (!localStorage.getItem('contabilidadIsCollapsed')) {
+          localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
+        }else{
+          this.contabilidadIsCollapsed = JSON.parse(localStorage.getItem('contabilidadIsCollapsed')!);
+        }
+        if (!localStorage.getItem('bancosIsCollapsed')) {
+          localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+        }else{
+          this.bancosIsCollapsed = JSON.parse(localStorage.getItem('bancosIsCollapsed')!);
+        }
+
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -90,6 +109,7 @@ export class SidebarComponent implements OnInit {
           });
 
         this.loadNotificaciones();
+        this.loadModules();
         this.usuarioLogueado();
     }
 
@@ -148,6 +168,15 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleGastos() {
+        if(this.gastosIsCollapsed){
+            this.closeAll();
+        }
+        this.gastosIsCollapsed = !this.gastosIsCollapsed;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
     togglePreferencias() {
         if(this.preferenciasIsCollapsed){
             this.closeAll();
@@ -184,6 +213,24 @@ export class SidebarComponent implements OnInit {
         this.toggleSidebarMenu();
     }
 
+    toggleContabilidad() {
+      if(this.contabilidadIsCollapsed){
+        this.closeAll();
+      }
+      this.contabilidadIsCollapsed = !this.contabilidadIsCollapsed;
+      localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
+      this.toggleSidebarMenu();
+    }
+
+    toggleBancos() {
+      if(this.bancosIsCollapsed){
+        this.closeAll();
+      }
+      this.bancosIsCollapsed = !this.bancosIsCollapsed;
+      localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
+      this.toggleSidebarMenu();
+    }
+
 
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
@@ -199,6 +246,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('ventasIsCollapsed', this.ventasIsCollapsed.toString());
         this.comprasIsCollapsed = true;
         localStorage.setItem('comprasIsCollapsed', this.comprasIsCollapsed.toString());
+        this.gastosIsCollapsed = true;
+        localStorage.setItem('gastosIsCollapsed', this.gastosIsCollapsed.toString());
         this.preferenciasIsCollapsed = true;
         localStorage.setItem('preferenciasIsCollapsed', this.preferenciasIsCollapsed.toString());
         this.finanzasIsCollapsed = true;
@@ -207,11 +256,15 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        this.contabilidadIsCollapsed = true;
+        localStorage.setItem('contabilidadIsCollapsed', this.contabilidadIsCollapsed.toString());
+        this.bancosIsCollapsed = true;
+        localStorage.setItem('bancosIsCollapsed', this.bancosIsCollapsed.toString());
     }
 
     public onSubmit(){
         this.loading = true;
-        this.apiService.getAll('buscador', this.filtros).subscribe(items => { 
+        this.apiService.getAll('buscador', this.filtros).subscribe(items => {
             this.items = items;
             this.loading = false;
         }, error => {this.alertService.error(error);this.loading = false; });
@@ -220,7 +273,7 @@ export class SidebarComponent implements OnInit {
     public loadNotificaciones() {
         this.filtros.leido = 0;
         this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => {
             this.notificaciones = notificaciones;
         }, error => {this.alertService.error(error); });
     }
@@ -228,5 +281,17 @@ export class SidebarComponent implements OnInit {
     public usuarioLogueado() {
         this.authUser = this.apiService.auth_user();
       }
+
+    canShowOption(permission: string): boolean {
+        return this.apiService.hasPermission(permission);
+    }
+
+    loadModules() {
+        this.apiService.getModules().subscribe(modules => {
+            this.modules = modules;
+        });
+    }
+
+
 
 }

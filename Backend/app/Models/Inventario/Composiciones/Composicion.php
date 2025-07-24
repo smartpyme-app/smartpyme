@@ -13,7 +13,7 @@ class Composicion extends Model {
         'cantidad'
     );
 
-    protected $appends = ['nombre_producto', 'nombre_compuesto'];
+    protected $appends = ['nombre_producto', 'nombre_compuesto', 'precio', 'costo'];
 
     public function getNombreCompuestoAttribute(){
         return $this->compuesto()->pluck('nombre')->first();
@@ -22,9 +22,17 @@ class Composicion extends Model {
     public function getNombreProductoAttribute(){
         return $this->producto()->pluck('nombre')->first();
     }
+    
+    public function getPrecioAttribute(){
+        return $this->producto()->pluck('precio')->first();
+    }
+    
+    public function getCostoAttribute(){
+        return $this->producto()->pluck('costo')->first();
+    }
 
     public function producto(){
-        return $this->belongsTo('App\Models\Inventario\Producto','id_producto');
+        return $this->belongsTo('App\Models\Inventario\Producto','id_compuesto');
     }
 
     public function compuesto(){

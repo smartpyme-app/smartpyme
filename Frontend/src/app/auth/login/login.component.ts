@@ -23,34 +23,43 @@ export class LoginComponent implements OnInit {
         private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
+        const returnUrl = localStorage.getItem('returnUrl');
         localStorage.clear();
+
+        if (returnUrl) {
+            localStorage.setItem('returnUrl', returnUrl);
+        }  
+
+        this.user = { email: '', password: '' };
     }
 
     submit() {
         this.loading = true;
-
+    
         this.apiService.login(this.user)
         .subscribe(
             data => {
+                const returnUrl = localStorage.getItem('returnUrl') || '/';
+                localStorage.removeItem('returnUrl');
+    
                 this.user = this.apiService.auth_user();
-
+    
                 if(this.user.empresa.fe_ambiente == '01'){
                     localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
                 }else{
                     localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
                 }
-
+    
                 if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
                     this.mhService.login();
                 }
-
-                setTimeout(()=>{
-                    this.apiService.loadData();
-                },2000);
-
-                this.router.navigate(['/']);
-                this.loading = false;
+    
+                this.apiService.loadData();
+                setTimeout(() => {
+                    this.router.navigate([returnUrl]);
+                }, 100);
                 
+                this.loading = false;
             },
             error => {
                 $('.container').addClass("animated shake");

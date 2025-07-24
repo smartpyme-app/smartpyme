@@ -6,8 +6,8 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="impuestos?.lenght">
-                Mostrando {{ impuestos?.lenght + ' registros' }}
+            <span class="text-muted" *ngIf="impuestos?.length">
+                Mostrando {{ impuestos?.length + ' registros' }}
             </span>
         </div>
 
@@ -44,7 +44,7 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="impuestos?.lenght < 1 && !loading">
+                        <td colspan="10" class="text-center" *ngIf="impuestos?.length < 1 && !loading">
                             <span class="badge bg-primary">No tiene impuestos registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
@@ -102,6 +102,35 @@
                 <div class="input-group">
                     <input type="number" class="form-control" [(ngModel)]="impuesto.porcentaje" name="impuesto.porcentaje">
                     <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="bg-white rounded p-3 my-3">
+                <div class="row">
+                    <h6>Configuración Contable</h6>
+                    <div class="form-group col-md-12">
+                        <label for="impuesto.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
+                        <ng-select [(ngModel)]="impuesto.id_cuenta_contable_ventas" class="form-select p-0" name="impuesto.id_cuenta_contable_ventas">
+                            <ng-option value="">Seleccione aquí</ng-option>
+                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        </ng-select>
+                    </div>
+                    <div class="form-group col-md-12">
+                        <label for="impuesto.id_cuenta_contable_compras">Cuenta contable para compras:</label>
+                        <ng-select [(ngModel)]="impuesto.id_cuenta_contable_compras" class="form-select p-0" name="impuesto.id_cuenta_contable_compras">
+                            <ng-option value="">Seleccione aquí</ng-option>
+                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        </ng-select>
+                    </div>
                 </div>
             </div>
         </div>

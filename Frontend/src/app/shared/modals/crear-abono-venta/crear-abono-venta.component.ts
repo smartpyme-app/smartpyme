@@ -14,7 +14,7 @@ export class CrearAbonoVentaComponent implements OnInit {
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
 	public formaPagos: any = [];
-    public bancos: any = [];
+    // public bancos: any = [];
     public abono: any = {};
  	public loading = false;
     public saving = false;
@@ -42,9 +42,10 @@ export class CrearAbonoVentaComponent implements OnInit {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        // this.apiService.getAll('bancos/list').subscribe(bancos => {
+        // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+        //     this.bancos = bancos;
+        // }, error => {this.alertService.error(error);});
 	}
 
     public setTotal(total:any){
@@ -62,9 +63,17 @@ export class CrearAbonoVentaComponent implements OnInit {
         }
 
         this.apiService.store('venta/abono', this.abono).subscribe(abono => {
+            
             this.update.emit();
             this.router.navigate(['/ventas/abonos']);
+            this.alertService.modal = false;
             this.saving = false;
+
+            //Generar partida contable
+            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                this.apiService.store('contabilidad/partida/cxc', abono).subscribe(abono => {
+                },error => {this.alertService.error(error);});
+            }
         }, error => {this.alertService.error(error); this.saving = false; });
 
 	}

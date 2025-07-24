@@ -23,7 +23,7 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->when($request->tipo_documento, function($query) {
@@ -55,12 +55,12 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
             });
 
         return $libroVentas;
-        
+
     }
 
     public function map($venta): array{
             setlocale(LC_NUMERIC, 'C');
-            
+
             $documento = $venta->documento;
             $cliente = optional($venta->cliente);
 

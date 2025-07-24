@@ -27,7 +27,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
     public function collection()
     {
         $request = $this->request;//where('id_empresa', Auth::user()->id_empresa)
-        
+
         $compras = Compra::with(['proveedor'])
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
@@ -62,12 +62,12 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             });
 
         return $libroCompras;
-        
+
     }
 
     public function map($compra): array{
             setlocale(LC_NUMERIC, 'C');
-            
+
             $proveedor = optional($compra->proveedor()->first());
 
             $tipo = '03'; //CCF

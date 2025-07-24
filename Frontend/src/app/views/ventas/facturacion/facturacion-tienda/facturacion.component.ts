@@ -5,8 +5,10 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
   selector: 'app-facturacion',
@@ -29,6 +31,7 @@ export class FacturacionComponent implements OnInit {
   public regimenes: any = [];
   public incoterms: any = [];
   public bancos: any = [];
+  public editar = false;
   public canales: any = [];
   public supervisor: any = {};
   public loading = false;
@@ -38,6 +41,15 @@ export class FacturacionComponent implements OnInit {
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
+  public opAvanzadas = false;
+  public opAvanzadasFacturacion = false;
+  public customFields: any = [];
+  public selectedCustomFields: number[] = [];
+  public activeCustomFields: any = [];
+  public filtros: any = {
+    bandera: true,
+  };
+  public customField: boolean = false;
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -71,10 +83,16 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        // if (this.apiService.auth_user().tipo != 'Administrador') {
+        //   this.sucursales = this.sucursales.filter(
+        //     (item: any) => item.id == this.apiService.auth_user().id_sucursal
+        //   );
+        // }
+
+        if (this.apiService.validateRole('super_admin', false)
+        || this.apiService.validateRole('admin', false)) {
           this.sucursales = this.sucursales.filter(
-            (item: any) => item.id == this.apiService.auth_user().id_sucursal
-          );
+            (item: any) => item.id == this.apiService.auth_user().id_sucursal);
         }
       },
       (error) => {
@@ -82,10 +100,45 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
+    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      this.apiService.getAll('custom-fields', this.filtros).subscribe(
+        (customFields) => {
+          console.log('customFields', customFields);
+          this.customFields = customFields;
+          //verificar si hay campos personalizados
+          if (this.customFields.data.length > 0) {
+            console.log('hay campos personalizados');
+            this.customField = true;
+          }else{
+            console.log('no hay campos personalizados');
+            this.customField = false;
+          }
+
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+// <<<<<<< HEAD
+//     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+//       this.bodegas = bodegas;
+//       // if (this.apiService.auth_user().tipo != 'Administrador') {
+//       //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+//       // }
+//       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
+//         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+// =======
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
-        if (this.apiService.auth_user().tipo != 'Administrador') {
+        // if (this.apiService.auth_user().tipo != 'Administrador') {
+        //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+        // }
+        if(this.apiService.validateRole('super_admin', false)
+          || this.apiService.validateRole('admin', false)) {
           this.bodegas = this.bodegas.filter(
             (item: any) =>
               item.id_sucursal == this.apiService.auth_user().id_sucursal
@@ -100,14 +153,17 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
-        if (
-          this.apiService.auth_user().tipo != 'Administrador' &&
-          this.apiService.auth_user().tipo != 'Supervisor' &&
-          this.apiService.auth_user().tipo != 'Supervisor Limitado'
-        ) {
-          this.usuarios = this.usuarios.filter(
-            (item: any) => item.id == this.apiService.auth_user().id
-          );
+        // if (
+        //   this.apiService.auth_user().tipo != 'Administrador' &&
+        //   this.apiService.auth_user().tipo != 'Supervisor'
+        // ) {
+        //   this.usuarios = this.usuarios.filter(
+        //     (item: any) => item.id == this.apiService.auth_user().id
+        //   );
+        // }
+
+        if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false) || this.apiService.validateRole('usuario_supervisor', false)) {
+          this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
         }
       },
       (error) => {
@@ -115,14 +171,9 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
-      (bancos) => {
-        this.bancos = bancos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+    //     this.bancos = bancos;
+    // }, error => {this.alertService.error(error);});
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
@@ -136,6 +187,11 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('canales/list').subscribe(
       (canales) => {
         this.canales = canales;
+
+        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+          this.venta.id_canal = null;
+          return;
+        }
         this.venta.id_canal = this.canales[0].id;
       },
       (error) => {
@@ -186,7 +242,12 @@ export class FacturacionComponent implements OnInit {
         this.documentos = this.documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
+        console.log(this.documentos);
+        console.log(this.venta);
+
         if (!this.venta.id_documento && !this.venta.correlativo) {
+          console.log('entro');
+
           let documento = this.documentos.find(
             (x: any) => x.predeterminado == 1
           );
@@ -199,6 +260,8 @@ export class FacturacionComponent implements OnInit {
           }
 
           if (this.venta.cotizacion == 1) {
+            //console.log('entro a cotizacion');
+            this.documentos = this.documentos;
             this.documentos = this.documentos.filter(
               (x: any) => x.nombre == 'Cotización'
             );
@@ -208,6 +271,10 @@ export class FacturacionComponent implements OnInit {
             if (documento) {
               this.venta.id_documento = documento.id;
               this.venta.correlativo = documento.correlativo;
+            }
+            //si no existe el documento de cotizacion decirle que debe crearlo
+            if (!documento) {
+              this.alertService.error('Debe crear un documento de cotización');
             }
           } else {
             this.documentos = this.documentos.filter(
@@ -252,6 +319,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.id_usuario = this.apiService.auth_user().id;
     this.venta.id_vendedor = this.apiService.auth_user().id;
     this.venta.id_sucursal = this.apiService.auth_user().id_sucursal;
+    this.venta.id_bodega = this.apiService.auth_user().id_sucursal;
     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
     if (corte) {
@@ -262,32 +330,59 @@ export class FacturacionComponent implements OnInit {
       this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
     }
 
-    // Para proyectos
     if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
       this.venta.id_proyecto =
         +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
 
-    // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
+      this.venta.tipo = 'cotizacion'; // Identificador para cotización
     }
 
-    // Para editar cotizaciones Pre-venta
-    if (this.route.snapshot.paramMap.get('id')!) {
+    // if (this.route.snapshot.paramMap.get('id')!) {
+    //   const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
+    //   const isCotizacion = this.venta.cotizacion == 1 ? true : false;
+    //   this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
+    //     this.venta = venta;
+    //     this.venta.cotizacion = isCotizacion ? 1 : 0;
+    //     this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
+    //   }, error => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   });
+    // }
+
+    if (this.route.snapshot.paramMap.get('id')) {
+      this.editar = true;
+      const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
+      const isCotizacion = this.venta.cotizacion == 1 ? true : false;
       this.apiService
-        .read('venta/', +this.route.snapshot.paramMap.get('id')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-          }
-        );
+        .read(endpoint, +this.route.snapshot.paramMap.get('id')!)
+        .subscribe((venta) => {
+          this.venta = venta;
+          this.venta.cotizacion = isCotizacion ? 1 : 0;
+          this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+
+          // Obtener todos los custom_field_ids únicos de los detalles
+          const usedCustomFieldIds = new Set();
+          this.venta.detalles.forEach((detalle: any) => {
+            if (detalle.custom_fields && detalle.custom_fields.length > 0) {
+              detalle.custom_fields.forEach((cf: any) => {
+                if (cf.custom_field) {
+                  usedCustomFieldIds.add(cf.custom_field.id);
+                }
+              });
+            }
+          });
+
+          // Pre-seleccionar los campos personalizados
+          this.selectedCustomFields = Array.from(
+            usedCustomFieldIds
+          ) as number[];
+          this.updateCustomFields();
+        });
     }
 
     // Facturar venta recurrente
@@ -333,50 +428,157 @@ export class FacturacionComponent implements OnInit {
         );
     }
 
-    // Facturar cotizacion
-    if (
-      this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
-      this.route.snapshot.queryParamMap.get('id_venta')!
-    ) {
-      this.facturarCotizacion = true;
-      this.apiService
-        .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-        .subscribe(
-          (venta) => {
-            this.venta = venta;
-            if(!this.venta.cliente){
-                this.venta.cliente = {};
-            }else{
-              this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
-            }
-            this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
-            this.venta.fecha = this.apiService.date();
-            this.venta.fecha_pago = this.apiService.date();
-            this.venta.id_documento = null;
-            this.venta.correlativo = null;
-            this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado';
-            this.venta.impuestos = this.impuestos;
-            this.venta.observaciones = '';
-            this.venta.cotizacion = 0;
-            this.venta.num_cotizacion = this.venta.id;
-            this.venta.id = null;
-            this.venta.detalles.forEach((detalle: any) => {
-              detalle.id = null;
-            });
-            this.sumTotal();
+    // Facturar cotizacion de main
+    // if (
+    //   this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
+    //   this.route.snapshot.queryParamMap.get('id_venta')!
+    // ) {
+    //   this.facturarCotizacion = true;
+    //   this.apiService
+    //     .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+    //     .subscribe(
+    //       (venta) => {
+    //         this.venta = venta;
+    //         if(!this.venta.cliente){
+    //           this.venta.cliente = {};
+    //         }else{
+    //           this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+    //         }
+    //         this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+    //         this.venta.fecha = this.apiService.date();
+    //         this.venta.fecha_pago = this.apiService.date();
+    //         this.venta.id_documento = null;
+    //         this.venta.correlativo = null;
+    //         this.venta.estado = 'Pagada';
+    //         this.venta.condicion = 'Contado';
+    //         this.venta.impuestos = this.impuestos;
+    //         this.venta.observaciones = '';
+    //         this.venta.cotizacion = 0;
+    //         this.venta.num_cotizacion = this.venta.id;
+    //         this.venta.id = null;
+    //         this.venta.detalles.forEach((detalle: any) => {
+    //           detalle.id = null;
+    //         });
+    //         this.sumTotal();
+    //
+    //         // Para proyectos
+    //         if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+    //           this.venta.detalles = [];
+    //         }
+    //       },
+    //       (error) => {
+    //         this.alertService.error(error);
+    //         this.loading = false;
+    //       }
+    //     );
+    // }
 
-            // Para proyectos
-            if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
-              this.venta.detalles = [];
-            }
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.loading = false;
+    // Facturar cotizacion
+if (
+  this.route.snapshot.queryParamMap.get('facturar_cotizacion') &&
+  this.route.snapshot.queryParamMap.get('id_venta')
+) {
+  this.facturarCotizacion = true;
+
+  console.log('facturar cotizacion');
+
+
+  this.apiService.getAll('impuestos').subscribe(
+    (impuestos) => {
+      this.impuestos = impuestos;
+
+
+      this.apiService.read(
+        'cotizacionVentas/',
+        +this.route.snapshot.queryParamMap.get('id_venta')!
+      ).subscribe(
+        (venta) => {
+          this.venta = venta;
+          this.venta.cobrar_impuestos = venta.cobrar_impuestos;
+          this.venta.retencion = venta.aplicar_retencion;
+          this.venta.fecha = this.apiService.date();
+          this.venta.fecha_pago = this.apiService.date();
+          this.venta.estado = 'Pagada';
+          this.venta.cotizacion = 0;
+          this.venta.num_cotizacion = this.venta.id;
+          this.venta.id = null;
+
+
+          if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
+            this.venta.impuestos = this.impuestos;
           }
-        );
+
+
+          this.venta.detalles.forEach((detalle: any) => {
+            if (detalle.codigo_combo) {
+              detalle.descripcion = detalle.combo.nombre;
+              detalle.detalles = detalle.combo.detalles;
+            } else {
+              detalle.descripcion = detalle.producto.nombre;
+            }
+            detalle.id = null;
+          });
+
+
+          if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
+            this.venta.detalles = [];
+          }
+
+          // Cargar los documentos y buscar una factura
+          this.apiService.getAll('documentos/list').subscribe(
+            (documentos) => {
+              this.documentos = documentos;
+              this.documentos = this.documentos.filter(
+                (x: any) => x.id_sucursal == this.venta.id_sucursal
+              );
+
+              // Filtrar solo documentos tipo factura
+              const docsFiltrados = this.documentos.filter(
+                (x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'
+              );
+
+              // Buscar documento predeterminado o tomar el primero
+              let documentoFactura = docsFiltrados.find(
+                (doc: any) => doc.predeterminado == 1
+              );
+
+              if (documentoFactura) {
+                this.venta.id_documento = documentoFactura.id;
+                this.venta.correlativo = documentoFactura.correlativo;
+                this.venta.nombre_documento = documentoFactura.nombre;
+              } else if (docsFiltrados.length > 0) {
+                this.venta.id_documento = docsFiltrados[0].id;
+                this.venta.correlativo = docsFiltrados[0].correlativo;
+                this.venta.nombre_documento = docsFiltrados[0].nombre;
+              }
+
+              // Actualizar la lista de documentos
+              this.documentos = docsFiltrados;
+
+              // Calcular totales
+              this.sumTotal();
+
+              // Completar carga de otros datos
+              this.loadData();
+            },
+            (error) => {
+              this.alertService.error(error);
+            }
+          );
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      );
+    },
+    (error) => {
+      this.alertService.error(error);
     }
+  );
+
+  return;
+}
 
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
@@ -456,6 +658,7 @@ export class FacturacionComponent implements OnInit {
         );
     }
     this.cargarDocumentos();
+    this.loadData();
   }
 
   totalPorMetodoDePago() {
@@ -472,6 +675,17 @@ export class FacturacionComponent implements OnInit {
   }
 
   public sumTotal() {
+    if (
+      this.venta.cobrar_impuestos &&
+      (!this.venta.impuestos || this.venta.impuestos.length === 0)
+    ) {
+      this.alertService.warning(
+        'Configuración requerida',
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+      );
+      this.venta.cobrar_impuestos = false;
+      return;
+    }
     this.venta.sub_total = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total')
     ).toFixed(4);
@@ -503,6 +717,12 @@ export class FacturacionComponent implements OnInit {
         impuesto.monto = 0;
       }
     });
+
+    // if (this.venta.cobrar_impuestos && this.venta.impuestos) {
+    //   this.venta.impuestos.forEach((impuesto: any) => {
+    //     impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
+    //   });
+    // }
 
     this.venta.iva = parseFloat(
       this.sumPipe.transform(this.venta.impuestos, 'monto')
@@ -651,18 +871,35 @@ export class FacturacionComponent implements OnInit {
 
   public onFacturar() {
     if (
-      confirm(
-        '¿Confirma procesar la ' +
-          (this.venta.cotizacion == 1 ? ' cotización.' : 'venta.')
-      )
+      this.venta.cobrar_impuestos &&
+      (!this.venta.impuestos || this.venta.impuestos.length === 0)
     ) {
-      if (!this.venta.recibido) this.venta.recibido = this.venta.total;
-
-      if (this.venta.forma_pago == 'Wompi') {
-        this.venta.estado = 'Pendiente';
-      }
-      this.onSubmit();
+      this.alertService.error(
+        'Debe configurar los impuestos en el módulo de finanzas antes de poder incluir IVA'
+      );
+      return;
     }
+    Swal.fire({
+      title:
+        '¿Confirma procesar la ' +
+        (this.venta.cotizacion == 1 ? 'cotización' : 'venta') +
+        '?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, procesar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (!this.venta.recibido) {
+          this.venta.recibido = this.venta.total;
+        }
+
+        if (this.venta.forma_pago == 'Wompi') {
+          this.venta.estado = 'Pendiente';
+        }
+        this.onSubmit();
+      }
+    });
   }
 
   // Guardar venta
@@ -682,29 +919,27 @@ export class FacturacionComponent implements OnInit {
       this.venta.cambio = 0;
     }
 
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
+    }
+
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
         // Si es cotización
-        if (this.facturarCotizacion) {
-          this.apiService
-            .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
-            .subscribe(
-              (venta) => {
-                venta.estado = 'Facturada';
-                this.apiService.store('venta', venta).subscribe(
-                  (venta) => {},
-                  (error) => {
-                    this.alertService.error(error);
-                    this.saving = false;
-                  }
-                );
-              },
-              (error) => {
-                this.alertService.error(error);
-                this.saving = false;
-              }
-            );
-        }
+        // if (this.facturarCotizacion) {
+        //   this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
+        //     venta.estado = 'Facturada';
+        //     this.apiService.store('venta', venta).subscribe(venta => {
+
+        //     }, error => { this.alertService.error(error); this.saving = false; });
+        //   }, error => { this.alertService.error(error); this.saving = false; });
+        // }
 
         if (
           this.venta.cotizacion != 1 &&
@@ -724,7 +959,6 @@ export class FacturacionComponent implements OnInit {
               'width=400'
             );
             this.cargarDatosIniciales();
-            this.loadData();
             this.router.navigate(['/venta/crear']);
           }
         } else {
@@ -737,9 +971,23 @@ export class FacturacionComponent implements OnInit {
           } else {
             this.router.navigate(['/ventas']);
             this.alertService.success(
-              'Venta creado',
+              'Venta creada',
               'La venta fue añadida exitosamente.'
             );
+
+            //Generar partida contable
+            if (
+              this.apiService.auth_user().empresa.generar_partidas == 'Auto'
+            ) {
+              this.apiService
+                .store('contabilidad/partida/venta', venta)
+                .subscribe(
+                  (venta) => {},
+                  (error) => {
+                    this.alertService.error(error);
+                  }
+                );
+            }
           }
         }
 
@@ -871,6 +1119,39 @@ export class FacturacionComponent implements OnInit {
           this.alertService.error(error);
         }
       );
+    }
+  }
+
+  toggleDiv(): void {
+    this.opAvanzadas = !this.opAvanzadas; // Cambiar entre true y false
+  }
+  toggleDivFacturacion(): void {
+    this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
+  }
+
+  // updateCustomFields() {
+  //   this.activeCustomFields = this.customFields.data
+  //     .filter((f: any) => this.selectedCustomFields.includes(f.id));
+  // }
+
+  updateCustomFields() {
+    //verificar si hay campos personalizados
+    if (this.customFields.data.length === 0) {
+      return;
+    }
+    this.activeCustomFields = this.customFields.data.filter((f: any) =>
+      this.selectedCustomFields.includes(f.id)
+    );
+
+    // Limpiar campos personalizados que ya no están seleccionados
+    if (this.venta.detalles) {
+      this.venta.detalles.forEach((detalle: any) => {
+        if (detalle.custom_fields) {
+          detalle.custom_fields = detalle.custom_fields.filter((cf: any) =>
+            this.selectedCustomFields.includes(cf.custom_field?.id)
+          );
+        }
+      });
     }
   }
 

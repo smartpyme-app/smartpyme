@@ -56,7 +56,7 @@ class LibroRetencion1Export implements FromCollection, WithMapping, WithHeadings
     public function collection()
     {
         $request = $this->request;
-        
+
         $ventas = Venta::with(['cliente', 'documento'])
                         ->where('estado', '!=', 'Anulada')
                         ->where('iva_retenido', '>', 0)
@@ -69,7 +69,7 @@ class LibroRetencion1Export implements FromCollection, WithMapping, WithHeadings
                         ->orderByDesc('correlativo')
                         ->get();
         return $ventas;
-        
+
     }
 
     public function map($venta): array{

@@ -2,7 +2,10 @@
   <div class="col-12 mb-5">
     <div class="bg-white p-3">
       <h3>Próximas Citas
-        <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})"
+        <!-- <button *ngIf="apiService.auth_user().tipo != 'Contador'" (click)="openModal(mevento, {})"
+          tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i>
+          Agendar</button> -->
+          <button *ngIf="apiService.validateRole('usuario_contador', false)" (click)="openModal(mevento, {})"
           tooltip="Agendar cita (F4)" class="btn btn-default float-end tcla-F4"><i class="fa fa-plus"></i>
           Agendar</button>
         <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3 float-end me-3"> <img

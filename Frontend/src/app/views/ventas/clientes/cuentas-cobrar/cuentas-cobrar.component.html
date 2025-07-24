@@ -67,7 +67,7 @@
                         <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
-                                <a *ngIf="apiService.auth_user().tipo == 'Administrador'"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
+                                <a *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
                                     <i class="fa fa-trash"></i>
                                 </a>
                                 <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver detalle">

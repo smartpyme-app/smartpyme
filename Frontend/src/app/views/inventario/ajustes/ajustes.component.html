@@ -2,8 +2,8 @@
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
         <h2 class="page-heading mb-0">Inventario</h2>
         <div class="d-flex flex-column flex-sm-row gap-2">
-            <button *ngIf="apiService.canCreate()" (click)="openModal(majuste)" tooltip="Crear ajuste (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir ajuste</button>
-            <button *ngIf="apiService.canCreate()" routerLink="/ajuste/crear" tooltip="Ajuste masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Ajuste masivo</button>
+            <button *ngIf="apiService.canCreateTest('productos.ajustes.crear')" (click)="openModal(majuste)" tooltip="Crear ajuste (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir ajuste</button>
+            <button *ngIf="apiService.canCreateTest('productos.ajustes.crear')" routerLink="/ajuste/crear" tooltip="Ajuste masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Ajuste masivo</button>
         </div>
     </div>
 </section>
@@ -12,7 +12,7 @@
     <div class="row mb-3">
         <div class="col">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="ajustes?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarAjustes()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -71,6 +71,7 @@
                         <th>Estado</th>
                         <th>Bodega</th>
                         <th (click)="setOrden('ajuste')" [ngClass]="{'sorted-asc': filtros.orden == 'ajuste' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'ajuste' && filtros.direccion == 'desc'}" class="click text-center">Ajuste</th>
+                        <th class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -104,6 +105,21 @@
                                     <tr> <td>Ajuste: </td> <td class="text-end">{{ ajuste.ajuste }}</td> </tr>
                                     <tr> <td>Stock actual: </td> <td class="text-end">{{ ajuste.stock_real }}</td> </tr>
                                 </table>
+                            </ng-template>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="list-group border-0">
+                                    <a routerLink="/ajuste/{{ajuste.id}}" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                                    </a>
+                                    <a (click)="generarPartidaContable(ajuste)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-edit"></i> Generar partida contable
+                                    </a>
+                                </div>
                             </ng-template>
                         </td>
                     </tr>
@@ -154,7 +170,7 @@
                 <label for="costo">Costo:</label>
                 <input type="text" class="form-control" [(ngModel)]="ajuste.costo" name="costo">
             </div>
-            
+
             <div class="form-group col-md-12" *ngIf="ajuste.stock_real">
                 <label for="ajuste">Se realizá un ajuste de:</label>
                 <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>

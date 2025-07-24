@@ -5,19 +5,19 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Sucursal;
-use App\Models\Inventario\Producto;
 use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
+use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class SucursalesController extends Controller
 {
-    
+
 
     // public function index(Request $request) {
     //     Log::info($request->all());
-       
+
     //     $sucursales = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
     //                             ->when($request->estado !== null, function($q) use ($request){
     //                                 $q->where('activo', !!$request->estado);
@@ -36,7 +36,7 @@ class SucursalesController extends Controller
 
     public function index(Request $request) {
         Log::info($request->all());
-        
+
         $query = Sucursal::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
             ->when($request->estado !== null, function($q) use ($request){
                 $q->where('activo', !!$request->estado);
@@ -45,7 +45,7 @@ class SucursalesController extends Controller
                 return $query->where('nombre', 'like' ,'%' . $request->buscador . '%')
                              ->orwhere('telefono', 'like' ,"%" . $request->buscador . "%");
             });
-        
+
         // Aplicar ordenamiento solo si se proporciona una columna válida
         if ($request->filled('orden')) {
             $query->orderBy($request->orden, $request->direccion ?? 'asc');
@@ -53,44 +53,44 @@ class SucursalesController extends Controller
             // Ordenamiento por defecto
             $query->orderBy('id', 'desc');
         }
-        
+
         $sucursales = $query->paginate($request->paginate);
-    
+
         return Response()->json($sucursales, 200);
     }
 
-    public function list() {
-       
+    public function list()
+    {
+
         $sucursales = Sucursal::orderby('nombre')
-                                ->where('activo', true)
-                                ->get();
+            ->where('activo', true)
+            ->get();
 
         return Response()->json($sucursales, 200);
-
     }
 
     //lista de marcas por empresa estan en la tabla productos y el campo marca
 
-    public function listaMarcas() {
-       
+    public function listaMarcas()
+    {
+
         $marcas = Producto::select('marca as nombre')
-                                ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-                                ->whereNotNull('marca')
-                                ->where('marca', '!=', '')
-                                ->groupBy('marca')
-                                ->get();
+            ->where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+            ->whereNotNull('marca')
+            ->where('marca', '!=', '')
+            ->groupBy('marca')
+            ->get();
 
         return Response()->json($marcas, 200);
-
     }
 
-    
-    
-    public function read($id) {
+
+
+    public function read($id)
+    {
 
         $sucursal = Sucursal::where('id', $id)->firstOrFail();
         return Response()->json($sucursal, 200);
-
     }
 
     public function store(Request $request)
@@ -100,14 +100,13 @@ class SucursalesController extends Controller
             'id_empresa'    => 'required|numeric',
         ]);
 
-        if($request->id)
+        if ($request->id)
             $sucursal = Sucursal::findOrFail($request->id);
         else
             $sucursal = new Sucursal;
-        
+
         $sucursal->fill($request->all());
         $sucursal->save();
-
         //Crear bodega por defecto
         if (!$request->id) {
             $bodega = Bodega::create([
@@ -129,7 +128,6 @@ class SucursalesController extends Controller
         }
 
         return Response()->json($sucursal, 200);
-
     }
 
     public function delete($id)
@@ -138,7 +136,5 @@ class SucursalesController extends Controller
         $sucursal->delete();
 
         return Response()->json($sucursal, 201);
-
     }
-
 }

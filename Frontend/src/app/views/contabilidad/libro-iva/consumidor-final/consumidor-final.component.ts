@@ -20,12 +20,12 @@ export class ConsumidorFinalComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-	ngOnInit() {   
+	ngOnInit() {
         const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
         // Crear un array con el año actual y los 10 años anteriores
@@ -39,10 +39,10 @@ export class ConsumidorFinalComponent implements OnInit {
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
-        
+
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -51,7 +51,7 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => { 
+        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -66,7 +66,7 @@ export class ConsumidorFinalComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
 
     public descargarLibro(){
         this.downloading = true;
@@ -118,7 +118,7 @@ export class ConsumidorFinalComponent implements OnInit {
               this.downloading = false;
               return;
             }
-      
+
             // Si no es texto plano, es un archivo ZIP
             const url = window.URL.createObjectURL(data);
             const a = document.createElement('a');

@@ -78,7 +78,8 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     NotificacionesComponent,
     DocsComponent,
     WhatsAppComponent,
-    WhatsAppEstadisticasComponent
+    WhatsAppEstadisticasComponent,
+    DocsComponent,
   ]
 })
 export class AdminModule { }

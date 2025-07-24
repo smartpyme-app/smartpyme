@@ -1,0 +1,58 @@
+
+
+  .steps {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    flex: 1;
+  }
+  
+  .step-item:not(:last-child):after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    width: 100%;
+    height: 2px;
+    background-color: #e9ecef;
+    z-index: 1;
+  }
+  
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    z-index: 2;
+    margin-bottom: 8px;
+  }
+  
+  .step-circle.active {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .step-title {
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+  }
+  
+  .step-title.active {
+    color: #007bff;
+    font-weight: bold;
+  }

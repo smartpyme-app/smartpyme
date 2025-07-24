@@ -20,12 +20,12 @@ export class ContribuyentesComponent implements OnInit {
     public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
-    ngOnInit() {   
+    ngOnInit() {
         const currentYear = new Date().getFullYear(); // Obtener el año actual
         const currentMonth = new Date().getMonth() + 1;
         // Crear un array con el año actual y los 10 años anteriores
@@ -42,7 +42,7 @@ export class ContribuyentesComponent implements OnInit {
         this.setTime();
 
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -51,7 +51,7 @@ export class ContribuyentesComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => { 
+        this.apiService.getAll('libro-iva/contribuyentes', this.filtros).subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -66,7 +66,7 @@ export class ContribuyentesComponent implements OnInit {
 
     public openModal(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
-    } 
+    }
 
 
     public descargarLibro(){
@@ -157,7 +157,7 @@ export class ContribuyentesComponent implements OnInit {
               this.downloading = false;
               return;
             }
-      
+
             // Si no es texto plano, es un archivo ZIP
             const url = window.URL.createObjectURL(data);
             const a = document.createElement('a');

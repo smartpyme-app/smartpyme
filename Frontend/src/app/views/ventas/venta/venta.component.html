@@ -1,13 +1,13 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading" (click)="loadAll()">
-        <span *ngIf="!loading && venta.estado != 'Pre-venta'">Venta</span>
-        <span *ngIf="!loading && venta.estado == 'Pre-venta'">Cotización</span>
+        <span *ngIf="!loading && !venta.cotizacion">Venta</span>
+        <span *ngIf="!loading && venta.cotizacion">Cotización</span>
     </h2>
     <div>
         <a *ngIf="venta.saldo > 0 && venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="btn btn-default me-2">
             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar
         </a>
-        <button class="btn btn-light text-danger" routerLink="/ventas"><i class="fa fa-arrow-left"></i> Regresar</button>
+        <button class="btn btn-light text-danger" [routerLink]="venta.cotizacion == 1 ? '/cotizaciones' : '/ventas'"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
 </section>
 
@@ -110,6 +110,11 @@
                         <th *ngIf="usuario.empresa.vendedor_detalle_venta">Vendedor</th>
                         <th>Detalle</th>
                         <th width="100">Cantidad</th>
+                        <th *ngFor="let field of customFields?.data" 
+                            width="100"
+                            [hidden]="!hasCustomField(field.id)">
+                            {{field.name}}
+                        </th>     
                         <th width="100">Precio</th>
                         <th width="100">Descuento</th>
                         <th width="100" class="text-end">Total</th>
@@ -139,6 +144,10 @@
                             </div>
                         </td>
                         <td>{{ detalle.cantidad }}</td>
+                        <td *ngFor="let field of customFields?.data"
+                            [hidden]="!hasCustomField(field.id)">
+                            {{ getCustomFieldValue(detalle, field.id) }}
+                        </td>
                         <td>{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
                         <td>{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
@@ -378,13 +387,13 @@
                                     <a routerLink="/devolucion/venta/{{venta.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="venta.estado == 'Pagada' && apiService.canEdit()" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Pagada' && apiService.canEditTest('ventas.editar')" (click)="setEstado(venta, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-ban"></i> Anular venta
                                     </a>
-                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEdit()" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="venta.estado == 'Anulada' && apiService.canEditTest('ventas.editar')" (click)="setEstado(venta, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-check"></i> Revertir anulación
                                     </a>
-                                    <a *ngIf="apiService.canEdit()" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
+                                    <a *ngIf="apiService.canEditTest('ventas.editar')" (click)="imprimir(venta)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
                                 </div>

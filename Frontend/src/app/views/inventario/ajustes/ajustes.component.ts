@@ -175,6 +175,12 @@ export class AjustesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    generarPartidaContable(ajuste:any){
+        this.apiService.store('contabilidad/partida/ajuste', ajuste).subscribe(ajuste => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
+    }
+
     public descargar(){
         this.downloading = true;
         this.apiService.export('ajustes/exportar', this.filtros).subscribe((data:Blob) => {

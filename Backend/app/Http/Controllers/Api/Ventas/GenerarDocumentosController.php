@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Ventas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Contabilidad\Partidas\Detalle;
 use Illuminate\Http\Request;
 
 use JWTAuth;

@@ -1,66 +1,76 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Cotización #{{ $venta->correlativo }} - {{ $venta->nombre_cliente }}</title>
     <style>
-
-        *{
+        * {
             margin: 0cm;
             font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
+
         body {
             font-family: serif;
             margin: 50px;
         }
-        h1,h2,h3,h4,h5,h6{
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
             color: #000000 !important;
         }
 
-        table{
+        table {
             width: 100%;
             border-collapse: collapse;
         }
-        .table th, .table td{
+
+        .table th,
+        .table td {
             border: 0px;
             border-collapse: collapse;
             padding: 10px 5px;
             text-align: left;
         }
-        .text-right{
+
+        .text-right {
             text-align: right !important;
         }
-        .border-bottom{
+
+        .border-bottom {
             border-bottom: 1px solid #000000 !important;
         }
-
-
     </style>
 
 </head>
-<body>
-{{-- <body onload="javascript:print();"> --}}
 
-        <table>
-            <tbody>
-                <tr>
-                    <td>
-                        <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
-                        <p>
-                            {{ $venta->empresa()->pluck('municipio')->first() }}
-                            {{ $venta->empresa()->pluck('departamento')->first() }}
-                        </p>
-                        <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
-                        <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
-                    </td>
-                    <td class="text-right">
+<body>
+    {{-- <body onload="javascript:print();"> --}}
+
+    <table>
+        <tbody>
+            <tr>
+                <td>
+                    <h1>{{ $venta->empresa()->pluck('nombre')->first() }}</h1>
+                    <p>
+                        {{ $venta->empresa()->pluck('municipio')->first() }}
+                        {{ $venta->empresa()->pluck('departamento')->first() }}
+                    </p>
+                    <p>{{ $venta->empresa()->pluck('direccion')->first() }}</p>
+                    <p>{{ $venta->empresa()->pluck('telefono')->first() }}</p>
+                </td>
+                <td class="text-right">
                         @if ($venta->empresa()->pluck('logo')->first())
                             <img width="150" height="150" src="{{ asset('img/'.$venta->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
-                </tr>
-            </tbody>
-        </table>
+            </tr>
+        </tbody>
+    </table>
 
         <table>
             <tbody>
@@ -79,7 +89,7 @@
                         </p>
                     </td>
                     <td>
-                        
+
                         @if ($venta->empresa()->pluck('id')->first() != 420)
                             <p>NCR:{{ $venta->cliente()->pluck('ncr')->first() }}</p>
                             <p>DUI:{{ $venta->cliente()->pluck('dui')->first() }}</p>
@@ -98,13 +108,30 @@
             </tbody>
         </table>
 
-        <br>
+    <br>
 
         <table class="table">
             <thead>
                 <tr>
                     <th class="border-bottom">Descripción</th>
                     <th class="border-bottom text-right">Cantidad</th>
+                    <!-- Custom field headers -->
+                    @php
+                        $uniqueCustomFields = collect([]);
+                        foreach($venta->detalles as $detalle) {
+                        foreach($detalle->customFields as $field) {
+                        $uniqueCustomFields->push([
+                        'id' => $field->custom_field_id,
+                        'name' => $field->customField->name
+                        ]);
+                        }
+                        }
+                        $uniqueCustomFields = $uniqueCustomFields->unique('id')->sortBy('id');
+                        $totalColumns = 4 + $uniqueCustomFields->count(); // Base columns + custom fields
+                    @endphp
+                    @foreach($uniqueCustomFields as $field)
+                        <th class="border-bottom text-right">{{ $field['name'] }}</th>
+                    @endforeach
                     <th class="border-bottom text-right">Precio</th>
                     <th class="border-bottom text-right">Total</th>
                 </tr>
@@ -114,15 +141,37 @@
                 <tr>
                     <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
                     <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
+                    <!-- Custom field values -->
+                    @foreach($uniqueCustomFields as $field)
+                        @php
+                            $customValue = $detalle->customFields->first(function($cf) use ($field) {
+                            return $cf->custom_field_id == $field['id'];
+                            });
+                        @endphp
+                        <td class="border-bottom text-right">
+                            @if($customValue)
+                                @if($customValue->custom_field_value_id)
+                                    {{ $customValue->customFieldValue->value }}
+                                @else
+                                    {{ $customValue->value }}
+                                @endif
+                            @else
+                                ----
+                            @endif
+                        </td>
+                    @endforeach
                     <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
-                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>
+                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</td>
                 </tr>
                 @if ($detalle->descuento > 0)
                     <tr>
                         <td>DESCUENTOS</td>
                         <td></td>
+                        @foreach($uniqueCustomFields as $field)
+                            <td class="border-bottom"></td>
+                        @endforeach
                         <td></td>
-                        <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </th>
+                        <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </td>
                     </tr>
                 @endif
                 @endforeach
@@ -157,18 +206,19 @@
             </tfoot>
         </table>
 
-        <br>
-        <h4>Términos y condiciones:</h4>
-{{--        <p>{{ $venta->observaciones }}</p>--}}
-        <p>{!! nl2br(e($venta->observaciones))  !!} </p>
-        <br>
 
-        <br>
-        <br>
-        <br>
+    <br>
+    <h4>Términos y condiciones:</h4>
+    {{-- <p>{{ $venta->observaciones }}</p>--}}
+    <p>{!! nl2br(e($venta->observaciones)) !!} </p>
+    <br>
 
-        <h4>Firma:</h4>
-        <p>____________________________</p>
+    <br>
+    <br>
+    <br>
+
+    <h4>Firma:</h4>
+    <p>____________________________</p>
 
 
 
@@ -176,4 +226,5 @@
 
 
 </body>
+
 </html>

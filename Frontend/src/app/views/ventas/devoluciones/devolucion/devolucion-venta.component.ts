@@ -23,11 +23,7 @@ export class DevolucionVentaComponent implements OnInit {
     public loading = false;
     modalRef!: BsModalRef;
     
-	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router,
-	    private modalService: BsModalService
-	) { }
+	constructor(private apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService){}
 
 	ngOnInit() {
         this.devolucion.sub_total = 0;

@@ -15,12 +15,13 @@ import { UsuarioComponent }     from '@views/admin/usuarios/usuario/usuario.comp
 
 import { NotificacionesComponent }     from '@views/admin/notificaciones/notificaciones.component';
 import { DocsComponent }     from '@views/admin/docs/docs.component';
-
+import { RolesPermisosComponent }     from '@views/admin/roles-permisos/roles-permisos.component';
 import { ReportesComponent }    from '@views/reportes/reportes.component';
 import { ReportesAutomaticosComponent }    from '@views/reportes/reportes-automaticos.component';
 import { WhatsAppComponent }    from '@views/admin/whatsapp/whatsapp.component';
 import { WhatsAppEstadisticasComponent } from '@views/admin/whatsapp/estadisticas/whatsapp-estadisticas.component';
 
+import { AuthorizationViewComponent } from '@shared/authorization/authorization-view/authorization-view.component';
 
 const routes: Routes = [
   {
@@ -40,7 +41,9 @@ const routes: Routes = [
         //Reportes automáticamente
         { path: 'reportes-automaticos', component: ReportesAutomaticosComponent, title: 'Reportes automáticos'},
         { path: 'whatsapp', component: WhatsAppComponent, title: 'WhatsApp' },
-        { path: 'whatsapp/estadisticas', component: WhatsAppEstadisticasComponent, title: 'Estadísticas de WhatsApp' }
+        { path: 'whatsapp/estadisticas', component: WhatsAppEstadisticasComponent, title: 'Estadísticas de WhatsApp' },
+        { path: 'roles-permisos', component: RolesPermisosComponent, title: 'Roles y permisos'},
+        { path: 'authorization/:code', component: AuthorizationViewComponent, title: 'Autorización' },
     ]
   }
 ];

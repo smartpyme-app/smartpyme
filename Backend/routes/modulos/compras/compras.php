@@ -1,8 +1,7 @@
-<?php 
+<?php
 
 use App\Http\Controllers\Api\Compras\ComprasController;
 use App\Http\Controllers\Api\Compras\SalidasController;
-//use Route;
 use Illuminate\Support\Facades\Route;
 
     Route::get('/compras',         		    [ComprasController::class, 'index']);
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/compra/{id}',              [ComprasController::class, 'read']);
     Route::post('/compra',                  [ComprasController::class, 'store']);
     Route::delete('/compra/{id}',           [ComprasController::class, 'delete']);
-    
+
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);
     Route::post('/compra/facturacion/consigna',  [ComprasController::class, 'facturacionConsigna']);
 

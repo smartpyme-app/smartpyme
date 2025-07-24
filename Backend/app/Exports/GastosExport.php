@@ -18,9 +18,7 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
 
     public function filter(Request $request)
     {
-        Log::info($request);
         $this->request = $request;
-
     }
 
     public function headings():array{
@@ -36,6 +34,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
             'Proveedor',
             'Num identificación',
             'Proyecto',
+            'Area',
+            'Departamento',
             'NIT',
             'Registro',
             'Subtotal',
@@ -64,6 +64,9 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
                     ->when($request->id_proyecto, function($q) use ($request){
                         $q->where('id_proyecto', $request->id_proyecto);
                     })
+                    ->when($request->id_area_empresa, function($query) use ($request){
+                        return $query->where('id_area_empresa', $request->id_area_empresa);
+                    })
                     ->when($request->id_usuario, function($query) use ($request){
                         return $query->where('id_usuario', $request->id_usuario);
                     })
@@ -83,7 +86,7 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->get();
-        
+
     }
 
     public function map($row): array{
@@ -99,6 +102,8 @@ class GastosExport implements FromCollection, WithHeadings, WithMapping
               $row->nombre_proveedor,
               $row->num_identificacion,
               $row->proyecto()->pluck('nombre')->first(),
+              $row->areaEmpresa()->pluck('nombre')->first(),
+              $row->nombre_departamento,
               $row->proveedor()->pluck('nit')->first(),
               $row->proveedor()->pluck('ncr')->first(),
               number_format($row->sub_total,2),

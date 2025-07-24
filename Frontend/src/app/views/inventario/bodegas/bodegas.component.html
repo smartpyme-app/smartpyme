@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bodegas</h2>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
+    <button *ngIf="apiService.canCreateTest('productos.bodegas.crear')" (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
 </section>
 <!-- <div>
     <p class="alert bg-primary text-muted border-0" *ngIf="!loading && (bodegas_activas < apiService.auth_user().empresa.bodega_limit)">
@@ -54,7 +54,7 @@
                         <th>Nombre</th>
                         <th>Sucursal</th>
                         <th>Estado</th>
-                        <th *ngIf="apiService.canEdit()" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        <th *ngIf="apiService.canEditTest('productos.bodegas.editar')" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,7 +75,7 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td *ngIf="apiService.canEdit()" class="text-center">
+                        <td *ngIf="apiService.canEditTest('productos.bodegas.editar')" class="text-center">
                             <div class="btn-group" role="group">
     <!--                             <a *ngIf="bodega.id != 1" class="btn btn-default" (click)="delete(bodega.id)" data-toggle="tooltip" title="Eliminar">
                                     <i class="fa fa-trash"></i>
@@ -83,7 +83,7 @@
                                 <a class="btn btn-default" (click)="openModal(mbodega, bodega)"  data-toggle="tooltip" title="Ver">
                                     <i class="fa fa-pencil-alt"></i>
                                 </a>
-                            </div>  
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -117,10 +117,10 @@
                     <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
                 </select>
             </div>
-            <div class="form-group col-lg-12">
+            <!-- <div class="form-group col-lg-12">
                 <label for="">Descripción:</label>
                 <input type="text" class="form-control" name="bodega.descripcion" [(ngModel)]="bodega.descripcion"/>
-            </div>
+            </div> -->
             <div class="form-group col-md-12">
                 <div class="form-switch bg-light-info rounded">
                   <label for="enable">Activa</label>
@@ -128,7 +128,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
                 <span *ngIf="!saving">Guardar</span>

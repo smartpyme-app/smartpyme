@@ -36,6 +36,10 @@ import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones
 
 import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-funcionalidades.component';
 
+import { RolesPermisosComponent } from '@views/admin/roles-permisos/roles-permisos.component';
+import { ModulesComponent } from '@views/admin/modules/modules.component';
+import { ModuleFormComponent } from '@views/admin/modules/create/module-form.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -66,8 +70,10 @@ import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-fun
     AdminSucursalesComponent,
     AdminSucursalComponent,
     AdminSuscripcionesComponent,
-    AdminSucursalComponent,
-    EmpresasFuncionalidadesComponent
+    EmpresasFuncionalidadesComponent,
+    RolesPermisosComponent,
+    ModulesComponent,
+    ModuleFormComponent
   ],
   exports: [
     EmpresasComponent,
@@ -82,7 +88,10 @@ import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-fun
     DashboardComponent,
     AdminSucursalesComponent,
     AdminSucursalComponent,
-    AdminSuscripcionesComponent
+    AdminSuscripcionesComponent,
+    RolesPermisosComponent,
+    ModulesComponent,
+    ModuleFormComponent
   ]
 })
 export class SuperAdminModule { }

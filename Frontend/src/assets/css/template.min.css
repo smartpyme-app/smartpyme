@@ -154,7 +154,7 @@ img.icon-2{
     }
 
     .form-group{
-      margin-bottom: 15px !important;
+      margin-bottom: 20px !important;
     }
 
     /*.form-select{
@@ -230,7 +230,7 @@ img.icon-2{
         width: 280px;
         padding: 20px 12px;
         transition: width 0.3s;
-        overflow: hidden;
+/*        overflow: hidden;*/
         height: 100%;
         background: #fff;
         transition: all 1s ease;
@@ -451,6 +451,10 @@ img.icon-2{
         overflow-y: auto;
         background-color: #FDFBFF !important;
     }
+
+.nav-pills .nav-link.active {
+    background-color: #D7E2FF !important;
+}
 
 /* Full calendar */
 

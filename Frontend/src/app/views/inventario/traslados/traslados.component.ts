@@ -99,14 +99,15 @@ export class TrasladosComponent implements OnInit {
         this.filtrarTraslados();
     }
 
-    public setEstado(traslado:any){
+    public setEstado(traslado:any, estado:any){
         this.traslado = traslado;
+        this.traslado.estado = estado;
         if (this.traslado.estado == 'Cancelado') {
             if (confirm('¿Confirma cancelar el traslado?')) {
                 this.delete(this.traslado.id);
             }
         }else{
-            if (confirm('¿Confirma confirmar el traslado?')) {
+            if (confirm('¿Confirma aplicar el traslado?')) {
                 this.onSubmit();
             }
         }
@@ -134,9 +135,11 @@ export class TrasladosComponent implements OnInit {
         this.traslado.id_empresa = this.apiService.auth_user().id_empresa;
         this.traslado.estado = 'Confirmado';
 
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error);});
+        if(!this.productos.length){
+            this.apiService.getAll('productos/list').subscribe(productos => {
+                this.productos = productos;
+            }, error => {this.alertService.error(error);});
+        }
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop:'static'});
     }
@@ -169,6 +172,12 @@ export class TrasladosComponent implements OnInit {
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
+    }
+
+    generarPartidaContable(traslado:any){
+        this.apiService.store('contabilidad/partida/traslado', traslado).subscribe(traslado => {
+            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+        },error => {this.alertService.error(error);});
     }
 
     public descargar(){

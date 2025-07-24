@@ -27,6 +27,7 @@ export class ClienteInformacionComponent implements OnInit {
   public loading_contacto = false;
   public esNuevo = false;
   public tipoAnterior = '';
+  public catalogo:any = [];
 
   modalRef?: BsModalRef;
 
@@ -38,16 +39,18 @@ export class ClienteInformacionComponent implements OnInit {
     private modalService: BsModalService
   ) {}
 
-  ngOnInit() {
-    this.loadAll();
-    this.paises = JSON.parse(localStorage.getItem('paises')!);
-    this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
-    this.distritos = JSON.parse(localStorage.getItem('distritos')!);
-    this.municipios = JSON.parse(localStorage.getItem('municipios')!);
-    this.actividad_economicas = JSON.parse(
-      localStorage.getItem('actividad_economicas')!
-    );
-  }
+    ngOnInit() {
+        this.loadAll();
+        this.paises = JSON.parse(localStorage.getItem('paises')!);
+        this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
+        this.distritos = JSON.parse(localStorage.getItem('distritos')!);
+        this.municipios = JSON.parse(localStorage.getItem('municipios')!);
+        this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
+
+        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+            this.catalogo = catalogo;
+        }, error => {this.alertService.error(error);});
+    }
 
   public loadAll() {
     this.route.params.subscribe((params: any) => {
@@ -238,10 +241,10 @@ export class ClienteInformacionComponent implements OnInit {
   openModal(template: TemplateRef<any>, contacto: any) {
 
     if (!contacto || contacto === null) {
-      
+
       this.contacto = {};
     } else {
-      
+
       this.contacto = { ...contacto };
     }
 
@@ -251,7 +254,7 @@ export class ClienteInformacionComponent implements OnInit {
     });
   }
 
-  
+
   agregarContacto(template: TemplateRef<any>) {
     this.contacto = {};
     this.modalRef = this.modalService.show(template, {
@@ -415,7 +418,7 @@ export class ClienteInformacionComponent implements OnInit {
           const nuevoTipo = this.cliente.tipo;
           this.mapearCamposEntreTipos(tipoAnterior, nuevoTipo);
       }
-      
+
       this.tipoAnterior = this.cliente.tipo;
   }
 
@@ -431,14 +434,14 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.departamento = '';
     this.cliente.municipio = '';
     this.cliente.distrito = '';
-    
+
     // Campos de persona
     this.cliente.dui = '';
     this.cliente.fecha_cumpleanos = '';
     this.cliente.red_social = '';
     this.cliente.etiquetas = [];
     this.cliente.nota = '';
-    
+
     // Campos de empresa
     this.cliente.nombre_empresa = '';
     this.cliente.nit = '';
@@ -447,11 +450,11 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.giro = '';
     this.cliente.empresa_telefono = '';
     this.cliente.empresa_direccion = '';
-    
+
     // Campos de extranjero
     this.cliente.tipo_documento = '';
     this.cliente.tipo_persona = '';
-    
+
     // Códigos de ubicación
     this.cliente.cod_pais = '';
     this.cliente.cod_departamento = '';
@@ -473,7 +476,7 @@ export class ClienteInformacionComponent implements OnInit {
         municipio: this.cliente.municipio,
         distrito: this.cliente.distrito
     };
- 
+
     const mapeos: any = {
         'Persona->Empresa': {
             ...datosComunes,
@@ -513,14 +516,14 @@ export class ClienteInformacionComponent implements OnInit {
             empresa_telefono: this.cliente.telefono
         }
     };
- 
+
     const clave = `${desde}->${hacia}`;
     const mapeo = mapeos[clave];
- 
+
     if (mapeo) {
         this.limpiarTodosSinTipo();
         Object.assign(this.cliente, mapeo);
-        
+
         this.alertService.info(
             'Datos adaptados',
             'Los campos se han adaptado automáticamente al nuevo tipo de cliente.'

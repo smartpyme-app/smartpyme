@@ -24,11 +24,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
     
     modalRef!: BsModalRef;
     
-	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
-	) {
+	constructor(public apiService: ApiService, private alertService: AlertService, private modalService: BsModalService, private sumPipe:SumPipe, private route: ActivatedRoute, private router: Router){
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -44,6 +40,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.venta = venta;
                 this.devolucion.detalles = venta.detalles;
                 this.devolucion.id_cliente = venta.id_cliente;
+                this.devolucion.id_bodega = venta.id_bodega;
                 this.devolucion.impuestos = venta.impuestos;
                 this.devolucion.fecha = this.apiService.date();
                 this.devolucion.id_venta = id;

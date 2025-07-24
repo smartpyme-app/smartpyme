@@ -4,7 +4,7 @@ namespace App\Models\Compras\Gastos;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 class Gasto extends Model {
 
     protected $table = 'egresos';
@@ -36,23 +36,29 @@ class Gasto extends Model {
         'total',
         'nota',
         'area_empresa',
+        'id_area_empresa',
         'id_usuario',
         'id_proyecto',
         'id_empresa',
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'otros_impuestos',
+        'es_retaceo',
+        'clasificacion',
         'tipo_operacion',
         'tipo_clasificacion',
         'tipo_sector',
         'tipo_costo_gasto',
+        'sector',
+        'tipo_gasto',
     ];
 
     protected $casts = [
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento'];
 
     protected static function boot()
     {
@@ -65,12 +71,12 @@ class Gasto extends Model {
         }
     }
 
-    public function getDteAttribute($value) 
+    public function getDteAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
 
-    public function getDteInvalidacionAttribute($value) 
+    public function getDteInvalidacionAttribute($value)
     {
         return is_string($value) ? json_decode($value,true) : $value;
     }
@@ -82,7 +88,7 @@ class Gasto extends Model {
     public function getNombreCategoriaAttribute(){
         return $this->categoria()->pluck('nombre')->first();
     }
-    
+
     public function getNombreProveedorAttribute()
     {   $proveedor = $this->proveedor()->first();
         if ($proveedor) {
@@ -90,7 +96,7 @@ class Gasto extends Model {
         }
         return 'Consumidor Final';
     }
-    
+
     public function getNombreSucursalAttribute(){
         return $this->sucursal()->pluck('nombre')->first();
     }
@@ -124,6 +130,31 @@ class Gasto extends Model {
     public function proyecto()
     {
         return $this->belongsTo('App\Models\Contabilidad\Proyecto', 'id_proyecto');
+    }
+
+    public function retaceoGasto()
+    {
+        return $this->hasOne('App\Models\Compras\Retaceo\RetaceoGasto', 'id_gasto');
+    }
+
+    public function areaEmpresa(){
+        return $this->belongsTo('App\Models\Compras\Gastos\AreaEmpresa', 'id_area_empresa');
+    }
+
+    public function departamento(){
+        return $this->belongsTo('App\Models\Admin\Departamento', 'id_departamento');
+    }
+
+    public function getIdDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->id_departamento : null;
+    }
+
+    public function getDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento : null;
+    }
+
+    public function getNombreDepartamentoAttribute(){
+        return $this->areaEmpresa ? $this->areaEmpresa->departamento->nombre : null;
     }
 
 

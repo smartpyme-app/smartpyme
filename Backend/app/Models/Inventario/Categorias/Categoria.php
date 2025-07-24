@@ -14,7 +14,9 @@ class Categoria extends Model
         'img',
         'descripcion',
         'enable',
-        'id_empresa'
+        'id_empresa',
+        'subcategoria',
+        'id_cate_padre'
     );
 
     protected $casts = ['enable' => 'string'];
@@ -28,6 +30,14 @@ class Categoria extends Model
                 $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
+    }
+
+    public function cuentas(){
+        return $this->hasMany('App\Models\Inventario\Categorias\Cuenta', 'id_categoria');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 
     public function productos(){

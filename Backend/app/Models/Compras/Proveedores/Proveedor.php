@@ -38,6 +38,7 @@ class Proveedor extends Model {
         'etiquetas',
         'id_usuario',
         'id_empresa',
+        'id_cuenta_contable',
     );
 
     protected $appends = ['nombre_completo'];

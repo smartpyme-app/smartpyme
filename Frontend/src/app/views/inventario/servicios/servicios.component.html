@@ -1,13 +1,14 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
-    <button *ngIf="apiService.canCreate() ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+    <!-- <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button> -->
+    <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.validateRole('usuario_citas', true)" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="servicios?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarServicios()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -60,8 +61,7 @@
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
-                        <!-- <th class="text-center" *ngIf="apiService.canEdit()">Más</th> -->
-                        <th class="text-center" *ngIf="apiService.canEdit() && !apiService.isSupervisorLimitado()">Más</th>
+                        <th class="text-center" *ngIf="apiService.canEditTest('servicios.editar')">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,7 +75,7 @@
                     </tr>
                     <tr *ngFor=" let servicio of servicios?.data">
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ servicio.img }}" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.baseUrl }}/img/{{ servicio.img }}" class="rounded-circle" width="50px">
                             {{ servicio.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
@@ -87,7 +87,7 @@
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>
                         <td class="text-right">{{ servicio.precio  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-right">{{ (servicio.precio * 1) + (servicio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center" *ngIf="apiService.canEdit() && !apiService.isSupervisorLimitado()">
+                        <td class="text-center" *ngIf="apiService.canEditTest('servicios.editar')">
                             <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
@@ -142,7 +142,7 @@
                 <input type="checkbox" [(ngModel)]="filtros.sin_condigo" class="form-check" name="filtros.sin_condigo">
             </div>
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">
@@ -166,14 +166,14 @@
   <div class="modal-body">
     <form name="facturacion" autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row text-center">
-  
+
             <div class="form-group col-md-12">
                 <label for="precio">Precio:</label>
                 <input type="number" class="form-control text-center" [(ngModel)]="servicio.precio" name="precio" placeholder="Precio">
             </div>
 
         </div>
-        
+
         <br><br>
         <div class="row text-center">
             <div class="col-xs-12">

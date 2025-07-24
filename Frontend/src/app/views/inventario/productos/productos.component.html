@@ -1,14 +1,19 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
-    <h2 class="page-heading">Inventario</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
-    <!-- <button *ngIf="apiService.canCreate()" routerLink="/ajuste/crear" tooltip="Ajuste masivo" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Ajuste masivo</button> -->
+  <h2 class="page-heading">Inventario</h2>
+  <div>
+    <button *ngIf="apiService.canCreateTest('productos.compuestos.crear')" routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
+      style="margin-right: 10px;"><img src="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
+    <button *ngIf="apiService.canCreateTest('productos.crear')" routerLink="/producto/crear" tooltip="Crear producto (F4)"
+      class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
+      producto</button>
+  </div>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
             <span class="text-muted d-flex align-items-center gap-2" *ngIf="productos?.total">
-                Mostrando 
+                Mostrando
                 <select name="paginate" class="form-select w-auto" (change)="filtrarProductos()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -89,7 +94,7 @@
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
                             {{ producto.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
@@ -145,7 +150,7 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
-                                    <button *ngIf="apiService.canEdit()" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
+                                    <button *ngIf="apiService.canEditTest('productos.editar')" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
                                         <img  src="/assets/icons/edit.png" class="icon me-2">Editar
                                     </button>
                                     <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">
@@ -157,7 +162,7 @@
                                     <button type="button" class="btn text-start border-0">
                                         <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
                                     </button> -->
-                                    
+
                                     <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
                                         <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
                                     </button> -->
@@ -224,10 +229,10 @@
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.marca">Marca:</label>
-                <ng-select name="marca" 
+                <ng-select name="marca"
                         placeholder="Todas"
-                        [(ngModel)]="filtros.marca" 
-                        (ngModelChange)="filtrarProductos()" 
+                        [(ngModel)]="filtros.marca"
+                        (ngModelChange)="filtrarProductos()"
                         class="form-select p-0">
                     <ng-option value="">Todas</ng-option>
                     <ng-option *ngFor="let marca of marcas" [value]="marca.id">
@@ -247,9 +252,9 @@
                   <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="filtros.compuestos" name="compuestos">
                 </div>
             </div>
-            
+
         </div>
-        
+
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
                 <span *ngIf="!loading">Filtrar</span>
@@ -277,7 +282,7 @@
                 <label for="stock_real">Ingrese la cantidad que debe haber en existencias:</label>
                 <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real" focus="true">
             </div>
-            
+
             <div class="form-groumdcol-xs-12" *ngIf="ajuste.stock_real">
                 <label for="ajuste">Se realizá un ajuste de:</label>
                 <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>

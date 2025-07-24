@@ -103,12 +103,12 @@ export class VentasComponent implements OnInit {
 
   public loadAll() {
     const filtrosGuardados = localStorage.getItem('ventasFiltros');
-    
+
     if (filtrosGuardados) {
       this.filtros = JSON.parse(filtrosGuardados);
       console.log(this.filtros);
     } else {
-      
+
       this.filtros = {
         id_sucursal: '',
         id_cliente: '',
@@ -128,13 +128,13 @@ export class VentasComponent implements OnInit {
       };
 
       // Aplicar filtro de sucursal para usuarios no administradores
-      if (this.apiService.auth_user().tipo != 'Administrador') {
+      if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) ){
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
     }
 
-    this.filtrarVentas();
-  }
+        this.filtrarVentas();
+    }
 
   public filtrarVentas() {
     localStorage.setItem('ventasFiltros', JSON.stringify(this.filtros));
@@ -390,7 +390,7 @@ export class VentasComponent implements OnInit {
     );
   }
 
- 
+
 
   public descargarAcumulado() {
     this.downloadingVentas = true;
@@ -421,7 +421,7 @@ export class VentasComponent implements OnInit {
         this.downloadingVentas = false;
         this.saving = false;
 
-     
+
         this.filtrosAcumulado = {
           inicio: '',
           fin: '',
@@ -482,7 +482,7 @@ export class VentasComponent implements OnInit {
     }
 
     public onSubmit() {
-        this.saving = true;            
+        this.saving = true;
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
             this.saving = false;
@@ -497,7 +497,7 @@ export class VentasComponent implements OnInit {
     public setRecurrencia(venta:any){
         this.venta = venta;
         this.venta.recurrente = true;
-        
+
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
             this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
@@ -507,6 +507,7 @@ export class VentasComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
+        this.alertService.modal = true;
         this.modalRef = this.modalService.show(template);
     }
 
@@ -538,7 +539,7 @@ export class VentasComponent implements OnInit {
             if (index !== -1) {
               this.ventas.data[index] = { ...ventaActualizada };
             }
-            
+
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
             this.enviarDTE(this.venta);
@@ -591,11 +592,11 @@ export class VentasComponent implements OnInit {
                     this.venta.dte_invalidacion = dte;
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        
+
                         if(dteFirmado.status == 'ERROR'){
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
-                        
+
                         this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
@@ -687,11 +688,15 @@ export class VentasComponent implements OnInit {
 
 
   getNumsIds(){
-    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => { 
+    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => {
         this.numeros_ids = numsIds;
     }, error => {this.alertService.error(error); });
-  } 
+  }
 
-
+  generarPartidaContable(venta:any){
+    this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
+      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+    },error => {this.alertService.error(error);});
+  }
 
 }

@@ -10,9 +10,10 @@ use App\Http\Controllers\Api\Inventario\ImagenesController;
 use App\Http\Controllers\Api\Inventario\ProveedorController;
 use App\Http\Controllers\Api\Inventario\KardexController;
 use App\Http\Controllers\Api\Inventario\SucursalesController;
-//use Route;
-use App\Http\Controllers\Api\Webhook\WooCommerceController;
+use App\Http\Controllers\ComboProductoController;
+use App\Http\Controllers\Api\Inventario\AtributoController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
@@ -35,11 +36,12 @@ use Illuminate\Support\Facades\Route;
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
 
 // Composisiones
-    Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
-    Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);
+Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
+Route::post('/producto/compuesto',        [ProductosController::class, 'storeCompuesto']);
+Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);
 
-    Route::post('/producto/composicion/opcion',        [OpcionesController::class, 'store']);
-    Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, 'delete']);
+Route::post('/producto/composicion/opcion',        [OpcionesController::class, 'store']);
+Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, 'delete']);
 
 // Precios
     Route::post('/producto/precio',        [PreciosController::class, 'store']);
@@ -67,6 +69,10 @@ use Illuminate\Support\Facades\Route;
     Route::post('promocion',          [PromocionesController::class, 'store']);
     Route::delete('promocion/{id}',   [PromocionesController::class, 'delete']);
     Route::get('promociones/eliminar',   [PromocionesController::class, 'deleteAll']);
+
+    Route::get('atributos', [AtributoController::class, 'index']);
+    Route::post('atributos', [AtributoController::class, 'store']);
+
 
 // Imagenes
     Route::post('/producto/imagen',        [ImagenesController::class, 'store']);
@@ -96,4 +102,14 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
     Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
+
+    //refactor productos compuestos
+    Route::group(['prefix' => 'combos'], function () {
+        Route::get('index', [ComboProductoController::class, 'index']);
+        Route::post('crear', [ComboProductoController::class, 'store']);
+        Route::post('actualizar', [ComboProductoController::class, 'update']);
+        Route::get("get/{id}", [ComboProductoController::class, 'show']);
+        Route::post("changeState", [ComboProductoController::class, 'changeState']);
+        Route::get("GetNewCorrelativo", [ComboProductoController::class, 'GetNewCorrelativo']);
+    });
 ?>

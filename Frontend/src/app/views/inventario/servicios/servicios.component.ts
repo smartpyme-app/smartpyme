@@ -101,7 +101,11 @@ export class ServiciosComponent implements OnInit {
     }
 
     openModalPrecio(template: TemplateRef<any>, servicio:any) {
-        if(this.apiService.auth_user().tipo == 'Administrador') {
+        // if(this.apiService.auth_user().tipo == 'Administrador') {
+        //     this.servicio = servicio;
+        //     this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        // }
+        if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.servicio = servicio;
             this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
         }

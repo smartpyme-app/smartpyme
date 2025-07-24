@@ -176,6 +176,23 @@
             </div>
         </div>
         <div class="row">
+            <div class="col-md-8 col-lg-6">
+                <h6>Configuración Contable</h6>
+                <div class="form-group col-md-12">
+                    <label for="proveedor.id_cuenta_contable">Cuenta contable:</label>
+                    <ng-select [(ngModel)]="proveedor.id_cuenta_contable" class="form-select p-0" name="proveedor.id_cuenta_contable">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                            <div class="d-flex align-items-center">
+                                <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                <span class="col-8"> - {{ cuenta.nombre }}</span>
+                            </div>
+                        </ng-option>
+                    </ng-select>
+                </div>
+            </div>
+        </div>
+        <div class="row">
             <div class="form-group col-md-12 mt-3">
                 <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                     <span *ngIf="!saving">Guardar proveedor <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>

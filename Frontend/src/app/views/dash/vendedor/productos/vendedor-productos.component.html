@@ -1,6 +1,8 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
-    <button *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    <!-- <button *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
+    <button *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
@@ -58,7 +60,8 @@
                         <th (click)="setOrden('codigo')" [ngClass]="{'sorted-asc': filtros.orden == 'codigo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'codigo' && filtros.direccion == 'desc'}" class="click d-none d-md-table-cell">Código</th>
                         <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
-                        <th *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th>
+                        <!-- <th *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th> -->
+                        <th *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,7 +116,7 @@
                                 </ng-template>
                             </div> -->
                         </td>
-                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" >
+                        <td class="text-center" *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario" >
                             <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

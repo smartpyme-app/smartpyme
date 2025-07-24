@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Documento;
 use App\Models\Compras\Gastos\Gasto;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 
 use App\Exports\GastosExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -16,11 +18,20 @@ use Illuminate\Support\Facades\Log;
 class GastosController extends Controller
 {
 
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService)
+    {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
+
 
     public function index(Request $request)
     {
 
-        $gastos = Gasto::when($request->id_proveedor, function ($query) use ($request) {
+        $gastos = Gasto::with('retaceoGasto')->when($request->id_proveedor, function ($query) use ($request) {
             return $query->where('id_proveedor', $request->id_proveedor);
         })
             ->when($request->estado, function ($query) use ($request) {
@@ -28,6 +39,9 @@ class GastosController extends Controller
             })
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
+            })
+            ->when($request->id_area_empresa, function($query) use ($request){
+                return $query->where('id_area_empresa', $request->id_area_empresa);
             })
             ->when($request->num_identificacion, function ($q) use ($request) {
                 $q->where('num_identificacion', $request->num_identificacion);
@@ -55,6 +69,13 @@ class GastosController extends Controller
             })
             ->when($request->dte && $request->dte == 1, function ($query) {
                 return $query->whereNotNull('sello_mh');
+            })
+            ->when($request->es_retaceo, function($query) use ($request) {
+                return $query->where('es_retaceo', true)
+                    ->when($request->es_retaceo === 'true',
+                        function($q) { return $q->whereDoesntHave('retaceoGasto'); },
+                        function($q) { return $q->whereHas('retaceoGasto'); }
+                    );
             })
             ->when($request->buscador, function ($query) use ($request) {
                 return $query->whereHas('proveedor', function ($q) use ($request) {
@@ -118,20 +139,22 @@ class GastosController extends Controller
             'fecha'         => 'required|date',
             'concepto'      => 'sometimes|max:255',
             'tipo_documento'     => 'required|max:255',
-            'concepto'     => 'required|max:255',
             'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
             // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
+            'id_categoria'    => 'required|numeric',
             'id_proveedor'    => 'required|numeric',
             'id_usuario'    => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
             'otros_impuestos' => 'nullable',
             'area_empresa'   => 'nullable',
+            'id_area_empresa'   => 'nullable',
         ],[
             'tipo.required' => 'El campo categoria es obligatorio.',
+            'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_usuario.required' => 'El campo usuario es obligatorio.',
             'id_empresa.required' => 'El campo empresa es obligatorio.'
@@ -142,8 +165,11 @@ class GastosController extends Controller
         else
             $gasto = new Gasto;
 
-
-        $gasto->fill($request->all());
+        $data = $request->all();
+        if (isset($data['otros_impuestos']) && empty($data['otros_impuestos'])) {
+            $data['otros_impuestos'] = null;
+        }
+        $gasto->fill($data);
         $gasto->save();
 
         // Incrementar el correlarivo de Sujeto excluido
@@ -151,6 +177,16 @@ class GastosController extends Controller
             $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
             $documento->increment('correlativo');
         }
+
+        // Crear transaccion bancaria
+            if(!$request->id && $gasto->forma_pago != 'Efectivo' && $gasto->forma_pago != 'Cheque'){
+                $this->transaccionesService->crear($gasto, 'Cargo', 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
+
+        // Crear cheque
+            if(!$request->id && $gasto->forma_pago == 'Cheque'){
+                $this->chequesService->crear($gasto, $gasto->nombre_proveedor, 'Gasto: ' . $gasto->tipo_documento . ' #' . ($gasto->referencia ? $gasto->referencia : ''), 'Gasto');
+            }
 
         return Response()->json($gasto, 200);
     }
@@ -474,7 +510,7 @@ class GastosController extends Controller
             ->whereNotNull('num_identificacion')
             ->where('num_identificacion', '!=', '')
             ->get();
-        
+
         return Response()->json($numsIds, 200);
      }
 }

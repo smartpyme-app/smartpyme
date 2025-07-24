@@ -3,24 +3,50 @@
 namespace App\Models\Inventario\Traslados;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+use JWTAuth;
 
 class Traslado extends Model {
 
-    protected $table = 'producto_traslados';
+    protected $table = 'traslados';
     protected $fillable = array(
        'fecha',
-       'nota',
+       'concepto',
        'estado',
-       'origen_id',
-       'destino_id',
-       'usuario_id'
+       'cantidad',
+       'id_bodega_de',
+       'id_bodega',
+       'id_usuario',
+       'id_empresa',
     );
 
-    protected $appends = ['usuario', 'total'];
+    protected $appends = ['nombre_producto', 'nombre_origen', 'nombre_destino'];
 
-    public function getNotaAttribute($value)
+    protected static function booted()
     {
-        return ucwords(mb_strtolower($value));
+        $usuario = JWTAuth::parseToken()->authenticate();
+
+        if ($usuario){
+            static::addGlobalScope('empresa', function (Builder $builder) use ($usuario) {
+                $builder->where('id_empresa', $usuario->id_empresa);
+            });
+        }
+        
+    }
+
+    public function getNombreProductoAttribute(){
+
+        return $this->producto()->pluck('nombre')->first();
+    }
+
+    public function getNombreOrigenAttribute(){
+
+        return $this->origen()->pluck('nombre')->first();
+    }
+
+    public function getNombreDestinoAttribute(){
+
+        return $this->destino()->pluck('nombre')->first();
     }
 
     public function getUsuarioAttribute()
@@ -28,25 +54,36 @@ class Traslado extends Model {
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getTotalAttribute()
+    public function getCantidadAttribute($value)
     {
-        return  $this->detalles()->count();
+        if (!$value)
+            return  $this->detalles()->sum('cantidad');
+        else
+            return $value;
     }
 
     public function detalles(){
-        return $this->hasMany('App\Models\Inventario\Traslados\Detalle','traslado_id');
+        return $this->hasMany('App\Models\Inventario\Traslados\Detalle','id_traslado');
     }
 
     public function origen(){
-        return $this->belongsTo('App\Models\Inventario\Bodega','origen_id');
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega_de');
+    }
+
+    public function producto(){
+        return $this->belongsTo('App\Models\Inventario\Producto', 'id_producto');
     }
 
     public function destino(){
-        return $this->belongsTo('App\Models\Inventario\Bodega','destino_id');
+        return $this->belongsTo('App\Models\Inventario\Bodega','id_bodega');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Admin','id_empresa');
     }
 
     public function usuario(){
-        return $this->belongsTo('App\Models\User','usuario_id');
+        return $this->belongsTo('App\Models\User','id_usuario');
     }
 
 }

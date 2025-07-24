@@ -18,10 +18,13 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Traits\Authorization\HasAutoAuthorization;
 
 class UsuariosController extends Controller
 {
 
+    use HasAutoAuthorization;
+    protected $authModule = 'usuarios';
 
     public function index(Request $request)
     {
@@ -77,10 +80,10 @@ class UsuariosController extends Controller
     }
 
 
-    public function read($id)
-    {
+    public function read($id) {
 
-        $usuario = Usuario::where('id', $id)->firstOrFail();
+        //$usuario = Usuario::where('id', $id)->firstOrFail();
+        $usuario = Usuario::with('roles')->where('id', $id)->firstOrFail();
         return Response()->json($usuario, 200);
     }
 
@@ -102,8 +105,10 @@ class UsuariosController extends Controller
     public function search($txt)
     {
 
-        $usuarios = Usuario::where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
-            ->where('name', 'like', '%' . $txt . '%')->paginate(15);
+        Log::info("loggg");
+        $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
+                            ->where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
+                            ->where('name', 'like' ,'%' . $txt . '%')->paginate(15);
         return Response()->json($usuarios, 200);
     }
 
@@ -112,7 +117,7 @@ class UsuariosController extends Controller
     {
         $request->validate([
             'name'          => 'required|max:255',
-            'email'         => 'required|unique:users,email,' . $request->id,
+            'email'         => 'required|unique:users,email,'.$request->id,
             'tipo'          => 'required',
             'id_empresa'    => 'required',
             'id_sucursal'   => 'required',
@@ -130,7 +135,18 @@ class UsuariosController extends Controller
 
         ]);
 
-        if ($request->id)
+        // Verificar si se está cambiando el rol
+        if ($request->id && $request->rol_id) {
+            $usuario = Usuario::findOrFail($request->id);
+            if ($usuario->roles->first()->id != $request->rol_id) {
+                if ($response = $this->checkAuth('change_role', ['id_usuario' => $request->id])) {
+                    return $response;
+                }
+            }
+        }
+
+
+        if($request->id)
             $usuario = Usuario::findOrFail($request->id);
         else
             $usuario = new Usuario;
@@ -165,6 +181,9 @@ class UsuariosController extends Controller
             $usuario->bienvenida();
         }
 
+        $usuario->roles()->sync([$request->rol_id]);
+
+        $usuario->load('roles');
 
         return Response()->json($usuario, 200);
     }
@@ -340,7 +359,7 @@ class UsuariosController extends Controller
         }
     }
 
-    public function updateEmail(Request $request, $id)
+    public function updateEmail(Request $request,$id)
     {
         $user = Usuario::findOrFail($id);
         $user->email = $request->email;
@@ -350,12 +369,12 @@ class UsuariosController extends Controller
 
     public function updatePassword(Request $request, $id)
     {
-        // if ($response = $this->checkAuth('change_password', [
-        //     'id_usuario' => $id,
-        //     'password' => $request->password
-        // ])) {
-        //     return $response;
-        // }
+        if ($response = $this->checkAuth('change_password', [
+            'id_usuario' => $id,
+            'password' => $request->password
+        ])) {
+            return $response;
+        }
 
         $user = Usuario::findOrFail($id);
         $user->password = Hash::make($request->password);
@@ -367,9 +386,9 @@ class UsuariosController extends Controller
     public function updateAuthCode(Request $request, $id)
     {
 
-        // if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
-        //     return $response;
-        // }
+        if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
+            return $response;
+        }
 
         $request->validate([
             'codigo_autorizacion' => 'required|numeric|digits_between:3,10'
@@ -402,7 +421,7 @@ class UsuariosController extends Controller
             'id_sucursal' => 'required',
         ]);
 
-        
+
         $user = Usuario::findOrFail($request->id);
         $user->fill($request->all());
         $user->save();
@@ -430,4 +449,7 @@ class UsuariosController extends Controller
         $user->save();
         return Response()->json($user, 200);
     }
+
+
+
 }

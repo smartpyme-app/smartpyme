@@ -4,38 +4,38 @@
         <h2>Libro de Compras</h2>
     </div>
     <div class="dropdown">
-        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton" 
+        <button class="btn btn-default tcla-F6 dropdown-toggle" type="button" id="dropdownMenuButton"
                 data-bs-toggle="dropdown" aria-expanded="false" [disabled]="downloading">
-          Descargas 
+          Descargas
         </button>
         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
+                <img src="/assets/icons/download.png" class="icon me-2">
                 Libro de compras Excel
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroPDF()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
+                <img src="/assets/icons/download.png" class="icon me-2">
                 Libro de IVA PDF
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
+                <img src="/assets/icons/download.png" class="icon me-2">
                 Anexo CSV
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroPercepcion()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
+                <img src="/assets/icons/download.png" class="icon me-2">
                 Libro de Percepcion 1% Excel
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexoPercepcion()">
-                <img src="/assets/icons/download.png" class="icon me-2"> 
+                <img src="/assets/icons/download.png" class="icon me-2">
                 Anexo de Percepcion 1% CSV
             </button>
           </li>
@@ -132,7 +132,7 @@
                     </tbody>
                     <tfoot *ngIf="ivas?.length > 0">
                         <tr>
-                            <td colspan="5" class="text-center"><b>Total</b></td>                                
+                            <td colspan="5" class="text-center"><b>Total</b></td>
                             <td class="text-end text-nowrap"><b>{{ ivas | sum:'compras_exentas' | currency }}</b></td>
                             <td class="text-end text-nowrap"><b>{{ ivas | sum:'no_sujeta' | currency }}</b></td>
                             <td class="text-end text-nowrap"><b>{{ ivas | sum:'importaciones_exentas' | currency }}</b></td>

@@ -1,34 +1,31 @@
-<div class="d-flex" style="min-height: 100vh; background: #fdfbff">
+<!-- <div class="container-fluid p-0 m-0">
+  <div *ngIf="usuario.empresa.estado_plan.estado == 'Prueba'" class="alert bg-warning rounded-0  m-0 p-2 text-center">
+      <a href="/pagar-plan" class="text-decoration-none text-dark">Estás en tu prueba gratuita, faltan {{ usuario.empresa.estado_plan.dias_faltantes }} días para que termine.
+      Puedes <span class="text-dark fw-bold"> pagar ahora tu plan acá.</span></a>
+  </div>
+</div> -->
 
-  <app-sidebar-admin
-    *ngIf="usuario.id_empresa == 2 && !usuario.empresa.licencia"
-  ></app-sidebar-admin>
-  <app-sidebar
-    *ngIf="
-      usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
-      apiService.isAdmin()
-    "
-  ></app-sidebar>
-  <app-sidebar-ventas
-    *ngIf="
-      usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
-      usuario.tipo == 'Ventas'
-    "
-  ></app-sidebar-ventas>
-  <app-sidebar-servicios
-    *ngIf="
-      usuario.id_empresa != 2 &&
-      !usuario.empresa.licencia &&
-      usuario.tipo == 'Citas'
-    "
-  ></app-sidebar-servicios>
-  <app-sidebar-organizaciones
-    *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"
-  ></app-sidebar-organizaciones>
+<!-- <div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
+  <app-sidebar-admin *ngIf="usuario.id_empresa == 2 && !usuario.empresa.licencia"></app-sidebar-admin>
+  <app-sidebar *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && apiService.isAdmin()"></app-sidebar>
+  <app-sidebar-ventas *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && usuario.tipo == 'Ventas'"></app-sidebar-ventas>
+  <app-sidebar-servicios *ngIf="usuario.id_empresa != 2 && !usuario.empresa.licencia && usuario.tipo == 'Citas'"></app-sidebar-servicios>
+  <app-sidebar-organizaciones *ngIf="usuario.id_empresa != 2 && usuario.empresa.licencia"></app-sidebar-organizaciones>
 
-  <div class="content p-2 px-lg-4 py-lg-2 position-relative overflow-hidden">
+  <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
+    <app-header></app-header>
+    <app-notificaciones-container *ngIf="!alertService.modal"></app-notificaciones-container>
+    <router-outlet></router-outlet>
+  </div>
+</div> -->
+<div class="d-flex" style="min-height: 100vh; background: #FDFBFF;">
+  <app-sidebar-admin *ngIf="apiService.verifyRoleAdmin() && !usuario.empresa.licencia"></app-sidebar-admin>
+  <app-sidebar *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia"></app-sidebar>
+  <!-- <app-sidebar-ventas *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyVentasRole()"></app-sidebar-ventas> -->
+  <!-- <app-sidebar-servicios *ngIf="apiService.isNotSuperAdmin() && !usuario.empresa.licencia && apiService.verifyCitasRole()"></app-sidebar-servicios> -->
+  <!-- <app-sidebar-organizaciones *ngIf="apiService.isNotSuperAdmin() && usuario.empresa.licencia"></app-sidebar-organizaciones> -->
+
+  <div class="content pt-5 mt-5 p-2 px-lg-4 py-lg-5 position-relative overflow-hidden">
     <div class="container-fluid p-0 m-0">
       <!-- Sección de estado de suscripción -->
 
@@ -273,16 +270,12 @@
         </div>
       </ng-container>
     </div>
-
     <app-header></app-header>
-    <app-notificaciones-container
-      *ngIf="!alertService.modal"
-    ></app-notificaciones-container>
+    <app-notificaciones-container *ngIf="!alertService.modal"></app-notificaciones-container>
     <router-outlet></router-outlet>
   </div>
 </div>
 
 <app-footer></app-footer>
 <app-chat-drawer></app-chat-drawer>
-
 <app-speed-dial></app-speed-dial>

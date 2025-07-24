@@ -1,0 +1,147 @@
+<div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
+    <h3 (click)="loadAll()">{{ conciliacion.id ? 'Editar ' : 'Crear ' }} Conciliación</h3>
+    <button class="btn btn-light text-danger" routerLink="/bancos/conciliaciones"><i class="fa fa-arrow-left"></i> Regresar</button>
+</div>
+
+<form autocomplete="off" (ngSubmit)="onSubmit()">
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="row">
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" name="fecha" [(ngModel)]="conciliacion.fecha">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="">Cuenta:</label>
+                <ng-select [(ngModel)]="conciliacion.id_cuenta" (change)="filtrarTransacciones()" class="form-select p-0" name="id_cuenta">
+                    <ng-option value="">Seleccione aquí</ng-option>
+                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                        {{ cuenta.nombre_banco }} : {{ cuenta.numero }}
+                    </ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="desde">Desde:</label>
+                <input type="date" class="form-control" name="desde" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.desde">
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="hasta">Hasta:</label>
+                <input type="date" class="form-control" name="hasta" (change)="filtrarTransacciones()" [(ngModel)]="conciliacion.hasta">
+            </div>
+            <div class="form-group col-md-12 col-lg-12">
+                <label for="nota">Observaciones:</label><br>
+                <input type="text" placeholder="Escriba aquí" class="form-control" name="nota" [(ngModel)]="conciliacion.nota"/>
+            </div>
+
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="saldo_actual">Saldo <small>(al {{ conciliacion.hasta | date:'dd/MM/yyyy' }})</small>:</label>
+                <input type="number" placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="saldo_actual" [(ngModel)]="conciliacion.saldo_actual" (change)="verificar()"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="gastos">Gastos bancarios:</label>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="gastos" [(ngModel)]="conciliacion.gastos"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="impuestos">Impuestos bancarios:</label>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="impuestos" [(ngModel)]="conciliacion.impuestos"/>
+            </div>
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="otras_entradas">Otras entradas:</label>
+                <input type='number' placeholder="Escriba aquí" class="form-control" (change)="verificar()" name="otras_entradas" [(ngModel)]="conciliacion.otras_entradas"/>
+            </div>
+
+        </div>
+     </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <table class="table table-borderless">
+            <thead>
+                <tr>
+                    <td class="text-center">Saldo <br> última conciliación</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Entradas</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Salidas</td>
+                    <td class="text-center"></td>
+                    <td class="text-center">Saldo Final</td>
+                    <td class="text-center border-end"></td>
+                    <td class="text-center">Diferencia <br> con el extracto</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-center"><h4>{{ conciliacion.saldo_anterior | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-plus"></i></td>
+                    <td class="text-center text-success"><h4>{{ (conciliacion.entradas + (conciliacion.otras_entradas ? conciliacion.otras_entradas : 0)) | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-minus"></i></td>
+                    <td class="text-center text-danger"><h4>{{ (conciliacion.salidas + (conciliacion.gastos ? conciliacion.gastos : 0) + (conciliacion.impuestos ? conciliacion.impuestos : 0)) | currency }}</h4></td>
+                    <td class="text-center"><i class="fa fa-arrow-right"></i></td>
+                    <td class="text-center"><h4>{{ conciliacion.saldo_final | currency }}</h4></td>
+                    <td class="text-center border-end"></td>
+                    <td class="text-center" [ngClass]="{ 'text-info' : conciliacion.diferencia == 0.00, 'text-danger' : conciliacion.diferencia != 0.00,  }"><h4>{{ conciliacion.diferencia | currency }}</h4></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="bg-white rounded p-3 mb-3">
+        <div class="form-group col-sm-12 pt-2 pb-4">
+            <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                <span *ngIf="!saving">Guardar conciliacion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                <span *ngIf="saving">Guardando...</span>
+            </button>
+        </div>
+    </div>
+
+</form>
+
+<div class="bg-white rounded p-3 mb-3" *ngIf="transacciones?.total">
+    <div class="row">
+        <h4>Listado de Transacciones</h4>
+        <div class="table-responsive">
+            <table class="table table-borderless table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Cuenta</th>
+                        <th>Concepto</th>
+                        <th>Tipo</th>
+                        <th>Operación</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                        <!-- <th class="text-center">Más</th> -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="9" class="text-center" *ngIf="transacciones?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene transacciones registrados</span>
+                        </td>
+                        <td colspan="9" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor=" let transaccion of transacciones?.data">
+                        <td>{{transaccion.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{transaccion.nombre_usuario}}</td>
+                        <td>{{transaccion.cuenta.nombre_banco}} : {{transaccion.cuenta.numero}}</td>
+                        <td>{{transaccion.concepto}}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : transaccion?.tipo == 'Cargo', 'bg-success' : transaccion?.tipo == 'Abono'}">{{ transaccion.tipo }}</span>
+                        </td>
+                        <td>{{ transaccion.tipo_operacion }}</td>
+                        <td>
+                            <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : transaccion?.estado == 'Pendiente', 'bg-danger' : transaccion?.estado == 'Anulada', 'bg-success' : transaccion?.estado == 'Aprobada'}">{{ transaccion.estado }}</span>
+                        </td>
+                        <td class="text-end">{{transaccion.total | currency}}</td>
+                        <!-- <td class="text-center"> </td> -->
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+

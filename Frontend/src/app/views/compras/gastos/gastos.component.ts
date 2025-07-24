@@ -24,6 +24,7 @@ export class GastosComponent implements OnInit {
     public proyectos:any = [];
     public sucursales:any = [];
     public proveedores:any = [];
+    public areas:any = [];
     public filtros:any = {};
     public numeros_ids:any = [];
 
@@ -55,8 +56,12 @@ export class GastosComponent implements OnInit {
             this.filtrarGastos();
         });
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
+        }, error => {this.alertService.error(error); });
+
+        this.apiService.getAll('area-empresa/list').subscribe(areas => {
+            this.areas = areas;
         }, error => {this.alertService.error(error); });
     }
 
@@ -69,6 +74,7 @@ export class GastosComponent implements OnInit {
         this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.tipo = '';
+        this.filtros.id_area_empresa = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
@@ -96,8 +102,8 @@ export class GastosComponent implements OnInit {
         if(!this.filtros.id_usuario){
             this.filtros.id_usuario = '';
         }
-        
-        this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
+
+        this.apiService.getAll('gastos', this.filtros).subscribe(gastos => {
             this.gastos = gastos;
             this.loading = false;
             if(this.modalRef){
@@ -122,9 +128,9 @@ export class GastosComponent implements OnInit {
         this.gasto = gasto;
         this.onSubmit();
     }
-    
+
     public onSubmit(){
-        this.apiService.store('gasto', this.gasto).subscribe(gasto => { 
+        this.apiService.store('gasto', this.gasto).subscribe(gasto => {
             this.gasto = gasto;
             this.alertService.success('Gasto guardado', 'El gasto fue cambiado a ' + this.gasto.estado.toLowerCase() + ' exitosamente.');
         }, error => {this.alertService.error(error); });
@@ -133,7 +139,7 @@ export class GastosComponent implements OnInit {
     public setRecurrencia(gasto:any){
         this.gasto = gasto;
         this.gasto.recurrente = true;
-        
+
         this.apiService.store('gasto', this.gasto).subscribe(gasto => {
             this.gasto = {};
             this.alertService.success('Gasto guardado', 'El gasto se marco como recurrente exitosamente.');
@@ -145,12 +151,12 @@ export class GastosComponent implements OnInit {
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('gasto/', id) .subscribe(data => {
-                for (let i = 0; i < this.gastos['data'].length; i++) { 
+                for (let i = 0; i < this.gastos['data'].length; i++) {
                     if (this.gastos['data'][i].id == data.id )
                         this.gastos['data'].splice(i, 1);
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
 
     }
@@ -181,27 +187,27 @@ export class GastosComponent implements OnInit {
 
     public openFilter(template: TemplateRef<any>) {
         if(!this.sucursales.length){
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list').subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
 
         // if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-        //     this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+        //     this.apiService.getAll('proyectos/list').subscribe(proyectos => {
         //         this.proyectos = proyectos;
         //     }, error => {this.alertService.error(error); });
         // }
 
-        if(!this.proyectos.length && 
-            this.apiService.auth_user().empresa.modulo_proyectos && 
+        if(!this.proyectos.length &&
+            this.apiService.auth_user().empresa.modulo_proyectos &&
             this.isColumnEnabled('columna_proyecto')){
-             this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+             this.apiService.getAll('proyectos/list').subscribe(proyectos => {
                  this.proyectos = proyectos;
              }, error => {this.alertService.error(error); });
          }
@@ -264,7 +270,7 @@ export class GastosComponent implements OnInit {
                     this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
                         this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
                         // this.alertService.success('DTE firmado.');
-                        
+
                         this.mhService.anularDTE(this.gasto, dteFirmado.body).subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.gasto.dte_invalidacion.sello = dte.selloRecibido;
@@ -303,9 +309,14 @@ export class GastosComponent implements OnInit {
     }
 
     getNumsIds(){
-        this.apiService.getAll('gastos/nums-ids').subscribe(numsIds => { 
+        this.apiService.getAll('gastos/nums-ids').subscribe(numsIds => {
             this.numeros_ids = numsIds;
         }, error => {this.alertService.error(error); });
     }
 
+  generarPartidaContable(gasto:any){
+    this.apiService.store('contabilidad/partida/gasto', gasto).subscribe(gasto => {
+      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+    },error => {this.alertService.error(error);});
+  }
 }

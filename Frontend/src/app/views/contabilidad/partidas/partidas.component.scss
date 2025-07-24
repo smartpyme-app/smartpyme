@@ -1,0 +1,975 @@
+.bn_mrgn {
+  margin-left: 10px;
+}
+
+/* ============ ESTILOS PARA CIERRE DE MES ============ */
+
+// Modal de cierre de mes
+.modal-xl {
+  max-width: 95%;
+
+  @media (min-width: 1200px) {
+    max-width: 1140px;
+  }
+}
+
+// Cards del modal
+.card {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+}
+
+.card-header {
+  border-bottom: 2px solid rgba(0, 0, 0, 0.125);
+  font-weight: 600;
+
+  h6 {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+}
+
+// Estados de período
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+// Balance de comprobación
+.balance-item {
+  padding: 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+}
+
+.balance-totals {
+  .border-end:last-child {
+    border-right: none !important;
+  }
+}
+
+// Indicadores de estado
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+
+  &.success {
+    background-color: #28a745;
+  }
+
+  &.warning {
+    background-color: #ffc107;
+  }
+
+  &.danger {
+    background-color: #dc3545;
+  }
+}
+
+// Spinner personalizado
+.spinner-border-lg {
+  width: 3rem;
+  height: 3rem;
+}
+
+// Tabla de cuentas
+.table-accounts {
+  font-size: 0.875rem;
+
+  th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  td {
+    vertical-align: middle;
+    padding: 0.5rem;
+  }
+}
+
+// Botones de acción
+.btn-action {
+  min-width: 120px;
+  font-weight: 500;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Animaciones
+@keyframes slideInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+// Estados de validación
+.validation-success {
+  border: 2px solid #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.validation-error {
+  border: 2px solid #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+.validation-warning {
+  border: 2px solid #ffc107;
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .modal-xl {
+    max-width: 95%;
+    margin: 0.5rem;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .btn-action {
+    min-width: auto;
+    font-size: 0.875rem;
+  }
+
+  .balance-totals {
+    .col-md-4 {
+      margin-bottom: 1rem;
+      text-align: center !important;
+
+      .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 1rem;
+      }
+    }
+  }
+
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+}
+
+// Utilidades adicionales
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.border-dashed {
+  border-style: dashed !important;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(45deg, #ffc107, #e0a800);
+}
+
+.bg-gradient-danger {
+  background: linear-gradient(45deg, #dc3545, #c82333);
+}
+
+// Iconos con animación
+.icon-animated {
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.icon-spin-slow {
+  animation: fa-spin 2s infinite linear;
+}
+
+// Mejoras para accesibilidad
+.btn:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+// Dark mode support (opcional)
+@media (prefers-color-scheme: dark) {
+  .card {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .card-header {
+    background-color: #4a5568;
+    border-color: #718096;
+  }
+
+  .table-accounts {
+    th {
+      background-color: #4a5568;
+      color: #e2e8f0;
+    }
+  }
+}
+
+/* ============ ESTILOS PARA SIMULACIÓN DE CIERRE ============ */
+
+// Contenedor principal de simulación
+.simulacion-container {
+  .metricas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metrica-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #007bff, #28a745);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    h4 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      line-height: 1.2;
+    }
+
+    small {
+      color: #6c757d;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+// Balance proyectado
+.balance-proyectado {
+  .balance-item {
+    background: #ffffff;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      transition: all 0.3s ease;
+    }
+
+    &.cuadra {
+      background: linear-gradient(135deg, #f8fff9, #e8f8e8);
+      border-color: #28a745;
+
+      &::before {
+        background: linear-gradient(90deg, #28a745, #20c997);
+      }
+    }
+
+    &.descuadra {
+      background: linear-gradient(135deg, #fff8f8, #ffeaea);
+      border-color: #dc3545;
+
+      &::before {
+        background: linear-gradient(90deg, #dc3545, #fd7e14);
+      }
+    }
+
+    h5 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    small {
+      color: #6c757d;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.5px;
+    }
+  }
+}
+
+// Advertencias y alertas
+.advertencias-container {
+  .alert {
+    border: 0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    border-left: 5px solid transparent;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      opacity: 0.3;
+    }
+
+    &.alert-danger {
+      background: linear-gradient(135deg, #fff5f5, #ffeaea);
+      color: #842029;
+      border-left-color: #dc3545;
+
+      &::before {
+        background: linear-gradient(90deg, #dc3545, #fd7e14);
+      }
+    }
+
+    &.alert-warning {
+      background: linear-gradient(135deg, #fffdf5, #fff8e1);
+      color: #664d03;
+      border-left-color: #ffc107;
+
+      &::before {
+        background: linear-gradient(90deg, #ffc107, #fd7e14);
+      }
+    }
+
+    &.alert-info {
+      background: linear-gradient(135deg, #f5f9ff, #e1f3ff);
+      color: #055160;
+      border-left-color: #0dcaf0;
+
+      &::before {
+        background: linear-gradient(90deg, #0dcaf0, #0d6efd);
+      }
+    }
+
+    strong {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    small {
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Recomendaciones
+.recomendaciones-container {
+  .list-group-item {
+    border: 0;
+    padding: 1rem 0;
+    background: transparent;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(0, 123, 255, 0.05);
+      border-radius: 8px;
+      border-bottom-color: transparent;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    i {
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(40, 167, 69, 0.1);
+      color: #28a745;
+      margin-right: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    &:hover i {
+      background: rgba(40, 167, 69, 0.2);
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Impacto del cierre
+.impacto-container {
+  .impacto-card {
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #007bff, #6610f2);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    h4 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    small {
+      color: #6c757d;
+      font-weight: 600;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Puntuación de calidad
+.puntuacion-calidad {
+  transition: all 0.3s ease;
+
+  &.alta {
+    color: #28a745;
+    text-shadow: 0 1px 2px rgba(40, 167, 69, 0.2);
+  }
+
+  &.media {
+    color: #ffc107;
+    text-shadow: 0 1px 2px rgba(255, 193, 7, 0.2);
+  }
+
+  &.baja {
+    color: #dc3545;
+    text-shadow: 0 1px 2px rgba(220, 53, 69, 0.2);
+    animation: pulse-warning 2s infinite;
+  }
+}
+
+// Nivel de riesgo
+.nivel-riesgo {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+
+  &.bajo {
+    color: #155724;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 1px solid #c3e6cb;
+  }
+
+  &.medio {
+    color: #856404;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 1px solid #ffeaa7;
+  }
+
+  &.alto {
+    color: #721c24;
+    background: linear-gradient(135deg, #f8d7da, #f1b0b7);
+    border: 1px solid #f1b0b7;
+    animation: pulse-danger 2s infinite;
+  }
+}
+
+// Botón de ejecutar cierre real
+.btn-ejecutar-cierre {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Animaciones personalizadas
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-warning {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-danger {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.simulacion-resultado {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.loading-shimmer {
+  animation: shimmer 1.5s infinite;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+}
+
+// Responsive design
+@media (max-width: 992px) {
+  .simulacion-container {
+    .metricas-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .simulacion-container {
+    .metricas-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .metrica-card {
+      padding: 1.25rem;
+
+      h4 {
+        font-size: 1.5rem;
+      }
+    }
+  }
+
+  .balance-proyectado {
+    .balance-item {
+      padding: 1.5rem;
+
+      h5 {
+        font-size: 1.4rem;
+      }
+    }
+  }
+
+  .impacto-container {
+    .impacto-card {
+      .card-body {
+        padding: 1.5rem;
+      }
+
+      h4 {
+        font-size: 1.5rem;
+      }
+    }
+  }
+}
+
+// Mejoras de accesibilidad
+.btn-simulacion {
+  &:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.5);
+  }
+}
+
+.alert {
+  &:focus-within {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+  }
+}
+
+// Tema oscuro para simulación
+@media (prefers-color-scheme: dark) {
+  .simulacion-container {
+    .metrica-card {
+      background: #343a40;
+      border-color: #495057;
+      color: #f8f9fa;
+    }
+  }
+
+  .balance-proyectado {
+    .balance-item {
+      background: #343a40;
+      border-color: #495057;
+      color: #f8f9fa;
+
+      &.cuadra {
+        background: linear-gradient(135deg, #1e3a1e, #2d4a2d);
+      }
+
+      &.descuadra {
+        background: linear-gradient(135deg, #3a1e1e, #4a2d2d);
+      }
+    }
+  }
+
+  .impacto-container {
+    .impacto-card {
+      background: #343a40;
+      border-color: #495057;
+      color: #f8f9fa;
+    }
+  }
+
+  .advertencias-container {
+    .alert {
+      &.alert-danger {
+        background: linear-gradient(135deg, #2d1b1b, #3a2222);
+        color: #f8d7da;
+      }
+
+      &.alert-warning {
+        background: linear-gradient(135deg, #2d2a1b, #3a3222);
+        color: #fff3cd;
+      }
+
+      &.alert-info {
+        background: linear-gradient(135deg, #1b2a2d, #22323a);
+        color: #d1ecf1;
+      }
+    }
+  }
+}
+
+// Estilos para el modal de reportes contables
+::ng-deep .modal-xl {
+  .modal-dialog {
+    max-width: 90%;
+  }
+
+  .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-header {
+    color: #000000;
+    border-radius: 12px 12px 0 0;
+
+    h4 {
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .btn-close {
+      opacity: 0.8;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 2rem;
+    background-color: #f8f9fa;
+  }
+}
+
+// Estilos para la navegación de tabs
+.nav-pills {
+  .nav-link {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+
+    &:not(.active) {
+      background-color: transparent;
+      color: #495057;
+
+      &:hover {
+        background-color: #e9ecef;
+        color: #495057;
+        transform: translateX(5px);
+      }
+    }
+
+    &.active {
+      background: #D7E2FF !important;
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+      transform: translateX(5px);
+    }
+
+    i {
+      opacity: 0.8;
+    }
+  }
+}
+
+// Estilos para el contenido de los tabs
+.tab-content {
+  min-height: 350px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  h5 {
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    i {
+      opacity: 0.8;
+    }
+  }
+}
+
+// Estilos para los formularios
+.form-label {
+  color: #495057;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-select, .form-control {
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+}
+
+// Estilos para las alertas informativas
+.alert {
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+
+  &.alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    color: #0c5460;
+  }
+
+  &.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+  }
+}
+
+// Estilos para los botones
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  transition: all 0.3s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  i {
+    margin-right: 0.5rem;
+  }
+}
+
+// Estilos para texto pequeño
+small.text-muted {
+  font-size: 0.8rem;
+  color: #6c757d !important;
+
+  i {
+    opacity: 0.7;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  ::ng-deep .modal-xl .modal-dialog {
+    max-width: 95%;
+    margin: 1rem;
+  }
+
+  .row.g-3 > * {
+    margin-bottom: 1rem;
+  }
+
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: 1rem;
+
+    .btn {
+      align-self: center;
+    }
+  }
+}
