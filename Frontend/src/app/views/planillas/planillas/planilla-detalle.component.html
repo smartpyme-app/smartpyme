@@ -580,57 +580,81 @@
                     <i class="fa fa-money-bill-wave"></i> Descuentos
                   </h5>
                 </div>
+            
                 <div class="card-body">
-                  <div class="mb-3">
-                    <label>ISSS (3%):</label>
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
-                        name="isss_empleado" [disabled]="true"
-                        [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+                  <!-- 🔁 ESTÁTICO para El Salvador -->
+                  <ng-container *ngIf="esElSalvador">
+                    <div class="mb-3">
+                      <label>ISSS (3%):</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
+                          name="isss_empleado" [disabled]="true"
+                          [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+                      </div>
+                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
+                      </small>
+                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                      </small>
                     </div>
-                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                      Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
-                    </small>
-                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                      No aplica para servicios profesionales
-                    </small>
-                  </div>
-
-                  <div class="mb-3">
-                    <label>AFP (7.25%):</label>
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
-                        name="afp_empleado" [disabled]="true"
-                        [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+            
+                    <div class="mb-3">
+                      <label>AFP (7.25%):</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
+                          name="afp_empleado" [disabled]="true"
+                          [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+                      </div>
+                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
+                      </small>
+                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        No aplica para servicios profesionales
+                      </small>
                     </div>
-                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                      Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
-                    </small>
-                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                      No aplica para servicios profesionales
-                    </small>
-                  </div>
-
-                  <div class="mb-3">
-                    <label>
-                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">ISR:</span>
-                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">ISR (10% fijo):</span>
-                    </label>
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
-                        [disabled]="true" />
+            
+                    <div class="mb-3">
+                      <label>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">ISR:</span>
+                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">ISR (10% fijo):</span>
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
+                          [disabled]="true" />
+                      </div>
+                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Según tablas de renta vigentes
+                      </small>
+                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        10% fijo sobre total de ingresos
+                      </small>
                     </div>
-                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                      Según tablas de renta vigentes
-                    </small>
-                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                      10% fijo sobre total de ingresos
-                    </small>
-                  </div>
-
+                  </ng-container>
+            
+                  <!-- 🌍 DINÁMICO para otros países -->
+                  <ng-container *ngIf="!esElSalvador">
+                    <div class="mb-3" *ngFor="let concepto of conceptosDeduccion">
+                      <label>{{ concepto[1].nombre }}:</label>
+                      <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input
+                          type="number"
+                          class="form-control"
+                          [value]="detalleSeleccionado?.conceptos?.[concepto[0]]"
+                          disabled
+                        />
+                      </div>
+                      <small class="text-muted">
+                        {{ concepto[1].tipo === 'porcentaje' ? concepto[1].valor + '%' : 'Monto fijo' }}
+                      </small>
+                    </div>
+                  </ng-container>
+            
+                  <!-- 🟡 Préstamos y Anticipos (siempre aplican) -->
                   <div class="mb-3">
                     <label>Préstamos:</label>
                     <div class="input-group">
@@ -641,7 +665,7 @@
                         " />
                     </div>
                   </div>
-
+            
                   <div class="mb-3">
                     <label>Anticipos:</label>
                     <div class="input-group">
@@ -652,7 +676,8 @@
                         " />
                     </div>
                   </div>
-
+            
+                  <!-- Total descuentos -->
                   <div class="alert alert-warning">
                     <strong>Total Descuentos:</strong> ${{
                     detalleSeleccionado.total_descuentos | number : "1.2-2"
@@ -661,6 +686,7 @@
                 </div>
               </div>
             </div>
+            
 
             <!-- Sueldo Neto -->
             <div class="col-12">

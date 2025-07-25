@@ -4,7 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
-import { ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
+import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
 
 import Swal from 'sweetalert2';
 
@@ -40,6 +40,8 @@ export class PlanillaDetalleComponent implements OnInit {
   public configPlanilla: any = null;
   public round: any = Math.round;
   public conceptosConfigurados: any = null;
+  public conceptosDeduccion: [string, ConceptoPlanilla][] = [];
+  public conceptos: { [codigo: string]: ConceptoPlanilla } = {};
 
 
   modalRef!: BsModalRef;
@@ -62,6 +64,10 @@ export class PlanillaDetalleComponent implements OnInit {
       }
     });
 
+    this.conceptosDeduccion = Object.entries(this.conceptos || {}).filter(
+      ([, concepto]) => concepto.es_deduccion && !concepto.es_patronal
+    );
+
     this.cargarCatalogos();
   }
 
@@ -79,6 +85,16 @@ export class PlanillaDetalleComponent implements OnInit {
       },
       error: (error) => this.alertService.error(error),
     });
+  }
+
+  cargarConceptosDeduccion() {
+    if (!this.esElSalvador && this.conceptosConfigurados) {
+      this.conceptosDeduccion = Object.entries(this.conceptosConfigurados || {}).filter(
+        ([, concepto]: any) => concepto.es_deduccion && !concepto.es_patronal
+      ) as [string, ConceptoPlanilla][];
+      
+      console.log('🌍 Conceptos de deducción cargados:', this.conceptosDeduccion);
+    }
   }
 
   public onDepartamentoChange() {
@@ -274,11 +290,64 @@ export class PlanillaDetalleComponent implements OnInit {
       next: (config) => {
         this.conceptosConfigurados = config?.configuracion?.conceptos || null;
         console.log('🧩 Conceptos personalizados cargados:', this.conceptosConfigurados);
+        this.cargarConceptosDeduccion();
       },
       error: () => {
         console.warn('⚠️ No hay configuración personalizada');
       }
     });
+  }
+
+  calcularDeduccionConcepto(detalle: any, concepto: any): number {
+    const codigo = concepto.codigo?.toLowerCase();
+    
+    // Si el campo existe directamente en el detalle
+    if (detalle.hasOwnProperty(codigo)) {
+      return Number(detalle[codigo]) || 0;
+    }
+    
+    // Si es un cálculo porcentual
+    if (concepto.tipo === 'porcentaje') {
+      const base = detalle[concepto.base_calculo] || detalle.total_ingresos || 0;
+      return (Number(base) * Number(concepto.valor)) / 100;
+    }
+    
+    // Si es monto fijo
+    if (concepto.tipo === 'fijo') {
+      return Number(concepto.valor) || 0;
+    }
+    
+    return 0;
+  }
+
+  actualizarDeduccionesCalculadas() {
+    if (!this.esElSalvador && this.detalleSeleccionado && this.conceptosDeduccion) {
+      let totalDeducciones = 0;
+      
+      // Calcular cada concepto de deducción
+      this.conceptosDeduccion.forEach(([codigo, concepto]) => {
+        const valor = this.calcularDeduccionConcepto(this.detalleSeleccionado, concepto);
+        
+        // Guardar el valor calculado en el detalle
+        if (!this.detalleSeleccionado.conceptos) {
+          this.detalleSeleccionado.conceptos = {};
+        }
+        this.detalleSeleccionado.conceptos[codigo] = valor;
+        
+        totalDeducciones += valor;
+      });
+      
+      // Agregar otros descuentos manuales
+      const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+      const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
+      
+      const totalFinal = totalDeducciones + prestamos + anticipos;
+      
+      this.detalleSeleccionado.total_descuentos = Number(totalFinal.toFixed(2));
+      this.detalleSeleccionado.sueldo_neto = Number(
+        (this.detalleSeleccionado.total_ingresos - totalFinal).toFixed(2)
+      );
+    }
   }
 
   public filtrarPlanillas() {
@@ -981,6 +1050,11 @@ export class PlanillaDetalleComponent implements OnInit {
     // ✅ CONDICIONAL: Solo actualizar renta si es empleado asalariado
     if (!esServiciosProfesionales) {
       this.actualizarRenta();
+    }
+
+    // Si no es El Salvador, actualizar deducciones dinámicas
+    if (!this.esElSalvador) {
+      this.actualizarDeduccionesCalculadas();
     }
   }
 
