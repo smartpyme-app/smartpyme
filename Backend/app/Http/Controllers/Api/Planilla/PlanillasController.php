@@ -77,7 +77,7 @@ class PlanillasController extends Controller
     {
 
         try {
-            $planilla = Planilla::findOrFail($request->id);
+            $planilla = Planilla::with('empresa')->findOrFail($request->id);
 
             if (
                 $planilla->id_empresa !== auth()->user()->id_empresa ||
@@ -139,7 +139,11 @@ class PlanillasController extends Controller
                 ')->first();
 
             // Convertir a array y añadir la información adicional
-            $planillaArray = $planilla->toArray();
+            $planillaArray['empresa'] = [
+                'id' => $planilla->empresa->id,
+                'nombre' => $planilla->empresa->nombre,
+                'cod_pais' => $planilla->empresa->cod_pais,
+            ];
             $planillaArray['detalles'] = $detalles;
             $planillaArray['totales'] = $totales;
 

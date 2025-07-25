@@ -39,6 +39,8 @@ export class PlanillaDetalleComponent implements OnInit {
   public downloading: boolean = false;
   public configPlanilla: any = null;
   public round: any = Math.round;
+  public conceptosConfigurados: any = null;
+
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
@@ -118,11 +120,162 @@ export class PlanillaDetalleComponent implements OnInit {
         this.detalles = response.detalles.data;
         this.calcularTotalesPlanilla();
         this.loading = false;
+
+        console.log('🧩 Detalles:', this.detalles);
+
+        this.loadConceptosConfigurados();
+
+        const pais = this.planilla?.empresa?.cod_pais;
+        if (pais !== 'SV') {
+          console.log('✅ Planilla de país diferente a El Salvador');
+        } else {
+          console.log('🇸🇻 Planilla salvadoreña (usa sistema legacy)');
+        }
+
+
       },
       error: (error) => {
         this.alertService.error(error);
         this.loading = false;
       },
+    });
+  }
+
+  // calcularConcepto(detalle: any, concepto: any): number {
+  //   const base = detalle[concepto.base_calculo]; // ej: detalle['salario_devengado']
+  //   const tipo = concepto.tipo;
+  //   const valor = concepto.valor;
+  
+  //   if (!base || !tipo) return 0;
+  
+  //   if (tipo === 'porcentaje') {
+  //     return (base * valor) / 100;
+  //   }
+
+    
+  
+  //   // Otros tipos (como tabla) los veremos después
+  //   return 0;
+  // }
+
+  calcularConcepto(detalle: any, concepto: any): number {
+    const codigo = concepto.codigo;
+    const codigoLower = codigo.toLowerCase();
+  
+    // 🎯 1. Si el campo existe en detalle (como "isss_empleado", "renta", etc.)
+    if (detalle.hasOwnProperty(codigoLower)) {
+      return Number(detalle[codigoLower]) || 0;
+    }
+  
+    // 🎯 2. Si el tipo es porcentaje, aplicamos cálculo sobre base
+    if (concepto.tipo === 'porcentaje') {
+      const base = detalle[concepto.base_calculo];
+      const tope = concepto.tope_maximo || null;
+  
+      let monto = Number(base) || 0;
+  
+      if (tope && monto > tope) {
+        monto = tope;
+      }
+  
+      return (monto * concepto.valor) / 100;
+    }
+  
+    // 🎯 3. Si el tipo es fijo
+    if (concepto.tipo === 'fijo') {
+      return Number(concepto.valor) || 0;
+    }
+  
+    // 🎯 4. Si es sistema existente pero el campo no está en detalle
+    if (concepto.tipo === 'sistema_existente') {
+      if (detalle.hasOwnProperty(codigoLower)) {
+        return Number(detalle[codigoLower]) || 0;
+      } else if (detalle.hasOwnProperty('renta') && codigo === 'RENTA') {
+        return Number(detalle['renta']) || 0;
+      }
+    }
+  
+    // ❌ 5. Fallback
+    return 0;
+  }
+  
+  
+
+  get esElSalvador(): boolean {
+    return this.planilla?.empresa?.cod_pais === 'SV';
+  }
+
+  get conceptosEmpleado() {
+    return Object.entries(this.conceptosConfigurados || {}).filter(
+      ([, c]: any) => !c.es_patronal
+    );
+  }
+  
+  get conceptosPatronales() {
+    return Object.entries(this.conceptosConfigurados || {}).filter(
+      ([, c]: any) => c.es_patronal
+    );
+  }
+
+  getTotalConcepto(codigo: string): number {
+    let total = 0;
+  
+    // Validación defensiva
+    if (!this.conceptosConfigurados || !this.detalles) return 0;
+  
+    const concepto = this.conceptosConfigurados[codigo];
+    if (!concepto) return 0;
+  
+    for (const detalle of this.detalles) {
+      const valor = this.calcularConcepto(detalle, concepto);
+      total += Number(valor) || 0;
+    }
+
+    return total;
+  }
+
+  getTotalCampoReal(campo: string): number {
+    let total = 0;
+  
+    for (const detalle of this.detalles) {
+      if (detalle[campo] !== undefined && detalle[campo] !== null) {
+        total += Number(detalle[campo]) || 0;
+      }
+    }
+  
+    return total;
+  }
+  
+  
+  
+  
+  getTotalCampo(campo: string): number {
+    let total = 0;
+  
+    for (const detalle of this.detalles) {
+      const valor = Number(detalle[campo]) || 0;
+      total += valor;
+    }
+  
+    return total;
+  }
+
+
+  getTotalAportesPatronales(detalle: any): number {
+    return this.conceptosPatronales
+      .map(([_, c]) => this.calcularConcepto(detalle, c))
+      .reduce((a, b) => a + b, 0);
+  }
+
+  loadConceptosConfigurados() {
+    this.configPlanillaService.obtenerConfiguracion().subscribe({
+      next: (config) => {
+        this.conceptosConfigurados = config?.configuracion?.conceptos || null;
+        console.log('🧩 Conceptos personalizados cargados:', this.conceptosConfigurados);
+      },
+      error: () => {
+        console.warn('⚠️ No hay configuración personalizada');
+      }
     });
   }
 
@@ -1336,6 +1489,8 @@ public calcularDescuentos(): void {
   this.configPlanillaService.probarCalculo(datosEmpleado).subscribe({
     next: (resultado) => {
       this.aplicarResultadosConfigurables(resultado);
+
+      
     },
     error: (error) => {
       console.warn('Fallback al sistema legacy:', error);
