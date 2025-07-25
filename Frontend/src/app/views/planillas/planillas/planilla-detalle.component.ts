@@ -56,6 +56,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
   ngOnInit() {
     this.route.params.subscribe((params) => {
+
       if (params['id']) {
         this.loadPlanillas(params['id']);
       }
@@ -119,6 +120,7 @@ export class PlanillaDetalleComponent implements OnInit {
         this.planilla = response;
         this.detalles = response.detalles.data;
         this.calcularTotalesPlanilla();
+        this.calcularTotalesPatronales();
         this.loading = false;
 
         console.log('🧩 Detalles:', this.detalles);
@@ -731,15 +733,19 @@ export class PlanillaDetalleComponent implements OnInit {
     });
   }
 
-  /**
-   * Método para obtener el total de descuentos patronales
-   */
   public getTotalDescuentosPatronales(): number {
-    if (!this.descuentosPatronales) return 0;
-    return this.descuentosPatronales.detalles?.reduce((total: number, detalle: any) => {
-      return total + (detalle.isss_patronal || 0) + (detalle.afp_patronal || 0);
-    }, 0) || 0;
+    return (
+      (this.descuentosPatronales?.resumen?.total_isss_patronal || 0) +
+      (this.descuentosPatronales?.resumen?.total_afp_patronal || 0)
+    );
   }
+
+  // public getTotalDescuentosPatronales(): number {
+  //   if (!this.descuentosPatronales) return 0;
+  //   return this.descuentosPatronales.detalles?.reduce((total: number, detalle: any) => {
+  //     return total + (detalle.isss_patronal || 0) + (detalle.afp_patronal || 0);
+  //   }, 0) || 0;
+  // }
 
   private readonly RENTA_2025 = {
     MENSUAL: {
@@ -1636,6 +1642,23 @@ public calcularTotalesPlanilla(): void {
   this.roundTotalesPlanilla();
 }
 
+public calcularTotalesPatronales() {
+  let totalISSS = 0;
+  let totalAFP = 0;
+
+  for (const detalle of this.detalles) {
+    totalISSS += Number(detalle.isss_patronal || 0);
+    totalAFP += Number(detalle.afp_patronal || 0);
+  }
+
+  this.descuentosPatronales = {
+    resumen: {
+      total_isss_patronal: totalISSS,
+      total_afp_patronal: totalAFP,
+    },
+  };
+}
+
 private resetearTotalesPlanilla(): void {
   this.planilla.total_salarios = 0;
   this.planilla.bonificaciones_total = 0;
@@ -1717,8 +1740,5 @@ public validarConfiguracionEmpresa(): void {
     }
   });
 }
-
-
-
 
 }

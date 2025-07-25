@@ -77,6 +77,7 @@ class PlanillasController extends Controller
     {
 
         try {
+
             $planilla = Planilla::with('empresa')->findOrFail($request->id);
 
             if (
@@ -144,7 +145,12 @@ class PlanillasController extends Controller
                 'nombre' => $planilla->empresa->nombre,
                 'cod_pais' => $planilla->empresa->cod_pais,
             ];
+            $planillaArray['id'] = $planilla->id;
             $planillaArray['detalles'] = $detalles;
+            $planillaArray['total_salarios'] = $planilla->total_salarios;
+            $planillaArray['total_deducciones'] = $planilla->total_deducciones;
+            $planillaArray['total_neto'] = $planilla->total_neto;
+            $planillaArray['estado'] = $planilla->estado;
             $planillaArray['totales'] = $totales;
 
             return response()->json($planillaArray);
