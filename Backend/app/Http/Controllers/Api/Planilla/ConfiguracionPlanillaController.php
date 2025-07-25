@@ -11,8 +11,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
 use App\Services\Planilla\PlanillaTemplatesService;
+use App\Models\Admin\Empresa;
 
-class ConfiguracionPlanillaController extends Controller
+class   ConfiguracionPlanillaController extends Controller
 {
     protected $configuracionService;
 
@@ -28,9 +29,9 @@ class ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
-            
+
             $configuracion = EmpresaConfiguracionPlanilla::obtenerConfiguracion($empresaId);
-            
+
             if (!$configuracion) {
                 // Crear configuración por defecto si no existe
                 $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
@@ -52,7 +53,6 @@ class ConfiguracionPlanillaController extends Controller
                     'ingresos' => $configuracion->getIngresos()
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error obteniendo configuración de planilla', [
                 'error' => $e->getMessage(),
@@ -95,7 +95,7 @@ class ConfiguracionPlanillaController extends Controller
                     'cod_pais' => $request->input('cod_pais', $configuracionActual->cod_pais),
                     'updated_at' => now()
                 ]);
-                
+
                 $nuevaConfiguracionModel = $configuracionActual;
             } else {
                 $nuevaConfiguracionModel = EmpresaConfiguracionPlanilla::create([
@@ -109,7 +109,7 @@ class ConfiguracionPlanillaController extends Controller
             }
 
             $validacion = $this->configuracionService->validarConfiguracion($empresaId);
-            
+
             if (!$validacion['valida']) {
                 throw new \Exception('Configuración inválida: ' . $validacion['mensaje']);
             }
@@ -125,7 +125,6 @@ class ConfiguracionPlanillaController extends Controller
                     'fecha_vigencia_desde' => $nuevaConfiguracionModel->fecha_vigencia_desde
                 ]
             ]);
-
         } catch (ValidationException $e) {
             DB::rollback();
             return response()->json([
@@ -133,7 +132,6 @@ class ConfiguracionPlanillaController extends Controller
                 'message' => 'Error de validación',
                 'errors' => $e->errors()
             ], 422);
-
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error actualizando configuración de planilla', [
@@ -178,7 +176,7 @@ class ConfiguracionPlanillaController extends Controller
                     'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais('CR')
                 ]
             ];
-    
+
             return response()->json([
                 'success' => true,
                 'data' => $plantillas
@@ -188,7 +186,7 @@ class ConfiguracionPlanillaController extends Controller
         }
     }
 
-    
+
 
     /**
      * Obtener conceptos disponibles y sus tipos
@@ -246,7 +244,6 @@ class ConfiguracionPlanillaController extends Controller
                     'bases_calculo' => $basesCalculo
                 ]
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -269,7 +266,7 @@ class ConfiguracionPlanillaController extends Controller
 
         try {
             $empresaId = $request->user()->id_empresa;
-            
+
             $datosEmpleado = [
                 'salario_base' => $request->input('salario_base'),
                 'salario_devengado' => $request->input('salario_base'), // Simplificado para prueba
@@ -289,8 +286,8 @@ class ConfiguracionPlanillaController extends Controller
             $tipoPlanilla = $request->input('tipo_planilla', 'mensual');
 
             $resultado = $this->configuracionService->calcularConceptos(
-                $datosEmpleado, 
-                $empresaId, 
+                $datosEmpleado,
+                $empresaId,
                 $tipoPlanilla
             );
 
@@ -302,7 +299,6 @@ class ConfiguracionPlanillaController extends Controller
                     'resultados' => $resultado
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error probando cálculo de planilla', [
                 'error' => $e->getMessage(),
@@ -323,14 +319,14 @@ class ConfiguracionPlanillaController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
-            
+
             $configuraciones = EmpresaConfiguracionPlanilla::porEmpresa($empresaId)
                 ->orderBy('fecha_vigencia_desde', 'desc')
                 ->get();
 
             return response()->json([
                 'success' => true,
-                'data' => $configuraciones->map(function($config) {
+                'data' => $configuraciones->map(function ($config) {
                     return [
                         'id' => $config->id,
                         'cod_pais' => $config->cod_pais,
@@ -342,7 +338,6 @@ class ConfiguracionPlanillaController extends Controller
                     ];
                 })
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -370,5 +365,170 @@ class ConfiguracionPlanillaController extends Controller
                 throw new \Exception("El concepto '{$codigo}' tiene un tipo inválido: {$concepto['tipo']}");
             }
         }
+    }
+
+    public function verificarPersonalizada()
+    {
+        try {
+            $empresaId = auth()->user()->id_empresa;
+            $empresa = Empresa::find($empresaId);
+
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Empresa no encontrada'
+                ], 404);
+            }
+
+            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $usaPersonalizada = $codigoPais !== 'SV';
+
+            // Verificar si tiene configuración en la tabla
+            $tieneConfiguracion = EmpresaConfiguracionPlanilla::where('empresa_id', $empresaId)
+                ->where('activo', true)
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'usa_configuracion_personalizada' => $usaPersonalizada,
+                    'cod_pais' => $codigoPais,
+                    'nombre_pais' => $this->getNombrePais($codigoPais),
+                    'tiene_configuracion' => $tieneConfiguracion
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error verificando configuración personalizada: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar configuración'
+            ], 500);
+        }
+    }
+
+    public function obtenerInformacionPais()
+    {
+        try {
+            $empresaId = auth()->user()->id_empresa;
+            $empresa = Empresa::find($empresaId);
+
+            $codigoPais = $empresa->cod_pais ?? 'SV';
+            $nombrePais = $this->getNombrePais($codigoPais);
+            $moneda = $this->getMonedaPais($codigoPais);
+
+            $configuracionDisponible = EmpresaConfiguracionPlanilla::where('empresa_id', $empresaId)
+                ->where('activo', true)
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'cod_pais' => $codigoPais,
+                    'nombre_pais' => $nombrePais,
+                    'moneda' => $moneda,
+                    'configuracion_disponible' => $configuracionDisponible
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener información del país'
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener conceptos para mostrar en tabla
+     */
+    public function obtenerConceptosParaTabla()
+    {
+        try {
+            $empresaId = auth()->user()->id_empresa;
+            $empresa = Empresa::find($empresaId);
+            $codigoPais = $empresa->cod_pais ?? 'SV';
+
+            if ($codigoPais === 'SV') {
+                // Retornar conceptos de El Salvador
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'conceptos_empleado' => [
+                            ['nombre' => 'ISSS', 'codigo' => 'ISSS_EMP', 'tipo' => 'porcentaje', 'valor' => 3.0],
+                            ['nombre' => 'AFP', 'codigo' => 'AFP_EMP', 'tipo' => 'porcentaje', 'valor' => 7.25],
+                            ['nombre' => 'ISR', 'codigo' => 'RENTA', 'tipo' => 'sistema_existente']
+                        ],
+                        'conceptos_patronal' => [
+                            ['nombre' => 'ISSS Patronal', 'codigo' => 'ISSS_PAT', 'tipo' => 'porcentaje', 'valor' => 7.5],
+                            ['nombre' => 'AFP Patronal', 'codigo' => 'AFP_PAT', 'tipo' => 'porcentaje', 'valor' => 8.75]
+                        ],
+                        'usa_configuracion_personalizada' => false
+                    ]
+                ]);
+            }
+
+            // Obtener configuración personalizada
+            $config = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+            $conceptos = $config->getConceptos();
+
+            $conceptosEmpleado = [];
+            $conceptosPatronal = [];
+
+            foreach ($conceptos as $codigo => $concepto) {
+                if ($concepto['es_patronal']) {
+                    $conceptosPatronal[] = $concepto;
+                } elseif ($concepto['es_deduccion']) {
+                    $conceptosEmpleado[] = $concepto;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'conceptos_empleado' => $conceptosEmpleado,
+                    'conceptos_patronal' => $conceptosPatronal,
+                    'usa_configuracion_personalizada' => true
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener conceptos para tabla'
+            ], 500);
+        }
+    }
+
+    private function getNombrePais($codigo)
+    {
+        $paises = [
+            'SV' => 'El Salvador',
+            'GT' => 'Guatemala',
+            'HN' => 'Honduras',
+            'NI' => 'Nicaragua',
+            'CR' => 'Costa Rica',
+            'PA' => 'Panamá'
+        ];
+
+        return $paises[$codigo] ?? 'Desconocido';
+    }
+
+    private function getMonedaPais($codigo)
+    {
+        $monedas = [
+            'SV' => 'USD',
+            'GT' => 'GTQ',
+            'HN' => 'HNL',
+            'NI' => 'NIO',
+            'CR' => 'CRC',
+            'PA' => 'USD'
+        ];
+
+        return $monedas[$codigo] ?? 'USD';
+    }
+
+    public function calcularDescuentos(Request $request)
+    {
+        $datosEmpleado = $request->all();
+        $resultado = $this->configuracionService->calcularConceptos($datosEmpleado, $request->user()->id_empresa, $request->input('tipo_planilla', 'mensual'));
+        return response()->json($resultado);
     }
 }

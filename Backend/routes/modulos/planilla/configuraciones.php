@@ -12,5 +12,11 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
             Route::post('/configuracion-planilla/probar', [ConfiguracionPlanillaController::class, 'probarCalculo']);
             Route::get('/configuracion-planilla/historial', [ConfiguracionPlanillaController::class, 'historial']);
 
+            Route::get('/configuracion-planilla/verificar-personalizada', [ConfiguracionPlanillaController::class, 'verificarPersonalizada']);
+            Route::get('/configuracion-planilla/pais-info', [ConfiguracionPlanillaController::class, 'obtenerInformacionPais']);
+            Route::get('/configuracion-planilla/conceptos-tabla', [ConfiguracionPlanillaController::class, 'obtenerConceptosParaTabla']);
+
+            Route::post('/configuracion-planilla/calcular-descuentos', [ConfiguracionPlanillaController::class, 'calcularDescuentos']);
+
     });
 });

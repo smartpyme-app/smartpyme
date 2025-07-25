@@ -2,43 +2,186 @@
 
 namespace App\Services\Planilla;
 
+use App\Constants\PlanillaConstants;
 use App\Models\EmpresaConfiguracionPlanilla;
 use App\Helpers\RentaHelper;
+use App\Models\Admin\Empresa;
+use Illuminate\Support\Facades\Log;
 
 class ConfiguracionPlanillaService
 {
-    /**
-     * Calcular todos los conceptos para un empleado usando configuración dinámica
-     */
-    public function calcularConceptos($datosEmpleado, $empresaId, $tipoPlanilla = 'mensual', $fecha = null)
+    public function calcularConceptos(array $datosEmpleado, $empresaId, $tipoPlanilla)
     {
-        // Obtener configuración de la empresa (o crear si no existe)
-        $configuracion = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
-        
-        $conceptos = $configuracion->getConceptos();
-        $resultados = [];
-
-        // Preparar datos base para cálculos
-        $datosBase = $this->prepararDatosBase($datosEmpleado, $configuracion, $tipoPlanilla);
-
-        // Calcular conceptos en orden específico (primero ingresos, luego deducciones)
-        $conceptosOrdenados = $this->ordenarConceptos($conceptos);
-
-        foreach ($conceptosOrdenados as $codigo => $concepto) {
-            $resultados[$codigo] = $this->calcularConcepto(
-                $codigo,
-                $concepto,
-                $datosBase,
-                $resultados,
-                $tipoPlanilla
-            );
+        try {
+            // Obtener país de la empresa
+            $empresa = Empresa::find($empresaId);
+            $codigoPais = $empresa->cod_pais ?? 'SV';
+    
+            // 🔧 NUEVO: Forzar que El Salvador siempre use lógica estándar
+            if ($codigoPais === 'SV') {
+                Log::info('🇸🇻 Forzando lógica estándar para El Salvador');
+                return $this->calcularConceptosElSalvador($datosEmpleado, $tipoPlanilla);
+            }
+    
+            // 🎯 Otros países: Usar configuración personalizada
+            Log::info('🌎 País diferente a SV - Usando configuración empresa', [
+                'pais' => $codigoPais,
+                'empresa_id' => $empresaId
+            ]);
+    
+            return $this->calcularConceptosConConfiguracion($datosEmpleado, $empresaId, $tipoPlanilla);
+    
+        } catch (\Exception $e) {
+            Log::error('❌ Error en ConfiguracionPlanillaService', [
+                'error' => $e->getMessage(),
+                'empresa_id' => $empresaId
+            ]);
+            throw $e;
         }
-
-        // Calcular totales finales
-        $resultados['totales'] = $this->calcularTotales($resultados, $conceptos);
-
-        return $resultados;
     }
+    
+
+    private function calcularConceptosElSalvador(array $datosEmpleado, string $tipoPlanilla)
+    {
+        $salarioDevengado = $datosEmpleado['salario_devengado'];
+        $tipoContrato = $datosEmpleado['tipo_contrato'] ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        
+        // Calcular ingresos totales
+        $totalIngresos = $salarioDevengado + 
+                        ($datosEmpleado['monto_horas_extra'] ?? 0) +
+                        ($datosEmpleado['comisiones'] ?? 0) +
+                        ($datosEmpleado['bonificaciones'] ?? 0) +
+                        ($datosEmpleado['otros_ingresos'] ?? 0);
+        
+        // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
+        $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+        
+        if ($esServiciosProfesionales) {
+            // Solo renta del 10%
+            $resultados = [
+                'isss_empleado' => 0,
+                'isss_patronal' => 0,
+                'afp_empleado' => 0,
+                'afp_patronal' => 0,
+                'renta' => round($totalIngresos * 0.10, 2)
+            ];
+        } else {
+            // Usar constantes actuales de El Salvador
+            $baseISSSEmpleado = min($totalIngresos, 1000);
+            $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+            $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            
+            // Calcular renta usando RentaHelper
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $totalIngresos,
+                $isssEmpleado,
+                $afpEmpleado,
+                $tipoPlanilla,
+                $tipoContrato
+            );
+            
+            $renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $tipoPlanilla,
+                $tipoContrato
+            );
+            
+            $resultados = [
+                'isss_empleado' => round($isssEmpleado, 2),
+                'isss_patronal' => round($isssPatronal, 2),
+                'afp_empleado' => round($afpEmpleado, 2),
+                'afp_patronal' => round($afpPatronal, 2),
+                'renta' => round($renta, 2)
+            ];
+        }
+        
+        // Calcular totales
+        $totalDeducciones = $resultados['isss_empleado'] + 
+                           $resultados['afp_empleado'] + 
+                           $resultados['renta'] +
+                           ($datosEmpleado['prestamos'] ?? 0) +
+                           ($datosEmpleado['anticipos'] ?? 0) +
+                           ($datosEmpleado['otros_descuentos'] ?? 0) +
+                           ($datosEmpleado['descuentos_judiciales'] ?? 0);
+        
+        $sueldoNeto = $totalIngresos - $totalDeducciones;
+        $aportesPatronales = $resultados['isss_patronal'] + $resultados['afp_patronal'];
+        
+        return [
+            'isss_empleado' => $resultados['isss_empleado'],
+            'isss_patronal' => $resultados['isss_patronal'],
+            'afp_empleado' => $resultados['afp_empleado'],
+            'afp_patronal' => $resultados['afp_patronal'],
+            'renta' => $resultados['renta'],
+            'totales' => [
+                'total_ingresos' => round($totalIngresos, 2),
+                'total_deducciones' => round($totalDeducciones, 2),
+                'sueldo_neto' => round($sueldoNeto, 2),
+                'aportes_patronales' => round($aportesPatronales, 2)
+            ]
+        ];
+    }
+
+    private function calcularConceptosConConfiguracion(array $datosEmpleado, $empresaId, string $tipoPlanilla)
+    {
+        $configEmpresa = EmpresaConfiguracionPlanilla::obtenerOCrearConfiguracion($empresaId);
+        $conceptos = $configEmpresa->getConceptos();
+        
+        $salarioDevengado = $datosEmpleado['salario_devengado'];
+        $totalIngresos = $salarioDevengado + 
+                        ($datosEmpleado['monto_horas_extra'] ?? 0) +
+                        ($datosEmpleado['comisiones'] ?? 0) +
+                        ($datosEmpleado['bonificaciones'] ?? 0) +
+                        ($datosEmpleado['otros_ingresos'] ?? 0);
+        
+        $conceptosPersonalizados = [];
+        $totalDeducciones = ($datosEmpleado['prestamos'] ?? 0) +
+                           ($datosEmpleado['anticipos'] ?? 0) +
+                           ($datosEmpleado['otros_descuentos'] ?? 0) +
+                           ($datosEmpleado['descuentos_judiciales'] ?? 0);
+        
+        $totalAportesPatronales = 0;
+
+        // Calcular cada concepto
+        foreach ($conceptos as $codigo => $concepto) {
+            if (!($concepto['obligatorio'] ?? false)) {
+                continue;
+            }
+            
+            $valor = $this->calcularConcepto($concepto, $totalIngresos, $datosEmpleado);
+            
+            if ($concepto['es_deduccion'] ?? false) {
+                $conceptosPersonalizados[$codigo] = [
+                    'valor' => round($valor, 2),
+                    'tipo' => 'deduccion',
+                    'nombre' => $concepto['nombre']
+                ];
+                $totalDeducciones += $valor;
+            } elseif ($concepto['es_patronal'] ?? false) {
+                $conceptosPersonalizados[$codigo] = [
+                    'valor' => round($valor, 2),
+                    'tipo' => 'aporte_patronal',
+                    'nombre' => $concepto['nombre']
+                ];
+                $totalAportesPatronales += $valor;
+            }
+        }
+        
+        $sueldoNeto = $totalIngresos - $totalDeducciones;
+        
+        return [
+            'conceptos_personalizados' => $conceptosPersonalizados,
+            'pais_configuracion' => $configEmpresa->cod_pais,
+            'totales' => [
+                'total_ingresos' => round($totalIngresos, 2),
+                'total_deducciones' => round($totalDeducciones, 2),
+                'sueldo_neto' => round($sueldoNeto, 2),
+                'aportes_patronales' => round($totalAportesPatronales, 2)
+            ]
+        ];
+    } 
 
     /**
      * Preparar datos base para los cálculos
@@ -90,41 +233,57 @@ class ConfiguracionPlanillaService
         return $conceptos;
     }
 
-    /**
-     * Calcular un concepto individual
-     */
-    private function calcularConcepto($codigo, $concepto, $datosBase, $resultadosAnteriores, $tipoPlanilla)
+    private function calcularConcepto(array $concepto, float $totalIngresos, array $datosEmpleado): float
     {
-        $tipo = $concepto['tipo'] ?? 'porcentaje';
-        $baseCalculo = $this->obtenerBaseCalculo($concepto['base_calculo'] ?? 'salario_devengado', $datosBase, $resultadosAnteriores);
-
+        $tipo = $concepto['tipo'];
+        $valor = $concepto['valor'] ?? 0;
+        
         switch ($tipo) {
             case 'porcentaje':
-                return $this->calcularPorcentaje($codigo, $concepto, $baseCalculo, $datosBase, $resultadosAnteriores, $tipoPlanilla);
-
+                $baseCalculo = $totalIngresos;
+                
+                // Aplicar tope máximo si existe
+                if (isset($concepto['tope_maximo'])) {
+                    $baseCalculo = min($baseCalculo, $concepto['tope_maximo']);
+                }
+                
+                return $baseCalculo * ($valor / 100);
+                
             case 'monto_fijo':
-                return $concepto['valor'] ?? 0;
-
-            case 'sistema_existente':
-                return $this->calcularSistemaExistente($codigo, $concepto, $datosBase, $resultadosAnteriores, $tipoPlanilla);
-
+                return $valor;
+                
             case 'tabla_progresiva':
-                return $this->calcularTablaProgresiva($concepto, $baseCalculo);
-
-            case 'escala_antiguedad':
-                return $this->calcularEscalaAntiguedad($concepto, $baseCalculo, $datosBase);
-
-            case 'dias_fijos':
-                return $this->calcularDiasFijos($concepto, $baseCalculo, $datosBase);
-
+                return $this->calcularPorTabla($concepto['tabla'] ?? [], $totalIngresos);
+                
+            case 'sistema_existente':
+                if (str_contains($concepto['codigo'] ?? '', 'RENTA')) {
+                    return 0;
+                }
+                return 0;
+                
             default:
                 return 0;
         }
     }
 
-    /**
-     * Obtener base de cálculo según el tipo especificado
-     */
+    private function calcularPorTabla(array $tabla, float $base): float
+    {
+        foreach ($tabla as $tramo) {
+            $desde = $tramo['desde'] ?? 0;
+            $hasta = $tramo['hasta'] ?? PHP_FLOAT_MAX;
+            
+            if ($base >= $desde && $base <= $hasta) {
+                $exceso = $base - $desde;
+                $porcentaje = ($tramo['porcentaje'] ?? 0) / 100;
+                $cuotaFija = $tramo['cuota_fija'] ?? 0;
+                
+                return $cuotaFija + ($exceso * $porcentaje);
+            }
+        }
+        
+        return 0;
+    }
+
     private function obtenerBaseCalculo($tipoBase, $datosBase, $resultadosAnteriores)
     {
         switch ($tipoBase) {

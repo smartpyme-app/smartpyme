@@ -7,6 +7,7 @@ use App\Models\Admin\Empresa;
 use App\Models\MH\Pais;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class EmpresaConfiguracionPlanilla extends Model
 {
@@ -79,6 +80,11 @@ class EmpresaConfiguracionPlanilla extends Model
     public static function obtenerOCrearConfiguracion($empresaId)
     {
         $configuracion = self::obtenerConfiguracion($empresaId);
+
+        Log::info('🔍 DEBUG HÍBRIDO', [
+            'empresa_id2' => $empresaId,
+            'configuracion2' => $configuracion
+        ]);
 
         if (!$configuracion) {
             // Crear configuración por defecto

@@ -404,106 +404,378 @@ class PlanillasController extends Controller
         ];
     }
 
-    private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
-    {
-        try {
-            // 🎯 PREPARAR DATOS DEL EMPLEADO
-            $diasReferencia = 30;
-            $factorAjuste = 1;
+    // private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
+    // {
+    //     try {
+    //         // 🎯 PREPARAR DATOS DEL EMPLEADO
+    //         $diasReferencia = 30;
+            
+    //         if ($tipoPlanilla === 'quincenal') {
+    //             $diasReferencia = 15;
+    //         } elseif ($tipoPlanilla === 'semanal') {
+    //             $diasReferencia = 7;
+    //         }
+    
+    //         // Calcular salario base ajustado según tipo de planilla
+    //         $salarioBase = $empleado->salario_base;
+    //         $salarioBaseAjustado = $salarioBase;
+            
+    //         if ($tipoPlanilla === 'quincenal') {
+    //             $salarioBaseAjustado = $salarioBase / 2;
+    //         } elseif ($tipoPlanilla === 'semanal') {
+    //             $salarioBaseAjustado = $salarioBase / 4.33;
+    //         }
+    
+    //         // Días laborados (por defecto el período completo)
+    //         $diasLaborados = $diasReferencia;
+            
+    //         // Salario devengado proporcional
+    //         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+    
+    //         // 🎯 PREPARAR DATOS PARA EL SERVICE
+    //         $datosEmpleado = [
+    //             'salario_base' => $salarioBase,
+    //             'salario_devengado' => $salarioDevengado,
+    //             'dias_laborados' => $diasLaborados,
+    //             'horas_extra' => 0,
+    //             'monto_horas_extra' => 0,
+    //             'comisiones' => 0,
+    //             'bonificaciones' => 0,
+    //             'otros_ingresos' => 0,
+    //             'prestamos' => 0,
+    //             'anticipos' => 0,
+    //             'otros_descuentos' => 0,
+    //             'descuentos_judiciales' => 0,
+    //             'tipo_contrato' => $empleado->tipo_contrato ?? null,
+    //         ];
+    
+    //         // 🎯 USAR SISTEMA OPTIMIZADO
+    //         $empresaId = auth()->user()->id_empresa;
+    //         $resultados = $this->configuracionPlanillaService->calcularConceptos(
+    //             $datosEmpleado, 
+    //             $empresaId, 
+    //             $tipoPlanilla
+    //         );
+    
+    //         // 🎯 CREAR DETALLE CON RESULTADOS
+    //         $detalle = new PlanillaDetalle();
+    //         $detalle->id_planilla = $planillaId;
+    //         $detalle->id_empleado = $empleado->id;
+    //         $detalle->salario_base = $salarioBase;
+    //         $detalle->salario_devengado = $salarioDevengado;
+    //         $detalle->dias_laborados = $diasLaborados;
+            
+    //         // Ingresos (siempre inicializar en 0)
+    //         $detalle->horas_extra = 0;
+    //         $detalle->monto_horas_extra = 0;
+    //         $detalle->comisiones = 0;
+    //         $detalle->bonificaciones = 0;
+    //         $detalle->otros_ingresos = 0;
+            
+    //         // Otras deducciones (siempre 0 al crear)
+    //         $detalle->prestamos = 0;
+    //         $detalle->anticipos = 0;
+    //         $detalle->otros_descuentos = 0;
+    //         $detalle->descuentos_judiciales = 0;
+            
+    //         // ✅ VERIFICAR SI USA CONCEPTOS PERSONALIZADOS
+    //         if (isset($resultados['conceptos_personalizados'])) {
+    //             // PAÍSES PERSONALIZADOS (Guatemala, etc.)
+    //             Log::info('🌎 Usando conceptos personalizados', [
+    //                 'conceptos_count' => count($resultados['conceptos_personalizados']),
+    //                 'pais' => $resultados['pais_configuracion']
+    //             ]);
+                
+    //             $detalle->conceptos_personalizados = $resultados['conceptos_personalizados'];
+    //             $detalle->pais_configuracion = $resultados['pais_configuracion'];
+                
+    //             // Mantener campos fijos en 0 para compatibilidad
+    //             $detalle->isss_empleado = 0;
+    //             $detalle->isss_patronal = 0;
+    //             $detalle->afp_empleado = 0;
+    //             $detalle->afp_patronal = 0;
+    //             $detalle->renta = 0;
+    //         } else {
+    //             // EL SALVADOR (campos fijos)
+    //             Log::info('🇸🇻 Usando campos fijos El Salvador');
+                
+    //             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
+    //             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
+    //             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
+    //             $detalle->afp_patronal = $resultados['afp_patronal'] ?? 0;
+    //             $detalle->renta = $resultados['renta'] ?? 0;
+    //             $detalle->pais_configuracion = 'SV';
+    //             $detalle->conceptos_personalizados = null;
+    //         }
+            
+    //         // Totales (siempre desde resultados)
+    //         $detalle->total_ingresos = $resultados['totales']['total_ingresos'] ?? $salarioDevengado;
+    //         $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
+    //         $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? $salarioDevengado;
+            
+    //         $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
+    
+    //         return $detalle;
+    
+    //     } catch (\Exception $e) {
+    //         Log::error('Error creando detalle de planilla', [
+    //             'empleado_id' => $empleado->id ?? null,
+    //             'planilla_id' => $planillaId,
+    //             'error' => $e->getMessage(),
+    //             'trace' => $e->getTraceAsString()
+    //         ]);
+    
+    //         // FALLBACK: usar sistema anterior si falla
+    //         return $this->crearDetallePlanillaFallback($empleado, $planillaId, $tipoPlanilla);
+    //     }
+    // }
+
+
+    //sirve en el salvador
+    // private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
+    // {
+    //     $diasReferencia = 30;
+    //     $factorAjuste = 1;
+    
+    //     if ($tipoPlanilla === 'quincenal') {
+    //         $diasReferencia = 15;
+    //         $factorAjuste = 2;
+    //     } elseif ($tipoPlanilla === 'semanal') {
+    //         $diasReferencia = 7;
+    //         $factorAjuste = 4.33;
+    //     }
+    
+    //     // Obtener las fechas de la planilla
+    //     $planilla = Planilla::findOrFail($planillaId);
+    //     $fechaInicioPlanilla = Carbon::parse($planilla->fecha_inicio)->startOfDay();
+    //     $fechaFinPlanilla = Carbon::parse($planilla->fecha_fin)->startOfDay();
+    
+    //     // Verificar si el empleado tiene fecha de baja programada
+    //     if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
+    //         ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)) {
+    //         return null; // No incluir en planilla
+    //     }
+    
+    //     // Calcular días proporcionales si hay baja programada
+    //     $tieneBajaProgramada = false;
+    //     $diasProporcionales = $diasReferencia;
+    
+    //     if ($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
+    //         $tieneBajaProgramada = true;
+    //         $diasProporcionales = Carbon::parse($empleado->fecha_baja)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
+    //     } elseif ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
+    //         $tieneBajaProgramada = true;
+    //         $diasProporcionales = Carbon::parse($empleado->fecha_fin)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
+    //     }
+    
+    //     $diasLaborados = $tieneBajaProgramada ? min($diasProporcionales, $diasReferencia) : $diasReferencia;
+    
+    //     // Calcular salario devengado
+    //     $salarioBaseMensual = $empleado->salario_base;
+    //     $salarioBaseAjustado = $tipoPlanilla !== 'mensual' ? $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
+    //     $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+    
+    //     // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (INCLUYE TODOS LOS CONCEPTOS)
+    //     $horasExtra = 0;
+    //     $montoHorasExtra = 0;
+    //     $comisiones = 0;
+    //     $bonificaciones = 0;
+    //     $otrosIngresos = 0;
         
-            if ($tipoPlanilla === 'quincenal') {
-                $diasReferencia = 15;
-                $factorAjuste = 2;
-            } elseif ($tipoPlanilla === 'semanal') {
-                $diasReferencia = 7;
-                $factorAjuste = 4.33;
-            }
+    //     $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
 
-            // Calcular salario base ajustado según tipo de planilla
-            $salarioBase = $empleado->salario_base;
-            $salarioBaseAjustado = $salarioBase;
-            
-            if ($tipoPlanilla === 'quincenal') {
-                $salarioBaseAjustado = $salarioBase / 2;
-            } elseif ($tipoPlanilla === 'semanal') {
-                $salarioBaseAjustado = $salarioBase / 4.33;
-            }
+    //     $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+    //     $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
 
-            // Días laborados (por defecto el período completo)
-            $diasLaborados = $diasReferencia;
-            
-            // Salario devengado proporcional
-            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+    //     if ($esServiciosProfesionales) {
+    //         // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+    //         $baseISSSEmpleado = 0;
+    //         $isssEmpleado = 0;
+    //         $isssPatronal = 0;
+    //         $afpEmpleado = 0;
+    //         $afpPatronal = 0;
+    //     } else {
+    //         // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+    //     $baseISSSEmpleado = min($totalIngresos, 1000); 
+    //     $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+    //     $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+    //     $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+    //     $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+    //     }
+    
+    //     // CALCULAR RENTA USANDO TOTAL DE INGRESOS (NO SOLO SALARIO DEVENGADO)
+    //     $salarioGravado = RentaHelper::calcularSalarioGravado(
+    //         $totalIngresos,
+    //         $isssEmpleado, 
+    //         $afpEmpleado, 
+    //         $tipoPlanilla,
+    //         $tipoContrato
+    //     );
+    
+    //     $renta = RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla, $tipoContrato);
+    //     $totalDeducciones = $isssEmpleado + $afpEmpleado + $renta;
+    //     $sueldoNeto = $totalIngresos - $totalDeducciones;
+    
+    //     return new PlanillaDetalle([
+    //         'id_planilla' => $planillaId,
+    //         'id_empleado' => $empleado->id,
+    //         'salario_base' => $empleado->salario_base,
+    //         'salario_devengado' => round($salarioDevengado, 2),
+    //         'dias_laborados' => $diasLaborados,
+    //         'horas_extra' => 0,
+    //         'monto_horas_extra' => 0,
+    //         'comisiones' => 0,
+    //         'bonificaciones' => 0,
+    //         'otros_ingresos' => 0,
+    //         'total_ingresos' => round($totalIngresos, 2),
+    //         'isss_empleado' => round($isssEmpleado, 2),
+    //         'isss_patronal' => round($isssPatronal, 2),
+    //         'afp_empleado' => round($afpEmpleado, 2),
+    //         'afp_patronal' => round($afpPatronal, 2),
+    //         'renta' => round($renta, 2),
+    //         'prestamos' => 0,
+    //         'anticipos' => 0,
+    //         'otros_descuentos' => 0,
+    //         'descuentos_judiciales' => 0,
+    //         'total_descuentos' => round($totalDeducciones, 2),
+    //         'sueldo_neto' => round($sueldoNeto, 2),
+    //         'estado' => PlanillaConstants::PLANILLA_BORRADOR
+    //     ]);
+    // }
 
-            // 🎯 PREPARAR DATOS PARA EL SERVICE
-            $datosEmpleado = [
-                'salario_base' => $salarioBase,
-                'salario_devengado' => $salarioDevengado,
-                'dias_laborados' => $diasLaborados,
-                'horas_extra' => 0,
-                'monto_horas_extra' => 0,
-                'comisiones' => 0,
-                'bonificaciones' => 0,
-                'otros_ingresos' => 0,
-                'prestamos' => 0,
-                'anticipos' => 0,
-                'otros_descuentos' => 0,
-                'descuentos_judiciales' => 0,
-                'tipo_contrato' => $empleado->tipo_contrato ?? null,
-            ];
 
-            // 🎯 USAR NUEVO SISTEMA O FALLBACK AL ACTUAL
-            $empresaId = auth()->user()->id_empresa;
-            $resultados = $this->calcularConceptosHibrido($datosEmpleado, $empresaId, $tipoPlanilla);
+    //nueva version madrugada
 
-            // 🎯 CREAR DETALLE CON RESULTADOS
-            $detalle = new PlanillaDetalle();
-            $detalle->id_planilla = $planillaId;
-            $detalle->id_empleado = $empleado->id;
-            $detalle->salario_base = $salarioBase;
-            $detalle->salario_devengado = $salarioDevengado;
-            $detalle->dias_laborados = $diasLaborados;
-            
-            // Ingresos
-            $detalle->horas_extra = 0;
-            $detalle->monto_horas_extra = 0;
-            $detalle->comisiones = 0;
-            $detalle->bonificaciones = 0;
-            $detalle->otros_ingresos = 0;
-            
-            // Deducciones empleado
-            $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
-            $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
-            $detalle->renta = $resultados['renta'] ?? 0;
-            $detalle->prestamos = 0;
-            $detalle->anticipos = 0;
-            $detalle->otros_descuentos = 0;
-            $detalle->descuentos_judiciales = 0;
-            
-            // Aportes patronales
-            $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
-            $detalle->afp_patronal = $resultados['afp_patronal'] ?? 0;
-            
-            // Totales
-            $detalle->total_ingresos = $resultados['totales']['total_ingresos'] ?? $salarioDevengado;
-            $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
-            $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? $salarioDevengado;
-            
-            $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
-
-            return $detalle;
-
-        } catch (\Exception $e) {
-            Log::error('Error creando detalle de planilla', [
-                'empleado_id' => $empleado->id ?? null,
-                'planilla_id' => $planillaId,
-                'error' => $e->getMessage()
-            ]);
-
-            // FALLBACK: usar sistema anterior si falla el nuevo
-            return $this->crearDetallePlanillaFallback($empleado, $planillaId, $tipoPlanilla);
+    private function crearDetallePlanilla($empleado, $planillaId, $tipoPlanilla)
+{
+    try {
+        // 🎯 PREPARAR DATOS DEL EMPLEADO
+        $diasReferencia = 30;
+        
+        if ($tipoPlanilla === 'quincenal') {
+            $diasReferencia = 15;
+        } elseif ($tipoPlanilla === 'semanal') {
+            $diasReferencia = 7;
         }
+
+        // Calcular salario base ajustado según tipo de planilla
+        $salarioBase = $empleado->salario_base;
+        $salarioBaseAjustado = $salarioBase;
+        
+        if ($tipoPlanilla === 'quincenal') {
+            $salarioBaseAjustado = $salarioBase / 2;
+        } elseif ($tipoPlanilla === 'semanal') {
+            $salarioBaseAjustado = $salarioBase / 4.33;
+        }
+
+        // Días laborados (por defecto el período completo)
+        $diasLaborados = $diasReferencia;
+        
+        // Salario devengado proporcional
+        $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+
+        // 🎯 PREPARAR DATOS PARA EL SERVICE
+        $datosEmpleado = [
+            'salario_base' => $salarioBase,
+            'salario_devengado' => $salarioDevengado,
+            'dias_laborados' => $diasLaborados,
+            'horas_extra' => 0,
+            'monto_horas_extra' => 0,
+            'comisiones' => 0,
+            'bonificaciones' => 0,
+            'otros_ingresos' => 0,
+            'prestamos' => 0,
+            'anticipos' => 0,
+            'otros_descuentos' => 0,
+            'descuentos_judiciales' => 0,
+            'tipo_contrato' => $empleado->tipo_contrato ?? null,
+        ];
+
+        // 🎯 USAR SISTEMA OPTIMIZADO
+        $empresaId = auth()->user()->id_empresa;
+        $resultados = $this->configuracionPlanillaService->calcularConceptos(
+            $datosEmpleado, 
+            $empresaId, 
+            $tipoPlanilla
+        );
+
+        // 🎯 CREAR DETALLE CON RESULTADOS
+        $detalle = new PlanillaDetalle();
+        $detalle->id_planilla = $planillaId;
+        $detalle->id_empleado = $empleado->id;
+        $detalle->salario_base = $salarioBase;
+        $detalle->salario_devengado = $salarioDevengado;
+        $detalle->dias_laborados = $diasLaborados;
+        
+        // Ingresos (siempre inicializar en 0)
+        $detalle->horas_extra = 0;
+        $detalle->monto_horas_extra = 0;
+        $detalle->comisiones = 0;
+        $detalle->bonificaciones = 0;
+        $detalle->otros_ingresos = 0;
+        
+        // Otras deducciones (siempre 0 al crear)
+        $detalle->prestamos = 0;
+        $detalle->anticipos = 0;
+        $detalle->otros_descuentos = 0;
+        $detalle->descuentos_judiciales = 0;
+
+        // ✅ VERIFICAR PAÍS ANTES DE APLICAR CONCEPTOS PERSONALIZADOS
+        $pais = $resultados['pais_configuracion'] ?? 'SV';
+
+        if (isset($resultados['conceptos_personalizados']) && $pais !== 'SV') {
+            // PAÍSES PERSONALIZADOS (Guatemala, etc.)
+            Log::info('🌎 Usando conceptos personalizados', [
+                'conceptos_count' => count($resultados['conceptos_personalizados']),
+                'pais' => $pais
+            ]);
+            
+            $detalle->conceptos_personalizados = $resultados['conceptos_personalizados'];
+            $detalle->pais_configuracion = $pais;
+
+            // Campos fijos en 0 para compatibilidad
+            $detalle->isss_empleado = 0;
+            $detalle->isss_patronal = 0;
+            $detalle->afp_empleado = 0;
+            $detalle->afp_patronal = 0;
+            $detalle->renta = 0;
+
+        } else {
+            // EL SALVADOR (aunque tenga configuración)
+            Log::info('🇸🇻 Usando campos fijos El Salvador', [
+                'pais' => $pais
+            ]);
+            
+            $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
+            $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
+            $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
+            $detalle->afp_patronal = $resultados['afp_patronal'] ?? 0;
+            $detalle->renta = $resultados['renta'] ?? 0;
+            $detalle->pais_configuracion = 'SV';
+            $detalle->conceptos_personalizados = null;
+        }
+
+        // Totales
+        $detalle->total_ingresos = $resultados['totales']['total_ingresos'] ?? $salarioDevengado;
+        $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
+        $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? $salarioDevengado;
+        
+        $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
+
+        return $detalle;
+
+    } catch (\Exception $e) {
+        Log::error('Error creando detalle de planilla', [
+            'empleado_id' => $empleado->id ?? null,
+            'planilla_id' => $planillaId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return $this->crearDetallePlanillaFallback($empleado, $planillaId, $tipoPlanilla);
     }
+}
+
 
     public function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
     {
@@ -2034,24 +2306,40 @@ class PlanillasController extends Controller
 
     private function calcularConceptosHibrido($datosEmpleado, $empresaId, $tipoPlanilla)
     {
+        Log::info('🔍 DEBUG HÍBRIDO ENTRADA', [
+            'empresa_id' => $empresaId,
+            'salario_devengado' => $datosEmpleado['salario_devengado'],
+            'tipo_planilla' => $tipoPlanilla,
+            'servicio_existe' => $this->configuracionPlanillaService !== null
+        ]);
+        
         try {
-            // 🎯 INTENTAR USAR NUEVO SISTEMA CONFIGURABLE
+            if (!$this->configuracionPlanillaService) {
+                throw new \Exception('Servicio ConfiguracionPlanillaService no está inyectado');
+            }
+            
             $resultados = $this->configuracionPlanillaService->calcularConceptos(
                 $datosEmpleado, 
                 $empresaId, 
                 $tipoPlanilla
             );
-
-            Log::info('✅ Usando sistema configurable para empresa', ['empresa_id' => $empresaId]);
-            return $resultados;
-
-        } catch (\Exception $e) {
-            Log::warning('⚠️ Fallback al sistema anterior', [
-                'empresa_id' => $empresaId,
-                'error' => $e->getMessage()
+            
+            Log::info('✅ RESULTADOS HÍBRIDO EXITOSO', [
+                'isss_empleado' => $resultados['isss_empleado'] ?? 'N/A',
+                'afp_empleado' => $resultados['afp_empleado'] ?? 'N/A',
+                'renta' => $resultados['renta'] ?? 'N/A'
             ]);
-
-            // 🎯 FALLBACK: usar sistema actual (TU LÓGICA EXISTENTE)
+            
+            return $resultados;
+            
+        } catch (\Exception $e) {
+            Log::error('❌ FALLÓ HÍBRIDO, usando legacy', [
+                'error' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => basename($e->getFile())
+            ]);
+            
+            // FALLBACK al sistema anterior
             return $this->calcularConceptosLegacy($datosEmpleado, $tipoPlanilla);
         }
     }
