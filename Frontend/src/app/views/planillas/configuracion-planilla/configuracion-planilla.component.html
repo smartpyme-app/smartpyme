@@ -1,0 +1,418 @@
+<!-- Loading Spinner -->
+<div *ngIf="loading" class="text-center p-4">
+  <div class="spinner-border text-primary" role="status">
+    <span class="sr-only">Cargando...</span>
+  </div>
+  <p class="mt-2">Cargando configuración de planillas...</p>
+</div>
+
+<!-- Contenido Principal -->
+<div *ngIf="!loading" class="container-fluid">
+  <!-- Header -->
+  <section class="bg-white p-4 rounded mb-3">
+    <div class="d-flex justify-content-between">
+      <h2 class="page-heading">Configuración de Planillas</h2>
+      <p class="text-muted mb-0">
+        País: {{ obtenerNombrePais(configuracion?.cod_pais || 'SV') }}
+        <span *ngIf="configuracion?.fecha_vigencia_desde" class="ms-2">
+          | Vigente desde: {{ configuracion.fecha_vigencia_desde | date:'short' }}
+        </span>
+        <!--  Indicador de Guardado -->
+        <span *ngIf="saving" class="badge bg-warning ms-2">
+          <i class="fas fa-spinner fa-spin me-1"></i>
+          Guardando...
+        </span>
+      </p>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-default" (click)="modoEdicion = !modoEdicion" [disabled]="saving">
+        <i class="fas fa-edit me-1"></i>
+        {{ modoEdicion ? 'Cancelar' : 'Editar' }}
+      </button>
+
+      <button *ngIf="modoEdicion" type="button" class="btn btn-success" (click)="guardarConfiguracion()"
+        [disabled]="!modoEdicion || saving">
+        <i class="fas fa-save me-1"></i>
+        <span *ngIf="saving">
+          <span class="spinner-border spinner-border-sm me-1"></span>
+          Guardando...
+        </span>
+        <span *ngIf="!saving">Guardar</span>
+      </button>
+
+      <button type="button" class="btn btn-default" (click)="abrirModalConcepto(modalConcepto)" [disabled]="saving">
+        <i class="fa fa-plus"></i> Añadir concepto
+      </button>
+
+      <div class="dropdown">
+        <button class="btn btn-outline-default dropdown-toggle" type="button" data-bs-toggle="dropdown"
+          [disabled]="saving">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <a class="dropdown-item" (click)="exportarConfiguracion()">
+              <i class="fas fa-download me-2"></i>Exportar JSON
+            </a>
+          </li>
+          <li>
+            <label class="dropdown-item cursor-pointer">
+              <i class="fas fa-upload me-2"></i>Importar JSON
+              <input type="file" accept=".json" (change)="onArchivoSeleccionado($event)" style="display: none;">
+            </label>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <a class="dropdown-item" (click)="probarCalculo()">
+              <i class="fas fa-calculator me-2"></i>Probar Cálculo
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabs de Navegación -->
+  <ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="tabActiva === 'conceptos'" (click)="cambiarTab('conceptos')"
+        href="javascript:void(0)">
+        <i class="fas fa-list me-1"></i>
+        Conceptos ({{ conceptosArray.length }})
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="tabActiva === 'configuracion'" (click)="cambiarTab('configuracion')"
+        href="javascript:void(0)">
+        <i class="fas fa-sliders-h me-1"></i>
+        Configuración General
+      </a>
+    </li>
+  </ul>
+
+  <!-- Tab: Conceptos -->
+  <div *ngIf="tabActiva === 'conceptos'" class="tab-content">
+
+    <!-- Botón Agregar Concepto -->
+    <!-- <div class="row mb-3" *ngIf="modoEdicion">
+      <div class="col-12">
+        <button type="button" class="btn btn-primary" (click)="abrirModalConcepto(modalConcepto)">
+          <i class="fas fa-plus me-1"></i>
+          Agregar Concepto
+        </button>
+      </div>
+    </div> -->
+
+    <!-- Lista de Conceptos -->
+    <div class="row">
+
+      <!-- Conceptos de Ingresos -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <!-- <i class="fas fa-plus-circle me-2"></i> -->
+              Devengos ({{ conceptosDevengos.length }})
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="conceptosIngresos.length === 0" class="text-muted text-center py-3">
+              No hay conceptos de devengos configurados
+            </div>
+
+            <div *ngFor="let concepto of conceptosIngresos; let i = index" class="card mb-2">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      {{ concepto.nombre }}
+                      <span class="badge bg-info ms-2">{{ concepto.codigo }}</span>
+                      <span *ngIf="concepto.obligatorio" class="badge bg-warning ms-1">Obligatorio</span>
+                    </h6>
+                    <small class="text-muted">
+                      <strong>Tipo:</strong> {{ tiposConceptos?.[concepto.tipo]?.nombre || concepto.tipo }}
+                      <br>
+                      <strong>Base:</strong> {{ basesCalculo[concepto.base_calculo] || concepto.base_calculo }}
+                      <span *ngIf="concepto.valor !== undefined">
+                        <br><strong>Valor:</strong>
+                        <span *ngIf="concepto.tipo === 'porcentaje'">{{ formatearPorcentaje(concepto.valor) }}</span>
+                        <span *ngIf="concepto.tipo === 'monto_fijo'">{{ formatearMonto(concepto.valor) }}</span>
+                      </span>
+                    </small>
+                  </div>
+
+                  <div *ngIf="modoEdicion" class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                      (click)="abrirModalConcepto(modalConcepto, concepto)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="duplicarConcepto(concepto)"
+                      title="Duplicar">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarConcepto(concepto)"
+                      [disabled]="concepto.obligatorio" title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conceptos de Deducciones -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <!-- <i class="fas fa me-2"></i> -->
+              Descuentos ({{ conceptosDeducciones.length }})
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="conceptosDeducciones.length === 0" class="text-muted text-center py-3">
+              No hay conceptos de deducciones configurados
+            </div>
+
+            <!-- ✅ CAMBIO: Pasar el concepto completo en lugar del índice -->
+            <div *ngFor="let concepto of conceptosDeducciones; let i = index" class="card mb-2">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      {{ concepto.nombre }}
+                      <span class="badge bg-info ms-2">{{ concepto.codigo }}</span>
+                      <span *ngIf="concepto.obligatorio" class="badge bg-warning ms-1">Obligatorio</span>
+                    </h6>
+                    <small class="text-muted">
+                      <strong>Tipo:</strong> {{ tiposConceptos[concepto.tipo]?.nombre || concepto.tipo }}
+                      <br>
+                      <strong>Base:</strong> {{ basesCalculo[concepto.base_calculo] || concepto.base_calculo }}
+                      <span *ngIf="concepto.valor !== undefined">
+                        <br><strong>Valor:</strong>
+                        <span *ngIf="concepto.tipo === 'porcentaje'">{{ formatearPorcentaje(concepto.valor) }}</span>
+                        <span *ngIf="concepto.tipo === 'monto_fijo'">{{ formatearMonto(concepto.valor) }}</span>
+                      </span>
+                      <span *ngIf="concepto.tope_maximo">
+                        <br><strong>Tope:</strong> {{ formatearMonto(concepto.tope_maximo) }}
+                      </span>
+                    </small>
+                  </div>
+
+                  <div *ngIf="modoEdicion" class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                      (click)="abrirModalConcepto(modalConcepto, concepto)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="duplicarConcepto(concepto)"
+                      title="Duplicar">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <!-- ✅ CAMBIO: Pasar concepto en lugar de índice -->
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarConcepto(concepto)"
+                      [disabled]="concepto.obligatorio" title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cargas Patronales -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <!-- <i class="fas fa-building me-2"></i> -->
+              Cargas Patronales ({{ conceptosPatronales.length }})
+            </h5>
+          </div>
+          <div class="card-body">
+            <div *ngIf="conceptosPatronales.length === 0" class="text-muted text-center py-3">
+              No hay cargas patronales configuradas
+            </div>
+
+            <div *ngFor="let concepto of conceptosPatronales; let i = index" class="card mb-2">
+              <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                      {{ concepto.nombre }}
+                      <span class="badge bg-secondary ms-2">{{ concepto.codigo }}</span>
+                      <span *ngIf="concepto.obligatorio" class="badge bg-warning ms-1">Obligatorio</span>
+                    </h6>
+                    <small class="text-muted">
+                      <strong>Tipo:</strong> {{ tiposConceptos[concepto.tipo]?.nombre || concepto.tipo }}
+                      <br>
+                      <strong>Base:</strong> {{ basesCalculo[concepto.base_calculo] || concepto.base_calculo }}
+                      <span *ngIf="concepto.valor !== undefined">
+                        <br><strong>Valor:</strong>
+                        <span *ngIf="concepto.tipo === 'porcentaje'">{{ formatearPorcentaje(concepto.valor) }}</span>
+                        <span *ngIf="concepto.tipo === 'monto_fijo'">{{ formatearMonto(concepto.valor) }}</span>
+                      </span>
+                      <span *ngIf="concepto.tope_maximo">
+                        <br><strong>Tope:</strong> {{ formatearMonto(concepto.tope_maximo) }}
+                      </span>
+                    </small>
+                  </div>
+
+                  <div *ngIf="modoEdicion" class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                      (click)="abrirModalConcepto(modalConcepto, concepto)" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="duplicarConcepto(concepto)"
+                      title="Duplicar">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" (click)="eliminarConcepto(concepto)"
+                      [disabled]="concepto.obligatorio" title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal para Agregar/Editar Concepto -->
+<ng-template #modalConcepto>
+  <div class="modal-header">
+    <h4 class="modal-title">
+      {{ conceptoEditando ? 'Editar Concepto' : 'Nuevo Concepto' }}
+    </h4>
+    <button type="button" class="btn-close" aria-label="Close" (click)="cerrarModalConcepto()"></button>
+  </div>
+ 
+  <div class="modal-body">
+    <form [formGroup]="conceptoForm">
+ 
+      <!-- Información básica -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Nombre *</label>
+          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej: ISSS Empleado">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Código *</label>
+          <input type="text" class="form-control" formControlName="codigo" placeholder="Ej: ISSS_EMP"
+            style="text-transform: uppercase;">
+        </div>
+      </div>
+ 
+      <!-- Tipo y base de cálculo -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Tipo *</label>
+          <select class="form-select" formControlName="tipo" (change)="onTipoConceptoCambiado()">
+            <option value="porcentaje">Porcentaje</option>
+            <option value="monto_fijo">Monto Fijo</option>
+            <option value="tabla_progresiva">Tabla Progresiva</option>
+            <option value="sistema_existente">Sistema Existente</option>
+            <option value="dias_fijos">Días Fijos</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Base de Cálculo *</label>
+          <select class="form-select" formControlName="base_calculo">
+            <option value="salario_base">Salario Base</option>
+            <option value="salario_devengado">Salario Devengado</option>
+            <option value="salario_gravable">Salario Gravable</option>
+            <option value="salario_hora">Valor por Hora</option>
+            <option value="total_ingresos">Total de Ingresos</option>
+          </select>
+        </div>
+      </div>
+ 
+      <!-- Campos específicos por tipo -->
+      <div class="row mb-3"
+        *ngIf="conceptoForm.get('tipo')?.value === 'porcentaje' || conceptoForm.get('tipo')?.value === 'monto_fijo'">
+        <div class="col-md-6">
+          <label class="form-label">
+            {{ conceptoForm.get('tipo')?.value === 'porcentaje' ? 'Porcentaje (%)' : 'Monto ($)' }}
+          </label>
+          <input type="number" class="form-control" formControlName="valor" min="0" step="0.01">
+        </div>
+        <div class="col-md-6" *ngIf="conceptoForm.get('tipo')?.value === 'porcentaje'">
+          <label class="form-label">Tope Máximo (opcional)</label>
+          <input type="number" class="form-control" formControlName="tope_maximo" min="0" step="0.01"
+            placeholder="Ej: 1000">
+        </div>
+      </div>
+ 
+      <!-- Para días fijos -->
+      <div class="row mb-3" *ngIf="conceptoForm.get('tipo')?.value === 'dias_fijos'">
+        <div class="col-md-6">
+          <label class="form-label">Cantidad de Días</label>
+          <input type="number" class="form-control" formControlName="dias" min="1" max="365">
+        </div>
+      </div>
+ 
+      <!-- Configuración adicional -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class=" mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="es_deduccion" id="es_deduccion">
+            <label class="form-check-label" for="es_deduccion">
+              Es deducción
+            </label>
+          </div>
+          <div class="">
+            <input class="form-check-input" type="checkbox" formControlName="es_patronal" id="es_patronal">
+            <label class="form-check-label" for="es_patronal">
+              Es carga patronal
+            </label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class=" mb-3">
+            <input class="form-check-input" type="checkbox" formControlName="aplica_renta" id="aplica_renta">
+            <label class="form-check-label" for="aplica_renta">
+              Aplica a renta
+            </label>
+          </div>
+          <div class="">
+            <input class="form-check-input" type="checkbox" formControlName="obligatorio" id="obligatorio">
+            <label class="form-check-label" for="obligatorio">
+              Obligatorio
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Orden -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Orden de Cálculo</label>
+          <input type="number" class="form-control" formControlName="orden" min="1">
+          <small class="form-text text-muted">Orden en que se ejecuta el cálculo (1 = primero)</small>
+        </div>
+      </div>
+ 
+    </form>
+  </div>
+ 
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="cerrarModalConcepto()">
+      Cancelar
+    </button>
+    <button type="button" class="btn btn-primary" (click)="guardarConcepto()">
+      <i class="fas fa-save me-1"></i>
+      {{ conceptoEditando ? 'Actualizar' : 'Crear' }}
+    </button>
+  </div>
+ </ng-template>
