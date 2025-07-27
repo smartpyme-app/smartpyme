@@ -388,13 +388,6 @@ class VentasController extends Controller
     public function facturacion(Request $request)
     {
 
-        // $existe = Venta::where('correlativo', $request->correlativo)
-        //                 ->where('id_sucursal', $request->id_sucursal)
-        //                 ->where('id_documento', $request->id_documento)->exists();
-
-        // if($existe){
-        //     return  Response()->json(['error' => 'Atención: El correlativo ingresado ya está asociado a una venta previa en la sucursal seleccionada. Por favor, ingresa un correlativo no registrado.', 'code' => 400], 400);
-        // }
 
         $request->validate([
             'fecha'             => 'required',
@@ -427,36 +420,20 @@ class VentasController extends Controller
 
         try {
 
-            // $id_empresa = Auth::user()->id_empresa;
-
-            // $empresa = Empresa::findOrFail($id_empresa);
-
-            // $facturacionElectronica = $empresa->facturacion_electronica;
-
-            // if ($facturacionElectronica) {
-            //     $year = date('Y', strtotime($request->fecha));
-            //     $existe = Venta::where('correlativo', $request->correlativo)
-            //         ->where('id_documento', $request->id_documento)
-            //         ->where('id_sucursal', $request->id_sucursal)
-            //         ->whereYear('fecha', $year)
-            //         ->exists();
-            // } else {
-            //     $existe = Venta::where('correlativo', $request->correlativo)
-            //         ->where('id_sucursal', $request->id_sucursal)
-            //         ->where('id_documento', $request->id_documento)
-            //         ->exists();
-            // }
-
-            // if ($existe) {
-            //     return response()->json(['error' => 'Atención: El correlativo ingresado ya está registrado. Verifica la información proporcionada.'], 400);
-            // }
-
 
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
                 $venta = new Venta;
             $venta->fill($request->all());
+
+                $documento = Documento::where('id', $request->id_documento)
+                            ->lockForUpdate()
+                            ->firstOrFail();
+
+                $venta->correlativo = $documento->correlativo;
+                $documento->increment('correlativo');
+                
             $venta->save();
 
             // Guardamos los detalles
@@ -583,10 +560,6 @@ class VentasController extends Controller
                 }
             }
 
-
-            // Incrementar el correlarivo
-            $documento = Documento::findOrfail($venta->id_documento);
-            $documento->increment('correlativo');
 
             DB::commit();
             return Response()->json($venta, 200);
