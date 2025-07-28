@@ -152,6 +152,7 @@ class PlanillasController extends Controller
             $planillaArray['total_neto'] = $planilla->total_neto;
             $planillaArray['estado'] = $planilla->estado;
             $planillaArray['totales'] = $totales;
+            $planillaArray['tipo_planilla'] = $planilla->tipo_planilla;
 
             return response()->json($planillaArray);
         } catch (\Exception $e) {
@@ -997,8 +998,9 @@ class PlanillasController extends Controller
     
             return response()->json([
                 'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',
-                'detalle' => $detalle->fresh(['empleado']),
-                'planilla' => $planilla->fresh()
+                'detalle' => $detalle,
+                'empleado' => $detalle->empleado,  
+                'planilla' => $planilla->fresh(['empresa']) 
             ]);
         } catch (\Exception $e) {
             DB::rollback();

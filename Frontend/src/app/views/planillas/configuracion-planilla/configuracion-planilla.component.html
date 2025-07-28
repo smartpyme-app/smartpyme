@@ -26,7 +26,7 @@
     </div>
 
     <div class="d-flex justify-content-end gap-2">
-      <button type="button" class="btn btn-default" (click)="modoEdicion = !modoEdicion" [disabled]="saving">
+      <button type="button" class="btn btn-default" (click)="modoEdicion = !modoEdicion" [disabled]="saving" [hidden]="configuracion.cod_pais === 'SV'">
         <i class="fas fa-edit me-1"></i>
         {{ modoEdicion ? 'Cancelar' : 'Editar' }}
       </button>
@@ -41,7 +41,7 @@
         <span *ngIf="!saving">Guardar</span>
       </button>
 
-      <button type="button" class="btn btn-default" (click)="abrirModalConcepto(modalConcepto)" [disabled]="saving">
+      <button type="button" class="btn btn-default" (click)="abrirModalConcepto(modalConcepto)" [disabled]="saving" [hidden]="configuracion.cod_pais === 'SV'">
         <i class="fa fa-plus"></i> Añadir concepto
       </button>
 
@@ -64,11 +64,6 @@
           </li>
           <li>
             <hr class="dropdown-divider">
-          </li>
-          <li>
-            <a class="dropdown-item" (click)="probarCalculo()">
-              <i class="fas fa-calculator me-2"></i>Probar Cálculo
-            </a>
           </li>
         </ul>
       </div>

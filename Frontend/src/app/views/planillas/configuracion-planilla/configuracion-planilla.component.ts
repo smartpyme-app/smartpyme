@@ -95,13 +95,9 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     // Cargar tipos de conceptos
   this.configService.obtenerTiposConceptos().subscribe({
     next: (response: any) => {
-      console.log('Response:', response);
       const data = response.data || response;
       this.tiposConceptos = data.tipos_conceptos;
       this.basesCalculo = data.bases_calculo;
-      console.log('Tipos de conceptos:', this.tiposConceptos);
-      console.log('Bases de cálculo:', this.basesCalculo);
-
     },
     error: (error) => {
       console.error('Error cargando tipos de conceptos:', error);
@@ -210,7 +206,6 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   get conceptosArray(): ConceptoPlanilla[] {
     if (!this.configuracion) return [];
     const conceptos = this.configuracion.configuracion.conceptos || {};
-    console.log('Conceptos:', conceptos);
     return Object.values(conceptos);
   }
 
@@ -259,7 +254,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
       formValue.cod_pais
     ).subscribe({
       next: (response) => {
-        this.alertService.success('Configuración guardada exitosamente', 'success');
+        this.alertService.success('success','Configuración guardada exitosamente');
         this.cargarDatosIniciales(); // Recargar datos
         this.modoEdicion = false;
         this.saving = false;

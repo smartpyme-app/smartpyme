@@ -488,10 +488,13 @@
                   <div class="mb-3">
                     <label>Días Laborados:</label>
                     <div class="input-group">
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.dias_laborados"
-                        (input)="calcularTotales()" name="dias_laborados" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.dias_laborados"
+                        (input)="calcularTotalesUnificado()" 
+                        name="dias_laborados" 
+                        (change)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                      />
                       <span class="input-group-text">días</span>
                     </div>
                     <small class="text-muted">
@@ -517,9 +520,13 @@
                   <div class="mb-3">
                     <label>Horas Extra:</label>
                     <div class="input-group">
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.horas_extra"
-                        (input)="calcularTotales()" (change)="calcularTotales()" name="horas_extra"
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" min="0" step="0.5" />
+                      <input type="number" class="form-control" 
+                      [(ngModel)]="detalleSeleccionado.horas_extra"
+                      (input)="calcularTotalesUnificado()" 
+                      (change)="calcularTotalesUnificado()" 
+                      name="horas_extra"
+                      [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      min="0" step="0.5" />
                       <span class="input-group-text">hrs</span>
                     </div>
                     <small class="text-muted">
@@ -534,10 +541,13 @@
                     <label>Comisiones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.comisiones"
-                        name="comisiones" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.comisiones"
+                        name="comisiones" 
+                        (input)="calcularTotalesUnificado()" 
+                        (change)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
+                      />
                     </div>
                   </div>
 
@@ -545,10 +555,13 @@
                     <label>Bonificaciones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.bonificaciones"
-                        name="bonificaciones" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.bonificaciones"
+                        name="bonificaciones" 
+                        (input)="calcularTotalesUnificado()" 
+                        (change)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      />
                     </div>
                   </div>
 
@@ -556,10 +569,13 @@
                     <label>Otros Ingresos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.otros_ingresos"
-                        name="otros_ingresos" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.otros_ingresos"
+                        name="otros_ingresos" 
+                        (input)="calcularTotalesUnificado()" 
+                        (change)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      />
                     </div>
                   </div>
 
@@ -659,10 +675,13 @@
                     <label>Préstamos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.prestamos"
-                        name="prestamos" (input)="calcularTotales()" (change)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.prestamos"
+                        name="prestamos" 
+                        (input)="calcularTotalesUnificado()" 
+                        (change)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      />
                     </div>
                   </div>
             
@@ -670,10 +689,13 @@
                     <label>Anticipos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.anticipos"
-                        name="anticipos" (change)="calcularTotales()" (input)="calcularTotales()" [disabled]="
-                          planilla.estado !== 2 && planilla.estado !== 3
-                        " />
+                      <input type="number" class="form-control" 
+                        [(ngModel)]="detalleSeleccionado.anticipos"
+                        name="anticipos" 
+                        (change)="calcularTotalesUnificado()" 
+                        (input)="calcularTotalesUnificado()" 
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      />
                     </div>
                   </div>
             

@@ -49,7 +49,7 @@
               <form name="form" (ngSubmit)="onSubmit()">
                 <div class="row">
                   <!-- Información Personal -->
-                  <h6 class="col-12 pb-2 mb-2">Información Personal</h6>
+                  <h5 class="col-12 pb-2 mb-2 fw-bold">Información Personal</h5>
                   <div class="form-group col-md-2">
                     <label for="codigo">Código:</label>
                     <input
@@ -84,7 +84,7 @@
                   </div>
 
                   <!-- Documentos -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4">Documentos</h6>
+                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Documentos</h6>
                   <div class="form-group col-md-3">
                     <label for="dui">DUI:</label>
                     <input
@@ -133,7 +133,7 @@
                   </div>
 
                   <!-- Información Laboral -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4">Información Laboral</h6>
+                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Información Laboral</h6>
                   <div class="form-group col-md-4">
                     <label for="id_departamento">Departamento:</label>
                     <div class="input-group">
@@ -196,7 +196,7 @@
                   </div>
 
                   <!-- Salario y Fechas -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4">Salario y Fechas</h6>
+                  <h6 class="col-12 pb-2 mb-2 mt-4 fw-bold">Salario y Fechas</h6>
                   <div class="form-group col-md-4">
                     <label for="salario_base">Salario Base:</label>
                     <div class="input-group">
@@ -284,7 +284,7 @@
                   </div>
 
                   <!-- Contacto -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4">Información de Contacto</h6>
+                  <h5 class="col-12 pb-2 mb-2 mt-4">Información de Contacto</h5>
                   <div class="form-group col-md-12">
                     <label for="direccion">Dirección:</label>
                     <textarea
@@ -316,8 +316,63 @@
                     />
                   </div>
 
+                  <!-- Datos Bancarios -->
+                  <h5 class="col-12 pb-2 mb-2 mt-4">Datos Bancarios</h5>
+                  <div class="form-group col-md-6">
+                    <label for="banco">Banco:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.banco"
+                      name="banco"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="tipo_cuenta">Tipo de Cuenta:</label>
+                    <select
+                      [(ngModel)]="empleado.tipo_cuenta"
+                      name="tipo_cuenta"
+                      class="form-select"
+                    >
+                      <option value="">Seleccione...</option>
+                      <option value="Ahorro">Ahorro</option>
+                      <option value="Corriente">Corriente</option>
+                    </select>
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="numero_cuenta">Número de Cuenta:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.numero_cuenta"
+                      name="numero_cuenta"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="titular_cuenta">Titular de la Cuenta:</label>
+                    <input
+                      type="text"
+                      [(ngModel)]="empleado.titular_cuenta"
+                      name="titular_cuenta"
+                      class="form-control"
+                    />
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="forma_pago">Forma de Pago:</label>
+                    <select
+                      [(ngModel)]="empleado.forma_pago"
+                      name="forma_pago"
+                      class="form-select"
+                    >
+                      <option value="">Seleccione...</option>
+                      <option value="Transferencia">Transferencia bancaria</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="Efectivo">Efectivo</option>
+                    </select>
+                  </div>
+
                   <!-- Contacto de Emergencia -->
-                  <h6 class="col-12 pb-2 mb-2 mt-4">Contacto de Emergencia</h6>
+                  <h5 class="col-12 pb-2 mb-2 mt-4">Contacto de Emergencia</h5>
                   <div class="form-group col-md-12">
                     <label for="nombre_contacto">Nombre del Contacto:</label>
                     <input
