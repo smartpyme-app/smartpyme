@@ -16,19 +16,19 @@ class RentaHelper
      */
     public static function calcularRetencionRenta($salarioGravado, $tipoPlanilla = 'mensual', $tipoContrato = null)
     {
-        Log::info('=== INICIO calcularRetencionRenta ===', [
-            'salario_gravado_recibido' => $salarioGravado,
-            'tipo_planilla' => $tipoPlanilla,
-            'tipo_contrato' => $tipoContrato,
-            'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
-        ]);
+        // Log::info('=== INICIO calcularRetencionRenta ===', [
+        //     'salario_gravado_recibido' => $salarioGravado,
+        //     'tipo_planilla' => $tipoPlanilla,
+        //     'tipo_contrato' => $tipoContrato,
+        //     'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
+        // ]);
 
         // ✅ SI ES SERVICIOS PROFESIONALES, aplicar 10% fijo
         if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
             $retencion = round($salarioGravado * 0.10, 2);
-            Log::info('=== SERVICIOS PROFESIONALES - 10% FIJO ===', [
-                'calculo' => "{$salarioGravado} * 0.10 = {$retencion}"
-            ]);
+            // Log::info('=== SERVICIOS PROFESIONALES - 10% FIJO ===', [
+            //     'calculo' => "{$salarioGravado} * 0.10 = {$retencion}"
+            // ]);
             return round($salarioGravado * 0.10, 2); // 10% fijo sobre salario total
         }
         
@@ -39,17 +39,17 @@ class RentaHelper
         // Redondear el salario gravado a 2 decimales
         $salarioGravado = round($salarioGravado, 2);
 
-        Log::info('=== TRAMOS OBTENIDOS ===', [
-            'tipo_planilla' => $tipoPlanilla,
-            'cantidad_tramos' => count($tramos),
-            'tramos_disponibles' => $tramos
-        ]);
+        // Log::info('=== TRAMOS OBTENIDOS ===', [
+        //     'tipo_planilla' => $tipoPlanilla,
+        //     'cantidad_tramos' => count($tramos),
+        //     'tramos_disponibles' => $tramos
+        // ]);
         
         // Si el salario gravado es 0 o negativo, no hay retención
         if ($salarioGravado <= 0) {
-            Log::info('=== RENTA = 0 (salario gravado <= 0) ===', [
-                'salario_gravado' => $salarioGravado
-            ]);
+            // Log::info('=== RENTA = 0 (salario gravado <= 0) ===', [
+            //     'salario_gravado' => $salarioGravado
+            // ]);
             return 0.00;
         }
         
@@ -76,18 +76,18 @@ class RentaHelper
                 $exceso = $salarioGravado - $tramo['sobre_exceso'];
                 $retencion = $tramo['cuota_fija'] + ($exceso * $tramo['porcentaje']);
                 
-                Log::info('=== TRAMO ENCONTRADO - CALCULANDO RENTA ===', [
-                    'tramo_numero' => $index + 1,
-                    'salario_gravado' => $salarioGravado,
-                    'desde' => $tramo['desde'],
-                    'hasta' => $tramo['hasta'],
-                    'sobre_exceso' => $tramo['sobre_exceso'],
-                    'cuota_fija' => $tramo['cuota_fija'],
-                    'porcentaje' => $tramo['porcentaje'],
-                    'exceso' => $exceso,
-                    'calculo' => "{$tramo['cuota_fija']} + ({$exceso} * {$tramo['porcentaje']})",
-                    'retencion_calculada' => round($retencion, 2)
-                ]);
+                // Log::info('=== TRAMO ENCONTRADO - CALCULANDO RENTA ===', [
+                //     'tramo_numero' => $index + 1,
+                //     'salario_gravado' => $salarioGravado,
+                //     'desde' => $tramo['desde'],
+                //     'hasta' => $tramo['hasta'],
+                //     'sobre_exceso' => $tramo['sobre_exceso'],
+                //     'cuota_fija' => $tramo['cuota_fija'],
+                //     'porcentaje' => $tramo['porcentaje'],
+                //     'exceso' => $exceso,
+                //     'calculo' => "{$tramo['cuota_fija']} + ({$exceso} * {$tramo['porcentaje']})",
+                //     'retencion_calculada' => round($retencion, 2)
+                // ]);
                 
                 return round($retencion, 2);
             }
@@ -98,12 +98,12 @@ class RentaHelper
         $exceso = $salarioGravado - $ultimoTramo['sobre_exceso'];
         $retencion = $ultimoTramo['cuota_fija'] + ($exceso * $ultimoTramo['porcentaje']);
         
-        Log::info('=== APLICANDO ÚLTIMO TRAMO (FUERA DE RANGOS) ===', [
-            'ultimo_tramo' => $ultimoTramo,
-            'exceso' => $exceso,
-            'retencion_calculada' => round($retencion, 2),
-            'razon' => 'Salario gravado excede todos los tramos definidos'
-        ]);
+        // Log::info('=== APLICANDO ÚLTIMO TRAMO (FUERA DE RANGOS) ===', [
+        //     'ultimo_tramo' => $ultimoTramo,
+        //     'exceso' => $exceso,
+        //     'retencion_calculada' => round($retencion, 2),
+        //     'razon' => 'Salario gravado excede todos los tramos definidos'
+        // ]);
         
         return round($retencion, 2);
     }
@@ -120,20 +120,20 @@ class RentaHelper
     public static function calcularSalarioGravado($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla = 'mensual', $tipoContrato = null)
     {
 
-        Log::info('=== INICIO calcularSalarioGravado ===', [
-            'salario_devengado' => $salarioDevengado,
-            'isss_empleado' => $isssEmpleado,
-            'afp_empleado' => $afpEmpleado,
-            'tipo_planilla' => $tipoPlanilla,
-            'tipo_contrato' => $tipoContrato,
-            'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
-        ]);
+        // Log::info('=== INICIO calcularSalarioGravado ===', [
+        //     'salario_devengado' => $salarioDevengado,
+        //     'isss_empleado' => $isssEmpleado,
+        //     'afp_empleado' => $afpEmpleado,
+        //     'tipo_planilla' => $tipoPlanilla,
+        //     'tipo_contrato' => $tipoContrato,
+        //     'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
+        // ]);
 
         // ✅ SI ES SERVICIOS PROFESIONALES, el salario gravado es el total
         if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
-            Log::info('=== SERVICIOS PROFESIONALES DETECTADO ===', [
-                'salario_gravado_final' => round($salarioDevengado, 2)
-            ]);
+            // Log::info('=== SERVICIOS PROFESIONALES DETECTADO ===', [
+            //     'salario_gravado_final' => round($salarioDevengado, 2)
+            // ]);
             return round($salarioDevengado, 2); // Sin descuentos de seguridad social
         }
         
@@ -169,12 +169,10 @@ class RentaHelper
         }
         */
 
-        Log::info('=== NO APLICA DEDUCCIÓN ===', [
-            'salario_gravado_final' => round($salarioGravado, 2),
-            'razon' => 'Salario anual > $9,100'
-        ]);
-        
-        
+        // Log::info('=== NO APLICA DEDUCCIÓN ===', [
+        //     'salario_gravado_final' => round($salarioGravado, 2),
+        //     'razon' => 'Salario anual > $9,100'
+        // ]);
         return round($salarioGravado, 2);
     }
 
