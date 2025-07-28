@@ -448,6 +448,15 @@ export class ApiService {
     return false;
   }
 
+  canChange(){
+    let usuario = this.auth_user();
+    if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'
+      // || usuario.tipo == 'Supervisor Limitado'
+    )
+      return true;
+    return false;
+  }
+
   canCreateTest(permission: string): boolean {
     return this.hasPermission(permission);
   }
