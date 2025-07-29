@@ -337,9 +337,28 @@
                                 Los sello y firma se generarán en formato PDF.
                             </small>
                         </div> 
+
+                        <div class="form-group col-md-6 col-xl-4 without-label">
+                            <div class="form-switch bg-light-info rounded">
+                                <label for="mostrar_sello_firma_cotizacion" class="form-label">
+                                    <strong>Mostrar sello y firma en cotizaciones</strong>
+                                </label>
+                                <input 
+                                    class="form-check-input float-end" 
+                                    type="checkbox" 
+                                    role="switch" 
+                                    id="mostrar_sello_firma_cotizacion"
+                                    [(ngModel)]="empresa.mostrar_sello_firma_cotizacion"
+                                    (change)="onSubmit()"
+                                    name="mostrar_sello_firma_cotizacion">
+                            </div>
+                            <small class="text-muted">
+                                Los sello y firma se generarán en formato PDF.
+                            </small>
+                        </div>
                     </div>
 
-                    <div class="row" *ngIf="empresa.mostrar_sello_firma">
+                    <div class="row" *ngIf="empresa.mostrar_sello_firma || empresa.mostrar_sello_firma_cotizacion">
                         <div class="col-md-6 mb-4">
                             <h6 class="mb-3">Subir sello</h6>
                             <div class="form-group">
