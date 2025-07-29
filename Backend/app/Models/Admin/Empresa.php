@@ -277,6 +277,44 @@ class Empresa extends Model
         return $this->hasMany('App\Models\Transaccion', 'id_empresa');
     }
 
+    public function suscripciones()
+    {
+        return $this->hasMany(Suscripcion::class, 'empresa_id');
+    }
+
+    public function suscripcionActiva()
+    {
+        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
+    }
+
+    public function suscripcionActivaCommand()
+    {
+        return $this->suscripciones()->latest()->first();
+    }
+
+    public function scopeConSuscripcionActiva($query)
+    {
+        return $query->whereHas('suscripciones', function ($subQuery) {
+            $subQuery->where('estado', 'activo');
+        });
+    }
+
+    public function tieneSuscripcionActiva(): bool
+    {
+        return $this->suscripciones()->where('estado', 'activo')->exists();
+    }
+
+    public function diasFaltantesSuscripcion(): ?int
+    {
+        $suscripcionActiva = $this->suscripcionActiva;
+        
+        if (!$suscripcionActiva) {
+            return null;
+        }
+        
+        return $suscripcionActiva->diasFaltantes();
+    }
+
     public function whatsappSessions()
     {
         return $this->hasMany('App\Models\WhatsApp\WhatsAppSession', 'id_empresa');
@@ -378,11 +416,6 @@ class Empresa extends Model
     public function getCurrencySymbolAttribute()
     {
         return $this->currency ? $this->currency->currency_symbol : null;
-    }
-
-    public function suscripcionActiva()
-    {
-        return $this->suscripciones()->where('estado', 'activo')->latest()->first();
     }
 
     public function inicializarEstadoPruebasMasivas()
