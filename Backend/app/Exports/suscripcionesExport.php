@@ -8,7 +8,6 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
-use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 
@@ -18,7 +17,6 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
 
     public function filter(Request $request)
     {
-        Log::info($request);
         $this->request = $request;
     }
 
@@ -48,7 +46,6 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
             $query->select('id', 'nombre', 'precio', 'slug', 'duracion_dias');
         }]);
 
-        // Filtro por estado de suscripción
         if ($request->estado) {
             if ($request->estado === 'sin_suscripcion') {
                 $query->doesntHave('suscripcion');
@@ -59,7 +56,6 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
             }
         }
 
-        // Aplicar todos los filtros del método index
         $query->when($request->buscador, function ($q) use ($request) {
             return $q->where(function ($query) use ($request) {
                 $query->where('nombre', 'like', '%' . $request->buscador . '%')
@@ -108,7 +104,6 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
         $suscripcion = $empresa->suscripcion;
         $plan = $suscripcion->plan ?? null;
 
-        // Calcular fecha de vencimiento y días restantes
         $diasRestantes = null;
         $fechaVencimiento = null;
         if ($suscripcion && $suscripcion->fecha_ultimo_pago && $plan) {
@@ -140,12 +135,11 @@ class SuscripcionesExport implements FromCollection, WithHeadings, WithMapping, 
     public function styles(Worksheet $sheet)
     {
         return [
-            // Estilo a la fila de encabezados
             1 => [
                 'font' => ['bold' => true, 'size' => 12],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['argb' => 'FFE5E5E5'], // gris claro
+                    'startColor' => ['argb' => 'FFE5E5E5'],
                 ],
                 'alignment' => [
                     'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
