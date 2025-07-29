@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
 
 import Swal from 'sweetalert2';
 
@@ -36,6 +37,12 @@ export class PlanillaDetalleComponent implements OnInit {
   public descuentosPatronales: any = null;
   public mostrarTodos: boolean = false;
   public downloading: boolean = false;
+  public configPlanilla: any = null;
+  public round: any = Math.round;
+  public conceptosConfigurados: any = null;
+  public conceptosDeduccion: [string, ConceptoPlanilla][] = [];
+  public conceptos: { [codigo: string]: ConceptoPlanilla } = {};
+
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
@@ -45,15 +52,21 @@ export class PlanillaDetalleComponent implements OnInit {
     private router: Router,
     public apiService: ApiService,
     private alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private configPlanillaService: ConfiguracionPlanillaService
   ) { }
 
   ngOnInit() {
     this.route.params.subscribe((params) => {
+
       if (params['id']) {
         this.loadPlanillas(params['id']);
       }
     });
+
+    this.conceptosDeduccion = Object.entries(this.conceptos || {}).filter(
+      ([, concepto]) => concepto.es_deduccion && !concepto.es_patronal
+    );
 
     this.cargarCatalogos();
   }
@@ -72,6 +85,15 @@ export class PlanillaDetalleComponent implements OnInit {
       },
       error: (error) => this.alertService.error(error),
     });
+  }
+
+  cargarConceptosDeduccion() {
+    if (!this.esElSalvador && this.conceptosConfigurados) {
+      this.conceptosDeduccion = Object.entries(this.conceptosConfigurados || {}).filter(
+        ([, concepto]: any) => concepto.es_deduccion && !concepto.es_patronal
+      ) as [string, ConceptoPlanilla][];
+      
+    }
   }
 
   public onDepartamentoChange() {
@@ -113,13 +135,234 @@ export class PlanillaDetalleComponent implements OnInit {
         this.planilla = response;
         this.detalles = response.detalles.data;
         this.calcularTotalesPlanilla();
+        this.calcularTotalesPatronales();
         this.loading = false;
+
+        this.loadConceptosConfigurados();
+
       },
       error: (error) => {
         this.alertService.error(error);
         this.loading = false;
       },
     });
+  }
+
+  // calcularConcepto(detalle: any, concepto: any): number {
+  //   const base = detalle[concepto.base_calculo]; // ej: detalle['salario_devengado']
+  //   const tipo = concepto.tipo;
+  //   const valor = concepto.valor;
+  
+  //   if (!base || !tipo) return 0;
+  
+  //   if (tipo === 'porcentaje') {
+  //     return (base * valor) / 100;
+  //   }
+
+    
+  
+  //   // Otros tipos (como tabla) los veremos después
+  //   return 0;
+  // }
+
+  calcularConcepto(detalle: any, concepto: any): number {
+    const codigo = concepto.codigo;
+    const codigoLower = codigo.toLowerCase();
+  
+    // 🎯 1. Si el campo existe en detalle (como "isss_empleado", "renta", etc.)
+    if (detalle.hasOwnProperty(codigoLower)) {
+      return Number(detalle[codigoLower]) || 0;
+    }
+  
+    // 🎯 2. Si el tipo es porcentaje, aplicamos cálculo sobre base
+    if (concepto.tipo === 'porcentaje') {
+      const base = detalle[concepto.base_calculo];
+      const tope = concepto.tope_maximo || null;
+  
+      let monto = Number(base) || 0;
+  
+      if (tope && monto > tope) {
+        monto = tope;
+      }
+  
+      return (monto * concepto.valor) / 100;
+    }
+  
+    // 🎯 3. Si el tipo es fijo
+    if (concepto.tipo === 'fijo') {
+      return Number(concepto.valor) || 0;
+    }
+  
+    // 🎯 4. Si es sistema existente pero el campo no está en detalle
+    if (concepto.tipo === 'sistema_existente') {
+      if (detalle.hasOwnProperty(codigoLower)) {
+        return Number(detalle[codigoLower]) || 0;
+      } else if (detalle.hasOwnProperty('renta') && codigo === 'RENTA') {
+        return Number(detalle['renta']) || 0;
+      }
+    }
+  
+    // ❌ 5. Fallback
+    return 0;
+  }
+  
+  
+
+  get esElSalvador(): boolean {
+    return this.planilla?.empresa?.cod_pais === 'SV';
+  }
+
+  get conceptosEmpleado() {
+    return Object.entries(this.conceptosConfigurados || {}).filter(
+      ([, c]: any) => !c.es_patronal
+    );
+  }
+  
+  get conceptosPatronales() {
+    return Object.entries(this.conceptosConfigurados || {}).filter(
+      ([, c]: any) => c.es_patronal
+    );
+  }
+
+  getTotalConcepto(codigo: string): number {
+    let total = 0;
+  
+    // Validación defensiva
+    if (!this.conceptosConfigurados || !this.detalles) return 0;
+  
+    const concepto = this.conceptosConfigurados[codigo];
+    if (!concepto) return 0;
+  
+    for (const detalle of this.detalles) {
+      const valor = this.calcularConcepto(detalle, concepto);
+      total += Number(valor) || 0;
+    }
+
+    return total;
+  }
+
+  getTotalCampoReal(campo: string): number {
+    let total = 0;
+  
+    for (const detalle of this.detalles) {
+      if (detalle[campo] !== undefined && detalle[campo] !== null) {
+        total += Number(detalle[campo]) || 0;
+      }
+    }
+  
+    return total;
+  }
+  
+  
+  
+  
+  getTotalCampo(campo: string): number {
+    let total = 0;
+  
+    for (const detalle of this.detalles) {
+      const valor = Number(detalle[campo]) || 0;
+      total += valor;
+    }
+  
+    return total;
+  }
+
+
+  getTotalAportesPatronales(detalle: any): number {
+    return this.conceptosPatronales
+      .map(([_, c]) => this.calcularConcepto(detalle, c))
+      .reduce((a, b) => a + b, 0);
+  }
+
+  loadConceptosConfigurados() {
+    this.configPlanillaService.obtenerConfiguracion().subscribe({
+      next: (config) => {
+        this.conceptosConfigurados = config?.configuracion?.conceptos || null;
+        this.cargarConceptosDeduccion();
+      },
+      error: () => {
+        console.warn('⚠️ No hay configuración personalizada');
+      }
+    });
+  }
+
+  calcularDeduccionConcepto(detalle: any, concepto: any): number {
+    
+    const codigo = concepto.codigo?.toLowerCase();
+    
+    // Si el campo existe directamente en el detalle
+    if (detalle.hasOwnProperty(codigo)) {
+      return Number(detalle[codigo]) || 0;
+    }
+    
+    // Obtener base de cálculo
+    const base = this.obtenerBaseCalculo(detalle, concepto.base_calculo);
+    
+    // Si es un cálculo porcentual
+    if (concepto.tipo === 'porcentaje') {
+      const resultado = (Number(base) * Number(concepto.valor)) / 100;
+      return resultado;
+    }
+   
+    if (concepto.tipo === 'tabla_progresiva') {
+      return 0; // Por ahora
+    }
+    
+    return 0;
+   }
+   
+   obtenerBaseCalculo(detalle: any, baseCalculo: string): number {
+    switch (baseCalculo) {
+      case 'salario_base':
+        return Number(detalle.salario_base) || 0;
+        case 'salario_devengado':
+          // Si es para cálculo de deducciones, usar total_ingresos actualizado
+          if (this.detalleSeleccionado && detalle === this.detalleSeleccionado) {
+            return Number(detalle.total_ingresos) || 0;
+          }
+          return Number(detalle.salario_devengado) || 0;
+      case 'salario_gravable':
+        // Salario gravable = total_ingresos - IGSS - AFP (lógica básica)
+        const totalIngresos = Number(detalle.total_ingresos) || 0;
+        const igss = Number(detalle.isss_empleado) || 0;
+        const afp = Number(detalle.afp_empleado) || 0;
+        return totalIngresos - igss - afp;
+      case 'valor_por_hora':
+        return this.calcularValorHora();
+      case 'total_ingresos':
+      default:
+        return Number(detalle.total_ingresos) || 0;
+    }
+   }
+
+  actualizarDeduccionesCalculadas() {
+    if (!this.esElSalvador && this.detalleSeleccionado && this.conceptosDeduccion) {
+      let totalDeducciones = 0;
+      
+      // Calcular cada concepto de deducción
+      this.conceptosDeduccion.forEach(([codigo, concepto]) => {
+        const valor = this.calcularDeduccionConcepto(this.detalleSeleccionado, concepto);
+        
+        // Guardar el valor calculado en el detalle
+        if (!this.detalleSeleccionado.conceptos) {
+          this.detalleSeleccionado.conceptos = {};
+        }
+        this.detalleSeleccionado.conceptos[codigo] = valor;
+        
+        totalDeducciones += valor;
+      });
+      
+      // Agregar otros descuentos manuales
+      const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+      const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
+      
+      const totalFinal = totalDeducciones + prestamos + anticipos;
+      
+      this.detalleSeleccionado.total_descuentos = Number(totalFinal.toFixed(2));
+      this.detalleSeleccionado.sueldo_neto = Number(
+        (this.detalleSeleccionado.total_ingresos - totalFinal).toFixed(2)
+      );
+    }
   }
 
   public filtrarPlanillas() {
@@ -276,8 +519,9 @@ export class PlanillaDetalleComponent implements OnInit {
           );
           if (index !== -1) {
             this.detalles[index] = {
+              ...this.detalles[index],
               ...response.detalle,
-              empleado: response.empleado,
+              empleado: response.empleado || this.detalles[index].empleado
             };
           }
 
@@ -574,15 +818,19 @@ export class PlanillaDetalleComponent implements OnInit {
     });
   }
 
-  /**
-   * Método para obtener el total de descuentos patronales
-   */
   public getTotalDescuentosPatronales(): number {
-    if (!this.descuentosPatronales) return 0;
-    return this.descuentosPatronales.detalles?.reduce((total: number, detalle: any) => {
-      return total + (detalle.isss_patronal || 0) + (detalle.afp_patronal || 0);
-    }, 0) || 0;
+    return (
+      (this.descuentosPatronales?.resumen?.total_isss_patronal || 0) +
+      (this.descuentosPatronales?.resumen?.total_afp_patronal || 0)
+    );
   }
+
+  // public getTotalDescuentosPatronales(): number {
+  //   if (!this.descuentosPatronales) return 0;
+  //   return this.descuentosPatronales.detalles?.reduce((total: number, detalle: any) => {
+  //     return total + (detalle.isss_patronal || 0) + (detalle.afp_patronal || 0);
+  //   }, 0) || 0;
+  // }
 
   private readonly RENTA_2025 = {
     MENSUAL: {
@@ -652,12 +900,12 @@ export class PlanillaDetalleComponent implements OnInit {
     let salarioGravado = salarioDevengado - isssEmpleado - afpEmpleado;
 
     // Aplicar deducción de empleados asalariados si corresponde
-    const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
+    // const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
 
-    if (salarioAnualEstimado <= 9100.00) {
-      const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
-      salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
-    }
+    // if (salarioAnualEstimado <= 9100.00) {
+    //   const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
+    //   salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
+    // }
 
     return Math.round(salarioGravado * 100) / 100;
   }
@@ -731,6 +979,19 @@ export class PlanillaDetalleComponent implements OnInit {
     return null;
   }
 
+  public calcularTotalesUnificado() {
+    if (!this.detalleSeleccionado) {
+      return;
+    }
+    // Primero ejecutar el cálculo base (El Salvador)
+    this.calcularTotales();
+    
+    // Si no es El Salvador, ejecutar cálculo adicional para conceptos dinámicos
+    if (!this.esElSalvador) {
+      this.actualizarDeduccionesCalculadas();
+    }
+  }
+
   public calcularTotales() {
     if (!this.detalleSeleccionado) {
       return;
@@ -795,6 +1056,8 @@ export class PlanillaDetalleComponent implements OnInit {
       // SERVICIOS PROFESIONALES: 10% fijo sobre total de ingresos
       renta = totalIngresos * 0.10;
     } else {
+
+      // console.log(this.planilla);
       // EMPLEADOS ASALARIADOS: Usar tablas de renta normales
       renta = this.calcularRentaConConstantesBackend(totalIngresos, isssEmpleado, afpEmpleado, this.planilla.tipo_planilla);
     }
@@ -818,6 +1081,11 @@ export class PlanillaDetalleComponent implements OnInit {
     // ✅ CONDICIONAL: Solo actualizar renta si es empleado asalariado
     if (!esServiciosProfesionales) {
       this.actualizarRenta();
+    }
+
+    // Si no es El Salvador, actualizar deducciones dinámicas
+    if (!this.esElSalvador) {
+      this.actualizarDeduccionesCalculadas();
     }
   }
 
@@ -849,6 +1117,8 @@ export class PlanillaDetalleComponent implements OnInit {
 
   private calcularRentaConConstantesBackend(totalIngresos: number, isssEmpleado: number, afpEmpleado: number, tipoPlanilla: string): number {
     try {
+
+      // console.log(tipoPlanilla);
       // Calcular salario gravado
       const salarioGravado = this.calcularSalarioGravadoCorregido(totalIngresos, isssEmpleado, afpEmpleado, tipoPlanilla);
       
@@ -982,12 +1252,12 @@ export class PlanillaDetalleComponent implements OnInit {
     let salarioGravado = totalIngresos - isssEmpleado - afpEmpleado;
     
     // Aplicar deducción de empleados asalariados si corresponde
-    const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
+    // const salarioAnualEstimado = this.extrapolarSalarioAnual(salarioGravado, tipoPlanilla);
     
-    if (salarioAnualEstimado <= 9100.00) {
-      const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
-      salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
-    }
+    // if (salarioAnualEstimado <= 9100.00) {
+    //   const deduccionProporcional = this.calcularDeduccionProporcional(tipoPlanilla);
+    //   salarioGravado = Math.max(0, salarioGravado - deduccionProporcional);
+    // }
     
     return Math.round(salarioGravado * 100) / 100;
   }
@@ -1149,13 +1419,7 @@ export class PlanillaDetalleComponent implements OnInit {
   }
 
   getIngresosAdicionales(detalle: any): number {
-    // console.log('Detalle valores:', {
-    //   bonificaciones: detalle.bonificaciones,
-    //   comisiones: detalle.comisiones,
-    //   monto_horas_extra: detalle.monto_horas_extra,
-    //   otros_ingresos: detalle.otros_ingresos
-    // });
-    
+
     const bon = parseFloat(detalle.bonificaciones) || 0;
     const com = parseFloat(detalle.comisiones) || 0;
     const horas = parseFloat(detalle.monto_horas_extra) || 0;
@@ -1230,61 +1494,12 @@ export class PlanillaDetalleComponent implements OnInit {
 
     const diferencia = rentaNueva - rentaLegacy;
 
-    console.log('🔍 Comparación de cálculos:', {
-      empleado: `${detalle.empleado?.nombres} ${detalle.empleado?.apellidos}`,
-      totalIngresos,
-      salarioGravado,
-      rentaLegacy: rentaLegacy.toFixed(2),
-      rentaNueva: rentaNueva.toFixed(2),
-      diferencia: diferencia.toFixed(2),
-      tipoPlanilla: this.planilla.tipo_planilla
-    });
-
     return {
       rentaLegacy,
       rentaNueva,
       diferencia,
       salarioGravado
     };
-  }
-
-  public calcularTotalesPlanilla() {
-    // Inicializar totales
-    this.planilla.total_salarios = 0;
-    this.planilla.bonificaciones_total = 0;
-    this.planilla.comisiones_total = 0;
-    this.planilla.total_ingresos = 0;
-    this.planilla.total_iss = 0;
-    this.planilla.total_afp = 0;
-    this.planilla.total_isr = 0;
-    this.planilla.total_neto = 0;
-  
-    const detallesActivos = this.detalles?.filter(d => d.estado !== 0);
-    if (!detallesActivos?.length) {
-      this.notValue = true;
-      return;
-    }
-  
-    this.notValue = false;
-  
-    detallesActivos.forEach((detalle) => {
-      // ✅ USAR VALORES DEL BACKEND
-      this.planilla.total_salarios += Number(detalle.salario_devengado) || 0;
-      this.planilla.bonificaciones_total += Number(detalle.bonificaciones) || 0;
-      this.planilla.comisiones_total += Number(detalle.comisiones) || 0;
-      this.planilla.total_ingresos += Number(detalle.total_ingresos) || 0;
-      this.planilla.total_iss += Number(detalle.isss_empleado) || 0;
-      this.planilla.total_afp += Number(detalle.afp_empleado) || 0;
-      this.planilla.total_isr += Number(detalle.renta) || 0;
-      this.planilla.total_neto += Number(detalle.sueldo_neto) || 0;
-    });
-  
-    // Redondear totales
-    Object.keys(this.planilla).forEach(key => {
-      if (typeof this.planilla[key] === 'number') {
-        this.planilla[key] = Math.round(this.planilla[key] * 100) / 100;
-      }
-    });
   }
 
   public calcularValorHora(): number {
@@ -1345,6 +1560,232 @@ export class PlanillaDetalleComponent implements OnInit {
     );
 }
 
+public calcularDescuentos(): void {
+  if (!this.detalleSeleccionado || !this.planilla) {
+    return;
+  }
 
+  // Preparar datos del empleado
+  const datosEmpleado = {
+    salario_base: Number(this.detalleSeleccionado.salario_base) || 0,
+    salario_devengado: Number(this.detalleSeleccionado.salario_devengado) || 0,
+    dias_laborados: Number(this.detalleSeleccionado.dias_laborados) || 30,
+    horas_extra: Number(this.detalleSeleccionado.horas_extra) || 0,
+    monto_horas_extra: Number(this.detalleSeleccionado.monto_horas_extra) || 0,
+    comisiones: Number(this.detalleSeleccionado.comisiones) || 0,
+    bonificaciones: Number(this.detalleSeleccionado.bonificaciones) || 0,
+    otros_ingresos: Number(this.detalleSeleccionado.otros_ingresos) || 0,
+    prestamos: Number(this.detalleSeleccionado.prestamos) || 0,
+    anticipos: Number(this.detalleSeleccionado.anticipos) || 0,
+    otros_descuentos: Number(this.detalleSeleccionado.otros_descuentos) || 0,
+    descuentos_judiciales: Number(this.detalleSeleccionado.descuentos_judiciales) || 0,
+    tipo_contrato: this.detalleSeleccionado.empleado?.tipo_contrato
+  };
+
+  // Intentar usar sistema configurable
+  this.configPlanillaService.probarCalculo(datosEmpleado).subscribe({
+    next: (resultado) => {
+      this.aplicarResultadosConfigurables(resultado);
+
+      
+    },
+    error: (error) => {
+      console.warn('Fallback al sistema legacy:', error);
+      this.calcularDescuentosLegacy();
+    }
+  });
+}
+
+private aplicarResultadosConfigurables(resultado: any): void {
+  const resultados = resultado.resultados;
+  
+  // Aplicar valores calculados
+  this.detalleSeleccionado.isss_empleado = this.round(resultados.isss_empleado || 0);
+  this.detalleSeleccionado.isss_patronal = this.round(resultados.isss_patronal || 0);
+  this.detalleSeleccionado.afp_empleado = this.round(resultados.afp_empleado || 0);
+  this.detalleSeleccionado.afp_patronal = this.round(resultados.afp_patronal || 0);
+  this.detalleSeleccionado.renta = this.round(resultados.renta || 0);
+  
+  // Aplicar totales
+  if (resultados.totales) {
+    this.detalleSeleccionado.total_ingresos = this.round(resultados.totales.total_ingresos || 0);
+    this.detalleSeleccionado.total_descuentos = this.round(resultados.totales.total_deducciones || 0);
+    this.detalleSeleccionado.sueldo_neto = this.round(resultados.totales.sueldo_neto || 0);
+  }
+
+  // Recalcular totales de planilla
+  this.calcularTotalesPlanilla();
+
+}
+
+private calcularDescuentosLegacy(): void {
+  const salarioDevengado = Number(this.detalleSeleccionado.salario_devengado) || 0;
+  const montoHorasExtra = Number(this.detalleSeleccionado.monto_horas_extra) || 0;
+  const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
+  const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
+  const otrosIngresos = Number(this.detalleSeleccionado.otros_ingresos) || 0;
+  const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+  const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
+  const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
+  const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
+
+  // Usar tu lógica actual (PlanillaConstants)
+  const calculos = PlanillaConstants.calcularDescuentosEmpleado(
+    salarioDevengado,
+    montoHorasExtra,
+    comisiones,
+    bonificaciones,
+    otrosIngresos,
+    this.planilla.tipo_planilla
+  );
+
+  // Asignar valores calculados
+  this.detalleSeleccionado.total_ingresos = calculos.totalIngresos;
+  this.detalleSeleccionado.isss_empleado = calculos.isssEmpleado;
+  this.detalleSeleccionado.isss_patronal = calculos.isssPatronal;
+  this.detalleSeleccionado.afp_empleado = calculos.afpEmpleado;
+  this.detalleSeleccionado.afp_patronal = calculos.afpPatronal;
+  this.detalleSeleccionado.renta = calculos.renta;
+
+  // Calcular total de descuentos
+  const totalDescuentos = calculos.isssEmpleado + calculos.afpEmpleado + calculos.renta +
+    prestamos + anticipos + otrosDescuentos + descuentosJudiciales;
+
+  this.detalleSeleccionado.total_descuentos = this.round(totalDescuentos);
+  this.detalleSeleccionado.sueldo_neto = this.round(calculos.totalIngresos - totalDescuentos);
+
+  this.calcularTotalesPlanilla();
+}
+
+
+public calcularTotalesPlanilla(): void {
+  if (!this.detalles?.length || !this.planilla) {
+    this.notValue = true;
+    return;
+  }
+
+  // Resetear totales
+  this.resetearTotalesPlanilla();
+
+  const detallesActivos = this.detalles.filter(d => d.estado !== 0);
+  if (!detallesActivos.length) {
+    this.notValue = true;
+    return;
+  }
+
+  this.notValue = false;
+
+  // Calcular totales usando valores del backend/sistema configurable
+  detallesActivos.forEach((detalle) => {
+    this.planilla.total_salarios += Number(detalle.salario_devengado) || 0;
+    this.planilla.bonificaciones_total += Number(detalle.bonificaciones) || 0;
+    this.planilla.comisiones_total += Number(detalle.comisiones) || 0;
+    this.planilla.total_ingresos += Number(detalle.total_ingresos) || 0;
+    this.planilla.total_iss += Number(detalle.isss_empleado) || 0;
+    this.planilla.total_afp += Number(detalle.afp_empleado) || 0;
+    this.planilla.total_isr += Number(detalle.renta) || 0;
+    this.planilla.total_neto += Number(detalle.sueldo_neto) || 0;
+  });
+
+  // Redondear totales
+  this.roundTotalesPlanilla();
+}
+
+public calcularTotalesPatronales() {
+  let totalISSS = 0;
+  let totalAFP = 0;
+
+  for (const detalle of this.detalles) {
+    totalISSS += Number(detalle.isss_patronal || 0);
+    totalAFP += Number(detalle.afp_patronal || 0);
+  }
+
+  this.descuentosPatronales = {
+    resumen: {
+      total_isss_patronal: totalISSS,
+      total_afp_patronal: totalAFP,
+    },
+  };
+}
+
+private resetearTotalesPlanilla(): void {
+  this.planilla.total_salarios = 0;
+  this.planilla.bonificaciones_total = 0;
+  this.planilla.comisiones_total = 0;
+  this.planilla.total_ingresos = 0;
+  this.planilla.total_iss = 0;
+  this.planilla.total_afp = 0;
+  this.planilla.total_isr = 0;
+  this.planilla.total_neto = 0;
+}
+
+private roundTotalesPlanilla(): void {
+  Object.keys(this.planilla).forEach(key => {
+    if (typeof this.planilla[key] === 'number') {
+      this.planilla[key] = this.round(this.planilla[key]);
+    }
+  });
+}
+
+public compararSistemas(detalle: any): void {
+  if (!detalle) return;
+
+  const salarioDevengado = Number(detalle.salario_devengado) || 0;
+  
+  // Sistema legacy
+  const calculosLegacy = PlanillaConstants.calcularDescuentosEmpleado(
+    salarioDevengado, 0, 0, 0, 0, this.planilla.tipo_planilla
+  );
+
+  // Datos para sistema configurable
+  const datosEmpleado = {
+    salario_base: Number(detalle.salario_base) || 0,
+    salario_devengado: salarioDevengado,
+    tipo_planilla: this.planilla.tipo_planilla
+  };
+
+  this.configPlanillaService.probarCalculo(datosEmpleado).subscribe({
+    next: (resultado) => {
+      // console.table({
+      //   'Concepto': ['ISSS Empleado', 'AFP Empleado', 'Renta', 'Sueldo Neto'],
+      //   'Sistema Legacy': [
+      //     calculosLegacy.isssEmpleado,
+      //     calculosLegacy.afpEmpleado, 
+      //     calculosLegacy.renta,
+      //     calculosLegacy.totalIngresos - calculosLegacy.isssEmpleado - calculosLegacy.afpEmpleado - calculosLegacy.renta
+      //   ],
+      //   'Sistema Configurable': [
+      //     resultado.resultados.isss_empleado,
+      //     resultado.resultados.afp_empleado,
+      //     resultado.resultados.renta,
+      //     resultado.resultados.totales.sueldo_neto
+      //   ]
+      // });
+    },
+    error: (error) => {
+      console.error('Error comparando sistemas:', error);
+    }
+  });
+}
+
+public recalcularDetalle(detalle: any): void {
+  const detalleAnterior = this.detalleSeleccionado;
+  this.detalleSeleccionado = detalle;
+  this.calcularDescuentos();
+  this.detalleSeleccionado = detalleAnterior;
+}
+
+public validarConfiguracionEmpresa(): void {
+  this.configPlanillaService.obtenerConfiguracion().subscribe({
+    next: (config) => {
+      if (config.configuracion.conceptos) {
+        const totalConceptos = Object.keys(config.configuracion.conceptos).length;
+      }
+    },
+    error: (error) => {
+      console.warn('⚠️ Empresa sin configuración personalizada, usando sistema legacy');
+    }
+  });
+}
 
 }

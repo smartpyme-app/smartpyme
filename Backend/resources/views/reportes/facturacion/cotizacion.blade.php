@@ -162,6 +162,42 @@
 {{--        <p>{{ $venta->observaciones }}</p>--}}
         <p>{!! nl2br(e($venta->observaciones))  !!} </p>
         <br>
+        @if($venta->empresa->mostrar_sello_firma_cotizacion)
+    <table style="width: 100%; margin-top: 30px;">
+        <tr>
+            <td style="width: 50%; padding: 20px; text-align: center;">
+                @if($venta->empresa->firma)
+                <img 
+                    src="{{ asset('img/'.$venta->empresa->firma) }}" 
+                    alt="Firma" 
+                    style="max-width: 150px; max-height: 100px;">
+                @else
+                <div style="height: 100px; line-height: 100px;">(Sin firma)</div>
+                @endif
+            </td>
+            <td style="width: 50%; padding: 20px; text-align: center;">
+                @if($venta->empresa->sello)
+                <img 
+                    src="{{ asset('img/'.$venta->empresa->sello) }}" 
+                    alt="Sello" 
+                    style="max-width: 150px; max-height: 100px;">
+                @else
+                <div style="height: 100px; line-height: 100px;">(Sin sello)</div>
+                @endif
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 50%; padding: 10px; text-align: center;">
+                <p>____________________________</p>
+                <h4 style="margin: 0; font-size: 16px; color: #333;">Firma</h4>
+            </td>
+            <td style="width: 50%; padding: 10px; text-align: center;">
+                <p>____________________________</p>
+                <h4 style="margin: 0; font-size: 16px; color: #333;">Sello</h4>
+            </td>
+        </tr>
+    </table>
+    @endif
 
         <br>
         <br>

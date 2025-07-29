@@ -20,6 +20,10 @@
             <i class="fa fa-search"></i>
             <!-- <img src="/assets/icons/search.png" class="icon"> -->
         </button>
+        <!-- <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto(createProductModal)">
+            <i class="fa fa-plus"></i>
+        </button> -->
+        <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
     </div>
 </div>
 
@@ -141,5 +145,17 @@
             </div>
         </section>
     </form>
+    </div>
+</ng-template>
+
+<ng-template #createProductModal>
+    <div class="modal-header justify-content-between">
+        <h4 class="modal-title text-center">
+            <span>Crear Producto</span>
+        </h4>
+        <button type="button" class="btn-close" (click)="modalCreateProductRef.hide(); alertService.modal = false;" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-producto (update)="onProductoCreated($event)"></app-crear-producto>
     </div>
 </ng-template>

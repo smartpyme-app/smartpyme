@@ -24,8 +24,10 @@ use JWTAuth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\Notificacion;
+use App\Models\EmpresaConfiguracionPlanilla;
 use App\Models\Plan;
 use App\Models\Suscripcion;
+use App\Services\Planilla\PlanillaTemplatesService;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
@@ -239,6 +241,8 @@ class AuthJWTController extends Controller
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
                 Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
+
+                $this->createPlanillaConfiguration($empresa);
             }
 
             if ($request->id) {
@@ -773,5 +777,39 @@ class AuthJWTController extends Controller
         $user->monto_plan = $suscripcion && $suscripcion->monto ? $suscripcion->monto : $this->getPlan($user->empresa->plan, true, $user->empresa->plan)->precio;
 
         return response()->json(['user' => $user], 200);
+    }
+
+    private function createPlanillaConfiguration($empresa)
+    {
+        try {
+            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
+            
+            EmpresaConfiguracionPlanilla::create([
+                'empresa_id' => $empresa->id,
+                'cod_pais' => $codPais,
+                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
+                'activo' => true,
+                'fecha_vigencia_desde' => now(),
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error creando configuración: {$e->getMessage()}");
+        }
+    }
+
+    private function mapearCodigoPais($nombrePais)
+    {
+        $mapeo = [
+            'El Salvador' => 'SV',
+            'Guatemala' => 'GT', 
+            'Honduras' => 'HN',
+            'Nicaragua' => 'NI',
+            'Costa Rica' => 'CR',
+            'Panama' => 'PA',
+            'Panamá' => 'PA',
+            'Belice' => 'BZ'
+        ];
+
+        return $mapeo[$nombrePais] ?? 'SV';
     }
 }
