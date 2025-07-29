@@ -43,6 +43,7 @@ class Empresa extends Model
         'iva',
         'moneda',
         'pais',
+        'cod_pais',
         'total',
         'forma_pago',
         'link_pago',

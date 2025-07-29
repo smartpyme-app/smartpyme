@@ -2,7 +2,6 @@
 
 namespace App\Models\Planilla;
 
-use App\Models\Planilla\Empleado;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 

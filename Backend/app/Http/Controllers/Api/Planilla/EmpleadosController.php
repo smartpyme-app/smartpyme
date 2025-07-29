@@ -79,8 +79,8 @@ class EmpleadosController extends Controller
             'isss' => 'nullable|string',
             'afp' => 'nullable|string',
             'fecha_nacimiento' => 'required|date',
-            'direccion' => 'required|string',
-            'telefono' => 'required|string',
+            'direccion' => 'nullable|string',
+            'telefono' => 'nullable|string',
             'email' => 'email',
             'salario_base' => 'required|numeric|min:0',
             'tipo_contrato' => 'required',
@@ -88,6 +88,16 @@ class EmpleadosController extends Controller
             'fecha_ingreso' => 'required|date',
             'id_departamento' => 'required|exists:departamentos_empresa,id',
             'id_cargo' => 'required|exists:cargos_de_empresa,id',
+            'forma_pago' => 'nullable|in:Transferencia,Cheque,Efectivo',
+
+            // Nuevos campos bancarios
+            'banco' => 'nullable|string|max:100',
+            'tipo_cuenta' => 'nullable|in:Ahorro,Corriente',
+            'numero_cuenta' => 'nullable|string|max:50',
+            'titular_cuenta' => 'nullable|string|max:100',
+            'forma_pago' => 'nullable|string|max:50',
+
+            // Contacto emergencia        
             'contacto_emergencia' => 'nullable|array',
             'contacto_emergencia.nombre' => 'nullable|string',
             'contacto_emergencia.relacion' => 'nullable|string',

@@ -19,6 +19,9 @@ import { PlanillasRoutingModule } from './planillas.routing.module';
 import { PlanillaDetalleComponent } from './planillas/planilla-detalle.component';
 import { BoletaPagoComponent } from './planillas/boleta-pago.component';
 import { VerBoletasComponent } from './planillas/ver-boletas.component';
+import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-planilla/configuracion-planilla.component';
+import { ReactiveFormsModule } from '@angular/forms';
+
 
 import { PdfViewerModule } from 'ng2-pdf-viewer';
 
@@ -38,7 +41,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     ModalModule.forRoot(),
     TooltipModule.forRoot(),
     ProgressbarModule.forRoot(),
-    PdfViewerModule
+    PdfViewerModule,
+    ReactiveFormsModule
   ],
   declarations: [
     PlanillasComponent,
@@ -46,7 +50,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     AdministrarEmpleadoComponent,
     PlanillaDetalleComponent,
     BoletaPagoComponent,
-    VerBoletasComponent
+    VerBoletasComponent,
+    ConfiguracionPlanillaComponent
   ],
   exports: [
     PlanillasComponent,
@@ -54,7 +59,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     AdministrarEmpleadoComponent,
     PlanillaDetalleComponent,
     BoletaPagoComponent,
-    VerBoletasComponent
+    VerBoletasComponent,
+    ConfiguracionPlanillaComponent
   ]
 })
 export class PlanillasModule { }

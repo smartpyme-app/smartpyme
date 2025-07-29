@@ -24,8 +24,10 @@ use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use JWTAuth;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
+use App\Models\EmpresaConfiguracionPlanilla;
+use App\Services\Planilla\PlanillaTemplatesService;
 
 class EmpresasController extends Controller
 {
@@ -94,125 +96,6 @@ class EmpresasController extends Controller
         $empresa = Empresa::findOrFail($id);
         return Response()->json($empresa, 200);
     }
-
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'nombre'        => 'required|max:255',
-    //         'iva'       => 'required|numeric',
-    //     ]);
-
-    //     if($request->id)
-    //         $empresa = Empresa::findOrFail($request->id);
-    //     else
-    //         $empresa = new Empresa;
-
-    //     //Bloquear usuarios
-    //     if ($request->id && ($empresa->activo == '1') && ($request['activo'] == '0')){
-    //         foreach ($empresa->usuarios()->get() as $usuario) {
-    //             $usuario->enable = false;
-    //             $usuario->save();
-    //         }
-    //     }
-    //     //Des bloquear usuario Administrador
-    //     if ($request->id && ($empresa->activo == '0') && ($request['activo'] == '1')){
-    //         foreach ($empresa->usuarios()->where('tipo', 'Administrador')->get() as $usuario) {
-    //             $usuario->enable = true;
-    //             $usuario->save();
-    //         }
-    //     }
-
-    //     $woocommerceFields = [
-    //         'woocommerce_api_key',
-    //         'woocommerce_store_url',
-    //         'woocommerce_consumer_key',
-    //         'woocommerce_consumer_secret',
-    //         'woocommerce_status'
-    //     ];
-
-    //     $woocommerceValues = [];
-    //     foreach ($woocommerceFields as $field) {
-    //         $woocommerceValues[$field] = $empresa->$field;
-    //     }
-
-    //     $empresa->fill($request->all());
-
-    //     if ($request->hasFile('file')) {
-    //         if ($request->id && $empresa->logo && $empresa->logo != 'empresas/default.jpg') {
-    //             Storage::delete($empresa->logo);
-    //         }
-    //         $path   = $request->file('file');
-    //         $resize = Image::make($path)->resize(350,350)->encode('jpg', 75);
-    //         $hash = md5($resize->__toString());
-    //         $path = "empresas/{$hash}.jpg";
-    //         $resize->save(public_path('img/'.$path), 50);
-    //         $empresa->logo = "/" . $path;
-    //     }
-
-    //     foreach ($woocommerceFields as $field) {
-    //         $empresa->$field = $woocommerceValues[$field];
-    //     }
-
-
-    //     $empresa->save();
-
-    //     if(!isset($request->isRegister) || $request->isRegister !== false) {
-
-    //         $suscripcion = $this->createSuscripcion([
-    //             'empresa_id' => $empresa->id,
-    //             'plan_id' => $plan = $this->getPlan($empresa->plan, true, $empresa->plan)->id,
-    //             'usuario_id' => $usuario->id,
-    //             'tipo_plan' => $empresa->tipo_plan,
-    //             'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
-    //             'monto' => $plan->precio,
-    //             'id_pago' => null,
-    //             'id_orden' => null,
-    //             'estado_ultimo_pago' => null,
-    //             'fecha_ultimo_pago' => null,
-    //             'fecha_proximo_pago' => null,
-    //             'fin_periodo_prueba' => now()->addDays($plan->duracion_dias),
-    //             'fecha_cancelacion' => null,
-    //             'motivo_cancelacion' => null,
-    //             'requiere_factura' => false,
-    //             'nit' => null,
-    //             'nombre_factura' => $empresa->nombre,
-    //             'direccion_factura' => $empresa->direccion,
-    //             'intentos_cobro' => 0,
-    //             'ultimo_intento_cobro' => null,
-    //             'historial_pagos' => null
-    //         ]);
-
-    //     }
-
-    //     //Crear sucursal
-    //         if(!$request->id){
-    //             // Crear cliente
-    //                 $cliente = Cliente::create(['nombre' => $empresa->nombre, 'id_empresa' => 2]);
-    //                 $empresa->cliente_id = $cliente->id;
-    //                 $empresa->save();
-    //             // Crear sucursal
-    //             $sucursal = Sucursal::create(['nombre' => $empresa->nombre, 'id_empresa' => $empresa->id]);
-    //             // Crear bodega
-    //             $bodega = Bodega::create(['nombre' => $empresa->nombre, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             // Crear canales
-    //             Canal::create(['nombre' => $empresa->nombre, 'enable' => true, 'id_empresa' => $empresa->id]);
-    //             // Crear impuesto
-    //             Impuesto::create(['nombre' => 'IVA', 'porcentaje' => $empresa->iva, 'id_empresa' => $empresa->id]);
-    //             // Formas de pago
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_EFECTIVO'), 'id_empresa' => $empresa->id]);
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TRANSFERENCIA'), 'id_empresa' => $empresa->id]);
-    //             FormaDePago::create(['nombre' => config('constants.TIPO_PAGO_TARJETA'), 'id_empresa' => $empresa->id]);
-    //             // Crear documentos
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_TICKET'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_FACTURA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_CREDITO_FISCAL'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_COTIZACION'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //             Documento::create(['nombre' => config('constants.TIPO_DOCUMENTO_ORDEN_COMPRA'), 'correlativo' => 1, 'activo' => 1, 'id_sucursal' => $sucursal->id, 'id_empresa' => $empresa->id]);
-    //         }
-
-    //     return Response()->json($empresa, 200);
-
-    // }
 
     public function store(Request $request)
     {
@@ -384,8 +267,42 @@ class EmpresasController extends Controller
         ]);
 
         $this->createPaymentMethods($empresa);
-
         $this->createDocuments($sucursal, $empresa);
+        $this->createPlanillaConfiguration($empresa);
+    }
+
+    private function createPlanillaConfiguration($empresa)
+    {
+        try {
+            $codPais = $this->mapearCodigoPais($empresa->pais ?? 'El Salvador');
+            
+            EmpresaConfiguracionPlanilla::create([
+                'empresa_id' => $empresa->id,
+                'cod_pais' => $codPais,
+                'configuracion' => PlanillaTemplatesService::getConfiguracionPorPais($codPais),
+                'activo' => true,
+                'fecha_vigencia_desde' => now(),
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error creando configuración: {$e->getMessage()}");
+        }
+    }
+
+    private function mapearCodigoPais($nombrePais)
+    {
+        $mapeo = [
+            'El Salvador' => 'SV',
+            'Guatemala' => 'GT', 
+            'Honduras' => 'HN',
+            'Nicaragua' => 'NI',
+            'Costa Rica' => 'CR',
+            'Panama' => 'PA',
+            'Panamá' => 'PA',
+            'Belice' => 'BZ'
+        ];
+
+        return $mapeo[$nombrePais] ?? 'SV';
     }
 
     private function createPaymentMethods(Empresa $empresa)
