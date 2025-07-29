@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exports\SuscripcionesExport;
 use App\Http\Controllers\Controller;
 use App\Models\Admin\Empresa;
 use App\Models\OrdenPago;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use JWTAuth;
-
+use Maatwebsite\Excel\Facades\Excel;
 
 class SuscripcionesController extends Controller
 {
@@ -67,18 +68,23 @@ class SuscripcionesController extends Controller
                 });
             })
             ->when($request->forma_pago, function ($q) use ($request) {
-                return $q->where('metodo_pago', $request->forma_pago);
+                return $q->whereHas('suscripcion', function ($query) use ($request) {
+                    $query->where('metodo_pago', $request->forma_pago);
+                });
             });
 
             if (!$request->estado) {
                 $query->withCount('suscripcion');
             }
 
-            $empresas = $query->orderBy($request->orden ?? 'created_at', $request->direccion ?? 'desc')
-                ->paginate($request->paginate ?? 10);
+            $orden = $request->orden ?? 'created_at';
+            $direccion = $request->direccion ?? 'desc';
 
-            // Obtener el tipo de plan para cada empresa
-            $empresas->getCollection()->transform(function ($empresa) {
+            $query = $this->ordenamiento($query, $orden, $direccion);
+
+            $empresas = $query->paginate($request->paginate ?? 10);
+
+            $empresas->through(function ($empresa) {
                 if ($empresa->suscripcion && $empresa->suscripcion->plan) {
                     $empresa->suscripcion->plan->tipo_plan = $empresa->suscripcion->plan->getTipoPlanAttribute();
                 }
@@ -111,6 +117,58 @@ class SuscripcionesController extends Controller
         return response()->json($suscripcion, 200);
     }
 
+    public function ordenamiento($query, $orden, $direccion)
+    {
+        switch ($orden) {
+            case 'estado_suscripcion':
+                $query->leftJoin('suscripciones as s1', 'empresas.id', '=', 's1.empresa_id')
+                    ->orderBy('s1.estado', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'estado_pago':
+                $query->leftJoin('suscripciones as s2', 'empresas.id', '=', 's2.empresa_id')
+                    ->orderBy('s2.estado_ultimo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'fecha_proximo_pago':
+                $query->leftJoin('suscripciones as s3', 'empresas.id', '=', 's3.empresa_id')
+                    ->orderBy('s3.fecha_proximo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'fecha_ultimo_pago':
+                $query->leftJoin('suscripciones as s4', 'empresas.id', '=', 's4.empresa_id')
+                    ->orderBy('s4.fecha_ultimo_pago', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'plan':
+                $query->leftJoin('suscripciones as s5', 'empresas.id', '=', 's5.empresa_id')
+                    ->leftJoin('planes as p1', 's5.plan_id', '=', 'p1.id')
+                    ->orderBy('p1.nombre', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'tipo_plan':
+                $query->leftJoin('suscripciones as s6', 'empresas.id', '=', 's6.empresa_id')
+                    ->orderBy('s6.tipo_plan', $direccion)
+                    ->select('empresas.*');
+                break;
+                
+            case 'metodo_pago':
+                $query->orderBy('metodo_pago', $direccion);
+                break;
+                
+            default:
+                $query->orderBy($orden, $direccion);
+                break;
+        }
+
+        return $query;
+    }
+
     public function createSuscription(Request $request)
     {
         try {
@@ -123,7 +181,6 @@ class SuscripcionesController extends Controller
                 'monto' => 'required|numeric|min:0',
                 'fecha_proximo_pago' => 'required|date',
                 'fin_periodo_prueba' => 'required|date',
-                // Campos opcionales
                 'nit' => 'nullable|string|max:20',
                 'nombre_factura' => 'nullable|string|max:255',
                 'direccion_factura' => 'nullable|string|max:500',
@@ -397,5 +454,29 @@ class SuscripcionesController extends Controller
             return null;
         }
        
+    }
+
+    // public function export(Request $request)
+    // {
+    //     $suscripciones = new SuscripcionesExport();
+    //     $suscripciones->filter($request);
+
+    //     return Excel::download($suscripciones, 'suscripciones_'.date('Y-m-d').'.xlsx');
+    // }
+
+    public function export(Request $request)
+    {
+        try {
+            $export = new SuscripcionesExport();
+            $export->filter($request);
+            
+            $filename = 'suscripciones_empresas_' . date('Y-m-d_H-i-s') . '.xlsx';
+            
+            return Excel::download($export, $filename);
+            
+        } catch (\Exception $e) {
+            Log::error('Error en export de suscripciones: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al exportar datos'], 500);
+        }
     }
 }
