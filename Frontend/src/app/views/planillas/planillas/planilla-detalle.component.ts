@@ -818,7 +818,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.apiService.read('planillas/descuentos-patronales/', this.planilla.id).subscribe({
       next: (response) => {
         this.descuentosPatronales = response;
-        console.log(this.descuentosPatronales);
+        // console.log(this.descuentosPatronales);
         this.loading = false;
       },
       error: (error) => {
