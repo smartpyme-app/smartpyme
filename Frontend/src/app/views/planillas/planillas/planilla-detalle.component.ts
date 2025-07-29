@@ -42,6 +42,10 @@ export class PlanillaDetalleComponent implements OnInit {
   public conceptosConfigurados: any = null;
   public conceptosDeduccion: [string, ConceptoPlanilla][] = [];
   public conceptos: { [codigo: string]: ConceptoPlanilla } = {};
+  public mapeoCamposES: { [codigo: string]: string } = {
+    isss_pat: 'isss_patronal',
+    afp_pat: 'afp_patronal',
+  };
 
 
   modalRef!: BsModalRef;
@@ -166,45 +170,42 @@ export class PlanillaDetalleComponent implements OnInit {
   // }
 
   calcularConcepto(detalle: any, concepto: any): number {
-    const codigo = concepto.codigo;
-    const codigoLower = codigo.toLowerCase();
-
-    // 🎯 1. Si el campo existe en detalle (como "isss_empleado", "renta", etc.)
-    if (detalle.hasOwnProperty(codigoLower)) {
-      return Number(detalle[codigoLower]) || 0;
+    const codigo = concepto.codigo?.toLowerCase() || '';
+  
+    // 🎯 Si es El Salvador, usar campos fijos
+    if (this.esElSalvador) {
+      // Mapeo específico solo para ES
+  
+      const campo = this.mapeoCamposES[codigo];
+      if (campo && detalle.hasOwnProperty(campo)) {
+        return Number(detalle[campo]) || 0;
+      }
     }
-
-    // 🎯 2. Si el tipo es porcentaje, aplicamos cálculo sobre base
+  
+    // 🎯 Si no es El Salvador, usar lógica general por configuración
+    if (detalle.hasOwnProperty(codigo)) {
+      return Number(detalle[codigo]) || 0;
+    }
+  
     if (concepto.tipo === 'porcentaje') {
       const base = detalle[concepto.base_calculo];
       const tope = concepto.tope_maximo || null;
-
+  
       let monto = Number(base) || 0;
-
       if (tope && monto > tope) {
         monto = tope;
       }
-
+  
       return (monto * concepto.valor) / 100;
     }
-
-    // 🎯 3. Si el tipo es fijo
+  
     if (concepto.tipo === 'fijo') {
       return Number(concepto.valor) || 0;
     }
-
-    // 🎯 4. Si es sistema existente pero el campo no está en detalle
-    if (concepto.tipo === 'sistema_existente') {
-      if (detalle.hasOwnProperty(codigoLower)) {
-        return Number(detalle[codigoLower]) || 0;
-      } else if (detalle.hasOwnProperty('renta') && codigo === 'RENTA') {
-        return Number(detalle['renta']) || 0;
-      }
-    }
-
-    // ❌ 5. Fallback
+  
     return 0;
   }
+  
 
 
 
@@ -269,10 +270,18 @@ export class PlanillaDetalleComponent implements OnInit {
 
 
   getTotalAportesPatronales(detalle: any): number {
+    if (this.esElSalvador) {
+      return (
+        Number(detalle.isss_patronal || 0) +
+        Number(detalle.afp_patronal || 0)
+      );
+    }
+  
     return this.conceptosPatronales
       .map(([_, c]) => this.calcularConcepto(detalle, c))
       .reduce((a, b) => a + b, 0);
   }
+  
 
   loadConceptosConfigurados() {
     this.configPlanillaService.obtenerConfiguracion().subscribe({
@@ -809,6 +818,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.apiService.read('planillas/descuentos-patronales/', this.planilla.id).subscribe({
       next: (response) => {
         this.descuentosPatronales = response;
+        console.log(this.descuentosPatronales);
         this.loading = false;
       },
       error: (error) => {
