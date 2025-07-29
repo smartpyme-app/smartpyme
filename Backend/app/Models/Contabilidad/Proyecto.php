@@ -83,15 +83,16 @@ class Proyecto extends Model {
     }
 
     public function gastos(){
-        return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_proyecto')->where('estado', '!=', 'Anulada');
+        return $this->hasMany('App\Models\Compras\Gastos\Gasto', 'id_proyecto')->where('estado', '!=', 'Anulada')->where('estado', '!=', 'Cancelado');
     }
+    //Cancelado
     public function compras(){
-        return $this->hasMany('App\Models\Compras\Compra', 'id_proyecto')->where('estado', '!=', 'Anulada')
+        return $this->hasMany('App\Models\Compras\Compra', 'id_proyecto')->where('estado', '!=', 'Anulada')->where('estado', '!=', 'Cancelado')
             ->where('tipo_documento', '!=', 'Orden de compra');
     }
 
     public function ventas(){
-        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 0)->where('estado', '!=', 'Anulada');
+        return $this->hasMany('App\Models\Ventas\Venta', 'id_proyecto')->where('cotizacion', 0)->where('estado', '!=', 'Anulada')->where('estado', '!=', 'Cancelado');
     }
 
     public function cliente(){
