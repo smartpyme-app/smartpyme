@@ -1,7 +1,11 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <div>
-    <h2 class="page-heading">Detalle de Planilla</h2>
-    <p class="text-muted mb-0" *ngIf="planilla?.codigo">
+    <div class="d-flex align-items-center gap-2">
+      <h2 class="page-heading">Detalle de Planilla</h2>
+      <h6 class="text-muted mb-0 badge bg-primary">Planilla {{ planilla.tipo_planilla | titlecase }}</h6>
+    </div>
+    
+    <p class="text-muted mb-0 " *ngIf="planilla?.codigo">
       Código: {{ planilla.codigo }} | Período:
       {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
       {{ planilla.fecha_fin | date : "dd/MM/yyyy" }} | Tipo:
@@ -130,14 +134,6 @@
           <tr>
             <th>Empleado</th>
             <th class="text-end">Salario Base</th>
-        
-            <!-- <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
-              ${{ planilla.total_salarios / 2 | number : "1.2-2" }}
-            </th>
-            <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
-              ${{ planilla.total_salarios / 4.33 | number : "1.2-2" }}
-            </th> -->
-        
             <th class="text-end">S. Devengado</th>
             <th class="text-end">Ingresos Adicionales</th>
             <th class="text-end">Total Ingresos</th>
@@ -152,7 +148,6 @@
               <th class="text-end" *ngFor="let concepto of conceptosEmpleado">
                 {{ concepto[1].nombre }}
               </th>
-              
             </ng-container>
         
             <th class="text-end">Total Neto</th>
@@ -168,14 +163,6 @@
         
             <td class="text-end">
               ${{ detalle.salario_base | number : "1.2-2" }}
-            </td>
-        
-            <td class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
-              ${{ detalle.salario_base / 2 | number : "1.2-2" }}
-            </td>
-        
-            <td class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
-              ${{ detalle.salario_base / 4.33 | number : "1.2-2" }}
             </td>
         
             <td class="text-end">
@@ -247,27 +234,15 @@
         <tfoot>
           <tr class="border-top">
             <th>Totales</th>
-            <th></th>
-        
-            <!-- Salario proporcional -->
-            <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
-              ${{ planilla.total_salarios / 2 | number : "1.2-2" }}
+            <th class="text-end">
+              ${{ getTotalCampo('salario_base') | number : "1.2-2" }}
             </th>
-            <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
-              ${{ planilla.total_salarios / 4.33 | number : "1.2-2" }}
-            </th>
-        
-            <!-- Devengado -->
             <th class="text-end">
               ${{ getTotalCampo('salario_devengado') | number : "1.2-2" }}
             </th>
-        
-            <!-- Ingresos adicionales -->
             <th class="text-end">
-              ${{ (planilla.bonificaciones_total + planilla.comisiones_total) | number : "1.2-2" }}
+              ${{ (planilla.bonificaciones_total + planilla.comisiones_total + planilla.otros_ingresos_total) | number : "1.2-2" }}
             </th>
-        
-            <!-- Total ingresos -->
             <th class="text-end">
               ${{ getTotalCampoReal('total_ingresos') | number : '1.2-2' }}
             </th>
@@ -283,7 +258,6 @@
               ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
             </th>
             
-        
             <!-- Columnas dinámicas si NO es El Salvador -->
             <ng-container *ngIf="!esElSalvador">
               <th class="text-end" *ngFor="let concepto of conceptosEmpleado">
@@ -291,17 +265,12 @@
               </th>
             </ng-container>
         
-            <!-- Neto -->
             <th class="text-end">
-              ${{ planilla.total_neto | number : "1.2-2" }}
+              ${{ getTotalCampoReal('sueldo_neto') | number : "1.2-2" }}
             </th>
-        
             <th></th>
           </tr>
         </tfoot>
-        
-               
-        
       </table>
     </div>
   </section>
