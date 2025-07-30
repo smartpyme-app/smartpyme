@@ -131,12 +131,12 @@
             <th>Empleado</th>
             <th class="text-end">Salario Base</th>
         
-            <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
+            <!-- <th class="text-end" *ngIf="planilla.tipo_planilla === 'quincenal'">
               ${{ planilla.total_salarios / 2 | number : "1.2-2" }}
             </th>
             <th class="text-end" *ngIf="planilla.tipo_planilla === 'semanal'">
               ${{ planilla.total_salarios / 4.33 | number : "1.2-2" }}
-            </th>
+            </th> -->
         
             <th class="text-end">S. Devengado</th>
             <th class="text-end">Ingresos Adicionales</th>
@@ -361,15 +361,23 @@
             <th class="text-end">Salario Base</th>
             <th class="text-end">Salario Devengado</th>
         
-            <!-- Conceptos patronales dinámicos -->
-            <th class="text-end" *ngFor="let concepto of conceptosPatronales">
-              {{ concepto[1].nombre }}
-            </th>
+            <!-- ✅ Aportes patronales para El Salvador -->
+            <ng-container *ngIf="esElSalvador; else dinamicosHead">
+              <th class="text-end">ISSS Patronal</th>
+              <th class="text-end">AFP Patronal</th>
+            </ng-container>
         
-            <th class="text-end">Total Aportes</th>
-            <th class="text-end">% sobre Salario</th>
+            <!-- ✅ Conceptos dinámicos para otros países -->
+            <ng-template #dinamicosHead>
+              <th class="text-end" *ngFor="let concepto of conceptosPatronales">
+                {{ concepto[1].nombre }}
+              </th>
+            </ng-template>
+        
+            <th class="text-end text-danger">Total Aportes</th>
+            <th class="text-end text-muted">% sobre Salario</th>
           </tr>
-        </thead>
+        </thead>        
         
         <tbody>
           <tr *ngFor="let detalle of descuentosPatronales?.detalles" class="table-row">
@@ -392,10 +400,18 @@
               ${{ detalle.salario_devengado | number : "1.2-2" }}
             </td>
         
-            <!-- Conceptos patronales dinámicos -->
-            <td class="text-end" *ngFor="let concepto of conceptosPatronales">
-              ${{ calcularConcepto(detalle, concepto[1]) | number : "1.2-2" }}
-            </td>
+            <!-- ✅ Aportes patronales para El Salvador -->
+            <ng-container *ngIf="esElSalvador; else dinamicos">
+              <td class="text-end">$ {{ detalle.isss_patronal | number : '1.2-2' }}</td>
+              <td class="text-end">$ {{ detalle.afp_patronal | number : '1.2-2' }}</td>
+            </ng-container>
+        
+            <!-- ✅ Aportes patronales dinámicos para otros países -->
+            <ng-template #dinamicos>
+              <td class="text-end" *ngFor="let concepto of conceptosPatronales">
+                ${{ calcularConcepto(detalle, concepto[1]) | number : '1.2-2' }}
+              </td>
+            </ng-template>
         
             <!-- Total aportes patronales -->
             <td class="text-end text-danger fw-bold">
@@ -408,6 +424,7 @@
             </td>
           </tr>
         </tbody>
+        
         
       </table>
     </div>

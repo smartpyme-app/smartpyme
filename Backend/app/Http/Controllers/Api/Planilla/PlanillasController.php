@@ -1338,7 +1338,9 @@ class PlanillasController extends Controller
     public function exportPDF($id)
     {
         try {
-            $planilla = Planilla::with(['detalles.empleado', 'empresa'])
+            $planilla = Planilla::with(['detalles' => function($query) {
+                    $query->where('estado', '!=', 0);
+                }, 'detalles.empleado', 'empresa'])
                 ->findOrFail($id);
 
             $pdf = PDF::loadView('pdf.planilla-detalle', [
@@ -1560,7 +1562,9 @@ class PlanillasController extends Controller
     public function generarBoletas($id)
     {
         try {
-            $planilla = Planilla::with(['detalles.empleado', 'empresa', 'sucursal'])
+            $planilla = Planilla::with(['detalles' => function($query) {
+                    $query->where('estado', '!=', 0);
+                }, 'detalles.empleado', 'empresa', 'sucursal'])
                 ->findOrFail($id);
 
             $pdf = PDF::loadView('pdf.boletas-pago', [
@@ -2241,7 +2245,7 @@ class PlanillasController extends Controller
                 ->join('empleados', 'planilla_detalles.id_empleado', '=', 'empleados.id')
                 ->leftJoin('cargos_de_empresa', 'empleados.id_cargo', '=', 'cargos_de_empresa.id')
                 ->leftJoin('departamentos_empresa', 'empleados.id_departamento', '=', 'departamentos_empresa.id')
-                ->where('planilla_detalles.estado', '!=', 0); // Solo empleados activos
+                ->where('planilla_detalles.estado', '!=', 0);
     
             // Aplicar filtros del frontend
             if ($request->filled('buscador')) {

@@ -81,7 +81,7 @@ class EmpleadosController extends Controller
             'fecha_nacimiento' => 'required|date',
             'direccion' => 'nullable|string',
             'telefono' => 'nullable|string',
-            'email' => 'email',
+            'email' => 'required|email',
             'salario_base' => 'required|numeric|min:0',
             'tipo_contrato' => 'required',
             'tipo_jornada' => 'required',

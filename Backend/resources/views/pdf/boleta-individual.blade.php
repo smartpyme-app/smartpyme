@@ -78,7 +78,16 @@
             <td class="monto">${{ number_format($detalle->bonificaciones, 2) }}</td>
             <td>Préstamos</td>
             <td class="monto">${{ number_format($detalle->prestamos, 2) }}</td>
+           
         </tr>
+        @if($detalle->anticipos > 0)
+            <tr>
+                <td></td>
+                <td class="monto"></td>
+                <td>Anticipos</td>
+                <td class="monto">${{ number_format($detalle->anticipos, 2) }}</td>
+            </tr>
+        @endif
         <tr>
             <td>Otros Ingresos</td>
             <td class="monto">${{ number_format($detalle->otros_ingresos, 2) }}</td>
