@@ -181,14 +181,6 @@ class AjustesService
                 'success' => true,
                 'message' => 'Partida contable creada exitosamente',
                 'partida_id' => $partida->id,
-                'debug_info' => [
-                    'costo_unitario_utilizado' => $costo_unitario,
-                    'cantidad_ajuste' => $ajusteCompleto->ajuste,
-                    'monto_calculado' => $monto,
-                    'costo_original_ajuste' => $ajusteCompleto->costo,
-                    'costo_producto' => $ajusteCompleto->producto->costo,
-                    'costo_promedio_producto' => $ajusteCompleto->producto->costo_promedio ?? null
-                ]
             ];
 
         } catch (Exception $e) {

@@ -19,8 +19,20 @@ class RetaceoService
      */
     public function crearPartida($id_retaceo)
     {
-        $configuracion = Configuracion::firstOrFail();
-        $retaceo = Retaceo::with('distribucion', 'gastos', 'compra')->findOrFail($id_retaceo);
+        // Validar que el ID del retaceo es válido
+        if (!$id_retaceo) {
+            throw new Exception('El ID del retaceo no es válido', 400);
+        }
+
+        $configuracion = Configuracion::first();
+        if (!$configuracion) {
+            throw new Exception('No se encontró la configuración contable', 400);
+        }
+
+        $retaceo = Retaceo::with('distribucion', 'gastos', 'compra')->find($id_retaceo);
+        if (!$retaceo) {
+            throw new Exception('No se encontró el retaceo con ID: ' . $id_retaceo, 400);
+        }
 
         if ($retaceo->estado !== 'Aplicado') {
             throw new Exception('El retaceo debe estar en estado Aplicado para generar la partida contable.', 400);
@@ -41,11 +53,19 @@ class RetaceoService
         DB::beginTransaction();
 
         try {
-            $cuentaPedidosTransito = Cuenta::findOrFail($configuracion->id_cuenta_pedidos_transito);
+            $cuentaPedidosTransito = Cuenta::find($configuracion->id_cuenta_pedidos_transito);
+            if (!$cuentaPedidosTransito) {
+                throw new Exception('No se encontró la cuenta contable de Pedidos en Transito', 400);
+            }
+
             $partidaNumero = 1;
 
             // Agrupar gastos por tipo/proveedor según el patrón del cliente
             $grupos = $this->agruparGastosEstiloCliente($retaceo);
+
+            if (empty($grupos)) {
+                throw new Exception('No se generaron grupos de gastos para procesar', 400);
+            }
 
             foreach ($grupos as $grupo) {
                 $partida = Partida::create([
@@ -80,7 +100,11 @@ class RetaceoService
 
                 // DEBE: IVA si aplica
                 if (isset($grupo['iva']) && $grupo['iva']['monto'] > 0) {
-                    $cuentaIva = Cuenta::findOrFail($grupo['iva']['id_cuenta']);
+                    $cuentaIva = Cuenta::find($grupo['iva']['id_cuenta']);
+                    if (!$cuentaIva) {
+                        throw new Exception('No se encontró la cuenta contable de IVA', 400);
+                    }
+
                     Detalle::create([
                         'id_cuenta'         => $cuentaIva->id,
                         'codigo'            => $cuentaIva->codigo,
@@ -96,7 +120,11 @@ class RetaceoService
 
                 // HABER: Proveedor específico
                 if ($grupo['proveedor']['id_cuenta'] && $totalDebe > 0) {
-                    $cuentaProveedor = Cuenta::findOrFail($grupo['proveedor']['id_cuenta']);
+                    $cuentaProveedor = Cuenta::find($grupo['proveedor']['id_cuenta']);
+                    if (!$cuentaProveedor) {
+                        throw new Exception('No se encontró la cuenta contable del proveedor', 400);
+                    }
+
                     Detalle::create([
                         'id_cuenta'         => $cuentaProveedor->id,
                         'codigo'            => $cuentaProveedor->codigo,
@@ -116,13 +144,16 @@ class RetaceoService
 
             return [
                 'success' => true,
-                'mensaje' => 'Partidas contables generadas correctamente',
+                'message' => 'Partidas contables de retaceo generadas correctamente',
                 'partidas_creadas' => $partidaNumero - 1
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollback();
-            throw new Exception('Error al generar partidas contables: ' . $e->getMessage(), 400);
+            throw new Exception('Error al generar partidas contables de retaceo: ' . $e->getMessage(), 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            throw new Exception('Error inesperado al generar partidas contables de retaceo: ' . $e->getMessage(), 500);
         }
     }
 
