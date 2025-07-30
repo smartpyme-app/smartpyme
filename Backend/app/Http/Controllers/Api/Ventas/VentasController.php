@@ -140,7 +140,7 @@ class VentasController extends Controller
     public function read($id)
     {
 
-        $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
     }
@@ -433,7 +433,7 @@ class VentasController extends Controller
 
                 $venta->correlativo = $documento->correlativo;
                 $documento->increment('correlativo');
-                
+
             $venta->save();
 
             // Guardamos los detalles
@@ -1003,7 +1003,7 @@ class VentasController extends Controller
 
     /**
      * Genera el reporte diario de ventas por vendedor
-     * 
+     *
      * @param Request $request Solicitud HTTP
      * @return mixed Descarga del archivo Excel o ruta del archivo generado
      * @throws \Exception Si ocurre un error al generar el reporte
@@ -1309,12 +1309,12 @@ class VentasController extends Controller
                     ->where('cotizacion', 0)
                     ->where('estado', '!=', 'Anulada')
                     ->count();
-    
+
                 $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
                     ->where('estado', '!=', 'Anulada')
                     ->sum('total');
-    
+
                 $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
                     ->where('cotizacion', 0)
                     ->distinct('id_vendedor')
@@ -1424,7 +1424,7 @@ class VentasController extends Controller
             ->whereNotNull('num_identificacion')
             ->where('num_identificacion', '!=', '')
             ->get();
-        
+
         return Response()->json($numsIds, 200);
      }
 }

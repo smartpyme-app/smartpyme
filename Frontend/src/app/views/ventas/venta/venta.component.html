@@ -30,11 +30,11 @@
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Fecha pago</label>
                 <p>{{ venta.fecha_pago | date:'dd/MM/yyyy' }}</p>
-            </div> 
+            </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Forma de pago</label>
                 <p>{{ venta.forma_pago }}</p>
-            </div> 
+            </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Detalle banco</label>
                 <p>{{ venta.detalle_banco }}</p>
@@ -82,11 +82,11 @@
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Recinto fiscal</label>
                 <p>{{ venta.recinto_fiscal }}</p>
-            </div> 
+            </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Regimen</label>
                 <p>{{ venta.regimen }}</p>
-            </div> 
+            </div>
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Seguro</label>
                 <p>{{ venta.seguro }}</p>
@@ -128,7 +128,7 @@
                         <td *ngIf="usuario.empresa.vendedor_detalle_venta"> {{ detalle?.vendedor?.name }} </td>
                         <td class="d-flex">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
                             </div>
                             <div class="ms-3">
                                 {{ detalle.descripcion }} <br>
@@ -207,7 +207,7 @@
             <div class="form-group col-lg-4">
                 <label class="fw-medium">Numero de control</label>
                 <p>{{ venta.numero_control }}</p>
-            </div> 
+            </div>
         </div>
     </div>
 
@@ -216,7 +216,7 @@
 <div class="card" *ngIf="venta.observaciones">
     <div class="card-body">
         <h5 class="card-title"> Observaciones </h5>
-        <p>{{ venta.observaciones }}</p>  
+        <p>{{ venta.observaciones }}</p>
     </div>
 
 </div>
@@ -280,6 +280,7 @@
                         <th>Concepto</th>
                         <th>Forma de pago</th>
                         <th>Estado</th>
+                        <th>Usuario</th>
                         <th class="text-end">Total</th>
                         <th class="text-center">Mas</th>
                     </tr>
@@ -303,6 +304,7 @@
                                 <option value="Confirmado">Confirmado</option>
                             </select>
                         </td>
+                        <td>{{ abono.usuario?.name || 'Sin usuario' }}</td>
                         <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
                             <a (click)="imprimirRecibo(abono)" class="btn btn-light">
@@ -313,8 +315,9 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="4" class="text-end"><b>Total:</b></td>
+                        <td colspan="5" class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.abonos | sum:'total' | currency }}</b></td>
+                        <td></td>
                     </tr>
                 </tfoot>
             </table>
@@ -351,7 +354,7 @@
                     </tr>
 
                     <tr class="animated fadeIn" *ngFor=" let venta of venta?.devoluciones">
-                        
+
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
@@ -364,7 +367,7 @@
                             <span class="badge py-2 position-relative text-dark" style="font-size: 0.8rem;" [ngClass]="{'bg-light-danger' : venta?.enable == 0, 'bg-light-success' : venta?.enable == 1}">
                                 {{ venta.enable ? 'Confirmada' : 'Anulada' }}
                                 <span title="Emitido a hacienda" style="position: absolute; top: -3px; right: -3px; font-size: 10px; color: blue;" *ngIf="apiService.auth_user().empresa.facturacion_electronica && venta.sello_mh">
-                                    ✅                       
+                                    ✅
                                 </span>
                             </span>
                         </td>
