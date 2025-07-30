@@ -1068,6 +1068,56 @@ class PlanillasController extends Controller
         }
     }
 
+    public function revertPayroll($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $planilla = Planilla::with('detalles')->findOrFail($id);
+
+            if ($planilla->estado != PlanillaConstants::PLANILLA_APROBADA) {
+                return response()->json([
+                    'error' => 'Solo se pueden revertir planillas en estado aprobado'
+                ], 422);
+            }
+
+            // Actualizar el estado de la planilla principal
+            $planilla->estado = PlanillaConstants::PLANILLA_BORRADOR; // Aprobada
+            $planilla->save();
+
+            // Inicializar contador de detalles actualizados
+            $detallesActualizados = 0;
+
+            // Actualizar el estado de todos los detalles activos
+            foreach ($planilla->detalles as $detalle) {
+                // Solo actualizamos los detalles que están en estado borrador o activo
+                if ($detalle->estado == PlanillaConstants::PLANILLA_APROBADA) {
+
+                    $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
+                    $detalle->save();
+                    $detallesActualizados++;
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Planilla aprobada exitosamente',
+                'detalles_actualizados' => $detallesActualizados
+            ]);
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error al aprobar la planilla', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al aprobar la planilla: ' . $e->getMessage()
+            ], 500);
+        }
+
+    }
+
     public function processPayment($id)
     {
         try {

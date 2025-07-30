@@ -1677,6 +1677,7 @@ export class PlanillaDetalleComponent implements OnInit {
       this.planilla.total_salarios += Number(detalle.salario_devengado) || 0;
       this.planilla.bonificaciones_total += Number(detalle.bonificaciones) || 0;
       this.planilla.comisiones_total += Number(detalle.comisiones) || 0;
+      this.planilla.otros_ingresos_total += Number(detalle.otros_ingresos) || 0;
       this.planilla.total_ingresos += Number(detalle.total_ingresos) || 0;
       this.planilla.total_iss += Number(detalle.isss_empleado) || 0;
       this.planilla.total_afp += Number(detalle.afp_empleado) || 0;
@@ -1709,6 +1710,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.planilla.total_salarios = 0;
     this.planilla.bonificaciones_total = 0;
     this.planilla.comisiones_total = 0;
+    this.planilla.otros_ingresos_total = 0;
     this.planilla.total_ingresos = 0;
     this.planilla.total_iss = 0;
     this.planilla.total_afp = 0;

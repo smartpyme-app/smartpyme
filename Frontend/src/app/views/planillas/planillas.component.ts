@@ -230,6 +230,34 @@ export class PlanillasComponent implements OnInit {
     });
   }
 
+  public revertirPlanilla(planilla: any) {
+    Swal.fire({
+      title: '¿Está seguro?',
+      text: 'La planilla se revertirá a estado borrador',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, revertir',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procesando = true;
+        this.apiService.store(`planillas/revertir/${planilla.id}`, {}).subscribe({
+          next: (response) => {
+            this.alertService.success('Éxito', 'Planilla revertida exitosamente');
+            this.loadPlanillas();
+            this.procesando = false;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+            this.procesando = false;
+          },
+        });
+      }
+    });
+  }
+
   public procesarPago(planilla: any) {
     Swal.fire({
       title: '¿Procesar pago de planilla?',
