@@ -37,7 +37,7 @@ class PlanillasController extends Controller
         $this->configuracionPlanillaService = $configuracionPlanillaService;
     }
 
-    
+
     public function index(Request $request)
     {
         $query = Planilla::with(['detalles.empleado'])
@@ -375,10 +375,10 @@ class PlanillasController extends Controller
         $baseISSSEmpleado = min($salarioDevengado, 1000);
         $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-    
+
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-    
+
         return [
             'isss_empleado' => round($isssEmpleado, 2),
             'isss_patronal' => round($isssPatronal, 2),
@@ -420,29 +420,29 @@ class PlanillasController extends Controller
     //     try {
     //         // 🎯 PREPARAR DATOS DEL EMPLEADO
     //         $diasReferencia = 30;
-            
+
     //         if ($tipoPlanilla === 'quincenal') {
     //             $diasReferencia = 15;
     //         } elseif ($tipoPlanilla === 'semanal') {
     //             $diasReferencia = 7;
     //         }
-    
+
     //         // Calcular salario base ajustado según tipo de planilla
     //         $salarioBase = $empleado->salario_base;
     //         $salarioBaseAjustado = $salarioBase;
-            
+
     //         if ($tipoPlanilla === 'quincenal') {
     //             $salarioBaseAjustado = $salarioBase / 2;
     //         } elseif ($tipoPlanilla === 'semanal') {
     //             $salarioBaseAjustado = $salarioBase / 4.33;
     //         }
-    
+
     //         // Días laborados (por defecto el período completo)
     //         $diasLaborados = $diasReferencia;
-            
+
     //         // Salario devengado proporcional
     //         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
-    
+
     //         // 🎯 PREPARAR DATOS PARA EL SERVICE
     //         $datosEmpleado = [
     //             'salario_base' => $salarioBase,
@@ -459,15 +459,15 @@ class PlanillasController extends Controller
     //             'descuentos_judiciales' => 0,
     //             'tipo_contrato' => $empleado->tipo_contrato ?? null,
     //         ];
-    
+
     //         // 🎯 USAR SISTEMA OPTIMIZADO
     //         $empresaId = auth()->user()->id_empresa;
     //         $resultados = $this->configuracionPlanillaService->calcularConceptos(
-    //             $datosEmpleado, 
-    //             $empresaId, 
+    //             $datosEmpleado,
+    //             $empresaId,
     //             $tipoPlanilla
     //         );
-    
+
     //         // 🎯 CREAR DETALLE CON RESULTADOS
     //         $detalle = new PlanillaDetalle();
     //         $detalle->id_planilla = $planillaId;
@@ -475,20 +475,20 @@ class PlanillasController extends Controller
     //         $detalle->salario_base = $salarioBase;
     //         $detalle->salario_devengado = $salarioDevengado;
     //         $detalle->dias_laborados = $diasLaborados;
-            
+
     //         // Ingresos (siempre inicializar en 0)
     //         $detalle->horas_extra = 0;
     //         $detalle->monto_horas_extra = 0;
     //         $detalle->comisiones = 0;
     //         $detalle->bonificaciones = 0;
     //         $detalle->otros_ingresos = 0;
-            
+
     //         // Otras deducciones (siempre 0 al crear)
     //         $detalle->prestamos = 0;
     //         $detalle->anticipos = 0;
     //         $detalle->otros_descuentos = 0;
     //         $detalle->descuentos_judiciales = 0;
-            
+
     //         // ✅ VERIFICAR SI USA CONCEPTOS PERSONALIZADOS
     //         if (isset($resultados['conceptos_personalizados'])) {
     //             // PAÍSES PERSONALIZADOS (Guatemala, etc.)
@@ -496,10 +496,10 @@ class PlanillasController extends Controller
     //                 'conceptos_count' => count($resultados['conceptos_personalizados']),
     //                 'pais' => $resultados['pais_configuracion']
     //             ]);
-                
+
     //             $detalle->conceptos_personalizados = $resultados['conceptos_personalizados'];
     //             $detalle->pais_configuracion = $resultados['pais_configuracion'];
-                
+
     //             // Mantener campos fijos en 0 para compatibilidad
     //             $detalle->isss_empleado = 0;
     //             $detalle->isss_patronal = 0;
@@ -509,7 +509,7 @@ class PlanillasController extends Controller
     //         } else {
     //             // EL SALVADOR (campos fijos)
     //             Log::info('🇸🇻 Usando campos fijos El Salvador');
-                
+
     //             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
     //             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
     //             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
@@ -518,16 +518,16 @@ class PlanillasController extends Controller
     //             $detalle->pais_configuracion = 'SV';
     //             $detalle->conceptos_personalizados = null;
     //         }
-            
+
     //         // Totales (siempre desde resultados)
     //         $detalle->total_ingresos = $resultados['totales']['total_ingresos'] ?? $salarioDevengado;
     //         $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
     //         $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? $salarioDevengado;
-            
+
     //         $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
-    
+
     //         return $detalle;
-    
+
     //     } catch (\Exception $e) {
     //         Log::error('Error creando detalle de planilla', [
     //             'empleado_id' => $empleado->id ?? null,
@@ -535,7 +535,7 @@ class PlanillasController extends Controller
     //             'error' => $e->getMessage(),
     //             'trace' => $e->getTraceAsString()
     //         ]);
-    
+
     //         // FALLBACK: usar sistema anterior si falla
     //         return $this->crearDetallePlanillaFallback($empleado, $planillaId, $tipoPlanilla);
     //     }
@@ -547,7 +547,7 @@ class PlanillasController extends Controller
     // {
     //     $diasReferencia = 30;
     //     $factorAjuste = 1;
-    
+
     //     if ($tipoPlanilla === 'quincenal') {
     //         $diasReferencia = 15;
     //         $factorAjuste = 2;
@@ -555,22 +555,22 @@ class PlanillasController extends Controller
     //         $diasReferencia = 7;
     //         $factorAjuste = 4.33;
     //     }
-    
+
     //     // Obtener las fechas de la planilla
     //     $planilla = Planilla::findOrFail($planillaId);
     //     $fechaInicioPlanilla = Carbon::parse($planilla->fecha_inicio)->startOfDay();
     //     $fechaFinPlanilla = Carbon::parse($planilla->fecha_fin)->startOfDay();
-    
+
     //     // Verificar si el empleado tiene fecha de baja programada
     //     if (($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay() < $fechaInicioPlanilla) ||
     //         ($empleado->fecha_fin && Carbon::parse($empleado->fecha_fin)->startOfDay() < $fechaInicioPlanilla)) {
     //         return null; // No incluir en planilla
     //     }
-    
+
     //     // Calcular días proporcionales si hay baja programada
     //     $tieneBajaProgramada = false;
     //     $diasProporcionales = $diasReferencia;
-    
+
     //     if ($empleado->fecha_baja && Carbon::parse($empleado->fecha_baja)->startOfDay()->between($fechaInicioPlanilla, $fechaFinPlanilla)) {
     //         $tieneBajaProgramada = true;
     //         $diasProporcionales = Carbon::parse($empleado->fecha_baja)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
@@ -578,21 +578,21 @@ class PlanillasController extends Controller
     //         $tieneBajaProgramada = true;
     //         $diasProporcionales = Carbon::parse($empleado->fecha_fin)->startOfDay()->diffInDays($fechaInicioPlanilla) + 1;
     //     }
-    
+
     //     $diasLaborados = $tieneBajaProgramada ? min($diasProporcionales, $diasReferencia) : $diasReferencia;
-    
+
     //     // Calcular salario devengado
     //     $salarioBaseMensual = $empleado->salario_base;
     //     $salarioBaseAjustado = $tipoPlanilla !== 'mensual' ? $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
     //     $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
-    
+
     //     // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (INCLUYE TODOS LOS CONCEPTOS)
     //     $horasExtra = 0;
     //     $montoHorasExtra = 0;
     //     $comisiones = 0;
     //     $bonificaciones = 0;
     //     $otrosIngresos = 0;
-        
+
     //     $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
 
     //     $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
@@ -607,26 +607,26 @@ class PlanillasController extends Controller
     //         $afpPatronal = 0;
     //     } else {
     //         // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-    //     $baseISSSEmpleado = min($totalIngresos, 1000); 
+    //     $baseISSSEmpleado = min($totalIngresos, 1000);
     //     $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
     //     $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
     //     $afpEmpleado = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
     //     $afpPatronal = $totalIngresos * PlanillaConstants::DESCUENTO_AFP_PATRONO;
     //     }
-    
+
     //     // CALCULAR RENTA USANDO TOTAL DE INGRESOS (NO SOLO SALARIO DEVENGADO)
     //     $salarioGravado = RentaHelper::calcularSalarioGravado(
     //         $totalIngresos,
-    //         $isssEmpleado, 
-    //         $afpEmpleado, 
+    //         $isssEmpleado,
+    //         $afpEmpleado,
     //         $tipoPlanilla,
     //         $tipoContrato
     //     );
-    
+
     //     $renta = RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla, $tipoContrato);
     //     $totalDeducciones = $isssEmpleado + $afpEmpleado + $renta;
     //     $sueldoNeto = $totalIngresos - $totalDeducciones;
-    
+
     //     return new PlanillaDetalle([
     //         'id_planilla' => $planillaId,
     //         'id_empleado' => $empleado->id,
@@ -662,7 +662,7 @@ class PlanillasController extends Controller
     try {
         // 🎯 PREPARAR DATOS DEL EMPLEADO
         $diasReferencia = 30;
-        
+
         if ($tipoPlanilla === 'quincenal') {
             $diasReferencia = 15;
         } elseif ($tipoPlanilla === 'semanal') {
@@ -672,7 +672,7 @@ class PlanillasController extends Controller
         // Calcular salario base ajustado según tipo de planilla
         $salarioBase = $empleado->salario_base;
         $salarioBaseAjustado = $salarioBase;
-        
+
         if ($tipoPlanilla === 'quincenal') {
             $salarioBaseAjustado = $salarioBase / 2;
         } elseif ($tipoPlanilla === 'semanal') {
@@ -681,7 +681,7 @@ class PlanillasController extends Controller
 
         // Días laborados (por defecto el período completo)
         $diasLaborados = $diasReferencia;
-        
+
         // Salario devengado proporcional
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
 
@@ -705,8 +705,8 @@ class PlanillasController extends Controller
         // 🎯 USAR SISTEMA OPTIMIZADO
         $empresaId = auth()->user()->id_empresa;
         $resultados = $this->configuracionPlanillaService->calcularConceptos(
-            $datosEmpleado, 
-            $empresaId, 
+            $datosEmpleado,
+            $empresaId,
             $tipoPlanilla
         );
 
@@ -717,14 +717,14 @@ class PlanillasController extends Controller
         $detalle->salario_base = $salarioBase;
         $detalle->salario_devengado = $salarioDevengado;
         $detalle->dias_laborados = $diasLaborados;
-        
+
         // Ingresos (siempre inicializar en 0)
         $detalle->horas_extra = 0;
         $detalle->monto_horas_extra = 0;
         $detalle->comisiones = 0;
         $detalle->bonificaciones = 0;
         $detalle->otros_ingresos = 0;
-        
+
         // Otras deducciones (siempre 0 al crear)
         $detalle->prestamos = 0;
         $detalle->anticipos = 0;
@@ -740,7 +740,7 @@ class PlanillasController extends Controller
                 'conceptos_count' => count($resultados['conceptos_personalizados']),
                 'pais' => $pais
             ]);
-            
+
             $detalle->conceptos_personalizados = $resultados['conceptos_personalizados'];
             $detalle->pais_configuracion = $pais;
 
@@ -756,7 +756,7 @@ class PlanillasController extends Controller
             Log::info('🇸🇻 Usando campos fijos El Salvador', [
                 'pais' => $pais
             ]);
-            
+
             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
@@ -770,7 +770,7 @@ class PlanillasController extends Controller
         $detalle->total_ingresos = $resultados['totales']['total_ingresos'] ?? $salarioDevengado;
         $detalle->total_descuentos = $resultados['totales']['total_deducciones'] ?? 0;
         $detalle->sueldo_neto = $resultados['totales']['sueldo_neto'] ?? $salarioDevengado;
-        
+
         $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
 
         return $detalle;
@@ -881,24 +881,24 @@ class PlanillasController extends Controller
             'descuentos_judiciales' => 'nullable|numeric|min:0',
             'detalle_otras_deducciones' => 'nullable|string'
         ]);
-    
+
         try {
             DB::beginTransaction();
-    
+
             $detalle = PlanillaDetalle::findOrFail($id);
             $planilla = $detalle->planilla;
-    
+
             // Verificar que la planilla esté en estado editable
             if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
                 return response()->json([
                     'error' => 'No se puede modificar una planilla aprobada o pagada'
                 ], 422);
             }
-    
+
             // Determinar días de referencia y factor de ajuste según tipo de planilla
             $diasReferencia = 30;
             $factorAjuste = 1;
-    
+
             if ($planilla->tipo_planilla === 'quincenal') {
                 $diasReferencia = 15;
                 $factorAjuste = 2;
@@ -906,7 +906,7 @@ class PlanillasController extends Controller
                 $diasReferencia = 7;
                 $factorAjuste = 4.33;
             }
-    
+
             // Actualizar campos básicos
             $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
             $detalle->horas_extra = $request->horas_extra ?? 0;
@@ -918,14 +918,14 @@ class PlanillasController extends Controller
             $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
             $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
             $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
-    
+
             // Calcular salario devengado según días laborados
             $salarioBaseMensual = $detalle->salario_base;
             $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
                 $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
             $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
             $detalle->salario_devengado = round($salarioDevengado, 2);
-    
+
             // Calcular monto de horas extra si aplica
             if ($detalle->horas_extra > 0) {
                 $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
@@ -933,7 +933,7 @@ class PlanillasController extends Controller
             } else {
                 $detalle->monto_horas_extra = 0;
             }
-    
+
             // Calcular total de ingresos
             $detalle->total_ingresos = round($detalle->salario_devengado +
                 $detalle->monto_horas_extra +
@@ -971,11 +971,11 @@ class PlanillasController extends Controller
             );
 
             $detalle->renta = RentaHelper::calcularRetencionRenta(
-                $salarioGravado, 
+                $salarioGravado,
                 $planilla->tipo_planilla,
                 $tipoContrato
             );
-    
+
             // Calcular total de deducciones
             $detalle->total_descuentos = round($detalle->isss_empleado +
                 $detalle->afp_empleado +
@@ -984,23 +984,23 @@ class PlanillasController extends Controller
                 $detalle->anticipos +
                 $detalle->otros_descuentos +
                 $detalle->descuentos_judiciales, 2);
-    
+
             // Calcular sueldo neto
             $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
-    
+
             // Guardar cambios
             $detalle->save();
-    
+
             // Actualizar totales de la planilla
             $this->updatePayrollTotals($planilla->id);
-    
+
             DB::commit();
-    
+
             return response()->json([
                 'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',
                 'detalle' => $detalle,
-                'empleado' => $detalle->empleado,  
-                'planilla' => $planilla->fresh(['empresa']) 
+                'empleado' => $detalle->empleado,
+                'planilla' => $planilla->fresh(['empresa'])
             ]);
         } catch (\Exception $e) {
             DB::rollback();
@@ -1864,7 +1864,7 @@ class PlanillasController extends Controller
 
     public function descargarPlantilla()
     {
-        $filePath = public_path('storage/plantillas/plantilla_importacion_planillas.xlsx');
+        $filePath = public_path('docs/plantilla_importacion_planillas.xlsx');
 
         if (file_exists($filePath)) {
             return response()->download($filePath, 'plantilla_importacion_planillas.xlsx');
@@ -1879,7 +1879,7 @@ class PlanillasController extends Controller
         try {
             // Obtener la planilla
             $planilla = Planilla::with(['empresa', 'sucursal'])->find($id);
-            
+
             if (!$planilla) {
                 return response()->json(['error' => 'Planilla no encontrada'], 404);
             }
@@ -1928,7 +1928,7 @@ class PlanillasController extends Controller
                     'isss_patronal' => round(floatval($detalle->isss_patronal), 2),
                     'afp_patronal' => round(floatval($detalle->afp_patronal), 2),
                     'total_aportes_patronales' => round(floatval($detalle->isss_patronal + $detalle->afp_patronal), 2),
-                    'porcentaje_sobre_salario' => $detalle->salario_devengado > 0 ? 
+                    'porcentaje_sobre_salario' => $detalle->salario_devengado > 0 ?
                         round((($detalle->isss_patronal + $detalle->afp_patronal) / $detalle->salario_devengado) * 100, 2) : 0
                 ];
             });
@@ -1948,7 +1948,7 @@ class PlanillasController extends Controller
                     'total_afp_patronal' => round($totalAfpPatronal, 2),
                     'total_descuentos_patronales' => round($totalDescuentosPatronales, 2),
                     'total_salarios_devengados' => round($totalSalariosDevengados, 2),
-                    'porcentaje_total' => $totalSalariosDevengados > 0 ? 
+                    'porcentaje_total' => $totalSalariosDevengados > 0 ?
                         round(($totalDescuentosPatronales / $totalSalariosDevengados) * 100, 2) : 0,
                     'cantidad_empleados' => $detalles->count()
                 ],
@@ -1975,13 +1975,13 @@ class PlanillasController extends Controller
         try {
             $salarioGravado = RentaHelper::calcularSalarioGravado($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla);
             $retencionRenta = RentaHelper::calcularRetencionRenta($salarioGravado, $tipoPlanilla);
-            
+
             return [
                 'salario_gravado' => $salarioGravado,
                 'retencion_renta' => $retencionRenta,
                 'aplicado_correctamente' => true
             ];
-            
+
         } catch (\Exception $e) {
             Log::error('Error calculando renta: ' . $e->getMessage());
             return [
@@ -2001,7 +2001,7 @@ class PlanillasController extends Controller
             // Calcular salario base según el tipo de planilla
             $salarioBase = $empleado->salario_base;
             $diasReferencia = 30; // Por defecto, mensual
-            
+
             // Ajustar según el tipo de planilla
             switch ($planilla->tipo_planilla) {
                 case 'quincenal':
@@ -2016,25 +2016,25 @@ class PlanillasController extends Controller
                     $diasReferencia = 30;
                     break;
             }
-            
+
             // Calcular días laborados (por defecto el período completo)
             $diasLaborados = $diasReferencia;
-            
+
             // Calcular salario devengado proporcional
             $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
-            
+
             // Calcular deducciones de seguridad social
             $isssEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
             $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-            
+
             // Calcular aportes patronales
             $isssPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
             $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-            
+
             // Calcular renta usando las nuevas tablas
             $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $planilla->tipo_planilla);
             $renta = $calculoRenta['retencion_renta'];
-            
+
             // Inicializar otros valores
             $horasExtra = 0;
             $montoHorasExtra = 0;
@@ -2045,12 +2045,12 @@ class PlanillasController extends Controller
             $anticipos = 0;
             $otrosDescuentos = 0;
             $descuentosJudiciales = 0;
-            
+
             // Calcular totales
             $totalIngresos = $salarioDevengado + $montoHorasExtra + $comisiones + $bonificaciones + $otrosIngresos;
             $totalDescuentos = $isssEmpleado + $afpEmpleado + $renta + $prestamos + $anticipos + $otrosDescuentos + $descuentosJudiciales;
             $sueldoNeto = $totalIngresos - $totalDescuentos;
-            
+
             // Crear el detalle de planilla
             $detalle = new PlanillaDetalle();
             $detalle->id_planilla = $planilla->id;
@@ -2076,11 +2076,11 @@ class PlanillasController extends Controller
             $detalle->isss_patronal = round($isssPatronal, 2);
             $detalle->afp_patronal = round($afpPatronal, 2);
             $detalle->estado = 1; // Activo
-            
+
             $detalle->save();
-            
+
             return $detalle;
-            
+
         } catch (\Exception $e) {
             Log::error('Error generando detalle de planilla: ' . $e->getMessage());
             throw $e;
@@ -2094,58 +2094,58 @@ class PlanillasController extends Controller
     {
         try {
             $planilla = Planilla::find($planillaId);
-            
+
             if (!$planilla) {
                 return response()->json(['error' => 'Planilla no encontrada'], 404);
             }
-            
+
             // Determinar el tipo de recálculo
             $mesActual = date('n');
             $tipoRecalculo = ($mesActual >= 6 && $mesActual <= 11) ? 'junio' : 'diciembre';
-            
+
             // Obtener todos los detalles de la planilla
             $detalles = PlanillaDetalle::where('id_planilla', $planillaId)
                 ->where('estado', '!=', 0)
                 ->get();
-            
+
             $recalculosAplicados = 0;
-            
+
             foreach ($detalles as $detalle) {
                 // Obtener el salario acumulado del empleado en el año
                 $salarioAcumulado = $this->obtenerSalarioAcumuladoAnual($detalle->id_empleado, $planilla->anio, $tipoRecalculo);
-                
+
                 // Obtener retenciones anteriores
                 $retencionesAnteriores = $this->obtenerRetencionesAnteriores($detalle->id_empleado, $planilla->anio, $tipoRecalculo);
-                
+
                 // Calcular recálculo
                 $recalculo = RentaHelper::calcularRecalculoRenta($salarioAcumulado, $tipoRecalculo, $retencionesAnteriores);
-                
+
                 if ($recalculo > 0) {
                     // Aplicar el recálculo sumándolo a la renta actual
                     $detalle->renta += $recalculo;
                     $detalle->total_descuentos += $recalculo;
                     $detalle->sueldo_neto -= $recalculo;
-                    
+
                     // Redondear valores
                     $detalle->renta = round($detalle->renta, 2);
                     $detalle->total_descuentos = round($detalle->total_descuentos, 2);
                     $detalle->sueldo_neto = round($detalle->sueldo_neto, 2);
-                    
+
                     $detalle->save();
                     $recalculosAplicados++;
                 }
             }
-            
+
             // Actualizar totales de la planilla
             $planilla->actualizarTotales();
-            
+
             return response()->json([
                 'message' => 'Recálculo de renta aplicado exitosamente',
                 'tipo_recalculo' => $tipoRecalculo,
                 'empleados_afectados' => $recalculosAplicados,
                 'planilla' => $planilla->fresh()
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Error en recálculo de renta: ' . $e->getMessage());
             return response()->json(['error' => 'Error al recalcular renta: ' . $e->getMessage()], 500);
@@ -2158,14 +2158,14 @@ class PlanillasController extends Controller
     private function obtenerSalarioAcumuladoAnual($empleadoId, $anio, $tipoRecalculo)
     {
         $mesLimite = ($tipoRecalculo === 'junio') ? 6 : 12;
-        
+
         $salarioAcumulado = PlanillaDetalle::join('planillas', 'planilla_detalles.id_planilla', '=', 'planillas.id')
             ->where('planilla_detalles.id_empleado', $empleadoId)
             ->where('planillas.anio', $anio)
             ->where('planillas.mes', '<=', $mesLimite)
             ->where('planilla_detalles.estado', '!=', 0)
             ->sum('planilla_detalles.salario_devengado');
-        
+
         return $salarioAcumulado;
     }
 
@@ -2175,14 +2175,14 @@ class PlanillasController extends Controller
     private function obtenerRetencionesAnteriores($empleadoId, $anio, $tipoRecalculo)
     {
         $mesLimite = ($tipoRecalculo === 'junio') ? 5 : 11; // Hasta el mes anterior al recálculo
-        
+
         $retenciones = PlanillaDetalle::join('planillas', 'planilla_detalles.id_planilla', '=', 'planillas.id')
             ->where('planilla_detalles.id_empleado', $empleadoId)
             ->where('planillas.anio', $anio)
             ->where('planillas.mes', '<=', $mesLimite)
             ->where('planilla_detalles.estado', '!=', 0)
             ->sum('planilla_detalles.renta');
-        
+
         return $retenciones;
     }
 
@@ -2191,11 +2191,11 @@ class PlanillasController extends Controller
     {
         try {
             $detalle = PlanillaDetalle::with(['empleado', 'planilla'])->findOrFail($detalleId);
-            
+
             $totalIngresos = $detalle->total_ingresos;
             $isssEmpleado = $detalle->isss_empleado;
             $afpEmpleado = $detalle->afp_empleado;
-            
+
             // Calcular usando RentaHelper
             $salarioGravado = \App\Helpers\RentaHelper::calcularSalarioGravado(
                 $totalIngresos,
@@ -2203,18 +2203,18 @@ class PlanillasController extends Controller
                 $afpEmpleado,
                 $detalle->planilla->tipo_planilla
             );
-            
+
             $retencionRenta = \App\Helpers\RentaHelper::calcularRetencionRenta(
                 $salarioGravado,
                 $detalle->planilla->tipo_planilla
             );
-            
+
             // Obtener información del tramo
             $informacionTramo = \App\Helpers\RentaHelper::obtenerInformacionTramo(
                 $salarioGravado,
                 $detalle->planilla->tipo_planilla
             );
-            
+
             return response()->json([
                 'empleado' => [
                     'nombres' => $detalle->empleado->nombres,
@@ -2232,7 +2232,7 @@ class PlanillasController extends Controller
                 'tramo_aplicado' => $informacionTramo,
                 'decreto_aplicado' => 'Decreto No. 10 - Abril 2025'
             ]);
-            
+
         } catch (\Exception $e) {
             Log::error('Error obteniendo detalle de cálculo de renta: ' . $e->getMessage());
             return response()->json([
@@ -2249,7 +2249,7 @@ class PlanillasController extends Controller
             'afp_empleado' => 'required|numeric|min:0',
             'tipo_planilla' => 'required|in:mensual,quincenal,semanal'
         ]);
-        
+
         try {
             $validacion = \App\Helpers\RentaHelper::validarCalculoRenta(
                 $request->salario_devengado,
@@ -2257,13 +2257,13 @@ class PlanillasController extends Controller
                 $request->afp_empleado,
                 $request->tipo_planilla
             );
-            
+
             return response()->json([
                 'validacion' => $validacion,
                 'es_valido' => true,
                 'mensaje' => 'Cálculo validado correctamente según decreto 2025'
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error en la validación: ' . $e->getMessage(),
@@ -2277,26 +2277,26 @@ class PlanillasController extends Controller
         try {
             $idPlanilla = $request->input('id_planilla');
             $vista = $request->input('vista', 'empleados');
-            
+
             if (!$idPlanilla) {
                 return response()->json(['error' => 'ID de planilla requerido'], 400);
             }
-    
+
             $planilla = Planilla::with(['empresa', 'sucursal'])->findOrFail($idPlanilla);
-            
+
             // Verificar permisos
             if ($planilla->id_empresa !== auth()->user()->id_empresa ||
                 $planilla->id_sucursal !== auth()->user()->id_sucursal) {
                 return response()->json(['error' => 'No tiene permisos para exportar esta planilla'], 403);
             }
-    
+
             // Construir query base
             $query = PlanillaDetalle::where('id_planilla', $planilla->id)
                 ->join('empleados', 'planilla_detalles.id_empleado', '=', 'empleados.id')
                 ->leftJoin('cargos_de_empresa', 'empleados.id_cargo', '=', 'cargos_de_empresa.id')
                 ->leftJoin('departamentos_empresa', 'empleados.id_departamento', '=', 'departamentos_empresa.id')
                 ->where('planilla_detalles.estado', '!=', 0);
-    
+
             // Aplicar filtros del frontend
             if ($request->filled('buscador')) {
                 $buscador = $request->input('buscador');
@@ -2307,25 +2307,25 @@ class PlanillasController extends Controller
                       ->orWhere('empleados.dui', 'LIKE', "%{$buscador}%");
                 });
             }
-    
+
             if ($request->filled('id_departamento')) {
                 $query->where('empleados.id_departamento', $request->input('id_departamento'));
             }
-    
+
             if ($request->filled('id_cargo')) {
                 $query->where('empleados.id_cargo', $request->input('id_cargo'));
             }
-    
+
             if ($request->filled('estado')) {
                 $query->where('planilla_detalles.estado', $request->input('estado'));
             }
-    
+
             // Seleccionar campos según la vista
             if ($vista === 'descuentos_patronales') {
                 $query->select([
                     'planilla_detalles.id',
                     'planilla_detalles.salario_base',
-                    'planilla_detalles.salario_devengado', 
+                    'planilla_detalles.salario_devengado',
                     'planilla_detalles.isss_patronal',
                     'planilla_detalles.afp_patronal',
                     'empleados.codigo as empleado_codigo',
@@ -2338,10 +2338,10 @@ class PlanillasController extends Controller
                     'cargos_de_empresa.nombre as cargo_nombre',
                     'departamentos_empresa.nombre as departamento_nombre'
                 ]);
-                
+
                 $exportClass = new DescuentosPatronalesExport($planilla, $query->orderBy('empleados.nombres')->get());
                 $filename = 'descuentos_patronales_' . $planilla->codigo . '.xlsx';
-                
+
             } else {
                 $query->select([
                     'planilla_detalles.*',
@@ -2355,13 +2355,13 @@ class PlanillasController extends Controller
                     'cargos_de_empresa.nombre as cargo_nombre',
                     'departamentos_empresa.nombre as departamento_nombre'
                 ]);
-                
+
                 $exportClass = new PlanillaDetallesExport($planilla, $query->orderBy('empleados.nombres')->get());
                 $filename = 'planilla_empleados_' . $planilla->codigo . '.xlsx';
             }
-    
+
             return Excel::download($exportClass, $filename);
-    
+
         } catch (\Exception $e) {
             Log::error('Error exportando detalles de planilla: ' . $e->getMessage());
             return response()->json([
@@ -2378,33 +2378,33 @@ class PlanillasController extends Controller
             'tipo_planilla' => $tipoPlanilla,
             'servicio_existe' => $this->configuracionPlanillaService !== null
         ]);
-        
+
         try {
             if (!$this->configuracionPlanillaService) {
                 throw new \Exception('Servicio ConfiguracionPlanillaService no está inyectado');
             }
-            
+
             $resultados = $this->configuracionPlanillaService->calcularConceptos(
-                $datosEmpleado, 
-                $empresaId, 
+                $datosEmpleado,
+                $empresaId,
                 $tipoPlanilla
             );
-            
+
             Log::info('✅ RESULTADOS HÍBRIDO EXITOSO', [
                 'isss_empleado' => $resultados['isss_empleado'] ?? 'N/A',
                 'afp_empleado' => $resultados['afp_empleado'] ?? 'N/A',
                 'renta' => $resultados['renta'] ?? 'N/A'
             ]);
-            
+
             return $resultados;
-            
+
         } catch (\Exception $e) {
             Log::error('❌ FALLÓ HÍBRIDO, usando legacy', [
                 'error' => $e->getMessage(),
                 'linea' => $e->getLine(),
                 'archivo' => basename($e->getFile())
             ]);
-            
+
             // FALLBACK al sistema anterior
             return $this->calcularConceptosLegacy($datosEmpleado, $tipoPlanilla);
         }
@@ -2419,17 +2419,17 @@ class PlanillasController extends Controller
         $baseISSSEmpleado = min($salarioDevengado, 1000);
         $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-        
+
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-        
+
         // Usar tu RentaHelper existente
         $renta = \App\Helpers\RentaHelper::calcularRetencionRenta(
             \App\Helpers\RentaHelper::calcularSalarioGravado(
-                $salarioDevengado, 
-                $isssEmpleado, 
-                $afpEmpleado, 
-                $tipoPlanilla, 
+                $salarioDevengado,
+                $isssEmpleado,
+                $afpEmpleado,
+                $tipoPlanilla,
                 $tipoContrato
             ),
             $tipoPlanilla,
@@ -2459,7 +2459,7 @@ class PlanillasController extends Controller
     {
         // 🎯 TU LÓGICA ACTUAL EXACTA - sin cambios
         $diasReferencia = 30;
-        
+
         if ($tipoPlanilla === 'quincenal') {
             $diasReferencia = 15;
         } elseif ($tipoPlanilla === 'semanal') {
@@ -2468,7 +2468,7 @@ class PlanillasController extends Controller
 
         $salarioBase = $empleado->salario_base;
         $salarioBaseAjustado = $salarioBase;
-        
+
         if ($tipoPlanilla === 'quincenal') {
             $salarioBaseAjustado = $salarioBase / 2;
         } elseif ($tipoPlanilla === 'semanal') {
@@ -2484,15 +2484,15 @@ class PlanillasController extends Controller
         $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
         $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
         $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
-        
+
         // Calcular renta usando RentaHelper actual
         $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla);
         $renta = $calculoRenta['retencion_renta'];
-        
+
         $totalIngresos = $salarioDevengado;
         $totalDescuentos = $isssEmpleado + $afpEmpleado + $renta;
         $sueldoNeto = $totalIngresos - $totalDescuentos;
-        
+
         $detalle = new PlanillaDetalle();
         $detalle->id_planilla = $planillaId;
         $detalle->id_empleado = $empleado->id;
@@ -2526,7 +2526,7 @@ class PlanillasController extends Controller
         try {
             $detalle = PlanillaDetalle::findOrFail($detalleId);
             $planilla = $detalle->planilla;
-            
+
             // Validar datos de entrada
             $request->validate([
                 'salario_devengado' => 'sometimes|numeric|min:0',
@@ -2560,8 +2560,8 @@ class PlanillasController extends Controller
 
             // Calcular usando sistema híbrido
             $resultados = $this->calcularConceptosHibrido(
-                $datosEmpleado, 
-                $planilla->id_empresa, 
+                $datosEmpleado,
+                $planilla->id_empresa,
                 $planilla->tipo_planilla
             );
 
@@ -2577,7 +2577,7 @@ class PlanillasController extends Controller
                 'anticipos' => $datosEmpleado['anticipos'],
                 'otros_descuentos' => $datosEmpleado['otros_descuentos'],
                 'descuentos_judiciales' => $datosEmpleado['descuentos_judiciales'],
-                
+
                 // Valores calculados
                 'isss_empleado' => $resultados['isss_empleado'] ?? 0,
                 'afp_empleado' => $resultados['afp_empleado'] ?? 0,
