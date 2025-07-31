@@ -35,6 +35,11 @@ class Empleado extends Model
         'direccion',
         'telefono',
         'email',
+        'banco',
+        'tipo_cuenta',
+        'numero_cuenta',
+        'titular_cuenta',
+        'forma_pago',
         'salario_base',
         'tipo_contrato',
         'tipo_jornada',
@@ -45,7 +50,7 @@ class Empleado extends Model
         'id_departamento',
         'id_cargo',
         'id_sucursal',
-        'id_empresa'
+        'id_empresa',
     ];
 
 

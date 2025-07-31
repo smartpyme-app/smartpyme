@@ -30,6 +30,7 @@ Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function (
         Route::get('detalles/exportar', 'exportarDetallesPlanilla');
         
         Route::post('/aprobar/{id}', 'approvePayroll');
+        Route::post('/revertir/{id}', 'revertPayroll');
         Route::post('/duplicate', 'store');
         Route::post('/importar', 'importar');
         Route::delete('/{id}', 'destroy');

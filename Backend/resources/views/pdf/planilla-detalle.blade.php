@@ -64,6 +64,8 @@
                 <th>H. Extra</th>
                 <th>Comisiones</th>
                 <th>Bonos</th>
+                <th>Prestamos</th>
+                <th>Anticipos</th>
                 <th>Total Ingresos</th>
                 <th>ISSS</th>
                 <th>AFP</th>
@@ -83,6 +85,8 @@
                 <td class="moneda">${{ number_format($detalle->monto_horas_extra, 2) }}</td>
                 <td class="moneda">${{ number_format($detalle->comisiones, 2) }}</td>
                 <td class="moneda">${{ number_format($detalle->bonificaciones, 2) }}</td>
+                <td class="moneda">${{ number_format($detalle->prestamos, 2) }}</td>
+                <td class="moneda">${{ number_format($detalle->anticipos, 2) }}</td>
                 <td class="moneda">${{ number_format($detalle->total_ingresos, 2) }}</td>
                 <td class="moneda">${{ number_format($detalle->isss_empleado, 2) }}</td>
                 <td class="moneda">${{ number_format($detalle->afp_empleado, 2) }}</td>
@@ -101,6 +105,8 @@
                 <td class="moneda"><strong>${{ number_format($detalles->sum('monto_horas_extra'), 2) }}</strong></td>
                 <td class="moneda"><strong>${{ number_format($detalles->sum('comisiones'), 2) }}</strong></td>
                 <td class="moneda"><strong>${{ number_format($detalles->sum('bonificaciones'), 2) }}</strong></td>
+                <td class="moneda"><strong>${{ number_format($detalles->sum('prestamos'), 2) }}</strong></td>
+                <td class="moneda"><strong>${{ number_format($detalles->sum('anticipos'), 2) }}</strong></td>
                 <td class="moneda"><strong>${{ number_format($detalles->sum('total_ingresos'), 2) }}</strong></td>
                 <td class="moneda"><strong>${{ number_format($detalles->sum('isss_empleado'), 2) }}</strong></td>
                 <td class="moneda"><strong>${{ number_format($detalles->sum('afp_empleado'), 2) }}</strong></td>

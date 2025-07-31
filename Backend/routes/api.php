@@ -143,6 +143,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// planillas
 	require base_path('routes/modulos/planilla/empleados.php');
 	require base_path('routes/modulos/planilla/planillas.php');
+	require base_path('routes/modulos/planilla/configuraciones.php');
 	require base_path('routes/modulos/planilla/cargos.php');
 	require base_path('routes/modulos/planilla/departamentos-planilla.php');
 

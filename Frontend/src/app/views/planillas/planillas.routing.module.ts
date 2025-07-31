@@ -8,6 +8,7 @@ import {AdministrarEmpleadoComponent} from './empleados/administrar-empleado.com
 import {PlanillaDetalleComponent} from './planillas/planilla-detalle.component';
 import {BoletaPagoComponent} from './planillas/boleta-pago.component';
 import {VerBoletasComponent} from './planillas/ver-boletas.component';
+import { ConfiguracionPlanillaComponent } from './configuracion-planilla/configuracion-planilla.component';
 
 const routes: Routes = [
   {
@@ -29,6 +30,7 @@ const routes: Routes = [
         component: BoletaPagoComponent,
       },
       {path: 'boletas/:id', component: VerBoletasComponent},
+      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent}
     ],
   },
 ];

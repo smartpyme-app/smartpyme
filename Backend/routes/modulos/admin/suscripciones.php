@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/suscripciones',               [SuscripcionesController::class, 'index']);
     Route::get('/suscripciones/list',          [SuscripcionesController::class, 'list']);
+    Route::get('/suscripciones/exportar',      [SuscripcionesController::class, 'export']);
     Route::post('/suscripcion/create',         [SuscripcionesController::class, 'createSuscription']);
     Route::post('/suscripcion/edit',           [SuscripcionesController::class, 'editSuscription']);
     Route::get('/suscripcion/{id}',            [SuscripcionesController::class, 'read']);
@@ -18,4 +19,5 @@ use Illuminate\Support\Facades\Route;
     Route::get('/suscripciones/{id}/pagos',    [SuscripcionesController::class, 'getHistorialPagos']);
     Route::get('/suscripcion/{id}/recibo-suscripcion',     [EmpresasController::class, 'printReciboSuscripcion']);
     Route::post('/suscripcion/pago-recurrente',     [EmpresasController::class, 'updatePagoRecurrente']);
+
 ?>

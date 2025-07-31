@@ -1,93 +1,128 @@
-<button type="button" class="btn btn-default" (click)="openModal(mProducto)" tooltip="Crear nuevo producto">
-    <i class="fa fa-plus"></i>
+<button type="button" class="btn btn-default tcla-F1" (click)="openModal(mproducto)">
+    <i tooltip="Crear nuevo producto (F1)" class="fa fa-plus"></i>
 </button>
 
-<ng-template #mProducto>
-    <div class="modal-header text-center">
-        <h3 class="modal-title">Producto</h3>
-        <button type="button" class="close pull-right" aria-label="Close" (click)="modalRef.hide()">
-          <span aria-hidden="true">&times;</span>
-        </button>
+<ng-template #mproducto>
+    <div class="modal-header justify-content-between">
+        <h3 class="modal-title">Nuevo producto</h3>
+        <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
-    <div class="modal-body">
-        <form name="form" (ngSubmit)="onSubmit()">
-            <app-notificaciones-container></app-notificaciones-container>
+    <div class="modal-body p-3">
+        <app-notificaciones-container></app-notificaciones-container>
+        <form (ngSubmit)="onSubmit()">
             <div class="row">
-                <div class="form-group col-md-6">
-                    <label for="nombre">Nombre:</label>
-                    <input type="text" class="form-control" [(ngModel)]="producto.nombre" name="nombre" placeholder="Nombre" required focus="true">
+                <h6 class="mb-3 font-weight-bold">Detalles</h6>
+                <div class="form-group col-md-12 col-lg-4">
+                    <label for="nombre">Nombre</label>
+                    <input type="text" class="form-control" (change)="verificarSiExiste()" [(ngModel)]="producto.nombre" name="nombre" placeholder="Escribe aquí" required>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="codigo">Código:</label>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="codigo">Código</label>
                     <div class="input-group">
-                        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Código" required>
-                        <span class="input-group-text">
-                            <a class="click" tooltip="Generar codigo" (click)="barcode()"><i class="fa fa-barcode"></i></a>
+                        <input type="text" class="form-control" [(ngModel)]="producto.codigo" name="codigo" placeholder="Escribe aquí">
+                        <span class="input-group-text" *ngIf="producto.codigo">
+                            <a class="click" tooltip="Generar código de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
                         </span>
                     </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="subcategoria_id" class="w-100">Categoria:</label>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="barcode">Código de barras</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí" mask='0*'>
+                </div>
+                <div class="form-group col-md-6 col-lg-2" *ngIf="producto.tipo != 'Servicio'">
+                    <label for="medida">U. de Medida</label>
+                    <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+                        <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+                            {{ medida.nombre }}
+                        </ng-option>
+                    </ng-select>
+                </div>
+
+                <h6 class="my-3 font-weight-bold">Organización</h6>
+                <div class="form-group col-md-6 col-lg-3">
+                    <label for="id_categoria" class="w-100">Categoria</label>
                     <div class="input-group">
-                        <select [(ngModel)]="producto.categoria_id" (change)="onSelectCategoria(producto.categoria_id)" class="form-control form-select" name="categoria_id">
-                            <option [value]="categoria.id" *ngFor="let categoria of categorias">{{ categoria.nombre }}</option>
-                        </select>
+                        <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0">
+                            <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+                                {{categoria.nombre}}
+                            </ng-option>
+                        </ng-select>
                         <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
                     </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="subcategoria_id" class="w-100">Sub Categoria:</label>
+                <div class="form-group col-md-6 col-lg-2">
+                    <label for="marca">Marca</label>
+                    <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Escribe aquí">
+                </div>
+                <div class="form-group col-md-12 col-lg-7">
+                    <label for="etiquetas">Etiquetas</label>
+                    <tag-input theme='bootstrap' [placeholder]="'Escribe aquí'" secondaryPlaceholder="Escribe aquí" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+                </div>
+
+                <h6 class="my-3 font-weight-bold">Precio</h6>
+                <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
+                    <label for="precio">Precio sin IVA</label>
                     <div class="input-group">
-                        <select [(ngModel)]="producto.subcategoria_id" class="form-control form-select" name="subcategoria_id">
-                            <option [value]="subcategoria.id" *ngFor="let subcategoria of subcategorias">{{ subcategoria.nombre }}</option>
-                        </select>
-                        <app-crear-subcategoria [categoria_id]="producto.categoria_id" (update)="setSubCategoria($event)"></app-crear-subcategoria>
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
                     </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="marca">Marca:</label>
-                    <input type="text" class="form-control" [(ngModel)]="producto.marca" name="marca" placeholder="Marca">
+                <div *ngIf="apiService.auth_user().empresa.valor_inventario != 'promedio'" class="form-group col-md-4 col-lg-3">
+                    <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" (change)="actualizarCostoPromedio()" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
+                    </div>
                 </div>
-                <div class="form-group col-lg-6">
-                    <label for="etiquetas">Etiquetas:</label>
-                    <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [separatorKeyCodes]="[32]" [(ngModel)]="producto.etiquetas" name="etiquetas"></tag-input>
+                <div *ngIf="apiService.auth_user().empresa.valor_inventario == 'promedio'" class="form-group col-md-4 col-lg-3">
+                    <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" (change)="actualizarCosto()" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="$0.00" required>
+                    </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="medida">Medida:</label>
-                    <input type="text" class="form-control" [(ngModel)]="producto.medida" name="medida" placeholder="Unidad, Lb, Cm etc." required>
+                <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
+                    <label for="tipo_impuesto">Ganancia</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
+                    </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="costo">Costo:</label>
-                    <input type="number" class="form-control" [(ngModel)]="producto.costo" name="costo" placeholder="$0.00" required>
+                <div class="form-group col-md-4 col-lg-3" *ngIf="!loading && producto.tipo != 'Materia prima'">
+                    <label for="impuesto">Margen</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" disabled value="{{ ((producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)) / producto.precio * 100).toFixed(2) }}">
+                        <span class="input-group-text">%</span>
+                    </div>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="precio">Precio:</label>
-                    <input type="number" class="form-control" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
+                <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-3">
+                    <label class="fw-bold" for="precio_final">Precio con IVA:</label>
+                    <div class="input-group">
+                        <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
+                        <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
+                    </div>
                 </div>
-                <!-- <div class="form-group col-md-3">
-                    <label for="precio2">Precio 2:</label>
-                    <input type="number" class="form-control" [(ngModel)]="producto.precio2" name="precio2" placeholder="$0.00">
+
+                <h6 class="my-3 font-weight-bold w-100">Descripción</h6>
+                <div class="form-group col-lg-12">
+                    <label for="descripcion">Agrega alguna información adicional</label>
+                    <textarea class="form-control" [(ngModel)]="producto.descripcion" name="descripcion" placeholder="Escribe aquí" cols="30" rows="2"></textarea>
                 </div>
-                <div class="form-group col-md-3">
-                    <label for="precio3">Precio 3:</label>
-                    <input type="number" class="form-control" [(ngModel)]="producto.precio3" name="precio3" placeholder="$0.00">
-                </div> -->
-        <!--         <div class="form-group col-md-3">
-                    <label for="precio4">Precio 4:</label>
-                    <input type="number" class="form-control" [(ngModel)]="producto.precio4" name="precio4" placeholder="$0.00">
-                </div> -->
-                <div class="form-group col-md-12">
-                    <label for="descripcion">Descripción:</label>
-                    <textarea class="form-control" [(ngModel)]="producto.descripcion" name="Descripcion" placeholder="Descripción" cols="30" rows="2"></textarea>
+
+                <div class="form-group col-md-6 col-lg-5 without-label" *ngIf="producto.tipo != 'Servicio'">
+                    <div class="form-switch bg-light-info rounded">
+                        <label>¿Es producto compuesto?</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCompuesto()" [checked]="producto.tipo == 'Compuesto'" name="compuesto">
+                    </div>
                 </div>
-                <div class="form-group col-md-12">
-                    <button [disabled]="loading" class="btn btn-primary float-end tcla-F4">
-                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                        <span *ngIf="loading">Guardando...</span>
+
+                <div class="form-group col-lg-12 mt-3">
+                    <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
+                        <span *ngIf="!guardar">Guardar</span>
+                        <span *ngIf="guardar">Guardando...</span>
                     </button>
                 </div>
             </div>
         </form>
-
     </div>
 </ng-template>

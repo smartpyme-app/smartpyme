@@ -38,6 +38,7 @@ export class AdminSuscripcionesComponent implements OnInit {
   public nuevaSuscripcion: any = {};
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
   public editando: boolean = false;
+  public downloading:boolean = false;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
@@ -439,5 +440,33 @@ export class AdminSuscripcionesComponent implements OnInit {
         return pago.metodo_pago === 'transferencia';
       }
     });
+  }
+
+  public setOrden(columna: string) {
+    if (this.filtros.orden === columna) {
+      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.filtros.orden = columna;
+      this.filtros.direccion = 'asc';
+    }
+  
+    this.filtrarSuscripciones();
+  }
+
+  public descargar(){
+    this.downloading = true;
+    this.apiService.export('suscripciones/exportar', this.filtros).subscribe((data:Blob) => {
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'suscripciones.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+      }, (error) => { this.alertService.error(error); this.downloading = false; }
+    );
   }
 }

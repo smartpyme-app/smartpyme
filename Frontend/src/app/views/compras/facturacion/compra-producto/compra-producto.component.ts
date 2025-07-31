@@ -18,6 +18,7 @@ export class CompraProductoComponent implements OnInit {
     @Input() compra: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
+    modalCreateProductRef?: BsModalRef;
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -27,14 +28,17 @@ export class CompraProductoComponent implements OnInit {
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
-
+    public search:any = '';
+    // private apiService: ApiService, private alertService: AlertService,
     constructor(
         private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        private modalService: BsModalService, private sumPipe:SumPipe,
+
     ) { }
 
     ngOnInit() {
-        console.log(this.compra);
+        this.alertService.modal = false;
+
         this.searchControl.valueChanges
               .pipe(
                 debounceTime(500),
@@ -129,6 +133,31 @@ export class CompraProductoComponent implements OnInit {
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
+    crearProducto(template: TemplateRef<any>) {
+        this.modalCreateProductRef = this.modalService.show(template, {
+            class: 'modal-lg',
+            backdrop: 'static',
+            keyboard: false,
+            ignoreBackdropClick: true
+        });
+    }
+
+    onProductoCreated(producto: any) {
+        // Aquí puedes manejar el producto creado si es necesario
+        producto.id_producto    = producto.id;
+        producto.nombre_producto = producto.nombre;
+        producto.img            = producto.img;
+        producto.precio         = parseFloat(producto.precio);
+        producto.costo          = parseFloat(producto.costo);
+        producto.inventarios        = producto?.inventarios?.filter((item:any) => item.id_sucursal == this.compra.id_sucursal) || [];
+        producto.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
+        producto.cantidad       = 1;
+        producto.descuento      = 0;
+
+        console.log('Producto creado:', producto);
+
+        this.productoSelect.emit(producto);
+    }
 
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
@@ -164,6 +193,7 @@ export class CompraProductoComponent implements OnInit {
     }
 
     onSubmit(){
+        console.log(this.detalle);
         this.productos = [];
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);

@@ -25,30 +25,29 @@ import { SharedModule } from './shared/shared.module';
 import { AppComponent } from './app.component';
 
 import { AuthModule } from './auth/auth.module';
-
 import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
 import { ReactiveFormsModule } from '@angular/forms';
 // Super Admin
-  import { SuperAdminModule } from '@views/super-admin/super-admin.module';
+import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
 // Organizacion Admin
-  import { OrganizacionesAdminModule } from '@views/organizaciones-admin/organizaciones-admin.module';
+import { OrganizacionesAdminModule } from '@views/organizaciones-admin/organizaciones-admin.module';
 
 // Ventas
-  import { VentasModule } from '@views/ventas/ventas.module';
-  import { ClientesModule } from '@views/ventas/clientes/clientes.module';
-  import { FacturacionModule } from '@views/ventas/facturacion/facturacion.module';
+import { VentasModule } from '@views/ventas/ventas.module';
+import { ClientesModule } from '@views/ventas/clientes/clientes.module';
+import { FacturacionModule } from '@views/ventas/facturacion/facturacion.module';
 
 // Inventario
-  import { InventarioModule } from '@views/inventario/inventario.module';
+import { InventarioModule } from '@views/inventario/inventario.module';
 
 // Compras
-  import { ComprasModule } from '@views/compras/compras.module';
-  import { ProveedoresModule } from '@views/compras/proveedores/proveedores.module';
+import { ComprasModule } from '@views/compras/compras.module';
+import { ProveedoresModule } from '@views/compras/proveedores/proveedores.module';
 
 // Contabilidad
-  import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
+import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
 
 
 // Planillas
@@ -56,10 +55,10 @@ import { PlanillasModule } from '@views/planillas/planillas.module';
 
 
 // Paquetes
-  import { PaquetesModule } from '@views/paquetes/paquetes.module';
+import { PaquetesModule } from '@views/paquetes/paquetes.module';
 
 // Proyectos
-  import { ProyectosModule } from '@views/proyectos/proyectos.module';
+import { ProyectosModule } from '@views/proyectos/proyectos.module';
 
  // Admin
   import { AdminModule } from '@views/admin/admin.module';
@@ -81,7 +80,7 @@ import { PlanillasModule } from '@views/planillas/planillas.module';
     TourNgxBootstrapModule,
     AppRoutingModule,
     ModalModule.forRoot(),
-    NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
+    NotifierModule.withConfig({ position: { horizontal: { position: 'middle' } }, theme: 'material' }),
     SharedModule,
     QuicklinkModule,
     LayoutModule,

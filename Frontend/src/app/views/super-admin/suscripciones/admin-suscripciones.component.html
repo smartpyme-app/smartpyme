@@ -22,12 +22,16 @@
         <!-- <form class="d-flex input-group" name="form" (ngSubmit)="filtrarSuscripciones()" autocomplete="off">
               <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form> -->
+          <button [disabled]="downloading" tooltip="Descargar suscripciones" (click)="descargar()" class="btn btn-default tcla-F6">
+            <img src="/assets/icons/download.png" class="icon">
+        </button>
         <form
           class="d-flex input-group"
           name="form"
           (ngSubmit)="filtrarSuscripciones()"
           autocomplete="off"
         >
+
           <div class="input-group">
             <div class="input-group-text bg-white border-end-0">
               <i class="fa fa-search text-muted"></i>
@@ -90,15 +94,39 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
-            <th>Empresa</th>
-            <th>Plan</th>
-            <th>Tipo Plan</th>
-            <th class="text-center">Metodo de pago</th>
+            <th (click)="setOrden('nombre')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'nombre' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'nombre' && filtros.direccion == 'desc'}" 
+                class="click">Empresa</th>
+            <th (click)="setOrden('plan')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'plan' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'plan' && filtros.direccion == 'desc'}" 
+                class="click">Plan</th>
+            <th (click)="setOrden('tipo_plan')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'tipo_plan' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'tipo_plan' && filtros.direccion == 'desc'}" 
+                class="click text-center">Tipo Plan</th>
+            <th (click)="setOrden('metodo_pago')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'metodo_pago' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'metodo_pago' && filtros.direccion == 'desc'}" 
+                class="click text-center">Método de pago</th>
             <th>Monto</th>
-            <th class="text-center">Estado suscripción</th>
-            <th class="text-center">Estado pago</th>
-            <th>Último pago</th>
-            <th>Próximo pago</th>
+            <th (click)="setOrden('estado_suscripcion')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'estado_suscripcion' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'estado_suscripcion' && filtros.direccion == 'desc'}" 
+                class="click text-center">Estado suscripción</th>
+            <th (click)="setOrden('estado_pago')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'estado_pago' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'estado_pago' && filtros.direccion == 'desc'}" 
+                class="click text-center">Estado pago</th>
+            <th (click)="setOrden('fecha_ultimo_pago')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'fecha_ultimo_pago' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'fecha_ultimo_pago' && filtros.direccion == 'desc'}" 
+                class="click">Último pago</th>
+            <th (click)="setOrden('fecha_proximo_pago')" 
+                [ngClass]="{'sorted-asc': filtros.orden == 'fecha_proximo_pago' && filtros.direccion == 'asc', 
+                           'sorted-desc': filtros.orden == 'fecha_proximo_pago' && filtros.direccion == 'desc'}" 
+                class="click">Próximo pago</th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
@@ -843,7 +871,8 @@
             </div>
           </div>
         </div>
-        <div class="form-group col-sm-12">
+        <div class="form-group col-12 col-md-6">
+          <label for="filtros.plan">Plan:</label>
           <select
             class="form-select"
             name="filtros.plan"
@@ -856,7 +885,7 @@
             <option value="Pro">Pro</option>
           </select>
         </div>
-        <div class="form-group col-sm-12">
+        <div class="form-group col-12 col-md-6">
           <label for="filtros.forma_pago">Forma de pago:</label>
           <select
             class="form-select"

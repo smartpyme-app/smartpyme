@@ -162,6 +162,13 @@
                     <i class="fa fa-fw fa-check"></i> Aprobar
                   </a>
                   <a
+                    (click)="revertirPlanilla(planilla)"
+                    class="list-group-item list-group-item-action border-0 click"
+                    *ngIf="planilla.estado == 4"
+                  >
+                    <i class="fa fa-fw fa-undo"></i> Revertir
+                  </a>
+                  <a
                     (click)="procesarPago(planilla)"
                     class="list-group-item list-group-item-action border-0 click"
                     *ngIf="planilla.estado == 2 || planilla.estado == 4"
