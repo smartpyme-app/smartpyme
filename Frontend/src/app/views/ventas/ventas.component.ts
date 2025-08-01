@@ -38,10 +38,17 @@ export class VentasComponent implements OnInit {
     categorias: [],
     marcas: [],
   };
+  public filtrosPorMarca: any = {
+    inicio: '',
+    fin: '',
+    id_empresa: this.apiService.auth_user().empresa.id,
+  };
 
   modalRef!: BsModalRef;
   modalRefDescargar!: BsModalRef;
   modalRefAcumulado!: BsModalRef;
+  modalRefPorMarca!: BsModalRef;
+  downloadingPorMarca: boolean = false;
 
   constructor(
     public apiService: ApiService,
@@ -87,6 +94,17 @@ export class VentasComponent implements OnInit {
     this.modalRefAcumulado = this.modalService.show(template, {
       class: 'modal-lg',
     });
+  }
+
+  public abrirModalFiltrosPorMarca(template: TemplateRef<any>) {
+    this.modalRefDescargar.hide();
+
+    setTimeout(() => {
+      this.modalRefPorMarca = this.modalService.show(template, {
+        class: 'modal-md',
+      });
+    }, 100);
+
   }
 
   public setOrden(columna: string) {
@@ -698,5 +716,36 @@ export class VentasComponent implements OnInit {
       this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
     },error => {this.alertService.error(error);});
   }
+
+  descargarPorMarcasPorMes(){
+    this.downloadingPorMarca = true;
+    this.saving = true;
+    this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
+    this.filtrosPorMarca.fin = this.filtrosPorMarca.fin;
+    this.apiService.export('ventas-por-marcas/exportar', this.filtrosPorMarca).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ventas-por-marcas_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloadingPorMarca = false;
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingPorMarca = false;
+        this.saving = false;
+      }
+    );
+  }
+
+
 
 }

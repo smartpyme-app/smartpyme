@@ -38,6 +38,7 @@ use App\Models\Inventario\CustomFields\ProductCustomField;
 use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
+use App\Exports\VentasPorMarcasExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
@@ -1075,6 +1076,12 @@ class VentasController extends Controller
         return Excel::download($ventas, 'corte.xlsx');
     }
 
+    public function porMarcasExport(Request $request)
+    {
+        $ventas = new VentasPorMarcasExport();
+        $ventas->filter($request);
+        return Excel::download($ventas, 'ventas-por-marcas.xlsx');
+    }
 
     public function enviarReporteDiario()
     {
