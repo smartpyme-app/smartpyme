@@ -3,7 +3,7 @@
   "short_name": "SP",
   "theme_color": "#1976d2",
   "background_color": "#fafafa",
-  "version": "30.07.25",
+  "version": "01.08.25",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
