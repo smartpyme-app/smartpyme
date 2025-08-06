@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { EncryptService } from '@services/encryption/encrypt.service';
 
 interface Permission {
   id: number;
@@ -129,17 +130,28 @@ export class UsuarioComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    public encryptService: EncryptService
   ) {}
   public authUser: any = {};
   public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
 
 
   ngOnInit() {
-    const id = this.route.snapshot.paramMap.get('id')!;
-    const idNum = parseInt(id);
+    const encryptedId = this.route.snapshot.paramMap.get('id')!;
+    const id = this.encryptService.decrypt(encryptedId);
 
-    this.loadAll(idNum);
+    if (id === 0 || isNaN(id)) {
+      // Nuevo usuario
+      this.usuario = {};
+      this.usuario.rol_id = 2;
+      this.usuario.sucursal_id = this.apiService.auth_user().sucursal_id;
+      this.usuario.caja_id = 1;
+      this.usuario.activo = true;
+    } else {
+      // Usuario existente
+      this.loadAll(id);
+    }
 
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
@@ -155,26 +167,30 @@ export class UsuarioComponent implements OnInit {
   }
 
   public loadAll(id: number) {
-	this.loading = true;
-	this.apiService.read('usuario/', id).subscribe(
-	  (usuario) => {
+    this.loading = true;
+    this.apiService.read('usuario/', id).subscribe(
+      (usuario) => {
+        this.usuario = usuario;
+        this.usuario.rol_id = usuario.roles[0].id;
+        this.rol = usuario.roles[0];
+        this.rol.name = this.rol.name
+          .split('_')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
 
-		
-		this.usuario = usuario;
-		this.nuevoCodigoAuth = usuario.codigo_autorizacion;
+        this.nuevoCodigoAuth = usuario.codigo_autorizacion;
 
-		
-		if (usuario.telefono) {
-		  this.detectCountryFromPhone(usuario.telefono);
-		}
-		
-		this.loading = false;
-	  },
-	  (error) => {
-		this.alertService.error(error);
-		this.loading = false;
-	  }
-	);
+        if (usuario.telefono) {
+          this.detectCountryFromPhone(usuario.telefono);
+        }
+
+        this.loading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+      }
+    );
   }
 
   public onSubmit() {
@@ -188,7 +204,7 @@ export class UsuarioComponent implements OnInit {
     formData.append('codigo', this.usuario.codigo);
     formData.append('id_sucursal', this.usuario.id_sucursal);
 
- 
+
 
     this.apiService.store('usuario/informacion', formData).subscribe(
       (usuario) => {
@@ -450,7 +466,7 @@ export class UsuarioComponent implements OnInit {
 
           this.usuario.telefono = localNumber;
 
-      
+
           this.formatLocalPhone(localNumber);
           return;
         }
