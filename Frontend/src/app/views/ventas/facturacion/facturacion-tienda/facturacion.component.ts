@@ -495,6 +495,9 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva_retenido = this.venta.retencion
       ? this.venta.sub_total * 0.01
       : 0;
+    this.venta.renta_retenida = this.venta.renta
+      ? this.venta.sub_total * 0.10
+      : 0;
 
     this.venta.impuestos.forEach((impuesto: any) => {
       if (this.venta.cobrar_impuestos) {
@@ -520,7 +523,8 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.exenta) +
       parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido)
+      parseFloat(this.venta.iva_retenido) -
+      parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
 
