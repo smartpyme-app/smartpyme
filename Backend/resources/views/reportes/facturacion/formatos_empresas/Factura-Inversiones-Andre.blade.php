@@ -101,7 +101,7 @@
             </tbody>
         </table>
 
-        <table id="op" style="margin-bottom: 5px;">
+        <table id="op">
             <thead>
                 <tr>
                     <th>NUMERO DE OP</th>

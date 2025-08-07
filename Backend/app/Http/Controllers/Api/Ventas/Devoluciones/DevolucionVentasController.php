@@ -246,6 +246,31 @@ class DevolucionVentasController extends Controller
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
 
+        // Validar que la suma de devoluciones no supere el total de la venta
+            $venta = Venta::findOrFail($request->id_venta);
+            $totalDevolucionesExistentes = Devolucion::where('id_venta', $request->id_venta)
+                ->where('enable', true)
+                ->sum('total');
+            
+            // Si es una actualización, excluir la devolución actual del cálculo
+            if ($request->id) {
+                $devolucionActual = Devolucion::find($request->id);
+                if ($devolucionActual) {
+                    $totalDevolucionesExistentes -= $devolucionActual->total;
+                }
+            }
+            
+            $totalNuevaDevolucion = $request->total;
+            $totalVenta = $venta->total;
+            
+            if (($totalDevolucionesExistentes + $totalNuevaDevolucion) > $totalVenta) {
+                return Response()->json([
+                    'error' => 'No se puede registrar la devolución. El monto total de devoluciones (' . 
+                              number_format($totalDevolucionesExistentes + $totalNuevaDevolucion, 2) . 
+                              ') supera el total de la venta (' . number_format($totalVenta, 2) . ').'
+                ], 400);
+            }
+
         DB::beginTransaction();
          
         try {
@@ -262,8 +287,7 @@ class DevolucionVentasController extends Controller
             // $venta = Venta::findOrFail($request['id_venta']);
             // $venta->estado = 'Anulada';
             // $venta->save();
-
-
+            
         // Guardamos los detalles
 
             foreach ($request->detalles as $det) {
