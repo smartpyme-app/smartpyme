@@ -159,6 +159,10 @@
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Retención:</b></td>
                         <td class="text-end"><b>{{ venta?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
+                    <tr *ngIf="venta?.renta_retenida > 0">
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Renta (10%)</b></td>
+                        <td class="text-end"><b>{{ venta?.renta_retenida | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
                     <tr *ngIf="venta?.exenta > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Ventas Exentas:</b></td>
                         <td class="text-end"><b>{{ venta?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
