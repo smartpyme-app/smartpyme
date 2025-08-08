@@ -71,6 +71,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       tipo: 'detalle-ventas-vendedor',
       nombre: 'Detalle de Ventas por Vendedor',
     },
+    {
+      tipo: 'inventario-por-sucursal',
+      nombre: 'Inventario por Sucursal',
+    },
   ];
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';
@@ -91,7 +95,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.loadAll();
@@ -426,12 +430,12 @@ export class ReportesAutomaticosComponent implements OnInit {
     const nuevoEstado = !config.activo;
     const configId = config.id;
 
-  
+
     if (nuevoEstado) {
       let existeReporteActivo = false;
 
       if (config.tipo_reporte !== 'ventas-por-categoria-vendedor') {
-   
+
         existeReporteActivo = this.tiposReporteActivos.includes(
           config.tipo_reporte
         );
@@ -477,8 +481,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           this.loadAll();
           this.alertService.success(
             'Estado actualizado',
-            `La configuración ha sido ${
-              nuevoEstado ? 'activada' : 'desactivada'
+            `La configuración ha sido ${nuevoEstado ? 'activada' : 'desactivada'
             } exitosamente.`
           );
         },
@@ -662,31 +665,30 @@ export class ReportesAutomaticosComponent implements OnInit {
 
   public descargarReporte(config: any, template: TemplateRef<any>, tipo: string = 'excel') {
     this.configReporteActual = config;
-    this.fechaInicio = '';
-    this.fechaFin = '';
     this.tipoReporte = tipo;
 
-    // Establecer fechas predeterminadas (este mes)
-    this.seleccionarPeriodo('mes');
+    if (config.tipo_reporte === 'inventario-por-sucursal') {
+      this.seleccionarPeriodo('mes');
+      this.descargarReporteDirecto();
+    } else {
+      this.fechaInicio = '';
+      this.fechaFin = '';
 
-    this.modalRefFechas = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static',
-    });
+      this.seleccionarPeriodo('mes');
+
+      this.modalRefFechas = this.modalService.show(template, {
+        class: 'modal-lg',
+        backdrop: 'static',
+      });
+    }
   }
 
-  public descargarReporteConFechas() {
-    // Validar fechas
-    if (!this.fechaInicio || !this.fechaFin || this.fechaInicio > this.fechaFin) {
-      this.alertService.error('Por favor seleccione un rango de fechas válido');
-      return;
-    }
-
+  public descargarReporteDirecto() {
     let tipo = this.configReporteActual?.tipo_reporte;
     tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
-  
+
     this.downloading = true;
-  
+
     // Preparar parámetros para la petición
     const params = {
       id: this.configReporteActual?.id,
@@ -694,21 +696,21 @@ export class ReportesAutomaticosComponent implements OnInit {
       fecha_fin: this.fechaFin,
       sucursales: this.configReporteActual?.sucursales || [],
     };
-  
+
     // Determinar la ruta y tipo de archivo según el tipo de reporte
     let route = 'reportes-configuracion/exportar';
-    
+
     if (this.tipoReporte === 'pdf') {
       route = 'reportes-configuracion/exportar-pdf';
     }
-  
+
     // Realizar la petición al servidor
     this.apiService.exportAcumuladoReportes(route, params)
       .subscribe({
         next: (response: any) => {
           // Crear nombre de archivo
-          let nombreArchivo = `${tipo}_${this.fechaInicio}_al_${this.fechaFin}`;
-  
+          let nombreArchivo = `inventario_por_sucursal_`;
+
           // Añadir información de sucursales al nombre
           if (params.sucursales && params.sucursales.length > 0) {
             if (params.sucursales.length === this.sucursales.length) {
@@ -726,47 +728,49 @@ export class ReportesAutomaticosComponent implements OnInit {
               nombreArchivo += `_${params.sucursales.length}_sucursales`;
             }
           }
-  
+
           if (this.tipoReporte === 'pdf') {
             // Para detectar el tipo real sin descargar múltiples archivos
             const fileReader = new FileReader();
             const blob = new Blob([response]);
-            
+
             fileReader.onload = () => {
               const arrayBuffer = fileReader.result as ArrayBuffer;
               const headerBytes = new Uint8Array(arrayBuffer.slice(0, 4));
-              
-              console.log('Primeros bytes:', Array.from(headerBytes).map(b => b.toString(16).padStart(2, '0')).join(' '));
-              
+
               // Determinar el tipo de archivo basado en los primeros bytes
               let fileType = 'pdf';
               let mimeType = 'application/pdf';
-              
+
               // 50 4b 03 04 es la firma de ZIP (PK..)
               if (headerBytes[0] === 0x50 && headerBytes[1] === 0x4B) {
-                console.log('¡Detectado archivo ZIP!');
                 fileType = 'zip';
                 mimeType = 'application/zip';
-                this.alertService.info('warning','El reporte es muy grande y se ha descargado como un archivo ZIP que contiene múltiples PDFs.');
+                this.alertService.info('warning', 'El reporte es muy grande y se ha descargado como un archivo ZIP que contiene múltiples PDFs.');
               }
-              
+
               // Crear un nuevo blob con el tipo MIME correcto
               const tipoCorrectoBlob = new Blob([response], { type: mimeType });
-              
+
               // Verificar si hay contenido
               if (tipoCorrectoBlob.size === 0) {
                 this.alertService.error(`El archivo generado está vacío`);
                 this.downloading = false;
                 return;
               }
-              
+
               // Ahora sí descargamos el archivo con el tipo correcto
               this.procesarDescarga(tipoCorrectoBlob, nombreArchivo, fileType);
-              
+
               this.downloading = false;
-              this.modalRefFechas.hide();
+
+              // Mostrar mensaje de éxito
+              this.alertService.success(
+                'Descarga completada',
+                `El reporte se ha descargado correctamente.`
+              );
             };
-            
+
             // Leer solo los primeros bytes para detectar la firma
             fileReader.readAsArrayBuffer(blob.slice(0, 4));
           } else {
@@ -774,17 +778,144 @@ export class ReportesAutomaticosComponent implements OnInit {
             const fileType = 'xlsx';
             const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
             const blob = new Blob([response], { type: mimeType });
-            
+
             // Verificar si hay contenido
             if (blob.size === 0) {
               this.alertService.error(`El archivo Excel generado está vacío`);
               this.downloading = false;
               return;
             }
-            
+
             // Crear URL y elemento para descarga
             this.procesarDescarga(blob, nombreArchivo, fileType);
-            
+
+            this.downloading = false;
+
+            // Mostrar mensaje de éxito
+            this.alertService.success(
+              'Descarga completada',
+              `El reporte se ha descargado correctamente.`
+            );
+          }
+        },
+        error: (error) => {
+          console.error('Error al descargar el reporte:', error);
+          this.alertService.error('Error al generar el reporte. Por favor intente nuevamente');
+          this.downloading = false;
+        }
+      });
+  }
+
+  public descargarReporteConFechas() {
+    // Validar fechas
+    if (!this.fechaInicio || !this.fechaFin || this.fechaInicio > this.fechaFin) {
+      this.alertService.error('Por favor seleccione un rango de fechas válido');
+      return;
+    }
+
+    let tipo = this.configReporteActual?.tipo_reporte;
+    tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
+
+    this.downloading = true;
+
+    // Preparar parámetros para la petición
+    const params = {
+      id: this.configReporteActual?.id,
+      fecha_inicio: this.fechaInicio,
+      fecha_fin: this.fechaFin,
+      sucursales: this.configReporteActual?.sucursales || [],
+    };
+
+    // Determinar la ruta y tipo de archivo según el tipo de reporte
+    let route = 'reportes-configuracion/exportar';
+
+    if (this.tipoReporte === 'pdf') {
+      route = 'reportes-configuracion/exportar-pdf';
+    }
+
+    // Realizar la petición al servidor
+    this.apiService.exportAcumuladoReportes(route, params)
+      .subscribe({
+        next: (response: any) => {
+          // Crear nombre de archivo
+          let nombreArchivo = `${tipo}_${this.fechaInicio}_al_${this.fechaFin}`;
+
+          // Añadir información de sucursales al nombre
+          if (params.sucursales && params.sucursales.length > 0) {
+            if (params.sucursales.length === this.sucursales.length) {
+              nombreArchivo += '_todas_sucursales';
+            } else if (params.sucursales.length <= 3) {
+              // Solo incluir nombres si son pocas sucursales
+              const sucursalesNombres = params.sucursales
+                .map((id: number) => {
+                  return this.sucursales.find((s) => s.id == id)?.nombre || id;
+                })
+                .join('-');
+              nombreArchivo += `_${sucursalesNombres}`;
+            } else {
+              // Si son muchas, solo indicar el número
+              nombreArchivo += `_${params.sucursales.length}_sucursales`;
+            }
+          }
+
+          if (this.tipoReporte === 'pdf') {
+            // Para detectar el tipo real sin descargar múltiples archivos
+            const fileReader = new FileReader();
+            const blob = new Blob([response]);
+
+            fileReader.onload = () => {
+              const arrayBuffer = fileReader.result as ArrayBuffer;
+              const headerBytes = new Uint8Array(arrayBuffer.slice(0, 4));
+
+              console.log('Primeros bytes:', Array.from(headerBytes).map(b => b.toString(16).padStart(2, '0')).join(' '));
+
+              // Determinar el tipo de archivo basado en los primeros bytes
+              let fileType = 'pdf';
+              let mimeType = 'application/pdf';
+
+              // 50 4b 03 04 es la firma de ZIP (PK..)
+              if (headerBytes[0] === 0x50 && headerBytes[1] === 0x4B) {
+                console.log('¡Detectado archivo ZIP!');
+                fileType = 'zip';
+                mimeType = 'application/zip';
+                this.alertService.info('warning', 'El reporte es muy grande y se ha descargado como un archivo ZIP que contiene múltiples PDFs.');
+              }
+
+              // Crear un nuevo blob con el tipo MIME correcto
+              const tipoCorrectoBlob = new Blob([response], { type: mimeType });
+
+              // Verificar si hay contenido
+              if (tipoCorrectoBlob.size === 0) {
+                this.alertService.error(`El archivo generado está vacío`);
+                this.downloading = false;
+                return;
+              }
+
+              // Ahora sí descargamos el archivo con el tipo correcto
+              this.procesarDescarga(tipoCorrectoBlob, nombreArchivo, fileType);
+
+              this.downloading = false;
+              this.modalRefFechas.hide();
+            };
+
+            // Leer solo los primeros bytes para detectar la firma
+            fileReader.readAsArrayBuffer(blob.slice(0, 4));
+          } else {
+            // Para Excel, mantenemos el comportamiento original
+            const fileType = 'xlsx';
+            const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            const blob = new Blob([response], { type: mimeType });
+
+            // Verificar si hay contenido
+            if (blob.size === 0) {
+              this.alertService.error(`El archivo Excel generado está vacío`);
+              this.downloading = false;
+              return;
+            }
+
+            // Crear URL y elemento para descarga
+            this.procesarDescarga(blob, nombreArchivo, fileType);
+
             this.downloading = false;
             this.modalRefFechas.hide();
           }
@@ -796,28 +927,28 @@ export class ReportesAutomaticosComponent implements OnInit {
         }
       });
   }
-  
+
   // Método auxiliar para procesar la descarga del archivo
   private procesarDescarga(blob: Blob, nombreArchivo: string, extension: string) {
     // Crear objeto URL para el blob
     const url = window.URL.createObjectURL(blob);
-    
+
     // Crear elemento <a> para la descarga
     const a = document.createElement('a');
     a.href = url;
     a.download = `${nombreArchivo}.${extension}`;
-    
+
     // Añadir al DOM, hacer clic y remover
     document.body.appendChild(a);
     a.click();
-    
+
     // Limpiar recursos
     setTimeout(() => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     }, 100);
   }
-  
+
 
   public toggleMostrarPeriodos(): void {
     this.periodosExpandidos = !this.periodosExpandidos;
