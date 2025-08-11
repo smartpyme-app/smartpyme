@@ -82,10 +82,10 @@ export class TrasladoComponent implements OnInit {
         this.bodegaDe = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega_de);
         this.bodegaPara = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega);
 
-    	console.log(this.producto);
-    	console.log(this.traslado);
-    	console.log(this.bodegaDe);
-    	console.log(this.bodegaPara);
+    	// console.log(this.producto);
+    	// console.log(this.traslado);
+    	// console.log(this.bodegaDe);
+    	// console.log(this.bodegaPara);
 
         this.detalle.id_producto = this.producto.id;
         this.detalle.nombre_producto = this.producto.nombre;
