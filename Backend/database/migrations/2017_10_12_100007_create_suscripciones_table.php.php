@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Migrations\Migration;
+// use Illuminate\Database\Schema\Blueprint;
+// use Illuminate\Database\Migrations\Migration;
 
-class CreateSuscripcionesTable extends Migration {
+// class CreateSuscripcionesTable extends Migration {
 
     // public function up()
     // {
@@ -26,4 +26,4 @@ class CreateSuscripcionesTable extends Migration {
     //     Schema::drop('suscripciones');
     // }
 
-}
+//}
