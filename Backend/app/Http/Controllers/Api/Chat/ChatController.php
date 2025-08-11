@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Chat;
 use App\Http\Controllers\Controller;
 use App\Models\Chat\Conversation;
 use App\Models\Chat\Message;
+use App\Models\User;
 use App\Services\AIService;
 use App\Services\ContextService;
 use Carbon\Carbon;
@@ -34,120 +35,138 @@ class ChatController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function bedrockChat(Request $request)
-{
-    try {
-        // Validar la solicitud
-        $validated = $request->validate([
-            'prompt' => 'required|string',
-            'history' => 'nullable|array',
-            'conversationId' => 'nullable|integer',
-            'maxTokens' => 'nullable|integer|min:1|max:4000',
-            'temperature' => 'nullable|numeric|min:0|max:1',
-            'topP' => 'nullable|numeric|min:0|max:1',
-            'topK' => 'nullable|integer|min:0',
-        ]);
-
-        // Obtener o verificar la conversación si existe
-        $conversationId = $validated['conversationId'] ?? null;
-        if ($conversationId) {
-            $conversation = Conversation::findOrFail($conversationId);
-        }
-
-        // Configurar el tipo de modelo si se especifica
-        if (isset($validated['modelType'])) {
-            $this->aiService->useModel($validated['modelType']);
-        }
-
-        // Opciones adicionales para la generación
-        $options = array_filter([
-            'maxTokens' => $validated['maxTokens'] ?? null,
-            'temperature' => $validated['temperature'] ?? null,
-            'topP' => $validated['topP'] ?? null,
-            'topK' => $validated['topK'] ?? null
-        ]);
-
-        $empresaId = $request->user()->id_empresa ?? null;
-        if ($empresaId) {
-            session(['id_empresa' => $empresaId]);
-        }
-        
-        $empresa = null;
-        $metricas = null;
-        
-        if ($empresaId) {
-            $empresa = $this->contextService->obtenerInformacionEmpresa($empresaId);
-            $metricas = $this->contextService->obtenerMetricasRecientes($empresaId);
-        }
-
-        $basePrompt = config('bedrock.system_prompt_haiku');
-        $systemPrompt = $this->contextService->generateSystemPrompt($empresa, $metricas, $basePrompt);
-        $systemPrompt = $this->contextService->enrichContextWithQueryData($systemPrompt, $empresa, $validated['prompt']);
-        
-        $this->aiService->setSystemPrompt($systemPrompt);
-
-        $botResponse = $this->aiService->generateResponse(
-            $validated['prompt'],
-            $validated['history'] ?? [],
-            $options
-        );
-        
-        // Extraer sugerencias si existen en la respuesta
-        $suggestions = [];
-        if (preg_match('/<sugerencias>(.*?)<\/sugerencias>/s', $botResponse, $matches)) {
-            $suggestionsText = $matches[1];
-            $suggestions = array_map('trim', explode(',', $suggestionsText));
-            
-            // Eliminar la etiqueta de sugerencias de la respuesta final
-            $botResponse = str_replace($matches[0], '', $botResponse);
-        }
-        
-        // Asegurar que la respuesta esté en formato HTML
-        if (!preg_match('/<[^>]+>/', $botResponse)) {
-            // Si no contiene etiquetas HTML, convertir a formato HTML básico
-            $botResponse = '<p>' . nl2br(htmlspecialchars($botResponse)) . '</p>';
-        }
-
-        // Si tenemos una conversación, guardar mensajes
-        if ($conversationId && isset($conversation)) {
-            // Guardar mensaje del usuario
-            $userMessage = new Message([
-                'conversation_id' => $conversationId,
-                'sender' => 'user',
-                'content' => $validated['prompt'],
-                'metadata' => []
+    public function bedrockChat(Request $request, $source = 'Web')
+    {
+        try {
+            // Validar la solicitud
+            $validated = $request->validate([
+                'prompt' => 'required|string',
+                'history' => 'nullable|array',
+                'conversationId' => 'nullable|integer',
+                'maxTokens' => 'nullable|integer|min:1|max:4000',
+                'temperature' => 'nullable|numeric|min:0|max:1',
+                'topP' => 'nullable|numeric|min:0|max:1',
+                'topK' => 'nullable|integer|min:0',
+                'user_id' => 'nullable|integer',
             ]);
-            $userMessage->save();
 
-            // Guardar respuesta del bot con metadatos de sugerencias
-            $botMessage = new Message([
-                'conversation_id' => $conversationId,
-                'sender' => 'bot',
-                'content' => $botResponse,
-                'metadata' => ['suggestions' => $suggestions]
+            $user = User::findOrFail($validated['user_id'] ?? $request->user()->id);
+            $conversation = $this->getActiveConversation($user->id, $user->id_empresa);
+
+            if ($conversation) {
+                $conversationId = $conversation->id;
+            } else {
+
+                $conversation = new Conversation([
+                    'id_user' => $user->id,
+                    'title' => 'Nueva conversación ' . $user->id . ' - ' . $user->name . ' - ' . $user->id_empresa,
+                    'id_empresa' => $user->id_empresa
+                ]);
+                $conversation->save();
+                $conversationId = $conversation->id;
+            }
+
+            if (isset($validated['modelType'])) {
+                $this->aiService->useModel($validated['modelType']);
+            }
+
+            $options = array_filter([
+                'maxTokens' => $validated['maxTokens'] ?? null,
+                'temperature' => $validated['temperature'] ?? null,
+                'topP' => $validated['topP'] ?? null,
+                'topK' => $validated['topK'] ?? null
             ]);
-            $botMessage->save();
+
+            $empresaId = $request->user()->id_empresa ?? null;
+            if ($empresaId) {
+                session(['id_empresa' => $empresaId]);
+            }
+
+            $empresa = null;
+            $metricas = null;
+
+            if ($empresaId) {
+                $empresa = $this->contextService->obtenerInformacionEmpresa($empresaId);
+                $metricas = $this->contextService->obtenerMetricasRecientes($empresaId);
+            }
+
+            $basePrompt = $source == 'WhatsApp' ? config('bedrock.system_prompt_haiku_whatsapp') : config('bedrock.system_prompt_haiku');
+            $systemPrompt = $this->contextService->generateSystemPrompt($empresa, $metricas, $basePrompt);
+            $systemPrompt = $this->contextService->enrichContextWithQueryData($systemPrompt, $empresa, $validated['prompt']);
+
+            $this->aiService->setSystemPrompt($systemPrompt);
+
+            $botResponse = $this->aiService->generateResponse(
+                $validated['prompt'],
+                $validated['history'] ?? [],
+                $options
+            );
+
+            // Extraer sugerencias si existen en la respuesta
+            $suggestions = [];
+            if (preg_match('/<sugerencias>(.*?)<\/sugerencias>/s', $botResponse, $matches)) {
+                $suggestionsText = $matches[1];
+                $suggestions = array_map('trim', explode(',', $suggestionsText));
+
+                // Eliminar la etiqueta de sugerencias de la respuesta final
+                $botResponse = str_replace($matches[0], '', $botResponse);
+            }
+
+            // Asegurar que la respuesta esté en formato HTML
+            if (!preg_match('/<[^>]+>/', $botResponse)) {
+                // Si no contiene etiquetas HTML, convertir a formato HTML básico
+                $botResponse = '<p>' . nl2br(htmlspecialchars($botResponse)) . '</p>';
+            }
+
+            // Si tenemos una conversación, guardar mensajes
+            if ($conversationId && isset($conversation)) {
+                // Guardar mensaje del usuario
+                $userMessage = new Message([
+                    'conversation_id' => $conversationId,
+                    'sender' => 'user',
+                    'content' => $validated['prompt'],
+                    'metadata' => []
+                ]);
+                $userMessage->save();
+
+                // Guardar respuesta del bot con metadatos de sugerencias
+                $botMessage = new Message([
+                    'conversation_id' => $conversationId,
+                    'sender' => 'bot',
+                    'content' => $botResponse,
+                    'metadata' => ['suggestions' => $suggestions]
+                ]);
+                $botMessage->save();
+            }
+
+            // Devolver respuesta con sugerencias
+            return response()->json([
+                'message' => $botResponse,
+                'suggestions' => $suggestions,
+                'conversationId' => $conversationId ?? null,
+                'modelUsed' => config('bedrock.model_id_haiku')
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en procesamiento de chat:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Error al procesar la solicitud',
+                'message' => config('app.debug') ? $e->getMessage() : '<p>Error interno del servidor</p>'
+            ], 500);
         }
-
-        // Devolver respuesta con sugerencias
-        return response()->json([
-            'message' => $botResponse,
-            'suggestions' => $suggestions,
-            'conversationId' => $conversationId ?? null,
-            'modelUsed' => config('bedrock.model_id_haiku')
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error en procesamiento de chat:', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'error' => 'Error al procesar la solicitud',
-            'message' => config('app.debug') ? $e->getMessage() : '<p>Error interno del servidor</p>'
-        ], 500);
     }
-}
+
+    private function getActiveConversation($userId, $empresaId)
+    {
+        return Conversation::where('id_user', $userId)
+            ->where('id_empresa', $empresaId)
+            ->where('updated_at', '>=', now()->subDays(7))
+            ->latest('updated_at')
+            ->first();
+    }
 
     private function generateSystemPrompt($empresa, $metricas)
     {
@@ -206,7 +225,8 @@ class ChatController extends Controller
             // Crear registro de conversación en la base de datos
             $conversation = new Conversation();
             $conversation->title = $title;
-            $conversation->user_id = $request->user()->id ?? null; // Si tienes autenticación
+            $conversation->id_user = $request->user()->id ?? null; // Si tienes autenticación
+            $conversation->id_empresa = $request->user()->id_empresa ?? null;
             $conversation->created_at = now();
             $conversation->save();
 
@@ -250,7 +270,7 @@ class ChatController extends Controller
             $userId = $request->user()->id ?? null;
 
             $conversations = Conversation::when($userId, function ($query, $userId) {
-                return $query->where('user_id', $userId);
+                return $query->where('id_user', $userId);
             })
                 ->orderBy('created_at', 'desc')
                 ->paginate(15);
@@ -282,7 +302,7 @@ class ChatController extends Controller
             $conversation = Conversation::findOrFail($id);
 
             // Verificar permisos si es necesario
-            if ($request->user() && $conversation->user_id !== $request->user()->id) {
+            if ($request->user() && $conversation->id_user !== $request->user()->id) {
                 // Verificar si el usuario tiene permiso para ver esta conversación
                 // ...
             }
@@ -335,7 +355,7 @@ class ChatController extends Controller
      */
     public function viewHistory(Request $request)
     {
-        $conversations = Conversation::where('user_id', $request->user()->id)
+        $conversations = Conversation::where('id_user', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -354,7 +374,7 @@ class ChatController extends Controller
         $conversation = Conversation::findOrFail($id);
 
         // Verificar permisos
-        if ($conversation->user_id !== $request->user()->id) {
+        if ($conversation->id_user !== $request->user()->id) {
             abort(403, 'No tienes permiso para ver esta conversación');
         }
 
