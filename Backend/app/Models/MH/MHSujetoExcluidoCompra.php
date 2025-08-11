@@ -131,13 +131,17 @@ class MHSujetoExcluidoCompra extends Model
         $tributos = NULL;
         $apendice = NULL;
 
-        if ($this->compra->proveedor->nit) {
-            $this->compra->proveedor->tipo_documento = '36';
-            $this->compra->proveedor->num_documento = $this->compra->proveedor->nit ? str_replace('-', '', $this->compra->proveedor->nit) : NULL;
-        }
-        if ($this->compra->proveedor->dui) {
-            $this->compra->proveedor->tipo_documento = '13';
-            $this->compra->proveedor->num_documento = $this->compra->proveedor->dui ? str_replace('-', '', $this->compra->proveedor->dui) : NULL;
+        if($this->compra->proveedor->tipo_documento){
+            $this->compra->proveedor->num_documento = $this->compra->proveedor->dui ? $this->compra->proveedor->dui : NULL;
+        }else{
+            if ($this->compra->proveedor->nit) {
+                $this->compra->proveedor->tipo_documento = '36';
+                $this->compra->proveedor->num_documento = $this->compra->proveedor->nit ? str_replace('-', '', $this->compra->proveedor->nit) : NULL;
+            }
+            if ($this->compra->proveedor->dui) {
+                $this->compra->proveedor->tipo_documento = '13';
+                $this->compra->proveedor->num_documento = $this->compra->proveedor->dui ? str_replace('-', '', $this->compra->proveedor->dui) : NULL;
+            }
         }
 
         return 
