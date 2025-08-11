@@ -16,6 +16,8 @@ class InventarioController extends Controller
     public function exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin)
     {
         try {
+            // ini_set('memory_limit', '1G');
+            // ini_set('max_execution_time', 600);
             $sucursales = $configuracion->sucursales ?? [];
 
             if (empty($sucursales)) {
@@ -58,61 +60,83 @@ class InventarioController extends Controller
             ->join('sucursal_bodegas as b', 'i.id_bodega', '=', 'b.id')
             ->join('sucursales as s', 'b.id_sucursal', '=', 's.id')
             ->leftJoin('categorias as c', 'p.id_categoria', '=', 'c.id')
-            ->leftJoin('producto_proveedores as pp', 'p.id', '=', 'pp.id_producto')
-            ->leftJoin('proveedores as prov', 'pp.id_proveedor', '=', 'prov.id')
             
             ->leftJoin(DB::raw('(
                 SELECT 
                     k.id_producto,
                     k.id_inventario,
                     k.precio_unitario,
-                    k.costo_unitario,
-                    k.fecha,
-                    k.detalle,
-                    ROW_NUMBER() OVER (
-                        PARTITION BY k.id_producto, k.id_inventario 
-                        ORDER BY k.fecha DESC, k.id DESC
-                    ) as rn
+                    k.costo_unitario
                 FROM kardexs k
-                WHERE k.precio_unitario > 0 OR k.costo_unitario > 0
+                INNER JOIN (
+                    SELECT 
+                        id_producto, 
+                        id_inventario, 
+                        MAX(fecha) as max_fecha,
+                        MAX(id) as max_id
+                    FROM kardexs 
+                    WHERE (precio_unitario > 0 OR costo_unitario > 0)
+                    GROUP BY id_producto, id_inventario
+                ) k_max ON k.id_producto = k_max.id_producto 
+                       AND k.id_inventario = k_max.id_inventario 
+                       AND k.fecha = k_max.max_fecha
+                       AND k.id = k_max.max_id
+                WHERE (k.precio_unitario > 0 OR k.costo_unitario > 0)
             ) as k_reciente'), function($join) {
                 $join->on('p.id', '=', 'k_reciente.id_producto')
-                     ->on('b.id', '=', 'k_reciente.id_inventario')
-                     ->where('k_reciente.rn', '=', 1);
+                     ->on('i.id_bodega', '=', 'k_reciente.id_inventario');
             })
+            
+            ->leftJoin(DB::raw('(
+                SELECT 
+                    pp.id_producto,
+                    CASE 
+                        WHEN prov.tipo = "Persona" THEN CONCAT(prov.nombre, " ", prov.apellido)
+                        WHEN prov.tipo = "Empresa" THEN prov.nombre_empresa
+                        ELSE "Sin proveedor"
+                    END as nombre_proveedor
+                FROM producto_proveedores pp
+                LEFT JOIN proveedores prov ON pp.id_proveedor = prov.id
+                INNER JOIN (
+                    SELECT id_producto, MAX(id) as max_id
+                    FROM producto_proveedores 
+                    GROUP BY id_producto
+                ) pp_max ON pp.id_producto = pp_max.id_producto AND pp.id = pp_max.max_id
+            ) as prov_info'), 'p.id', '=', 'prov_info.id_producto')
             
             ->select([
                 'p.nombre as nombre_producto',
                 'c.nombre as nombre_categoria', 
                 'p.codigo as codigo_producto',
-                DB::raw('COALESCE(k_reciente.precio_unitario, p.precio, 0) as precio_unitario'),
-                DB::raw('COALESCE(k_reciente.costo_unitario, p.costo_promedio, p.costo, 0) as costo_unitario'),
                 'b.nombre as nombre_bodega',
                 's.nombre as nombre_sucursal',
                 'i.stock as cantidad_actual',
                 'i.updated_at as fecha_ultima_actualizacion',
-                DB::raw('CASE 
-                    WHEN prov.tipo = "Persona" THEN CONCAT(prov.nombre, " ", prov.apellido)
-                    WHEN prov.tipo = "Empresa" THEN prov.nombre_empresa
-                    ELSE "Sin proveedor"
-                END as nombre_proveedor'),
+                
+                DB::raw('COALESCE(k_reciente.precio_unitario, p.precio, 0) as precio_unitario'),
+                DB::raw('COALESCE(k_reciente.costo_unitario, p.costo_promedio, p.costo, 0) as costo_unitario'),
+                DB::raw('COALESCE(prov_info.nombre_proveedor, "Sin proveedor") as nombre_proveedor'),
+                
                 DB::raw('(i.stock * COALESCE(k_reciente.costo_unitario, p.costo_promedio, p.costo, 0)) as valor_inventario'),
                 DB::raw('(i.stock * COALESCE(k_reciente.precio_unitario, p.precio, 0)) as precio_total'),
                 DB::raw('(i.stock * COALESCE(k_reciente.costo_unitario, p.costo_promedio, p.costo, 0)) as costo_total'),
+                
                 DB::raw('CASE 
                     WHEN i.stock <= i.stock_minimo THEN "Bajo" 
                     WHEN i.stock >= i.stock_maximo THEN "Alto" 
                     ELSE "Normal" 
                 END as estado_stock')
             ])
+            
             ->whereIn('b.id', $bodegas)
             ->where('s.id_empresa', Auth::user()->id_empresa)
-            ->where('i.updated_at', '<=', $fecha_fin . ' 23:59:59') 
+            ->where('i.stock', '>', 0)
+            ->where('i.updated_at', '<=', $fecha_fin . ' 23:59:59')
             ->whereNull('i.deleted_at')
             ->whereNull('p.deleted_at')
+            
             ->orderBy('s.nombre')
-            ->orderBy('b.nombre') 
-            ->orderBy('c.nombre')
+            ->orderBy('b.nombre')
             ->orderBy('p.nombre');
     }
 
@@ -195,6 +219,6 @@ class InventarioController extends Controller
             $sucursalInfo = '_' . count($sucursales) . '_sucursales';
         }
 
-        return $nombreBase . '_'. $sucursalInfo;
+        return $nombreBase . '_' . $sucursalInfo;
     }
 }
