@@ -98,7 +98,7 @@
 
               <div class="form-group col-md-12 col-lg-3">
                   <label for="nombre">Cantidad de combos</label>
-                  <input type="text" class="form-control"  name="nombre" placeholder="Escribe aquí" [(ngModel)]="producto.stock" (ngModelChange)="calCantidadenCombo()">
+                  <input type="number" class="form-control" name="nombre" placeholder="0" [(ngModel)]="producto.stock" (ngModelChange)="calCantidadenCombo()">
               </div>
 
               <div class="form-group col-md-12 col-lg-3">
