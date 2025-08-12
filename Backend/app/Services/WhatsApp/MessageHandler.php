@@ -153,7 +153,7 @@ class MessageHandler
                 return $session->usuario;
             });
 
-            $response = $this->chatController->bedrockChat($request);
+            $response = $this->chatController->bedrockChat($request,'WhatsApp');
 
             $responseData = $response->getData(true);
 

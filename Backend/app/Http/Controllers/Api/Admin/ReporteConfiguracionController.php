@@ -6,6 +6,7 @@ use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVended
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorPdfExport;
 use App\Http\Controllers\Api\Ventas\VentasController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\InventarioController;
 use App\Models\Admin\ReporteConfiguracion;
 use App\Models\Admin\Sucursal;
 use Illuminate\Http\Request;
@@ -124,6 +125,7 @@ class ReporteConfiguracionController extends Controller
 
         return response()->json($configuracion, 200);
     }
+    
     public function show($id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
@@ -310,7 +312,15 @@ class ReporteConfiguracionController extends Controller
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
 
+                case 'inventario-por-sucursal':
+                    $controller = new VentasController();
+                        
+                    $destinatarios = $request->email_prueba
+                    ? [$request->email_prueba]
+                    : $configuracion->destinatarios;
 
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
                 default:
                     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
             }
@@ -359,6 +369,10 @@ class ReporteConfiguracionController extends Controller
                     return $resultado;
                 case 'detalle-ventas-vendedor':
                     $controller = new VentasController();
+                    $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
+                    return $resultado;
+                case 'inventario-por-sucursal':
+                    $controller = new InventarioController();
                     $resultado = $controller->exportarReporteProgramado($configuracion, $fecha_inicio, $fecha_fin);
                     return $resultado;
                 default:

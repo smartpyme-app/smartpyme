@@ -383,4 +383,10 @@ public changePhoneNumber(event: any) {
     window.location.href = `/usuario/${encryptedId}`;
   }
 
+  crearUsuario() {
+    // Para nuevo usuario, usamos un ID especial (0) que será detectado en el componente usuario
+    const encryptedId = this.encryptService.encrypt(0);
+    window.location.href = `/usuario/${encryptedId}`;
+  }
+
 }

@@ -26,9 +26,83 @@ export class UsuarioComponent implements OnInit {
   public rol: any = {};
   public loading = false;
   public mostrarCambioContrasena = false;
+  public countries = [
+    {
+      code: 'SV',
+      name: 'El Salvador',
+      dial: '+503',
+      flag: '🇸🇻',
+      mask: '####-####',
+      maxLength: 9,
+    },
+    {
+      code: 'GT',
+      name: 'Guatemala',
+      dial: '+502',
+      flag: '🇬🇹',
+      mask: '####-####',
+      maxLength: 8,
+    },
+    {
+      code: 'HN',
+      name: 'Honduras',
+      dial: '+504',
+      flag: '🇭🇳',
+      mask: '####-####',
+      maxLength: 8,
+    },
+    {
+      code: 'NI',
+      name: 'Nicaragua',
+      dial: '+505',
+      flag: '🇳🇮',
+      mask: '####-####',
+      maxLength: 8,
+    },
+    {
+      code: 'CR',
+      name: 'Costa Rica',
+      dial: '+506',
+      flag: '🇨🇷',
+      mask: '####-####',
+      maxLength: 8,
+    },
+    {
+      code: 'PA',
+      name: 'Panamá',
+      dial: '+507',
+      flag: '🇵🇦',
+      mask: '####-####',
+      maxLength: 8,
+    },
+    {
+      code: 'US',
+      name: 'Estados Unidos',
+      dial: '+1',
+      flag: '🇺🇸',
+      mask: '(###) ###-####',
+      maxLength: 14,
+    },
+    {
+      code: 'CA',
+      name: 'Canadá',
+      dial: '+1',
+      flag: '🇨🇦',
+      mask: '(###) ###-####',
+      maxLength: 14,
+    },
+    {
+      code: 'MX',
+      name: 'México',
+      dial: '+52',
+      flag: '🇲🇽',
+      mask: '### ### ####',
+      maxLength: 12,
+    },
+  ];
   public searchTerm: string = '';
   public filterModules: any[] = [];
-
+  public selectedCountry = this.countries[0];
 
   // Img Upload
   public file?: File;
@@ -41,7 +115,6 @@ export class UsuarioComponent implements OnInit {
   public nuevoEmail: string = '';
   public newPassword: string = '';
   public nuevoCodigoAuth: string = '';
-
 
   public confirmPassword: string = '';
   public confirmarCodigoAuth: string = '';
@@ -115,6 +188,12 @@ export class UsuarioComponent implements OnInit {
           .split('_')
           .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
+
+        this.nuevoCodigoAuth = usuario.codigo_autorizacion;
+
+        if (usuario.telefono) {
+          this.detectCountryFromPhone(usuario.telefono);
+        }
 
         this.loading = false;
       },
@@ -518,9 +597,192 @@ export class UsuarioComponent implements OnInit {
       },
     });
   }
+
   toggleModule(module: any) {
     module.expanded = !module.expanded;
   }
+
+  sendFile(file: File) {
+    let formData: FormData = new FormData();
+    formData.append('file', file);
+    formData.append('id', this.usuario.id);
+    this.apiService.store('usuario/avatar', formData).subscribe(
+      (response: any) => {
+      },
+      (error) => {
+        console.error('Error completo:', error);
+      }
+    );
+  }
+
+
+  onCountryChange(country: any) {
+    this.selectedCountry = country;
+    this.usuario.telefono = '';
+  }
+
+
+  detectCountryFromPhone(phone: string) {
+    if (!phone) {
+      return;
+    }
+
+    let cleanPhone = phone.replace(/\D/g, '');
+
+    if (phone.startsWith('+')) {
+
+      for (let country of this.countries) {
+        const dialCode = country.dial.replace('+', '');
+
+        if (cleanPhone.startsWith(dialCode)) {
+          this.selectedCountry = country;
+
+          const localNumber = cleanPhone.substring(dialCode.length);
+
+          this.usuario.telefono = localNumber;
+
+
+          this.formatLocalPhone(localNumber);
+          return;
+        }
+      }
+    } else {
+
+      if (cleanPhone.length <= 9) {
+        this.selectedCountry =
+          this.countries.find((c) => c.code === 'SV') || this.countries[0];
+      } else if (cleanPhone.length === 10) {
+        this.selectedCountry =
+          this.countries.find((c) => c.code === 'US') || this.countries[0];
+      }
+      this.usuario.telefono = cleanPhone;
+      this.formatLocalPhone(cleanPhone);
+    }
+  }
+
+  formatLocalPhone(localNumber: string) {
+    if (!localNumber) return;
+
+    let formatted = '';
+    const clean = localNumber.replace(/\D/g, '');
+
+    if (
+      this.selectedCountry.code === 'SV' ||
+      ['GT', 'HN', 'NI', 'CR', 'PA'].includes(this.selectedCountry.code)
+    ) {
+      if (clean.length >= 4) {
+        formatted = clean.substring(0, 4) + '-' + clean.substring(4, 8);
+      } else {
+        formatted = clean;
+      }
+    } else if (['US', 'CA'].includes(this.selectedCountry.code)) {
+      if (clean.length >= 6) {
+        formatted =
+          '(' +
+          clean.substring(0, 3) +
+          ') ' +
+          clean.substring(3, 6) +
+          '-' +
+          clean.substring(6, 10);
+      } else if (clean.length >= 3) {
+        formatted = '(' + clean.substring(0, 3) + ') ' + clean.substring(3);
+      } else {
+        formatted = clean;
+      }
+    } else if (this.selectedCountry.code === 'MX') {
+      if (clean.length >= 6) {
+        formatted =
+          clean.substring(0, 3) +
+          ' ' +
+          clean.substring(3, 6) +
+          ' ' +
+          clean.substring(6, 10);
+      } else if (clean.length >= 3) {
+        formatted = clean.substring(0, 3) + ' ' + clean.substring(3);
+      } else {
+        formatted = clean;
+      }
+    }
+
+    this.usuario.telefono = formatted;
+  }
+
+  formatPhone(event: any) {
+    let value = event.target.value.replace(/\D/g, '');
+
+    this.formatLocalPhone(value);
+    event.target.value = this.usuario.telefono;
+  }
+
+  getFullPhoneNumber(): string {
+    if (!this.usuario.telefono) return '';
+
+    const cleanPhone = this.usuario.telefono.replace(/\D/g, '');
+    return this.selectedCountry.dial + cleanPhone;
+  }
+
+  formatPhoneDisplay() {
+    if (!this.usuario.telefono) return;
+
+    const cleanPhone = this.usuario.telefono.replace(/\D/g, '');
+    let formattedPhone = '';
+
+    if (
+      this.selectedCountry.code === 'SV' ||
+      ['GT', 'HN', 'NI', 'CR', 'PA'].includes(this.selectedCountry.code)
+    ) {
+      if (cleanPhone.length >= 4) {
+        formattedPhone =
+          cleanPhone.substring(0, 4) + '-' + cleanPhone.substring(4, 8);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    } else if (['US', 'CA'].includes(this.selectedCountry.code)) {
+      if (cleanPhone.length >= 6) {
+        formattedPhone =
+          '(' +
+          cleanPhone.substring(0, 3) +
+          ') ' +
+          cleanPhone.substring(3, 6) +
+          '-' +
+          cleanPhone.substring(6, 10);
+      } else if (cleanPhone.length >= 3) {
+        formattedPhone =
+          '(' + cleanPhone.substring(0, 3) + ') ' + cleanPhone.substring(3);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    } else if (this.selectedCountry.code === 'MX') {
+      if (cleanPhone.length >= 6) {
+        formattedPhone =
+          cleanPhone.substring(0, 3) +
+          ' ' +
+          cleanPhone.substring(3, 6) +
+          ' ' +
+          cleanPhone.substring(6, 10);
+      } else if (cleanPhone.length >= 3) {
+        formattedPhone =
+          cleanPhone.substring(0, 3) + ' ' + cleanPhone.substring(3);
+      } else {
+        formattedPhone = cleanPhone;
+      }
+    }
+
+    this.usuario.telefono = formattedPhone;
+  }
+
+  getPlaceholder(): string {
+    return this.selectedCountry.mask;
+  }
+
+  onCountrySelectChange(event: any) {
+    const selectedCode = event.target.value;
+    const country = this.countries.find((c) => c.code === selectedCode);
+    if (country) {
+      this.onCountryChange(country);
+    }
+  }
+
 
   getSimplePermissionName(fullName: string): string {
     const parts = fullName.split('.');
@@ -547,6 +809,7 @@ export class UsuarioComponent implements OnInit {
 
     return false;
   }
+
 
   onPermissionChange(permission: any) {
     const permissionName = permission.name;

@@ -251,11 +251,11 @@ export class FacturacionCompraComponent implements OnInit {
     this.compra.iva_retenido = this.compra.retencion ? this.compra.sub_total * 0.01 : 0;
     this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0;
 
-    if (this.compra.cobrar_impuestos) {
-      this.compra.iva = (this.compra.sub_total * 0.13).toFixed(2);
-    } else {
-      this.compra.iva = 0;
-    }
+        if(this.compra.cobrar_impuestos){
+            this.compra.iva = ( this.compra.sub_total * (this.apiService.auth_user().empresa.iva / 100) ).toFixed(2);
+        }else{
+            this.compra.iva = 0;
+        }
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total_costo = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'total_costo'))).toFixed(2);

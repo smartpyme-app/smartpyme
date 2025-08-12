@@ -18,6 +18,7 @@ export interface BedrockRequest {
   maxTokens?: number;
   temperature?: number;
   topP?: number;
+  user_id?: number;
 }
 
 @Injectable({
@@ -34,7 +35,6 @@ export class ChatService {
     'Comparativa de ventas con el mes anterior',
     'Proyección de ingresos para el próximo mes',
     'Estado de resultados mensual',
-    'Facturas pendientes por pagar',
     'Rentabilidad del mes actual',
     'Cuentas por cobrar con vencimiento en 30 días',
     'Total de egresos del mes',
@@ -168,6 +168,7 @@ export class ChatService {
     const request: BedrockRequest = {
       prompt,
       history,
+      user_id: JSON.parse(localStorage.getItem('SP_auth_user')!).id,
       // La configuración de maxTokens, temperature, etc. se maneja en el backend
     };
 

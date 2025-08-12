@@ -254,73 +254,69 @@
 </section>
 
 <section class="card border-0 p-3 mb-3">
-  <h6 class="mt-3">Productos y servicios</h6>
-  <app-venta-detalles
-    [venta]="venta"
-    [usuarios]="usuarios"
-    [customFields]="customFields"
-    [selectedCustomFields]="selectedCustomFields"
-    (update)="updateVenta($event)"
-    (sumTotal)="sumTotal()"
-  >
-  </app-venta-detalles>
-  <div class="row">
-    <div class="col-md-12">
-      <table class="table table-sm table-borderless table-condensed mb-0">
-        <tbody>
-        <tr>
-          <td class="text-right"><b>Sub Total</b></td>
-          <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2' }}</td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr>
-          <td class="text-right"><b>Descuentos</b></td>
-          <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2' }}</td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr>
-          <td class="text-right"><b>Impuestos</b></td>
-          <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2' }}</td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr *ngFor="let impuesto of venta?.impuestos">
-          <td class="text-right"> {{ impuesto.nombre }}</td>
-          <td style="width: 150px;" class="text-right">
-            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
-            <span *ngIf="impuesto?.monto > 0"
-                  tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
-          </td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr *ngIf="venta.retencion">
-          <td class="text-right"><b>Retención (1%)</b></td>
-          <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2' }}</td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr *ngIf="venta.exenta > 0">
-          <td class="text-right"><b>Ventas Exentas</b></td>
-          <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr *ngIf="venta.no_sujeta > 0">
-          <td class="text-right"><b>Ventas No Sujetas</b></td>
-          <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2' }}</b>
-          </td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr *ngIf="venta.cuenta_a_terceros > 0">
-          <td class="text-right"><b>Cuenta a terceros</b></td>
-          <td style="width: 150px;" class="text-right">
-            <b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2' }}</b></td>
-          <td style="width: 50px;"></td>
-        </tr>
-        <tr>
-          <td class="text-right"><b>Total</b></td>
-          <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2' }}</b></td>
-          <td style="width: 50px;"></td>
-        </tr>
-        </tbody>
-      </table>
+    <h6 class="mt-3">Productos y servicios</h6>
+
+    <app-venta-detalles [venta]="venta" [usuarios]="usuarios" (update)="updateVenta($event)" (sumTotal)="sumTotal()"></app-venta-detalles>
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-sm table-borderless table-condensed mb-0">
+                <tbody>
+                    <tr>
+                        <td class="text-right"><b>Sub Total</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.sub_total | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"><b>Descuentos</b> </td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.descuento | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Impuestos</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngFor="let impuesto of venta?.impuestos">
+                        <td class="text-right"> {{ impuesto.nombre }} </td>
+                        <td style="width: 150px;" class="text-right">
+                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
+                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                        </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.retencion">
+                        <td class="text-right"> <b>Retención (1%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.renta">
+                        <td class="text-right"> <b>Renta (10%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.exenta > 0">
+                        <td class="text-right"> <b>Ventas Exentas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.no_sujeta > 0">
+                        <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr *ngIf="venta.cuenta_a_terceros > 0">
+                        <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                    <tr>
+                        <td class="text-right"> <b>Total</b> </td>
+                        <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
+                </tbody>
+            </table>
 
 
         </div>
@@ -363,14 +359,20 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="percepcion">Retención</label>
+              <label for="percepcion">Retención (1%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-switch bg-light-info rounded">
+                <label for="renta">Renta (10%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
@@ -714,18 +716,18 @@
   </div>
   <div class="modal-body">
     <div class="row text-center">
-      <form name="form" (ngSubmit)="supervisorCheck()">
-        <div class="form-group col-md-12">
-          <label for="codigo">Ingrese el código de supervisor:</label>
-          <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
-        </div>
-        <div class="col-md-12">
-          <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
-            <span *ngIf="!loading">Guardar</span>
-            <span *ngIf="loading">Guardando...</span>
-          </button>
-        </div>
-      </form>
+        <form name="form" (ngSubmit)="supervisorCheck()" autocomplete="off">
+            <div class="form-group col-md-12">
+                <label for="codigo">Ingrese el código de supervisor:</label>
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" autocomplete="off">
+            </div>
+            <div class="col-md-12">
+                <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
+                    <span *ngIf="!loading">Guardar</span>
+                    <span *ngIf="loading">Guardando...</span>
+                </button>
+            </div>
+        </form>
     </div>
   </div>
 </ng-template>
