@@ -52,7 +52,7 @@ export class CrearProveedorComponent implements OnInit {
             this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
         }
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
     setGiro(){
