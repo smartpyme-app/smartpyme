@@ -196,8 +196,8 @@ export class ProductosComponent implements OnInit {
        this.ajuste = {};
        this.producto = producto;
        this.inventario = this.producto.inventarios.find((item:any) => item.id_bodega == this.filtros.id_bodega);
-       console.log(this.filtros);
-       console.log(this.producto);
+    //    console.log(this.filtros);
+    //    console.log(this.producto);
        this.ajuste.stock_actual = this.inventario.stock;
        this.alertService.modal = true;
        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});

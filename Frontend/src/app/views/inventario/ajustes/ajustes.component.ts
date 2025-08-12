@@ -119,7 +119,7 @@ export class AjustesComponent implements OnInit {
 
     public setBodega(){
         this.sucursal = this.producto?.inventarios.find((item:any) => item.id_bodega == this.ajuste.id_bodega);
-        console.log(this.sucursal);
+        // console.log(this.sucursal);
         this.ajuste.stock_actual = this.sucursal.stock;
     }
 
