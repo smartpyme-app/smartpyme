@@ -59,7 +59,7 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="id_bodega">Bodega:</label>
-                <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega">
+                <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega" (change)="obtenerIdSucursal(inventario.id_bodega)">
                     <option value="">Seleccione aquí</option>
                     <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
                 </select>

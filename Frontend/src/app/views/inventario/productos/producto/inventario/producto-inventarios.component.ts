@@ -30,7 +30,6 @@ export class ProductoInventariosComponent implements OnInit {
     }
 
     public setAjuste(event:any){
-        console.log(this.producto.inventarios);
         this.inventario.stock = event.stock_real;
     }
 
@@ -47,22 +46,30 @@ export class ProductoInventariosComponent implements OnInit {
             this.inventario.stock = 0;
             this.inventario.id_sucursal = '';
             this.inventario.id_producto = this.producto.id;
-            this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
-        }else{
-            this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
 
     public onSubmit() {
         this.loading = true;
+        
         this.apiService.store('inventario', this.inventario).subscribe(inventario => {
-            if(!this.inventario.id)
+            if(!this.inventario.id) {
                 this.producto.inventarios.push(inventario);
+                this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
+            } else {
+                this.alertService.success('Inventario actualizado', 'El inventario fue actualizado exitosamente.');
+            }
+            
             this.inventario = {};
             this.loading = false;
             this.modalRef.hide();
-        },error => {this.alertService.error(error); this.loading = false; });
+        }, error => {
+            const errorMessage = error.error?.error || error.error?.message || error.message || 'Error desconocido';
+
+            this.alertService.error(errorMessage); 
+            this.loading = false; 
+        });
     }
 
     public delete(id:number) {
@@ -77,6 +84,10 @@ export class ProductoInventariosComponent implements OnInit {
                    
         }
 
+    }
+
+    obtenerIdSucursal(id:number) {
+        this.inventario.id_sucursal = this.bodegas.find((bodega:any) => bodega.id == id).id_sucursal;
     }
 
 }
