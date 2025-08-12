@@ -134,7 +134,7 @@ export class UsuarioComponent implements OnInit {
     public encryptService: EncryptService
   ) {}
   public authUser: any = {};
-  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
+  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543];
 
 
   ngOnInit() {
