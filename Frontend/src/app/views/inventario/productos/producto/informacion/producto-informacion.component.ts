@@ -12,8 +12,10 @@ import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { co } from '@fullcalendar/core/internal-common';
+import { finalize } from 'rxjs/operators';
+
 
 @Component({
   selector: 'app-producto-informacion',
@@ -49,7 +51,8 @@ export class ProductoInformacionComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private modalService: BsModalService // Agregar esto
+    private modalService: BsModalService,
+    private zone: NgZone
   ) {
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
@@ -108,11 +111,11 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   public loadAtributes() {
-    console.log('color1', this.producto.color);
+    // console.log('color1', this.producto.color);
     this.apiService.getAll('atributos').subscribe(
       (atributos) => {
         //this.categorias = categorias;
-        console.log('color2', this.producto.color);
+        // console.log('color2', this.producto.color);
         //  recorrer los atributos por tipo 'talla', 'color', 'material'
         this.tallas = atributos.filter((cat: any) => {
           return cat.tipo == 'talla';
@@ -138,7 +141,7 @@ export class ProductoInformacionComponent implements OnInit {
 
   public setCategoria(categoria: any) {
     this.loadCategorias();
-    console.log('entro');
+    // console.log('entro');
     if (categoria.subcategoria) {
       this.subcategRes.push(categoria);
       this.producto.id_subcategoria = categoria.id;
@@ -203,51 +206,43 @@ export class ProductoInformacionComponent implements OnInit {
 
   public onSubmit() {
     this.guardar = true;
-    this.apiService.store('producto', this.producto).subscribe(
-      (producto) => {
-        this.guardar = false;
-       // this.loading = false;
-        if (!this.producto.id) {
-          this.producto = producto;
-        }
-        if (this.producto.tipo == 'Producto') {
-          this.router.navigate(['/producto/editar/' + producto.id]);
-          this.alertService.success(
-            'Producto guardado',
-            'El producto fue guardado exitosamente.'
-          );
+    this.cdr.markForCheck();
 
-        }
-        if (this.producto.tipo == 'Servicio') {
-          this.router.navigate(['/servicio/editar/' + producto.id]);
-          this.alertService.success(
-            'Servicio guardado',
-            'El servicio fue guardado exitosamente.'
-          );
-        }
-        if (this.producto.tipo == 'Compuesto') {
-          this.router.navigate(['/producto/editar/' + producto.id]);
-          this.alertService.success(
-            'Producto compuesto guardado',
-            'El producto compuesto fue guardado exitosamente.'
-          );
-        }
-        if (this.producto.tipo == 'Materia Prima') {
-          this.router.navigate(['/materias-prima/editar/' + producto.id]);
-          this.alertService.success(
-            'Materia prima guardada',
-            'La materia prima fue guardada exitosamente.'
-          );
-        }
-      },
+    this.apiService.store('producto', this.producto)
+      .pipe(
+        finalize(() => {
+          // Si tu ApiService corre fuera de Angular, asegúrate de volver a la zona:
+          this.zone.run(() => {
+            this.guardar = false;
+            this.cdr.markForCheck();
+          });
+        })
+      )
+      .subscribe({
+        next: (producto) => {
+          if (!this.producto.id) this.producto = producto;
 
-
-      (error) => {
-        this.alertService.error(error);
-        this.guardar = false;
-        this.loading = false;
-      }
-    );
+          // Navegación + alertas
+          const tipo = this.producto.tipo;
+          if (tipo === 'Producto' || tipo === 'Compuesto') {
+            this.router.navigate(['/producto/editar/' + producto.id]);
+            this.alertService.success(
+              tipo === 'Compuesto' ? 'Producto compuesto guardado' : 'Producto guardado',
+              `El ${tipo.toLowerCase()} fue guardado exitosamente.`
+            );
+          } else if (tipo === 'Servicio') {
+            this.router.navigate(['/servicio/editar/' + producto.id]);
+            this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
+          } else if (tipo === 'Materia Prima') {
+            this.router.navigate(['/materias-prima/editar/' + producto.id]);
+            this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente.');
+          }
+        },
+        error: (err) => {
+          this.alertService.error(err);
+          // `guardar` se apaga en finalize()
+        }
+      });
   }
 
   public barcode() {
@@ -406,8 +401,8 @@ export class ProductoInformacionComponent implements OnInit {
       (response) => {
        // this.loadAtributes();
 
-        console.log('tipo', this.tipoAtributoActual);
-        console.log('response', response);
+        // console.log('tipo', this.tipoAtributoActual);
+        // console.log('response', response);
 
         // Asignar el nuevo valor según el tipo
         switch (this.tipoAtributoActual) {
