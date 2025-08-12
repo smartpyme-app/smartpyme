@@ -109,6 +109,7 @@ export class ProductoComboComponent implements OnInit {
       if (!this.producto.id) {
         this.producto = producto;
       }
+      this.alertService.success('success', 'Producto compuesto creado correctamente');
       this.router.navigate(['/productos']);
     }, error => { this.alertService.error(error); this.guardar = false; });
   }

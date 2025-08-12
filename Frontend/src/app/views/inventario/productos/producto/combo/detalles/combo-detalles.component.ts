@@ -67,7 +67,6 @@ export class ComboDetallesComponent implements OnInit {
 
   // Agregar detalle
   productoSelect(producto: any): void {
-    console.log(this.producto);
     this.detalle = Object.assign({}, producto);
     this.detalle.id = null;
 

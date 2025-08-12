@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+use App\Models\Inventario\Composiciones\Composicion;
 
 class ProductosController extends Controller
 {
@@ -296,6 +297,66 @@ class ProductosController extends Controller
 
         return Response()->json($producto, 200);
     }
+
+    public function storeCompuesto(Request $request){
+
+        DB::beginTransaction();
+        if(empty($request->codigo)) {
+            $request['codigo'] = NULL;
+        }
+
+        $request->validate([
+            'nombre'            => 'required|max:255',
+            'precio'            => 'required|numeric',
+            'costo'             => 'required|numeric',
+            'id_categoria'      => 'required',
+            'id_empresa'        => 'required',
+            'detalles'          => 'required',
+        ], [
+            // 'nombre.required' => 'Agregue un nombre.',
+            'id_categoria.required' => 'El campo categoria es obligatorio.',
+            'detalles.required' => 'Agrege los detalles del producto',
+            // 'costo.required' => 'Agregue el costo.'
+        ]);
+
+        if ($request->id)
+            $producto = Producto::findOrFail($request->id);
+        else
+            $producto = new Producto;
+
+        $producto->fill($request->all());
+        $producto->save();
+
+        foreach($request->detalles as $detalle){
+            $composicion = new Composicion();
+            //$composicion->fill($detalle->all()); FUNCION ALL QUEDO EN EL SERVER
+            $composicion->cantidad = $detalle["cantidad"];
+            $composicion->id_producto = $detalle["id_producto"];
+            $composicion->id_compuesto = $producto->id;
+            $composicion->save();
+        }
+
+        // Configurar inventarios para las bodegas
+        if(!$request->id && $producto->tipo != 'Servicio'){
+            $bodegas = Bodega::all();
+            foreach($bodegas as $bodega){
+                $inventario = new Inventario;
+                $inventario->id_producto    = $producto->id;
+                $inventario->stock          = 0;
+                $inventario->id_bodega    = $bodega->id;
+                $inventario->save();
+            }
+        }
+        ## se define el inventario del compuesto en la bodega seleccionada
+        $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
+        $inventarioInicial->stock = $request->stock;
+        $inventarioInicial->save();
+        
+        DB::commit();
+        
+        return Response()->json($producto, 200);
+    }
+
 
     public function delete($id)
     {
