@@ -374,9 +374,13 @@
                     <label for="num_cotizacion">Núm Cotización:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
                 </div>
-                <div class="form-group col-md-6">
-                    <label for="num_orden">Núm de orden:</label>
-                    <input type="number" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden">
+                <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                    <label for="num_orden">Número de orden:</label><br>
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
+                </div>
+                <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
+                    <label for="num_orden_exento">Número de orden exento:</label><br>
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
                 </div>
                 <div class="form-group col-sm-6">
                     <label for="tipo_operacion">Tipo de operación:</label>
