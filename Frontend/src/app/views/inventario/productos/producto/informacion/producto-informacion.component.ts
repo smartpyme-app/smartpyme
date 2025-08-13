@@ -108,11 +108,8 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   public loadAtributes() {
-    console.log('color1', this.producto.color);
     this.apiService.getAll('atributos').subscribe(
       (atributos) => {
-        //this.categorias = categorias;
-        console.log('color2', this.producto.color);
         //  recorrer los atributos por tipo 'talla', 'color', 'material'
         this.tallas = atributos.filter((cat: any) => {
           return cat.tipo == 'talla';
@@ -138,7 +135,6 @@ export class ProductoInformacionComponent implements OnInit {
 
   public setCategoria(categoria: any) {
     this.loadCategorias();
-    console.log('entro');
     if (categoria.subcategoria) {
       this.subcategRes.push(categoria);
       this.producto.id_subcategoria = categoria.id;
@@ -147,7 +143,6 @@ export class ProductoInformacionComponent implements OnInit {
     } else {
       this.categorias.push(categoria);
        this.producto.id_categoria = categoria.id;
-     // this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
     }
   }
 
@@ -206,7 +201,6 @@ export class ProductoInformacionComponent implements OnInit {
     this.apiService.store('producto', this.producto).subscribe(
       (producto) => {
         this.guardar = false;
-       // this.loading = false;
         if (!this.producto.id) {
           this.producto = producto;
         }
@@ -327,8 +321,6 @@ export class ProductoInformacionComponent implements OnInit {
 
 
   addAttribute(event: any, tipo: string) {
-    // console.log('event', event);
-    // console.log('tipo', tipo);
     switch (tipo) {
       case 'talla': {
         this.producto.talla = event ? event.valor : null;
@@ -347,7 +339,6 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   private loadCategorias() {
-    // Cargar categorías principales
     this.apiService.getAll('categorias/padre').subscribe(
       (categorias) => {
         this.categorias = categorias;
@@ -404,10 +395,6 @@ export class ProductoInformacionComponent implements OnInit {
 
     this.apiService.store('atributos', this.nuevoAtributo).subscribe(
       (response) => {
-       // this.loadAtributes();
-
-        console.log('tipo', this.tipoAtributoActual);
-        console.log('response', response);
 
         // Asignar el nuevo valor según el tipo
         switch (this.tipoAtributoActual) {
