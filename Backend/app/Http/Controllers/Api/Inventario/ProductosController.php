@@ -35,62 +35,103 @@ use App\Models\Inventario\Composiciones\Composicion;
 class ProductosController extends Controller
 {
 
-
     public function index(Request $request)
     {
-
-        $productos = Producto::with(['inventarios' => function ($q) use ($request) {
-            if ($request->id_bodega) {
-                $q->where('id_bodega', $request->id_bodega);
-            }
-        }, 'precios'])
-            ->when($request->id_categoria, function ($query) use ($request) {
-                return $query->where('id_categoria', $request->id_categoria);
-            })
-            ->when($request->buscador, function ($query) use ($request) {
-//                return $query->where(function ($subQuery) use ($request) {
-//                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
-//                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
-//                });
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('marca', 'like', "%" . $request->buscador . "%")
-                    ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
-            })
-            ->when($request->sin_stock, function ($query) use ($request) {
-                return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
-                    ->whereRaw('COALESCE(inventario.stock, 0) < COALESCE(inventario.stock_minimo, 0)');
-            })
-            ->when($request->nombre, function ($q) use ($request) {
-                $q->where('nombre', $request->nombre);
-            })
-            ->when($request->compuestos !== null, function ($q) use ($request) {
-                $q->whereHas('composiciones');
-            })
-            ->when($request->id_proveedor, function ($q) use ($request) {
-                $q->whereHas('proveedores', function ($q) use ($request) {
-                    return $q->where("id_proveedor", $request->id_proveedor);
-                });
-            })
-            ->when($request->estado !== null, function ($q) use ($request) {
-                $q->where('enable', !!$request->estado);
-            })
-
-            ->when($request->marca, function ($query) use ($request) {
-                return $query->where('marca', 'like', '%' . $request->marca . '%');
-            })
-            ->whereIn('tipo', ['Producto', 'Compuesto'])
-            // ->whereNotIn('id_categoria', [1,2])
-            ->orderBy('enable', 'desc')
-            ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
-            ->paginate($request->paginate);
-
+        $orden = $request->orden ?: 'nombre';
+        $direccion = $request->direccion ?: 'desc';
+    
+        if ($orden === 'categoria') {
+            // Para ordenar por categoría, construimos la query de manera diferente
+            $productos = Producto::withoutGlobalScope('empresa') // Removemos el scope temporalmente
+                ->where('productos.id_empresa', Auth::user()->id_empresa) // Lo aplicamos manualmente
+                ->with(['inventarios' => function ($q) use ($request) {
+                    if ($request->id_bodega) {
+                        $q->where('id_bodega', $request->id_bodega);
+                    }
+                }, 'precios'])
+                ->when($request->id_categoria, function ($query) use ($request) {
+                    return $query->where('productos.id_categoria', $request->id_categoria);
+                })
+                ->when($request->buscador, function ($query) use ($request) {
+                    return $query->where('productos.nombre', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('productos.codigo', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('productos.barcode', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('productos.etiquetas', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('productos.marca', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('productos.descripcion', 'like', "%" . $request->buscador . "%");
+                })
+                ->when($request->sin_stock, function ($query) use ($request) {
+                    return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
+                        ->whereRaw('COALESCE(inventario.stock, 0) < COALESCE(inventario.stock_minimo, 0)');
+                })
+                ->when($request->nombre, function ($q) use ($request) {
+                    $q->where('productos.nombre', $request->nombre);
+                })
+                ->when($request->compuestos !== null, function ($q) use ($request) {
+                    $q->whereHas('composiciones');
+                })
+                ->when($request->id_proveedor, function ($q) use ($request) {
+                    $q->whereHas('proveedores', function ($q) use ($request) {
+                        return $q->where("id_proveedor", $request->id_proveedor);
+                    });
+                })
+                ->when($request->estado !== null, function ($q) use ($request) {
+                    $q->where('productos.enable', !!$request->estado);
+                })
+                ->when($request->marca, function ($query) use ($request) {
+                    return $query->where('productos.marca', 'like', '%' . $request->marca . '%');
+                })
+                ->whereIn('productos.tipo', ['Producto', 'Compuesto'])
+                ->leftJoin('categorias', 'productos.id_categoria', '=', 'categorias.id')
+                ->select('productos.*')
+                ->orderBy('productos.enable', 'desc')
+                ->orderBy('categorias.nombre', $direccion)
+                ->paginate($request->paginate);
+        } else {
+            // Para otros ordenamientos, query normal
+            $productos = Producto::with(['inventarios' => function ($q) use ($request) {
+                if ($request->id_bodega) {
+                    $q->where('id_bodega', $request->id_bodega);
+                }
+            }, 'precios'])
+                ->when($request->id_categoria, function ($query) use ($request) {
+                    return $query->where('id_categoria', $request->id_categoria);
+                })
+                ->when($request->buscador, function ($query) use ($request) {
+                    return $query->where('nombre', 'like', '%' . $request->buscador . '%')
+                        ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('marca', 'like', "%" . $request->buscador . "%")
+                        ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+                })
+                ->when($request->sin_stock, function ($query) use ($request) {
+                    return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
+                        ->whereRaw('COALESCE(inventario.stock, 0) < COALESCE(inventario.stock_minimo, 0)');
+                })
+                ->when($request->nombre, function ($q) use ($request) {
+                    $q->where('nombre', $request->nombre);
+                })
+                ->when($request->compuestos !== null, function ($q) use ($request) {
+                    $q->whereHas('composiciones');
+                })
+                ->when($request->id_proveedor, function ($q) use ($request) {
+                    $q->whereHas('proveedores', function ($q) use ($request) {
+                        return $q->where("id_proveedor", $request->id_proveedor);
+                    });
+                })
+                ->when($request->estado !== null, function ($q) use ($request) {
+                    $q->where('enable', !!$request->estado);
+                })
+                ->when($request->marca, function ($query) use ($request) {
+                    return $query->where('marca', 'like', '%' . $request->marca . '%');
+                })
+                ->whereIn('tipo', ['Producto', 'Compuesto'])
+                ->orderBy('enable', 'desc')
+                ->orderBy($orden, $direccion)
+                ->paginate($request->paginate);
+        }
+    
         return Response()->json($productos, 200);
     }
 
