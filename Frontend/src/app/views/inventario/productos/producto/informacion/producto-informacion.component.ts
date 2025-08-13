@@ -150,7 +150,6 @@ export class ProductoInformacionComponent implements OnInit {
     } else {
       this.categorias.push(categoria);
        this.producto.id_categoria = categoria.id;
-     // this.producto.id_categoria = categoria.subcategoria ? categoria.id_cate_padre : categoria.id;
     }
   }
 
@@ -207,7 +206,6 @@ export class ProductoInformacionComponent implements OnInit {
   public onSubmit() {
     this.guardar = true;
     this.cdr.markForCheck();
-
     this.apiService.store('producto', this.producto)
       .pipe(
         finalize(() => {
@@ -322,8 +320,6 @@ export class ProductoInformacionComponent implements OnInit {
 
 
   addAttribute(event: any, tipo: string) {
-    // console.log('event', event);
-    // console.log('tipo', tipo);
     switch (tipo) {
       case 'talla': {
         this.producto.talla = event ? event.valor : null;
@@ -342,7 +338,6 @@ export class ProductoInformacionComponent implements OnInit {
   }
 
   private loadCategorias() {
-    // Cargar categorías principales
     this.apiService.getAll('categorias/padre').subscribe(
       (categorias) => {
         this.categorias = categorias;

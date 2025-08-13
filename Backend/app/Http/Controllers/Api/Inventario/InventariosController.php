@@ -63,10 +63,12 @@ class InventariosController extends Controller
     }
 
     public function store(Request $request) {
-    	
+
+        try {
         $request->validate([
             'id_producto'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric',
+            'id_sucursal'    => 'nullable|numeric',
+            'id_bodega'      => 'required|numeric',
             'stock'          => 'required|numeric',
             'stock_minimo'      => 'required|numeric',
             'stock_maximo'      => 'required|numeric',
@@ -79,16 +81,24 @@ class InventariosController extends Controller
         else{
 
             $inventario = new Inventario;
-            $existe = Inventario::where('id_producto', $request->id_producto)->where('id_sucursal', $request->id_sucursal)->first();
+            $existe = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega)->first();
 
             if($existe)
-                return  Response()->json(['error' => 'Ya ha sido configurado el producto en esta sucursal', 'code' => 400], 400);
+                return  Response()->json(['error' => 'Ya ha sido configurado el producto en esta bodega', 'code' => 400], 400);
         }
         
         $inventario->fill($request->all());
         $inventario->save();
 
         return Response()->json($inventario, 200);
+
+
+    } catch (\Exception $e) {
+        return Response()->json([
+            'error' => 'Error al guardar el inventario: ' . $e->getMessage(),
+            'code' => 500
+        ], 500);
+    }
 
 
     }
