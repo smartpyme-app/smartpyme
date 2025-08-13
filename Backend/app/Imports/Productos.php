@@ -10,22 +10,19 @@ use App\Models\Inventario\Ajuste;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use JWTAuth;
 
-class Productos implements ToModel, WithHeadingRow, WithValidation
+class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
-    // use Importable;
-
     private $numRows = 0;
     private $usuario;
     private $bodegas;
-
 
     public function __construct()
     {
@@ -38,6 +35,10 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
     public function model(array $row)
     {
+        if (empty($row['nombre']) || empty($row['precio']) || empty($row['costo']) || empty($row['categoria'])) {
+            return null;
+        }
+
         $id_categoria = Categoria::where('nombre', $row['categoria'])
             ->where('id_empresa', $this->usuario->id_empresa)
             ->pluck('id')->first();
@@ -113,13 +114,11 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
 
         $bodegas = $this->bodegas;
 
-        // ✅ OPTIMIZACIÓN: UNA SOLA consulta para obtener todos los inventarios del producto
         $inventariosExistentes = Inventario::where('id_producto', $producto->id)
             ->whereIn('id_bodega', $bodegas->pluck('id'))
             ->get()
-            ->keyBy('id_bodega'); // Indexar por bodega para acceso rápido
+            ->keyBy('id_bodega');
 
-        // ✅ Procesar sucursal 1
         if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
             $this->procesarInventarioBodega(
                 $inventariosExistentes->get($bodegas[0]->id),
@@ -129,7 +128,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             );
         }
 
-        // ✅ Procesar sucursal 2
         if (isset($bodegas[1]) && isset($row['sucursal_2_stock'])) {
             $this->procesarInventarioBodega(
                 $inventariosExistentes->get($bodegas[1]->id),
@@ -139,7 +137,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             );
         }
 
-        // ✅ Procesar sucursal 3
         if (isset($bodegas[2]) && isset($row['sucursal_3_stock'])) {
             $this->procesarInventarioBodega(
                 $inventariosExistentes->get($bodegas[2]->id),
@@ -164,7 +161,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         return $producto;
     }
 
-    // ✅ NUEVO MÉTODO: Evita duplicación de código y centraliza la lógica
     private function procesarInventarioBodega($inventarioExistente, $bodega, $stock, $productoId)
     {
         // Usar inventario existente o crear nuevo
@@ -192,7 +188,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             'id_usuario' => $this->usuario->id,
         ]);
 
-        // ✅ CORRECCIÓN: Solo llamar kardex si el inventario existe
         if ($inventario->exists) {
             $inventario->kardex($ajuste, $ajuste->ajuste);
         }
@@ -207,7 +202,6 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             'sucursal_*_stock' => 'nullable|numeric|min:0',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
-            // 'codigo_de_barra' => 'sometimes|string',
         ];
     }
 
