@@ -144,8 +144,15 @@
         <div class="row">
             <div class="form-group col-md-12">
                 <label for="">Producto</label>
-                <ng-select name="id_producto" (change)="setProducto()" [(ngModel)]="ajuste.id_producto" class="form-select p-0">
-                    <ng-option value="" selected>Seleccionar producto</ng-option>
+                <ng-select 
+                    name="id_producto" 
+                    (change)="setProducto()" 
+                    [(ngModel)]="ajuste.id_producto" 
+                    class="form-select p-0"
+                    [typeahead]="productosInput$"
+                    typeaheadMinLength="2"
+                    [loading]="loadingProductos"
+                    placeholder="Escriba para buscar productos...">
                     <ng-option *ngFor="let producto of productos" [value]="producto.id">
                         {{producto.nombre}}
                     </ng-option>

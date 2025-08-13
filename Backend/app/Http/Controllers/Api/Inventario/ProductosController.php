@@ -102,8 +102,11 @@ class ProductosController extends Controller
             ->where('enable', true)
             ->get();
 
+        // Log::info('Productos: ' . $productos->count());    
+
         return Response()->json($productos, 200);
     }
+    
 
     public function search($txt)
     {
@@ -119,6 +122,40 @@ class ProductosController extends Controller
             ->get();
 
         return Response()->json($productos, 200);
+    }
+
+    public function searchForList(Request $request)
+    {
+        $search = $request->input('search', '');
+        $limit = $request->input('limit', 20);
+
+        $query = Producto::where('enable', true)
+            ->orderBy('nombre');
+
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('nombre', 'LIKE', '%' . $search . '%')
+                ->orWhere('codigo', 'LIKE', '%' . $search . '%')
+                ->orWhere('barcode', 'LIKE', '%' . $search . '%');
+            });
+        }
+
+        $productos = $query->limit($limit)->get();
+
+        // Log::info('Búsqueda de productos: ' . $search . ' - Resultados: ' . $productos->count());
+
+        return response()->json($productos, 200);
+    }
+
+    public function inventarios($id)
+    {
+        $producto = Producto::with('inventarios')->find($id);
+        
+        if (!$producto) {
+            return response()->json(['error' => 'Producto no encontrado'], 404);
+        }
+
+        return response()->json($producto->inventarios, 200);
     }
 
     public function searchByQuery(Request $request)
