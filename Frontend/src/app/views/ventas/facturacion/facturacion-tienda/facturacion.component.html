@@ -307,11 +307,11 @@
                 <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
             </div>
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
             <label for="num_orden">Número de orden:</label><br>
             <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
         </div>
-        <div class="form-group col-md-6 col-lg-3">
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
             <label for="num_orden_exento">Número de orden exento:</label><br>
             <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
         </div>
