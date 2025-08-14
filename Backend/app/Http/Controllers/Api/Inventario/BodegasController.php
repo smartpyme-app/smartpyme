@@ -14,21 +14,23 @@ use Illuminate\Support\Facades\DB;
 
 class BodegasController extends Controller
 {
-
-
-
+    //Este es el index de modulo de bodegas
     public function index(Request $request)
     {
-
-        $bodegas = Bodega::when($request->estado !== null, function ($q) use ($request) {
-            $q->where('activo', !!$request->estado);
-        })
+            $bodegas = Bodega::when($request->estado !== null, function ($q) use ($request) {
+                $q->where('activo', !!$request->estado);
+            })
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
+                $buscador = $request->buscador;
+                $query->where(function($q) use ($buscador) {
+                    $q->where('nombre', 'like', '%' . $buscador . '%')
+                      ->orWhereHas('sucursal', function($s) use ($buscador) {
+                          $s->where('nombre', 'like', '%' . $buscador . '%');
+                      });
+                });
             })
             ->orderBy($request->orden, $request->direccion)
             ->paginate($request->paginate);
