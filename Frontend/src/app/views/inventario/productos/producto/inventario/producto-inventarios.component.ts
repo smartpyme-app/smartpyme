@@ -45,8 +45,8 @@ export class ProductoInventariosComponent implements OnInit {
         
         if(!this.inventario.id) {
             this.inventario.stock = 0;
-            this.inventario.id_sucursal = '';
             this.inventario.id_producto = this.producto.id;
+            this.inventario.id_bodega = this.inventario.id_bodega;
             this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
         }else{
             this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
