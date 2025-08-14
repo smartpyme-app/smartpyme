@@ -83,14 +83,22 @@ export class AjustesComponent implements OnInit {
     }
 
     public setOrden(columna: string) {
-        if (this.filtros.orden === columna) {
-          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        if (columna === 'created_at') {
+            if (this.filtros.orden === 'created_at') {
+                this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.filtros.orden = 'created_at';
+                this.filtros.direccion = 'desc'; // Por defecto, ordenar por fecha descendente (más reciente primero)
+            }
         } else {
-          this.filtros.orden = columna;
-          this.filtros.direccion = 'asc';
+            if (this.filtros.orden === columna) {
+                this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.filtros.orden = columna;
+                this.filtros.direccion = 'asc';
+            }
         }
-
-        this.loadAll();
+        this.filtrarAjustes();
     }
 
     public setPagination(event:any):void{
