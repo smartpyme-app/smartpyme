@@ -8,7 +8,7 @@ use Auth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Proveedor extends Model {
-    
+
     // use SoftDeletes;
     protected $table = 'proveedores';
     protected $fillable = array(
@@ -39,6 +39,8 @@ class Proveedor extends Model {
         'id_usuario',
         'id_empresa',
         'id_cuenta_contable',
+        'tipo_documento',
+        'tipo_persona'
     );
 
     protected $appends = ['nombre_completo'];
@@ -55,12 +57,12 @@ class Proveedor extends Model {
         }
     }
 
-    public function getNombreCompletoAttribute() 
+    public function getNombreCompletoAttribute()
     {
         return $this->nombre . ' ' . ($this->apellido ? $this->apellido : '');
     }
 
-    public function getEtiquetasAttribute($value) 
+    public function getEtiquetasAttribute($value)
     {
         return is_string($value) ? json_decode($value) : $value;
     }

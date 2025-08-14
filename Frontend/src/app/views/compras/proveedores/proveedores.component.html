@@ -77,9 +77,10 @@
                         <td class="d-none d-md-table-cell">{{ proveedor.dui}}</td>
                         <td class="d-none d-md-table-cell">{{ proveedor.ncr }}</td>
                         <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" (change)="setTipo(proveedor)" [(ngModel)]="proveedor.tipo" [ngClass]="{'bg-light-success' : proveedor?.tipo == 'Empresa', 'bg-light-info' : proveedor?.tipo == 'Persona'}">
+                            <select name="enable" class="form-select w-auto border-0" (change)="setTipo(proveedor)" [(ngModel)]="proveedor.tipo" [ngClass]="{'bg-light-success' : proveedor?.tipo == 'Empresa', 'bg-light-info' : proveedor?.tipo == 'Persona', 'bg-dark' : cliente?.tipo == 'Extranjero'}">
                                 <option value="Persona">Persona</option>
                                 <option value="Empresa">Empresa</option>
+                                <option value="Extranjero">Extranjero</option>
                             </select>
                         </td>
                         <td class="text-center">
