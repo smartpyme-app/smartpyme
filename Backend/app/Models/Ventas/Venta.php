@@ -27,6 +27,7 @@ class Venta extends Model {
         'tipo_documento',
         'num_cotizacion',
         'num_orden',
+        'num_orden_exento',
         'condicion',
         'referencia',
         // 'nombre',
