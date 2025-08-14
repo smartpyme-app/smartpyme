@@ -9,23 +9,50 @@ use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Compras\Detalle as DetalleCompra;
 
 use App\Imports\Categorias;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CategoriasController extends Controller
 {
 
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
+        try {
+            $categorias = Categoria::with(['cuentas' => function($q) use ($request) {
+                    if ($request->id_sucursal) {
+                        $q->where('id_sucursal', $request->id_sucursal);
+                    }
+                }])
+                ->when($request->id_sucursal, function ($q) use ($request) {
+                    $q->whereHas('cuentas', function ($subQ) use ($request) {
+                        $subQ->where('id_sucursal', $request->id_sucursal);
+                    });
+                })
+                ->when($request->nombre, function ($q) use ($request) {
+                    $q->where('nombre', 'like', '%' . $request->nombre . '%');
+                })
+                ->when($request->buscador, function ($q) use ($request) {
+                    $q->where(function ($subQuery) use ($request) {
+                        $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
+                                ->orWhere('descripcion', 'like', '%' . $request->buscador . '%');
+                    });
+                })
+                ->when($request->estado !== null, function ($q) use ($request) {
+                    $q->where('enable', !!$request->estado);
+                })
+                ->when($request->id_empresa, function ($q) use ($request) {
+                    $q->where('id_empresa', $request->id_empresa);
+                })
+                ->orderBy('enable', 'desc')
+                ->orderBy($request->orden ?? 'nombre', $request->direccion ?? 'asc')
+                ->paginate($request->paginate ?? 10);
 
-        $categorias = Categoria::with('cuentas')
-                                ->when($request->id_sucursal, function ($q) use ($request) {
-                                    $q->where('id_sucursal', $request->id_sucursal);
-                                })
-                                ->orderBy('enable', 'desc')
-                                ->orderBy('nombre', 'asc')
-                                ->get();
+            return response()->json($categorias, 200);
 
-        return Response()->json($categorias, 200);
-
+        } catch (\Exception $e) {
+            Log::error('Error al obtener las categorias: ' . $e->getMessage());
+            return response()->json(['error' => 'Ha ocurrido un error al obtener las categorias'], 500);
+        }
     }
 
     public function list() {
