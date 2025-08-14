@@ -3,6 +3,9 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { Subject, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-ajustes',
@@ -22,12 +25,23 @@ export class AjustesComponent implements OnInit {
     public usuarios:any = [];
     public producto:any = {};
     public sucursal:any = {};
+    public productosInput$ = new Subject<string>();
+    public loadingProductos: boolean = false;
 
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    ){
+        this.productosInput$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(term => this.searchProductos(term))
+        ).subscribe(productos => {
+            this.productos = productos;
+            this.loadingProductos = false;
+        });
+    }
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -52,6 +66,17 @@ export class AjustesComponent implements OnInit {
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
+    }
+
+    private searchProductos(term: string): Observable<any[]> {
+        if (!term || term.length < 2) {
+            return of([]);
+        }
+
+        this.loadingProductos = true;
+        return this.apiService.getAll('productos/list/search', { search: term, limit: 20 }).pipe(
+            catchError(() => of([]))
+        );
     }
 
     public loadAll() {
@@ -121,8 +146,25 @@ export class AjustesComponent implements OnInit {
     }
 
     public setProducto(){
+        if (!this.ajuste.id_producto) return;
+        
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
-        this.ajuste.costo = this.producto.costo;
+        if (this.producto) {
+            this.ajuste.costo = this.producto.costo;
+            // Si el producto no tiene inventarios cargados, cargarlos
+            if (!this.producto.inventarios) {
+                this.loadProductoInventarios(this.producto.id);
+            }
+        }
+    }
+
+    // Cargar inventarios de un producto específico
+    private loadProductoInventarios(productoId: number) {
+        this.apiService.getAll(`productos/${productoId}/inventarios`).subscribe(inventarios => {
+            if (this.producto && this.producto.id == productoId) {
+                this.producto.inventarios = inventarios;
+            }
+        }, error => {this.alertService.error(error);});
     }
 
     public setBodega(){
@@ -136,18 +178,17 @@ export class AjustesComponent implements OnInit {
     }
 
     public openModal(template: TemplateRef<any>) {
-        this.ajuste.id_producto = '';
-        this.ajuste.id_bodega = '';
-
-        this.ajuste.id_usuario = this.apiService.auth_user().id;
-        this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
-
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error);});
+        this.ajuste = {
+            id_producto: '',
+            id_bodega: '',
+            id_usuario: this.apiService.auth_user().id,
+            id_empresa: this.apiService.auth_user().id_empresa
+        };
+        
+        this.productos = [];
+        this.producto = {};
 
         this.alertService.modal = true;
-        
         this.modalRef = this.modalService.show(template);
     }
 
