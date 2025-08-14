@@ -123,6 +123,7 @@ const routes: Routes = [
       },
 
       { path: 'ajustes', component: AjustesComponent, title: 'Ajustes' },
+      { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
       { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste' },
 
       { path: 'bodegas', component: BodegasComponent },

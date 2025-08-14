@@ -43,7 +43,6 @@ export class AjusteMasivoComponent implements OnInit {
         }, error => {this.alertService.error(error);});
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
-            console.log('bodegas', bodegas);
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error);});
     }
