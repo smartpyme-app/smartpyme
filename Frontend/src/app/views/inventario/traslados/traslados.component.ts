@@ -83,14 +83,20 @@ export class TrasladosComponent implements OnInit {
     }
 
     public setOrden(columna: string) {
-        if (this.filtros.orden === columna) {
-          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
-        } else {
-          this.filtros.orden = columna;
-          this.filtros.direccion = 'asc';
+        // Solo permitir ordenar por fecha de creación o por cantidad
+        if (columna !== 'created_at' && columna !== 'cantidad') {
+            return;
         }
 
-        this.loadAll();
+        if (this.filtros.orden === columna) {
+            this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.filtros.orden = columna;
+            // Por defecto, si es fecha, descendente (más reciente primero), si es cantidad, ascendente
+            this.filtros.direccion = columna === 'created_at' ? 'desc' : 'asc';
+        }
+
+        this.filtrarTraslados();
     }
 
     public setPagination(event:any):void{

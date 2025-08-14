@@ -59,7 +59,7 @@
      <!-- unidad de medida -->
      <div class="form-group col-md-4 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
       <label for="medida">U. de Medida</label>
-      <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="producto.medida">
+      <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="medida">
         <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
           {{ medida.nombre }}
         </ng-option>
@@ -150,7 +150,7 @@
         <div class="form-group col-md-12 col-lg-3">
           <label for="talla" class="w-100">Talla</label>
           <div class="input-group">
-            <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" name="producto.talla" placeholder="Selecciona o agrega una talla">
+            <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" placeholder="Selecciona o agrega una talla">
               <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
                 {{ talla.valor }}
               </ng-option>
@@ -166,7 +166,7 @@
         <div class="form-group col-md-12 col-lg-3">
           <label for="color" class="w-100">Color</label>
           <div class="input-group">
-          <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" name="producto.color" placeholder="Selecciona o agrega un color">
+          <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" placeholder="Selecciona o agrega un color">
             <ng-option *ngFor="let color of colores" [value]="color.valor">
               {{ color.valor }}
             </ng-option>
@@ -181,7 +181,7 @@
         <div class="form-group col-md-12 col-lg-3">
           <label for="material" class="w-100">Material</label>
           <div class="input-group">
-          <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" name="producto.material" placeholder="Selecciona o agrega un material">
+          <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" placeholder="Selecciona o agrega un material">
             <ng-option *ngFor="let material of materiales" [value]="material.valor">
               {{ material.valor }}
             </ng-option>

@@ -243,8 +243,8 @@
             <tbody>
                 <tr>
                     <td>{{ $venta->num_orden }}</td>
-                    <td></td>
-                    <td></td>
+                    <td>{{ $venta->num_orden_exento }}</td>
+                    <td>{{ $venta->id_cliente ? $cliente->nrc : '' }}</td>
                     <td></td>
                     <td>{{ \Carbon\Carbon::parse($venta->fecha_pago)->format('d/m/Y') }}</td> 
                     <td>{{ $venta->condicion }}</td> 
