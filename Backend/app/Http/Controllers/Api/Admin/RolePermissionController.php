@@ -440,7 +440,7 @@ class RolePermissionController extends Controller
         return response()->json([
             'ok' => true,
             'data' => [
-                'role' => $firstRole ? $firstRole->name : 'Sin rol asignado',
+                'role' => $user->roles->first()->name,
                 'rolePermissions' => $rolePermissions,
                 'directPermissions' => $directPermissions,
                 'revokedPermissions' => $revokedPermissions,

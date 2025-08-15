@@ -25,7 +25,7 @@ class RoleSeeder extends Seeder
             'ROL_USUARIO_CONSULTAS' => 'usuario_consultas',
             'ROL_SUPERVISOR_LIMITADO' => 'supervisor_limitado',
             'ROL_USUARIO_CAJERO' => 'usuario_cajero',
-            // 'ROL_USUARIO_VENDEDOR' => 'usuario_vendedor',
+            'ROL_USUARIO_VENDEDOR' => 'usuario_vendedor',
             // 'ROL_USUARIO_COCINERO' => 'usuario_cocinero'
         ];
 
@@ -283,6 +283,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
-        
+
     }
 }
