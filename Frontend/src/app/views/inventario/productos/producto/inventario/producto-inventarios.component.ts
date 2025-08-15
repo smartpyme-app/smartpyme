@@ -21,7 +21,7 @@ export class ProductoInventariosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
     ){ }
@@ -36,23 +36,26 @@ export class ProductoInventariosComponent implements OnInit {
 
     openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
-        
+
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
-        
+
         if(!this.inventario.id) {
             this.inventario.stock = 0;
-            this.inventario.id_sucursal = '';
             this.inventario.id_producto = this.producto.id;
+            this.inventario.id_bodega = this.inventario.id_bodega;
+            this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
+        }else{
+            this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
         }
         this.modalRef = this.modalService.show(template, {class: 'modal-md'});
     }
 
     public onSubmit() {
         this.loading = true;
-        
+
         this.apiService.store('inventario', this.inventario).subscribe(inventario => {
             if(!this.inventario.id) {
                 this.producto.inventarios.push(inventario);
@@ -60,28 +63,28 @@ export class ProductoInventariosComponent implements OnInit {
             } else {
                 this.alertService.success('Inventario actualizado', 'El inventario fue actualizado exitosamente.');
             }
-            
+
             this.inventario = {};
             this.loading = false;
             this.modalRef.hide();
         }, error => {
             const errorMessage = error.error?.error || error.error?.message || error.message || 'Error desconocido';
 
-            this.alertService.error(errorMessage); 
-            this.loading = false; 
+            this.alertService.error(errorMessage);
+            this.loading = false;
         });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('inventario/', id) .subscribe(data => {
-                for (let i = 0; i < this.producto.inventarios.length; i++) { 
+                for (let i = 0; i < this.producto.inventarios.length; i++) {
                     if (this.producto.inventarios[i].id == data.id )
                         this.producto.inventarios.splice(i, 1);
                 }
                 this.alertService.success('Inventario eliminado', 'El inventario fue eliminado exitosamente.');
             }, error => {this.alertService.error(error); });
-                   
+
         }
 
     }
