@@ -11,27 +11,34 @@
         </h3>
         <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
-    <div class="modal-body p-3">
+    <div class="modal-body p-4">
         <app-notificaciones-container></app-notificaciones-container>
         <form (ngSubmit)="onSubmit()">
-            <div class="row mb-3">
-                <div class="col d-grid">
-                    <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option1" (change)="setTipo('Persona')">
-                    <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Persona', 'btn-light' : cliente.tipo != 'Persona' }" for="option1">Persona</label>
-                </div>
-                <div class="col d-grid">
-                    <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option2" (change)="setTipo('Empresa')">
-                    <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Empresa', 'btn-light' : cliente.tipo != 'Empresa' }" for="option2">Empresa</label>
-                </div>
-                <div class="col d-grid">
-                    <input type="radio" class="btn-check" name="tipo" [(ngModel)]="cliente.tipo" id="option3" (change)="setTipo('Extranjero')">
-                    <label class="btn" [ngClass]="{'btn-default' : cliente.tipo == 'Extranjero', 'btn-light' : cliente.tipo != 'Extranjero' }" for="option3">Extranjero</label>
+            <div class="row mb-3 p-3">
+                <div class="col-12 col-md-6">
+                    <label for="tipo" class="form-label">Tipo de Cliente</label>
+                    <select class="form-select" name="tipo" [(ngModel)]="cliente.tipo" (change)="onTipoChange()">
+                        <option value="Persona">Persona</option>
+                        <option value="Empresa">Empresa</option>
+                        <option value="Extranjero">Extranjero</option>
+                    </select>
+                    <small class="form-text text-muted" *ngIf="id_cliente">
+                        Los datos relevantes se adaptarán automáticamente al nuevo tipo de cliente.
+                    </small>
+                    <small class="form-text text-muted" *ngIf="!id_cliente">
+                        Si cambias el tipo de cliente, los campos se limpiarán automáticamente.
+                    </small>
                 </div>
             </div>
-            <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
+
+            <div class="row" *ngIf="cliente.tipo != 'Extranjero'" class="p-3">
                 <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+                        <div class="form-group col-6 col-lg-3">
+                            <label for="codigo_cliente">Código Cliente</label>
+                            <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                        </div>
                         <div class="form-group col-lg-3">
                             <label for="nombre">Nombre</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -44,10 +51,6 @@
                             <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label>
                             <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
-                        </div>
-                        <div class="form-group col-6 col-lg-3">
-                            <label for="codigo_cliente">Código Cliente</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="correo">Correo</label>
@@ -222,6 +225,10 @@
             </div>
             <div class="row" *ngIf="cliente.tipo == 'Extranjero'">
                     <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
+                    <div class="form-group col-6 col-lg-3">
+                        <label for="codigo_cliente">Código de Cliente</label>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
+                    </div>
                     <div class="form-group col-lg-3">
                         <label for="nombre">Nombre</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre" [(ngModel)]="cliente.nombre">
@@ -244,13 +251,9 @@
                         <label for="dui">Número de Identificación</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui">
                     </div>
-                    <div class="form-group col-6">
+                    <div class="form-group col-6 col-lg-3">
                         <label for="nombre_empresa">Nombre comercial</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
-                    </div>
-                    <div class="form-group col-6 col-lg-3">
-                        <label for="codigo_cliente">Código de Cliente</label>
-                        <input type="text" class="form-control" placeholder="Escribe aquí" name="codigo_cliente" [(ngModel)]="cliente.codigo_cliente">
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="tipo_persona">Tipo Persona:</label>
