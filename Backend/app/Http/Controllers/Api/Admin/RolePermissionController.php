@@ -29,7 +29,7 @@ class RolePermissionController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
         $query = Role::with('permissions');
 
         $query->where(function($q) use ($user) {
@@ -209,7 +209,7 @@ class RolePermissionController extends Controller
     //     ]);
 
     //     $user = auth()->user();
-        
+
 
     //     $role = Role::create(['name' => $request->name]);
     //     $role->syncPermissions($request->permissions);
@@ -226,7 +226,7 @@ class RolePermissionController extends Controller
         ]);
 
         $user = auth()->user();
-        
+
         // Verificar si el nombre del rol ya existe para esta empresa
         $existingRole = Role::where('name', $request->name)
             ->where(function($q) use ($user) {
@@ -253,13 +253,13 @@ class RolePermissionController extends Controller
         }
 
         $role = Role::create($roleData);
-        
+
         if (!empty($request->permissions)) {
             $role->syncPermissions($request->permissions);
         }
 
         return response()->json([
-            'message' => 'Rol creado correctamente', 
+            'message' => 'Rol creado correctamente',
             'role' => $role->load('permissions')
         ], 201);
     }
@@ -285,7 +285,7 @@ class RolePermissionController extends Controller
         ]);
 
         $user = auth()->user();
-        
+
         $role = Role::where('name', $request->role)
             ->where(function($q) use ($user) {
                 $q->where('id_empresa', $user->id_empresa)
@@ -309,7 +309,7 @@ class RolePermissionController extends Controller
         $role->syncPermissions($request->permissions);
 
         return response()->json([
-            'message' => 'Permisos actualizados correctamente', 
+            'message' => 'Permisos actualizados correctamente',
             'role' => $role->load('permissions')
         ], 200);
     }
@@ -440,7 +440,7 @@ class RolePermissionController extends Controller
         return response()->json([
             'ok' => true,
             'data' => [
-                'role' => $user->roles->first()->name,
+                'role' => $firstRole ? $firstRole->name : 'Sin rol asignado',
                 'rolePermissions' => $rolePermissions,
                 'directPermissions' => $directPermissions,
                 'revokedPermissions' => $revokedPermissions,
