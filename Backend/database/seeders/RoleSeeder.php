@@ -283,6 +283,6 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_FINANZAS.reporteria.ver')
         ]);
 
-        
+
     }
 }
