@@ -654,54 +654,9 @@
               <span *ngIf="downloadingAcumulado">Descargando...</span>
             </button>
           </div>
-            <div class="row">
-                <!-- Fechas -->
-                <div class="form-group col-sm-6">
-                    <label>Del:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.inicio" name="inicio">
-                </div>
-                <div class="form-group col-sm-6">
-                    <label>Al:</label>
-                    <input type="date" class="form-control" [(ngModel)]="filtrosAcumulado.fin" name="fin">
-                </div>
-
-                <!-- Sucursales -->
-                <div class="form-group col-12 mt-3">
-                    <label>Sucursales:</label>
-                    <ng-select [multiple]="true" class="form-select p-0" [items]="sucursales"
-                        [(ngModel)]="filtrosAcumulado.sucursales" bindLabel="nombre" bindValue="id"
-                        placeholder="Seleccione sucursales" name="sucursales">
-                    </ng-select>
-                </div>
-
-                <!-- Categorías -->
-                <div class="form-group col-12 mt-3">
-                    <label>Categorías:</label>
-                    <ng-select [multiple]="true" class="form-select p-0" [items]="categorias"
-                        [(ngModel)]="filtrosAcumulado.categorias" bindLabel="nombre" bindValue="id"
-                        placeholder="Seleccione categorías" name="categorias">
-                    </ng-select>
-                </div>
-
-                <!-- Marcas -->
-                <div class="form-group col-12 mt-3">
-                    <label>Marcas:</label>
-                    <ng-select [multiple]="true" class="form-select p-0" [items]="marcas"
-                        [(ngModel)]="filtrosAcumulado.marcas" bindLabel="nombre" bindValue="nombre"
-                        placeholder="Seleccione marcas" name="marcas">
-                    </ng-select>
-                </div>
-            </div>
-
-            <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
-                    <span *ngIf="!downloadingAcumulado">Descargar Reporte</span>
-                    <span *ngIf="downloadingAcumulado">Descargando...</span>
-                </button>
-            </div>
         </form>
-    </div>
-</ng-template>
+      </div>
+    </ng-template>
 
 <ng-template #mfiltrosPorMarca>
     <div class="modal-header">
