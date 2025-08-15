@@ -28,45 +28,70 @@ use Auth;
 class DevolucionVentasController extends Controller
 {
     
-
     public function index(Request $request) {
-       
+    
         $ventas = Devolucion::when($request->inicio, function($query) use ($request){
-                            return $query->where('fecha', '>=', $request->inicio);
-                        })
-                        ->when($request->fin, function($query) use ($request){
-                            return $query->where('fecha', '<=', $request->fin);
-                        })
-                        ->when($request->estado !== null, function($q) use ($request){
-                            $q->where('enable', !!$request->estado);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->forma_de_pago, function($query) use ($request){
-                            return $query->where('forma_de_pago', $request->forma_de_pago);
-                        })
-                        ->when($request->id_cliente, function($query) use ($request){
-                            $query->where('id_cliente', $request->id_cliente);
-                        })
-                        ->when($request->tipo_documento, function($query) use ($request){
-                            return $query->where('tipo_documento', $request->tipo_documento);
-                        })
-                        ->when($request->buscador, function($query) use ($request){
-                        return $query->whereHas('cliente', function($q) use ($request){
-                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
-                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
-                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%');
-                        })
-                    ->orderBy($request->orden, $request->direccion)
-                    ->orderBy('id', 'desc')
-                    ->paginate($request->paginate);
-
+                return $query->where('fecha', '>=', $request->inicio);
+            })
+            ->when($request->fin, function($query) use ($request){
+                return $query->where('fecha', '<=', $request->fin);
+            })
+            ->when($request->estado !== null, function($q) use ($request){
+                $q->where('enable', !!$request->estado);
+            })
+            ->when($request->id_usuario, function($query) use ($request){
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->forma_de_pago, function($query) use ($request){
+                return $query->where('forma_de_pago', $request->forma_de_pago);
+            })
+            ->when($request->id_cliente, function($query) use ($request){
+                $query->where('id_cliente', $request->id_cliente);
+            })
+            ->when($request->tipo_documento, function($query) use ($request){
+                return $query->where('tipo_documento', $request->tipo_documento);
+            })
+            ->when($request->buscador, function($query) use ($request){
+                return $query->where(function($q) use ($request) {
+                    $searchTerm = $request->buscador;
+                    
+                    $q->whereHas('cliente', function($clienteQuery) use ($searchTerm){
+                        $clienteQuery->where('nombre_empresa', 'like', "%" . $searchTerm . "%")
+                            ->orWhere('ncr', 'like', "%" . $searchTerm . "%")
+                            ->orWhere('nit', 'like', "%" . $searchTerm . "%")
+                            // Búsqueda por nombre individual
+                            ->orWhere('nombre', 'like', "%" . $searchTerm . "%")
+                            // Búsqueda por apellido individual  
+                            ->orWhere('apellido', 'like', "%" . $searchTerm . "%")
+                            // Búsqueda por nombre completo concatenado (nombre + apellido)
+                            ->orWhereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", ["%" . $searchTerm . "%"])
+                            // Búsqueda por apellido + nombre (en caso de que busquen en orden inverso)
+                            ->orWhereRaw("CONCAT(COALESCE(apellido, ''), ' ', nombre) LIKE ?", ["%" . $searchTerm . "%"]);
+                    })
+                    // Búsqueda por correlativo
+                    ->orWhere('correlativo', 'like', '%'.$searchTerm.'%')
+                    // Búsqueda por observaciones
+                    ->orWhere('observaciones', 'like', '%'.$searchTerm.'%')
+                    // Búsqueda por nombre del documento (usando JOIN)
+                    ->orWhereHas('documento', function($documentoQuery) use ($searchTerm) {
+                        $documentoQuery->where('nombre', 'like', '%'.$searchTerm.'%');
+                    })
+                    // Búsqueda por documento completo usando subquery para obtener el nombre del documento
+                    ->orWhereExists(function($subquery) use ($searchTerm) {
+                        $subquery->select(DB::raw(1))
+                            ->from('documentos')
+                            ->whereColumn('documentos.id', 'devoluciones_venta.id_documento')
+                            ->whereRaw("CONCAT(COALESCE(documentos.nombre, 'Devolución'), CASE WHEN devoluciones_venta.correlativo IS NOT NULL THEN CONCAT(' #', devoluciones_venta.correlativo) ELSE '' END) LIKE ?", ["%" . $searchTerm . "%"]);
+                    })
+                    // Búsqueda solo por "#correlativo" (en caso de que busquen con el #)
+                    ->orWhereRaw("CONCAT('#', correlativo) LIKE ?", ["%" . $searchTerm . "%"]);
+                });
+            })
+        ->orderBy($request->orden, $request->direccion)
+        ->orderBy('id', 'desc')
+        ->paginate($request->paginate);
+    
         return Response()->json($ventas, 200);
-
     }
 
 
