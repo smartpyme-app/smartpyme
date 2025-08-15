@@ -10,7 +10,7 @@ class Bodega extends Model {
     protected $table = 'sucursal_bodegas';
     protected $fillable = array(
         'nombre',
-        'descripcion',
+        // 'descripcion', //comentado por que no existe en la base de datos
         'activo',
         'id_sucursal',
         'id_empresa'

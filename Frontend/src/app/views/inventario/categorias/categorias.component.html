@@ -6,14 +6,23 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="categorias?.length">
-                Mostrando {{ categorias?.length + ' registros' }}
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="categorias?.total">
+                Mostrando
+                <select name="paginate" class="form-select w-auto" (change)="filtrarCategorias()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                de {{ categorias?.total + ' registros' }}
             </span>
         </div>
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <input type="search" placeholder="Buscar..." class="form-control" [(ngModel)]="filtros.buscador">
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCategorias()" autocomplete="off">
+                    <input type="text" name="search" class="form-control pull-right" placeholder="Buscar categoria" [(ngModel)]="filtros.buscador">
+                </form>
             </div>
         </div>
     </div>
@@ -22,7 +31,7 @@
             <button class="btn btn-primary tcla-F5" tooltip="Actualizar (F5)" (click)="loadAll()">Todos</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="filtros.estado" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="filtros.estado" (change)="filtrarCategorias()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
@@ -49,14 +58,14 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="categorias?.length < 1 && !loading">
+                        <td colspan="8" class="text-center" *ngIf="categorias?.total < 1 && !loading">
                             <span class="badge bg-primary">No tiene categorias registrados</span>
                         </td>
                         <td colspan="8" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
-                    <tr *ngFor=" let categoria of categorias | filter:['nombre','descripcion']:filtros.buscador | filter:['enable']:filtros.estado">
+                    <tr *ngFor=" let categoria of categorias?.data">
                         <td>{{ categoria.nombre }}</td>
                         <td class="d-none d-md-table-cell">{{ categoria.descripcion }}</td>
                         <td class="d-none d-lg-table-cell">
@@ -73,6 +82,10 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="col-12" *ngIf="categorias?.last_page > 1">
+            <app-pagination [items]="categorias" (setPagination)="setPagination($event)"></app-pagination>
         </div>
     </div>
 </section>
