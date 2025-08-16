@@ -88,7 +88,29 @@ class RoleSeeder extends Seeder
             config('permissions.PERMISSION_FINANZAS.libro_iva.crear'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.editar'),
             config('permissions.PERMISSION_FINANZAS.libro_iva.eliminar'),
-            config('permissions.PERMISSION_FINANZAS.reporteria.ver')
+            config('permissions.PERMISSION_FINANZAS.reporteria.ver'),
+            // Planilla
+            config('permissions.PERMISSION_PLANILLA.ver'),
+            config('permissions.PERMISSION_PLANILLA.crear'),
+            config('permissions.PERMISSION_PLANILLA.editar'),
+            config('permissions.PERMISSION_PLANILLA.eliminar'),
+            config('permissions.PERMISSION_PLANILLA.empleados.ver'),
+            config('permissions.PERMISSION_PLANILLA.empleados.crear'),
+            config('permissions.PERMISSION_PLANILLA.empleados.editar'),
+            config('permissions.PERMISSION_PLANILLA.empleados.eliminar'),
+            config('permissions.PERMISSION_PLANILLA.registros.ver'),
+            config('permissions.PERMISSION_PLANILLA.registros.crear'),
+            config('permissions.PERMISSION_PLANILLA.registros.editar'),
+            config('permissions.PERMISSION_PLANILLA.registros.eliminar'),
+            config('permissions.PERMISSION_PLANILLA.configuracion.ver'),
+            config('permissions.PERMISSION_PLANILLA.configuracion.crear'),
+            config('permissions.PERMISSION_PLANILLA.configuracion.editar'),
+            config('permissions.PERMISSION_PLANILLA.configuracion.eliminar'),
+            // Gastos departamentos
+            config('permissions.PERMISSION_GASTOS.departamentos.ver'),
+            config('permissions.PERMISSION_GASTOS.departamentos.crear'),
+            config('permissions.PERMISSION_GASTOS.departamentos.editar'),
+            config('permissions.PERMISSION_GASTOS.departamentos.eliminar')
         ]);
 
         // Contador Auxiliar

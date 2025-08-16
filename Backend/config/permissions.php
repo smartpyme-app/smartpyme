@@ -343,6 +343,46 @@ return [
             'crear' => 'gastos.categorias.crear',
             'editar' => 'gastos.categorias.editar',
             'eliminar' => 'gastos.categorias.eliminar'
+        ],
+
+        'departamentos' => [
+            'ver' => 'gastos.departamentos.ver',
+            'crear' => 'gastos.departamentos.crear',
+            'editar' => 'gastos.departamentos.editar',
+            'eliminar' => 'gastos.departamentos.eliminar'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permisos de Planilla
+    |--------------------------------------------------------------------------
+    */
+    'PERMISSION_PLANILLA' => [
+        'ver' => 'planilla.ver',
+        'crear' => 'planilla.crear',
+        'editar' => 'planilla.editar',
+        'eliminar' => 'planilla.eliminar',
+
+        'empleados' => [
+            'ver' => 'planilla.empleados.ver',
+            'crear' => 'planilla.empleados.crear',
+            'editar' => 'planilla.empleados.editar',
+            'eliminar' => 'planilla.empleados.eliminar'
+        ],
+
+        'registros' => [
+            'ver' => 'planilla.registros.ver',
+            'crear' => 'planilla.registros.crear',
+            'editar' => 'planilla.registros.editar',
+            'eliminar' => 'planilla.registros.eliminar'
+        ],
+
+        'configuracion' => [
+            'ver' => 'planilla.configuracion.ver',
+            'crear' => 'planilla.configuracion.crear',
+            'editar' => 'planilla.configuracion.editar',
+            'eliminar' => 'planilla.configuracion.eliminar'
         ]
     ],
 
