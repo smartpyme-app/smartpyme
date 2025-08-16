@@ -72,7 +72,7 @@
                     <li *ngIf="usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                     <li *ngIf="apiService.hasPermission('ventas.ordenes_produccion.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
                   </ul>
-    
+
                 </div>
              </li>
             <li class="mb-1" *ngIf="apiService.hasPermission('compras.ver')">
@@ -115,7 +115,7 @@
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     <li *ngIf="apiService.hasPermission('finanzas.bancos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
                     <li *ngIf="apiService.hasPermission('finanzas.documentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.libros_iva.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
+                    <li *ngIf="apiService.hasPermission('finanzas.libro_iva.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
                     <li *ngIf="apiService.hasPermission('finanzas.presupuestos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
                     <li *ngIf="apiService.hasPermission('finanzas.documentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
                     <li *ngIf="apiService.hasPermission('finanzas.impuestos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
