@@ -343,6 +343,13 @@ return [
             'crear' => 'gastos.categorias.crear',
             'editar' => 'gastos.categorias.editar',
             'eliminar' => 'gastos.categorias.eliminar'
+        ],
+
+        'departamentos' => [
+            'ver' => 'gastos.departamentos.ver',
+            'crear' => 'gastos.departamentos.crear',
+            'editar' => 'gastos.departamentos.editar',
+            'eliminar' => 'gastos.departamentos.eliminar'
         ]
     ],
 
