@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ExportProductsToShopify;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
+use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
@@ -27,16 +28,137 @@ class ShopifyController extends Controller
         $this->transformer = $transformer;
     }
 
-    public function procesarVenta($tokenEmpresa, Request $request)
+
+
+    public function procesarWebhook($tokenEmpresa, Request $request)
     {
         Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
 
-        // Verificar webhook de prueba
-        // if ($request->has('test') && $request->test === true) {
-        //     return response()->json(['message' => 'Webhook de prueba válido'], 200);
-        // }
+        // Detectar tipo de webhook por header
+        $webhookTopic = $request->header('X-Shopify-Topic');
 
-        Log::info("Token de empresa Shopify: {$tokenEmpresa}");
+        Log::info("Tipo de webhook: {$webhookTopic}");
+        Log::info($request->all());
+
+        // Validar empresa y usuario (mismo código)
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$empresa) {
+            Log::error("Token de empresa Shopify no válido: {$tokenEmpresa}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido o no conectado'
+            ], 401);
+        }
+
+        $usuario = User::where('id_empresa', $empresa->id)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$usuario) {
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario no encontrado'
+            ], 401);
+        }
+
+        // Procesar según el tipo de webhook
+        //  try {
+        switch ($webhookTopic) {
+            case 'orders/create':
+                return $this->procesarOrden($request, $empresa, $usuario);
+
+            case 'products/create':
+                return $this->procesarProductoCreado($request, $empresa, $usuario);
+
+            case 'products/update':
+                return $this->procesarProductoActualizado($request, $empresa, $usuario);
+
+            default:
+                Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
+                return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
+        }
+        // } catch (\Exception $e) {
+        //     Log::error("Error procesando webhook Shopify: " . $e->getMessage());
+        //     return response()->json([
+        //         'status' => 'error',
+        //         'mensaje' => 'Error al procesar webhook',
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
+    }
+
+
+
+    private function procesarProductoCreado(Request $request, $empresa, $usuario)
+    {
+        Log::info("Producto creado en Shopify", ['product_id' => $request->id]);
+
+        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
+        $productoExistente = Producto::where('shopify_product_id', $request->id)
+            ->where('id_empresa', $empresa->id)
+            ->where('codigo', $productoData['codigo'])
+            ->first();
+        $categoria = $this->buscarCategoria('General', $empresa->id);
+
+        if (!$productoExistente) {
+            Log::info("Producto no existe en tu sistema", ['product_id' => $request->id]);
+            $productoData['id_categoria'] = $categoria->id;  // ← Siempre asignar para productos nuevos
+            Log::info($productoData);
+            $producto = Producto::create($productoData);
+            Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
+        } else {
+            Log::info("Producto existente en tu sistema", ['producto_id' => $productoExistente->id]);
+            // Solo verificar categoría si el producto existe
+            if (!$productoExistente->categoria) {
+                $productoData['id_categoria'] = $categoria->id;
+            }
+            Log::info($productoData);
+            Log::info("Producto actualizado en tu sistema", ['producto_id' => $productoExistente->id]);
+            $productoExistente->update($productoData);
+        }
+
+        return response()->json(['status' => 'success', 'mensaje' => 'Producto procesado'], 200);
+    }
+
+
+    private function procesarProductoActualizado(Request $request, $empresa, $usuario)
+    {
+        Log::info("Producto actualizado en Shopify", ['product_id' => $request->id]);
+
+        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
+
+        $producto = Producto::where('shopify_product_id', $request->id)
+            ->where('id_empresa', $empresa->id)
+            ->where('codigo', $productoData['codigo'])
+            ->first();
+
+        $categoria = $this->buscarCategoria('General', $empresa->id);
+
+        if ($producto) {
+            // SIEMPRE asignar categoría si no existe o es null
+            if (empty($producto->id_categoria)) {
+                Log::info("Asignando categoría al producto", ['producto_id' => $producto->id]);
+                $productoData['id_categoria'] = $categoria->id;
+            }
+            Log::info($productoData);
+            $producto->update($productoData);
+            Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
+        } else {
+            $productoData['id_categoria'] = $categoria->id;
+            $producto = Producto::create($productoData);
+            Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
+        }
+
+        return response()->json(['status' => 'success', 'mensaje' => 'Producto actualizado'], 200);
+    }
+
+    public function procesarVenta($tokenEmpresa, Request $request)
+    {
+
+
 
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
@@ -104,15 +226,15 @@ class ShopifyController extends Controller
 
             // 2. Crear Venta
             $ventaData = $this->transformer->transformarVenta(
-                $request->all(), 
-                $cliente->id, 
-                $documento->id, 
+                $request->all(),
+                $cliente->id,
+                $documento->id,
                 $documento->correlativo
             );
             Log::info($ventaData);
             $venta = Venta::create($ventaData);
 
-            
+
 
             // 3. Procesar líneas de productos
             Log::info($request->line_items);
@@ -132,9 +254,9 @@ class ShopifyController extends Controller
                 if (!$producto) {
                     // Crear el producto si no existe
                     $productoData = $this->transformer->transformarProducto(
-                        $item, 
-                        $usuario->id_empresa, 
-                        $usuario->id, 
+                        $item,
+                        $usuario->id_empresa,
+                        $usuario->id,
                         $usuario->id_sucursal
                     );
                     $producto = Producto::create($productoData);
@@ -170,7 +292,6 @@ class ShopifyController extends Controller
                 'mensaje' => 'Venta procesada correctamente',
                 'venta_id' => $venta->id
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error procesando venta de Shopify: ' . $e->getMessage());
@@ -223,13 +344,31 @@ class ShopifyController extends Controller
         Log::info($request->headers->all());
         $hmacHeader = $request->header('X-Shopify-Hmac-Sha256');
         $body = $request->getContent();
-        
+
         if (!$hmacHeader || !$webhookSecret) {
             return false;
         }
 
         $calculatedHmac = base64_encode(hash_hmac('sha256', $body, $webhookSecret, true));
-        
+
         return hash_equals($hmacHeader, $calculatedHmac);
+    }
+    //crear o Buscar categoria
+    private function buscarCategoria($nombre, $id_empresa)
+    {
+        $categoria = Categoria::where('nombre', $nombre)
+            ->where('id_empresa', $id_empresa)
+            ->first();
+
+        if (!$categoria) {
+            $categoria = Categoria::create([
+                'nombre' => $nombre,
+                'id_empresa' => $id_empresa,
+                'enable' => 1,
+                'descripcion' => 'Categoria generada desde Shopify',
+            ]);
+        }
+
+        return $categoria;
     }
 }

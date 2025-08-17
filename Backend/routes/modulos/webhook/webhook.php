@@ -11,7 +11,7 @@ Route::post('/webhook/woocommerce/{token}', [WooCommerceController::class, 'proc
 
 
 // En routes/api.php o routes/web.php
-Route::post('/webhook/shopify/{token}', [ShopifyController::class, 'procesarVenta'])
+Route::post('/webhook/shopify/{token}', [ShopifyController::class, 'procesarWebhook'])
     ->name('shopify.webhook.orders');
 
 Route::post('/shopify/exportar', [ShopifyController::class, 'exportarShopify'])

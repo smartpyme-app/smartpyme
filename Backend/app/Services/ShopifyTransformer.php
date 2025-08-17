@@ -11,7 +11,7 @@ class ShopifyTransformer
     {
         $customer = $shopifyData['customer'] ?? $shopifyData;
         $billingAddress = $shopifyData['billing_address'] ?? $customer['default_address'] ?? [];
-        
+
         return [
             'nombre' => $customer['first_name'] ?? '',
             'apellido' => $customer['last_name'] ?? '',
@@ -37,7 +37,7 @@ class ShopifyTransformer
     {
         // Mapear estados de Shopify
         $estado = $this->mapearEstado($shopifyData['financial_status'] ?? 'pending');
-        
+
         return [
             'codigo_generacion' => null,
             'estado' => $estado,
@@ -127,7 +127,7 @@ class ShopifyTransformer
         $mapeo = [
             'pending' => 'Pendiente',
             'authorized' => 'Pendiente',
-            'partially_paid' => 'Pendiente', 
+            'partially_paid' => 'Pendiente',
             'paid' => 'Pagada',
             'partially_refunded' => 'Pagada',
             'refunded' => 'Reembolsada',
@@ -140,7 +140,7 @@ class ShopifyTransformer
     private function mapearFormaPago($shopifyData)
     {
         $gateway = $shopifyData['gateway'] ?? 'unknown';
-        
+
         $mapeo = [
             'shopify_payments' => 'Tarjeta de crédito/débito',
             'paypal' => 'PayPal',
@@ -150,5 +150,25 @@ class ShopifyTransformer
         ];
 
         return $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+    }
+
+    public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
+    {
+        return [
+            'codigo' => $shopifyData['variants'][0]['sku'] ?? '',
+            'barcode' => $shopifyData['variants'][0]['barcode'] ?? '',
+            'nombre' => $shopifyData['title'],
+            'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+            'id_empresa' => $id_empresa,
+            'id_usuario' => $id_usuario,
+            'id_sucursal' => $id_sucursal,
+            'precio' => $shopifyData['variants'][0]['price'] ?? 0,
+            'shopify_product_id' => $shopifyData['id'],
+            'shopify_variant_id' => $shopifyData['variants'][0]['id'],
+            'shopify_inventory_item_id' => $shopifyData['variants'][0]['inventory_item_id'],
+            'enable' => 1,
+            'tipo' => 'Producto',
+            'costo' => $shopifyData['variants'][0]['price'] ?? 0,
+        ];
     }
 }

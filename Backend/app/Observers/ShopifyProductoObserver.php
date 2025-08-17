@@ -19,6 +19,9 @@ class ShopifyProductoObserver
 
     public function updated(Producto $producto)
     {
+        Log::info("Producto actualizado", [
+            'producto_id' => $producto->id
+        ]);
         // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
             Log::info("Producto deshabilitado, no se sincronizará con Shopify", [
@@ -60,15 +63,20 @@ class ShopifyProductoObserver
 
     public function created(Producto $producto)
     {
-        $empresa = Empresa::where('id', $producto->id_empresa)->first();
+        Log::info("Producto creado", [
+            'producto_id' => $producto->id
+        ]);
+        $empresa = Empresa::where('id', $producto->id_empresa)
+            ->whereNotNull('shopify_store_url')
+            ->whereNotNull('shopify_consumer_secret')
+            ->where('shopify_status', 'connected')
+            ->first();
 
         if (!$empresa) {
             return;
         }
 
         $usuarios = User::where('id_empresa', $empresa->id)
-            ->whereNotNull('shopify_store_url')
-            ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
             ->get();
 
