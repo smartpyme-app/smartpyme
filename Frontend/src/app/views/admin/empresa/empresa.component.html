@@ -704,8 +704,12 @@
                         </small>
                     </div>
                 </div>
-
-    
+            </div>
+        </section>
+    </tab>
+    <tab heading="WooCommerce">
+        <section class="bg-white rounded p-4 mb-4">
+            <div class="row">
                 <div class="col-12">
                     <h5 class="mb-3">Integración WooCommerce</h5>
                     
@@ -816,7 +820,7 @@
                                         type="button" 
                                         *ngIf="empresa.status_conexion_woocommerce !== 'connected' || empresa.is_current_user_connected_to_woocommerce"
                                         [disabled]="empresa.status_conexion_woocommerce === 'connected' && !empresa.is_current_user_connected_to_woocommerce"
-                                        (click)="saveCredentials()">
+                                        (click)="saveCredentials('woocommerce')">
                                     <i class="fa fa-save me-2"></i>
                                     Guardar Credenciales
                                 </button>
@@ -833,6 +837,126 @@
             </div>
         </section>
     </tab>
+    <tab heading="Shopify">
+        <section class="bg-white rounded p-4 mb-4">
+            <div class="row">
+                <div class="col-12">
+                    <h5 class="mb-3">Integración Shopify</h5>
+                    
+                    <div class="row g-3">
+    
+                        <div class="col-12">
+                            <label for="url_webhook_shopify" class="form-label">URL Webhook para Shopify:</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       [(ngModel)]="empresa.shopify_webhook_url" 
+                                       name="url_webhook_shopify" 
+                                       placeholder="URL del Webhook para Shopify" 
+                                       readonly>
+                                <button class="btn btn-secondary" 
+                                        type="button" 
+                                        (click)="copyToClipboard(empresa.shopify_webhook_url)" 
+                                        tooltip="Copiar URL">
+                                    <i class="fa fa-copy"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Configure esta URL en su tienda Shopify para sincronizar datos automáticamente
+                            </small>
+                        </div>
+
+
+                        <div class="col-md-6">
+                            <label for="shopify_store_url" class="form-label">URL de la Tienda:</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.shopify_store_url" 
+                                   name="shopify_store_url" 
+                                   [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                   placeholder="Ej: https://mitienda.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="shopify_consumer_secret" class="form-label">Clave Secreta:</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   [(ngModel)]="empresa.shopify_consumer_secret" 
+                                   name="shopify_consumer_secret" 
+                                   [readonly]="empresa.status_conexion_shopify === 'connected'"
+                                   placeholder="Ingrese su clave secreta de Shopify">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="shopify_canal" class="form-label">Canal de ventas:</label>
+                            <select class="form-select" 
+                                    [(ngModel)]="empresa.shopify_canal_id" 
+                                    name="shopify_canal"
+                                    [disabled]="empresa.status_conexion_shopify === 'connected'">
+                                <option [value]="0" selected>Seleccione un canal</option>
+                                <option *ngFor="let canal of canales" [value]="canal.id">{{canal.nombre}}</option>
+                            </select>
+                            <small class="text-muted">
+                                Este canal se asignará automáticamente a todas las ventas realizadas desde Shopify.
+                            </small>
+                        </div>
+
+       
+                        <div class="col-12">
+                            <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" 
+                                class="alert mt-3" 
+                                [ngClass]="{'alert-success': empresa.shopify_status === 'connected', 'alert-warning': empresa.shopify_status === 'disconnected', 'alert-info': !empresa.shopify_status}">
+                                <i class="fa" [ngClass]="{'fa-check-circle': empresa.shopify_status === 'connected', 'fa-exclamation-circle': empresa.shopify_status === 'disconnected', 'fa-info-circle': !empresa.shopify_status}"></i>
+                                <span *ngIf="empresa.shopify_status === 'connected'"> Conexión establecida con Shopify</span>
+                                <span *ngIf="empresa.shopify_status === 'disconnected'"> Sin conexión con Shopify</span>
+                                <span *ngIf="!empresa.shopify_status"> Estado de conexión desconocido</span>
+                            </div>
+
+                            <div class="text-end mt-3">
+                                <button tooltip="importar productos a Shopify" 
+                                        (click)="exportarShopify()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_shopify === 'connected'">
+                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
+                                    Importar productos
+                                </button>
+                                
+                                <button tooltip="Descargar productos para importar en Shopify (F7)" 
+                                        (click)="descargarShopify()" 
+                                        class="btn btn-light me-2" 
+                                        *ngIf="empresa.status_conexion_shopify === 'connected'">
+                                    <img src="/assets/icons/woocommerce.png" class="icon me-2">
+                                    Descargar productos
+                                </button>
+
+                                <button class="btn btn-light text-danger me-2" 
+                                        type="button"
+                                        *ngIf="empresa.is_current_user_connected_to_shopify"
+                                        (click)="disconnectShopify()">
+                                    <i class="fa fa-unlink me-2"></i>
+                                    Desconectar Shopify
+                                </button>
+                                <button class="btn btn-light text-success" 
+                                        type="button" 
+                                        *ngIf="empresa.status_conexion_shopify !== 'connected' || empresa.is_current_user_connected_to_shopify"
+                                        [disabled]="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify"
+                                        (click)="saveCredentials('shopify')">
+                                    <i class="fa fa-save me-2"></i>
+                                    Guardar Credenciales
+                                </button>
+                            </div>
+
+                            <div class="alert alert-info mt-3" 
+                                *ngIf="empresa.status_conexion_shopify === 'connected' && !empresa.is_current_user_connected_to_shopify">
+                                <i class="fa fa-info-circle me-2"></i>
+                                Hay otros usuarios conectados a Shopify. Solo el usuario que estableció la conexión puede desconectarla.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </tab>
+
 
 </tabset>
 

@@ -532,23 +532,28 @@ export class EmpresaComponent implements OnInit {
         this.alertService.success('Copiado', 'Texto copiado al portapapeles');
     }
 
-    public saveCredentials() {
+    public saveCredentials(tipo: 'shopify' | 'woocommerce') {
         this.saving = true;
+    
+        const config = this.getCredentialConfig(tipo);
         
-        if (!this.empresa.woocommerce_store_url || !this.empresa.woocommerce_consumer_key || !this.empresa.woocommerce_consumer_secret) {
+        const missingFields = config.requiredFields.filter(field => 
+            !this.empresa[field] || this.empresa[field] === '' || this.empresa[field] === '0' || this.empresa[field] === 0
+        );
+    
+        if (missingFields.length > 0) {
             this.saving = false;
-            
             Swal.fire({
                 title: 'Error',
-                text: 'Todos los campos son requeridos',
+                text: config.validationMessages.requiredFields,
                 icon: 'error',
                 confirmButtonText: 'Aceptar'
             });
             return;
         }
-
-        //verificar que el canal no vaya vacio o nulo
-        if (!this.empresa.woocommerce_canal_id || this.empresa.woocommerce_canal_id == 0 || this.empresa.woocommerce_canal_id == '0') {
+    
+        const canalField = tipo === 'shopify' ? 'shopify_canal_id' : 'woocommerce_canal_id';
+        if (!this.empresa[canalField] || this.empresa[canalField] == 0 || this.empresa[canalField] == '0') {
             this.saving = false;
             Swal.fire({
                 title: 'Error',
@@ -558,32 +563,41 @@ export class EmpresaComponent implements OnInit {
             });
             return;
         }
+    
 
+        const otherPlatform = tipo === 'shopify' ? 'woocommerce' : 'shopify';
+        const otherStatusField = `${otherPlatform}_status`;
         
-        const credentials = {
-            store_url: this.empresa.woocommerce_store_url,
-            consumer_key: this.empresa.woocommerce_consumer_key,
-            consumer_secret: this.empresa.woocommerce_consumer_secret,
-            canal_id: this.empresa.woocommerce_canal_id,
-        };
+        // if (this.empresa[otherStatusField] === 'connected') {
+        //     this.saving = false;
+        //     Swal.fire({
+        //         title: 'Error',
+        //         text: `Ya tienes ${otherPlatform === 'woocommerce' ? 'WooCommerce' : 'Shopify'} conectado. Solo puedes tener una integración activa.`,
+        //         icon: 'error',
+        //         confirmButtonText: 'Aceptar'
+        //     });
+        //     return;
+        // }
+    
+        const credentials = this.prepareCredentials(tipo);
         
         Swal.fire({
             title: 'Conectando...',
-            text: 'Verificando conexión con WooCommerce',
+            text: `Verificando conexión con ${config.platformName}`,
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
             }
         });
         
-        this.apiService.store('usuario/save-credentials', credentials).subscribe(
+        this.apiService.store(config.endpoint, credentials).subscribe(
             response => {
                 this.saving = false;
                 this.loadAll();
                 Swal.close();
                 Swal.fire({
                     title: 'Conexión Exitosa',
-                    text: 'Credenciales guardadas y conexión con WooCommerce establecida',
+                    text: `Credenciales guardadas y conexión con ${config.platformName} establecida`,
                     icon: 'success',
                     confirmButtonText: 'Aceptar'
                 });
@@ -594,13 +608,56 @@ export class EmpresaComponent implements OnInit {
                 this.loadAll();
                 Swal.fire({
                     title: 'Error de Conexión',
-                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudieron guardar las credenciales',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : `No se pudieron guardar las credenciales de ${config.platformName}`,
                     icon: 'error',
                     confirmButtonText: 'Aceptar'
                 });
             }
         );
     }
+
+    private getCredentialConfig(tipo: 'shopify' | 'woocommerce') {
+        const configs = {
+            woocommerce: {
+                platformName: 'WooCommerce',
+                endpoint: 'usuario/save-credentials',
+                requiredFields: ['woocommerce_store_url', 'woocommerce_consumer_key', 'woocommerce_consumer_secret'],
+                validationMessages: {
+                    requiredFields: 'La URL de la tienda, clave de API y clave secreta son requeridos'
+                }
+            },
+            shopify: {
+                platformName: 'Shopify',
+                endpoint: 'usuario/save-credentials',
+                requiredFields: ['shopify_store_url', 'shopify_consumer_secret'],
+                validationMessages: {
+                    requiredFields: 'La URL de la tienda y la clave secreta son requeridos'
+                }
+            }
+        };
+    
+        return configs[tipo];
+    }
+    
+    private prepareCredentials(tipo: 'shopify' | 'woocommerce') {
+        if (tipo === 'woocommerce') {
+            return {
+                store_url: this.empresa.woocommerce_store_url,
+                tipo: 'woocommerce',
+                consumer_key: this.empresa.woocommerce_consumer_key,
+                consumer_secret: this.empresa.woocommerce_consumer_secret,
+                canal_id: this.empresa.woocommerce_canal_id
+            };
+        } else {
+            return {
+                store_url: this.empresa.shopify_store_url,
+                tipo: 'shopify',
+                consumer_secret: this.empresa.shopify_consumer_secret,
+                canal_id: this.empresa.shopify_canal_id
+            };
+        }
+    }
+    
 
 
     public disconnectWooCommerce() {
@@ -617,6 +674,38 @@ export class EmpresaComponent implements OnInit {
                 Swal.fire({
                     title: 'Desconexión Exitosa',
                     text: 'Desconectado de WooCommerce',
+                    icon: 'success',
+                    confirmButtonText: 'Aceptar'
+                });
+
+            }, error => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: error.error && error.error.mensaje ? error.error.mensaje : 'No se pudo desconectar de WooCommerce',
+                    icon: 'error',
+                    confirmButtonText: 'Aceptar'
+                });
+            }
+        );
+
+
+    }
+
+    public disconnectShopify() {
+        this.saving = true;
+
+        this.empresa.shopify_store_url = '';
+        this.empresa.shopify_consumer_secret = '';
+        
+        this.apiService.store('usuario/disconnect-shopify', {}).subscribe(
+            response => {
+                this.saving = false;
+                this.loadAll();
+                Swal.fire({
+                    title: 'Desconexión Exitosa',
+                    text: 'Desconectado de Shopify',
                     icon: 'success',
                     confirmButtonText: 'Aceptar'
                 });
@@ -679,6 +768,50 @@ export class EmpresaComponent implements OnInit {
             }
         });
     }
+
+    public exportarShopify(){
+        Swal.fire({
+            title: '¿Está seguro de exportar sus productos a Shopify?',
+            html: `
+                <p>Esta acción iniciará una migración asincrónica de productos a Shopify:</p>
+                <ul style="text-align: left; margin-top: 1em;">
+                    <li>Solo se migrarán los productos relacionados con su usuario y sucursal actual</li>
+                    <li>Los productos vinculados a otras sucursales no serán exportados</li>
+                    <li>El proceso se ejecutará en segundo plano y puede tomar varios minutos</li>
+                    <li>Esta acción no se puede revertir</li>
+                </ul>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, iniciar exportación',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Iniciando exportación...',
+                    text: 'La migración de productos ha comenzado y continuará en segundo plano',
+                    icon: 'info',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+
+                this.apiService.store('producto/exportar-shopify', {}).subscribe(
+                    response => {
+                        Swal.fire({
+                            title: 'Proceso iniciado',
+                            text: 'La migración de productos a Shopify se está ejecutando en segundo plano',
+                            icon: 'success'
+                        });
+                    },
+                    error => {
+                        this.alertService.error(error);
+                    }
+                );
+            }
+        });
+    }
     //descargarWooCommerce
     public descargarWooCommerce() {
         console.log('descargarWooCommerce');
@@ -709,6 +842,51 @@ export class EmpresaComponent implements OnInit {
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = 'productos_woocommerce_' + new Date().toISOString().split('T')[0] + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                window.URL.revokeObjectURL(url);
+                this.downloading = false;
+                
+                this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+            },
+            (error) => { 
+                this.alertService.error('Error en la exportación: ' + error); 
+                this.downloading = false; 
+            }
+        );
+    }
+
+    public descargarShopify() {
+        console.log('descargarShopify');
+        this.downloading = true;
+
+        Swal.fire({
+            title: 'Exportando productos a Shopify',
+            text: 'Estamos preparando el archivo CSV con los productos de Shopify',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        this.apiService.export('productos/exportar/shopify', this.filtros).subscribe(
+            (data: Blob) => {
+                Swal.close();
+
+                Swal.fire({
+                    title: 'Exportando productos a Shopify',
+                    text: 'El archivo CSV está listo para descargar',
+                    icon: 'success',
+                    showConfirmButton: true
+                });
+                const blob = new Blob([data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'productos_shopify_' + new Date().toISOString().split('T')[0] + '.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);

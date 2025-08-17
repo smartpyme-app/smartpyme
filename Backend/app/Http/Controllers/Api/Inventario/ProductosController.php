@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
+use App\Exports\ShopifyExport;
 
 class ProductosController extends Controller
 {
@@ -47,14 +48,14 @@ class ProductosController extends Controller
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
-//                return $query->where(function ($subQuery) use ($request) {
-//                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
-//                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
-//                });
+                //                return $query->where(function ($subQuery) use ($request) {
+                //                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
+                //                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                //                });
                 return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
                     ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
@@ -563,6 +564,28 @@ class ProductosController extends Controller
         );
     }
 
+    // Agregar este método a tu ProductoController o el controller que manejes
+
+    public function exportarShopifyTemplate(Request $request)
+    {
+        $user = Auth::user();
+        $id_empresa = $user->id_empresa;
+
+        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
+
+        $productos = new ShopifyExport();
+        $productos->filter($request);
+
+        return Excel::download(
+            $productos,
+            'productos_shopify_' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV,
+            [
+                'Content-Type' => 'text/csv',
+            ]
+        );
+    }
+
     public function exportarPlantillaTraslado(Request $request)
     {
         $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
@@ -701,8 +724,6 @@ class ProductosController extends Controller
                         $composicionesValidas = false;
                         break;
                     }
-
-
                 }
 
 
@@ -802,7 +823,7 @@ class ProductosController extends Controller
                 ->orderBy('marca', 'asc')
                 ->pluck('marca');
 
-            $marcas = $marcasRaw->map(function($marca) {
+            $marcas = $marcasRaw->map(function ($marca) {
                 return [
                     'id' => $marca,
                     'nombre' => $marca
@@ -812,7 +833,6 @@ class ProductosController extends Controller
             Log::info('Marcas obtenidas:', $marcas->toArray());
 
             return response()->json($marcas);
-            
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al obtener las marcas',
@@ -820,5 +840,4 @@ class ProductosController extends Controller
             ], 500);
         }
     }
-
 }
