@@ -7,6 +7,7 @@ use App\Jobs\ExportProductsToShopify;
 use App\Models\Admin\Documento;
 use App\Models\Admin\Empresa;
 use App\Models\Inventario\Categorias\Categoria;
+use App\Models\Inventario\Imagen;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
@@ -18,6 +19,8 @@ use App\Services\ShopifyTransformer;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManagerStatic as Image;
 
 class ShopifyController extends Controller
 {
@@ -68,7 +71,7 @@ class ShopifyController extends Controller
         //  try {
         switch ($webhookTopic) {
             case 'orders/create':
-                return $this->procesarOrden($request, $empresa, $usuario);
+                return $this->procesarVenta($request, $empresa, $usuario);
 
             case 'products/create':
                 return $this->procesarProductoCreado($request, $empresa, $usuario);
@@ -108,7 +111,9 @@ class ShopifyController extends Controller
             $productoData['id_categoria'] = $categoria->id;  // ← Siempre asignar para productos nuevos
             Log::info($productoData);
             $producto = Producto::create($productoData);
+            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
             Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
+            $this->procesarImagenes($request, $producto->id);
         } else {
             Log::info("Producto existente en tu sistema", ['producto_id' => $productoExistente->id]);
             // Solo verificar categoría si el producto existe
@@ -116,8 +121,10 @@ class ShopifyController extends Controller
                 $productoData['id_categoria'] = $categoria->id;
             }
             Log::info($productoData);
+            $this->actualizarInventario($productoExistente->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
             Log::info("Producto actualizado en tu sistema", ['producto_id' => $productoExistente->id]);
             $productoExistente->update($productoData);
+            $this->procesarImagenes($request, $productoExistente->id);
         }
 
         return response()->json(['status' => 'success', 'mensaje' => 'Producto procesado'], 200);
@@ -145,14 +152,33 @@ class ShopifyController extends Controller
             }
             Log::info($productoData);
             $producto->update($productoData);
+            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
+            $this->procesarImagenes($request, $producto->id);
             Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
         } else {
             $productoData['id_categoria'] = $categoria->id;
             $producto = Producto::create($productoData);
+            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
+            $this->procesarImagenes($request, $producto->id);
             Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
         }
 
         return response()->json(['status' => 'success', 'mensaje' => 'Producto actualizado'], 200);
+    }
+
+    public function procesarImagenes($request, $productoId)
+    {
+        $imagenes = $request->images;
+        foreach ($imagenes as $imagen) {
+            $imagenData = [
+                'id_producto' => $productoId,
+                'src' => $imagen['src'],
+                'shopify_image_id' => $imagen['id'],
+            ];
+            Log::info($imagenData);
+            Log::info("Procesando imagen", ['imagen_id' => $imagen['id']]);
+            $this->storeImage($imagenData);
+        }
     }
 
     public function procesarVenta($tokenEmpresa, Request $request)
@@ -337,23 +363,6 @@ class ShopifyController extends Controller
         ]);
     }
 
-    private function verificarWebhookSignature(Request $request, $webhookSecret)
-    {
-        Log::info("Verificando firma de webhook Shopify");
-        //ver los headers
-        Log::info($request->headers->all());
-        $hmacHeader = $request->header('X-Shopify-Hmac-Sha256');
-        $body = $request->getContent();
-
-        if (!$hmacHeader || !$webhookSecret) {
-            return false;
-        }
-
-        $calculatedHmac = base64_encode(hash_hmac('sha256', $body, $webhookSecret, true));
-
-        return hash_equals($hmacHeader, $calculatedHmac);
-    }
-    //crear o Buscar categoria
     private function buscarCategoria($nombre, $id_empresa)
     {
         $categoria = Categoria::where('nombre', $nombre)
@@ -370,5 +379,119 @@ class ShopifyController extends Controller
         }
 
         return $categoria;
+    }
+
+    //actualizar inventario
+    private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId)
+    {
+
+        $inventario = Inventario::where('id_producto', $productoId)
+            ->where('id_bodega', $bodegaId)
+            ->first();
+
+        if ($inventario) {
+            $inventario->update([
+                'stock' => $cantidad
+            ]);
+            $producto = Producto::find($productoId);
+
+            if ($inventario->stock > 0) {
+                $producto->id_usuario = $usuarioId;
+                $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+            }
+        } else {
+            $inventario = Inventario::create([
+                'id_producto' => $productoId,
+                'id_bodega' => $bodegaId,
+                'stock' => $cantidad,
+                'stock_minimo' => 0,
+                'stock_maximo' => 0,
+            ]);
+        }
+        return [
+            'id_producto' => $productoId,
+            'id_bodega' => $bodegaId,
+            'stock' => ['decrement' => $cantidad],
+            'updated_at' => now()
+        ];
+    }
+
+    public function storeImage($data)
+    {
+        Log::info('storeImage', $data);
+
+        try {
+            // Buscar imagen existente por shopify_image_id, NO por id
+            if (isset($data['shopify_image_id']) && $data['shopify_image_id']) {
+                $imagen = Imagen::where('shopify_image_id', $data['shopify_image_id'])->first();
+
+                if (!$imagen) {
+                    // Si no existe, crear nueva
+                    $imagen = new Imagen();
+                    Log::info('Creando nueva imagen');
+                } else {
+                    Log::info('Imagen existente encontrada', ['imagen_id' => $imagen->id]);
+                }
+            } else {
+                $imagen = new Imagen();
+                Log::info('Creando nueva imagen sin shopify_image_id');
+            }
+
+            // Llenar datos
+            $imagen->fill($data);
+            Log::info('Imagen después de fill', $imagen->toArray());
+
+            // Procesar imagen si tiene src
+            if (isset($data['src']) && $data['src']) {
+                Log::info('Procesando src', ['src' => $data['src']]);
+
+                // Eliminar imagen anterior si existe
+                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg') {
+                    Storage::delete($imagen->img);
+                    Log::info('Imagen anterior eliminada', ['path' => $imagen->img]);
+                }
+
+                try {
+                    // Descargar y procesar imagen
+                    $imageContent = file_get_contents($data['src']);
+                    if ($imageContent === false) {
+                        throw new \Exception('No se pudo descargar la imagen desde: ' . $data['src']);
+                    }
+
+                    $resize = Image::make($imageContent)->resize(750, 750)->encode('jpg', 75);
+                    $hash = md5($resize->__toString());
+                    $path = "productos/{$hash}.jpg";
+
+                    // Crear directorio si no existe
+                    $fullPath = public_path('img/productos');
+                    if (!file_exists($fullPath)) {
+                        mkdir($fullPath, 0755, true);
+                    }
+
+                    $resize->save(public_path('img/' . $path), 50);
+                    $imagen->img = "/" . $path;
+
+                    Log::info('Imagen procesada y guardada', ['path' => $path]);
+                } catch (\Exception $e) {
+                    Log::error('Error procesando imagen: ' . $e->getMessage());
+                    // Continuar sin imagen si falla
+                }
+            }
+
+            // Guardar imagen
+            $saved = $imagen->save();
+
+            if ($saved) {
+                Log::info('Imagen guardada exitosamente', ['imagen_id' => $imagen->id]);
+            } else {
+                Log::error('Error guardando imagen en base de datos');
+            }
+
+            return $imagen;
+        } catch (\Exception $e) {
+            Log::error('Error en storeImage: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return false;
+        }
     }
 }

@@ -9,7 +9,8 @@ class Imagen extends Model {
     protected $table = 'productos_imagenes';
     protected $fillable = array(
         'img',
-        'id_producto'
+        'id_producto',
+        'shopify_image_id'
     );
 
 

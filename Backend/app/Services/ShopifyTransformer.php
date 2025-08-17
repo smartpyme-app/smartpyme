@@ -169,6 +169,7 @@ class ShopifyTransformer
             'enable' => 1,
             'tipo' => 'Producto',
             'costo' => $shopifyData['variants'][0]['price'] ?? 0,
+            'stock' => $shopifyData['variants'][0]['inventory_quantity'] ?? 0,
         ];
     }
 }
