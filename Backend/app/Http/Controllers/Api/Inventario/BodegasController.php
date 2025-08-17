@@ -72,43 +72,39 @@ class BodegasController extends Controller
         $bodega->fill($request->all());
         $bodega->save();
 
-        // Configurar inventarios para los productos
-        // if (!$request->id) {
-        //     $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
-        //     foreach ($productos as $producto) {
-        //         $inventario = new Inventario;
-        //         $inventario->id_bodega    = $bodega->id;
-        //         $inventario->stock          = 0;
-        //         $inventario->id_producto    = $producto->id;
-        //         $inventario->save();
-        //     }
-        // }
+        // Configurar inventarios para los productos de forma eficiente
         if (!$request->id) {
-            $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->get();
-            foreach ($productos as $producto) {
-                $inventario = new Inventario;
-                $inventario->id_bodega    = $bodega->id;
-                $inventario->stock          = 0;
-                $inventario->id_producto    = $producto->id;
-                $inventario->save();
+            // Obtener todos los IDs de productos de la empresa de una sola vez
+            $productoIds = DB::table('productos')
+                ->whereIn('tipo', ['Producto', 'Compuesto'])
+                ->where('id_empresa', $request->id_empresa)
+                ->pluck('id')
+                ->toArray();
 
-                $productoIds = DB::table('productos')
-                    ->whereIn('tipo', ['Producto', 'Compuesto'])
-                    ->where('id_empresa', $request->id_empresa)
-                    ->pluck('id')
+            // Filtrar productos que ya tienen inventario en esta bodega para evitar procesamiento innecesario
+            if (!empty($productoIds)) {
+                $existingInventoryIds = DB::table('inventario')
+                    ->where('id_bodega', $bodega->id)
+                    ->whereIn('id_producto', $productoIds)
+                    ->pluck('id_producto')
                     ->toArray();
+
+                $productoIds = array_diff($productoIds, $existingInventoryIds);
+            }
+
+            if (!empty($productoIds)) {
                 $batchSize = 500;
                 $batches = array_chunk($productoIds, $batchSize);
+                $now = now()->format('Y-m-d H:i:s');
 
                 foreach ($batches as $batch) {
                     $values = [];
                     $placeholders = [];
-                    $now = now()->format('Y-m-d H:i:s');
 
                     foreach ($batch as $productoId) {
                         $placeholders[] = "(?, ?, ?, ?, ?)";
                         $values[] = $bodega->id;
-                        $values[] = 0; // stock
+                        $values[] = 0; // stock inicial
                         $values[] = $productoId;
                         $values[] = $now; // created_at
                         $values[] = $now; // updated_at
@@ -116,15 +112,15 @@ class BodegasController extends Controller
 
                     if (!empty($placeholders)) {
                         $placeholdersString = implode(', ', $placeholders);
+                        // Usar INSERT IGNORE para evitar duplicados en caso de que ya existan registros
                         DB::statement(
-                            "INSERT INTO inventario (id_bodega, stock, id_producto, created_at, updated_at) VALUES " .
+                            "INSERT IGNORE INTO inventario (id_bodega, stock, id_producto, created_at, updated_at) VALUES " .
                                 $placeholdersString,
                             $values
                         );
                     }
                 }
             }
-
         }
         return Response()->json($bodega, 200);
     }

@@ -73,7 +73,7 @@
                     </td>
                 </tr>
 
-                <tr *ngFor=" let usuario of usuarios.data">                    
+                <tr *ngFor=" let usuario of usuarios.data">
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.tipo}}</td>
                     <td>{{usuario.sucursal?.nombre}}</td>
@@ -94,10 +94,10 @@
                                 <i class="fa fa-pencil-alt"></i>
                             </a> -->
                             <!-- ir a usuario -->
-                            <a class="btn btn-default" [routerLink]="['/usuario', usuario.id]" data-toggle="tooltip" title="Editar">
+                            <a class="btn btn-default" (click)="editarUsuario(usuario)" data-toggle="tooltip" title="Editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
-                        </div>  
+                        </div>
                     </td>
 
                 </tr>
@@ -124,7 +124,7 @@
   </div>
   <div class="modal-body">
     <form autocomplete="off" (ngSubmit)="onSubmit()">
-        <div class="row">   
+        <div class="row">
             <app-notificaciones-container></app-notificaciones-container>
             <div class="form-group col-md-6">
                 <label for="nombre">Nombre:</label>

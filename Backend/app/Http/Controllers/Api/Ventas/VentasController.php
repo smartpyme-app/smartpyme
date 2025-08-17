@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Ventas;
 
 use App\Exports\ReportesAutomaticos\EstadoFinancieroConsolidadoSucursales\EstadoFinancieroConsolidadoSucursalesExport;
 use App\Exports\ReportesAutomaticos\DetalleVentasPorVendedor\DetalleVentasVendedorExport;
+use App\Exports\ReportesAutomaticos\InventarioPorSucursal\InventarioExport;
 use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -1155,6 +1156,8 @@ class VentasController extends Controller
                 $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
             } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
                 $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $empresa->id);
+            }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
+                $export = new InventarioExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1216,6 +1219,7 @@ class VentasController extends Controller
                 'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
@@ -1277,6 +1281,9 @@ class VentasController extends Controller
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
                 $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 $filename = "detalle-ventas-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
+                $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "inventario-por-sucursal-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1338,6 +1345,7 @@ class VentasController extends Controller
                 'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
             ];
 
             $datos = [
@@ -1408,6 +1416,9 @@ class VentasController extends Controller
                 break;
             case 'detalle-ventas-vendedor':
                 $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
+                break;
+            case 'inventario-por-sucursal':
+                $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

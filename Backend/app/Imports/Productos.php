@@ -10,72 +10,82 @@ use App\Models\Inventario\Ajuste;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 use JWTAuth;
 
-class Productos implements ToModel, WithHeadingRow, WithValidation
+class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
-    // use Importable;
-
     private $numRows = 0;
-    
+    private $usuario;
+    private $bodegas;
+
+    public function __construct()
+    {
+        $this->usuario = JWTAuth::parseToken()->authenticate();
+
+        $this->bodegas = Bodega::where('id_empresa', $this->usuario->id_empresa)
+            ->where('activo', true)
+            ->get();
+    }
+
     public function model(array $row)
     {
-
-        $usuario = JWTAuth::parseToken()->authenticate();
+        if (empty($row['nombre']) || empty($row['precio']) || empty($row['costo']) || empty($row['categoria'])) {
+            return null;
+        }
 
         $id_categoria = Categoria::where('nombre', $row['categoria'])
-                                ->where('id_empresa', $usuario->id_empresa)
-                                ->pluck('id')->first();
-        
+            ->where('id_empresa', $this->usuario->id_empresa)
+            ->pluck('id')->first();
 
-        if(!$id_categoria){
+
+        if (!$id_categoria) {
             $categoria = new Categoria();
             $categoria->nombre = $row['categoria'];
             $categoria->descripcion = $row['categoria'];
             $categoria->enable = true;
-            $categoria->id_empresa = $usuario->id_empresa;
+            $categoria->id_empresa = $this->usuario->id_empresa;
             $categoria->save();
             $id_categoria = $categoria->id;
         }
 
         if ($row['proveedor_nombre']) {
             $id_proveedor = Proveedor::where(function ($query) use ($row) {
-                    $query->where('nombre', $row['proveedor_nombre'])
-                          ->where('apellido', $row['proveedor_apellido']);
-                })
+                $query->where('nombre', $row['proveedor_nombre'])
+                    ->where('apellido', $row['proveedor_apellido']);
+            })
                 ->orWhere('nombre_empresa', $row['proveedor_nombre'])
-                ->where('id_empresa', $usuario->id_empresa)
+                ->where('id_empresa', $this->usuario->id_empresa)
                 ->pluck('id')
                 ->first();
 
-            if(!$id_proveedor){
+            if (!$id_proveedor) {
                 $proveedor = new Proveedor();
                 $proveedor->nombre = $row['proveedor_apellido'] ? $row['proveedor_nombre'] : null;
                 $proveedor->apellido = $row['proveedor_apellido'];
                 $proveedor->tipo = $row['proveedor_apellido'] ? 'Persona' : 'Empresa';
                 $proveedor->nombre_empresa = $proveedor->tipo == 'Empresa' ? $row['proveedor_nombre'] : NULL;
                 $proveedor->enable = true;
-                $proveedor->id_empresa = $usuario->id_empresa;
-                $proveedor->id_usuario = $usuario->id;
+                $proveedor->id_empresa = $this->usuario->id_empresa;
+                $proveedor->id_usuario = $this->usuario->id;
                 $proveedor->save();
                 $id_proveedor = $proveedor->id;
             }
         }
 
         $producto = Producto::where('nombre', $row['nombre'])
-                                ->when(isset($row['codigo']) && !empty($row['codigo']), function ($query) use ($row) {
-                                    return $query->where('codigo', $row['codigo']);
-                                })
-                                ->where('id_empresa', $usuario->id_empresa)
-                                ->first();
+            ->when(isset($row['codigo']) && !empty($row['codigo']), function ($query) use ($row) {
+                return $query->where('codigo', $row['codigo']);
+            })
+            ->where('id_empresa', $this->usuario->id_empresa)
+            ->first();
 
-        if(!$producto){
+        if (!$producto) {
             $producto = new Producto();
             ++$this->numRows;
         }
@@ -92,7 +102,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
         $producto->medida = $row['unidad_medida'];
         $producto->barcode = $row['codigo_de_barra'];
         $producto->enable  = true;
-        $producto->id_empresa =  $usuario->id_empresa;
+        $producto->id_empresa =  $this->usuario->id_empresa;
         $producto->save();
 
         if (isset($id_proveedor)) {
@@ -102,139 +112,85 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             ]);
         }
 
+        $bodegas = $this->bodegas;
 
-        $bodegas = Bodega::where('id_empresa', $usuario->id_empresa)->where('activo', true)->get();
+        $inventariosExistentes = Inventario::where('id_producto', $producto->id)
+            ->whereIn('id_bodega', $bodegas->pluck('id'))
+            ->get()
+            ->keyBy('id_bodega');
 
         if (isset($bodegas[0]) && isset($row['sucursal_1_stock'])) {
-            
-            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[0]->id)->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-            }
-
-            $inventario->id_producto = $producto->id;
-            $inventario->id_bodega = $bodegas[0]->id;
-            $inventario->stock = $row['sucursal_1_stock'];
-            $inventario->save(); 
-
-
-            $ajuste = Ajuste::create([
-                'concepto' => 'Ajuste inicial',
-                'id_producto' => $producto->id,
-                'id_bodega' => $bodegas[0]->id,
-                'stock_actual' => 0,
-                'stock_real' => $inventario->stock,
-                'ajuste' => $inventario->stock,
-                'estado' => 'Confirmado',
-                'id_empresa' => $usuario->id_empresa,
-                'id_usuario' => $usuario->id,
-            ]);
-            
-            if (!$inventario) {
-                $inventario->kardex($ajuste, $ajuste->ajuste);
-            }
-
+            $this->procesarInventarioBodega(
+                $inventariosExistentes->get($bodegas[0]->id),
+                $bodegas[0],
+                $row['sucursal_1_stock'],
+                $producto->id
+            );
         }
 
         if (isset($bodegas[1]) && isset($row['sucursal_2_stock'])) {
-            
-            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[1]->id)->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-            }
-
-            $inventario->id_producto = $producto->id;
-            $inventario->id_bodega = $bodegas[1]->id;
-            $inventario->stock = $row['sucursal_2_stock'];
-            $inventario->save();
-
-
-            $ajuste = Ajuste::create([
-                'concepto' => 'Ajuste inicial',
-                'id_producto' => $producto->id,
-                'id_bodega' => $bodegas[1]->id,
-                'stock_actual' => 0,
-                'stock_real' => $inventario->stock,
-                'ajuste' => $inventario->stock,
-                'estado' => 'Confirmado',
-                'id_empresa' => $usuario->id_empresa,
-                'id_usuario' => $usuario->id,
-            ]);
-
-            if ($inventario) {
-                $inventario->kardex($ajuste, $ajuste->ajuste);
-            }
+            $this->procesarInventarioBodega(
+                $inventariosExistentes->get($bodegas[1]->id),
+                $bodegas[1],
+                $row['sucursal_2_stock'],
+                $producto->id
+            );
         }
 
         if (isset($bodegas[2]) && isset($row['sucursal_3_stock'])) {
-            
-            $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[2]->id)->first();
-
-            if (!$inventario) {
-                $inventario = new Inventario();
-            }
-
-            $inventario->id_producto = $producto->id;
-            $inventario->id_bodega = $bodegas[2]->id;
-            $inventario->stock = $row['sucursal_3_stock'];
-            $inventario->save();
-
-
-            $ajuste = Ajuste::create([
-                'concepto' => 'Ajuste inicial',
-                'id_producto' => $producto->id,
-                'id_bodega' => $bodegas[2]->id,
-                'stock_actual' => 0,
-                'stock_real' => $inventario->stock,
-                'ajuste' => $inventario->stock,
-                'estado' => 'Confirmado',
-                'id_empresa' => $usuario->id_empresa,
-                'id_usuario' => $usuario->id,
-            ]);
-
-            if ($inventario) {
-                $inventario->kardex($ajuste, $ajuste->ajuste);
-            }
+            $this->procesarInventarioBodega(
+                $inventariosExistentes->get($bodegas[2]->id),
+                $bodegas[2],
+                $row['sucursal_3_stock'],
+                $producto->id
+            );
         }
 
-        // Procesar bodegas adicionales (desde la 4ta en adelante)
+        // ✅ Procesar bodegas adicionales (desde la 4ta en adelante)
         if ($bodegas->count() > 3) {
-           for ($i=3; $i < $bodegas->count(); $i++) { 
-               
-               $inventario = Inventario::where('id_producto', $producto->id)->where('id_bodega', $bodegas[$i]->id)->first();
-
-               if (!$inventario) {
-                    $inventario = new Inventario();
-               }
-
-               $inventario->id_producto = $producto->id;
-               $inventario->id_bodega = $bodegas[$i]->id;
-               $inventario->stock = 0; // Stock inicial en 0 para bodegas adicionales
-               $inventario->save();
-
-
-               $ajuste = Ajuste::create([
-                   'concepto' => 'Ajuste inicial',
-                   'id_producto' => $producto->id,
-                   'id_bodega' => $bodegas[$i]->id,
-                   'stock_actual' => 0,
-                   'stock_real' => $inventario->stock,
-                   'ajuste' => $inventario->stock,
-                   'estado' => 'Confirmado',
-                   'id_empresa' => $usuario->id_empresa,
-                   'id_usuario' => $usuario->id,
-               ]);
-
-               if ($inventario) {
-                   $inventario->kardex($ajuste, $ajuste->ajuste);
-               }
-           }
+            for ($i = 3; $i < $bodegas->count(); $i++) {
+                $this->procesarInventarioBodega(
+                    $inventariosExistentes->get($bodegas[$i]->id),
+                    $bodegas[$i],
+                    0, // Stock inicial en 0 para bodegas adicionales
+                    $producto->id
+                );
+            }
         }
 
         return $producto;
+    }
 
+    private function procesarInventarioBodega($inventarioExistente, $bodega, $stock, $productoId)
+    {
+        // Usar inventario existente o crear nuevo
+        if (!$inventarioExistente) {
+            $inventario = new Inventario();
+            $inventario->id_producto = $productoId;
+            $inventario->id_bodega = $bodega->id;
+        } else {
+            $inventario = $inventarioExistente;
+        }
+
+        $inventario->stock = $stock;
+        $inventario->save();
+
+        // Crear ajuste
+        $ajuste = Ajuste::create([
+            'concepto' => 'Ajuste inicial',
+            'id_producto' => $productoId,
+            'id_bodega' => $bodega->id,
+            'stock_actual' => 0,
+            'stock_real' => $inventario->stock,
+            'ajuste' => $inventario->stock,
+            'estado' => 'Confirmado',
+            'id_empresa' => $this->usuario->id_empresa,
+            'id_usuario' => $this->usuario->id,
+        ]);
+
+        if ($inventario->exists) {
+            $inventario->kardex($ajuste, $ajuste->ajuste);
+        }
     }
 
     public function rules(): array
@@ -243,10 +199,9 @@ class Productos implements ToModel, WithHeadingRow, WithValidation
             'nombre' => 'required|string',
             'precio' => 'required|numeric',
             'costo' => 'required|numeric',
-            'sucursal_1_stock' => 'required|numeric',
+            'sucursal_*_stock' => 'nullable|numeric|min:0',
             'categoria' => 'required|string',
             'proveedor_apellido' => 'required_with:proveedor_nombre',
-            // 'codigo_de_barra' => 'sometimes|string',
         ];
     }
 

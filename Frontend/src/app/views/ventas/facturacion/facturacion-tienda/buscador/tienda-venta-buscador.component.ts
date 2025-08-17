@@ -59,8 +59,8 @@ export class TiendaVentaBuscadorComponent implements OnInit {
 
               if (
                 results &&
-                results.length === 1 &&
-                this.buscador === results[0].codigo
+                results.length == 1 &&
+                (this.searchControl.value == results[0].codigo || this.searchControl.value == results[0].barcode)
               ) {
                 this.selectProducto(results[0]);
               }

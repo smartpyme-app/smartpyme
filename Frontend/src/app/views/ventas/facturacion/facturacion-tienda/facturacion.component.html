@@ -171,6 +171,11 @@
                         <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    <tr *ngIf="venta.renta">
+                        <td class="text-right"> <b>Renta (10%)</b></td>
+                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida | currency:'USD':'symbol':'1.2'}} </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr *ngIf="venta.exenta > 0">
                         <td class="text-right"> <b>Ventas Exentas</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -233,14 +238,20 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.cobrar_impuestos" name="venta.cobrar_impuestos">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="percepcion">Retención</label>
+              <label for="percepcion">Retención (1%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.retencion" name="compra.retencion">
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-3 without-label ">
+            <div class="form-switch bg-light-info rounded">
+                <label for="renta">Renta (10%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="venta.renta" name="renta">
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
@@ -295,6 +306,14 @@
                 <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
                 <input type="number" class="form-control" disabled [(ngModel)]="venta.cambio" name="cambio" id="cambio">
             </div>
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden">Número de orden:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
+        </div>
+        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            <label for="num_orden_exento">Número de orden exento:</label><br>
+            <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
         </div>
     </div>
     <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
@@ -405,10 +424,10 @@
   </div>
   <div class="modal-body">
     <div class="row text-center">
-        <form name="form" (ngSubmit)="supervisorCheck()">
+        <form name="form" (ngSubmit)="supervisorCheck()" autocomplete="off">
             <div class="form-group col-md-12">
                 <label for="codigo">Ingrese el código de supervisor:</label>
-                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center">
+                <input type="password" [(ngModel)]="supervisor.codigo" name="codigo" class="form-control text-center" autocomplete="off">
             </div>
             <div class="col-md-12">
                 <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">

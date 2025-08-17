@@ -175,7 +175,7 @@
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
             <div class="form-switch bg-light-info rounded">
-              <label for="cobrar_impuestos">Con IVA</label>
+              <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0' }}%)</label>
               <input class="form-check-input float-end" type="checkbox" role="switch" (change)="sumTotal()" [(ngModel)]="compra.cobrar_impuestos" name="compra.cobrar_impuestos">
             </div>
         </div>

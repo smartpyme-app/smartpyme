@@ -220,7 +220,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.compra.renta_retenida = this.compra.renta ? this.compra.sub_total * 0.10 : 0; 
 
         if(this.compra.cobrar_impuestos){
-            this.compra.iva = ( this.compra.sub_total * 0.13 ).toFixed(2);
+            this.compra.iva = ( this.compra.sub_total * (this.apiService.auth_user().empresa.iva / 100) ).toFixed(2);
         }else{
             this.compra.iva = 0;
         }

@@ -38,6 +38,8 @@ class Proveedor extends Model {
         'etiquetas',
         'id_usuario',
         'id_empresa',
+        'tipo_documento',
+        'tipo_persona'
     );
 
     protected $appends = ['nombre_completo'];

@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { EncryptService } from '@services/encryption/encrypt.service';
 import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
 
 @Component({
@@ -43,7 +44,8 @@ export class UsuariosComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     public alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private encryptService: EncryptService
   ) {}
 
   ngOnInit() {
@@ -84,6 +86,16 @@ export class UsuariosComponent implements OnInit {
     this.apiService.getAll('usuarios', this.filtros).subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
+        this.usuarios.data.forEach((usuario:any) => {
+          if (usuario.roles && usuario.roles.length > 0) {
+            usuario.rol_id = usuario.roles[0].id;
+            usuario.rol_name = usuario.roles[0].name;
+          } else {
+            usuario.rol_id = null;
+            usuario.rol_name = 'Sin rol asignado';
+          }
+          usuario.encrypted_id = this.encryptService.encrypt(usuario.id);
+        });
         this.contarActivos();
         this.loading = false;
       },
@@ -105,8 +117,8 @@ export class UsuariosComponent implements OnInit {
 openModal(template: TemplateRef<any>, usuario: any) {
   this.alertService.modal = true;
   this.usuario = usuario;
-  
-  
+
+
   if (!this.usuario.id) {
     this.usuario.tipo = 'Administrador';
     this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
@@ -214,7 +226,19 @@ openModal(template: TemplateRef<any>, usuario: any) {
 
 public changePhoneNumber(event: any) {
   console.log('Evento completo:', event);
-  this.usuario.telefono = event.e164Number; 
+  this.usuario.telefono = event.e164Number;
   console.log('Teléfono a enviar:', this.usuario.telefono);
+}
+
+editarUsuario(usuario: any) {
+  const encryptedId = this.encryptService.encrypt(usuario.id);
+  // Navegar usando Router si lo tienes importado, o usar window.location
+  window.location.href = `/usuario/${encryptedId}`;
+}
+
+crearUsuario() {
+  // Para nuevo usuario, usamos un ID especial (0) que será detectado en el componente usuario
+  const encryptedId = this.encryptService.encrypt(0);
+  window.location.href = `/usuario/${encryptedId}`;
 }
 }
