@@ -155,6 +155,71 @@ class AbonosController extends Controller
 
     }
 
+    public function update(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $request->validate([
+                'id'          => 'required|numeric|exists:abonos_ventas,id',
+                'fecha'       => 'required|date',
+                'concepto'    => 'required|max:255',
+                'nombre_de'   => 'required|max:255',
+                'estado'      => 'required|max:255',
+                'forma_pago'  => 'required|max:255',
+                'total'       => 'required|numeric',
+                'id_venta'    => 'required|numeric',
+                'id_usuario'  => 'required|numeric',
+                'id_sucursal' => 'required|numeric',
+            ]);
+        
+    
+            $abono = Abono::findOrFail($request->id);
+            $venta = Venta::find($request->id_venta);
+    
+            // Actualizar el abono
+            $abono->fill($request->all());
+            $abono->save();
+    
+            // Actualizar estado de la venta según el saldo
+            if ($venta) {
+                if ($venta->saldo <= 0) {
+                    $venta->estado = 'Pagada';
+                    $venta->save();
+    
+                    // Actualizar paquetes relacionados
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
+                        $paquete->estado = 'Facturado';
+                        $paquete->save();
+                    }
+                } else {
+                    $venta->estado = 'Pendiente';
+                    $venta->save();
+    
+                    // Actualizar paquetes relacionados
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
+                        $paquete->estado = 'Pendiente';
+                        $paquete->save();
+                    }
+                }
+            }
+    
+            DB::commit();
+            return response()->json($abono, 200);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
     public function delete($id){
         $abono = Abono::findOrFail($id);
         $abono->delete();
