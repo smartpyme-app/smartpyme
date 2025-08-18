@@ -115,13 +115,34 @@ class CotizacionVentaController extends Controller
             ->when($request->tipo_documento, function ($query) use ($request) {
                 return $query->where('tipo_documento', $request->tipo_documento);
             })
-            ->when($request->buscador, function ($query) use ($request) {
-                return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ;
+            ->when($request->buscador, function ($q) use ($request) {
+                $b = trim($request->buscador);
+                $q->where(function ($qq) use ($b) {
+                    $qq->where('correlativo', 'like', "%{$b}%")
+                       ->orWhere('estado', 'like', "%{$b}%")
+                       ->orWhere('observaciones', 'like', "%{$b}%")
+                       // cliente: nombre + apellido
+                       ->orWhereHas('cliente', function ($qc) use ($b) {
+                           $qc->whereRaw("CONCAT_WS(' ', nombre, apellido) LIKE ?", ["%{$b}%"])
+                              ->orWhere('nombre', 'like', "%{$b}%")
+                              ->orWhere('apellido', 'like', "%{$b}%");
+                       })
+                       // usuario: name
+                       ->orWhereHas('usuario', function ($qu) use ($b) {
+                           $qu->where('name', 'like', "%{$b}%");
+                       })
+                       // empresa: nombre
+                       ->orWhereHas('cliente', function ($qe) use ($b) {
+                           $qe->where('nombre_empresa', 'like', "%{$b}%");
+                       });
+                });
             })
-         //   ->where('id_empresa', Auth::user()->id_empresa)
+            ->when($request->cliente_nombre, function ($q) use ($request) {
+                $b = trim($request->cliente_nombre);
+                $q->whereHas('cliente', function ($qc) use ($b) {
+                    $qc->whereRaw("CONCAT_WS(' ', nombre, apellido) LIKE ?", ["%{$b}%"]);
+                });
+            })
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);

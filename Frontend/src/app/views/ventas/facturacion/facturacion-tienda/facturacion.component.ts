@@ -104,14 +104,14 @@ export class FacturacionComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.apiService.getAll('custom-fields', this.filtros).subscribe(
         (customFields) => {
-          console.log('customFields', customFields);
+          // console.log('customFields', customFields);
           this.customFields = customFields;
           //verificar si hay campos personalizados
           if (this.customFields.data.length > 0) {
-            console.log('hay campos personalizados');
+            // console.log('hay campos personalizados');
             this.customField = true;
           }else{
-            console.log('no hay campos personalizados');
+            // console.log('no hay campos personalizados');
             this.customField = false;
           }
 
@@ -242,11 +242,11 @@ export class FacturacionComponent implements OnInit {
         this.documentos = this.documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
-        console.log(this.documentos);
-        console.log(this.venta);
+        // console.log(this.documentos);
+        // console.log(this.venta);
 
         if (!this.venta.id_documento && !this.venta.correlativo) {
-          console.log('entro');
+          // console.log('entro');
 
           let documento = this.documentos.find(
             (x: any) => x.predeterminado == 1
@@ -480,7 +480,7 @@ if (
 ) {
   this.facturarCotizacion = true;
 
-  console.log('facturar cotizacion');
+  // console.log('facturar cotizacion');
 
 
   this.apiService.getAll('impuestos').subscribe(
@@ -642,7 +642,7 @@ if (
                     this.venta.detalles.push(detalle);
                     this.sumTotal();
                     this.loading = false;
-                    console.log(this.venta);
+                    // console.log(this.venta);
                   },
                   (error) => {
                     this.alertService.error(error);
@@ -671,7 +671,7 @@ if (
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     ).total;
-    console.log(this.venta);
+    // console.log(this.venta);
   }
 
   public sumTotal() {
@@ -777,7 +777,7 @@ if (
                 this.sumTotal();
             }
         }
-        console.log(cliente);
+        // console.log(cliente);
     }
 
   // Proyecto
@@ -821,7 +821,7 @@ if (
         item.total = null;
       });
     }
-    console.log(this.venta);
+    // console.log(this.venta);
   }
 
   public setDocumento(id_documento: any) {
