@@ -11,6 +11,8 @@ class Abono extends Model {
     protected $table = 'abonos_ventas';
     protected $fillable = array(
         'fecha',
+        'correlativo',
+        'id_documento',
         'concepto',
         'referencia',
         'estado',
@@ -52,5 +54,14 @@ class Abono extends Model {
         return $this->belongsTo('App\Models\Admin\Sucursal','id_sucursal');
     }
 
+    public function documento(){
+        return $this->belongsTo('App\Models\Admin\Documento','id_documento');
+    }
+
+    protected $appends = ['nombre_documento'];
+
+    public function getNombreDocumentoAttribute(){
+        return $this->documento()->pluck('nombre')->first();
+    }
 
 }
