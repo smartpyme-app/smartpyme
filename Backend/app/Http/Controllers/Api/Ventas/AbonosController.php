@@ -28,39 +28,55 @@ class AbonosController extends Controller
     }
     
     public function index(Request $request) {
-       
-        $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_venta', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
-                            return $query->where('fecha', '>=', $request->inicio);
-                        })
-                        ->when($request->fin, function($query) use ($request){
-                            return $query->where('fecha', '<=', $request->fin);
-                        })
-                        ->when($request->id_sucursal, function($query) use ($request){
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->id_cliente, function($query) use ($request){
-                            return $query->where('id_cliente', $request->id_cliente);
-                        })
-                        ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->orderBy($request->orden, $request->direccion)
-                        ->orderBy('id', 'desc')
-                        ->paginate($request->paginate);
+            $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){
+                return $query->where(function($q) use ($request) {
+                $q->where('id_venta', 'like', '%'.$request->buscador.'%')
+                    ->orWhere('concepto', 'like', '%'.$request->buscador.'%')
+                    ->orWhere('nombre_de', 'like', '%'.$request->buscador.'%')
+                    // Búsqueda en la relación venta
+                    ->orWhereHas('venta', function($ventaQuery) use ($request) {
+                        $ventaQuery->where('correlativo', 'like', '%'.$request->buscador.'%')
+                                // Buscar en la relación documento (tabla documentos)
+                                ->orWhereHas('documento', function($docQuery) use ($request) {
+                                    $docQuery->where('nombre', 'like', '%'.$request->buscador.'%');
+                                })
+                                // Buscar por la concatenación usando JOIN
+                                ->orWhereExists(function($query) use ($request) {
+                                    $query->select(DB::raw(1))
+                                            ->from('documentos')
+                                            ->whereColumn('documentos.id', 'ventas.id_documento')
+                                            ->whereRaw("CONCAT(documentos.nombre, ' # ', ventas.correlativo) LIKE ?", ['%'.$request->buscador.'%']);
+                                });
+                    });
+                });
+                })
+                ->when($request->inicio, function($query) use ($request){
+                    return $query->where('fecha', '>=', $request->inicio);
+                })
+                ->when($request->fin, function($query) use ($request){
+                    return $query->where('fecha', '<=', $request->fin);
+                })
+                ->when($request->id_sucursal, function($query) use ($request){
+                    return $query->where('id_sucursal', $request->id_sucursal);
+                })
+                ->when($request->id_usuario, function($query) use ($request){
+                    return $query->where('id_usuario', $request->id_usuario);
+                })
+                ->when($request->id_cliente, function($query) use ($request){
+                    return $query->where('id_cliente', $request->id_cliente);
+                })
+                ->when($request->forma_pago, function($query) use ($request){
+                    return $query->where('forma_pago', $request->forma_pago);
+                })
+                ->when($request->estado, function($query) use ($request){
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->metodo_pago, function($query) use ($request){
+                    return $query->where('metodo_pago', $request->metodo_pago);
+                })
+                ->orderBy($request->orden, $request->direccion)
+                ->orderBy('id', 'desc')
+                ->paginate($request->paginate);
 
         return Response()->json($abonos, 200);
            
