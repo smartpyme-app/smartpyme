@@ -48,30 +48,42 @@ export class CanalesComponent implements OnInit {
 
     public setEstado(canal:any){
         this.canal = canal;
-        this.onSubmit();
+        this.onSubmit(true);
     }
 
-    public onSubmit(){
+    public onSubmit(isStatusChange: boolean = false) {
         this.loading = true;
         this.apiService.store('canal', this.canal).subscribe(canal => {
-            if (!this.canal.id) {
-                this.canales.push(canal);
-                this.alertService.success('Canal creado', 'El canal fue añadido exitosamente.');
+            if (isStatusChange) {
+                const index = this.canales.findIndex((c: any) => c.id === canal.id);
+                if (index !== -1) {
+                    this.canales[index] = canal;
+                }
+                this.alertService.success('Estado actualizado', 'El estado del canal fue cambiado exitosamente.');
             } else {
-                this.alertService.success('Canal guardado', 'El canal fue guardado exitosamente.');
+                if (!this.canal.id) {
+                    this.canales.push(canal);
+                }
+                
+                this.alertService.modal = false;
+                if (this.modalRef) {
+                    this.modalRef.hide();
+                }
+                
+                setTimeout(() => {
+                    if (!this.canal.id) {
+                        this.alertService.success('Canal creado', 'El canal fue añadido exitosamente.');
+                    } else {
+                        this.alertService.success('Canal guardado', 'El canal fue guardado exitosamente.');
+                    }
+                }, 300);
             }
             this.loading = false;
-            this.alertService.modal = false;
-            
-            if (this.modalRef) {
-                this.modalRef.hide();
-            }
         }, error => {
             this.alertService.error(error); 
             this.loading = false;
         });
     }
-
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
