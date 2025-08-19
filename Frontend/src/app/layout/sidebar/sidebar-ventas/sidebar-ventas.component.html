@@ -25,7 +25,12 @@
                     <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
                 </a>
             </li>
-            <li *ngIf="canShowOption('productos.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <li *ngIf="canShowOption('cotizaciones.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+          <a [routerLink]="['/cotizaciones']" tooltip="Cotizaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                    <img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones
+                </a>
+            </li>
+          <li *ngIf="canShowOption('productos.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/vendedor/productos']" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
                 </a>
