@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Planilla;
 
 use App\Constants\PlanillaConstants;
 use App\Helpers\DocumentHelper;
+use App\Helpers\RentaHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Planilla\ContactoEmergencia;
 use App\Models\Planilla\DocumentoEmpleado;
@@ -20,6 +21,14 @@ use Illuminate\Support\Facades\Storage;
 
 class EmpleadosController extends Controller
 {
+
+    protected $planillasController;
+
+    public function __construct(PlanillasController $planillasController)
+    {
+        $this->planillasController = $planillasController;
+    }
+
     public function index(Request $request)
     {
 
@@ -243,24 +252,29 @@ class EmpleadosController extends Controller
             $detalle->afp_empleado = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
             $detalle->afp_patronal = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
             
-            // Recalcular Renta
-            $baseRenta = $detalle->salario_devengado - $detalle->isss_empleado - $detalle->afp_empleado;
-            $baseRentaAnualizada = $baseRenta;
+            $empleado = $detalle->empleado;
+            $tipoContrato = $empleado ? $empleado->tipo_contrato : null;
             
-            if ($planilla->tipo_planilla !== 'mensual') {
-                $baseRentaAnualizada = $baseRenta * $factorAjuste;
-            }
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $detalle->salario_devengado,
+                $detalle->isss_empleado,
+                $detalle->afp_empleado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
             
-            $detalle->renta = PlanillasController::calcularRentaAjustada($baseRentaAnualizada, $planilla->tipo_planilla, $factorAjuste);
+            $detalle->renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
             
-            // Recalcular total de ingresos
             $detalle->total_ingresos = $detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos;
                 
-            // Recalcular total de descuentos
             $detalle->total_descuentos = $detalle->isss_empleado +
                 $detalle->afp_empleado +
                 $detalle->renta +
@@ -269,13 +283,11 @@ class EmpleadosController extends Controller
                 $detalle->otros_descuentos +
                 $detalle->descuentos_judiciales;
                 
-            // Recalcular sueldo neto
             $detalle->sueldo_neto = $detalle->total_ingresos - $detalle->total_descuentos;
             
-            // Guardar cambios
             $detalle->save();
             
-            Log::info("Actualizado detalle de planilla ID: {$detalle->id}, de salario {$salarioBaseAnterior} a {$nuevoSalario}");
+            // Log::info("Actualizado detalle de planilla ID: {$detalle->id}, de salario {$salarioBaseAnterior} a {$nuevoSalario}");
             
             // Actualizar totales de la planilla
             $planilla->actualizarTotales();
@@ -283,35 +295,6 @@ class EmpleadosController extends Controller
         
         Log::info("Finalizada actualización de salario en planillas para empleado ID: {$idEmpleado}");
     }
-
-    // private function calcularRentaAjustada($baseRenta, $tipoPlanilla, $factorAjuste = 1)
-    // {
-    //     // Calcular renta según tabla de El Salvador
-    //     $renta = 0;
-
-    //     if ($baseRenta <= PlanillaConstants::RENTA_MINIMA) {
-    //         return 0;
-    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) {
-    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MINIMA) *
-    //             PlanillaConstants::PORCENTAJE_PRIMER_TRAMO) +
-    //             PlanillaConstants::IMPUESTO_PRIMER_TRAMO;
-    //     } elseif ($baseRenta <= PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) {
-    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_PRIMER_TRAMO) *
-    //             PlanillaConstants::PORCENTAJE_SEGUNDO_TRAMO) +
-    //             PlanillaConstants::IMPUESTO_SEGUNDO_TRAMO;
-    //     } else {
-    //         $renta = (($baseRenta - PlanillaConstants::RENTA_MAXIMA_SEGUNDO_TRAMO) *
-    //             PlanillaConstants::PORCENTAJE_TERCER_TRAMO) +
-    //             PlanillaConstants::IMPUESTO_TERCER_TRAMO;
-    //     }
-
-    //     // Si no es mensual, dividir la renta calculada por el factor de ajuste
-    //     if ($tipoPlanilla !== 'mensual') {
-    //         $renta = $renta / $factorAjuste;
-    //     }
-
-    //     return round($renta, 2);
-    // }
 
     public function getDocumentos($id)
     {

@@ -117,9 +117,19 @@ class AbonosController extends Controller
             else
                 $abono = new Abono;
 
-            
+            // Obtener el documento y asignar correlativo
+            $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
+                            ->where('id_sucursal', $request->id_sucursal)
+                            ->lockForUpdate()
+                            ->first();
+
             $abono->fill($request->all());
-            $abono->save();
+            if($documento){
+                $abono->id_documento = $documento->id;
+                $abono->correlativo = $documento->correlativo;
+                $documento->increment('correlativo');
+            }
+            $abono->save(); 
 
             if ($venta && $venta->saldo <= 0) {
                 $venta->estado = 'Pagada';
@@ -246,12 +256,14 @@ class AbonosController extends Controller
 
     public function print($id){
 
-        $recibo = Abono::where('id', $id)->first();
+        $recibo = Abono::with('documento')->where('id', $id)->first();
         $venta = Venta::with('empresa.currency')->where('id', $recibo->id_venta)->first();
 
         $pdf = PDF::loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
         $pdf->setPaper('US Letter', 'portrait');
-        return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');   
+        
+        $nombreArchivo = ($recibo->nombre_documento ?? 'recibo') . '-' . ($recibo->correlativo ?? $recibo->id) . '.pdf';
+        return $pdf->stream($nombreArchivo);   
 
     }
 
