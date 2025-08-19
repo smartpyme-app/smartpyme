@@ -71,7 +71,7 @@ export class AbonosVentasComponent implements OnInit {
     }
 
     public setEstado(abono:any){
-        this.apiService.store('venta/abono', abono).subscribe(abono => { 
+        this.apiService.store('venta/abono/update', abono).subscribe(abono => { 
             this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
