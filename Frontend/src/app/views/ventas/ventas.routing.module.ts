@@ -33,8 +33,8 @@ import { CategoriasVentasComponent } from '@views/reportes/ventas/categorias/cat
 import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotizacion-form/cotizacion-form.component';
 
 import { PermissionGuard } from '../../guards/permission.guard';
-
 import { RoleGuard } from '../../guards/role.guard';
+import { CotizacionComponent } from './cotizaciones/cotizacion/cotizacion.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -118,7 +118,7 @@ const routes: Routes = [
       //  { path: 'cotizacion/crear', component: CotizacionFormComponent, title: 'Cotización' },
       {
         path: 'cotizacion/crear',
-        component: FacturacionComponent,
+        component: CotizacionComponent,
         title: 'Cotización',
         canActivate: [PermissionGuard],
         data: { permission: 'ventas.cotizaciones.crear' },

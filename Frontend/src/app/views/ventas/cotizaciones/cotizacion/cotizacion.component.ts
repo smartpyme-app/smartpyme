@@ -11,15 +11,14 @@ import * as moment from 'moment';
 import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
-  selector: 'app-facturacion',
-  templateUrl: './facturacion.component.html',
+  selector: 'app-cotizacion',
+  templateUrl: './cotizacion.component.html',
   providers: [SumPipe],
 })
-export class FacturacionComponent implements OnInit {
+export class CotizacionComponent implements OnInit {
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
-  // public clientes: any = [];
   public proyectos: any = [];
   public usuarios: any = [];
   public documentos: any = [];
@@ -83,9 +82,14 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('sucursales/list').subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
+        // if (this.apiService.auth_user().tipo != 'Administrador') {
+        //   this.sucursales = this.sucursales.filter(
+        //     (item: any) => item.id == this.apiService.auth_user().id_sucursal
+        //   );
+        // }
 
         if (this.apiService.validateRole('super_admin', false)
-          || this.apiService.validateRole('admin', false)) {
+        || this.apiService.validateRole('admin', false)) {
           this.sucursales = this.sucursales.filter(
             (item: any) => item.id == this.apiService.auth_user().id_sucursal);
         }
@@ -95,19 +99,44 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    // <<<<<<< HEAD
-    //     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-    //       this.bodegas = bodegas;
-    //       // if (this.apiService.auth_user().tipo != 'Administrador') {
-    //       //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
-    //       // }
-    //       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
-    //         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
-    // =======
+    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      this.apiService.getAll('custom-fields', this.filtros).subscribe(
+        (customFields) => {
+          console.log('customFields', customFields);
+          this.customFields = customFields;
+          //verificar si hay campos personalizados
+          if (this.customFields.data.length > 0) {
+            console.log('hay campos personalizados');
+            this.customField = true;
+          }else{
+            console.log('no hay campos personalizados');
+            this.customField = false;
+          }
+
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
+// <<<<<<< HEAD
+//     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+//       this.bodegas = bodegas;
+//       // if (this.apiService.auth_user().tipo != 'Administrador') {
+//       //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+//       // }
+//       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
+//         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+// =======
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
-        if (this.apiService.validateRole('super_admin', false)
+        // if (this.apiService.auth_user().tipo != 'Administrador') {
+        //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
+        // }
+        if(this.apiService.validateRole('super_admin', false)
           || this.apiService.validateRole('admin', false)) {
           this.bodegas = this.bodegas.filter(
             (item: any) =>
@@ -123,8 +152,16 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
+        // if (
+        //   this.apiService.auth_user().tipo != 'Administrador' &&
+        //   this.apiService.auth_user().tipo != 'Supervisor'
+        // ) {
+        //   this.usuarios = this.usuarios.filter(
+        //     (item: any) => item.id == this.apiService.auth_user().id
+        //   );
+        // }
 
-        if (this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false) || this.apiService.validateRole('usuario_supervisor', false)) {
+        if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false) || this.apiService.validateRole('usuario_supervisor', false)) {
           this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
         }
       },
@@ -132,6 +169,10 @@ export class FacturacionComponent implements OnInit {
         this.alertService.error(error);
       }
     );
+
+    // this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+    //     this.bancos = bancos;
+    // }, error => {this.alertService.error(error);});
 
     this.apiService.getAll('formas-de-pago/list').subscribe(
       (formaPagos) => {
@@ -145,6 +186,11 @@ export class FacturacionComponent implements OnInit {
     this.apiService.getAll('canales/list').subscribe(
       (canales) => {
         this.canales = canales;
+
+        if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+          this.venta.id_canal = null;
+          return;
+        }
         this.venta.id_canal = this.canales[0].id;
       },
       (error) => {
@@ -165,6 +211,17 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
+    // this.apiService.getAll('clientes/list').subscribe(
+    //   (clientes) => {
+    //     this.clientes = clientes;
+    //     this.loading = false;
+    //   },
+    //   (error) => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   }
+    // );
+
     this.apiService.getAll('proyectos/list').subscribe(
       (proyectos) => {
         this.proyectos = proyectos;
@@ -184,8 +241,12 @@ export class FacturacionComponent implements OnInit {
         this.documentos = this.documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
+        console.log(this.documentos);
+        console.log(this.venta);
 
         if (!this.venta.id_documento && !this.venta.correlativo) {
+          console.log('entro');
+
           let documento = this.documentos.find(
             (x: any) => x.predeterminado == 1
           );
@@ -198,6 +259,7 @@ export class FacturacionComponent implements OnInit {
           }
 
           if (this.venta.cotizacion == 1) {
+            //console.log('entro a cotizacion');
             this.documentos = this.documentos;
             this.documentos = this.documentos.filter(
               (x: any) => x.nombre == 'Cotización'
@@ -278,6 +340,19 @@ export class FacturacionComponent implements OnInit {
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
     }
 
+    // if (this.route.snapshot.paramMap.get('id')!) {
+    //   const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
+    //   const isCotizacion = this.venta.cotizacion == 1 ? true : false;
+    //   this.apiService.read(endpoint, +this.route.snapshot.paramMap.get('id')!).subscribe(venta => {
+    //     this.venta = venta;
+    //     this.venta.cotizacion = isCotizacion ? 1 : 0;
+    //     this.venta.cobrar_impuestos = (this.venta.iva > 0) ? true : false;
+    //   }, error => {
+    //     this.alertService.error(error);
+    //     this.loading = false;
+    //   });
+    // }
+
     if (this.route.snapshot.paramMap.get('id')) {
       this.editar = true;
       const endpoint = this.venta.cotizacion == 1 ? 'cotizacion/' : 'venta/';
@@ -309,6 +384,9 @@ export class FacturacionComponent implements OnInit {
         });
     }
 
+    // Facturar venta recurrente
+    // Duplicar venta
+
     if (
       this.route.snapshot.queryParamMap.get('recurrente')! &&
       this.route.snapshot.queryParamMap.get('id_venta')!
@@ -319,9 +397,9 @@ export class FacturacionComponent implements OnInit {
         .subscribe(
           (venta) => {
             this.venta = venta;
-            if (!this.venta.cliente) {
-              this.venta.cliente = {};
-            } else {
+            if(!this.venta.cliente){
+                this.venta.cliente = {};
+            }else{
               this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
             }
             this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
@@ -349,109 +427,157 @@ export class FacturacionComponent implements OnInit {
         );
     }
 
+    // Facturar cotizacion de main
+    // if (
+    //   this.route.snapshot.queryParamMap.get('facturar_cotizacion')! &&
+    //   this.route.snapshot.queryParamMap.get('id_venta')!
+    // ) {
+    //   this.facturarCotizacion = true;
+    //   this.apiService
+    //     .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+    //     .subscribe(
+    //       (venta) => {
+    //         this.venta = venta;
+    //         if(!this.venta.cliente){
+    //           this.venta.cliente = {};
+    //         }else{
+    //           this.venta.cliente.nombre = this.venta.cliente.tipo == 'Empresa' ? this.venta.cliente.nombre_empresa : this.venta.cliente.nombre_completo;
+    //         }
+    //         this.venta.cobrar_impuestos = this.venta.iva > 0 ? true : false;
+    //         this.venta.fecha = this.apiService.date();
+    //         this.venta.fecha_pago = this.apiService.date();
+    //         this.venta.id_documento = null;
+    //         this.venta.correlativo = null;
+    //         this.venta.estado = 'Pagada';
+    //         this.venta.condicion = 'Contado';
+    //         this.venta.impuestos = this.impuestos;
+    //         this.venta.observaciones = '';
+    //         this.venta.cotizacion = 0;
+    //         this.venta.num_cotizacion = this.venta.id;
+    //         this.venta.id = null;
+    //         this.venta.detalles.forEach((detalle: any) => {
+    //           detalle.id = null;
+    //         });
+    //         this.sumTotal();
+    //
+    //         // Para proyectos
+    //         if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
+    //           this.venta.detalles = [];
+    //         }
+    //       },
+    //       (error) => {
+    //         this.alertService.error(error);
+    //         this.loading = false;
+    //       }
+    //     );
+    // }
+
     // Facturar cotizacion
-    if (
-      this.route.snapshot.queryParamMap.get('facturar_cotizacion') &&
-      this.route.snapshot.queryParamMap.get('id_venta')
-    ) {
-      this.facturarCotizacion = true;
+if (
+  this.route.snapshot.queryParamMap.get('facturar_cotizacion') &&
+  this.route.snapshot.queryParamMap.get('id_venta')
+) {
+  this.facturarCotizacion = true;
 
-      this.apiService.getAll('impuestos').subscribe(
-        (impuestos) => {
-          this.impuestos = impuestos;
+  console.log('facturar cotizacion');
 
 
-          this.apiService.read(
-            'cotizacionVentas/',
-            +this.route.snapshot.queryParamMap.get('id_venta')!
-          ).subscribe(
-            (venta) => {
-              this.venta = venta;
-              this.venta.cobrar_impuestos = venta.cobrar_impuestos;
-              this.venta.retencion = venta.aplicar_retencion;
-              this.venta.fecha = this.apiService.date();
-              this.venta.fecha_pago = this.apiService.date();
-              this.venta.estado = 'Pagada';
-              this.venta.cotizacion = 0;
-              this.venta.num_cotizacion = this.venta.id;
-              this.venta.id = null;
+  this.apiService.getAll('impuestos').subscribe(
+    (impuestos) => {
+      this.impuestos = impuestos;
 
 
-              if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
-                this.venta.impuestos = this.impuestos;
-              }
+      this.apiService.read(
+        'cotizacionVentas/',
+        +this.route.snapshot.queryParamMap.get('id_venta')!
+      ).subscribe(
+        (venta) => {
+          this.venta = venta;
+          this.venta.cobrar_impuestos = venta.cobrar_impuestos;
+          this.venta.retencion = venta.aplicar_retencion;
+          this.venta.fecha = this.apiService.date();
+          this.venta.fecha_pago = this.apiService.date();
+          this.venta.estado = 'Pagada';
+          this.venta.cotizacion = 0;
+          this.venta.num_cotizacion = this.venta.id;
+          this.venta.id = null;
 
 
-              this.venta.detalles.forEach((detalle: any) => {
-                if (detalle.codigo_combo) {
-                  detalle.descripcion = detalle.combo.nombre;
-                  detalle.detalles = detalle.combo.detalles;
-                } else {
-                  detalle.descripcion = detalle.producto.nombre;
-                }
-                detalle.id = null;
-              });
+          if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
+            this.venta.impuestos = this.impuestos;
+          }
 
 
-              if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
-                this.venta.detalles = [];
-              }
+          this.venta.detalles.forEach((detalle: any) => {
+            if (detalle.codigo_combo) {
+              detalle.descripcion = detalle.combo.nombre;
+              detalle.detalles = detalle.combo.detalles;
+            } else {
+              detalle.descripcion = detalle.producto.nombre;
+            }
+            detalle.id = null;
+          });
 
-              // Cargar los documentos y buscar una factura
-              this.apiService.getAll('documentos/list').subscribe(
-                (documentos) => {
-                  this.documentos = documentos;
-                  this.documentos = this.documentos.filter(
-                    (x: any) => x.id_sucursal == this.venta.id_sucursal
-                  );
 
-                  // Filtrar solo documentos tipo factura
-                  const docsFiltrados = this.documentos.filter(
-                    (x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'
-                  );
+          if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
+            this.venta.detalles = [];
+          }
 
-                  // Buscar documento predeterminado o tomar el primero
-                  let documentoFactura = docsFiltrados.find(
-                    (doc: any) => doc.predeterminado == 1
-                  );
-
-                  if (documentoFactura) {
-                    this.venta.id_documento = documentoFactura.id;
-                    this.venta.correlativo = documentoFactura.correlativo;
-                    this.venta.nombre_documento = documentoFactura.nombre;
-                  } else if (docsFiltrados.length > 0) {
-                    this.venta.id_documento = docsFiltrados[0].id;
-                    this.venta.correlativo = docsFiltrados[0].correlativo;
-                    this.venta.nombre_documento = docsFiltrados[0].nombre;
-                  }
-
-                  // Actualizar la lista de documentos
-                  this.documentos = docsFiltrados;
-
-                  // Calcular totales
-                  this.sumTotal();
-
-                  // Completar carga de otros datos
-                  this.loadData();
-                },
-                (error) => {
-                  this.alertService.error(error);
-                }
+          // Cargar los documentos y buscar una factura
+          this.apiService.getAll('documentos/list').subscribe(
+            (documentos) => {
+              this.documentos = documentos;
+              this.documentos = this.documentos.filter(
+                (x: any) => x.id_sucursal == this.venta.id_sucursal
               );
+
+              // Filtrar solo documentos tipo factura
+              const docsFiltrados = this.documentos.filter(
+                (x: any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra'
+              );
+
+              // Buscar documento predeterminado o tomar el primero
+              let documentoFactura = docsFiltrados.find(
+                (doc: any) => doc.predeterminado == 1
+              );
+
+              if (documentoFactura) {
+                this.venta.id_documento = documentoFactura.id;
+                this.venta.correlativo = documentoFactura.correlativo;
+                this.venta.nombre_documento = documentoFactura.nombre;
+              } else if (docsFiltrados.length > 0) {
+                this.venta.id_documento = docsFiltrados[0].id;
+                this.venta.correlativo = docsFiltrados[0].correlativo;
+                this.venta.nombre_documento = docsFiltrados[0].nombre;
+              }
+
+              // Actualizar la lista de documentos
+              this.documentos = docsFiltrados;
+
+              // Calcular totales
+              this.sumTotal();
+
+              // Completar carga de otros datos
+              this.loadData();
             },
             (error) => {
               this.alertService.error(error);
-              this.loading = false;
             }
           );
         },
         (error) => {
           this.alertService.error(error);
+          this.loading = false;
         }
       );
-
-      return;
+    },
+    (error) => {
+      this.alertService.error(error);
     }
+  );
+
+  return;
+}
 
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
@@ -504,7 +630,7 @@ export class FacturacionComponent implements OnInit {
 
                     detalle.total = (
                       parseFloat(detalle.cantidad) *
-                      parseFloat(detalle.precio) -
+                        parseFloat(detalle.precio) -
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
 
@@ -515,6 +641,7 @@ export class FacturacionComponent implements OnInit {
                     this.venta.detalles.push(detalle);
                     this.sumTotal();
                     this.loading = false;
+                    console.log(this.venta);
                   },
                   (error) => {
                     this.alertService.error(error);
@@ -543,6 +670,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     ).total;
+    console.log(this.venta);
   }
 
   public sumTotal() {
@@ -628,27 +756,28 @@ export class FacturacionComponent implements OnInit {
 
     // Asignar tipo renta
     if (this.venta.detalles.length > 0) {
-      if (this.venta.detalles[0].tipo == 'Servicio') {
-        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
-      } else {
-        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
-      }
+        if (this.venta.detalles[0].tipo == 'Servicio'){
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
+        }else{
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
+        }
     }
 
   }
 
   // Cliente
-  public setCliente(cliente: any) {
-    if (cliente.id) {
-      cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
-      this.venta.id_cliente = cliente.id;
-      this.venta.cliente = cliente;
-      if (cliente.tipo_contribuyente == "Grande") {
-        this.venta.retencion = 1;
-        this.sumTotal();
-      }
+  public setCliente(cliente:any){
+        if(cliente.id){
+            cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
+            this.venta.id_cliente = cliente.id;
+            this.venta.cliente = cliente;
+            if(cliente.tipo_contribuyente == "Grande") {
+                this.venta.retencion = 1;
+                this.sumTotal();
+            }
+        }
+        console.log(cliente);
     }
-  }
 
   // Proyecto
   public setProyecto(proyecto: any) {
@@ -691,6 +820,7 @@ export class FacturacionComponent implements OnInit {
         item.total = null;
       });
     }
+    console.log(this.venta);
   }
 
   public setDocumento(id_documento: any) {
@@ -804,6 +934,15 @@ export class FacturacionComponent implements OnInit {
 
     this.apiService.store('facturacion', this.venta).subscribe(
       (venta) => {
+        // Si es cotización
+        // if (this.facturarCotizacion) {
+        //   this.apiService.read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!).subscribe(venta => {
+        //     venta.estado = 'Facturada';
+        //     this.apiService.store('venta', venta).subscribe(venta => {
+
+        //     }, error => { this.alertService.error(error); this.saving = false; });
+        //   }, error => { this.alertService.error(error); this.saving = false; });
+        // }
 
         if (
           this.venta.cotizacion != 1 &&
@@ -815,10 +954,10 @@ export class FacturacionComponent implements OnInit {
           } else {
             window.open(
               this.apiService.baseUrl +
-              '/api/reporte/facturacion/' +
-              venta.id +
-              '?token=' +
-              this.apiService.auth_token(),
+                '/api/reporte/facturacion/' +
+                venta.id +
+                '?token=' +
+                this.apiService.auth_token(),
               'Impresión',
               'width=400'
             );
@@ -846,7 +985,7 @@ export class FacturacionComponent implements OnInit {
               this.apiService
                 .store('contabilidad/partida/venta', venta)
                 .subscribe(
-                  (venta) => { },
+                  (venta) => {},
                   (error) => {
                     this.alertService.error(error);
                   }
@@ -903,17 +1042,17 @@ export class FacturacionComponent implements OnInit {
           'DTE emitido.',
           'El documento ha sido emitido.'
         );
-        if (this.venta.id_cliente) {
-          this.enviarDTE();
+        if(this.venta.id_cliente){
+            this.enviarDTE();
         }
         this.emiting = false;
 
         window.open(
           this.apiService.baseUrl +
-          '/api/reporte/facturacion/' +
-          venta.id +
-          '?token=' +
-          this.apiService.auth_token(),
+            '/api/reporte/facturacion/' +
+            venta.id +
+            '?token=' +
+            this.apiService.auth_token(),
           'Impresión',
           'width=400'
         );
@@ -946,11 +1085,11 @@ export class FacturacionComponent implements OnInit {
   public setBodega() {
 
     let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
-    // console.log("bodega", bodegaSeleccionada);
+   // console.log("bodega", bodegaSeleccionada);
     this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
     if (bodegaSeleccionada) {
-      // console.log("bodegaSeleccionada", bodegaSeleccionada);
+     // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
       this.apiService.getAll('documentos/list').subscribe(
@@ -986,12 +1125,19 @@ export class FacturacionComponent implements OnInit {
     }
   }
 
-  toggleDiv(): void {
-    this.opAvanzadas = !this.opAvanzadas; // Cambiar entre true y false
+  toggleOpAvanzadasHeader(): void {
+    this.opAvanzadas = !this.opAvanzadas;
   }
+
+    
   toggleDivFacturacion(): void {
     this.opAvanzadasFacturacion = !this.opAvanzadasFacturacion; // Cambiar entre true y false
   }
+
+  // updateCustomFields() {
+  //   this.activeCustomFields = this.customFields.data
+  //     .filter((f: any) => this.selectedCustomFields.includes(f.id));
+  // }
 
   updateCustomFields() {
     //verificar si hay campos personalizados
@@ -1016,5 +1162,5 @@ export class FacturacionComponent implements OnInit {
 
   public isColumnEnabled(columnName: string): boolean {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
-  }
+}
 }
