@@ -57,13 +57,19 @@ export class CanalesComponent implements OnInit {
             if (!this.canal.id) {
                 this.canales.push(canal);
                 this.alertService.success('Canal creado', 'El canal fue añadido exitosamente.');
-            }else{
+            } else {
                 this.alertService.success('Canal guardado', 'El canal fue guardado exitosamente.');
             }
             this.loading = false;
             this.alertService.modal = false;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
+        }, error => {
+            this.alertService.error(error); 
+            this.loading = false;
+        });
     }
 
 
