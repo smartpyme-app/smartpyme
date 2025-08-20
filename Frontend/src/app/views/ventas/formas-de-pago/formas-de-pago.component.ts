@@ -72,4 +72,12 @@ export class FormasDePagoComponent implements OnInit {
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
+    public delete(id:number) {
+        if (confirm('¿Desea eliminar el Registro?')) {
+            this.apiService.delete('forma-de-pago/', id) .subscribe(data => {
+                this.loadAll();
+            }, error => {this.alertService.error(error); });
+        }
+    }
+
 }
