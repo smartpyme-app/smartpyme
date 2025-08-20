@@ -39,6 +39,7 @@ class ClientesController extends Controller
                     ->orwhere('telefono', 'like',  '%' . $request->buscador . '%')
                     ->orwhere('red_social', 'like',  '%' . $request->buscador . '%')
                     ->orwhere('ncr', 'like',  '%' . $request->buscador . '%')
+                    ->orwhere('correo', 'like',  '%' . $request->buscador . '%')
                     ->orwhere('dui', 'like',  '%' . $request->buscador . '%');
             })
             ->when($request->nombre, function ($q) use ($request) {
