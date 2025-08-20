@@ -28,39 +28,55 @@ class AbonosController extends Controller
     }
     
     public function index(Request $request) {
-       
-        $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){
-                        return $query->orwhere('id_venta', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('concepto', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('nombre_de', 'like', '%'.$request->buscador.'%');
-                        })
-                        ->when($request->inicio, function($query) use ($request){
-                            return $query->where('fecha', '>=', $request->inicio);
-                        })
-                        ->when($request->fin, function($query) use ($request){
-                            return $query->where('fecha', '<=', $request->fin);
-                        })
-                        ->when($request->id_sucursal, function($query) use ($request){
-                            return $query->where('id_sucursal', $request->id_sucursal);
-                        })
-                        ->when($request->id_usuario, function($query) use ($request){
-                            return $query->where('id_usuario', $request->id_usuario);
-                        })
-                        ->when($request->id_cliente, function($query) use ($request){
-                            return $query->where('id_cliente', $request->id_cliente);
-                        })
-                        ->when($request->forma_pago, function($query) use ($request){
-                            return $query->where('forma_pago', $request->forma_pago);
-                        })
-                        ->when($request->estado, function($query) use ($request){
-                            return $query->where('estado', $request->estado);
-                        })
-                        ->when($request->metodo_pago, function($query) use ($request){
-                            return $query->where('metodo_pago', $request->metodo_pago);
-                        })
-                        ->orderBy($request->orden, $request->direccion)
-                        ->orderBy('id', 'desc')
-                        ->paginate($request->paginate);
+            $abonos = Abono::with('venta')->when($request->buscador, function($query) use ($request){
+                return $query->where(function($q) use ($request) {
+                $q->where('id_venta', 'like', '%'.$request->buscador.'%')
+                    ->orWhere('concepto', 'like', '%'.$request->buscador.'%')
+                    ->orWhere('nombre_de', 'like', '%'.$request->buscador.'%')
+                    // Búsqueda en la relación venta
+                    ->orWhereHas('venta', function($ventaQuery) use ($request) {
+                        $ventaQuery->where('correlativo', 'like', '%'.$request->buscador.'%')
+                                // Buscar en la relación documento (tabla documentos)
+                                ->orWhereHas('documento', function($docQuery) use ($request) {
+                                    $docQuery->where('nombre', 'like', '%'.$request->buscador.'%');
+                                })
+                                // Buscar por la concatenación usando JOIN
+                                ->orWhereExists(function($query) use ($request) {
+                                    $query->select(DB::raw(1))
+                                            ->from('documentos')
+                                            ->whereColumn('documentos.id', 'ventas.id_documento')
+                                            ->whereRaw("CONCAT(documentos.nombre, ' # ', ventas.correlativo) LIKE ?", ['%'.$request->buscador.'%']);
+                                });
+                    });
+                });
+                })
+                ->when($request->inicio, function($query) use ($request){
+                    return $query->where('fecha', '>=', $request->inicio);
+                })
+                ->when($request->fin, function($query) use ($request){
+                    return $query->where('fecha', '<=', $request->fin);
+                })
+                ->when($request->id_sucursal, function($query) use ($request){
+                    return $query->where('id_sucursal', $request->id_sucursal);
+                })
+                ->when($request->id_usuario, function($query) use ($request){
+                    return $query->where('id_usuario', $request->id_usuario);
+                })
+                ->when($request->id_cliente, function($query) use ($request){
+                    return $query->where('id_cliente', $request->id_cliente);
+                })
+                ->when($request->forma_pago, function($query) use ($request){
+                    return $query->where('forma_pago', $request->forma_pago);
+                })
+                ->when($request->estado, function($query) use ($request){
+                    return $query->where('estado', $request->estado);
+                })
+                ->when($request->metodo_pago, function($query) use ($request){
+                    return $query->where('metodo_pago', $request->metodo_pago);
+                })
+                ->orderBy($request->orden, $request->direccion)
+                ->orderBy('id', 'desc')
+                ->paginate($request->paginate);
 
         return Response()->json($abonos, 200);
            
@@ -101,9 +117,19 @@ class AbonosController extends Controller
             else
                 $abono = new Abono;
 
-            
+            // Obtener el documento y asignar correlativo
+            $documento = \App\Models\Admin\Documento::where('nombre', 'Abono de Venta')
+                            ->where('id_sucursal', $request->id_sucursal)
+                            ->lockForUpdate()
+                            ->first();
+
             $abono->fill($request->all());
-            $abono->save();
+            if($documento){
+                $abono->id_documento = $documento->id;
+                $abono->correlativo = $documento->correlativo;
+                $documento->increment('correlativo');
+            }
+            $abono->save(); 
 
             if ($venta && $venta->saldo <= 0) {
                 $venta->estado = 'Pagada';
@@ -155,6 +181,71 @@ class AbonosController extends Controller
 
     }
 
+    public function update(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $request->validate([
+                'id'          => 'required|numeric|exists:abonos_ventas,id',
+                'fecha'       => 'required|date',
+                'concepto'    => 'required|max:255',
+                'nombre_de'   => 'required|max:255',
+                'estado'      => 'required|max:255',
+                'forma_pago'  => 'required|max:255',
+                'total'       => 'required|numeric',
+                'id_venta'    => 'required|numeric',
+                'id_usuario'  => 'required|numeric',
+                'id_sucursal' => 'required|numeric',
+            ]);
+        
+    
+            $abono = Abono::findOrFail($request->id);
+            $venta = Venta::find($request->id_venta);
+    
+            // Actualizar el abono
+            $abono->fill($request->all());
+            $abono->save();
+    
+            // Actualizar estado de la venta según el saldo
+            if ($venta) {
+                if ($venta->saldo <= 0) {
+                    $venta->estado = 'Pagada';
+                    $venta->save();
+    
+                    // Actualizar paquetes relacionados
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
+                        $paquete->estado = 'Facturado';
+                        $paquete->save();
+                    }
+                } else {
+                    $venta->estado = 'Pendiente';
+                    $venta->save();
+    
+                    // Actualizar paquetes relacionados
+                    $paquetes = Paquete::where('id_venta', $venta->id)->get();
+                    foreach ($paquetes as $paquete) {
+                        $paquete->fecha = $abono->fecha;
+                        $paquete->estado = 'Pendiente';
+                        $paquete->save();
+                    }
+                }
+            }
+    
+            DB::commit();
+            return response()->json($abono, 200);
+    
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
     public function delete($id){
         $abono = Abono::findOrFail($id);
         $abono->delete();
@@ -165,12 +256,14 @@ class AbonosController extends Controller
 
     public function print($id){
 
-        $recibo = Abono::where('id', $id)->first();
+        $recibo = Abono::with('documento')->where('id', $id)->first();
         $venta = Venta::with('empresa.currency')->where('id', $recibo->id_venta)->first();
 
         $pdf = PDF::loadView('reportes.recibos.recibo', compact('venta', 'recibo'));
         $pdf->setPaper('US Letter', 'portrait');
-        return $pdf->stream('recibo-' . $recibo->concepto . '.pdf');   
+        
+        $nombreArchivo = ($recibo->nombre_documento ?? 'recibo') . '-' . ($recibo->correlativo ?? $recibo->id) . '.pdf';
+        return $pdf->stream($nombreArchivo);   
 
     }
 

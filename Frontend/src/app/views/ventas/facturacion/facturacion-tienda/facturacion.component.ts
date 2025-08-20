@@ -95,15 +95,28 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    // <<<<<<< HEAD
-    //     this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-    //       this.bodegas = bodegas;
-    //       // if (this.apiService.auth_user().tipo != 'Administrador') {
-    //       //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
-    //       // }
-    //       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
-    //         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
-    // =======
+    //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+    if (this.route.snapshot.queryParamMap.get('cotizacion')) {
+      this.apiService.getAll('custom-fields', this.filtros).subscribe(
+        (customFields) => {
+          // console.log('customFields', customFields);
+          this.customFields = customFields;
+          //verificar si hay campos personalizados
+          if (this.customFields.data.length > 0) {
+            // console.log('hay campos personalizados');
+            this.customField = true;
+          }else{
+            // console.log('no hay campos personalizados');
+            this.customField = false;
+          }
+
+        },
+        (error) => {
+          this.alertService.error(error);
+        }
+      );
+    }
+
     this.apiService.getAll('bodegas/list').subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
@@ -184,7 +197,6 @@ export class FacturacionComponent implements OnInit {
         this.documentos = this.documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
-
         if (!this.venta.id_documento && !this.venta.correlativo) {
           let documento = this.documentos.find(
             (x: any) => x.predeterminado == 1
@@ -543,6 +555,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     ).total;
+
   }
 
   public sumTotal() {
@@ -592,12 +605,6 @@ export class FacturacionComponent implements OnInit {
       }
     });
 
-    // if (this.venta.cobrar_impuestos && this.venta.impuestos) {
-    //   this.venta.impuestos.forEach((impuesto: any) => {
-    //     impuesto.monto = this.venta.sub_total * (impuesto.porcentaje / 100);
-    //   });
-    // }
-
     this.venta.iva = parseFloat(
       this.sumPipe.transform(this.venta.impuestos, 'monto')
     ).toFixed(4);
@@ -618,8 +625,6 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
-
-    // Asignar tipoOperacion según los detalles
     if (this.venta.cobrar_impuestos) {
       this.venta.tipo_operacion = 'Gravada'; // Aplica IVA
     } else {

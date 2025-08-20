@@ -4,32 +4,32 @@
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
-  <div class="row">
-      <div class="col-md-6 mb-3">
-          <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-              Mostrando 
-              <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
-                  <option value="10">10</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-              </select>
-               de {{ ventas?.total + ' registros' }}
-          </span>
-      </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
+                Mostrando
+                <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ ventas?.total + ' registros' }}
+            </span>
+        </div>
 
-      <div class="col-md-6 mb-3">
-          <div class="d-flex gap-2">
-              <button [disabled]="downloading" tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6">
-                  <img src="/assets/icons/download.png" class="icon">
-              </button>
-              <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
-                  <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
-              </form>
-              <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
-          </div>
-      </div>
-  </div>
+        <div class="col-md-6 mb-3">
+            <div class="d-flex gap-2">
+                <button [disabled]="downloading" tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button>
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarVentas()" autocomplete="off">
+                    <input type="text" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+            </div>
+        </div>
+    </div>
 
   <div class="d-flex mb-3">
       <div class="col d-flex gap-2">
@@ -69,16 +69,16 @@
                   </tr>
 
                   <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
-                      
+
                       <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                       <td>{{venta.usuario?.name | truncate:30 }}</td>
                       <td>{{venta.nombre_cliente| truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                       <td>
-                        
-                       
-                        <select name="enable" class="form-select w-auto border-0" 
-                                (change)="setEstado(venta)" 
-                                [(ngModel)]="venta.estado" 
+
+
+                        <select name="enable" class="form-select w-auto border-0"
+                                (change)="setEstado(venta)"
+                                [(ngModel)]="venta.estado"
                                 [ngClass]="{
                                   'bg-light-warning': venta?.estado == 'pendiente' || venta?.estado == 'aprobada',
                                   'bg-light-success': venta?.estado == 'aceptada',
@@ -113,7 +113,7 @@
                                   <a routerLink="/cotizacion/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
-                                
+
                                   <a *ngIf="venta.estado == 'aceptada' && !venta.facturada " routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
                                       <i class="fa fa-fw fa-money-bill"></i> Facturar
                                   </a>
@@ -207,9 +207,9 @@
                   </ng-option>
               </ng-select>
           </div>
-          
+
       </div>
-      
+
       <div class="d-grid mt-3">
           <button type="submit" [disabled]="loading" class="btn btn-primary">
               <span *ngIf="!loading">Filtrar</span>

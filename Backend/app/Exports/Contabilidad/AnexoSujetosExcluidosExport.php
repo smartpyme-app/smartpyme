@@ -72,12 +72,12 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
             $proveedor = optional($compra->proveedor()->first());
 
             $data = [
-                $proveedor->nit ? 2 : 1,  // A - TIPO DE DOCUMENTO
+                $proveedor->nit ? 1 : 2,  // A - TIPO DE DOCUMENTO
                 $proveedor->nit ? $proveedor->nit : $proveedor->dui,  // B - NUMERO DE NIT, DI-II, IJ OTRO DOCUMENTO
                 $compra->nombre_proveedor,  // C - NOMBRE, RAZ N SOCIAL O DENOMINACI N
                 \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y'),  // D - FECHA DE EMISI N DEL DOCUMENTO
-                $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
-                str_replace('-', '', $compra->referencia),  // F - NUMERO DE DOCUMENTO
+                $compra->sello_mh ? $compra->sello_mh : $compra->num_serie,  // E - NUMERO DE SERIE DEL DOCUMENTO
+                $compra->sello_mh ? $compra->dte['identificacion']['codigoGeneracion'] : $compra->referencia,  // F - NUMERO DE DOCUMENTO
                 number_format($compra->total, 2, '.', ''),  // G - MONTO DE LA OPERACIÖN
                 number_format($compra->iva, 2, '.', ''),  // H - MONTO DE LA RETENCIÖN IVA 13%
                 $this->tipoOperacion($compra->tipo_operacion),  // Q - TIPO DE OPERACIÖN
