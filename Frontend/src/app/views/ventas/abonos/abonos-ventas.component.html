@@ -80,7 +80,7 @@
                     <tr *ngFor=" let abono of abonos?.data">
                         
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{abono.venta?.nombre_cliente }}</td>
+                        <td>{{abono.venta?.nombre_cliente | truncate:30 }}<a *ngIf="abono.venta?.id_cliente && abono.venta?.id_cliente != 1"  class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{abono.venta?.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>
                             {{abono.venta?.nombre_documento }} # {{abono.venta?.correlativo }}
                             <a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{abono.id_venta}}"><i class="fa fa-magnifying-glass"></i></a>
