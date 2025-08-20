@@ -213,7 +213,7 @@ public setEstado(cotizacion: any) {
 
   changeStateCotizacion(ventaId: number, estado: string) {
     this.apiService.store('cotizacion/changeState', { id: ventaId, estado: estado }).subscribe(data => {
-      this.alertService.success('Cotización anulada', 'La cotización fue anulada exitosamente.');
+        this.alertService.success(`Cotización ${estado}`, `La cotización fue ${estado} exitosamente.`);
       this.filtrarVentas();
     }, error => { this.alertService.error(error); });
   }
