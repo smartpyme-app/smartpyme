@@ -47,10 +47,6 @@ class Inventario extends Model {
                 $clase = 'Venta Anulada';
             }
         }
-        if ($clase == 'App\Models\Transporte\Mantenimientos\Mantenimiento') { //Mantenimiento
-            $salidaCantidad =  $cantidad;
-            $clase = 'Mantenimiento';
-        }
         else if ($clase == 'App\Models\Compras\Compra') {
             if ($cantidad > 0) {
                 $entradaCantidad =  $cantidad;
@@ -122,6 +118,24 @@ class Inventario extends Model {
             // No es entrada ni salida, por lo que ambos valores serían NULL
             $entradaCantidad = null;
             $salidaCantidad = null;
+        }
+        else if ($clase == 'App\Models\Inventario\Entradas\Entrada') {
+            if ($cantidad > 0) {
+                $entradaCantidad =  $cantidad;
+                $clase = 'Otra Entrada';
+            }else{
+                $salidaCantidad =  abs($cantidad);
+                $clase = 'Otra Entrada Anulada';
+            }
+        }
+        else if ($clase == 'App\Models\Inventario\Salidas\Salida') {
+            if ($cantidad > 0) {
+                $salidaCantidad =  $cantidad;
+                $clase = 'Otra Salida';
+            }else{
+                $entradaCantidad =  abs($cantidad);
+                $clase = 'Otra Salida Anulada';
+            }
         }else{
             // return null;
         }

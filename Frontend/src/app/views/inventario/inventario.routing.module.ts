@@ -25,6 +25,13 @@ import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
 import { TrasladoMasivoComponent } from '@views/inventario/productos/producto/traslado/traslado-masivo.component';
 import { AjusteMasivoComponent } from '@views/inventario/productos/producto/ajuste/ajuste-masivo.component';
 
+// Nuevos componentes de entradas y salidas
+import { InventarioEntradasComponent } from '@views/inventario/entradas/inventario-entradas.component';
+import { InventarioSalidasComponent } from '@views/inventario/salidas/inventario-salidas.component';
+import { InventarioEntradaComponent } from '@views/inventario/entradas/entrada/inventario-entrada.component';
+import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inventario-salida.component';
+import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
+import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
 
 const routes: Routes = [
   {
@@ -64,6 +71,14 @@ const routes: Routes = [
         { path: 'bodegas', component: BodegasComponent },
         { path: 'bodega/:id', component: BodegaComponent },
         { path: 'traslado-masivo/crear', component: TrasladoMasivoComponent, title: 'Traslado masivo' },
+
+        // Nuevas rutas para entradas y salidas
+        { path: 'entradas', component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
+        { path: 'entrada/:id', component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
+        { path: 'entrada/detalle/:id', component: EntradaDetalleComponent, title: 'Detalle de entrada' },
+        { path: 'salidas', component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
+        { path: 'salida/:id', component: InventarioSalidaComponent, title: 'Salida de Inventario' },
+        { path: 'salida/detalle/:id', component: SalidaDetalleComponent, title: 'Detalle de salida' },
 
 
     ]
