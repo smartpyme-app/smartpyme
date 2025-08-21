@@ -46,6 +46,7 @@ class AnexoSujetosExcluidosExport implements FromCollection, WithMapping, WithCu
 
         $gastos = Gasto::with('proveedor')
             // ->where('iva' , '>', 0)
+            ->where('estado', '!=', 'Cancelado')
             ->where('estado', '!=', 'Anulada')
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
