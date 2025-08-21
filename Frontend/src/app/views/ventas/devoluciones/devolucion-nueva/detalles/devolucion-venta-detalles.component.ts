@@ -79,10 +79,8 @@ export class DevolucionVentaDetallesComponent implements OnInit {
     }
 
     haySeleccionados(): boolean {
-        return this.devolucion.detalles.some(
-            (detalle: any) => detalle.seleccionado
-        );
-    }
+        return this.devolucion?.detalles?.some((d: any) => !!d.seleccionado) ?? false;
+      }
 
    // eliminarSeleccionados() {
     eliminarSeleccionados(event?: any) {

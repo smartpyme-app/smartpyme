@@ -82,8 +82,7 @@
                                 [ngClass]="{
                                   'bg-light-warning': venta?.estado == 'pendiente' || venta?.estado == 'aprobada',
                                   'bg-light-success': venta?.estado == 'aceptada',
-                                  'bg-light-danger': venta?.estado == 'anulada',
-                                  'bg-light-danger': venta?.estado == 'perdida' || venta?.estado == 'cancelada',
+                                  'bg-light-danger': venta?.estado == 'perdida' || venta?.estado == 'cancelada' || venta?.estado == 'anulada',
                                   'bg-light-info': venta?.estado == 'facturada' || venta?.estado == 'enviada'
                                 }">
                           <option value="pendiente">Pendiente</option>

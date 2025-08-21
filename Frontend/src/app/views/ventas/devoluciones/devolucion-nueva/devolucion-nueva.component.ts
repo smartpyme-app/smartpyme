@@ -64,7 +64,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
-                console.log(this.devolucion);
+                // console.log(this.devolucion);
             }, error => {this.alertService.error(error);this.loading = false;});
         }
 
@@ -149,7 +149,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         this.devolucion.descuento = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'descuento'))).toFixed(2);
         this.devolucion.total_costo = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total_costo'))).toFixed(2);
         this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.cuenta_a_terceros) + parseFloat(this.devolucion.exenta) + parseFloat(this.devolucion.no_sujeta) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido)).toFixed(2);
-        console.log(this.devolucion);
+        // console.log(this.devolucion);
     }
 
 

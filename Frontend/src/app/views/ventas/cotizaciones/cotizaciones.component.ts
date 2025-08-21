@@ -70,28 +70,23 @@ export class CotizacionesComponent implements OnInit {
 
   public filtrarVentas() {
     this.loading = true;
-    if (!this.filtros.id_cliente) {
-      this.filtros.id_cliente = '';
-    }
+    if (!this.filtros.id_cliente) this.filtros.id_cliente = '';
+  
     this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
-     // this.ventas = ventas;
+      this.ventas = this.normalizeVentas(ventas);
+      this.loading = false;
+      if (this.modalRef) this.modalRef.hide();
+    }, error => { this.alertService.error(error); this.loading = false; });
+  }
 
-     if (ventas && ventas.data) {
+  private normalizeVentas(ventas: any) {
+    if (ventas && Array.isArray(ventas.data)) {
       ventas.data = ventas.data.map((venta: any) => ({
         ...venta,
-        estado: venta.estado ? venta.estado.toLowerCase() : venta.estado
+        estado: venta?.estado ? String(venta.estado).toLowerCase() : venta?.estado
       }));
     }
-    
-    this.ventas = ventas;
-    
-    this.ventas = ventas;
-
-      this.loading = false;
-      if (this.modalRef) {
-        this.modalRef.hide();
-      } 
-    }, error => { this.alertService.error(error); });
+    return ventas;
   }
 
   // public setEstado(cotizacion: any) {
@@ -132,7 +127,7 @@ public setEstado(cotizacion: any) {
   public setPagination(event: any): void {
     this.loading = true;
     this.apiService.paginate(this.ventas.path + '?page=' + event.page, this.filtros).subscribe(ventas => {
-      this.ventas = ventas;
+      this.ventas = this.normalizeVentas(ventas);
       this.loading = false;
     }, error => { this.alertService.error(error); this.loading = false; });
   }
