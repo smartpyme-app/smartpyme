@@ -413,7 +413,7 @@ class Indicador extends Model
     public function getDocumentoEmitidos(){
 
         // Primero, ordenamos las ventas por correlativo antes de agruparlas
-        $ventasOrdenadas = $this->ventas->sortBy('correlativo');
+        $ventasOrdenadas = $this->ventas->where('estado', '!=', 'Anulada')->sortBy('correlativo');
 
         $documentos = $ventasOrdenadas->groupBy('id_documento')->map(function ($group) {
             return [
