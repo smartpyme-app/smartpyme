@@ -48,6 +48,7 @@ export class InventarioSalidaComponent implements OnInit {
             this.salida.fecha = this.apiService.date();
             this.salida.id_usuario = this.apiService.auth_user().id;
             this.salida.id_bodega = this.apiService.auth_user().id_bodega;
+            this.salida.id_empresa = this.apiService.auth_user().id_empresa;
             this.salida.detalles = [];
         }
         else{

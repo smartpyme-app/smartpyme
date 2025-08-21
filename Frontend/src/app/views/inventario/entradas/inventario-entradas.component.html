@@ -41,8 +41,8 @@
             <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            <button class="tecla-F3 btn "  tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" routerLinkActive="btn-primary"  routerLink="/entradas">Entradas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Salidas</button>
+            <button class="tecla-F3 btn "  tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" routerLinkActive="btn-primary"  routerLink="/entradas">Otras Entradas</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
         </div>
         <div class="col-md-4 d-md-none d-lg-flex gap-2 justify-content-end mb-3">
             <ng-select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select p-0 border-0 bg-default">
@@ -100,19 +100,19 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
+                                    <button *ngIf="apiService.auth_user().tipo == 'Administrador' && entrada.estado == 'Pendiente'" type="button" [routerLink]="'/entrada/' + entrada.id" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-edit"></i>Editar
+                                    </button>
                                     <button type="button" [routerLink]="'/entrada/detalle/' + entrada.id" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-file-alt"></i>Detalles
                                     </button>
                                     <button type="button" (click)="reemprimir(entrada)" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-print"></i>Imprimir
                                     </button>
-                                    <button *ngIf="apiService.auth_user().tipo == 'Administrador' && entrada.estado == 'Pendiente'" type="button" [routerLink]="'/entrada/' + entrada.id" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-edit"></i>Editar
-                                    </button>
-                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado == 'Pendiente'" type="button" (click)="setEstado(entrada, 'Aprobada')" class="btn text-start border-0">
+                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado != 'Aprobada'" type="button" (click)="setEstado(entrada, 'Aprobada')" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-check"></i>Aprobar
                                     </button>
-                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado == 'Pendiente'" type="button" (click)="setEstado(entrada, 'Anulada')" class="btn text-start border-0">
+                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado == 'Aprobada'" type="button" (click)="setEstado(entrada, 'Anulada')" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-times"></i>Anular
                                     </button>
                                     <button *ngIf="entrada.estado == 'Pendiente'" type="button" (click)="delete(entrada.id)" class="btn text-start text-danger">

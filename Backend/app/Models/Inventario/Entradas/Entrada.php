@@ -18,6 +18,7 @@ class Entrada extends Model {
         'tipo',
         'estado',
         'id_usuario',
+        'id_empresa',
     );
 
     protected $appends = ['usuario_nombre', 'bodega_nombre'];
@@ -26,14 +27,21 @@ class Entrada extends Model {
     {
         parent::boot();
 
-        static::addGlobalScope('sucursal', function (Builder $builder) {
-            // Solo aplicar el filtro si el usuario está autenticado y no es administrador
-            if (Auth::check() && Auth::user()->tipo != 'Administrador') {
-                $builder->whereHas('bodega', function ($query) {
-                    $query->where('id_sucursal', Auth::user()->id_sucursal);
-                });
-            }
-        });
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+            
+            static::addGlobalScope('sucursal', function (Builder $builder) {
+                // Solo aplicar el filtro si el usuario está autenticado y no es administrador
+                if (Auth::check() && Auth::user()->tipo != 'Administrador') {
+                    $builder->whereHas('bodega', function ($query) {
+                        $query->where('id_sucursal', Auth::user()->id_sucursal);
+                    });
+                }
+            });
+        }
+
     }
 
     public function getUsuarioNombreAttribute(){
@@ -54,6 +62,10 @@ class Entrada extends Model {
 
     public function bodega(){
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Empresa', 'id_empresa');
     }
 
     /**
@@ -129,7 +141,7 @@ class Entrada extends Model {
                                 ->where('id_bodega', $this->id_bodega)
                                 ->first();
 
-        if ($inventario && $producto->inventario) {
+        if ($inventario) {
             $inventario->stock -= $detalle->cantidad;
             
             // Validar que no quede stock negativo

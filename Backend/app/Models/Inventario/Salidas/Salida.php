@@ -18,6 +18,7 @@ class Salida extends Model {
         'tipo',
         'estado',
         'id_usuario',
+        'id_empresa',
     );
 
     protected $appends = ['usuario_nombre', 'bodega_nombre'];
@@ -26,14 +27,20 @@ class Salida extends Model {
     {
         parent::boot();
 
-        static::addGlobalScope('sucursal', function (Builder $builder) {
-            // Solo aplicar el filtro si el usuario está autenticado y no es administrador
-            if (Auth::check() && Auth::user()->tipo != 'Administrador') {
-                $builder->whereHas('bodega', function ($query) {
-                    $query->where('id_sucursal', Auth::user()->id_sucursal);
-                });
-            }
-        });
+        if (Auth::check()) {
+            static::addGlobalScope('empresa', function (Builder $builder) {
+                $builder->where('id_empresa', Auth::user()->id_empresa);
+            });
+            
+            static::addGlobalScope('sucursal', function (Builder $builder) {
+                // Solo aplicar el filtro si el usuario está autenticado y no es administrador
+                if (Auth::check() && Auth::user()->tipo != 'Administrador') {
+                    $builder->whereHas('bodega', function ($query) {
+                        $query->where('id_sucursal', Auth::user()->id_sucursal);
+                    });
+                }
+            });
+        }
     }
 
     public function getUsuarioNombreAttribute(){
@@ -54,6 +61,10 @@ class Salida extends Model {
 
     public function bodega(){
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
+    public function empresa(){
+        return $this->belongsTo('App\Models\Empresa', 'id_empresa');
     }
 
     /**
@@ -120,7 +131,7 @@ class Salida extends Model {
             $inventario->save();
 
             // Registrar en kardex
-            $inventario->kardex($this, $detalle->cantidad, null, $detalle->costo);
+            $inventario->kardex($this, $detalle->cantidad * -1, null, $detalle->costo);
         }
     }
 

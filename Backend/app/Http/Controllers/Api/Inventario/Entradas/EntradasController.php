@@ -182,7 +182,7 @@ class EntradasController extends Controller
     public function generarDoc($id) {
 
         $entrada = Entrada::where('id', $id)->with('detalles')->firstOrFail();
-        $empresa = Empresa::find(1);
+        $empresa = Empresa::find($entrada->id_empresa);
 
         $reportes = \PDF::loadView('reportes.inventario.entrada', compact('entrada', 'empresa'));
         return $reportes->stream();

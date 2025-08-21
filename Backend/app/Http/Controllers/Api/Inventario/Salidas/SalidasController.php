@@ -183,7 +183,7 @@ class SalidasController extends Controller
     public function generarDoc($id) {
 
         $salida = Salida::where('id', $id)->with('detalles')->firstOrFail();
-        $empresa = Empresa::find(1);
+        $empresa = Empresa::find($salida->id_empresa);
 
         $reportes = \PDF::loadView('reportes.inventario.salida', compact('salida', 'empresa'));
         return $reportes->stream();
