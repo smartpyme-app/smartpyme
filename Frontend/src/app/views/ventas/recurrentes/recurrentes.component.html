@@ -78,7 +78,7 @@
                     <tr *ngFor=" let venta of ventas?.data">
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1"  class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
                         <!-- <td>{{venta.forma_pago}}</td> -->
                         <!-- <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td> -->
