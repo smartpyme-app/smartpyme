@@ -154,16 +154,6 @@
         <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia"
                placeholder="Escriba aquí"/>
       </div>
-      <div class="form-group col-md-4 col-lg-3">
-        <label for="area_empresa">Area empresa:</label>
-        <input
-          type="text"
-          [(ngModel)]="gasto.area_empresa"
-          name="area_empresa"
-          class="form-control"
-          id="area_empresa"
-          placeholder="Ingrese el área de la empresa">
-      </div>
       <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
         <label for="num_identificacion">Número identificación:</label>
         <input

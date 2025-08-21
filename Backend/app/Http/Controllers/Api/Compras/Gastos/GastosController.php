@@ -135,14 +135,13 @@ class GastosController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
             'fecha'         => 'required|date',
             'concepto'      => 'sometimes|max:255',
             'tipo_documento'     => 'required|max:255',
-            'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
-            // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
             'id_categoria'    => 'required|numeric',
             'id_proveedor'    => 'required|numeric',
@@ -153,7 +152,6 @@ class GastosController extends Controller
             'area_empresa'   => 'nullable',
             'id_area_empresa'   => 'nullable',
         ],[
-            'tipo.required' => 'El campo categoria es obligatorio.',
             'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_usuario.required' => 'El campo usuario es obligatorio.',
