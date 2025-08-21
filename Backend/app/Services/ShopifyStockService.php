@@ -7,12 +7,90 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ShopifyStockService
 {
-    public function actualizarStockEnShopify($productoId, $userId)
+    /**
+     * MÉTODO PARA ACTUALIZAR SOLO EL STOCK (desde Observer de Inventario)
+     */
+    public function actualizarSoloStockEnShopify($productoId, $userId)
     {
         try {
+            $producto = Producto::find($productoId);
+
+            if (!$producto) {
+                Log::error("Producto no encontrado para actualizar stock", ['producto_id' => $productoId]);
+                return false;
+            }
+
+    
+
+            $usuario = User::find($userId);
+            $empresa = Empresa::where('id', $usuario->id_empresa)->first();
+
+            if (!$usuario || empty($empresa->shopify_consumer_secret) || empty($empresa->shopify_store_url)) {
+                Log::error("Usuario/empresa sin configuración Shopify", ['user_id' => $userId]);
+                return false;
+            }
+
+           
+            if (empty($producto->shopify_variant_id) || empty($producto->shopify_inventory_item_id)) {
+                Log::info("Producto sin IDs de Shopify - no se actualiza stock", [
+                    'producto_id' => $productoId,
+                    'variant_id' => $producto->shopify_variant_id,
+                    'inventory_item_id' => $producto->shopify_inventory_item_id
+                ]);
+                return false;
+            }
+
+            $stock = Inventario::where('id_producto', $productoId)
+                ->where('id_bodega', $usuario->id_bodega)
+                ->value('stock');
+
+            if ($stock === null) {
+                $stock = 0;
+            }
+
+            $shopifyClient = new ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret
+            );
+
+           
+            Cache::put("shopify_sync_lock_{$productoId}", true, now()->addMinutes(2));
+            Log::info("Cache lock establecido para stock", ['producto_id' => $productoId, 'ttl' => '2 minutos']);
+
+            
+            return $this->actualizarSoloInventario($shopifyClient, $producto, $stock);
+
+        } catch (\Exception $e) {
+            Log::error("Error al actualizar solo stock en Shopify: " . $e->getMessage(), [
+                'producto_id' => $productoId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * MÉTODO PARA ACTUALIZAR PRODUCTO COMPLETO (desde otros lugares)
+     */
+    public function actualizarProductoCompletoEnShopify($productoId, $userId)
+    {
+        try {
+            $producto = Producto::with('imagenes')->find($productoId);
+
+            if (!$producto) {
+                Log::error("Producto no encontrado", ['producto_id' => $productoId]);
+                return false;
+            }
+
+
+           
+            $producto->last_shopify_sync = now();
+            $producto->save();
+
             $usuario = User::find($userId);
             $empresa = Empresa::where('id', $usuario->id_empresa)->first();
 
@@ -23,13 +101,6 @@ class ShopifyStockService
 
             if (empty($empresa->shopify_store_url)) {
                 Log::error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
-                return false;
-            }
-
-            $producto = Producto::with('imagenes')->find($productoId);
-
-            if (!$producto) {
-                Log::error("Producto no encontrado", ['producto_id' => $productoId]);
                 return false;
             }
 
@@ -57,14 +128,18 @@ class ShopifyStockService
 
             $productData = $this->prepararDatosProducto($producto, $stock, $shopifyClient);
 
-            // Actualizar por shopify_variant_id si existe
+            
+            Cache::put("shopify_sync_lock_{$productoId}", true, now()->addMinutes(2));
+            Log::info("Cache lock establecido para producto completo", ['producto_id' => $productoId, 'ttl' => '2 minutos']);
+
+            
             if (!empty($producto->shopify_variant_id)) {
-                if ($this->actualizarVariantePorId($shopifyClient, $producto, $productData)) {
+                if ($this->actualizarProductoPorId($shopifyClient, $producto, $productData)) {
                     return true;
                 }
             }
 
-            // Buscar por SKU
+            
             $existente = $this->buscarProductoPorSku($shopifyClient, $producto->codigo);
 
             if ($existente) {
@@ -74,9 +149,8 @@ class ShopifyStockService
             }
 
             return true;
-
         } catch (\Exception $e) {
-            Log::error("Error al actualizar stock en Shopify: " . $e->getMessage(), [
+            Log::error("Error al actualizar producto completo en Shopify: " . $e->getMessage(), [
                 'producto_id' => $productoId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -86,29 +160,110 @@ class ShopifyStockService
         }
     }
 
-    private function actualizarVariantePorId($client, $producto, $productData)
+
+    public function actualizarStockEnShopify($productoId, $userId)
+    {
+        return $this->actualizarProductoCompletoEnShopify($productoId, $userId);
+    }
+
+
+    private function actualizarSoloInventario($client, $producto, $stock)
     {
         try {
-            // Obtener la ubicación principal
             $locationId = $this->getDefaultLocationId($client);
             
-            // Actualizar el nivel de inventario
             $response = $client->post('inventory_levels/set.json', [
+                'location_id' => $locationId,
+                'inventory_item_id' => $producto->shopify_inventory_item_id,
+                'available' => (int)$stock
+            ]);
+
+            Log::info("Solo stock actualizado en Shopify", [
+                'producto_id' => $producto->id,
+                'variant_id' => $producto->shopify_variant_id,
+                'stock' => $stock
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::warning("Error actualizando solo inventario en Shopify: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function actualizarProductoPorId($client, $producto, $productData)
+    {
+        try {
+            $productUpdate = [
+                'title' => $productData['title'],
+                'body_html' => $productData['body_html'],
+                'vendor' => $productData['vendor'],
+                'product_type' => $productData['product_type'],
+                'status' => $productData['status']
+            ];
+
+            $response = $client->put("products/{$producto->shopify_product_id}.json", [
+                'product' => $productUpdate
+            ]);
+
+            $variantUpdate = [
+                'price' => $productData['variants'][0]['price'],
+                'sku' => $productData['variants'][0]['sku']
+            ];
+
+            $client->put("variants/{$producto->shopify_variant_id}.json", [
+                'variant' => $variantUpdate
+            ]);
+
+            $locationId = $this->getDefaultLocationId($client);
+            $client->post('inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => $producto->shopify_inventory_item_id,
                 'available' => (int)$productData['stock_quantity']
             ]);
 
-            Log::info("Stock actualizado en Shopify por variant_id", [
+            if (!empty($productData['images'])) {
+                $this->actualizarImagenesProducto($client, $producto->shopify_product_id, $productData['images']);
+            }
+
+            Log::info("Producto completo actualizado en Shopify por ID", [
+                'product_id' => $producto->shopify_product_id,
                 'variant_id' => $producto->shopify_variant_id,
                 'stock' => $productData['stock_quantity']
             ]);
 
             return true;
         } catch (\Exception $e) {
-            Log::warning("Error actualizando por variant_id en Shopify: " . $e->getMessage());
+            Log::warning("Error actualizando producto completo por ID en Shopify: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function actualizarImagenesProducto($client, $productId, $images)
+    {
+        try {
+            $response = $client->get("products/{$productId}/images.json");
+            $imagenesActuales = $response['body']['images'] ?? [];
+
+            foreach ($imagenesActuales as $imagen) {
+                $client->delete("products/{$productId}/images/{$imagen['id']}.json");
+            }
+
+            foreach ($images as $imagen) {
+                $client->post("products/{$productId}/images.json", [
+                    'image' => $imagen
+                ]);
+            }
+
+            Log::info("Imágenes actualizadas en Shopify", ['product_id' => $productId]);
+        } catch (\Exception $e) {
+            Log::warning("Error actualizando imágenes en Shopify: " . $e->getMessage());
+        }
+    }
+
+    private function actualizarVariantePorId($client, $producto, $productData)
+    {
+        return $this->actualizarSoloInventario($client, $producto, $productData['stock_quantity']);
     }
 
     private function buscarProductoPorSku($client, $sku)
@@ -118,7 +273,6 @@ class ShopifyStockService
                 return null;
             }
 
-            // Buscar productos que contengan este SKU
             $response = $client->get('products.json', [
                 'limit' => 250,
                 'fields' => 'id,variants'
@@ -139,7 +293,6 @@ class ShopifyStockService
             }
 
             return null;
-
         } catch (\Exception $e) {
             Log::warning("Error buscando producto por SKU ({$sku}): " . $e->getMessage());
             return null;
@@ -151,14 +304,12 @@ class ShopifyStockService
         try {
             $locationId = $this->getDefaultLocationId($client);
 
-            // Actualizar inventario
             $response = $client->post('inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => $existente['inventory_item_id'],
                 'available' => (int)$productData['stock_quantity']
             ]);
 
-            // Guardar IDs para futuras actualizaciones
             $producto->shopify_product_id = $existente['product_id'];
             $producto->shopify_variant_id = $existente['variant_id'];
             $producto->shopify_inventory_item_id = $existente['inventory_item_id'];
@@ -169,7 +320,6 @@ class ShopifyStockService
                 'variant_id' => $existente['variant_id'],
                 'stock' => $productData['stock_quantity']
             ]);
-
         } catch (\Exception $e) {
             throw new \Exception("Error actualizando producto por SKU: " . $e->getMessage());
         }
@@ -178,7 +328,6 @@ class ShopifyStockService
     private function crearNuevoProducto($client, $producto, $productData)
     {
         try {
-            // Crear producto en Shopify
             $response = $client->post('products.json', [
                 'product' => $productData
             ]);
@@ -188,15 +337,13 @@ class ShopifyStockService
             }
 
             $shopifyProduct = $response['body']['product'];
-            $variant = $shopifyProduct['variants'][0]; // Primera variante
+            $variant = $shopifyProduct['variants'][0];
 
-            // Guardar IDs
             $producto->shopify_product_id = $shopifyProduct['id'];
             $producto->shopify_variant_id = $variant['id'];
             $producto->shopify_inventory_item_id = $variant['inventory_item_id'];
             $producto->save();
 
-            // Actualizar inventario
             $locationId = $this->getDefaultLocationId($client);
             $client->post('inventory_levels/set.json', [
                 'location_id' => $locationId,
@@ -209,7 +356,6 @@ class ShopifyStockService
                 'shopify_product_id' => $shopifyProduct['id'],
                 'variant_id' => $variant['id']
             ]);
-
         } catch (\Exception $e) {
             throw new \Exception("Error creando producto en Shopify: " . $e->getMessage());
         }
@@ -270,7 +416,7 @@ class ShopifyStockService
         ];
 
         foreach ($productoIds as $productoId) {
-            $exito = $this->actualizarStockEnShopify($productoId, $userId);
+            $exito = $this->actualizarProductoCompletoEnShopify($productoId, $userId);
 
             if ($exito) {
                 $resultados['exitosos']++;

@@ -58,12 +58,13 @@ class ShopifyInventarioObserver
             }
 
             try {
-                $this->stockService->actualizarStockEnShopify(
+                // ⭐ USAR EL MÉTODO ESPECÍFICO PARA SOLO STOCK
+                $this->stockService->actualizarSoloStockEnShopify(
                     $inventario->id_producto,
                     $usuario->id
                 );
             } catch (\Exception $e) {
-                Log::error("Error al sincronizar stock Shopify para usuario: " . $e->getMessage(), [
+                Log::error("Error al sincronizar solo stock Shopify: " . $e->getMessage(), [
                     'usuario_id' => $usuario->id,
                     'producto_id' => $inventario->id_producto
                 ]);

@@ -32,10 +32,16 @@ class Producto extends Model
         'shopify_product_id',
         'shopify_variant_id',
         'shopify_inventory_item_id',
+        'syncing_from_shopify',
+        'last_shopify_sync',
     );
 
     protected $appends = ['nombre_categoria', 'img'];
-    protected $casts = ['enable' => 'string'];
+    protected $casts = [
+        'enable' => 'string',
+        'syncing_from_shopify' => 'boolean',
+        'last_shopify_sync' => 'datetime',
+    ];
 
     protected static function boot()
     {

@@ -4,9 +4,7 @@ namespace App\Services;
 
 class ShopifyTransformer
 {
-    /**
-     * Transforma datos de cliente de Shopify al formato de tu sistema
-     */
+    
     public function transformarCliente($shopifyData)
     {
         $customer = $shopifyData['customer'] ?? $shopifyData;
@@ -30,12 +28,8 @@ class ShopifyTransformer
         ];
     }
 
-    /**
-     * Transforma datos de venta de Shopify
-     */
     public function transformarVenta($shopifyData, $clienteId, $documentoId, $correlativo)
     {
-        // Mapear estados de Shopify
         $estado = $this->mapearEstado($shopifyData['financial_status'] ?? 'pending');
 
         return [
@@ -65,9 +59,6 @@ class ShopifyTransformer
         ];
     }
 
-    /**
-     * Transforma líneas de items a detalles de venta
-     */
     public function transformarDetallesVenta($lineItem, $ventaId)
     {
         return [
@@ -89,9 +80,6 @@ class ShopifyTransformer
         ];
     }
 
-    /**
-     * Actualiza el inventario
-     */
     public function actualizarInventario($productoId, $cantidad, $bodegaId)
     {
         return [
@@ -102,9 +90,6 @@ class ShopifyTransformer
         ];
     }
 
-    /**
-     * Transforma producto de Shopify para crear en tu sistema
-     */
     public function transformarProducto($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
         return [
@@ -124,6 +109,7 @@ class ShopifyTransformer
 
     private function mapearEstado($shopifyStatus)
     {
+        return 'Pendiente';
         $mapeo = [
             'pending' => 'Pendiente',
             'authorized' => 'Pendiente',

@@ -17,6 +17,7 @@ use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -31,19 +32,16 @@ class ShopifyController extends Controller
         $this->transformer = $transformer;
     }
 
-
-
     public function procesarWebhook($tokenEmpresa, Request $request)
     {
         Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
 
-        // Detectar tipo de webhook por header
+      
         $webhookTopic = $request->header('X-Shopify-Topic');
 
         Log::info("Tipo de webhook: {$webhookTopic}");
-        Log::info($request->all());
+     
 
-        // Validar empresa y usuario (mismo código)
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
@@ -67,8 +65,7 @@ class ShopifyController extends Controller
             ], 401);
         }
 
-        // Procesar según el tipo de webhook
-        //  try {
+        try {
         switch ($webhookTopic) {
             case 'orders/create':
                 return $this->procesarVenta($request, $empresa, $usuario);
@@ -83,17 +80,15 @@ class ShopifyController extends Controller
                 Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
                 return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
         }
-        // } catch (\Exception $e) {
-        //     Log::error("Error procesando webhook Shopify: " . $e->getMessage());
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'mensaje' => 'Error al procesar webhook',
-        //         'error' => $e->getMessage()
-        //     ], 500);
-        // }
+        } catch (\Exception $e) {
+            Log::error("Error procesando webhook Shopify: " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar webhook',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
-
-
 
     private function procesarProductoCreado(Request $request, $empresa, $usuario)
     {
@@ -104,11 +99,27 @@ class ShopifyController extends Controller
             ->where('id_empresa', $empresa->id)
             ->where('codigo', $productoData['codigo'])
             ->first();
+
+        // ⭐ VERIFICAR CACHE LOCK CON ID INTERNO SI EL PRODUCTO EXISTE
+        if ($productoExistente && Cache::has("shopify_sync_lock_{$productoExistente->id}")) {
+            Log::info("Producto en período de gracia - ignorando webhook de creación", [
+                'product_id' => $request->id,
+                'producto_id' => $productoExistente->id,
+                'webhook_type' => 'products/create'
+            ]);
+            return response()->json(['status' => 'ignored', 'mensaje' => 'En período de gracia'], 200);
+        }
+
+        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
+        $productoExistente = Producto::where('shopify_product_id', $request->id)
+            ->where('id_empresa', $empresa->id)
+            ->where('codigo', $productoData['codigo'])
+            ->first();
         $categoria = $this->buscarCategoria('General', $empresa->id);
 
         if (!$productoExistente) {
             Log::info("Producto no existe en tu sistema", ['product_id' => $request->id]);
-            $productoData['id_categoria'] = $categoria->id;  // ← Siempre asignar para productos nuevos
+            $productoData['id_categoria'] = $categoria->id;
             Log::info($productoData);
             $producto = Producto::create($productoData);
             $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
@@ -116,7 +127,6 @@ class ShopifyController extends Controller
             $this->procesarImagenes($request, $producto->id);
         } else {
             Log::info("Producto existente en tu sistema", ['producto_id' => $productoExistente->id]);
-            // Solo verificar categoría si el producto existe
             if (!$productoExistente->categoria) {
                 $productoData['id_categoria'] = $categoria->id;
             }
@@ -130,7 +140,6 @@ class ShopifyController extends Controller
         return response()->json(['status' => 'success', 'mensaje' => 'Producto procesado'], 200);
     }
 
-
     private function procesarProductoActualizado(Request $request, $empresa, $usuario)
     {
         Log::info("Producto actualizado en Shopify", ['product_id' => $request->id]);
@@ -142,10 +151,25 @@ class ShopifyController extends Controller
             ->where('codigo', $productoData['codigo'])
             ->first();
 
+        if ($producto && Cache::has("shopify_sync_lock_{$producto->id}")) {
+            Log::info("Producto en período de gracia - ignorando webhook de actualización", [
+                'product_id' => $request->id,
+                'producto_id' => $producto->id,
+                'webhook_type' => 'products/update'
+            ]);
+            return response()->json(['status' => 'ignored', 'mensaje' => 'En período de gracia'], 200);
+        }
+
+        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
+
+        $producto = Producto::where('shopify_product_id', $request->id)
+            ->where('id_empresa', $empresa->id)
+            ->where('codigo', $productoData['codigo'])
+            ->first();
+
         $categoria = $this->buscarCategoria('General', $empresa->id);
 
         if ($producto) {
-            // SIEMPRE asignar categoría si no existe o es null
             if (empty($producto->id_categoria)) {
                 Log::info("Asignando categoría al producto", ['producto_id' => $producto->id]);
                 $productoData['id_categoria'] = $categoria->id;
@@ -183,9 +207,6 @@ class ShopifyController extends Controller
 
     public function procesarVenta($tokenEmpresa, Request $request)
     {
-
-
-
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
@@ -208,15 +229,6 @@ class ShopifyController extends Controller
                 'mensaje' => 'Usuario no encontrado'
             ], 401);
         }
-
-        // Verificar el webhook signature
-        // if (!$this->verificarWebhookSignature($request, $empresa->shopify_consumer_secret)) {
-        //     Log::error("Firma de webhook Shopify inválida");
-        //     return response()->json([
-        //         'status' => 'error',
-        //         'mensaje' => 'Firma de webhook inválida'
-        //     ], 401);
-        // }
 
         if ($empresa->facturacion_electronica) {
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
@@ -242,7 +254,6 @@ class ShopifyController extends Controller
                 'id_canal' => $empresa->shopify_canal_id
             ]);
 
-            // 1. Crear/actualizar Cliente
             $clienteData = $this->transformer->transformarCliente($request->all());
             Log::info($clienteData);
             $cliente = Cliente::updateOrCreate(
@@ -250,7 +261,6 @@ class ShopifyController extends Controller
                 $clienteData
             );
 
-            // 2. Crear Venta
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
                 $cliente->id,
@@ -260,13 +270,9 @@ class ShopifyController extends Controller
             Log::info($ventaData);
             $venta = Venta::create($ventaData);
 
-
-
-            // 3. Procesar líneas de productos
             Log::info($request->line_items);
             foreach ($request->line_items as $item) {
                 Log::info($item['variant_id']);
-                // Buscar producto primero por shopify_id, luego por SKU
                 $producto = Producto::where('shopify_variant_id', $item['variant_id'])
                     ->where('id_empresa', $usuario->id_empresa)
                     ->first();
@@ -278,7 +284,6 @@ class ShopifyController extends Controller
                 }
 
                 if (!$producto) {
-                    // Crear el producto si no existe
                     $productoData = $this->transformer->transformarProducto(
                         $item,
                         $usuario->id_empresa,
@@ -288,12 +293,10 @@ class ShopifyController extends Controller
                     $producto = Producto::create($productoData);
                 }
 
-                // Crear detalle de venta
                 $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
-                // Actualizar inventario
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->decrement('stock', $item['quantity']);
@@ -307,7 +310,6 @@ class ShopifyController extends Controller
                 }
             }
 
-            // Incrementar correlativo del documento
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
 
@@ -384,7 +386,6 @@ class ShopifyController extends Controller
     //actualizar inventario
     private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId)
     {
-
         $inventario = Inventario::where('id_producto', $productoId)
             ->where('id_bodega', $bodegaId)
             ->first();
@@ -421,12 +422,10 @@ class ShopifyController extends Controller
         Log::info('storeImage', $data);
 
         try {
-            // Buscar imagen existente por shopify_image_id, NO por id
             if (isset($data['shopify_image_id']) && $data['shopify_image_id']) {
                 $imagen = Imagen::where('shopify_image_id', $data['shopify_image_id'])->first();
 
                 if (!$imagen) {
-                    // Si no existe, crear nueva
                     $imagen = new Imagen();
                     Log::info('Creando nueva imagen');
                 } else {
@@ -437,22 +436,18 @@ class ShopifyController extends Controller
                 Log::info('Creando nueva imagen sin shopify_image_id');
             }
 
-            // Llenar datos
             $imagen->fill($data);
             Log::info('Imagen después de fill', $imagen->toArray());
 
-            // Procesar imagen si tiene src
             if (isset($data['src']) && $data['src']) {
                 Log::info('Procesando src', ['src' => $data['src']]);
 
-                // Eliminar imagen anterior si existe
                 if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg') {
                     Storage::delete($imagen->img);
                     Log::info('Imagen anterior eliminada', ['path' => $imagen->img]);
                 }
 
                 try {
-                    // Descargar y procesar imagen
                     $imageContent = file_get_contents($data['src']);
                     if ($imageContent === false) {
                         throw new \Exception('No se pudo descargar la imagen desde: ' . $data['src']);
@@ -462,7 +457,6 @@ class ShopifyController extends Controller
                     $hash = md5($resize->__toString());
                     $path = "productos/{$hash}.jpg";
 
-                    // Crear directorio si no existe
                     $fullPath = public_path('img/productos');
                     if (!file_exists($fullPath)) {
                         mkdir($fullPath, 0755, true);
@@ -474,11 +468,9 @@ class ShopifyController extends Controller
                     Log::info('Imagen procesada y guardada', ['path' => $path]);
                 } catch (\Exception $e) {
                     Log::error('Error procesando imagen: ' . $e->getMessage());
-                    // Continuar sin imagen si falla
                 }
             }
 
-            // Guardar imagen
             $saved = $imagen->save();
 
             if ($saved) {
