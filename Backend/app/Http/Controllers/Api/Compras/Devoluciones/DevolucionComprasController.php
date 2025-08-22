@@ -43,6 +43,25 @@ class DevolucionComprasController extends Controller
                         ->when($request->id_proveedor, function($query) use ($request){
                             $query->where('id_proveedor', $request->id_proveedor);
                         })
+                        ->when($request->referencia, function($query) use ($request){
+                            $buscador = $request->referencia;
+                            $query->where(function($q) use ($buscador) {
+                                $q->whereHas('proveedor', function($q2) use ($buscador){
+                                    $q2->where('nombre', 'like', "%{$buscador}%")
+                                       ->orWhere('nombre_empresa', 'like', "%{$buscador}%")
+                                       ->orWhere('ncr', 'like', "%{$buscador}%")
+                                       ->orWhere('nit', 'like', "%{$buscador}%");
+                                })
+                                ->orWhere('referencia', 'like', "%{$buscador}%")
+                                ->orWhere('observaciones', 'like', "%{$buscador}%")
+                                ->orWhere('tipo_documento', 'like', "%{$buscador}%")
+                                ->orWhere(function($q3) use ($buscador){
+                                    $q3->where('tipo_documento', 'like', "%{$buscador}%")
+                                    ->orWhere('referencia', 'like', "%{$buscador}%")
+                                    ->orWhere(DB::raw("CONCAT(tipo_documento, ' #', referencia)"), 'like', "%{$buscador}%");
+                                });
+                            });
+                        })
                     ->orderBy($request->orden, $request->direccion)
                     ->orderBy('id', 'desc')
                     ->paginate($request->paginate);
