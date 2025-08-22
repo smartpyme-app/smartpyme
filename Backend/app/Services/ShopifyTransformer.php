@@ -4,7 +4,7 @@ namespace App\Services;
 
 class ShopifyTransformer
 {
-    
+
     public function transformarCliente($shopifyData)
     {
         $customer = $shopifyData['customer'] ?? $shopifyData;
@@ -140,22 +140,54 @@ class ShopifyTransformer
 
     public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
+        $productos = [];
+        foreach ($shopifyData['variants'] as $variant) {
+            $productos[] = [
+                'codigo' => $variant['sku'] ?? '',
+                'barcode' => $variant['barcode'] ?? '',
+                'nombre' => $shopifyData['title'],
+                'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+                'id_empresa' => $id_empresa,
+                'id_usuario' => $id_usuario,
+                'id_sucursal' => $id_sucursal,
+                'precio' => $variant['price'] ?? 0,
+                'shopify_product_id' => $shopifyData['id'],
+                'shopify_variant_id' => $variant['id'],
+                'shopify_inventory_item_id' => $variant['inventory_item_id'],
+                'enable' => 1,
+                'tipo' => 'Producto',
+                'costo' => $variant['price'] ?? 0,
+                'stock' => $variant['inventory_quantity'] ?? 0,
+            ];
+        }
+        return $productos;
+    }
+
+    //     return [
+    //         'codigo' => $shopifyData['variants'][0]['sku'] ?? '',
+    //         'barcode' => $shopifyData['variants'][0]['barcode'] ?? '',
+    //         'nombre' => $shopifyData['title'],
+    //         'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+    //         'id_empresa' => $id_empresa,
+    //         'id_usuario' => $id_usuario,
+    //         'id_sucursal' => $id_sucursal,
+    //         'precio' => $shopifyData['variants'][0]['price'] ?? 0,
+    //         'shopify_product_id' => $shopifyData['id'],
+    //         'shopify_variant_id' => $shopifyData['variants'][0]['id'],
+    //         'shopify_inventory_item_id' => $shopifyData['variants'][0]['inventory_item_id'],
+    //         'enable' => 1,
+    //         'tipo' => 'Producto',
+    //         'costo' => $shopifyData['variants'][0]['price'] ?? 0,
+    //         'stock' => $shopifyData['variants'][0]['inventory_quantity'] ?? 0,
+    //     ];
+
+    public function transformarCategoriaDesdeShopify($shopifyData, $id_empresa)
+    {
         return [
-            'codigo' => $shopifyData['variants'][0]['sku'] ?? '',
-            'barcode' => $shopifyData['variants'][0]['barcode'] ?? '',
-            'nombre' => $shopifyData['title'],
-            'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+            'nombre' => $shopifyData['category']['name'],
+            'descripcion' => $shopifyData['category']['full_name'],
             'id_empresa' => $id_empresa,
-            'id_usuario' => $id_usuario,
-            'id_sucursal' => $id_sucursal,
-            'precio' => $shopifyData['variants'][0]['price'] ?? 0,
-            'shopify_product_id' => $shopifyData['id'],
-            'shopify_variant_id' => $shopifyData['variants'][0]['id'],
-            'shopify_inventory_item_id' => $shopifyData['variants'][0]['inventory_item_id'],
             'enable' => 1,
-            'tipo' => 'Producto',
-            'costo' => $shopifyData['variants'][0]['price'] ?? 0,
-            'stock' => $shopifyData['variants'][0]['inventory_quantity'] ?? 0,
         ];
     }
 }

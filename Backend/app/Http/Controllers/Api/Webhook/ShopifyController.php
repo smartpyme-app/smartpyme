@@ -35,12 +35,12 @@ class ShopifyController extends Controller
     public function procesarWebhook($tokenEmpresa, Request $request)
     {
         Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
+        Log::info("Datos del webhook: ", $request->all());
 
-      
         $webhookTopic = $request->header('X-Shopify-Topic');
 
         Log::info("Tipo de webhook: {$webhookTopic}");
-     
+
 
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
@@ -66,20 +66,20 @@ class ShopifyController extends Controller
         }
 
         try {
-        switch ($webhookTopic) {
-            case 'orders/create':
-                return $this->procesarVenta($request, $empresa, $usuario);
+            switch ($webhookTopic) {
+                case 'orders/create':
+                    return $this->procesarVenta($tokenEmpresa, $request);
 
-            case 'products/create':
-                return $this->procesarProductoCreado($request, $empresa, $usuario);
+                case 'products/create':
+                    return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
-            case 'products/update':
-                return $this->procesarProductoActualizado($request, $empresa, $usuario);
+                case 'products/update':
+                    return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
-            default:
-                Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
-                return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
-        }
+                default:
+                    Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
+                    return response()->json(['message' => 'Webhook recibido pero no procesado'], 200);
+            }
         } catch (\Exception $e) {
             Log::error("Error procesando webhook Shopify: " . $e->getMessage());
             return response()->json([
@@ -90,104 +90,73 @@ class ShopifyController extends Controller
         }
     }
 
-    private function procesarProductoCreado(Request $request, $empresa, $usuario)
-    {
-        Log::info("Producto creado en Shopify", ['product_id' => $request->id]);
-
-        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
-        $productoExistente = Producto::where('shopify_product_id', $request->id)
-            ->where('id_empresa', $empresa->id)
-            ->where('codigo', $productoData['codigo'])
-            ->first();
-
-        // ⭐ VERIFICAR CACHE LOCK CON ID INTERNO SI EL PRODUCTO EXISTE
-        if ($productoExistente && Cache::has("shopify_sync_lock_{$productoExistente->id}")) {
-            Log::info("Producto en período de gracia - ignorando webhook de creación", [
-                'product_id' => $request->id,
-                'producto_id' => $productoExistente->id,
-                'webhook_type' => 'products/create'
-            ]);
-            return response()->json(['status' => 'ignored', 'mensaje' => 'En período de gracia'], 200);
-        }
-
-        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
-        $productoExistente = Producto::where('shopify_product_id', $request->id)
-            ->where('id_empresa', $empresa->id)
-            ->where('codigo', $productoData['codigo'])
-            ->first();
-        $categoria = $this->buscarCategoria('General', $empresa->id);
-
-        if (!$productoExistente) {
-            Log::info("Producto no existe en tu sistema", ['product_id' => $request->id]);
-            $productoData['id_categoria'] = $categoria->id;
-            Log::info($productoData);
-            $producto = Producto::create($productoData);
-            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
-            Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
-            $this->procesarImagenes($request, $producto->id);
-        } else {
-            Log::info("Producto existente en tu sistema", ['producto_id' => $productoExistente->id]);
-            if (!$productoExistente->categoria) {
-                $productoData['id_categoria'] = $categoria->id;
-            }
-            Log::info($productoData);
-            $this->actualizarInventario($productoExistente->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
-            Log::info("Producto actualizado en tu sistema", ['producto_id' => $productoExistente->id]);
-            $productoExistente->update($productoData);
-            $this->procesarImagenes($request, $productoExistente->id);
-        }
-
-        return response()->json(['status' => 'success', 'mensaje' => 'Producto procesado'], 200);
-    }
-
     private function procesarProductoActualizado(Request $request, $empresa, $usuario)
     {
         Log::info("Producto actualizado en Shopify", ['product_id' => $request->id]);
 
-        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
+        // Transformar datos
+        $productosData = $this->transformer->transformarProductoDesdeShopify(
+            $request->all(),
+            $empresa->id,
+            $usuario->id,
+            $usuario->id_sucursal
+        );
 
-        $producto = Producto::where('shopify_product_id', $request->id)
-            ->where('id_empresa', $empresa->id)
-            ->where('codigo', $productoData['codigo'])
-            ->first();
+        $categoriaData = $this->transformer->transformarCategoriaDesdeShopify(
+            $request->all(),
+            $empresa->id
+        );
 
-        if ($producto && Cache::has("shopify_sync_lock_{$producto->id}")) {
-            Log::info("Producto en período de gracia - ignorando webhook de actualización", [
-                'product_id' => $request->id,
-                'producto_id' => $producto->id,
-                'webhook_type' => 'products/update'
-            ]);
-            return response()->json(['status' => 'ignored', 'mensaje' => 'En período de gracia'], 200);
-        }
+        foreach ($productosData as $productoData) {
+            // Buscar producto existente
+            $producto = $this->buscarProductoExistente($request->id, $productoData, $empresa->id);
 
-        $productoData = $this->transformer->transformarProductoDesdeShopify($request->all(), $empresa->id, $usuario->id, $usuario->id_sucursal);
-
-        $producto = Producto::where('shopify_product_id', $request->id)
-            ->where('id_empresa', $empresa->id)
-            ->where('codigo', $productoData['codigo'])
-            ->first();
-
-        $categoria = $this->buscarCategoria('General', $empresa->id);
-
-        if ($producto) {
-            if (empty($producto->id_categoria)) {
-                Log::info("Asignando categoría al producto", ['producto_id' => $producto->id]);
-                $productoData['id_categoria'] = $categoria->id;
-            }
-            Log::info($productoData);
-            $producto->update($productoData);
-            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
-            $this->procesarImagenes($request, $producto->id);
-            Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
-        } else {
+            // Asignar categoría
+            $categoria = $this->obtenerCategoria($request->all(), $categoriaData, $empresa->id);
             $productoData['id_categoria'] = $categoria->id;
-            $producto = Producto::create($productoData);
-            $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
-            $this->procesarImagenes($request, $producto->id);
-            Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
+
+            if ($producto) {
+                $this->actualizarProductoExistente($producto, $productoData, $usuario);
+            } else {
+                $this->crearNuevoProducto($productoData, $usuario, $request);
+            }
         }
 
         return response()->json(['status' => 'success', 'mensaje' => 'Producto actualizado'], 200);
+    }
+
+    private function buscarProductoExistente($shopifyId, $productoData, $empresaId)
+    {
+        return Producto::where('shopify_product_id', $shopifyId)
+            ->where('shopify_variant_id', $productoData['shopify_variant_id'])
+            ->where('id_empresa', $empresaId)
+            ->first();
+    }
+
+    private function obtenerCategoria($requestData, $categoriaData, $empresaId)
+    {
+        $nombreCategoria = empty($requestData['category']) ? 'General' : $categoriaData['nombre'];
+        return $this->buscarCategoria($nombreCategoria, $empresaId);
+    }
+
+    private function actualizarProductoExistente($producto, $productoData, $usuario)
+    {
+        Log::info("Actualizando producto existente", ['producto_id' => $producto->id]);
+
+        $producto->update($productoData);
+        $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
+        $this->procesarImagenes(request(), $producto->id);
+
+        Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
+    }
+
+    private function crearNuevoProducto($productoData, $usuario, $request)
+    {
+        $producto = Producto::create($productoData);
+        $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
+        $this->procesarImagenes($request, $producto->id);
+
+        Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
     }
 
     public function procesarImagenes($request, $productoId)

@@ -16,6 +16,7 @@ class ShopifyStockService
      */
     public function actualizarSoloStockEnShopify($productoId, $userId)
     {
+        return true;
         try {
             $producto = Producto::find($productoId);
 
@@ -163,6 +164,7 @@ class ShopifyStockService
 
     public function actualizarStockEnShopify($productoId, $userId)
     {
+        return true;
         return $this->actualizarProductoCompletoEnShopify($productoId, $userId);
     }
 
