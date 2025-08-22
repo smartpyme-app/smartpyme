@@ -87,7 +87,8 @@ class PartidasController extends Controller
             return $q->where(function($subQ) use ($request) {
                 $subQ->where('partidas.concepto', 'like' ,'%' . $request->buscador . '%')
                      ->orWhere('partidas.tipo', 'like' ,'%' . $request->buscador . '%')
-                     ->orWhere('partidas.correlativo', 'like' ,'%' . $request->buscador . '%');
+                     ->orWhere('partidas.correlativo', 'like' ,'%' . $request->buscador . '%')
+                     ->orWhere('partidas.id', 'like' ,'%' . $request->buscador . '%');
             });
         })
         ->when($request->inicio, function($q) use ($request){
