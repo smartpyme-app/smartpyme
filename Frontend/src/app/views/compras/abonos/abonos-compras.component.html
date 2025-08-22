@@ -61,7 +61,7 @@
                         <th>Proveedor</th>
                         <th class="d-none d-md-table-cell">Compra</th>
                         <th class="d-none d-md-table-cell">Método de pago</th>
-                        <th (click)="setOrden('fecha_pago')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha_pago' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha_pago' && filtros.direccion == 'desc'}" class="click">Fecha pago</th>
+                        <th [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}" class="click">Estado</th>
                         <!-- <th>Estado</th> -->
                         <th  (click)="setOrden('total')" [ngClass]="{'sorted-asc': filtros.orden == 'total' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'total' && filtros.direccion == 'desc'}" class="click text-right">Total</th>
                         <!-- <th class="text-center"><i class="fa fa-cog"></i></th> -->

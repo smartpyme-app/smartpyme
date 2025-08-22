@@ -74,7 +74,7 @@ export class AbonosComprasComponent implements OnInit {
     }
 
     public setEstado(cotizacion:any){
-        this.apiService.store('orden-de-compra', cotizacion).subscribe(cotizacion => { 
+        this.apiService.store('compras/abonos/change-estado', cotizacion).subscribe(cotizacion => { 
             this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
     }
