@@ -98,6 +98,7 @@
       <table class="table table-borderless table-hover mb-0">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Fecha</th>
             <th>Concepto</th>
             <th>Correlativo</th>
@@ -119,6 +120,7 @@
           </tr>
 
           <tr *ngFor=" let partida of partidas?.data">
+            <td>{{ partida.id }}</td>
             <!-- Fecha -->
             <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
             <!-- Concepto -->
