@@ -90,7 +90,7 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
-            ->where('estado', 'Aplicada')
+            ->whereIn('estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->orderBy('fecha', 'desc');
@@ -107,6 +107,7 @@ class GenerarReportesController extends Controller
         $reporteLibroDiario = $partidas->map(function ($partida) {
             return [
                 'partida_num' => '#' . $partida->id,
+                'correlativo' => $partida->correlativo,
                 'fecha' => $partida->fecha,
                 'concepto' => $partida->concepto,
                 'detalles' => $partida->detalles->map(function ($detalle) {
@@ -142,7 +143,7 @@ class GenerarReportesController extends Controller
             }
         }])
             ->where('id_empresa', $empresa_id)
-            ->where('estado', 'Aplicada')
+            ->whereIn('estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->orderBy('fecha', 'desc');
@@ -161,6 +162,7 @@ class GenerarReportesController extends Controller
         $reporteLibroDiario = $partidas->map(function ($partida) {
             return [
                 'partida_num' => '#' . $partida->id,
+                'correlativo' => $partida->correlativo,
                 'fecha' => $partida->fecha,
                 'concepto' => $partida->concepto,
                 'detalles' => $partida->detalles->map(function ($detalle) {
@@ -208,17 +210,18 @@ class GenerarReportesController extends Controller
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-        $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
-            $query->where('id_empresa', $empresa_id)
-                ->where('estado', 'Aplicada')
-                //->where('id_cuenta', $cuenta)
-                ->whereYear('fecha', $year)
-                ->whereMonth('fecha', $month);
+        $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
+            ->whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
+                $query->where('id_empresa', $empresa_id)
+                    ->whereIn('estado', ['Aplicada', 'Cerrada'])
+                    //->where('id_cuenta', $cuenta)
+                    ->whereYear('fecha', $year)
+                    ->whereMonth('fecha', $month);
 
-            if ($cuenta && $cuenta !== 'all') {
-                $query->where('id_cuenta', $cuenta);
-            }
-        })->get();
+                if ($cuenta && $cuenta !== 'all') {
+                    $query->where('id_cuenta', $cuenta);
+                }
+            })->get();
 
         //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
         foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
@@ -250,12 +253,32 @@ class GenerarReportesController extends Controller
                 $cuenta_reporte = new CuentaReporte();
                 $cuenta_reporte->cuenta = $cod_padre;
                 $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->detalles = $partidasFiltradas;
                 $cuenta_reporte->naturaleza = $cnt->naturaleza;
                 $cuenta_reporte->cargo = $sum_deb;
                 $cuenta_reporte->abono = $sum_hab;
                 $cuenta_reporte->saldo_actual = 0;
                 $cuenta_reporte->saldo_anterior = 0;
+
+                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
+                $saldo_actual = 0;
+                foreach ($partidasFiltradas as $detalle) {
+                    $debe_valor = (float)($detalle->debe ?? 0);
+                    $haber_valor = (float)($detalle->haber ?? 0);
+                    
+                    // Calcular saldo según naturaleza de la cuenta
+                    if ($cnt->naturaleza == 'Deudor') {
+                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
+                    } else {
+                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
+                    }
+                    
+                    // Agregar el saldo calculado al detalle
+                    $detalle->saldo_calculado = $saldo_actual;
+                }
+                
+                // Actualizar el saldo final de la cuenta para totales
+                $cuenta_reporte->saldo_actual = $saldo_actual;
+                $cuenta_reporte->detalles = $partidasFiltradas;
 
 
                 array_push($cuentas, $cuenta_reporte);
@@ -289,16 +312,17 @@ class GenerarReportesController extends Controller
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
-        $partidas = Detalle::whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
-            $query->where('id_empresa', $empresa_id)
-                ->where('estado', 'Aplicada')
-                ->whereYear('fecha', $year)
-                ->whereMonth('fecha', $month);
+        $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
+            ->whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
+                $query->where('id_empresa', $empresa_id)
+                    ->whereIn('estado', ['Aplicada', 'Cerrada'])
+                    ->whereYear('fecha', $year)
+                    ->whereMonth('fecha', $month);
 
-            if ($cuenta && $cuenta !== 'all') {
-                $query->where('id_cuenta', $cuenta);
-            }
-        })->get();
+                if ($cuenta && $cuenta !== 'all') {
+                    $query->where('id_cuenta', $cuenta);
+                }
+            })->get();
 
         //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
         foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
@@ -330,12 +354,32 @@ class GenerarReportesController extends Controller
                 $cuenta_reporte = new CuentaReporte();
                 $cuenta_reporte->cuenta = $cod_padre;
                 $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->detalles = $partidasFiltradas;
                 $cuenta_reporte->naturaleza = $cnt->naturaleza;
                 $cuenta_reporte->cargo = $sum_deb;
                 $cuenta_reporte->abono = $sum_hab;
                 $cuenta_reporte->saldo_actual = 0;
                 $cuenta_reporte->saldo_anterior = 0;
+
+                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
+                $saldo_actual = 0;
+                foreach ($partidasFiltradas as $detalle) {
+                    $debe_valor = (float)($detalle->debe ?? 0);
+                    $haber_valor = (float)($detalle->haber ?? 0);
+                    
+                    // Calcular saldo según naturaleza de la cuenta
+                    if ($cnt->naturaleza == 'Deudor') {
+                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
+                    } else {
+                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
+                    }
+                    
+                    // Agregar el saldo calculado al detalle
+                    $detalle->saldo_calculado = $saldo_actual;
+                }
+                
+                // Actualizar el saldo final de la cuenta para totales
+                $cuenta_reporte->saldo_actual = $saldo_actual;
+                $cuenta_reporte->detalles = $partidasFiltradas;
 
 
                 array_push($cuentas, $cuenta_reporte);
@@ -453,6 +497,13 @@ class GenerarReportesController extends Controller
                 $saldo_final = $saldo_inicial + $haber - $debe;
             }
 
+            // Calcular operaciones del mes según naturaleza de la cuenta
+            if ($cuenta->naturaleza == 'Deudor') {
+                $operaciones_mes = $debe - $haber;
+            } else { // Acreedor
+                $operaciones_mes = $haber - $debe;
+            }
+
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
                 $total_saldo_inicial += $saldo_inicial;
@@ -470,6 +521,7 @@ class GenerarReportesController extends Controller
                 'saldo_inicial' => $saldo_inicial,
                 'debe' => $debe,
                 'haber' => $haber,
+                'operaciones_mes' => $operaciones_mes,
                 'saldo_final' => $saldo_final,
                 'es_cuenta_padre' => $cuenta->nivel == 0,
             ];
@@ -579,6 +631,13 @@ class GenerarReportesController extends Controller
                 $saldo_final = $saldo_inicial + $haber - $debe;
             }
 
+            // Calcular operaciones del mes según naturaleza de la cuenta
+            if ($cuenta->naturaleza == 'Deudor') {
+                $operaciones_mes = $debe - $haber;
+            } else { // Acreedor
+                $operaciones_mes = $haber - $debe;
+            }
+
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
                 $total_saldo_inicial += $saldo_inicial;
@@ -596,6 +655,7 @@ class GenerarReportesController extends Controller
                 'saldo_inicial' => $saldo_inicial,
                 'debe' => $debe,
                 'haber' => $haber,
+                'operaciones_mes' => $operaciones_mes,
                 'saldo_final' => $saldo_final,
                 'es_cuenta_padre' => $cuenta->nivel == 0,
             ];

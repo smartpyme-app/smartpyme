@@ -55,6 +55,7 @@
             <thead>
             <tr>
                 <th>ID Partida</th>
+                <th>Correlativo</th>
                 <th>Fecha</th>
                 <th>Concepto</th>
                 <th>Código Cuenta</th>
@@ -67,6 +68,7 @@
             @foreach ($reporteLibroDiario as $partida)
                 <tr>
                     <td class="id_partida"> PART-{{$partida['partida_num'] }}</td>
+                    <td class="correlativo">{{ $partida['correlativo'] }}</td>
                     <td class="fecha_partida">{{ $partida['fecha'] }}</td>
                     <td class="concepto" colspan="5"><strong>{{ $partida['concepto'] }}</strong></td>
                     </td>
@@ -74,6 +76,7 @@
                 <!-- Detalles de la partida -->
                 @foreach ($partida['detalles'] as $detalle)
                     <tr class="detalles">
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>

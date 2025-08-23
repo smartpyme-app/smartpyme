@@ -43,11 +43,15 @@ class BalanceComprobacionExport implements FromView, WithStyles
         $sheet->getColumnDimension('F')->setWidth(20);
         $sheet->getColumnDimension('G')->setWidth(20);
         $sheet->getColumnDimension('H')->setWidth(20);
+        $sheet->getColumnDimension('I')->setWidth(20);
 
-        $sheet->getStyle('A1:H1')->getAlignment()->setHorizontal('center');
-        $sheet->getStyle('A2:H2')->getAlignment()->setHorizontal('center');
-        $sheet->getStyle('A3:H3')->getAlignment()->setHorizontal('center');
-        $sheet->getStyle('A5:H5')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A1:I1')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A2:I2')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A3:I3')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A4:I4')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A5:I5')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A6:I6')->getAlignment()->setHorizontal('center');
+        $sheet->getStyle('A8:I8')->getAlignment()->setHorizontal('center');
 
         // Ajustar altura de filas para mayor visibilidad
         $sheet->getRowDimension('1')->setRowHeight(30);
@@ -57,10 +61,13 @@ class BalanceComprobacionExport implements FromView, WithStyles
         $sheet->getRowDimension('6')->setRowHeight(30);
 
         return [
-            'A1:H1' => ['font' => ['bold' => true, 'size' => 14]],
-            'A2:H2' => ['font' => ['bold' => true, 'size' => 14]],
-            'A3:H3' => ['font' => ['bold' => true, 'size' => 14]],
-            'A5:H5' => ['font' => ['bold' => true, 'size' => 14]],
+            'A1:I1' => ['font' => ['bold' => true, 'size' => 14]],
+            'A2:I2' => ['font' => ['bold' => true, 'size' => 14]],
+            'A3:I3' => ['font' => ['bold' => true, 'size' => 14]],
+            'A4:I4' => ['font' => ['bold' => true, 'size' => 14]],
+            'A5:I5' => ['font' => ['bold' => true, 'size' => 14]],
+            'A6:I6' => ['font' => ['bold' => true, 'size' => 14]],
+            'A8:I8' => ['font' => ['bold' => true, 'size' => 14]],
         ];
     }
 }
