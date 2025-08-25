@@ -101,7 +101,7 @@ export class ComprasRecurrentesComponent implements OnInit {
         this.compra = compra;
         this.compra.recurrente = false;
         
-        this.apiService.store('compra', this.compra).subscribe(compra => {
+        this.apiService.store('marcar-recurrente', this.compra).subscribe(compra => {
             this.compra = {};
             this.loadAll();
             this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
