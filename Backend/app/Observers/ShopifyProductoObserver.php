@@ -6,27 +6,42 @@ use App\Models\Admin\Empresa;
 use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Services\ShopifyStockService;
-use Illuminate\Support\Facades\Log;
+use App\Services\ShopifySyncCache;
 
 class ShopifyProductoObserver
 {
     protected $stockService;
+    protected $cache;
 
-    public function __construct(ShopifyStockService $stockService)
+    public function __construct(ShopifyStockService $stockService, ShopifySyncCache $cache)
     {
         $this->stockService = $stockService;
+        $this->cache = $cache;
     }
 
     public function updated(Producto $producto)
     {
-        Log::info("Producto actualizado", [
-            'producto_id' => $producto->id
-        ]);
-        // No sincronizar si el producto está deshabilitado
         if (!$producto->enable) {
-            Log::info("Producto deshabilitado, no se sincronizará con Shopify", [
-                'producto_id' => $producto->id
-            ]);
+            return;
+        }
+
+        // Evitar loops de sincronización
+        if ($this->cache->isLocked($producto->id)) {
+            return;
+        }
+
+        // Solo verificar campos relevantes
+        $camposRelevantes = ['precio', 'costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
+        $hayCambios = false;
+
+        foreach ($camposRelevantes as $campo) {
+            if ($producto->isDirty($campo)) {
+                $hayCambios = true;
+                break;
+            }
+        }
+
+        if (!$hayCambios) {
             return;
         }
 
@@ -36,74 +51,57 @@ class ShopifyProductoObserver
             ->where('shopify_status', 'connected')
             ->first();
 
-        if (!$empresa) {
-            return;
-        }
+        if (!$empresa) return;
 
         $usuario = User::where('id_empresa', $empresa->id)
             ->where('shopify_status', 'connected')
             ->first();
 
-        if (!$usuario) {
-            return;
+        if (!$usuario) return;
+
+        // COMPARAR con cache - solo sincronizar si cambió
+        if (!$this->cache->hasProductChanged($producto)) {
+            return; // No cambió, no hacer nada
         }
 
-        try {
-            $this->stockService->actualizarStockEnShopify(
-                $producto->id,
-                $usuario->id
-            );
-        } catch (\Exception $e) {
-            Log::error("Error al sincronizar producto Shopify para usuario: " . $e->getMessage(), [
-                'usuario_id' => $usuario->id,
-                'producto_id' => $producto->id
-            ]);
+        // Sincronizar a Shopify
+        $success = $this->stockService->actualizarProductoCompletoEnShopify(
+            $producto->id,
+            $usuario->id,
+            false
+        );
+
+        // Guardar nuevo snapshot si fue exitoso
+        if ($success) {
+            $this->cache->saveProductSnapshot($producto);
         }
     }
 
     public function created(Producto $producto)
     {
-        Log::info("Producto creado", [
-            'producto_id' => $producto->id
-        ]);
         $empresa = Empresa::where('id', $producto->id_empresa)
             ->whereNotNull('shopify_store_url')
             ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
             ->first();
 
-        if (!$empresa) {
-            return;
-        }
+        if (!$empresa) return;
 
         $usuarios = User::where('id_empresa', $empresa->id)
             ->where('shopify_status', 'connected')
             ->get();
 
-        if ($usuarios->isEmpty()) {
-            Log::info("No se encontraron usuarios con integración Shopify para este producto", [
-                'producto_id' => $producto->id,
-                'sucursal_id' => $producto->id_sucursal
-            ]);
-            return;
-        }
-
         foreach ($usuarios as $usuario) {
-            try {
-                $this->stockService->actualizarStockEnShopify(
-                    $producto->id,
-                    $usuario->id
-                );
-            } catch (\Exception $e) {
-                Log::error("Error al sincronizar nuevo producto Shopify para usuario: " . $e->getMessage(), [
-                    'usuario_id' => $usuario->id,
-                    'producto_id' => $producto->id
-                ]);
+            $success = $this->stockService->createdProductoCompletoEnShopify(
+                $producto->id,
+                $usuario->id,
+                true
+            );
+
+            // Guardar snapshot inicial
+            if ($success) {
+                $this->cache->saveProductSnapshot($producto);
             }
         }
-
-        Log::info("Usuarios con Shopify encontrados", [
-            'usuarios' => $usuarios->count()
-        ]);
     }
 }

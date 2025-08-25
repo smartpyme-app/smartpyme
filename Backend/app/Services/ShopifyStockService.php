@@ -16,7 +16,7 @@ class ShopifyStockService
      */
     public function actualizarSoloStockEnShopify($productoId, $userId)
     {
-        return true;
+        // return true;
         try {
             $producto = Producto::find($productoId);
 
@@ -25,7 +25,7 @@ class ShopifyStockService
                 return false;
             }
 
-    
+
 
             $usuario = User::find($userId);
             $empresa = Empresa::where('id', $usuario->id_empresa)->first();
@@ -35,7 +35,7 @@ class ShopifyStockService
                 return false;
             }
 
-           
+
             if (empty($producto->shopify_variant_id) || empty($producto->shopify_inventory_item_id)) {
                 Log::info("Producto sin IDs de Shopify - no se actualiza stock", [
                     'producto_id' => $productoId,
@@ -57,14 +57,7 @@ class ShopifyStockService
                 $empresa->shopify_store_url,
                 $empresa->shopify_consumer_secret
             );
-
-           
-            Cache::put("shopify_sync_lock_{$productoId}", true, now()->addMinutes(2));
-            Log::info("Cache lock establecido para stock", ['producto_id' => $productoId, 'ttl' => '2 minutos']);
-
-            
             return $this->actualizarSoloInventario($shopifyClient, $producto, $stock);
-
         } catch (\Exception $e) {
             Log::error("Error al actualizar solo stock en Shopify: " . $e->getMessage(), [
                 'producto_id' => $productoId,
@@ -77,7 +70,7 @@ class ShopifyStockService
     /**
      * MÉTODO PARA ACTUALIZAR PRODUCTO COMPLETO (desde otros lugares)
      */
-    public function actualizarProductoCompletoEnShopify($productoId, $userId)
+    public function actualizarProductoCompletoEnShopify($productoId, $userId, $bandera = false)
     {
         try {
             $producto = Producto::with('imagenes')->find($productoId);
@@ -88,7 +81,7 @@ class ShopifyStockService
             }
 
 
-           
+
             $producto->last_shopify_sync = now();
             $producto->save();
 
@@ -105,13 +98,13 @@ class ShopifyStockService
                 return false;
             }
 
-            if (empty($producto->codigo)) {
-                Log::warning("Producto sin código/SKU para buscar en Shopify", [
-                    'producto_id' => $productoId,
-                    'nombre' => $producto->nombre
-                ]);
-                return false;
-            }
+            // if (empty($producto->codigo)) {
+            //     Log::warning("Producto sin código/SKU para buscar en Shopify", [
+            //         'producto_id' => $productoId,
+            //         'nombre' => $producto->nombre
+            //     ]);
+            //     return false;
+            // }
 
             $stock = Inventario::where('id_producto', $productoId)
                 ->where('id_bodega', $usuario->id_bodega)
@@ -129,18 +122,17 @@ class ShopifyStockService
 
             $productData = $this->prepararDatosProducto($producto, $stock, $shopifyClient);
 
-            
-            Cache::put("shopify_sync_lock_{$productoId}", true, now()->addMinutes(2));
-            Log::info("Cache lock establecido para producto completo", ['producto_id' => $productoId, 'ttl' => '2 minutos']);
 
-            
+
+
+
             if (!empty($producto->shopify_variant_id)) {
                 if ($this->actualizarProductoPorId($shopifyClient, $producto, $productData)) {
                     return true;
                 }
             }
 
-            
+
             $existente = $this->buscarProductoPorSku($shopifyClient, $producto->codigo);
 
             if ($existente) {
@@ -161,10 +153,70 @@ class ShopifyStockService
         }
     }
 
+    public function createdProductoCompletoEnShopify($productoId, $userId, $bandera = false)
+    {
+        try {
+            $producto = Producto::with('imagenes')->find($productoId);
+
+            if (!$producto) {
+                Log::error("Producto no encontrado", ['producto_id' => $productoId]);
+                return false;
+            }
+
+            $usuario = User::find($userId);
+            $empresa = Empresa::where('id', $usuario->id_empresa)->first();
+
+            if (!$usuario || empty($empresa->shopify_consumer_secret)) {
+                Log::error("Usuario no encontrado o sin consumer secret de Shopify", ['user_id' => $userId]);
+                return false;
+            }
+
+            if (empty($empresa->shopify_store_url)) {
+                Log::error("Empresa sin store URL de Shopify configurado", ['empresa_id' => $empresa->id]);
+                return false;
+            }
+
+
+            $stock = Inventario::where('id_producto', $productoId)
+                ->where('id_bodega', $usuario->id_bodega)
+                ->value('stock');
+
+            if ($stock === null) {
+                Log::warning("No se encontró inventario para el producto", ['producto_id' => $productoId]);
+                $stock = 0;
+            }
+
+            $shopifyClient = new ShopifyApiClient(
+                $empresa->shopify_store_url,
+                $empresa->shopify_consumer_secret
+            );
+
+            $productData = $this->prepararDatosProducto($producto, $stock, $shopifyClient);
+
+            $this->crearNuevoProducto($shopifyClient, $producto, $productData);
+
+            Log::info("Producto creado exitosamente en Shopify", [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'shopify_product_id' => $producto->shopify_product_id
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Error al crear producto en Shopify: " . $e->getMessage(), [
+                'producto_id' => $productoId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return false;
+        }
+    }
+
 
     public function actualizarStockEnShopify($productoId, $userId)
     {
-        return true;
+        //return true;
         return $this->actualizarProductoCompletoEnShopify($productoId, $userId);
     }
 
@@ -173,7 +225,7 @@ class ShopifyStockService
     {
         try {
             $locationId = $this->getDefaultLocationId($client);
-            
+
             $response = $client->post('inventory_levels/set.json', [
                 'location_id' => $locationId,
                 'inventory_item_id' => $producto->shopify_inventory_item_id,

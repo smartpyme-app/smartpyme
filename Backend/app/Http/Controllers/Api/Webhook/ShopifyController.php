@@ -22,14 +22,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
+use App\Services\ShopifySyncCache;
 
 class ShopifyController extends Controller
 {
     protected $transformer;
+    protected $cache;
 
-    public function __construct(ShopifyTransformer $transformer)
+
+    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache)
     {
         $this->transformer = $transformer;
+        $this->cache = $cache;
     }
 
     public function procesarWebhook($tokenEmpresa, Request $request)
@@ -92,9 +96,8 @@ class ShopifyController extends Controller
 
     private function procesarProductoActualizado(Request $request, $empresa, $usuario)
     {
-        Log::info("Producto actualizado en Shopify", ['product_id' => $request->id]);
+        Log::info("Producto desde Shopify", ['product_id' => $request->id]);
 
-        // Transformar datos
         $productosData = $this->transformer->transformarProductoDesdeShopify(
             $request->all(),
             $empresa->id,
@@ -106,23 +109,45 @@ class ShopifyController extends Controller
             $request->all(),
             $empresa->id
         );
+        Log::info("Categoria desde Shopify", ['categoria_id' => $categoriaData]);
 
         foreach ($productosData as $productoData) {
-            // Buscar producto existente
             $producto = $this->buscarProductoExistente($request->id, $productoData, $empresa->id);
+            Log::info("Producto existente", ['producto_id' => $producto->id]);
 
-            // Asignar categoría
+            Log::info("Data producto", ['producto_id' => $productoData]);
             $categoria = $this->obtenerCategoria($request->all(), $categoriaData, $empresa->id);
             $productoData['id_categoria'] = $categoria->id;
 
             if ($producto) {
-                $this->actualizarProductoExistente($producto, $productoData, $usuario);
+                // COMPARAR datos de Shopify con producto local
+                if ($this->cache->isShopifyDataDifferent($producto, $productoData)) {
+
+                    // Lock para evitar loop
+                    $this->cache->lockSync($producto->id);
+
+                    $this->actualizarProductoExistente($producto, $productoData, $usuario);
+
+                    // Guardar nuevo snapshot
+                    $producto->fresh();
+                    $this->cache->saveProductSnapshot($producto);
+
+                    Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
+                } else {
+                    Log::info("Producto sin cambios desde Shopify", ['producto_id' => $producto->id]);
+                }
             } else {
-                $this->crearNuevoProducto($productoData, $usuario, $request);
+                // Lock para producto nuevo
+                $nuevoProducto = $this->crearNuevoProducto($productoData, $usuario, $request);
+
+                if ($nuevoProducto) {
+                    $this->cache->lockSync($nuevoProducto->id);
+                    $this->cache->saveProductSnapshot($nuevoProducto);
+                }
             }
         }
 
-        return response()->json(['status' => 'success', 'mensaje' => 'Producto actualizado'], 200);
+        return response()->json(['status' => 'success'], 200);
     }
 
     private function buscarProductoExistente($shopifyId, $productoData, $empresaId)
@@ -141,22 +166,53 @@ class ShopifyController extends Controller
 
     private function actualizarProductoExistente($producto, $productoData, $usuario)
     {
-        Log::info("Actualizando producto existente", ['producto_id' => $producto->id]);
+        // Verificar si stock cambió
+        $stockActual = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $usuario->id_bodega)
+            ->value('stock') ?? 0;
 
+        $stockNuevo = $productoData['stock'] ?? 0;
+
+        // Actualizar producto
         $producto->update($productoData);
-        $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
-        $this->procesarImagenes(request(), $producto->id);
 
-        Log::info("Producto actualizado desde Shopify", ['producto_id' => $producto->id]);
+        // Solo tocar inventario si stock realmente cambió
+        if ($stockActual != $stockNuevo) {
+            $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $usuario->id);
+
+            // Guardar snapshot de inventario
+            $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
+                ->where('id_bodega', $usuario->id_bodega)
+                ->first();
+
+            if ($inventario) {
+                $this->cache->saveInventorySnapshot($inventario, $producto->id);
+            }
+        }
+
+        $this->procesarImagenes(request(), $producto->id);
     }
+
 
     private function crearNuevoProducto($productoData, $usuario, $request)
     {
         $producto = Producto::create($productoData);
+        
         $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
         $this->procesarImagenes($request, $producto->id);
 
+        // Guardar snapshot inicial de inventario
+        $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
+            ->where('id_bodega', $usuario->id_bodega)
+            ->first();
+            
+        if ($inventario) {
+            $this->cache->saveInventorySnapshot($inventario, $producto->id);
+        }
+
         Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
+        
+        return $producto;
     }
 
     public function procesarImagenes($request, $productoId)

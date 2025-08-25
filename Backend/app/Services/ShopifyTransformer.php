@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
 class ShopifyTransformer
 {
 
@@ -140,6 +142,8 @@ class ShopifyTransformer
 
     public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
+        Log::info("Producto desde Shopify", ['product_id' => $shopifyData['id']]);
+        Log::info("Producto desde Shopify", ['product_id' => $shopifyData]);
         $productos = [];
         foreach ($shopifyData['variants'] as $variant) {
             $productos[] = [

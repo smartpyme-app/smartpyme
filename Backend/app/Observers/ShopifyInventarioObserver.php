@@ -7,68 +7,83 @@ use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\User;
 use App\Services\ShopifyStockService;
+use App\Services\ShopifySyncCache;
 use Illuminate\Support\Facades\Log;
 
 class ShopifyInventarioObserver
 {
     protected $stockService;
+    protected $cache;
 
-    public function __construct(ShopifyStockService $stockService)
+    public function __construct(ShopifyStockService $stockService, ShopifySyncCache $cache)
     {
         $this->stockService = $stockService;
+        $this->cache = $cache;
     }
 
     public function updated(Inventario $inventario)
     {
-        if ($inventario->isDirty('stock')) {
-            Log::info("Cambio de stock detectado para Shopify", [
-                'producto_id' => $inventario->id_producto,
-                'bodega_id' => $inventario->id_bodega,
-                'stock_anterior' => $inventario->getOriginal('stock'),
-                'stock_nuevo' => $inventario->stock
+        if (!$inventario->isDirty('stock')) {
+            return;
+        }
+        Log::info("Inventario actualizado", [
+            'inventario_id' => $inventario->id,
+        ]);
+
+        // Evitar loops de sincronización
+        if ($this->cache->isLocked($inventario->id_producto)) {
+            return;
+        }
+
+        $bodega = Bodega::find($inventario->id_bodega);
+        if (!$bodega) return;
+
+        $empresa = Empresa::where('id', $bodega->id_empresa)
+            ->whereNotNull('shopify_store_url')
+            ->whereNotNull('shopify_consumer_secret')
+            ->where('shopify_status', 'connected')
+            ->first();
+            Log::info("Empresa encontrada", [
+                'empresa_id' => $empresa->id,
+                'bodega_id' => $bodega->id
             ]);
 
-            $bodega = Bodega::where('id', $inventario->id_bodega)->first();
-            $empresa = Empresa::where('id', $bodega->id_empresa)
-                ->whereNotNull('shopify_store_url')
-                ->whereNotNull('shopify_consumer_secret')
-                ->where('shopify_status', 'connected')
-                ->first();
+        if (!$empresa) return;
 
-            if (!$empresa) {
-                Log::info("No se encontró empresa con integración Shopify para esta bodega", [
-                    'bodega_id' => $inventario->id_bodega
-                ]);
-                return;
-            }
+        $usuario = User::where('id_empresa', $empresa->id)
+            ->where('shopify_status', 'connected')
+            ->first();
+            Log::info("Usuario encontrado", [
+                'usuario_id' => $usuario->id,
+                'bodega_id' => $bodega->id,
+                'bodega_id_usuario' => $usuario->id_bodega
+            ]);
 
-            $usuario = User::where('id_empresa', $empresa->id)
-                ->where('shopify_status', 'connected')
-                ->first();
+        if (!$usuario || $inventario->id_bodega != $usuario->id_bodega) {
+            return;
+        }
+        Log::info("Inventario actualizado", [
+            'inventario_id' => $inventario->id,
+            'stock' => $inventario->stock,
+            'producto_id' => $inventario->id_producto,
+            'bodega_id' => $inventario->id_bodega,
+            'usuario_id' => $usuario->id
+        ]);
 
-            if (!$usuario) {
-                Log::info("No se encontró usuario con integración Shopify para esta empresa", [
-                    'empresa_id' => $empresa->id
-                ]);
-                return;
-            }
+        // COMPARAR con cache - solo sincronizar si cambió
+        if (!$this->cache->hasInventoryChanged($inventario, $inventario->id_producto)) {
+            return; // No cambió, no hacer nada
+        }
 
-            if ($inventario->id_bodega != $usuario->id_bodega) {
-                return;
-            }
+        // Sincronizar a Shopify
+        $success = $this->stockService->actualizarSoloStockEnShopify(
+            $inventario->id_producto,
+            $usuario->id
+        );
 
-            try {
-                // ⭐ USAR EL MÉTODO ESPECÍFICO PARA SOLO STOCK
-                $this->stockService->actualizarSoloStockEnShopify(
-                    $inventario->id_producto,
-                    $usuario->id
-                );
-            } catch (\Exception $e) {
-                Log::error("Error al sincronizar solo stock Shopify: " . $e->getMessage(), [
-                    'usuario_id' => $usuario->id,
-                    'producto_id' => $inventario->id_producto
-                ]);
-            }
+        // Guardar nuevo snapshot si fue exitoso
+        if ($success) {
+            $this->cache->saveInventorySnapshot($inventario, $inventario->id_producto);
         }
     }
 }
