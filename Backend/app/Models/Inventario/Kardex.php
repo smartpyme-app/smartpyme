@@ -66,6 +66,12 @@ class Kardex extends Model {
         if ($this->detalle == 'Actualización de producto') {
             $info = 'Actualización de producto';
         }
+        if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
+            $info = 'Entrada #' . $this->referencia;
+        }
+        if ($this->detalle == 'Otra Salida' || $this->detalle == 'Otra Salida Anulada') {
+            $info = 'Salida #' . $this->referencia;
+        }
 
         return $info;
     }
@@ -91,6 +97,12 @@ class Kardex extends Model {
         }
         if ($this->detalle == 'Actualización de producto') {
             return 'producto';
+        }
+        if ($this->detalle == 'Otra Entrada' || $this->detalle == 'Otra Entrada Anulada') {
+            return 'entrada/detalle';
+        }
+        if ($this->detalle == 'Otra Salida' || $this->detalle == 'Otra Salida Anulada') {
+            return 'salida/detalle';
         }
     }
 

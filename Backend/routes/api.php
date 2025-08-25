@@ -72,6 +72,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/inventario/ajustes.php');
 	require base_path('routes/modulos/inventario/bodegas.php');
 	require base_path('routes/modulos/inventario/paquetes.php');
+	require base_path('routes/modulos/inventario/entradas-salidas.php');
 
 	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');

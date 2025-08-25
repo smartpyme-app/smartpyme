@@ -56,6 +56,14 @@ import { ReactiveFormsModule } from '@angular/forms';
 
 import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo.component';
 
+// Nuevos componentes de entradas y salidas
+import { InventarioEntradasComponent } from './entradas/inventario-entradas.component';
+import { InventarioSalidasComponent } from './salidas/inventario-salidas.component';
+import { InventarioEntradaComponent } from './entradas/entrada/inventario-entrada.component';
+import { InventarioSalidaComponent } from './salidas/salida/inventario-salida.component';
+import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-detalle.component';
+import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -106,7 +114,14 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent
   ],
   exports: [
   	ProductosComponent,
@@ -138,7 +153,14 @@ import { AjusteMasivoComponent } from './productos/producto/ajuste/ajuste-masivo
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent
   ]
 })
 export class InventarioModule { }

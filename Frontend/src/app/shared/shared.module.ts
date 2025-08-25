@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
@@ -55,6 +55,7 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     PipesModule,
     TagInputModule,

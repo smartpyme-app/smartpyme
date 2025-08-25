@@ -1,0 +1,91 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+  <h2 class="page-heading">Detalle de salida</h2>
+  <div>
+      <button class="btn btn-light text-danger" routerLink="/salidas"><i class="fa fa-arrow-left"></i> Regresar</button>
+  </div>
+</section>
+
+<div class="card">
+  <div class="card-body">
+
+    <!-- Información general -->
+    <div class="row">
+        <div class="form-group col-6 col-md-2">
+            <label><strong>Fecha:</strong></label>
+            <div>{{ salida.fecha | date:'dd/MM/yyyy' }}</div>
+        </div>
+        <div class="form-group col-6 col-md-2">
+            <label><strong>Concepto:</strong></label>
+            <div>{{ salida.concepto }}</div>
+        </div>
+        <div class="form-group col-6 col-md-2">
+            <label><strong>Bodega:</strong></label>
+            <div>{{ salida.bodega_nombre }}</div>
+        </div>
+        <div class="form-group col-6 col-md-2">
+            <label><strong>Usuario:</strong></label>
+            <div>{{ salida.usuario_nombre }}</div>
+        </div>
+        <div class="form-group col-6 col-md-2">
+            <label><strong>Estado:</strong></label>
+            <div>{{ salida.estado || 'Pendiente' }}</div>
+        </div>
+    </div>
+
+    <!-- Información del corte (si existe) -->
+    <div class="row mt-3" *ngIf="salida.corte">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label><strong>Corte N°:</strong></label>
+                        <div>{{ salida.corte.id }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label><strong>Caja:</strong></label>
+                        <div>{{ salida.corte.caja?.nombre }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label><strong>Fecha Corte:</strong></label>
+                        <div>{{ salida.corte.fecha_arqueo | date:'dd/MM/yyyy hh:mm a' }}</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label><strong>Cajero:</strong></label>
+                        <div>{{ salida.corte.usuario?.name }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de detalles -->
+    <div class="table-responsive mt-4">
+      <table class="table table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>N°</th>
+            <th>Producto</th>
+            <th class="text-end">Cantidad</th>
+            <th class="text-end">Costo</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="salida.detalles?.length < 1 && !loading">
+            <td colspan="5" class="text-center text-muted">No tiene productos agregados</td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="5" class="text-center text-muted">Cargando...</td>
+          </tr>
+          <tr *ngFor="let detalle of salida.detalles; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>{{ detalle.nombre_producto }}</td>
+            <td class="text-end">{{ detalle.cantidad }}</td>
+            <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+            <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div> 
