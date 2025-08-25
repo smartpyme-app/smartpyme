@@ -104,7 +104,13 @@ class ComprasController extends Controller
                                  })->orwhere('referencia', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('estado', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+                                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%')
+                                    ->orWhereHas('proyecto', function($q) use ($request){
+                                        $q->where('nombre', 'like', '%'.$request->buscador.'%');
+                                    })
+                                    ->orWhere('num_identificacion', 'like', '%'.$request->buscador.'%')
+                                    ->orWhere('tipo_documento', 'like', '%'.$request->buscador.'%')
+                                    ->orWhereRaw("CONCAT(tipo_documento, ' #', referencia) LIKE ?", ['%' . $request->buscador . '%']);
                         })
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
