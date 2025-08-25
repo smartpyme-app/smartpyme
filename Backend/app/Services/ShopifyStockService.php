@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Cache;
 
 class ShopifyStockService
 {
-    /**
-     * MÉTODO PARA ACTUALIZAR SOLO EL STOCK (desde Observer de Inventario)
-     */
+   
     public function actualizarSoloStockEnShopify($productoId, $userId)
     {
         // return true;
@@ -67,9 +65,6 @@ class ShopifyStockService
         }
     }
 
-    /**
-     * MÉTODO PARA ACTUALIZAR PRODUCTO COMPLETO (desde otros lugares)
-     */
     public function actualizarProductoCompletoEnShopify($productoId, $userId, $bandera = false)
     {
         try {

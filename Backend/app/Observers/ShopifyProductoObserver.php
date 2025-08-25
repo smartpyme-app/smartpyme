@@ -25,12 +25,9 @@ class ShopifyProductoObserver
             return;
         }
 
-        // Evitar loops de sincronización
         if ($this->cache->isLocked($producto->id)) {
             return;
         }
-
-        // Solo verificar campos relevantes
         $camposRelevantes = ['precio', 'costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
         $hayCambios = false;
 
@@ -59,19 +56,15 @@ class ShopifyProductoObserver
 
         if (!$usuario) return;
 
-        // COMPARAR con cache - solo sincronizar si cambió
         if (!$this->cache->hasProductChanged($producto)) {
-            return; // No cambió, no hacer nada
+            return;
         }
-
-        // Sincronizar a Shopify
         $success = $this->stockService->actualizarProductoCompletoEnShopify(
             $producto->id,
             $usuario->id,
             false
         );
 
-        // Guardar nuevo snapshot si fue exitoso
         if ($success) {
             $this->cache->saveProductSnapshot($producto);
         }
@@ -98,7 +91,6 @@ class ShopifyProductoObserver
                 true
             );
 
-            // Guardar snapshot inicial
             if ($success) {
                 $this->cache->saveProductSnapshot($producto);
             }

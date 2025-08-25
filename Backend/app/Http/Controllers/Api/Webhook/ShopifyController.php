@@ -120,15 +120,11 @@ class ShopifyController extends Controller
             $productoData['id_categoria'] = $categoria->id;
 
             if ($producto) {
-                // COMPARAR datos de Shopify con producto local
                 if ($this->cache->isShopifyDataDifferent($producto, $productoData)) {
-
-                    // Lock para evitar loop
                     $this->cache->lockSync($producto->id);
 
                     $this->actualizarProductoExistente($producto, $productoData, $usuario);
 
-                    // Guardar nuevo snapshot
                     $producto->fresh();
                     $this->cache->saveProductSnapshot($producto);
 
@@ -137,7 +133,6 @@ class ShopifyController extends Controller
                     Log::info("Producto sin cambios desde Shopify", ['producto_id' => $producto->id]);
                 }
             } else {
-                // Lock para producto nuevo
                 $nuevoProducto = $this->crearNuevoProducto($productoData, $usuario, $request);
 
                 if ($nuevoProducto) {
@@ -166,21 +161,17 @@ class ShopifyController extends Controller
 
     private function actualizarProductoExistente($producto, $productoData, $usuario)
     {
-        // Verificar si stock cambió
         $stockActual = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
             ->where('id_bodega', $usuario->id_bodega)
             ->value('stock') ?? 0;
 
         $stockNuevo = $productoData['stock'] ?? 0;
 
-        // Actualizar producto
         $producto->update($productoData);
 
-        // Solo tocar inventario si stock realmente cambió
         if ($stockActual != $stockNuevo) {
             $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $usuario->id);
 
-            // Guardar snapshot de inventario
             $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
                 ->where('id_bodega', $usuario->id_bodega)
                 ->first();
@@ -201,7 +192,6 @@ class ShopifyController extends Controller
         $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
         $this->procesarImagenes($request, $producto->id);
 
-        // Guardar snapshot inicial de inventario
         $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
             ->where('id_bodega', $usuario->id_bodega)
             ->first();

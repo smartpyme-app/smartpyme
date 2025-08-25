@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class ShopifySyncCache
 {
-    /**
-     * Guardar snapshot del producto en cache
-     */
     public function saveProductSnapshot($producto)
     {
         $key = "shopify_product_{$producto->id}";
@@ -31,9 +28,6 @@ class ShopifySyncCache
         ]);
     }
 
-    /**
-     * Guardar snapshot del inventario en cache
-     */
     public function saveInventorySnapshot($inventario, $productoId)
     {
         $key = "shopify_inventory_{$productoId}";
@@ -50,9 +44,6 @@ class ShopifySyncCache
         ]);
     }
 
-    /**
-     * Verificar si el producto cambió comparando con cache
-     */
     public function hasProductChanged($producto)
     {
         $key = "shopify_product_{$producto->id}";
@@ -84,9 +75,6 @@ class ShopifySyncCache
         return $changed;
     }
 
-    /**
-     * Verificar si el inventario cambió
-     */
     public function hasInventoryChanged($inventario, $productoId)
     {
         $key = "shopify_inventory_{$productoId}";
@@ -109,9 +97,6 @@ class ShopifySyncCache
         return $changed;
     }
 
-    /**
-     * Verificar si data de Shopify es diferente a la local
-     */
     public function isShopifyDataDifferent($localProduct, $shopifyData)
     {
         $localData = [
@@ -144,13 +129,10 @@ class ShopifySyncCache
         return $different;
     }
 
-    /**
-     * Lock temporal para evitar loops de sincronización
-     */
     public function lockSync($productoId)
     {
         $key = "sync_lock_{$productoId}";
-        Cache::put($key, true, 120); // 2 minutos
+        Cache::put($key, true, 120); 
     }
 
     public function isLocked($productoId)

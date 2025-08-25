@@ -30,7 +30,6 @@ class ShopifyInventarioObserver
             'inventario_id' => $inventario->id,
         ]);
 
-        // Evitar loops de sincronización
         if ($this->cache->isLocked($inventario->id_producto)) {
             return;
         }
@@ -70,18 +69,14 @@ class ShopifyInventarioObserver
             'usuario_id' => $usuario->id
         ]);
 
-        // COMPARAR con cache - solo sincronizar si cambió
         if (!$this->cache->hasInventoryChanged($inventario, $inventario->id_producto)) {
-            return; // No cambió, no hacer nada
+            return;
         }
-
-        // Sincronizar a Shopify
         $success = $this->stockService->actualizarSoloStockEnShopify(
             $inventario->id_producto,
             $usuario->id
         );
 
-        // Guardar nuevo snapshot si fue exitoso
         if ($success) {
             $this->cache->saveInventorySnapshot($inventario, $inventario->id_producto);
         }

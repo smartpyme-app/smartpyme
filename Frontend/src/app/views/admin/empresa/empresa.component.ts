@@ -568,16 +568,16 @@ export class EmpresaComponent implements OnInit {
         const otherPlatform = tipo === 'shopify' ? 'woocommerce' : 'shopify';
         const otherStatusField = `${otherPlatform}_status`;
         
-        // if (this.empresa[otherStatusField] === 'connected') {
-        //     this.saving = false;
-        //     Swal.fire({
-        //         title: 'Error',
-        //         text: `Ya tienes ${otherPlatform === 'woocommerce' ? 'WooCommerce' : 'Shopify'} conectado. Solo puedes tener una integración activa.`,
-        //         icon: 'error',
-        //         confirmButtonText: 'Aceptar'
-        //     });
-        //     return;
-        // }
+        if (this.empresa[otherStatusField] === 'connected') {
+            this.saving = false;
+            Swal.fire({
+                title: 'Error',
+                text: `Ya tienes ${otherPlatform === 'woocommerce' ? 'WooCommerce' : 'Shopify'} conectado. Solo puedes tener una integración activa.`,
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+        }
     
         const credentials = this.prepareCredentials(tipo);
         

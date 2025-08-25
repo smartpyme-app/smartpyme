@@ -11,9 +11,6 @@ class ShopifyApiClient
     protected $accessToken;
     protected $apiVersion = '2024-01';
 
-    /**
-     * Constructor del cliente API de Shopify
-     */
     public function __construct($shopDomain, $accessToken)
     {
         $this->shopDomain = $shopDomain;
