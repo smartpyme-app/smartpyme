@@ -813,4 +813,16 @@ class ComprasController extends Controller
 
         return $total;
     }
+
+    public function marcarRecurrente(Request $request)
+{
+    $compra = Compra::findOrFail($request->id);
+    $compra->recurrente = false;
+    $compra->save();
+
+    return response()->json([
+        'message' => 'Compra marcada como no recurrente',
+        'compra'  => $compra
+    ], 200);
+}
 }
