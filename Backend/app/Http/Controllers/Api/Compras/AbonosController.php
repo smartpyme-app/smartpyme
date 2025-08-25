@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Exports\AbonosComprasExport;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use JWTAuth;
 
@@ -122,6 +123,25 @@ class AbonosController extends Controller
 
         return Response()->json($abono, 200);
 
+    }
+
+
+    public function changeEstado(Request $request)
+    {
+        try {
+        DB::beginTransaction();
+
+        $abono = Abono::findOrFail($request->id);
+        $abono->estado = $request->estado;
+        $abono->save();
+
+        DB::commit();
+        return Response()->json($abono, 200);
+
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     public function delete($id){
