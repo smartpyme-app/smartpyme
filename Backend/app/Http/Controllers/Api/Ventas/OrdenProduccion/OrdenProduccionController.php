@@ -23,9 +23,7 @@ class OrdenProduccionController extends Controller
 {
     public function index(Request $request)
     {
-
         $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
-            //  ->where('id_empresa', Auth::user()->id_empresa)
             ->when($request->estado, function ($q, $estado) {
                 return $q->where('estado', $estado);
             })
@@ -35,8 +33,22 @@ class OrdenProduccionController extends Controller
             ->when($request->id_asesor, function ($q, $asesor) {
                 return $q->where('id_asesor', $asesor);
             })
+            ->when($request->buscador, function ($q, $busqueda) {
+                return $q->where(function ($query) use ($busqueda) {
+                    $query->where('codigo', 'like', '%' . $busqueda . '%')
+                    ->orWhereHas('cliente', function ($clienteQuery) use ($busqueda) {
+                        $clienteQuery->where('nombre', 'like', '%' . $busqueda . '%')
+                            ->orWhere('apellido', 'like', '%' . $busqueda . '%')
+                            ->orWhere('nombre_empresa', 'like', '%' . $busqueda . '%')
+                            ->orWhere(DB::raw("CONCAT(nombre, ' ', apellido)"), 'like', '%' . $busqueda . '%');
+                    })
+                    ->orWhereHas('asesor', function ($asesorQuery) use ($busqueda) {
+                        $asesorQuery->where('name', 'like', '%' . $busqueda . '%');
+                    });
+                });
+            })
             ->orderBy('id', 'desc');
-
+    
         return response()->json([
             'success' => true,
             'data' => $query->paginate($request->perPage ?? 10)

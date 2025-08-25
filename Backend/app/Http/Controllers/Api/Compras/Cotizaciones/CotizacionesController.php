@@ -126,8 +126,6 @@ class CotizacionesController extends Controller
             'id_proveedor.required' => 'El proveedor es requerido',
             'id_bodega.required' => 'La bodega es requerida',
         ]);
-
-        Log::info("Orden de Compra - iniciando proceso");
     
         // VERIFICAR AUTORIZACIÓN por niveles de monto
         if (!$request->id && !$request->id_authorization) {

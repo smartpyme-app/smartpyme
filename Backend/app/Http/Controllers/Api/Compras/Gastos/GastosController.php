@@ -78,15 +78,23 @@ class GastosController extends Controller
                     );
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->whereHas('proveedor', function ($q) use ($request) {
-                    $q->where('nombre', 'like', "%" . $request->buscador . "%")
-                        ->orwhere('nombre_empresa', 'like', "%" . $request->buscador . "%")
-                        ->orwhere('ncr', 'like', "%" . $request->buscador . "%")
-                        ->orwhere('nit', 'like', "%" . $request->buscador . "%");
-                })->orwhere('referencia', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('concepto', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+                return $query->where(function ($q) use ($request) {
+                    $q->whereHas('proveedor', function ($q2) use ($request) {
+                        $q2->where('nombre', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('nombre_empresa', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('ncr', 'like', "%" . $request->buscador . "%")
+                            ->orWhere('nit', 'like', "%" . $request->buscador . "%");
+                    })
+                    ->orWhereRaw("CONCAT(tipo_documento, ' #', referencia) like ?", ['%' . $request->buscador . '%'])
+                    ->orWhere('referencia', 'like', '%' . $request->buscador . '%')
+                    ->orWhere('estado', 'like', '%' . $request->buscador . '%')
+                    ->orWhere('concepto', 'like', '%' . $request->buscador . '%')
+                    ->orWhere('forma_pago', 'like', '%' . $request->buscador . '%')
+                    ->orWhere('num_identificacion', 'like', '%' . $request->buscador . '%')
+                    ->orWhereHas('proyecto', function ($q3) use ($request) {
+                        $q3->where('nombre', 'like', '%' . $request->buscador . '%');
+                    });
+                });
             })
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
@@ -135,14 +143,13 @@ class GastosController extends Controller
 
     public function store(Request $request)
     {
+
         $request->validate([
             'fecha'         => 'required|date',
             'concepto'      => 'sometimes|max:255',
             'tipo_documento'     => 'required|max:255',
-            'tipo'     => 'required|max:255',
             'forma_pago'     => 'required|max:255',
             'estado'     => 'required|max:255',
-            // 'fecha_pago'         => 'required|date',
             'total'         => 'required|numeric',
             'id_categoria'    => 'required|numeric',
             'id_proveedor'    => 'required|numeric',
@@ -153,7 +160,6 @@ class GastosController extends Controller
             'area_empresa'   => 'nullable',
             'id_area_empresa'   => 'nullable',
         ],[
-            'tipo.required' => 'El campo categoria es obligatorio.',
             'id_categoria.required' => 'El campo categoria es obligatorio.',
             'id_proveedor.required' => 'El campo proveedor es obligatorio.',
             'id_usuario.required' => 'El campo usuario es obligatorio.',
