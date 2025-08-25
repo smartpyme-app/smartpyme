@@ -52,7 +52,6 @@ class ComprasController extends Controller
             ->when($request->inicio && $request->fin, function ($query) use ($request) {
                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
             })
-            // recurrente puede venir como "true"/"false", 1/0, true/false
             ->when(!is_null($request->recurrente), function ($q) use ($request) {
                 $valor = filter_var($request->recurrente, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                 if (!is_null($valor)) {
@@ -71,7 +70,6 @@ class ComprasController extends Controller
             ->when($request->dte !== null && $request->dte == 0, fn($q) => $q->whereNull('sello_mh'))
             ->when($request->dte !== null && $request->dte == 1, fn($q) => $q->whereNotNull('sello_mh'))
             ->when($request->es_retaceo !== null, function ($q) use ($request) {
-                // si solo quieres retaceos: true -> con relación; false -> sin relación
                 $valor = filter_var($request->es_retaceo, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                 if ($valor === true) {
                     $q->where('es_retaceo', true)->whereHas('retaceo');
@@ -81,7 +79,6 @@ class ComprasController extends Controller
             })
             ->where('cotizacion', 0)
     
-            // 🔒 Agrupar el buscador para no romper filtros previos
             ->when($request->buscador, function ($query) use ($request) {
                 $term = $request->buscador;
                 $query->where(function ($q) use ($term) {
