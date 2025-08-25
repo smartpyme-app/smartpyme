@@ -12,53 +12,59 @@ class ProyectosController extends Controller
 {
 
 
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
 
-        $proyectos = Proyecto::when($request->buscador, function($query) use ($request){
-                        return $query->where('nombre', 'like', '%'. $request->buscador . '%');
-                    })
-                    ->when($request->inicio, function($query) use ($request){
-                        return $query->where('fecha_inicio', '>=', $request->inicio);
-                    })
-                    ->when($request->fin, function($query) use ($request){
-                        return $query->where('fecha_fin', '<=', $request->fin);
-                    })
-                    ->when($request->id_cliente, function($query) use ($request){
-                        return $query->where('id_cliente', $request->id_cliente);
-                    })
-                    ->when($request->id_usuario, function($query) use ($request){
-                        return $query->where('id_usuario', $request->id_usuario);
-                    })
-                    ->when($request->estado, function($query) use ($request){
-                        return $query->where('estado', $request->estado);
-                    })
-                    ->when($request->estado !== null, function($q) use ($request){
-                        $q->where('enable', !!$request->estado);
-                    })
-                    ->with('cotizaciones', 'presupuesto')
-                    ->orderBy($request->orden, $request->direccion)
-                    ->orderBy('id', 'desc')
-                    ->paginate($request->paginate);
-
-        return Response()->json($proyectos, 200);
-
-    }
-
-    public function list() {
-
-        $proyectos = Proyecto::orderBy('nombre','asc')
-                            ->where('enable', true)
-                            ->get();
+        $proyectos = Proyecto::when($request->buscador, function ($query) use ($request) {
+            $txt = $request->buscador;
+            $query->where('nombre', 'like', "%$txt%")
+                ->orWhereHas('cliente', function ($q) use ($txt) {
+                    $q->where('nombre', 'like', "%$txt%")
+                        ->orWhere('apellido', 'like', "%$txt%")
+                        ->orWhere('nombre_empresa', 'like', "%$txt%");
+                });
+        })
+            ->when($request->inicio, function ($query) use ($request) {
+                return $query->where('fecha_inicio', '>=', $request->inicio);
+            })
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha_fin', '<=', $request->fin);
+            })
+            ->when($request->id_cliente, function ($query) use ($request) {
+                return $query->where('id_cliente', $request->id_cliente);
+            })
+            ->when($request->id_usuario, function ($query) use ($request) {
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->estado, function ($query) use ($request) {
+                return $query->where('estado', $request->estado);
+            })
+            ->when($request->estado !== null, function ($q) use ($request) {
+                $q->where('enable', !!$request->estado);
+            })
+            ->with('cotizaciones', 'presupuesto')
+            ->orderBy($request->orden, $request->direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($request->paginate);
 
         return Response()->json($proyectos, 200);
-
     }
 
-    public function read($id) {
+    public function list()
+    {
+
+        $proyectos = Proyecto::orderBy('nombre', 'asc')
+            ->where('enable', true)
+            ->get();
+
+        return Response()->json($proyectos, 200);
+    }
+
+    public function read($id)
+    {
 
         $proyecto = Proyecto::where('id', $id)->with('compras', 'ventas.abonos', 'cotizaciones', 'gastos', 'presupuestos')->firstOrFail();
         return Response()->json($proyecto, 200);
-
     }
 
 
@@ -73,11 +79,11 @@ class ProyectosController extends Controller
             'id_usuario'   => 'required|numeric',
             'id_sucursal'   => 'required|numeric',
             'id_empresa'   => 'required|numeric',
-        ],[
+        ], [
             'id_cliente.required' => 'El cliente es requerido.'
         ]);
 
-        if($request->id)
+        if ($request->id)
             $proyecto = Proyecto::findOrFail($request->id);
         else
             $proyecto = new Proyecto;
@@ -86,7 +92,6 @@ class ProyectosController extends Controller
         $proyecto->save();
 
         return Response()->json($proyecto, 200);
-
     }
 
     public function delete($id)
@@ -96,8 +101,5 @@ class ProyectosController extends Controller
         $proyecto->delete();
 
         return Response()->json($proyecto, 201);
-
     }
-
-
 }
