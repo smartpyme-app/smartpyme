@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
@@ -53,6 +53,7 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     PipesModule,
     TagInputModule,

@@ -1,0 +1,71 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">Entrada de inventario</h2>
+    <button class="btn btn-light text-danger" onclick="history.back()"><i class="fa fa-arrow-left"></i> Regresar</button>
+</section>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row">
+            <div class="form-group col-md-3">
+                <label for="fecha">Fecha:</label>
+                <input type="date" class="form-control" [(ngModel)]="entrada.fecha" name="fecha">
+            </div>
+            <div class="form-group col-md-3" *ngIf="apiService.auth_user().tipo != 'Cajero'">
+                <label for="entrada.id_bodega">Bodega:</label>
+                <select class="form-control form-select" [(ngModel)]="entrada.id_bodega" name="id_bodega">
+                    <option value="{{ bodega.id }}" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                </select>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="concepto">Concepto:</label>
+                <input type="text" class="form-control" [(ngModel)]="entrada.concepto" name="concepto" placeholder="Concepto" required>
+            </div>
+        </div>
+                    
+        <!-- Tabla -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card" style="min-height: 250px;">
+                    <div class="card-body mb-0">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="d-flex justify-content-end">
+                                    <app-buscador-productos class="col-6 pe-0" (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                                </div>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-borderless mb-0">
+                            <thead>
+                                <tr>
+                                    <th width="100" class="text-center"><i class="fa fa-cog"></i></th>
+                                    <th width="100" class="text-center">N°</th>
+                                    <th>Producto</th>
+                                    <th width="150" class="text-center">Cantidad</th>
+                                    <th width="150" class="text-center">Costo</th>
+                                    <th width="150" class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor=" let detalle of entrada?.detalles, let i=index">
+                                    <td>
+                                        <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                    <td class="text-center">{{ i + 1 }}</td>
+                                    <td>{{ detalle.nombre_producto }}</td>
+                                    <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
+                                    <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
+                                    <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button (click)="onSubmit()" [disabled]="saving" class="btn btn-primary float-end tcla-F10 mr-2" tooltip="Guardar (F10)">
+            <span *ngIf="!saving">Guardar</span>
+            <span *ngIf="saving">Guardando...</span>
+        </button>
+    </div>
+</div>

@@ -64,6 +64,14 @@ import { ComboIndexComponent } from './productos/producto/combo/combo-index/comb
 import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
 import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
 
+// Nuevos componentes de entradas y salidas
+import { InventarioEntradasComponent } from './entradas/inventario-entradas.component';
+import { InventarioSalidasComponent } from './salidas/inventario-salidas.component';
+import { InventarioEntradaComponent } from './entradas/entrada/inventario-entrada.component';
+import { InventarioSalidaComponent } from './salidas/salida/inventario-salida.component';
+import { EntradaDetalleComponent } from './entradas/entrada-detalle/entrada-detalle.component';
+import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -124,7 +132,14 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent
   ],
   exports: [
     ProductosComponent,
@@ -164,7 +179,14 @@ import { CustomFieldsComponent } from './custom-fields/custom-fields.component';
     BodegaComponent,
     BodegasComponent,
     TrasladoMasivoComponent,
-    AjusteMasivoComponent
+    AjusteMasivoComponent,
+    // Nuevos componentes
+    InventarioEntradasComponent,
+    InventarioSalidasComponent,
+    InventarioEntradaComponent,
+    InventarioSalidaComponent,
+    EntradaDetalleComponent,
+    SalidaDetalleComponent
   ]
 })
 export class InventarioModule { }

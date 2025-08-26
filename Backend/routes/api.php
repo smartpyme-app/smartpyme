@@ -54,28 +54,30 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/ventas/clientes.php');
 
 	// Compras
-		require base_path('routes/modulos/compras/compras.php');
-		require base_path('routes/modulos/compras/detalles.php');
-		require base_path('routes/modulos/compras/devoluciones.php');
-		require base_path('routes/modulos/compras/gastos.php');
-		require base_path('routes/modulos/compras/proveedores.php');
-		require base_path('routes/modulos/compras/abonos.php');
-		require base_path('routes/modulos/compras/ordenes-de-compras.php');
-		require base_path('routes/modulos/compras/retaceos.php');
+    require base_path('routes/modulos/compras/compras.php');
+    require base_path('routes/modulos/compras/detalles.php');
+    require base_path('routes/modulos/compras/devoluciones.php');
+    require base_path('routes/modulos/compras/gastos.php');
+    require base_path('routes/modulos/compras/proveedores.php');
+    require base_path('routes/modulos/compras/abonos.php');
+    require base_path('routes/modulos/compras/ordenes-de-compras.php');
+    require base_path('routes/modulos/compras/retaceos.php');
 
 	// Inventario
-		require base_path('routes/modulos/inventario/productos.php');
-		require base_path('routes/modulos/inventario/servicios.php');
-		require base_path('routes/modulos/inventario/materias-primas.php');
-		require base_path('routes/modulos/inventario/inventarios.php');
-		require base_path('routes/modulos/inventario/categorias.php');
-		require base_path('routes/modulos/inventario/traslados.php');
-		require base_path('routes/modulos/inventario/ajustes.php');
-		require base_path('routes/modulos/inventario/bodegas.php');
-		require base_path('routes/modulos/inventario/paquetes.php');
-		require base_path('routes/modulos/inventario/custom-fields.php');
+    require base_path('routes/modulos/inventario/productos.php');
+    require base_path('routes/modulos/inventario/servicios.php');
+    require base_path('routes/modulos/inventario/materias-primas.php');
+    require base_path('routes/modulos/inventario/inventarios.php');
+    require base_path('routes/modulos/inventario/categorias.php');
+    require base_path('routes/modulos/inventario/traslados.php');
+    require base_path('routes/modulos/inventario/ajustes.php');
+    require base_path('routes/modulos/inventario/bodegas.php');
+    require base_path('routes/modulos/inventario/paquetes.php');
+    require base_path('routes/modulos/inventario/custom-fields.php');
+    require base_path('routes/modulos/inventario/entradas-salidas.php');
 
-	// Eventos
+
+    // Eventos
 	require base_path('routes/modulos/eventos/eventos.php');
 
 	// Empleados
@@ -86,8 +88,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// require base_path('routes/modulos/empleados/metas.php');
 
 	// Contabilidad
-	//require base_path('routes/modulos/contabilidad/activos.php');
-	//require base_path('routes/modulos/contabilidad/cajas-chicas.php');
+	require base_path('routes/modulos/contabilidad/activos.php');
+	require base_path('routes/modulos/contabilidad/cajas-chicas.php');
 	require base_path('routes/modulos/contabilidad/presupuestos.php');
 	require base_path('routes/modulos/contabilidad/proyectos.php');
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
@@ -118,7 +120,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/admin/accesos.php');
 	require base_path('routes/modulos/admin/licencias.php');
 	require base_path('routes/modulos/admin/suscripciones.php');
-	    require base_path('routes/modulos/admin/MH.php');
+	require base_path('routes/modulos/admin/MH.php');
     require base_path('routes/modulos/admin/reportes-automaticos.php');
     require base_path('routes/modulos/admin/roles-permissions.php');
 

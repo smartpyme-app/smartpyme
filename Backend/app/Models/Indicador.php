@@ -412,17 +412,25 @@ class Indicador extends Model
 
     public function getDocumentoEmitidos(){
 
-        return $this->ventas->groupBy('id_documento')->map(function ($group) {
-                    return [
-                        'id' => $group->first()['id'],
-                        'nombre' => $group->first()->documento()->pluck('nombre')->first(),
-                        'nombre_sucursal' => $group->first()->sucursal()->pluck('nombre')->first(),
-                        'inicio' => $group->first()->correlativo,
-                        'fin' => $group->last()->correlativo,
-                        'cantidad' => $group->count(),
-                        'total' => $group->sum('total'),
-                    ];
-                })->sortByDesc('id')->values()->all();
+        // Primero, ordenamos las ventas por correlativo antes de agruparlas
+        $ventasOrdenadas = $this->ventas->where('estado', '!=', 'Anulada')->sortBy('correlativo');
+
+        $documentos = $ventasOrdenadas->groupBy('id_documento')->map(function ($group) {
+            return [
+                'id' => $group->first()['id'],
+                'nombre' => $group->first()->documento()->pluck('nombre')->first(),
+                'nombre_sucursal' => $group->first()->sucursal()->pluck('nombre')->first(),
+                'inicio' => $group->first()->correlativo,
+                'fin' => $group->last()->correlativo,
+                'cantidad' => $group->count(),
+                'total' => $group->sum('total'),
+                'documentos' => $group,
+                'correlativo' => $group->first()->correlativo // Usamos el correlativo de inicio para ordenar después
+            ];
+        });
+
+        // Ahora sí, ordenamos los grupos por el correlativo de inicio (de mayor a menor)
+        return $documentos->sortByDesc('correlativo')->values()->all();
     }
 
     public function getDocumentoConDevolucion(){
