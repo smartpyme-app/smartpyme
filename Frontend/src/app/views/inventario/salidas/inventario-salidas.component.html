@@ -1,0 +1,212 @@
+<section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
+    <h2 class="page-heading">Salidas de Inventario</h2>
+    <button *ngIf="apiService.canCreate()" routerLink="/salida/crear" tooltip="Crear salida (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir salida</button>
+</section>
+
+<section class="bg-white p-2 p-md-4 rounded mb-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <span class="text-muted d-flex align-items-center gap-2" *ngIf="salidas?.total">
+                Mostrando 
+                <select name="per_page" class="form-select w-auto" (change)="filtrar()" [(ngModel)]="filtros.per_page">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                 de {{ salidas?.total + ' registros' }}
+            </span>
+        </div>
+
+        <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar">
+            <div class="d-flex gap-2">
+                <!-- <button [disabled]="loading" tooltip="Descargar salidas" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6">
+                    <img src="/assets/icons/download.png" class="icon">
+                </button> -->
+                <form class="d-flex input-group" name="form" (ngSubmit)="filtrar()" autocomplete="off">
+                    <div class="input-group">
+                        <div class="input-group-text bg-white border-end-0">
+                            <i class="fa fa-search text-muted"></i>
+                        </div>
+                        <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
+                    </div>
+                </form>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8 d-flex gap-2 mb-3">
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Productos</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
+            <button class="btn " routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
+            <button class="btn tcla-F3" tooltip="Actualizar (F5)" (click)="loadAll()"  routerLinkActive="btn-primary" routerLinkActive="btn-primary"  routerLink="/salidas">Otras Salidas</button>
+        </div>
+        <div class="col-md-4 d-md-none d-lg-flex gap-2 justify-content-end mb-3">
+            <ng-select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select p-0 border-0 bg-default">
+                <ng-option value="">Estado</ng-option>
+                <ng-option value="Pendiente">Pendiente</ng-option>
+                <ng-option value="Aprobada">Aprobada</ng-option>
+                <ng-option value="Anulada">Anulada</ng-option>
+            </ng-select>
+            <ng-select name="tipo" (change)="filtrar()" [(ngModel)]="filtros.tipo" class="form-select p-0 border-0 bg-default">
+                <ng-option value="">Tipo</ng-option>
+                <ng-option value="Venta">Venta</ng-option>
+                <ng-option value="Consumo">Consumo</ng-option>
+                <ng-option value="Ajuste">Ajuste</ng-option>
+                <ng-option value="Otro">Otro</ng-option>
+            </ng-select>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12 table-responsive">
+            <table class="table table-borderless table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th (click)="setOrden('usuario_nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'usuario_nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'usuario_nombre' && filtros.direccion == 'desc'}" class="click">Usuario</th>
+                        <th (click)="setOrden('bodega_nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'bodega_nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'bodega_nombre' && filtros.direccion == 'desc'}" class="click">Bodega</th>
+                        <th (click)="setOrden('concepto')" [ngClass]="{'sorted-asc': filtros.orden == 'concepto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'concepto' && filtros.direccion == 'desc'}" class="click">Concepto</th>
+                        <th (click)="setOrden('estado')" [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}" class="click">Estado</th>
+                        <th class="text-center">Más</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center" *ngIf="salidas?.total < 1 && !loading">
+                            <span class="badge bg-primary">No tiene salidas registradas</span>
+                        </td>
+                        <td colspan="6" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let salida of salidas?.data">
+                        <td>
+                            <span tooltip="{{ salida.created_at | date:'hh:mm:ss a' }}">{{salida.fecha | date:'dd/MM/yyyy'}}</span>
+                        </td>
+                        <td>{{ salida.usuario_nombre }}</td>
+                        <td>{{ salida.bodega_nombre }}</td>
+                        <td>{{ salida.concepto }}</td>
+                        <td>
+                            <span class="badge py-2" [ngClass]="{'bg-warning' : salida?.estado == 'Pendiente', 'bg-danger' : salida?.estado == 'Anulada', 'bg-success' : salida?.estado == 'Aprobada'}">
+                                {{ salida.estado || 'Pendiente' }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                            </span>
+                            <ng-template #accionesTemplate>
+                                <div class="d-flex flex-column">
+                                    <button *ngIf="apiService.auth_user().tipo == 'Administrador' && salida.estado == 'Pendiente'" type="button" [routerLink]="'/salida/' + salida.id" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-edit"></i>Editar
+                                    </button>
+                                    <button type="button" [routerLink]="'/salida/detalle/' + salida.id" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-file-alt"></i>Detalles
+                                    </button>
+                                    <button type="button" (click)="reemprimir(salida)" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-print"></i>Imprimir
+                                    </button>
+                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && salida.estado != 'Aprobada'" type="button" (click)="setEstado(salida, 'Aprobada')" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-check"></i>Aprobar
+                                    </button>
+                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && salida.estado == 'Aprobada'" type="button" (click)="setEstado(salida, 'Anulada')" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-times"></i>Anular
+                                    </button>
+                                    <button *ngIf="salida.estado == 'Pendiente'" type="button" (click)="delete(salida.id)" class="btn text-start text-danger">
+                                        <i class="fa fa-fw fa-trash"></i>Eliminar
+                                    </button>
+                                </div>
+                            </ng-template>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12" *ngIf="salidas?.last_page > 1">
+            <app-pagination [items]="salidas" (setPagination)="setPagination($event)"></app-pagination>
+        </div>
+    </div>
+</section>
+
+<ng-template #mfilter>
+  <div class="modal-header">
+    <div class="modal-title text-center">
+        <h2 class="text-center">Filtrar</h2>
+    </div>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+    <form autocomplete="off" (ngSubmit)="filtrar()">
+        <div class="row">
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Aprobada">Aprobada</option>
+                    <option value="Anulada">Anulada</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.tipo">Tipo:</label>
+                <select [(ngModel)]="filtros.tipo" class="form-control form-select" name="filtros.tipo">
+                    <option value="">Todos</option>
+                    <option value="Venta">Venta</option>
+                    <option value="Consumo">Consumo</option>
+                    <option value="Ajuste">Ajuste</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.usuario_id">Usuario:</label>
+                <select [(ngModel)]="filtros.usuario_id" class="form-control form-select" name="filtros.usuario_id">
+                    <option value="">Todos</option>
+                    <option *ngFor="let usuario of usuarios" [value]="usuario.id">
+                        {{ usuario.nombre }}
+                    </option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.inicio">Fecha inicio:</label>
+                <input type="date" [(ngModel)]="filtros.inicio" class="form-control" name="filtros.inicio">
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.fin">Fecha fin:</label>
+                <input type="date" [(ngModel)]="filtros.fin" class="form-control" name="filtros.fin">
+            </div>
+        </div>
+        
+        <div class="d-grid mt-3">
+            <button type="submit" [disabled]="loading" class="btn btn-primary">
+                <span *ngIf="!loading">Filtrar</span>
+                <span *ngIf="loading">Filtrando...</span>
+            </button>
+        </div>
+    </form>
+  </div>
+</ng-template>
+
+<ng-template #mdescargar>
+  <div class="modal-header">
+    <h4 class="modal-title text-center">Descargar registro de salidas</h4>
+    <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <app-notificaciones-container></app-notificaciones-container>
+        <p class="alert bg-info">Acá puedes descargar los registros de salidas en un archivo de Excel.</p>
+        <div class="row">
+            <div class="d-grid mt-4">
+                <label>Descargar detalle de salidas:</label>
+                <button [disabled]="loading" tooltip="Descargar salidas" (click)="descargar()" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar salidas</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+        </div>
+  </div>
+</ng-template>

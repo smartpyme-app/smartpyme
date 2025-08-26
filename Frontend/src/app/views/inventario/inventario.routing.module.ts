@@ -27,6 +27,14 @@ import { VerProductoComponent } from './productos/producto/ver-producto/ver-prod
 import { CustomFieldsComponent } from '@views/inventario/custom-fields/custom-fields.component';
 import { PermissionGuard } from '@guards/permission.guard';
 
+// Nuevos componentes de entradas y salidas
+import { InventarioEntradasComponent } from '@views/inventario/entradas/inventario-entradas.component';
+import { InventarioSalidasComponent } from '@views/inventario/salidas/inventario-salidas.component';
+import { InventarioEntradaComponent } from '@views/inventario/entradas/entrada/inventario-entrada.component';
+import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inventario-salida.component';
+import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
+import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
+
 const routes: Routes = [
   {
     path: '',
@@ -161,6 +169,13 @@ const routes: Routes = [
         data: { permission: 'productos.campos_personalizados.ver' },
         title: 'Campos personalizados',
       },
+       // Nuevas rutas para entradas y salidas
+       { path: 'entradas', component: InventarioEntradasComponent, title: 'Entradas de Inventario' },
+       { path: 'entrada/:id', component: InventarioEntradaComponent, title: 'Entrada de Inventario' },
+       { path: 'entrada/detalle/:id', component: EntradaDetalleComponent, title: 'Detalle de entrada' },
+       { path: 'salidas', component: InventarioSalidasComponent, title: 'Salidas de Inventario' },
+       { path: 'salida/:id', component: InventarioSalidaComponent, title: 'Salida de Inventario' },
+       { path: 'salida/detalle/:id', component: SalidaDetalleComponent, title: 'Detalle de salida' },
     ],
   },
 ];
