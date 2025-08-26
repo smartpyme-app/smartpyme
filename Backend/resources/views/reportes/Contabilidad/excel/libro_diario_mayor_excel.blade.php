@@ -150,17 +150,17 @@
 <table>
     <thead>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario Mayor</strong></th>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario Mayor</strong></th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
         </th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>Periodo: {{$month_name}} - {{$year}}</strong></th>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Periodo: {{$month_name}} - {{$year}}</strong></th>
     </tr>
     <tr>
-        <th colspan="6" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong></th>
+        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong></th>
     </tr>
     <tr></tr>
     </thead>
@@ -176,9 +176,11 @@
                 <th style="border: none; "></th>
                 <th style="border: none; "></th>
                 <th style="border: none; "></th>
+                <th style="border: none; "></th>
             </tr>
             <tr>
                 <th style="font-size: 14px;border: 1px solid #000;"><strong>Partida</strong></th>
+                <th style="font-size: 14px;border: 1px solid #000;"><strong>Correlativo</strong></th>
                 <th style="font-size: 14px;border: 1px solid #000;"><strong>Fecha</strong></th>
                 <th style="font-size: 14px;border: 1px solid #000;"><strong>Concepto</strong></th>
                 <th style="font-size: 14px;border: 1px solid #000;"><strong>Cargo</strong></th>
@@ -189,24 +191,21 @@
             <tr>
                 <td style="border: none;"></td>
                 <td style="border: none;"></td>
+                <td style="border: none;"></td>
                 <td style="border: none;">Saldo inicial:</td>
                 <td style="border: none; text-align: center;">0.00</td>
                 <td style="border: none; text-align: center;">0.00</td>
-                <td style="border: none; text-align: center;">{{$cuenta->saldo_anterior}}</td>
+                <td style="border: none; text-align: center;">{{ number_format($cuenta->saldo_anterior ?? 0, 2) }}</td>
             </tr>
             @foreach($cuenta->detalles as $detalle)
                 <tr>
                     <td class="id_partida"> PART - {{$detalle->id_partida}}    </td>
+                    <td class="correlativo">{{ $detalle->partida->correlativo ?? '' }}</td>
                     <td class="fecha_partida">  {{$detalle->created_at}}    </td>
                     <td class="concepto">       {{$detalle->concepto}}    </td>
-                    <td class="cargo">          {{$detalle->debe}}   </td>
-                    <td class="abono">          {{$detalle->haber}}    </td>
-                    {{--                        <td class="saldo">          {{$detalle->saldo}}   </td>--}}
-                    @if($cuenta->naturaleza=="Deudor")
-                        <td class="saldo">    {{$cuenta->saldo_actual = number_format((float)$cuenta->saldo_actual + (float)$detalle->debe - (float)$detalle->haber, 2) }}</td>
-                    @else
-                        <td class="saldo">     {{$cuenta->saldo_actual=number_format((float)$cuenta->saldo_actual-(float)$detalle->debe+(float)$detalle->haber, 2)}}</td>
-                    @endif
+                    <td class="cargo">          {{ number_format($detalle->debe ?? 0, 2) }}   </td>
+                    <td class="abono">          {{ number_format($detalle->haber ?? 0, 2) }}    </td>
+                    <td class="saldo">{{ number_format($detalle->saldo_calculado ?? 0, 2) }}</td>
                 </tr>
                 @if($loop->last == false)
 
@@ -217,9 +216,11 @@
             <tr>
                 <th></th>
                 <th></th>
+                <th></th>
                 <th><strong>Total por cuenta:</strong></th>
-                <th><strong>{{number_format($cuenta->cargo,2)}}</strong></th>
-                <th><strong>{{number_format($cuenta->saldo_actual,2)}}</strong></th>
+                <th><strong>{{ number_format($cuenta->cargo ?? 0, 2) }}</strong></th>
+                <th><strong>{{ number_format($cuenta->abono ?? 0, 2) }}</strong></th>
+                <th><strong>{{ number_format($cuenta->saldo_actual ?? 0, 2) }}</strong></th>
             </tr>
             <tr></tr>
         </table>

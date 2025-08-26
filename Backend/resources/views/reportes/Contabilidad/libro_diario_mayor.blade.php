@@ -166,9 +166,11 @@
                     <th style="border: none; "></th>
                     <th style="border: none; "></th>
                     <th style="border: none; "></th>
+                    <th style="border: none; "></th>
                 </tr>
                 <tr>
                     <th>Partida</th>
+                    <th>Correlativo</th>
                     <th>Fecha</th>
                     <th>Concepto</th>
                     <th>Cargo</th>
@@ -179,24 +181,21 @@
                 <tr>
                     <td style="border: none;"></td>
                     <td style="border: none;"></td>
+                    <td style="border: none;"></td>
                     <td style="border: none;">Saldo inicial:</td>
                     <td style="border: none; text-align: center;">0.00</td>
                     <td style="border: none; text-align: center;">0.00</td>
-                    <td style="border: none; text-align: center;">{{$cuenta->saldo_anterior}}</td>
+                    <td style="border: none; text-align: center;">{{ number_format($cuenta->saldo_anterior ?? 0, 2) }}</td>
                 </tr>
                 @foreach($cuenta->detalles as $detalle)
                     <tr>
                         <td class="id_partida"> PART - {{$detalle->id_partida}}    </td>
+                        <td class="correlativo">{{ $detalle->partida->correlativo ?? '' }}</td>
                         <td class="fecha_partida">  {{$detalle->created_at}}    </td>
                         <td class="concepto">       {{$detalle->concepto}}    </td>
-                        <td class="cargo">          {{$detalle->debe}}   </td>
-                        <td class="abono">          {{$detalle->haber}}    </td>
-                        {{--                        <td class="saldo">          {{$detalle->saldo}}   </td>--}}
-                        @if($cuenta->naturaleza=="Deudor")
-                            <td class="saldo">    {{$cuenta->saldo_actual = number_format((float)$cuenta->saldo_actual + (float)$detalle->debe - (float)$detalle->haber, 2) }}</td>
-                        @else
-                            <td class="saldo">     {{$cuenta->saldo_actual=number_format((float)$cuenta->saldo_actual-(float)$detalle->debe+(float)$detalle->haber, 2)}}</td>
-                        @endif
+                        <td class="cargo">          {{ number_format($detalle->debe ?? 0, 2) }}   </td>
+                        <td class="abono">          {{ number_format($detalle->haber ?? 0, 2) }}    </td>
+                        <td class="saldo">{{ number_format($detalle->saldo_calculado ?? 0, 2) }}</td>
                     </tr>
                     @if($loop->last == false)
 
@@ -207,10 +206,11 @@
                 <tr>
                     <th></th>
                     <th></th>
+                    <th></th>
                     <th>Total por cuenta:</th>
-                    <th>{{number_format($cuenta->cargo,2)}}</th>
-                    <th> {{number_format($cuenta->abono,2)}}</th>
-                    <th>{{number_format($cuenta->saldo_actual,2)}}</th>
+                    <th>{{ number_format($cuenta->cargo ?? 0, 2) }}</th>
+                    <th>{{ number_format($cuenta->abono ?? 0, 2) }}</th>
+                    <th>{{ number_format($cuenta->saldo_actual ?? 0, 2) }}</th>
                 </tr>
             </table>
         @endforeach

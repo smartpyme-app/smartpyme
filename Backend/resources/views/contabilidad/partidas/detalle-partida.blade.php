@@ -47,6 +47,9 @@
 
     <div class="info">
         <p><strong>Número de Partida:</strong> {{ $partida->id }}</p>
+        @if(!empty($partida->correlativo))
+            <p><strong>Número de Correlativo:</strong> {{ $partida->correlativo }}</p>
+        @endif
         <p><strong>Fecha:</strong> {{ $partida->fecha }}</p>
         <p><strong>Tipo:</strong> {{ $partida->tipo }}</p>
         <p><strong>Concepto:</strong> {{ $partida->concepto }}</p>

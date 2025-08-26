@@ -20,17 +20,17 @@
 <table class="table" width="100%">
     <thead>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario</strong></th>
+        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario</strong></th>
     </tr>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
+        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
         </th>
     </tr>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $month_name }} - {{ $year }}</strong></th>
+        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $month_name }} - {{ $year }}</strong></th>
     </tr>
     <tr>
-        <th colspan="7" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong>
+        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong>
         </th>
     </tr>
     <tr></tr>
@@ -40,6 +40,7 @@
         <thead>
         <tr>
             <th><strong>ID Partida</strong></th>
+            <th><strong>Correlativo</strong></th>
             <th><strong>Fecha</strong></th>
             <th><strong>Concepto</strong></th>
             <th><strong>Código Cuenta</strong></th>
@@ -53,6 +54,7 @@
             {{-- Fila de partida principal --}}
             <tr>
                 <td>PART-{{ $partida['partida_num'] }}</td>
+                <td>{{ $partida['correlativo'] }}</td>
                 <td>{{ $partida['fecha'] }}</td>
                 <td>{{ $partida['concepto'] }}</td>
                 <td></td>
@@ -64,6 +66,7 @@
             {{-- Detalles de cada partida --}}
             @foreach ($partida['detalles'] as $detalle)
                 <tr>
+                    <td></td>
                     <td></td>
                     <td></td>
                     <td></td>
