@@ -32,6 +32,18 @@
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cheques']">Cheques</button>
             <button class="tcla-F5 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" [routerLink]="['/bancos/cuentas']">Cuentas</button>
         </div>
+        <div class="col-md-6 d-flex gap-2 justify-content-end  mb-3">
+            <select name="tipo" (change)="filtrarCuentas()" [(ngModel)]="filtros.tipo" class="form-select bg-default w-auto">
+                <option value="">Tipo</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Banco">Banco</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Corriente">Corriente</option>
+                <option value="De ahorro">De ahorro</option>
+                <option value="Tarjeta de crédito">Tarjeta de crédito</option>
+                <option value="Tarjeta de débito">Tarjeta de débito</option>
+            </select>
+        </div>
     </div>
     <div class="row">
         <div class="table-responsive">
