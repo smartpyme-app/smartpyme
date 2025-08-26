@@ -39,7 +39,6 @@ export class CrearEventoComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    console.log(this.evento);
 
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
@@ -60,7 +59,6 @@ export class CrearEventoComponent implements OnInit {
     } else {
       this.evento.tipo = 'Confirmado';
     }
-    console.log(this.evento);
   }
 
   setTime() {
@@ -198,7 +196,7 @@ export class CrearEventoComponent implements OnInit {
       if (result.isConfirmed) {
         this.apiService.delete('evento/', evento.id).subscribe(data => {
           this.onSubmit();
-        }, error => { this.alertService.error(error); }); 4
+        }, error => { this.alertService.error(error); });
       } else if (result.dismiss === Swal.DismissReason.cancel) {
         // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
       }

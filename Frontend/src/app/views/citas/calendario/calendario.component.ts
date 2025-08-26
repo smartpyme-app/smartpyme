@@ -195,7 +195,6 @@ export class CalendarioComponent implements OnInit {
     let maxTime = moment().set('hour', 17).set('minute', 30).set('second', 0).format('HH:mm:ss');
     for (let index = 0; index < events.length; index++) {
       const event = events[index];
-      console.log(event);
 
       let start = moment(event.start).format('HH:mm:ss');
       let end = moment(event.end).format('HH:mm:ss');
@@ -209,7 +208,7 @@ export class CalendarioComponent implements OnInit {
     this.timeGridMinTime = minTime;
     this.timeGridMaxTime = maxTime;
 
-    console.log(this.timeGridMinTime, this.timeGridMaxTime);
+
 
     //set slotMinTime and slotMaxTime on HH:00:00 format of minTime and maxTime
     // this.calendar?.setOption('slotMinTime', moment(this.timeGridMinTime).format('HH:00:00'));
@@ -271,7 +270,6 @@ export class CalendarioComponent implements OnInit {
     this.evento = arg.event.extendedProps.data;
     this.evento.inicio = moment(arg.event.start).format('YYYY-MM-DD HH:mm');
     this.setTime();
-    console.log(this.evento);
     this.onSubmit();
   }
 
