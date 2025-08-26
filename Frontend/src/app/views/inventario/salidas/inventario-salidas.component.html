@@ -115,6 +115,9 @@
                                     <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && salida.estado == 'Aprobada'" type="button" (click)="setEstado(salida, 'Anulada')" class="btn text-start border-0">
                                         <i class="fa fa-fw fa-times"></i>Anular
                                     </button>
+                                    <button *ngIf="salida.estado == 'Aprobada'" type="button" (click)="generarPartidaContable(salida)" class="btn text-start border-0">
+                                        <i class="fa fa-fw fa-calculator"></i>Generar partida contable
+                                    </button>
                                     <button *ngIf="salida.estado == 'Pendiente'" type="button" (click)="delete(salida.id)" class="btn text-start text-danger">
                                         <i class="fa fa-fw fa-trash"></i>Eliminar
                                     </button>

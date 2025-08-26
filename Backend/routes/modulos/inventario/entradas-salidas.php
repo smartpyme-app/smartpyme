@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Inventario\Salidas\DetallesController as SDControll
     Route::post('/entrada/aprobar/{id}',   [EntradasController::class, 'aprobar']);
     Route::post('/entrada/anular/{id}',    [EntradasController::class, 'anular']);
     Route::get('/reporte/entrada/{id}',    [EntradasController::class, 'generarDoc']);
+    Route::post('/entrada/partida-contable/{id}', [EntradasController::class, 'generarPartidaContable']);
 
 // Detalles
     Route::get('/entrada/detalles',        [EDController::class, 'index']);
@@ -33,6 +34,7 @@ use App\Http\Controllers\Api\Inventario\Salidas\DetallesController as SDControll
     Route::post('/salida/aprobar/{id}',   [SalidasController::class, 'aprobar']);
     Route::post('/salida/anular/{id}',    [SalidasController::class, 'anular']);
     Route::get('/reporte/salida/{id}',    [SalidasController::class, 'generarDoc']);
+    Route::post('/salida/partida-contable/{id}', [SalidasController::class, 'generarPartidaContable']);
 
 // Detalles
     Route::get('/salida/detalles',        [SDController::class, 'index']);

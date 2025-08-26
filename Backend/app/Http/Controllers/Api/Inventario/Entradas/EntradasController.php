@@ -189,5 +189,27 @@ class EntradasController extends Controller
 
     }
 
+    public function generarPartidaContable($id)
+    {
+        try {
+            $entrada = Entrada::findOrFail($id);
+            
+            // Llamar al servicio de contabilidad para generar la partida
+            $response = app('App\Services\Contabilidad\OtrasEntradasService')->crearPartida($entrada);
+            
+            return Response()->json([
+                'success' => true,
+                'message' => 'Partida contable generada exitosamente',
+                'partida_id' => $response['partida_id']
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return Response()->json([
+                'success' => false,
+                'message' => 'Error al generar la partida contable: ' . $e->getMessage()
+            ], 400);
+        }
+    }
+
 
 }

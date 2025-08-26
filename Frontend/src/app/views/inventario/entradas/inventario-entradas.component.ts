@@ -174,4 +174,30 @@ export class InventarioEntradasComponent implements OnInit {
         });
     }
 
+    generarPartidaContable(entrada: any) {
+        Swal.fire({
+            title: '¿Generar partida contable?',
+            text: '¿Estás seguro de que deseas generar la partida contable para esta entrada?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, generar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.loading = true;
+                this.apiService.store('entrada/partida-contable/' + entrada.id, {}).subscribe(
+                    (response) => {
+                        this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+                        this.loading = false;
+                        this.filtrar();
+                    },
+                    (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                );
+            }
+        });
+    }
+
 }
