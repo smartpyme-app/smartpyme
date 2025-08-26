@@ -88,8 +88,8 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	// require base_path('routes/modulos/empleados/metas.php');
 
 	// Contabilidad
-	require base_path('routes/modulos/contabilidad/activos.php');
-	require base_path('routes/modulos/contabilidad/cajas-chicas.php');
+	//require base_path('routes/modulos/contabilidad/activos.php');
+	//require base_path('routes/modulos/contabilidad/cajas-chicas.php');
 	require base_path('routes/modulos/contabilidad/presupuestos.php');
 	require base_path('routes/modulos/contabilidad/proyectos.php');
 	require base_path('routes/modulos/contabilidad/libros-iva.php');
