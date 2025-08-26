@@ -48,7 +48,10 @@ export class ConciliacionesComponent implements OnInit {
     }
 
     public loadAll() {
+
         this.filtros.id_cuenta = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
         this.filtros.id_usuario = '';
