@@ -70,13 +70,13 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="text-center"><h4>{{ conciliacion.saldo_anterior | currency }}</h4></td>
+                    <td class="text-center"><h4>{{ getSaldoAnterior() | currency }}</h4></td>
                     <td class="text-center"><i class="fa fa-plus"></i></td>
-                    <td class="text-center text-success"><h4>{{ (conciliacion.entradas + (conciliacion.otras_entradas ? conciliacion.otras_entradas : 0)) | currency }}</h4></td>
+                    <td class="text-center text-success"><h4>{{ totalEntradas | currency }}</h4></td>
                     <td class="text-center"><i class="fa fa-minus"></i></td>
-                    <td class="text-center text-danger"><h4>{{ (conciliacion.salidas + (conciliacion.gastos ? conciliacion.gastos : 0) + (conciliacion.impuestos ? conciliacion.impuestos : 0)) | currency }}</h4></td>
+                    <td class="text-center text-danger"><h4>{{ totalSalidas | currency }}</h4></td>
                     <td class="text-center"><i class="fa fa-arrow-right"></i></td>
-                    <td class="text-center"><h4>{{ conciliacion.saldo_final | currency }}</h4></td>
+                    <td class="text-center"><h4>{{ totalSaldoFinal | currency }}</h4></td>
                     <td class="text-center border-end"></td>
                     <td class="text-center" [ngClass]="{ 'text-info' : conciliacion.diferencia == 0.00, 'text-danger' : conciliacion.diferencia != 0.00,  }"><h4>{{ conciliacion.diferencia | currency }}</h4></td>
                 </tr>

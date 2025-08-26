@@ -121,6 +121,7 @@ export class ConciliacionesComponent implements OnInit {
                         if (this.conciliaciones.data[i].id == data.id )
                             this.conciliaciones.data.splice(i, 1);
                     }
+                    this.alertService.success('Conciliación eliminada', 'La conciliación fue eliminada exitosamente.');
                 }, error => {this.alertService.error(error); });4
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
