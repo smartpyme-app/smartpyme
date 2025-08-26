@@ -16,8 +16,15 @@ class TransaccionesController extends Controller
 
     public function index(Request $request) {
 
-        $transacciones = Transaccion::with('cuenta')->when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre', 'like' ,'%' . $request->buscador . '%');
+        $transacciones = Transaccion::with('cuenta', 'usuario')->when($request->buscador, function($query) use ($request){
+                                    return $query->where('concepto', 'like' ,'%' . $request->buscador . '%')
+                                    ->orWhereHas('cuenta', function($query) use ($request){
+                                        return $query->where('numero', 'like' ,'%' . $request->buscador . '%')
+                                        ->orWhere('nombre_banco', 'like' ,'%' . $request->buscador . '%');
+                                    })
+                                    ->orWhereHas('usuario', function($query) use ($request){
+                                        return $query->where('name', 'like' ,'%' . $request->buscador . '%');
+                                    });
                                 })
                                 ->when($request->inicio, function($query) use ($request){
                                     return $query->where('fecha', '>=', $request->inicio);
