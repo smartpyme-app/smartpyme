@@ -2,321 +2,200 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>COTIZACIÓN #{{ $venta->correlativo }} - {{ $venta->nombre_cliente }}</title>
+    <title>Cotización Grupo Split #{{ $venta->correlativo }} - {{ $venta->nombre_cliente }}</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+
+        *{
+            margin: 0cm;
+            font-family: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"';
         }
-        
         body {
-            font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #000;
-            background: #fff;
+            font-family: serif;
+            margin: 50px;
         }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        h1,h2,h3,h4,h5,h6{
+            color: #000000 !important;
         }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 20px;
-        }
-        
-        .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-        
-        .company-info {
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        
-        .company-contact {
-            font-size: 12px;
-            color: #333;
-        }
-        
-        .document-title {
-            text-align: center;
-            font-size: 28px;
-            font-weight: bold;
-            margin: 30px 0;
-            text-transform: uppercase;
-            text-decoration: underline;
-        }
-        
-        .client-section {
-            margin-bottom: 30px;
-        }
-        
-        .client-header {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-        
-        .client-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .client-details {
-            flex: 1;
-        }
-        
-        .client-details p {
-            margin-bottom: 5px;
-        }
-        
-        .document-details {
-            flex: 1;
-            text-align: right;
-        }
-        
-        .document-details p {
-            margin-bottom: 5px;
-        }
-        
-        .products-table {
+
+        table{
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
         }
-        
-        .products-table th {
-            background-color: #f0f0f0;
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: center;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .products-table td {
-            border: 1px solid #000;
-            padding: 8px;
-            text-align: center;
-        }
-        
-        .products-table .description {
+        .table th, .table td{
+            border: 0px;
+            border-collapse: collapse;
+            padding: 5px 5px;
             text-align: left;
         }
-        
-        .products-table .quantity,
-        .products-table .price,
-        .products-table .total {
-            text-align: right;
+        .text-right{
+            text-align: right !important;
         }
-        
-        .totals-section {
-            margin-left: auto;
-            width: 300px;
+        .text-center{
+            text-align: center !important;
         }
-        
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            padding: 3px 0;
+        .border-bottom{
+            border-bottom: 1px solid #000000 !important;
         }
-        
-        .total-row.grand-total {
-            font-weight: bold;
-            font-size: 14px;
-            border-top: 2px solid #000;
-            padding-top: 10px;
-            margin-top: 10px;
-        }
-        
-        .terms-section {
-            margin-top: 40px;
-            border-top: 1px solid #000;
-            padding-top: 20px;
-        }
-        
-        .terms-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-        
-        .terms-content {
-            margin-bottom: 20px;
-        }
-        
-        .signature-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 40px;
-        }
-        
-        .signature-box {
-            text-align: center;
-            flex: 1;
-            margin: 0 20px;
-        }
-        
-        .signature-line {
-            border-bottom: 1px solid #000;
-            height: 40px;
-            margin-bottom: 10px;
-        }
-        
-        .signature-label {
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
-        .page-number {
-            text-align: center;
-            margin-top: 30px;
-            font-size: 10px;
-            color: #666;
-        }
+
+
     </style>
+
 </head>
 <body>
-    <div class="container">
-        <!-- Encabezado de la empresa -->
-        <div class="header">
-            <div class="company-name">{{ $venta->empresa()->pluck('nombre')->first() }}</div>
-            <div class="company-info">{{ $venta->empresa()->pluck('direccion')->first() }}</div>
-            <div class="company-info">{{ $venta->empresa()->pluck('municipio')->first() }}, {{ $venta->empresa()->pluck('departamento')->first() }}</div>
-            <div class="company-contact">
-                Tel: {{ $venta->empresa()->pluck('telefono')->first() }} | 
-                Email: {{ $venta->empresa()->pluck('email')->first() ?? 'info@empresa.com' }}
-            </div>
-        </div>
+{{-- <body onload="javascript:print();"> --}}
 
-        <!-- Título del documento -->
-        <div class="document-title">COTIZACIÓN</div>
+        <table>
+            <tbody>
+                <tr>
+                    <td class="text-left" style="vertical-align: top;">
+                        <img height="100" src="{{ asset('img/logo-grupo-split.jpg') }}" alt="Logo">
+                        <br>
+                        @php
+                            setlocale(LC_TIME, 'es_ES.UTF-8');
+                            $fecha = \Carbon\Carbon::parse($venta->fecha);
+                            $dia = $fecha->format('d');
+                            $mes = ucfirst(strftime('%B', $fecha->timestamp));
+                            $anio = $fecha->format('Y');
+                        @endphp
+                        San Salvador, {{ $dia }} de {{ $mes }} {{ $anio }}
+                        <br>
+                        Señores, <br> <br>
+                        {{ $venta->empresa()->pluck('nombre')->first() }} <br>
+                        Presente
+                        <br> <br>
+                    </td>
+                    <td class="text-right" style="vertical-align: top;">
+                        <h2>{{ $venta->empresa()->pluck('nombre')->first() }}</h2>
+                        Cotización N°: {{ $venta->correlativo }} <br> 
 
-        <!-- Información del cliente -->
-        <div class="client-section">
-            <div class="client-header">INFORMACIÓN DEL CLIENTE</div>
-            <div class="client-info">
-                <div class="client-details">
-                    <p><strong>Nombre:</strong> {{ $venta->nombre_cliente }}</p>
-                    <p><strong>Dirección:</strong> {{ $venta->cliente()->pluck('direccion')->first() }}</p>
-                    <p><strong>Ciudad:</strong> {{ $venta->cliente()->pluck('municipio')->first() }}, {{ $venta->cliente()->pluck('departamento')->first() }}</p>
-                    <p><strong>Teléfono:</strong> {{ $venta->cliente()->pluck('telefono')->first() }}</p>
-                    @if($venta->cliente()->pluck('ncr')->first())
-                        <p><strong>NCR/RTN:</strong> {{ $venta->cliente()->pluck('ncr')->first() }}</p>
-                    @endif
-                </div>
-                <div class="document-details">
-                    <p><strong>Cotización #:</strong> {{ $venta->correlativo }}</p>
-                    <p><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y') }}</p>
-                    <p><strong>Válido hasta:</strong> {{ \Carbon\Carbon::parse($venta->fecha_expiracion)->format('d/m/Y') }}</p>
-                    <p><strong>Vendedor:</strong> {{ $venta->nombre_usuario }}</p>
-                </div>
-            </div>
-        </div>
+                        <br>
+                        <br>
+                        <br>
+                        Atención a: <br>
+                        <p>{{ $venta->nombre_cliente }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <p>
+                        Por medio de la presente, nuestra empresa agradece su preferencia y pone a su disposición la siguiente propuesta de precios, esperando que pueda   
+                        adaptarse a su necesidad. De antemano, gracias por permitirnos ofrecerle nuestro servicio.  
+                        </p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <br>
 
-        <!-- Tabla de productos -->
-        <table class="products-table">
+        <table class="table">
             <thead>
                 <tr>
-                    <th style="width: 5%;">#</th>
-                    <th style="width: 50%;">DESCRIPCIÓN DEL PRODUCTO/SERVICIO</th>
-                    <th style="width: 10%;">CANTIDAD</th>
-                    <th style="width: 15%;">PRECIO UNITARIO</th>
-                    <th style="width: 20%;">TOTAL</th>
+                    <th style="width: 10%;" class="border-bottom">CÓDIGO</th>
+                    <th style="width: 40%;" class="border-bottom">NOMBRE DEL ARTÍCULO</th>
+                    <th style="width: 10%;" class="border-bottom text-right">CANTIDAD</th>
+                    <th style="width: 10%;" class="border-bottom text-right">UNITARIO</th>
+                    <th style="width: 10%;" class="border-bottom text-right">IMPORTE</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach($venta->detalles as $index => $detalle)
+                @foreach($venta->detalles as $detalle)
                 <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td class="description">{{ $detalle->nombre_producto }}</td>
-                    <td class="quantity">{{ number_format($detalle->cantidad, 0) }}</td>
-                    <td class="price">{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->precio, 2) }}</td>
-                    <td class="total">{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->total, 2) }}</td>
+                    <td class="border-bottom">   {{ $detalle->producto->codigo ?? $detalle->producto->barcode }}</td>
+                    <td class="border-bottom">   {{ $detalle->nombre_producto  }}</td>
+                    <td class="border-bottom text-right">   {{ number_format($detalle->cantidad, 0) }}</td>
+                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{number_format($detalle->precio , 2) }}</td>
+                    <td class="border-bottom text-right">   {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>
                 </tr>
                 @if ($detalle->descuento > 0)
-                <tr>
-                    <td></td>
-                    <td class="description"><em>Descuento aplicado</em></td>
-                    <td></td>
-                    <td></td>
-                    <td class="total">-{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->descuento, 2) }}</td>
-                </tr>
+                    <tr>
+                        <td></td>
+                        <td>DESCUENTOS</td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-right">- {{ $venta->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </th>
+                    </tr>
                 @endif
                 @endforeach
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" rowspan="5" style="vertical-align: top;">
+                        <h6>CONDICIONES GENERALES DE SUMINISTRO:</h6>
+                        <p>{!! nl2br(e($venta->observaciones))  !!} </p>
+
+                    </td>
+                    <td class="text-right">SUBTOTAL</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="text-right">
+                        @if ($venta->empresa->pais == 'Honduras')
+                            ISV
+                        @else
+                            IVA
+                        @endif
+                    </td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="text-right">RETENCIÓN</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva_retenido, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="text-right">PERCEPCIÓN</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva_percibido, 2) }}</td>
+                </tr>
+                <tr>
+                    <td class="text-right"><b>TOTAL</b></td>
+                    <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->total, 2) }}</b></td>
+                </tr>
+            </tfoot>
         </table>
 
-        <!-- Totales -->
-        <div class="totals-section">
-            <div class="total-row">
-                <span>Subtotal:</span>
-                <span>{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($venta->sub_total, 2) }}</span>
-            </div>
-            <div class="total-row">
-                <span>
-                    @if ($venta->empresa->pais == 'Honduras')
-                        ISV (15%):
-                    @else
-                        IVA (13%):
-                    @endif
-                </span>
-                <span>{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($venta->iva, 2) }}</span>
-            </div>
-            <div class="total-row grand-total">
-                <span>TOTAL:</span>
-                <span>{{ $venta->empresa->currency->currency_symbol ?? '$' }} {{ number_format($venta->total, 2) }}</span>
-            </div>
-        </div>
+        <br>
 
-        <!-- Términos y condiciones -->
-        <div class="terms-section">
-            <div class="terms-title">TÉRMINOS Y CONDICIONES</div>
-            <div class="terms-content">
-                @if($venta->observaciones)
-                    {!! nl2br(e($venta->observaciones)) !!}
-                @else
-                    <p>• Esta cotización es válida por 30 días a partir de la fecha de emisión.</p>
-                    <p>• Los precios están sujetos a cambios sin previo aviso.</p>
-                    <p>• El pago debe realizarse según las condiciones acordadas.</p>
-                    <p>• Los productos se entregarán en el plazo establecido.</p>
-                @endif
-            </div>
-        </div>
+        <br>
+        <p class="text-center">Agradeciendo su atención y esperando nuestra cotización sea conveniente a los intereses de su vivienda o empresa, aprovechamos la   
+        ocasión, para saludarles.  </p>
+        <br>
 
-        <!-- Firmas -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="signature-label">Cliente</div>
-            </div>
-            <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="signature-label">Vendedor</div>
-            </div>
-            <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="signature-label">Autorización</div>
-            </div>
-        </div>
 
-        <!-- Número de página -->
-        <div class="page-number">Página 1 de 1</div>
-    </div>
+        <table style="width: 100%; margin-top: 30px;">
+            <tr>
+                <td style="width: 20%; padding: 20px; text-align: center;">
+                    Atentamente,
+                </td>
+                <td style="width: 40%; padding: 20px; text-align: center;">
+                    ____________________________ <br>
+                    GRUPO SPLIT SA DE CV <br>
+                    Christian Escalante <br>
+                    Gerente Administrativo <br>
+                </td>
+                <td style="width: 40%; padding: 20px; text-align: center;">
+                    ____________________________ <br>
+                    Firma y sello de <br>
+                    aceptado <br>
+                    <br>
+                </td>
+            </tr>
+        </table>
+
+        <p class="text-center" style="font-size: 10px;">
+            GRUPOSPLIT SA DE CV  <br>
+            Ciudad Merliot, Pol J #25 Antiguo Cuscatlan, La Libertad  <br>
+            PBX: (503) 2524-4230 | CEL: (503) 7656 2576 | www.gruposplit.com.sv  <br>
+            <span style="color: darkblue;">GRUPO SPLIT | LIDER EN AIRES ACONDICIONADOS | EL SALVADOR</span>  <br>
+        </p>
+        <br>
+        <p style="margin-left: 300px;">
+            <span>Distribuidor Autorizado de:</span>
+            <img style=" height: 70px; margin-left: 50px; margin-top: 20px;" src="{{ asset('img/logo-grupo-split-2.jpg') }}" alt="Logo">
+        </p>
+
+
+    </section>
+
+
 </body>
 </html>
-
