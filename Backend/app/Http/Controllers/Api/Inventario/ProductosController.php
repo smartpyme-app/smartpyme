@@ -47,14 +47,6 @@ class ProductosController extends Controller
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
-//                return $query->where(function ($subQuery) use ($request) {
-//                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
-//                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
-//                });
                 return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
                     ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
@@ -62,9 +54,10 @@ class ProductosController extends Controller
                     ->orwhere('marca', 'like', "%" . $request->buscador . "%")
                     ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
             })
-            ->when($request->sin_stock, function ($query) use ($request) {
-                return $query->join('inventario', 'productos.id', '=', 'inventario.id_producto')
-                    ->whereRaw('COALESCE(inventario.stock, 0) < COALESCE(inventario.stock_minimo, 0)');
+            ->when($request->sin_stock, function($query) use ($request){
+                return $query->whereHas('inventarios', function($q) {
+                    $q->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
+                });
             })
             ->when($request->nombre, function ($q) use ($request) {
                 $q->where('nombre', $request->nombre);
