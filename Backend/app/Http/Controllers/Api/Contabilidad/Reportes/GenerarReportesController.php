@@ -759,7 +759,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -883,7 +883,7 @@ class GenerarReportesController extends Controller
 
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -1021,7 +1021,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -1115,7 +1115,7 @@ class GenerarReportesController extends Controller
         // Obtener los movimientos del mes filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
-            ->where('partidas.estado', 'Aplicada')
+            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
             ->whereYear('fecha', $year)
             ->whereMonth('fecha', $month)
             ->select(
@@ -1181,7 +1181,15 @@ class GenerarReportesController extends Controller
         $estado_resultados['totales']['utilidad_perdida'] =
             $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
 
-        return (new EstadoResultadosExport($estado_resultados, $empresa, $month_name, $month, $year))->download('estado_resultados_' . $month . '_' . $year . '.xlsx');
+        $data = [
+            'estado_resultados' => $estado_resultados,
+            'empresa' => $empresa,
+            'month_name' => $month_name,
+            'month' => $month,
+            'year' => $year
+        ];
+
+        return Excel::download(new EstadoResultadosExport($data), 'estado_resultados_' . $month . '_' . $year . '.xlsx');
     }
 
     /**
