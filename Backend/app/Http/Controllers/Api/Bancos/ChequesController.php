@@ -20,23 +20,31 @@ class ChequesController extends Controller
     public function index(Request $request) {
 
         $cheques = Cheque::when($request->buscador, function($query) use ($request){
-                                    return $query->where('anombrede', 'like' ,'%' . $request->buscador . '%');
-                                })
-                                ->when($request->inicio, function($query) use ($request){
-                                    return $query->where('fecha', '>=', $request->inicio);
-                                })
-                                ->when($request->fin, function($query) use ($request){
-                                    return $query->where('fecha', '<=', $request->fin);
-                                })
-                                ->when($request->estado, function($query) use ($request){
-                                    return $query->where('estado', $request->estado);
-                                })
-                                ->when($request->id_cuenta, function($query) use ($request){
-                                    return $query->where('id_cuenta', $request->id_cuenta);
-                                })
-                                ->orderBy($request->orden, $request->direccion)
-                                ->orderBy('id', 'desc')
-                                ->paginate($request->paginate);
+            return $query->where('anombrede', 'like' ,'%' . $request->buscador . '%')
+            ->orWhereHas('cuenta', function($query) use ($request){
+                return $query->where('nombre_banco', 'like' ,'%' . $request->buscador . '%');
+            })
+            ->orWhereHas('usuario', function($query) use ($request){
+                return $query->where('name', 'like' ,'%' . $request->buscador . '%');
+            })
+            ->orWhere('concepto', 'like' ,'%' . $request->buscador . '%')
+            ->orWhere('correlativo', 'like' ,'%' . $request->buscador . '%');
+        })
+        ->when($request->inicio, function($query) use ($request){
+            return $query->where('fecha', '>=', $request->inicio);
+        })
+        ->when($request->fin, function($query) use ($request){
+            return $query->where('fecha', '<=', $request->fin);
+        })
+        ->when($request->estado, function($query) use ($request){
+            return $query->where('estado', $request->estado);
+        })
+        ->when($request->id_cuenta, function($query) use ($request){
+            return $query->where('id_cuenta', $request->id_cuenta);
+        })
+        ->orderBy($request->orden, $request->direccion)
+        ->orderBy('id', 'desc')
+        ->paginate($request->paginate);
 
         return Response()->json($cheques, 200);
 

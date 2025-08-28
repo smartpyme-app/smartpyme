@@ -14,11 +14,15 @@ class CuentasController extends Controller
     public function index(Request $request) {
        
         $cuentas = Cuenta::when($request->buscador, function($query) use ($request){
-                                    return $query->where('nombre_banco', 'like' ,'%' . $request->buscador . '%')
-                                                ->orwhere('numero', 'like' ,'%' . $request->buscador . '%');
-                                })
-                                ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
-                                ->paginate($request->paginate);
+            return $query->where('nombre_banco', 'like' ,'%' . $request->buscador . '%')
+            ->orWhere('tipo', 'like' ,'%' . $request->buscador . '%')
+            ->orwhere('numero', 'like' ,'%' . $request->buscador . '%');
+        })
+        ->when($request->tipo, function($query) use ($request){
+            return $query->where('tipo', $request->tipo);
+        })
+        ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
+        ->paginate($request->paginate);
 
         return Response()->json($cuentas, 200);
 
