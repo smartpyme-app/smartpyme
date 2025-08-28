@@ -118,7 +118,18 @@ class Empresa extends Model
         'sello',
         'firma',
         'mostrar_sello_firma',
-        'mostrar_sello_firma_cotizacion'
+        'mostrar_sello_firma_cotizacion',
+        'shopify_store_url',
+        'shopify_consumer_secret',
+        'shopify_webhook_secret',
+        'shopify_status',
+        'shopify_canal_id',
+        'shopify_sync_progress',
+        'shopify_sync_total_batches',
+        'shopify_sync_processed_batches',
+        'shopify_sync_status',
+        'shopify_last_sync',
+        'shopify_error',
 
     ];
 
@@ -128,7 +139,18 @@ class Empresa extends Model
         'custom_empresa' => 'json',
     ];
 
-    protected $appends = ['estado_plan', 'woocommerce_api_url', 'status_conexion_woocommerce', 'is_current_user_connected_to_woocommerce', 'currency_symbol', 'acces_chatbot_whatsapp', 'generar_partidas'];
+    protected $appends = [
+        'estado_plan',
+        'woocommerce_api_url',
+        'status_conexion_woocommerce',
+        'is_current_user_connected_to_woocommerce',
+        'currency_symbol',
+        'acces_chatbot_whatsapp',
+        'generar_partidas',
+        'shopify_webhook_url',
+        'status_conexion_shopify',
+        'is_current_user_connected_to_shopify'
+    ];
 
     public function limiteUsuarios()
     {
@@ -317,11 +339,11 @@ class Empresa extends Model
     public function diasFaltantesSuscripcion(): ?int
     {
         $suscripcionActiva = $this->suscripcionActiva;
-        
+
         if (!$suscripcionActiva) {
             return null;
         }
-        
+
         return $suscripcionActiva->diasFaltantes();
     }
 
@@ -670,5 +692,31 @@ class Empresa extends Model
     {
         $funcionalidad = $this->empresaFuncionalidad()->where('id_funcionalidad', 2)->first();
         return $funcionalidad ? $funcionalidad->activo : false;
+    }
+
+
+    public function getShopifyWebhookUrlAttribute()
+    {
+        if (empty($this->woocommerce_api_key)) {
+            return null;
+        }
+        return url('/api/webhook/shopify/' . $this->woocommerce_api_key);
+    }
+
+    public function getStatusConexionShopifyAttribute()
+    {
+        $connected_users = $this->usuarios->where('shopify_status', 'connected');
+
+        if ($connected_users->count() > 0) {
+            return 'connected';
+        }
+
+        return 'disconnected';
+    }
+
+    public function getIsCurrentUserConnectedToShopifyAttribute()
+    {
+        $current_user = Auth::user();
+        return $current_user && $current_user->shopify_status === 'connected';
     }
 }

@@ -77,5 +77,9 @@ return [
         'use_ai' => env('WHATSAPP_USE_AI', false), // 
         'use_whatsapp_business' => env('WHATSAPP_USE_BUSINESS', true), //
     ],
+    'shopify' => [
+        'enabled' => env('SHOPIFY_ENABLED', false),
+        'webhook_secret' => env('SHOPIFY_WEBHOOK_SECRET'),
+    ],
 
 ];

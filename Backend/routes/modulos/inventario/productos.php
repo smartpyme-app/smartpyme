@@ -96,6 +96,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/producto/exportar-woocommerce',          [WooCommerceController::class, 'exportarWooCommerce']);
     //productos/exportar/woocommerce
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
+    //productos/exportar-shopify
+    Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     //productos/traslado-masivo/importar

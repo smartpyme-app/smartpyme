@@ -159,7 +159,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEAnuladoSujetoExcluido(Request $request){
+    public function generarDTEAnuladoSujetoExcluidoGasto(Request $request){
         $gasto = Gasto::where('id', $request->id)->firstOrFail();
         
         $mh = new MHAnulacion;
@@ -402,11 +402,13 @@ class MHDTEController extends Controller
         if ($request->tipo_dte == '14') {
             if ($request->tipo == 'compra') {
                 $registro = Compra::with('proveedor')->where('id', $request->id)->firstOrFail();
-                $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+                $proveedor = $registro->proveedor()->first();
+                $correo = $proveedor ? $proveedor->correo : null;
             }
             if ($request->tipo == 'gasto') {
                 $registro = Gasto::with('proveedor')->where('id', $request->id)->firstOrFail();
-                $correo = $registro->proveedor ? $registro->proveedor->correo : null;
+                $proveedor = $registro->proveedor()->first();
+                $correo = $proveedor ? $proveedor->correo : null;
             }
         }
 
@@ -492,8 +494,8 @@ class MHDTEController extends Controller
 
             return Response()->json($DTE, 200);
         }else{
-            return Response()->json($DTE, 200);
-            // return Response()->json(['error' => 'El cliente no tiene correo electrónico'], 400);
+            // return Response()->json($DTE, 200);
+            return Response()->json(['error' => 'Registro sin correo electrónico'], 400);
         }
 
     }

@@ -41,6 +41,8 @@ class User extends Authenticatable implements JWTSubject
         'whatsapp_code_expires_at',
         'whatsapp_verified',
         'pending_changes',
+        'shopify_status',
+
     ];
 
     protected $hidden = ['password', 'remember_token', 'whatsapp_verification_code','rol_id'];

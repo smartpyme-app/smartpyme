@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Models\Inventario\Composiciones\Composicion;
+use App\Exports\ShopifyExport;
 
 class ProductosController extends Controller
 {
@@ -39,7 +40,7 @@ class ProductosController extends Controller
     {
         $orden = $request->orden ?: 'nombre';
         $direccion = $request->direccion ?: 'desc';
-    
+
         if ($orden === 'categoria') {
             // Para ordenar por categoría, construimos la query de manera diferente
             $productos = Producto::withoutGlobalScope('empresa') // Removemos el scope temporalmente
@@ -131,7 +132,7 @@ class ProductosController extends Controller
                 ->orderBy($orden, $direccion)
                 ->paginate($request->paginate);
         }
-    
+
         return Response()->json($productos, 200);
     }
 
@@ -143,11 +144,8 @@ class ProductosController extends Controller
             ->where('enable', true)
             ->get();
 
-        // Log::info('Productos: ' . $productos->count());    
-
         return Response()->json($productos, 200);
     }
-    
 
     public function search($txt)
     {
@@ -191,7 +189,7 @@ class ProductosController extends Controller
     public function inventarios($id)
     {
         $producto = Producto::with('inventarios')->find($id);
-        
+
         if (!$producto) {
             return response()->json(['error' => 'Producto no encontrado'], 404);
         }
@@ -429,9 +427,9 @@ class ProductosController extends Controller
         $inventarioInicial = Inventario::where('id_bodega', $request->id_bodega)->where('id_producto', $producto->id)->first();
         $inventarioInicial->stock = $request->stock;
         $inventarioInicial->save();
-        
+
         DB::commit();
-        
+
         return Response()->json($producto, 200);
     }
 
@@ -702,6 +700,28 @@ class ProductosController extends Controller
         );
     }
 
+    // Agregar este método a tu ProductoController o el controller que manejes
+
+    public function exportarShopifyTemplate(Request $request)
+    {
+        $user = Auth::user();
+        $id_empresa = $user->id_empresa;
+
+        $request->request->add(['id_empresa' => $id_empresa, 'user_id' => $user->id]);
+
+        $productos = new ShopifyExport();
+        $productos->filter($request);
+
+        return Excel::download(
+            $productos,
+            'productos_shopify_' . date('Y-m-d') . '.csv',
+            \Maatwebsite\Excel\Excel::CSV,
+            [
+                'Content-Type' => 'text/csv',
+            ]
+        );
+    }
+
     public function exportarPlantillaTraslado(Request $request)
     {
         $request->request->add(['productos_ids' => explode(',', $request->productos_ids)]);
@@ -840,8 +860,6 @@ class ProductosController extends Controller
                         $composicionesValidas = false;
                         break;
                     }
-
-
                 }
 
 
@@ -941,7 +959,7 @@ class ProductosController extends Controller
                 ->orderBy('marca', 'asc')
                 ->pluck('marca');
 
-            $marcas = $marcasRaw->map(function($marca) {
+            $marcas = $marcasRaw->map(function ($marca) {
                 return [
                     'id' => $marca,
                     'nombre' => $marca
@@ -951,7 +969,6 @@ class ProductosController extends Controller
             Log::info('Marcas obtenidas:', $marcas->toArray());
 
             return response()->json($marcas);
-            
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al obtener las marcas',
@@ -959,5 +976,4 @@ class ProductosController extends Controller
             ], 500);
         }
     }
-
 }

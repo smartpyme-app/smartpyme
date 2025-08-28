@@ -233,7 +233,10 @@ class CotizacionesController extends Controller
             if(Auth::user()->id_empresa == 420){ //420
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-inversiones-andre', compact('venta'));
                 $pdf->setPaper('US Letter', 'portrait');
-            }else{
+            }elseif(Auth::user()->id_empresa == 498){ //13
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
+                $pdf->setPaper('US Letter', 'portrait');
+            } else{
                 $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
                 $pdf->setPaper('US Letter', 'portrait');
             }
