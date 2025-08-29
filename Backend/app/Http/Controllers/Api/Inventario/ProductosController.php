@@ -106,6 +106,42 @@ class ProductosController extends Controller
         return Response()->json($productos, 200);
     }
 
+    public function searchProductos(Request $request)
+    {
+        $term = $request->get('q', '');
+        $limit = $request->get('limit', 15);
+        $tipos = $request->get('tipos', ['Producto']);
+        $extraFields = $request->get('fields', []);
+
+        if (strlen($term) < 2) {
+            return response()->json([], 200);
+        }
+
+        $query = Producto::query()
+            ->where('enable', true)
+            ->whereIn('tipo', $tipos)
+            ->where(function ($q) use ($term) {
+                $q->where('nombre', 'LIKE', "%{$term}%");
+            })
+            ->orderByRaw("
+                CASE 
+                    WHEN nombre LIKE ? THEN 1
+                    ELSE 2
+                END
+            ", [$term . '%'])
+            ->orderBy('nombre', 'asc')
+            ->limit($limit);
+
+        if (!empty($extraFields) && is_array($extraFields)) {
+            $fields = array_merge(['id', 'nombre', 'codigo', 'precio', 'tipo'], $extraFields);
+            $productos = $query->get($fields);
+        } else {
+            $productos = $query->get();
+        }
+
+        return response()->json($productos, 200);
+    }
+
     public function search($txt)
     {
 

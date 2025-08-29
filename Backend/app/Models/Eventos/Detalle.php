@@ -13,10 +13,14 @@ class Detalle extends Model {
         'id_evento'
     );
 
-    protected $appends = ['nombre_producto'];
+    protected $appends = ['nombre_producto', 'precio_producto'];
 
     public function getNombreProductoAttribute(){
         return $this->producto()->pluck('nombre')->first();
+    }
+
+    public function getPrecioProductoAttribute(){
+        return $this->producto()->pluck('precio')->first() ?? 0;
     }
 
     public function producto(){
