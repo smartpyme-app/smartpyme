@@ -29,6 +29,41 @@ class InventarioObserver
             ]);
 
             $bodega = Bodega::where('id', $inventario->id_bodega)->first();
+            
+            if (!$bodega) {
+                Log::warning("Bodega no encontrada", [
+                    'bodega_id' => $inventario->id_bodega
+                ]);
+                return;
+            }
+
+            // Primero obtenemos la empresa base para verificar si tiene WooCommerce habilitado
+            $empresaBase = Empresa::where('id', $bodega->id_empresa)->first();
+            
+            if (!$empresaBase) {
+                Log::warning("Empresa no encontrada para la bodega", [
+                    'bodega_id' => $inventario->id_bodega,
+                    'empresa_id' => $bodega->id_empresa
+                ]);
+                return;
+            }
+
+            // VALIDACIÓN PREVIA: Solo continuar si la empresa tiene intención de usar WooCommerce
+            // Si no tiene ni siquiera woocommerce_status configurado o es null, no intentar sincronizar
+            if (empty($empresaBase->woocommerce_status) || 
+                $empresaBase->woocommerce_status === 'disconnected' || 
+                $empresaBase->woocommerce_status === 'disabled') {
+                
+                Log::debug("Empresa sin integración WooCommerce habilitada - omitiendo sincronización", [
+                    'bodega_id' => $inventario->id_bodega,
+                    'empresa_id' => $empresaBase->id,
+                    'empresa_nombre' => $empresaBase->nombre,
+                    'woocommerce_status' => $empresaBase->woocommerce_status ?? 'null'
+                ]);
+                return;
+            }
+
+            // Solo si la empresa tiene status 'connecting' o 'connected', intentar la sincronización
             $empresa = Empresa::where('id', $bodega->id_empresa)
                 ->whereNotNull('woocommerce_api_key')
                 ->whereNotNull('woocommerce_store_url')
@@ -38,9 +73,23 @@ class InventarioObserver
                 ->first();
 
             if (!$empresa) {
-                Log::info("No se encontró empresa con integración WooCommerce para esta bodega", [
-                    'bodega_id' => $inventario->id_bodega
-                ]);
+                // Solo logear como INFO si la empresa está intentando conectarse
+                if ($empresaBase->woocommerce_status === 'connecting') {
+                    Log::info("Empresa en proceso de configuración WooCommerce - sincronización pendiente", [
+                        'bodega_id' => $inventario->id_bodega,
+                        'empresa_id' => $empresaBase->id,
+                        'empresa_nombre' => $empresaBase->nombre,
+                        'current_status' => $empresaBase->woocommerce_status,
+                        'diagnostico' => 'Ejecuta: php artisan woocommerce:diagnosticar ' . $inventario->id_bodega
+                    ]);
+                } else {
+                    // Solo logear como DEBUG para empresas con configuración incompleta
+                    Log::debug("Configuración WooCommerce incompleta - omitiendo sincronización", [
+                        'bodega_id' => $inventario->id_bodega,
+                        'empresa_id' => $empresaBase->id,
+                        'current_status' => $empresaBase->woocommerce_status
+                    ]);
+                }
                 return;
             }
 

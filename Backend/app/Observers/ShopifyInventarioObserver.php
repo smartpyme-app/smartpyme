@@ -26,8 +26,13 @@ class ShopifyInventarioObserver
         if (!$inventario->isDirty('stock')) {
             return;
         }
-        Log::info("Inventario actualizado", [
+
+        Log::info("Cambio de stock detectado para Shopify", [
             'inventario_id' => $inventario->id,
+            'producto_id' => $inventario->id_producto,
+            'bodega_id' => $inventario->id_bodega,
+            'stock_anterior' => $inventario->getOriginal('stock'),
+            'stock_nuevo' => $inventario->stock
         ]);
 
         if ($this->cache->isLocked($inventario->id_producto)) {
@@ -37,31 +42,50 @@ class ShopifyInventarioObserver
         $bodega = Bodega::find($inventario->id_bodega);
         if (!$bodega) return;
 
+        // Verificar si la empresa tiene Shopify habilitado antes de intentar sincronizar
+        $empresaBase = Empresa::find($bodega->id_empresa);
+        if (!$empresaBase) return;
+
+        // VALIDACIÓN PREVIA: Solo continuar si la empresa tiene intención de usar Shopify
+        if (empty($empresaBase->shopify_status) || 
+            $empresaBase->shopify_status === 'disconnected' || 
+            $empresaBase->shopify_status === 'disabled') {
+            
+            Log::debug("Empresa sin integración Shopify habilitada - omitiendo sincronización", [
+                'bodega_id' => $inventario->id_bodega,
+                'empresa_id' => $empresaBase->id,
+                'empresa_nombre' => $empresaBase->nombre,
+                'shopify_status' => $empresaBase->shopify_status ?? 'null'
+            ]);
+            return;
+        }
+
         $empresa = Empresa::where('id', $bodega->id_empresa)
             ->whereNotNull('shopify_store_url')
             ->whereNotNull('shopify_consumer_secret')
             ->where('shopify_status', 'connected')
             ->first();
-            Log::info("Empresa encontrada", [
-                'empresa_id' => $empresa->id,
-                'bodega_id' => $bodega->id
-            ]);
 
-        if (!$empresa) return;
+        if (!$empresa) {
+            if ($empresaBase->shopify_status === 'connecting') {
+                Log::info("Empresa en proceso de configuración Shopify - sincronización pendiente", [
+                    'bodega_id' => $inventario->id_bodega,
+                    'empresa_id' => $empresaBase->id,
+                    'current_status' => $empresaBase->shopify_status
+                ]);
+            }
+            return;
+        }
 
         $usuario = User::where('id_empresa', $empresa->id)
             ->where('shopify_status', 'connected')
             ->first();
-            Log::info("Usuario encontrado", [
-                'usuario_id' => $usuario->id,
-                'bodega_id' => $bodega->id,
-                'bodega_id_usuario' => $usuario->id_bodega
-            ]);
 
         if (!$usuario || $inventario->id_bodega != $usuario->id_bodega) {
             return;
         }
-        Log::info("Inventario actualizado", [
+
+        Log::info("Iniciando sincronización con Shopify", [
             'inventario_id' => $inventario->id,
             'stock' => $inventario->stock,
             'producto_id' => $inventario->id_producto,
