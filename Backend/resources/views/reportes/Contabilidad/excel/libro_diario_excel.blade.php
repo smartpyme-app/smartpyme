@@ -20,17 +20,17 @@
 <table class="table" width="100%">
     <thead>
     <tr>
-        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario</strong></th>
+        <th colspan="9" style="text-align: center; font-size: 16px;"><strong>Reporte Libro Diario</strong></th>
     </tr>
     <tr>
-        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
+        <th colspan="9" style="text-align: center; font-size: 16px;"><strong>Empresa: {{ $empresa->nombre }}</strong>
         </th>
     </tr>
     <tr>
-        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $month_name }} - {{ $year }}</strong></th>
+        <th colspan="9" style="text-align: center; font-size: 16px;"><strong>Periodo: {{ $month_name }} - {{ $year }}</strong></th>
     </tr>
     <tr>
-        <th colspan="8" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong>
+        <th colspan="9" style="text-align: center; font-size: 16px;"><strong>VALORES ESPRESADOS EN US DOLARES</strong>
         </th>
     </tr>
     <tr></tr>
@@ -45,6 +45,7 @@
             <th><strong>Concepto</strong></th>
             <th><strong>Código Cuenta</strong></th>
             <th><strong>Nombre Cuenta</strong></th>
+            <th><strong>Concepto/Detalle</strong></th>
             <th><strong>Debe</strong></th>
             <th><strong>Haber</strong></th>
         </tr>
@@ -61,6 +62,7 @@
                 <td></td>
                 <td></td>
                 <td></td>
+                <td></td>
             </tr>
 
             {{-- Detalles de cada partida --}}
@@ -72,6 +74,7 @@
                     <td></td>
                     <td>{{ $detalle['codigo'] }}</td>
                     <td>{{ $detalle['nombre_cuenta'] }}</td>
+                    <td>{{ $detalle['concepto'] }}</td>
                     <td>{{ number_format($detalle['debe'], 2) }}</td>
                     <td>{{ number_format($detalle['haber'], 2) }}</td>
                 </tr>
