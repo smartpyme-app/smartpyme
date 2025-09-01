@@ -54,15 +54,33 @@ return [
     'MAIL_CC_ADDRESS_2' => 'contact@smartpyme.sv',
 
     // Roles principales del JIRA
-    'ROL_SUPER_ADMIN'          => 'super_admin',          // Del SP-117
-    'ROL_ADMIN'                => 'admin',                // Del SP-117
-    'ROL_CONTADOR_SUPERIOR'    => 'usuario_contador',       // Del SP-118
-    'ROL_CONTADOR_AUXILIAR'    => 'auxiliar_contable',    // Del SP-118
-    'ROL_USUARIO_SUPERVISOR'   => 'usuario_supervisor',       // Del SP-119
-    'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',   // Del SP-119
-    'ROL_GERENTE_COMPRAS'     => 'gerente_compras',      // Del SP-119
-    'ROL_USUARIO'             => 'usuario',               // Del SP-120
-    'ROL_SUPERVISOR_LIMITADO' => 'supervisor_limitado',
+    // 'ROL_SUPER_ADMIN'          => 'super_admin',          // Del SP-117
+    // 'ROL_ADMIN'                => 'admin',                // Del SP-117
+    // 'ROL_CONTADOR_SUPERIOR'    => 'usuario_contador',       // Del SP-118
+    // 'ROL_CONTADOR_AUXILIAR'    => 'auxiliar_contable',    // Del SP-118
+    // 'ROL_USUARIO_SUPERVISOR'   => 'usuario_supervisor',       // Del SP-119
+    // 'ROL_GERENTE_OPERACIONES' => 'gerente_operaciones',   // Del SP-119
+    // 'ROL_GERENTE_COMPRAS'     => 'gerente_compras',      // Del SP-119
+    // 'ROL_USUARIO'             => 'usuario',               // Del SP-120
+    // 'ROL_SUPERVISOR_LIMITADO' => 'supervisor_limitado',
+
+    'ROL_SUPER_ADMIN'          => 'super_admin',
+    'ROL_ADMIN'                => 'admin',
+    'ROL_USUARIO'              => 'usuario',
+    'ROL_CONTADOR_SUPERIOR'    => 'contador_superior',
+    'ROL_CONTADOR_AUXILIAR'    => 'contador_auxiliar',
+    'ROL_GERENTE_COMPRAS'      => 'gerente_compras',
+    'ROL_GERENTE_VENTAS'       => 'gerente_ventas',
+    'ROL_GERENTE_OPERACIONES'  => 'gerente_operaciones',
+    'ROL_USUARIO_VENTAS'       => 'usuario_ventas',
+    'ROL_USUARIO_CITAS'        => 'usuario_citas',
+    'ROL_USUARIO_CONSULTAS'    => 'usuario_consultas',
+    'ROL_SUPERVISOR_LIMITADO'  => 'supervisor_limitado',
+    // Los siguientes roles están comentados en el seeder y no se usan actualmente:
+    // 'ROL_USUARIO_CAJERO'      => 'usuario_cajero',
+    // 'ROL_USUARIO_VENDEDOR'    => 'usuario_vendedor',
+    // 'ROL_USUARIO_SUPERVISOR'  => 'usuario_supervisor',
+    // 'ROL_USUARIO_COCINERO'    => 'usuario_cocinero',
 
     // Roles adicionales según los nuevos requerimientos
     'ROL_USUARIO_VENTAS'      => 'usuario_ventas',

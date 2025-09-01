@@ -31,7 +31,7 @@ class UsuariosController extends Controller
     {
 
         $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
-            ->with('sucursal')
+            ->with('sucursal', 'roles', 'roles.permissions')
             ->when($request->estado !== null, function ($q) use ($request) {
                 $q->where('enable', !!$request->estado);
             })
@@ -39,8 +39,13 @@ class UsuariosController extends Controller
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('name', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('email', 'like', "%" . $request->buscador . "%");
+                return $query->where(function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->buscador . '%')
+                        ->orWhere('email', 'like', '%' . $request->buscador . '%')
+                        ->orWhereHas('sucursal', function ($sq) use ($request) {
+                            $sq->where('nombre', 'like', '%' . $request->buscador . '%');
+                        });
+                });
             })
             // ->orderBy('enable', 'desc')
             ->orderBy($request->orden, $request->direccion)
@@ -105,8 +110,6 @@ class UsuariosController extends Controller
 
     public function search($txt)
     {
-
-        Log::info("loggg");
         $usuarios = Usuario::where('id_empresa', JWTAuth::parseToken()->authenticate()->id_empresa)
                             ->where('id_sucursal', JWTAuth::parseToken()->authenticate()->id_sucursal)
                             ->where('name', 'like' ,'%' . $txt . '%')->paginate(15);
@@ -136,16 +139,17 @@ class UsuariosController extends Controller
 
         ]);
 
-        // Verificar si se está cambiando el rol
         if ($request->id && $request->rol_id) {
             $usuario = Usuario::findOrFail($request->id);
-            if ($usuario->roles->first()->id != $request->rol_id) {
+            $rolActual = optional($usuario->roles->first())->id;
+            
+            // Si el rol actual es diferente al nuevo rol (incluyendo cuando no hay rol actual)
+            if ($rolActual != $request->rol_id) {
                 if ($response = $this->checkAuth('change_role', ['id_usuario' => $request->id])) {
                     return $response;
                 }
             }
         }
-
 
         if($request->id)
             $usuario = Usuario::findOrFail($request->id);
@@ -157,9 +161,11 @@ class UsuariosController extends Controller
             $request['password'] = Hash::make($request->password);
         }
 
-        // if (!$request->id) {
-        //     $request['password'] = \Hash::make('smart');
-        // }
+        if ($request->has('whatsapp_verified')) {
+            $request->merge([
+                'whatsapp_verified' => filter_var($request->whatsapp_verified, FILTER_VALIDATE_BOOLEAN)
+            ]);
+        }
 
         $usuario->fill($request->all());
 

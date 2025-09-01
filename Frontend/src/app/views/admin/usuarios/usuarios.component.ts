@@ -88,18 +88,14 @@ export class UsuariosComponent implements OnInit {
   }
 
   cargarModulos() {
-    console.log('Cargando módulos...');
     this.apiService.getAll('permissions').subscribe(
       response => {
-        console.log('Response modules:', response);
         this.modules = (response?.modules || []).map((module: any) => ({
           ...module,
           expanded: false
         }));
-        console.log('Módulos cargados:', this.modules);
       },
       error => {
-        console.error('Error al cargar módulos:', error);
         this.alertService.error(error);
         this.modules = [];
       }
@@ -118,7 +114,6 @@ export class UsuariosComponent implements OnInit {
           usuario.rol_id = usuario.roles[0].id;
           usuario.rol_name = usuario.roles[0].name;
         } else {
-          usuario.rol_id = null;
           usuario.rol_name = 'Sin rol asignado';
         }
         usuario.encrypted_id = this.encryptService.encrypt(usuario.id);
@@ -269,9 +264,7 @@ export class UsuariosComponent implements OnInit {
   }
 
 public changePhoneNumber(event: any) {
-  console.log('Evento completo:', event);
   this.usuario.telefono = event.e164Number;
-  console.log('Teléfono a enviar:', this.usuario.telefono);
 }
 
 // Métodos para el modal de roles
@@ -387,6 +380,11 @@ public changePhoneNumber(event: any) {
     // Para nuevo usuario, usamos un ID especial (0) que será detectado en el componente usuario
     const encryptedId = this.encryptService.encrypt(0);
     window.location.href = `/usuario/${encryptedId}`;
+  }
+
+  getRolName(rolId: number): string {
+    const rol = this.roles.find((r: any) => r.id === rolId);
+    return rol ? rol.name : 'Sin rol asignado';
   }
 
 }

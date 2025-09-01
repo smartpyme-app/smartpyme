@@ -10,6 +10,7 @@ use App\Models\Inventario\Ajuste;
 use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Proveedor as ProductoProveedor;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\Importable;
@@ -54,8 +55,9 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             $id_categoria = $categoria->id;
         }
 
+        Log::info($row['subcategoria']);
         $id_subcategoria = Categoria::where('nombre', $row['subcategoria'])
-            ->where('id_empresa', $usuario->id_empresa)
+            ->where('id_empresa', $this->usuario->id_empresa)
             ->pluck('id')->first();
 
 
@@ -64,7 +66,7 @@ class Productos implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRo
             $subcategoria->nombre = $row['categoria'];
             $subcategoria->descripcion = $row['categoria'];
             $subcategoria->enable = true;
-            $subcategoria->id_empresa = $usuario->id_empresa;
+            $subcategoria->id_empresa = $this->usuario->id_empresa;
             $subcategoria->subcategoria = true;
             $subcategoria->id_cate_padre = $id_categoria;
             $subcategoria->save();

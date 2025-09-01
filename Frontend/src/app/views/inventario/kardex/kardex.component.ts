@@ -51,7 +51,7 @@ export class KardexComponent implements OnInit {
 
     selectProducto(producto:any){
         this.filtros.id_producto = producto.id;
-        console.log(this.filtros);
+        // console.log(this.filtros);
     }
 
     public descargarKardex(){

@@ -540,6 +540,7 @@ export class ApiService {
     }
     return false;
   }
+  
   //no es super admin
   isNotSuperAdmin() {
     let user = localStorage.getItem('SP_user_permissions');
@@ -609,8 +610,19 @@ export class ApiService {
   }
 
   isSupervisorLimitado() {
+    const userPermissions = localStorage.getItem('SP_user_permissions');
+    if (userPermissions) {
+      try {
+        const { role } = JSON.parse(userPermissions);
+        return role === 'usuario_supervisor_limitado' || role === 'supervisor_limitado';
+      } catch (error) {
+        console.error('Error checking supervisor limitado role:', error);
+      }
+    }
+    
+    // Fallback al campo tipo para compatibilidad
     let usuario = this.auth_user();
-    if (usuario.tipo == 'Supervisor Limitado') return true;
+    if (usuario && usuario.tipo == 'Supervisor Limitado') return true;
     return false;
   }
 
