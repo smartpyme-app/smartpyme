@@ -27,8 +27,8 @@
         #fecha          {top: 4cm; left: 6cm; }
         #cliente        {top: 4.5cm; left: 0.3cm; width: 8cm; white-space:nowrap;}
         #direccion      {top: 5cm; left: 0.3cm; width: 8cm;}
-        #condicion      {top: 5.8cm; left: 5.7cm; }
-        #dui            {top: 5.8cm; left: 3.1cm; }
+        #condicion      {top: 5.8cm; left: 6.3cm; }
+        #dui            {top: 5.8cm; left: 3.7cm; }
         #nit            {top: 5.8cm; left: 0.3cm; }
 
 
