@@ -20,6 +20,7 @@ import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
 import { MHService } from './services/MH.service';
 import { ApiService } from '@services/api.service';
+import { ConstantsService } from '@services/constants.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import { SharedModule } from './shared/shared.module';
@@ -112,7 +113,7 @@ import { ProyectosModule } from '@views/proyectos/proyectos.module';
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
                 { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
                 AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, AlertService, ApiService,
-                MHService, SumPipe, provideEnvironmentNgxMask()],
+                ConstantsService, MHService, SumPipe, provideEnvironmentNgxMask()],
   bootstrap: [AppComponent]
 })
 

@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { SwUpdate } from '@angular/service-worker';
 import { ApiService } from '@services/api.service';
+import { ConstantsService } from '@services/constants.service';
 import { ChatService } from '@services/chat/chat.service';
 
 import {
@@ -28,6 +29,7 @@ export class AppComponent implements OnInit {
 
     constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
         private tourService: TourService, private modalService: BsModalService, private chatService: ChatService,
+        private constantsService: ConstantsService,
     ) {
 
         if (this.updates.isEnabled) {
@@ -44,6 +46,9 @@ export class AppComponent implements OnInit {
 
         this.chatService.resetChat();
         this.usuario = this.apiService.auth_user();
+        
+        // Cargar constantes si no están disponibles
+        this.loadConstantsIfNeeded();
         
         this.tourSteps = [
             {
@@ -158,6 +163,23 @@ export class AppComponent implements OnInit {
         this.usuario.tour_bienvenida = true;
         this.apiService.store('usuario', this.usuario).subscribe(usuario => {
         },error => {this.alertService.error(error); });
+    }
+
+    private loadConstantsIfNeeded() {
+        const constants = localStorage.getItem('SP_constants');
+        if (!constants) {
+            console.log('Cargando constantes...');
+            this.constantsService.loadConstants().subscribe(
+                (constants) => {
+                    console.log('Constantes cargadas en app component:', constants);
+                },
+                (error) => {
+                    console.error('Error cargando constantes en app component:', error);
+                }
+            );
+        } else {
+            console.log('Constantes ya disponibles en localStorage');
+        }
     }
 
 

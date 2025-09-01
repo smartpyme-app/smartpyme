@@ -9,6 +9,7 @@ import {PlanillaDetalleComponent} from './planillas/planilla-detalle.component';
 import {BoletaPagoComponent} from './planillas/boleta-pago.component';
 import {VerBoletasComponent} from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from './configuracion-planilla/configuracion-planilla.component';
+import { TestConstantsComponent } from './test-constants.component';
 
 const routes: Routes = [
   {
@@ -30,7 +31,8 @@ const routes: Routes = [
         component: BoletaPagoComponent,
       },
       {path: 'boletas/:id', component: VerBoletasComponent},
-      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent}
+      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent},
+      {path: 'test-constants', component: TestConstantsComponent}
     ],
   },
 ];

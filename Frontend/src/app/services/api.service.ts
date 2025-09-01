@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angul
 import { map, catchError, retry } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
+import { ConstantsService } from '@services/constants.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
 
@@ -41,7 +42,7 @@ export class ApiService {
     role: '',
   };
 
-  constructor(private http: HttpClient, private alertService: AlertService) {}
+  constructor(private http: HttpClient, private alertService: AlertService, private constantsService: ConstantsService) {}
 
   getToUrl(url: string) {
     return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError));
@@ -160,6 +161,9 @@ export class ApiService {
 
           // Cargar permisos después del login
           this.loadUserPermissions(data.user.id);
+          
+          // Cargar constantes usando ConstantsService
+          this.loadConstants();
         }
         return data;
       })
@@ -627,9 +631,10 @@ export class ApiService {
   }
 
   private loadConstants() {
-    this.http.get<any>(this.apiUrl + 'constants').subscribe(
+    this.constantsService.loadConstants().subscribe(
       (constants) => {
         localStorage.setItem('SP_constants', JSON.stringify(constants));
+        console.log('Constantes cargadas exitosamente:', constants);
       },
       (error) => {
         console.error('Error cargando constantes:', error);
