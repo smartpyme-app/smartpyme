@@ -209,7 +209,7 @@
                 <td class="border-bottom">   {{ $detalle['codigo']  }}</td>
                 <td class="border-bottom">
                     {{ $detalle['descripcion']  }}
-                    @if ($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
+                    @if ($registro->detalles->where('descripcion', $detalle['descripcion'])->first() && $registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
                         <br>
                         <span class="text-muted">
                             {!! nl2br(e($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto->descripcion)) !!}
