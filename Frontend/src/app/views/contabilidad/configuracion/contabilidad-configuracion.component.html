@@ -136,6 +136,19 @@
                 </ng-option>
             </ng-select>
         </div>
+        <div class="form-group col-md-12 col-lg-6">
+            <label for="configuracion.id_cuenta_inventario_transitorio">Inventario transitorio:</label>
+            <ng-select [(ngModel)]="configuracion.id_cuenta_inventario_transitorio" class="form-select p-0" name="configuracion.id_cuenta_inventario_transitorio">
+                <ng-option value="">Seleccione aquí</ng-option>
+                <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                    <div class="d-flex align-items-center">
+        
+                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                    </div>
+                </ng-option>
+            </ng-select>
+        </div>
     </div>
     <div class="row mt-3">
         <h6>Compras</h6>

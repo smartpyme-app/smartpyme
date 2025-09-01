@@ -38,14 +38,6 @@ class OtrasSalidasService
             throw new Exception('La salida debe estar en estado Aprobada para generar la partida contable', 400);
         }
 
-        // Verificar que no exista una partida contable para esta salida
-        $partidaExistente = Partida::where('referencia', 'Otra Salida')
-                                  ->where('id_referencia', $salidaCompleta->id)
-                                  ->first();
-        if ($partidaExistente) {
-            throw new Exception('Ya existe una partida contable para esta salida', 400);
-        }
-
         // Validar que tenga detalles
         if (!$salidaCompleta->detalles || count($salidaCompleta->detalles) == 0) {
             throw new Exception('La salida no tiene detalles para generar la partida contable', 400);
@@ -130,31 +122,7 @@ class OtrasSalidasService
                 ]);
 
                 // Buscar cuenta de contrapartida según el tipo de salida
-                $cuenta_contrapartida = null;
-                
-                switch ($salidaCompleta->tipo) {
-                    case 'Venta':
-                        // Para ventas, usar cuenta de clientes o cuentas por cobrar
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_clientes ?? $configuracion->id_cuenta_cuentas_por_cobrar);
-                        break;
-                    case 'Devolución':
-                        // Para devoluciones, usar cuenta de proveedores o cuentas por pagar
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_proveedores ?? $configuracion->id_cuenta_cuentas_por_pagar);
-                        break;
-                    case 'Ajuste':
-                        // Para ajustes, usar cuenta de ajustes de inventario
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_ajuste_inventario ?? $configuracion->id_cuenta_otros_gastos);
-                        break;
-                    case 'Mantenimiento':
-                        // Para mantenimiento, usar cuenta de gastos de mantenimiento
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_gastos_mantenimiento ?? $configuracion->id_cuenta_otros_gastos);
-                        break;
-                    default:
-                        // Para otros tipos, usar cuenta de perdida
-                        $id_cuenta_perdida = $cuenta_categoria->id_cuenta_contable_perdida ?? $configuracion->id_cuenta_perdida_ajuste;
-                        $cuenta_contrapartida = Cuenta::find($id_cuenta_perdida);
-                        break;
-                }
+                $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_inventario_transitorio);
 
                 if (!$cuenta_contrapartida) {
                     throw new Exception('No se encontró la cuenta contrapartida configurada para el tipo de salida: ' . $salidaCompleta->tipo, 400);

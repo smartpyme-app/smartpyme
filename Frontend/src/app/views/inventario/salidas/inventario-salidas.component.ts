@@ -96,6 +96,13 @@ export class InventarioSalidasComponent implements OnInit {
                     this.apiService.store('salida/aprobar/' + salida.id, {}).subscribe(data => {
                         this.alertService.success('Salida aprobada correctamente', 'El registro fue aprobado exitosamente.');
                         this.filtrar();
+
+                        //Generar partida contable
+                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                            this.apiService.store('salida/partida-contable/' + data.id, {}).subscribe(salida => {
+                            },error => {this.alertService.error(error);});
+                        }
+
                     }, error => {this.alertService.error(error); });
                 }
             });

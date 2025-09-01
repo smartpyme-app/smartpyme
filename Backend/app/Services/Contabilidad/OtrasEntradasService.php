@@ -38,14 +38,6 @@ class OtrasEntradasService
             throw new Exception('La entrada debe estar en estado Aprobada para generar la partida contable', 400);
         }
 
-        // Verificar que no exista una partida contable para esta entrada
-        $partidaExistente = Partida::where('referencia', 'Otra Entrada')
-                                  ->where('id_referencia', $entradaCompleta->id)
-                                  ->first();
-        if ($partidaExistente) {
-            throw new Exception('Ya existe una partida contable para esta entrada', 400);
-        }
-
         // Validar que tenga detalles
         if (!$entradaCompleta->detalles || count($entradaCompleta->detalles) == 0) {
             throw new Exception('La entrada no tiene detalles para generar la partida contable', 400);
@@ -130,28 +122,7 @@ class OtrasEntradasService
                 ]);
 
                 // Buscar cuenta de contrapartida según el tipo de entrada
-                $cuenta_contrapartida = null;
-
-                
-                switch ($entradaCompleta->tipo) {
-                    case 'Compra':
-                        // Para compras, usar cuenta de proveedores o cuentas por pagar
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_proveedores ?? $configuracion->id_cuenta_cuentas_por_pagar);
-                        break;
-                        case 'Devolución':
-                            // Para devoluciones, usar cuenta de clientes o cuentas por cobrar
-                            $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_clientes ?? $configuracion->id_cuenta_cuentas_por_cobrar);
-                            break;
-                        case 'Ajuste':
-                                // Para ajustes, usar cuenta de ajustes de inventario
-                                $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_ajustes_inventario ?? $configuracion->id_cuenta_otros_ingresos);
-                            break;
-                        default:
-                            // Para otros tipos, usar cuenta de ganancia
-                            $id_cuenta_ganancia = $cuenta_categoria->id_cuenta_contable_ganancia ?? $configuracion->id_cuenta_ganancia_ajuste;
-                            $cuenta_contrapartida = Cuenta::find($id_cuenta_ganancia);
-                        break;
-                }
+                $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_inventario_transitorio);
 
                 if (!$cuenta_contrapartida) {
                     throw new Exception('No se encontró la cuenta contrapartida configurada para el tipo de entrada: ' . $entradaCompleta->tipo, 400);
