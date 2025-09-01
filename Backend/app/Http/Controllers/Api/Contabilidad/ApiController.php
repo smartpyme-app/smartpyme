@@ -18,6 +18,8 @@ use App\Services\Contabilidad\TransaccionesService;
 use App\Services\Contabilidad\RetaceoService;
 use App\Services\Contabilidad\AjustesService;
 use App\Services\Contabilidad\TrasladosService;
+use App\Services\Contabilidad\OtrasEntradasService;
+use App\Services\Contabilidad\OtrasSalidasService;
 
 use App\Models\Bancos\Cuenta;
 use App\Models\Compras\Retaceo\Retaceo;
@@ -33,6 +35,10 @@ class ApiController extends Controller
     protected $gastosService;
     protected $transaccionesService;
     protected $retaceoService;
+    protected $ajustesService;
+    protected $trasladosService;
+    protected $otrasEntradasService;
+    protected $otrasSalidasService;
 
     public function __construct(
         VentasService $ventasService,
@@ -43,7 +49,9 @@ class ApiController extends Controller
         TransaccionesService $transaccionesService,
         RetaceoService $retaceoService,
         AjustesService $ajustesService,
-        TrasladosService $trasladosService
+        TrasladosService $trasladosService,
+        OtrasEntradasService $otrasEntradasService,
+        OtrasSalidasService $otrasSalidasService
     ) {
         $this->ventasService = $ventasService;
         $this->cxcService = $cxcService;
@@ -54,6 +62,8 @@ class ApiController extends Controller
         $this->retaceoService = $retaceoService;
         $this->ajustesService = $ajustesService;
         $this->trasladosService = $trasladosService;
+        $this->otrasEntradasService = $otrasEntradasService;
+        $this->otrasSalidasService = $otrasSalidasService;
     }
 
     public function venta(Request $venta)
@@ -168,6 +178,32 @@ class ApiController extends Controller
         $this->trasladosService->crearPartida($traslado);
 
         return Response()->json($traslado, 200);
+    }
+
+    public function otraEntrada(Request $entrada)
+    {
+        $partida = Partida::where('referencia', 'Otra Entrada')->where('id_referencia', $entrada->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la entrada.', 'code' => 400], 400);
+        // }
+
+        $this->otrasEntradasService->crearPartida($entrada);
+
+        return Response()->json($entrada, 200);
+    }
+
+    public function otraSalida(Request $salida)
+    {
+        $partida = Partida::where('referencia', 'Otra Salida')->where('id_referencia', $salida->id)->first();
+
+        // if ($partida) {
+        //     return  Response()->json(['titulo' => 'Verificar registro de partidas.', 'error' => 'Ya hay una partida creada para la salida.', 'code' => 400], 400);
+        // }
+
+        $this->otrasSalidasService->crearPartida($salida);
+
+        return Response()->json($salida, 200);
     }
 
 

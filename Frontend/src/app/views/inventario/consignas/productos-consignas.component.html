@@ -38,6 +38,10 @@
         routerLink="/traslados">Traslados</button>
       <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()"
         routerLink="/consignas">Consignas</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/entradas">Otras entradas</button>
+      <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
+        routerLink="/salidas">Otras salidas</button>
     </div>
     <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
       <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default  w-auto">
