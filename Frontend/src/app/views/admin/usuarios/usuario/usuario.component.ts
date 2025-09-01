@@ -167,11 +167,6 @@ export class UsuarioComponent implements OnInit {
       }
     }
   
-    console.log('=== FORM DATA DEBUG ===');
-    formData.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
-    });
-  
     // Save the user
     this.apiService.store('usuario', formData).subscribe(
       (usuario) => {

@@ -79,10 +79,6 @@ const routes: Routes = [
   {
     path: '',
     // canActivate: [AuthGuard, AdminGuard],
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      guardType: GUARD_TYPES.ADMIN,
-    },
     loadChildren: () =>
       import('./views/compras/compras.module').then((m) => m.ComprasModule),
   },
@@ -91,10 +87,6 @@ const routes: Routes = [
   {
     path: '',
     // canActivate: [AuthGuard, AdminGuard],
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      guardType: GUARD_TYPES.ADMIN,
-    },
     loadChildren: () =>
       import('./views/contabilidad/contabilidad.module').then(
         (m) => m.ContabilidadModule
@@ -111,10 +103,6 @@ const routes: Routes = [
   {
     path: '',
     // canActivate: [AuthGuard, AdminGuard],
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      guardType: GUARD_TYPES.ADMIN,
-    },
     loadChildren: () =>
       import('./views/admin/admin.module').then((m) => m.AdminModule),
   },
@@ -123,10 +111,6 @@ const routes: Routes = [
   {
     path: '',
     // canActivate: [AuthGuard, SuperAdminGuard],
-    canActivate: [AuthGuard, RoleGuard],
-    data: {
-      guardType: GUARD_TYPES.SUPER_ADMIN,
-    },
     loadChildren: () =>
       import('./views/super-admin/super-admin.module').then(
         (m) => m.SuperAdminModule
