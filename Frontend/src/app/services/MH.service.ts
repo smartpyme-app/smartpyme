@@ -170,8 +170,9 @@ export class MHService {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
-                            venta.tipo_dte = dte.tipo_dte;
-                            venta.numero_control = dte.numero_control;
+                            venta.tipo_dte = dte.tipoDte;
+                            venta.numero_control = dte.numeroControl;
+                            venta.codigo_generacion = dte.codigoGeneracion;
                             // venta.estado = 'Emitido';
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);
