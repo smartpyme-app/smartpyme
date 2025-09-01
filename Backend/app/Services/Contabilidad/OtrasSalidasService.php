@@ -150,8 +150,9 @@ class OtrasSalidasService
                         $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_gastos_mantenimiento ?? $configuracion->id_cuenta_otros_gastos);
                         break;
                     default:
-                        // Para otros tipos, usar cuenta de otros gastos
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_otros_gastos);
+                        // Para otros tipos, usar cuenta de perdida
+                        $id_cuenta_perdida = $cuenta_categoria->id_cuenta_contable_perdida ?? $configuracion->id_cuenta_perdida_ajuste;
+                        $cuenta_contrapartida = Cuenta::find($id_cuenta_perdida);
                         break;
                 }
 

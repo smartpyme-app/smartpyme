@@ -131,23 +131,25 @@ class OtrasEntradasService
 
                 // Buscar cuenta de contrapartida según el tipo de entrada
                 $cuenta_contrapartida = null;
+
                 
                 switch ($entradaCompleta->tipo) {
                     case 'Compra':
                         // Para compras, usar cuenta de proveedores o cuentas por pagar
                         $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_proveedores ?? $configuracion->id_cuenta_cuentas_por_pagar);
                         break;
-                    case 'Devolución':
-                        // Para devoluciones, usar cuenta de clientes o cuentas por cobrar
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_clientes ?? $configuracion->id_cuenta_cuentas_por_cobrar);
-                        break;
-                    case 'Ajuste':
-                        // Para ajustes, usar cuenta de ajustes de inventario
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_ajuste_inventario ?? $configuracion->id_cuenta_otros_ingresos);
-                        break;
-                    default:
-                        // Para otros tipos, usar cuenta de otros ingresos
-                        $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_otros_ingresos);
+                        case 'Devolución':
+                            // Para devoluciones, usar cuenta de clientes o cuentas por cobrar
+                            $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_clientes ?? $configuracion->id_cuenta_cuentas_por_cobrar);
+                            break;
+                        case 'Ajuste':
+                                // Para ajustes, usar cuenta de ajustes de inventario
+                                $cuenta_contrapartida = Cuenta::find($configuracion->id_cuenta_ajustes_inventario ?? $configuracion->id_cuenta_otros_ingresos);
+                            break;
+                        default:
+                            // Para otros tipos, usar cuenta de ganancia
+                            $id_cuenta_ganancia = $cuenta_categoria->id_cuenta_contable_ganancia ?? $configuracion->id_cuenta_ganancia_ajuste;
+                            $cuenta_contrapartida = Cuenta::find($id_cuenta_ganancia);
                         break;
                 }
 
