@@ -104,7 +104,6 @@ class UsuariosController extends Controller
         else
             $usuario = new Usuario;
 
-        // ✅ CORRECCIÓN: Manejar el password DESPUÉS de obtener el usuario
         $data = $request->all();
         
         if ($request->password) {
