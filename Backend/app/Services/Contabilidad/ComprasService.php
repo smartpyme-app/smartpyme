@@ -69,12 +69,12 @@ class ComprasService
                 }
 
                 if (!$formapago->banco || !$formapago->banco->id_cuenta_contable) {
-                    throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada', 400);
+                    throw new Exception('La forma de pago no tiene un banco o cuenta contable configurada, para configurarla puede ir al menú de la aplicación, en Finanzas > Métodos de pago', 400);
                 }
 
                 $cuenta = Cuenta::find($formapago->banco->id_cuenta_contable);
                 if (!$cuenta) {
-                    throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago', 400);
+                    throw new Exception('No se encontró la cuenta contable del banco asociado a la forma de pago, para configurarla puede ir al menú de la aplicación, en Finanzas > Bancos, seleccionar el tab de Cuentas y agregar la cuenta contable al banco.', 400);
                 }
             }
 
