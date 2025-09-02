@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade as PDF;
 
 class AuthJWTController extends Controller
 {
@@ -291,6 +292,8 @@ class AuthJWTController extends Controller
             $usuario->tipo         = config('constants.TIPO_USUARIO_ADMINISTRADOR');
             $usuario->enable       = true;
             $usuario->save();
+
+            $usuario->assignRole(config('constants.ROL_ADMIN'));
 
 
             DB::commit();

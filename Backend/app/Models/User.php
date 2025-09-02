@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Authorization\AuthorizationType;
+use App\Models\MetodoPago;
+use App\Models\Suscripcion;
+use App\Models\OrdenPago;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
