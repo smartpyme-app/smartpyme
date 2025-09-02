@@ -5,8 +5,8 @@ use App\Http\Controllers\Api\Admin\DashboardsController;
 use App\Http\Controllers\Api\Admin\ReportesController;
 use Illuminate\Support\Facades\Route;
 
-    Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('superadmin');
-    Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('superadmin');
+    Route::get('/empresas',        	        [EmpresasController::class, 'index'])->middleware('role:super_admin');
+    Route::get('/empresas/list',            [EmpresasController::class, 'list'])->middleware('role:super_admin');
 
     Route::get('/empresa/get-alert',     [EmpresasController::class, 'getAlertSuscription']);
     Route::get('/empresa/isvisible-alert', [EmpresasController::class, 'isVisibleAlertSuscription']);
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
     Route::post('/empresa',                 [EmpresasController::class, 'store']);
     Route::get('/empresa/{id}',             [EmpresasController::class, 'read']);
 
-    Route::post('/empresa/eliminar/datos',   [EmpresasController::class, 'eliminarDatos'])->middleware('admin');
+    Route::post('/empresa/eliminar/datos',   [EmpresasController::class, 'eliminarDatos'])->middleware('role:admin');
 
     Route::get('/suscripcion',             [EmpresasController::class, 'suscripcion']);
     Route::get('/suscripcion/recibo/pdf/{id}',             [EmpresasController::class, 'printRecibo']);

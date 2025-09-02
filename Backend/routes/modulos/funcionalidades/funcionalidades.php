@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 // Rutas para gestión administrativa (solo accesibles para usuarios admin)
 
 Route::get('/empresas-funcionalidades', [EmpresasFuncionalidadesController::class, 'index'])->name('admin.empresas-funcionalidades');
-Route::get('/empresas/list', [EmpresasController::class, 'list'])->middleware('superadmin');
+Route::get('/empresas/list', [EmpresasController::class, 'list'])->middleware('role:super_admin');
 
 // API para cargar datos
 Route::get('/empresas/{id}/funcionalidades', [EmpresasFuncionalidadesController::class, 'getEmpresaFuncionalidades']);

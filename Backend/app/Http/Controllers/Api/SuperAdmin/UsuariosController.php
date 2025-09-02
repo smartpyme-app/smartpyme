@@ -79,7 +79,6 @@ class UsuariosController extends Controller
 
     }
 
-
     public function store(Request $request)
     {
         $request->validate([
@@ -90,15 +89,14 @@ class UsuariosController extends Controller
             'id_bodega'     => 'required',
             'id_sucursal'   => 'required',
             'password'      => [
-                  'required_if:id,null',
-                  'confirmed',
-                  'min:8',
-                  'regex:/[a-z]/',
-                  'regex:/[A-Z]/',
-                  'regex:/[0-9]/',
-                  'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
+                'required_if:id,null',
+                'confirmed',
+                'min:8',
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
             ],
-
         ]);
 
         if($request->id)
@@ -106,16 +104,20 @@ class UsuariosController extends Controller
         else
             $usuario = new Usuario;
 
-
+        // ✅ CORRECCIÓN: Manejar el password DESPUÉS de obtener el usuario
+        $data = $request->all();
+        
         if ($request->password) {
-            $request['password'] = \Hash::make($request->password);
-        }
-       
-        if (!$request->id) {
-            $request['password'] = \Hash::make('smart');
+            $data['password'] = Hash::make($request->password);
+        } elseif (!$request->id) {
+            // Solo establecer password por defecto si es usuario nuevo Y no se proporcionó password
+            $data['password'] = Hash::make('smart');
+        } else {
+            // Si es actualización y no se proporcionó password, no tocar el campo
+            unset($data['password']);
         }
         
-        $usuario->fill($request->all());
+        $usuario->fill($data);
 
         if ($request->hasFile('file')) {
             if ($request->id && $usuario->avatar && $usuario->avatar != 'usuarios/default.jpg') {
@@ -129,13 +131,11 @@ class UsuariosController extends Controller
             $usuario->avatar = "/" . $path;
         }
 
+        $usuario->save();
         
         $usuario->roles()->sync([$request->rol_id]);
-        $usuario->save();
 
         return Response()->json($usuario, 200);
-
-
     }
 
     public function delete($id)
