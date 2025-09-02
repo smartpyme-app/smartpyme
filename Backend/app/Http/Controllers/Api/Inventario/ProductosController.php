@@ -465,23 +465,30 @@ class ProductosController extends Controller
         $request->validate([
             'archivo' => 'required|file|mimes:xlsx,xls,csv',
             'detalle' => 'required|string',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
         ]);
 
-        $importador = new InventarioImport($request->detalle);
+        $importador = new InventarioImport($request->detalle, $request->id_bodega);
         Excel::import($importador, $request->file('archivo'));
 
-        // Verificar si se actualizó algún producto
+        // Generar log con estadísticas completas
+        $importador->logEstadisticasFinales();
+        
+        // Obtener estadísticas completas
+        $estadisticas = $importador->getEstadisticas();
         $actualizados = $importador->getActualizados();
 
         if ($actualizados > 0) {
             return Response()->json([
-                'message' => "Ajuste de inventario realizado exitosamente. Se actualizaron {$actualizados} productos.",
-                'actualizados' => $actualizados
+                'message' => "Ajuste de inventario realizado exitosamente. Se actualizaron {$actualizados} de {$estadisticas['procesados']} productos procesados.",
+                'actualizados' => $actualizados,
+                'estadisticas' => $estadisticas
             ], 200);
         } else {
             return Response()->json([
-                'message' => 'No se realizó ningún cambio en el inventario. Verifica que los datos sean correctos.',
-                'actualizados' => 0
+                'message' => "No se realizó ningún cambio en el inventario. Se procesaron {$estadisticas['procesados']} productos. Verifica que los datos sean correctos.",
+                'actualizados' => 0,
+                'estadisticas' => $estadisticas
             ], 200);
         }
     }
