@@ -35,8 +35,8 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-8 d-flex gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Productos</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
@@ -44,7 +44,7 @@
             <button class="tecla-F3 btn "  tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" routerLinkActive="btn-primary"  routerLink="/entradas">Otras Entradas</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
         </div>
-        <div class="col-md-4 d-md-none d-lg-flex gap-2 justify-content-end mb-3">
+        <div class="ms-auto d-flex gap-2">
             <ng-select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Estado</ng-option>
                 <ng-option value="Pendiente">Pendiente</ng-option>
