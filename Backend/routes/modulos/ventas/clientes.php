@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/cliente/{id}',                     [ClientesController::class, 'read']);
     Route::get('/clientes/buscar/{text}',           [ClientesController::class, 'search']);
     Route::post('/cliente',                         [ClientesController::class, 'store']);
+    Route::post('/cliente/update',                 [ClientesController::class, 'update']);
     //storeContacto
     Route::post('/cliente/contacto',                [ClientesController::class, 'storeContacto']);
     Route::delete('/cliente/contacto/{id}',         [ClientesController::class, 'deleteContacto']);
