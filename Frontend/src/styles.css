@@ -159,3 +159,8 @@ a.fc-col-header-cell-cushion{
     cursor: pointer;
   }
 
+  .select-width {
+    min-width:180px;
+    max-width:180px;
+  }
+
