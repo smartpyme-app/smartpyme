@@ -54,7 +54,7 @@ class Compra extends Model {
         'tipo_costo_gasto',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto', 'empresa_nombre'];
 
     protected static function boot()
     {
@@ -62,7 +62,20 @@ class Compra extends Model {
 
         if (Auth::check()) {
             static::addGlobalScope('empresa', function (Builder $builder) {
-                $builder->where('id_empresa', Auth::user()->id_empresa);
+                $user = Auth::user();
+
+                $licencia = $user->empresa()->first()->licencia()->first();
+
+                if ($licencia) {
+                    $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
+                    if (!empty($empresasLicencia)) {
+                        $builder->whereIn('id_empresa', $empresasLicencia)->where('estado', 'Pendiente');
+                    } else {
+                        $builder->where('id_empresa', $user->id_empresa);
+                    }
+                } else {
+                    $builder->where('id_empresa', $user->id_empresa);
+                }
             });
         }
     }
@@ -106,6 +119,11 @@ class Compra extends Model {
     public function getNombreProyectoAttribute()
     {
         return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    public function getEmpresaNombreAttribute()
+    {
+        return $this->empresa->nombre ?? '';
     }
 
     public function bodega(){

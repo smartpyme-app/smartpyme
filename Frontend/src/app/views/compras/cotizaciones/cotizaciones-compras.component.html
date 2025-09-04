@@ -64,7 +64,13 @@
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{compra.nombre_usuario }}</td>
+                        <td>
+                            {{compra.nombre_usuario }}
+                            <span class="text-muted" *ngIf="compra.id_empresa != apiService.auth_user().id_empresa">
+                                <br>
+                                {{ compra.empresa_nombre }}
+                            </span>
+                        </td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.referencia ?? '-'}}</td>
                         <td>
@@ -92,6 +98,10 @@
                                     </a>
                                     <a (click)="imprimir(compra)" class="btn">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a>
+
+                                    <a *ngIf="compra.id_empresa != apiService.auth_user().id_empresa" routerLink="/venta/crear" [queryParams]="{ facturar_orden_compra: 1, id_orden_compra: compra.id }" class="btn">
+                                        <i class="fa fa-fw fa-exchange"></i> Generar como venta
                                     </a>
                                     <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar

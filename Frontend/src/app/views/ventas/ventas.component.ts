@@ -739,6 +739,12 @@ export class VentasComponent implements OnInit {
     );
   }
 
+  public generarTrasladoEmpresa(venta:any){
+    this.apiService.store('venta/generar-traslado-empresa', venta).subscribe(venta => {
+      this.alertService.success('Traslado generado.', 'El traslado fue generado exitosamente.');
+    }, error => {this.alertService.error(error); });
+  }
+
 
 
 }

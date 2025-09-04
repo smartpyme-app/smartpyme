@@ -378,6 +378,31 @@ export class FacturacionComponent implements OnInit {
         );
     }
 
+    // Facturar orden de compra
+    if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
+      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
+            
+        ordenCompra.detalles.forEach((detalleCompra: any) => {
+          this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+            let detalle: any = {};
+            detalle.cantidad = detalleCompra.cantidad;
+            detalle.descripcion = producto.nombre;
+            detalle.id_producto = producto.id;
+            detalle.precio = parseFloat(producto.precio);
+            detalle.costo = parseFloat(producto.costo);
+            detalle.gravada = detalle.total;
+            detalle.exenta = 0;
+            detalle.no_sujeta = 0;
+            detalle.cuenta_a_terceros = 0;
+            detalle.total = detalle.precio * detalle.cantidad;
+            this.venta.detalles.push(detalle);
+            this.sumTotal();
+          });
+        });
+      }, (error) => { this.alertService.error(error); this.loading = false; }
+    );
+    }
+
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
       this.loading = true;
