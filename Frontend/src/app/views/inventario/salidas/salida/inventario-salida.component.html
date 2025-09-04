@@ -30,7 +30,7 @@
                         <div class="row">
                             <div class="col-12 mb-3">
                                 <div class="d-flex justify-content-end">
-                                    <app-buscador-productos class="col-6 pe-0" (selectProducto)="productoSelect($event)"></app-buscador-productos>
+                                    <app-buscador-productos class="col-6 pe-0" [id_bodega]="salida.id_bodega" (selectProducto)="productoSelect($event)"></app-buscador-productos>
                                 </div>
                             </div>
                         </div>

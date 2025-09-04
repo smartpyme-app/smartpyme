@@ -140,6 +140,45 @@ class ProductosController extends Controller
         return Response()->json($productos, 200);
     }
 
+    public function searchByQueryWithBodega(Request $request)
+    {
+        $query = $request->query('query');
+        $id_bodega = $request->query('id_bodega');
+
+        if ($id_bodega) {
+            // Si se especifica bodega, filtrar productos que tengan inventario en esa bodega
+            $productos = Producto::where('enable', true)
+                ->with(['inventarios' => function($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                }])
+                ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
+                ->whereHas('inventarios', function($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                })
+                ->where(function ($q) use ($query) {
+                    $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('barcode', 'like', "%$query%")
+                        ->orWhere('codigo', 'like', "%$query%")
+                        ->orWhere('etiquetas', 'like', "%$query%");
+                })
+                ->take(15)
+                ->get();
+        } else {
+            // Si no se especifica bodega, usar la búsqueda normal
+            $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+                ->where(function ($q) use ($query) {
+                    $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('barcode', 'like', "%$query%")
+                        ->orWhere('codigo', 'like', "%$query%")
+                        ->orWhere('etiquetas', 'like', "%$query%");
+                })
+                ->take(15)
+                ->get();
+        }
+
+        return Response()->json($productos, 200);
+    }
+
 
     public function porCodigo($codigo)
     {

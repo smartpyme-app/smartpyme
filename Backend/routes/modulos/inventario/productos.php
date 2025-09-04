@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/productos/list',               [ProductosController::class, 'list']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
+    Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
