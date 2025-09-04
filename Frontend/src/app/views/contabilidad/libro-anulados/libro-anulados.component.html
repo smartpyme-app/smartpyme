@@ -26,15 +26,15 @@
 </section>
 
 <div class="bg-white p-4 rounded mb-3">
-    <div class="row">
-        <div class="col-lg-8 d-flex gap-2 mb-3">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn tcla-F5" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/contribuyentes">Contribuyentes</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-iva/consumidor-final">Consumidor Final</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras">Compras</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" (click)="loadAll()" routerLink="/libro-anulados">Anulados</button>
             <button class="btn" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/libro-compras-sujetos-excluidos">Sujetos Excluidos</button>
         </div>
-        <div class="col-lg-4 d-flex gap-2 justify-content-end  mb-3">
+        <div class="ms-auto d-flex gap-2">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
                 <option value="">Todas las sucursales</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>

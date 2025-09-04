@@ -63,7 +63,8 @@ export class CrearClienteComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('cliente', this.cliente).subscribe(cliente => {
+        let routeUrl = this.id_cliente ? 'cliente/update' : 'cliente';
+        this.apiService.store(routeUrl, this.cliente).subscribe(cliente => {
             this.update.emit(cliente);
             this.modalRef?.hide();
             this.saving = false;

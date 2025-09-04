@@ -144,38 +144,12 @@ export class ClienteInformacionComponent implements OnInit {
     this.cliente.cod_distrito = '';
   }
 
-  //   public onSubmit(): void {
-  //     this.saving = true;
-  //     console.log('Cliente', this.cliente);
-
-  //     this.apiService.store('cliente', this.cliente).subscribe(
-  //       (cliente) => {
-  //         if (!this.cliente.id) {
-  //           this.alertService.success(
-  //             'Cliente guardado',
-  //             'El cliente fue guardado exitosamente.'
-  //           );
-  //         } else {
-  //           this.alertService.success(
-  //             'Cliente creado',
-  //             'El cliente fue añadido exitosamente.'
-  //           );
-  //           this.router.navigate(['/clientes']);
-  //           this.cliente = cliente;
-  //           this.saving = false;
-  //         }
-  //       },
-  //       (error) => {
-  //         this.alertService.error(error);
-  //         this.saving = false;
-  //       }
-  //     );
-  //   }
-
   public onSubmit(): void {
     this.saving = true;
 
-    this.apiService.store('cliente', this.cliente).subscribe({
+    let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
+
+    this.apiService.store(routeUrl, this.cliente).subscribe({
       next: (cliente) => {
         const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
         const mensaje = this.esNuevo
@@ -186,8 +160,6 @@ export class ClienteInformacionComponent implements OnInit {
 
         this.cliente = cliente;
         if (this.esNuevo) {
-          //this.router.navigate(['/clientes']);
-          //cliente/editar
           this.router.navigate(['/cliente/editar', cliente.id]);
         }
 

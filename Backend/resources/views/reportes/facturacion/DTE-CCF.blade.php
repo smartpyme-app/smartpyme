@@ -61,7 +61,7 @@
                     <td  style="width: 25%;">
                         {{-- Logo --}}
                         @if ($registro->empresa()->pluck('logo')->first())
-                            <img height="130" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
+                            <img height="150" src="{{ asset('img/'.$registro->empresa()->pluck('logo')->first()) }}" alt="Logo">
                         @endif
                     </td>
                     <td style="width: 50%; text-align: center;">
@@ -69,7 +69,7 @@
                         <h2>COMPROBANTE DE CRÉDITO FISCAL</h2>
                     </td>
                     <td style="width: 25%; text-align: right;">
-                        {!! '<img id="qrcode" width="130" height="130" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
+                        {!! '<img id="qrcode" width="150" height="150" src="data:image/png;base64,' . DNS2D::getBarcodePNG($registro->qr, 'QRCODE', 10, 10, array(0,0,0), true) . '" alt="barcode"   />' !!}
                     </td>
                 </tr>
             </tbody>
@@ -84,6 +84,7 @@
                 'Transmisión por contingencia'
             ];
         @endphp
+        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -106,6 +107,7 @@
                     '13'
             ];
         @endphp
+        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -146,6 +148,9 @@
                 </tr>
             </tbody>
         </table> 
+
+        <br>
+
         <table class="table bordered">
             <thead>
                 <tr class="bg-light">
@@ -167,10 +172,18 @@
                 @foreach($DTE['cuerpoDocumento'] as $detalle)
                 <tr>
                     <td class="border-bottom">   {{ $detalle['numItem']  }}</td>
-                    <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 4) }}</td>
+                    <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 2) }}</td>
                     <td class="border-bottom">   {{ $detalle['codigo']  }}</td>
-                    <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
-                    <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
+                    <td class="border-bottom">
+                        {{ $detalle['descripcion']  }}
+                        @if ($registro->detalles->where('descripcion', $detalle['descripcion'])->first() && $registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
+                            <br>
+                            <span class="text-muted">
+                                {!! nl2br(e($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto->descripcion)) !!}
+                            </span>
+                        @endif
+                    </td>
+                    <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 2) }}</td>
                     <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
                     @if ($DTE['resumen']['totalNoGravado'] > 0)
                         <td class="border-bottom text-right">   ${{ number_format($detalle['noGravado'], 2) }}</th>

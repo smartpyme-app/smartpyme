@@ -90,8 +90,8 @@ class PlantillaInventarioExport implements FromQuery, WithHeadings, WithMapping,
     public function styles(Worksheet $sheet)
     {
 
-        $sheet->getColumnDimension('A')->setVisible(false);
-        $sheet->getColumnDimension('B')->setVisible(false);
+        //$sheet->getColumnDimension('A')->setVisible(false);
+        //$sheet->getColumnDimension('B')->setVisible(false);
         
         return [
     
