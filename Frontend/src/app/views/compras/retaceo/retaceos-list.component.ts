@@ -39,7 +39,7 @@ export class RetaceosListComponent implements OnInit {
 
     if (filtrosGuardados) {
       this.filtros = JSON.parse(filtrosGuardados);
-      console.log(this.filtros);
+      // console.log(this.filtros);
     } else {
 
     const hoy = new Date();

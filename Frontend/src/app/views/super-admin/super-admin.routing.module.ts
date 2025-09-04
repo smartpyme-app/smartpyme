@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { SuperAdminGuard } from '@guards/super-admin.guard';
 import { LayoutComponent } from '@layout/layout.component';
 
 import { EmpresasComponent }     from '@views/super-admin/empresas/empresas.component';
@@ -24,6 +25,7 @@ const routes: Routes = [
   {
     path: 'admin',
     component: LayoutComponent,
+    canActivate: [SuperAdminGuard],
     children: [
         { path: 'empresas', component: EmpresasComponent, title: 'Empresas' },
         // { path: 'empresa/crear', component: CrearEmpresaComponent, title: 'Empresa' },

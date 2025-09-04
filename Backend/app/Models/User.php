@@ -56,7 +56,7 @@ class User extends Authenticatable implements JWTSubject
         'enable' => 'string',
         'pending_changes' => 'array',
         'whatsapp_code_expires_at' => 'datetime',
-        'whatsapp_verified' => 'boolean'
+        'whatsapp_verified' => 'boolean',
     ];
 
     protected static function boot()

@@ -16,8 +16,6 @@ import { LockComponent }    from './auth/lock/lock.component';
 import { ForgetComponent }    from './auth/forget/forget.component';
 import { QuicklinkStrategy } from 'ngx-quicklink';
 import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
-import { RoleGuard } from './guards/role.guard';
-
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -79,19 +77,11 @@ const routes: Routes = [
         // Compras
         {
           path: '',
-          canActivate: [AdminGuard,SupervisorLimitadoGuard, RoleGuard],
-          data: {
-            guardType: GUARD_TYPES.ADMIN,
-          },
           loadChildren: () => import('./views/compras/compras.module').then(m => m.ComprasModule),
         },
         // Contabilidad
         {
           path: '',
-          canActivate: [AdminGuard,AuthGuard, RoleGuard],
-          data: {
-            guardType: GUARD_TYPES.ADMIN,
-          },
           loadChildren: () => import('./views/contabilidad/contabilidad.module').then(m => m.ContabilidadModule),
         },
         // Citas
@@ -102,19 +92,11 @@ const routes: Routes = [
         // Admin
         {
           path: '',
-          canActivate: [AuthGuard, RoleGuard],
-          data: {
-            guardType: GUARD_TYPES.ADMIN,
-          },
           loadChildren: () => import('./views/admin/admin.module').then(m => m.AdminModule),
         },
         // Super Admin
         {
           path: '',
-          canActivate: [AuthGuard, RoleGuard],
-          data: {
-            guardType: GUARD_TYPES.SUPER_ADMIN,
-          },
           loadChildren: () => import('./views/super-admin/super-admin.module').then(m => m.SuperAdminModule),
         },
         // Organizaciones Admin

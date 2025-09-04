@@ -58,7 +58,7 @@ export class RecurrentesComponent implements OnInit {
 
         if (filtrosGuardados) {
             this.filtros = JSON.parse(filtrosGuardados);
-            console.log(this.filtros);
+            // console.log(this.filtros);
           } else {
             this.filtros.id_sucursal = '';
             this.filtros.id_cliente = '';

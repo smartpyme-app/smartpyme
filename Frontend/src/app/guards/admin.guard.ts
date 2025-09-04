@@ -11,20 +11,60 @@ export class AdminGuard implements CanActivate {
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
-    let user = this.apiService.auth_user()
+    
+    // Verificar que el usuario esté autenticado
+    if (!this.apiService.autenticated()) {
+      this.router.navigate(['/login']);
+      return false;
+    }
+
+    // Si es super admin, tiene acceso a todo
+    if (this.apiService.verifyRoleAdmin()) {
+      return true;
+    }
+
     const currentUrl = state.url;
 
+    // Rutas que solo permiten acceso a administradores
     const adminOnlyRoutes = [
       '/suscripcion',
       '/usuarios',
+      '/usuario',
       '/sucursales',
-      '/mi-cuenta'
+      '/mi-cuenta',
+      '/roles-permisos',
+      '/notificaciones',
+      '/whatsapp'
     ];
 
-    // Si la ruta actual es una de las restringidas, solo permitir acceso a administradores
+    // Si la ruta actual es una de las restringidas, verificar permisos de administrador
     if (adminOnlyRoutes.some(route => currentUrl.includes(route))) {
+      // Verificar si tiene permisos específicos para la funcionalidad
+      if (currentUrl.includes('/usuarios') || currentUrl.includes('/usuario')) {
+        if (this.apiService.hasPermission('usuarios.acceder') ||
+            this.apiService.hasPermission('usuarios.ver') ||
+            this.apiService.hasPermission('usuarios.listar')) {
+          return true;
+        }
+      }
+      
+      if (currentUrl.includes('/sucursales')) {
+        if (this.apiService.hasPermission('sucursales.acceder') ||
+            this.apiService.hasPermission('sucursales.ver')) {
+          return true;
+        }
+      }
 
-      if (user.tipo === 'Administrador') {
+      if (currentUrl.includes('/roles-permisos')) {
+        if (this.apiService.hasPermission('roles.acceder') ||
+            this.apiService.hasPermission('permisos.acceder')) {
+          return true;
+        }
+      }
+
+      // Verificar si tiene rol de administrador
+      if (this.apiService.isAdminRole() ||
+          this.apiService.hasPermission('admin.acceder')) {
         return true;
       } else {
         this.router.navigate(['/']);
@@ -32,10 +72,14 @@ export class AdminGuard implements CanActivate {
       }
     }
 
-		if(user.tipo == 'Administrador' || user.tipo == 'Contador' || user.tipo == 'Supervisor')
-	        return true;
+    // Para otras rutas del admin, permitir acceso a roles administrativos
+    if (this.apiService.isAdminRole() || 
+        this.apiService.hasPermission('admin.acceder')) {
+      return true;
+    }
 
-	    this.router.navigate(['/']);
-	    return false;
+    // Si no tiene permisos, redirigir al inicio
+    this.router.navigate(['/']);
+    return false;
   }
 }

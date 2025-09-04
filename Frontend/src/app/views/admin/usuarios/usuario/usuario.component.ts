@@ -250,15 +250,9 @@ export class UsuarioComponent implements OnInit {
       }
     }
 
-    console.log('=== FORM DATA DEBUG ===');
-    formData.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
-    });
-
     // Save the user
     this.apiService.store('usuario', formData).subscribe(
       (usuario) => {
-        console.log('✅ Usuario guardado exitosamente:', usuario);
 
         if (!this.usuario.id) {
           this.router.navigate(['/usuarios']);
@@ -282,11 +276,9 @@ export class UsuarioComponent implements OnInit {
         );
       },
       (error) => {
-        console.log('❌ Error en onSubmit:', error);
         this.loading = false;
 
         if (error.status === 403 && error.error?.requires_authorization) {
-          console.log('🔐 Se requiere autorización - el interceptor manejará esto');
           return;
         }
 
@@ -363,7 +355,6 @@ export class UsuarioComponent implements OnInit {
       })
       .subscribe(
         (response) => {
-          console.log('Respuesta del servidor:', response);
 
           this.loading = false;
           this.mostrarCambioContrasena = false;
@@ -521,7 +512,6 @@ export class UsuarioComponent implements OnInit {
       })
       .subscribe(
         (response: any) => {
-          console.log('Respuesta exitosa:', response);
 
           this.loading = false;
           this.editandoPassword = false;
@@ -833,12 +823,6 @@ export class UsuarioComponent implements OnInit {
       }
     }
 
-    console.log('Estado de permisos:', {
-      permission: permissionName,
-      added: this.addedPermissions,
-      removed: this.removedPermissions,
-      currentState: isCurrentlySelected,
-    });
   }
 
   savePermissions() {
@@ -848,8 +832,6 @@ export class UsuarioComponent implements OnInit {
       added_permissions: this.addedPermissions,
       removed_permissions: this.removedPermissions,
     };
-
-    console.log('Guardando cambios:', data);
 
     this.apiService
       .store(`roles-permissions/user/${this.usuario.id}`, data)
@@ -896,16 +878,8 @@ export class UsuarioComponent implements OnInit {
       return;
     }
 
-
     this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
 
-
-  }
-
-  onRoleChange(selectedRoleId: any) {
-      console.log('Role seleccionado:', selectedRoleId, typeof selectedRoleId);
-      console.log('Roles disponibles:', this.roles);
-      console.log('Usuario rol_id:', this.usuario.rol_id, typeof this.usuario.rol_id);
   }
 
   public usuarioLogueado() {

@@ -41,9 +41,15 @@ const routes: Routes = [
         path: 'empresas/usuarios',
         component: EmpresasUsuariosComponent,
         title: 'Usuarios',
+        canActivate: [PermissionGuard],
+        data: { permission: 'organizacion.usuarios.ver' },
       },
 
-      { path: 'usuarios', component: UsuariosComponent, title: 'Empresas' },
+      { path: 'usuarios',
+         component: UsuariosComponent, title: 'Empresas',
+         canActivate: [PermissionGuard],
+         data: { permission: 'organizacion.usuarios.ver' },
+        },
     ],
   },
 ];

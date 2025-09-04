@@ -20,6 +20,7 @@ import { PlanillaDetalleComponent } from './planillas/planilla-detalle.component
 import { BoletaPagoComponent } from './planillas/boleta-pago.component';
 import { VerBoletasComponent } from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-planilla/configuracion-planilla.component';
+import { TestConstantsComponent } from './test-constants.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
 
@@ -51,7 +52,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     PlanillaDetalleComponent,
     BoletaPagoComponent,
     VerBoletasComponent,
-    ConfiguracionPlanillaComponent
+    ConfiguracionPlanillaComponent,
+    TestConstantsComponent
   ],
   exports: [
     PlanillasComponent,
@@ -60,7 +62,8 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     PlanillaDetalleComponent,
     BoletaPagoComponent,
     VerBoletasComponent,
-    ConfiguracionPlanillaComponent
+    ConfiguracionPlanillaComponent,
+    TestConstantsComponent
   ]
 })
 export class PlanillasModule { }

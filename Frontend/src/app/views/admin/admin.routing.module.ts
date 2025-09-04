@@ -1,6 +1,8 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from '@guards/auth.guard';
+import { AdminGuard } from '@guards/admin.guard';
+import { UsuariosGuard } from '@guards/usuarios.guard';
 import { LayoutComponent } from '@layout/layout.component';
 
 import { EmpresaComponent }     from '@views/admin/empresa/empresa.component';
@@ -27,14 +29,15 @@ const routes: Routes = [
   {
     path: '',
     component: LayoutComponent,
+    canActivate: [AdminGuard],
     children: [
         { path: 'mi-cuenta', component: EmpresaComponent, title: 'Mi cuenta' },
         { path: 'eliminar-datos', component: EliminarDatosComponent, title: 'Eliminar datos' },
         { path: 'suscripcion', component: SuscripcionComponent, title: 'Suscripción' },
         { path: 'sucursales', component: SucursalesComponent, title: 'Sucursales' },
         // { path: 'sucursal/:id', component: SucursalComponent, title: 'Sucursal' },
-        { path: 'usuarios', component: UsuariosComponent, title: 'Usuarios' },
-        { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario' },
+        { path: 'usuarios', component: UsuariosComponent, title: 'Usuarios', canActivate: [UsuariosGuard] },
+        { path: 'usuario/:id', component: UsuarioComponent, title: 'Usuario', canActivate: [UsuariosGuard] },
         { path: 'notificaciones', component: NotificacionesComponent, title: 'Notificaciones' },
         { path: 'ayuda', component: DocsComponent, title: 'Ayuda' },
         { path: 'reportes', component: ReportesComponent, title: 'Inteligencia de negocios'},
