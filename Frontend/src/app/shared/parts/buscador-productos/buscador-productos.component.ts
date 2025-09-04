@@ -13,6 +13,7 @@ import { AlertService } from '@services/alert.service';
 export class BuscadorProductosComponent implements OnInit {
 
     @Output() selectProducto = new EventEmitter();
+    @Input() id_bodega?: number; // Parámetro opcional para filtrar por bodega
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -29,16 +30,25 @@ export class BuscadorProductosComponent implements OnInit {
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
-              this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
+            switchMap((query: any) => {
+              // Decidir qué endpoint usar basado en si se proporciona id_bodega
+              let endpoint = 'productos/buscar-by-query';
+              let params = `query=${encodeURIComponent(query)}`;
+              
+              if (this.id_bodega) {
+                endpoint = 'productos/buscar-by-query-bodega';
+                params += `&id_bodega=${this.id_bodega}`;
+              }
+              
+              return this.apiService.getAll(`${endpoint}?${params}`).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
                   this.productos = []; // Limpiar resultados en caso de error.
                   this.loading = false; // Asegurar que el estado de carga se actualice.
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
-              )
-            )
+              );
+            })
           )
           .subscribe({
             next: (results: any[]) => {
