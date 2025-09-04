@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class N1coChargeController extends Controller
 {
@@ -203,95 +204,98 @@ class N1coChargeController extends Controller
 
     private function createOrderAndCharge(Request $request, string $cardId)
     {
-        $plan = Plan::find($request->input('plan.id_plan'));
-        $user = User::find($request->input('customer.id'));
-        $empresa = Empresa::where('id', $user->id_empresa)->first();
-        $suscripcion = Suscripcion::where('empresa_id', $empresa->id)
-            ->where('plan_id', $plan->id)
-            ->first();
+        return DB::transaction(function () use ($request, $cardId) {
+            $plan = Plan::find($request->input('plan.id_plan'));
+            $user = User::find($request->input('customer.id'));
+            $empresa = Empresa::where('id', $user->id_empresa)->first();
+            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)
+                ->where('plan_id', $plan->id)
+                ->first();
 
-        $monto = $suscripcion ? $suscripcion->monto : $plan->precio;
+            $monto = $suscripcion ? $suscripcion->monto : $plan->precio;
 
-        $order = OrdenPago::create([
-            'id_usuario' => $request->input('customer.id'),
-            'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
-            'id_orden_n1co' => null,
-            'id_autorizacion_3ds' => null,
-            'autorizacion_url' => null,
-            'id_plan' => $plan->id,
-            'nombre_cliente' => $request->input('customer.name'),
-            'email_cliente' => $request->input('customer.email'),
-            'telefono_cliente' => $request->input('customer.phoneNumber'),
-            'plan' => $plan->nombre,
-            'monto' => $monto,
-            'estado' => 'pendiente',
-        ]);
-
-        $chargeData = [
-            'customer' => [
-                'name' => $request->input('customer.name'),
-                'email' => $request->input('customer.email'),
-                'phoneNumber' => $request->input('customer.phoneNumber')
-            ],
-            'cardId' => $cardId,
-            'order' => [
-                'id' => $order->id_orden,
-                'lineItems' => [
-                    [
-                        'product' => [
-                            'name' => $plan->nombre,
-                            'price' => $suscripcion->monto
-                        ],
-                        'quantity' => 1
-                    ]
-                ],
-                'description' => $plan->descripcion,
-                'name' => $plan->nombre
-            ],
-            'billingInfo' => [
-                'countryCode' => $request->input('billingInfo.countryCode'),
-                'stateCode' => $request->input('billingInfo.stateCode'),
-                'zipCode' => $request->input('billingInfo.zipCode')
-            ]
-        ];
-
-        $chargeResult = $this->n1coGateway->createCharge($chargeData);
-
-        Log::channel('payments_success')->info('Resultado de la creación del cargo', [
-            'charge_result' => $chargeResult
-        ]);
-
-        if (!$chargeResult['success']) {
-            Log::channel('payments_error')->error('Error al crear cargo', [
-                'message' => $chargeResult['error']
+            $order = OrdenPago::create([
+                'id_usuario' => $request->input('customer.id'),
+                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                'id_orden_n1co' => null,
+                'id_autorizacion_3ds' => null,
+                'autorizacion_url' => null,
+                'id_plan' => $plan->id,
+                'nombre_cliente' => $request->input('customer.name'),
+                'email_cliente' => $request->input('customer.email'),
+                'telefono_cliente' => $request->input('customer.phoneNumber'),
+                'plan' => $plan->nombre,
+                'monto' => $monto,
+                'estado' => 'pendiente',
             ]);
-            return response()->json($chargeResult, 500);
-        }
 
-        if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
-            $authenticationId = $chargeResult['data']['authentication']['id'];
-            $authenticationUrl = $chargeResult['data']['authentication']['url'];
+            $chargeData = [
+                'customer' => [
+                    'name' => $request->input('customer.name'),
+                    'email' => $request->input('customer.email'),
+                    'phoneNumber' => $request->input('customer.phoneNumber')
+                ],
+                'cardId' => $cardId,
+                'order' => [
+                    'id' => $order->id_orden,
+                    'lineItems' => [
+                        [
+                            'product' => [
+                                'name' => $plan->nombre,
+                                'price' => $suscripcion->monto
+                            ],
+                            'quantity' => 1
+                        ]
+                    ],
+                    'description' => $plan->descripcion,
+                    'name' => $plan->nombre
+                ],
+                'billingInfo' => [
+                    'countryCode' => $request->input('billingInfo.countryCode'),
+                    'stateCode' => $request->input('billingInfo.stateCode'),
+                    'zipCode' => $request->input('billingInfo.zipCode')
+                ]
+            ];
 
-            $order->updateStatusAuthentication3DS(
-                $authenticationId, 
-                $authenticationUrl, 
-                config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
-            );
+            $chargeResult = $this->n1coGateway->createCharge($chargeData);
+
+            Log::channel('payments_success')->info('Resultado de la creación del cargo', [
+                'charge_result' => $chargeResult
+            ]);
+
+            if (!$chargeResult['success']) {
+                Log::channel('payments_error')->error('Error al crear cargo', [
+                    'message' => $chargeResult['error']
+                ]);
+                // Si falla el cargo, se hace rollback automáticamente
+                throw new \Exception('Error al crear cargo: ' . $chargeResult['error']);
+            }
+
+            if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                $authenticationId = $chargeResult['data']['authentication']['id'];
+                $authenticationUrl = $chargeResult['data']['authentication']['url'];
+
+                $order->updateStatusAuthentication3DS(
+                    $authenticationId, 
+                    $authenticationUrl, 
+                    config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'requires_3ds' => true,
+                    'authentication_url' => $authenticationUrl,
+                    'authentication_id' => $authenticationId,
+                    'order_id' => $order->id_orden
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'requires_3ds' => true,
-                'authentication_url' => $authenticationUrl,
-                'authentication_id' => $authenticationId,
-                'order_id' => $order->id_orden
+                'message' => 'Método de pago creado exitosamente',
+                'data' => $chargeResult['data']
             ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Método de pago creado exitosamente',
-            'data' => $chargeResult['data']
-        ]);
+        });
     }
 
     private function handleFailedOrderRetry($ordenPago, $metodoPago, $request)
@@ -355,82 +359,92 @@ class N1coChargeController extends Controller
 
     private function createNewOrderWithExistingMethod($metodoPago, $request)
     {
-        // Crear nueva orden con método existente (para pago inicial)
-        $plan = Plan::find($request->input('plan.id_plan'));
-        $user = User::find($request->input('customer.id'));
-        $empresa = Empresa::where('id', $user->id_empresa)->first();
-        $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
-        $monto = $suscripcion ? $suscripcion->monto : $plan->precio;
+        return DB::transaction(function () use ($metodoPago, $request) {
+            // Crear nueva orden con método existente (para pago inicial)
+            $plan = Plan::find($request->input('plan.id_plan'));
+            $user = User::find($request->input('customer.id'));
+            $empresa = Empresa::where('id', $user->id_empresa)->first();
+            $suscripcion = Suscripcion::where('empresa_id', $empresa->id)->first();
+            $monto = $suscripcion ? $suscripcion->monto : $plan->precio;
 
-        $ordenPago = OrdenPago::create([
-            'id_usuario' => $request->input('customer.id'),
-            'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
-            'id_orden_n1co' => null,
-            'id_autorizacion_3ds' => null,
-            'autorizacion_url' => null,
-            'id_plan' => $plan->id,
-            'nombre_cliente' => $request->input('customer.name'),
-            'email_cliente' => $request->input('customer.email'),
-            'telefono_cliente' => $request->input('customer.phoneNumber'),
-            'plan' => $plan->nombre,
-            'monto' => $monto,
-            'estado' => 'pendiente',
-        ]);
+            $ordenPago = OrdenPago::create([
+                'id_usuario' => $request->input('customer.id'),
+                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                'id_orden_n1co' => null,
+                'id_autorizacion_3ds' => null,
+                'autorizacion_url' => null,
+                'id_plan' => $plan->id,
+                'nombre_cliente' => $request->input('customer.name'),
+                'email_cliente' => $request->input('customer.email'),
+                'telefono_cliente' => $request->input('customer.phoneNumber'),
+                'plan' => $plan->nombre,
+                'monto' => $monto,
+                'estado' => 'pendiente',
+            ]);
 
-        $chargeData = [
-            'customer' => [
-                'name' => $request->input('customer.name'),
-                'email' => $request->input('customer.email'),
-                'phoneNumber' => $request->input('customer.phoneNumber')
-            ],
-            'cardId' => $metodoPago->id_tarjeta,
-            'order' => [
-                'id' => $ordenPago->id_orden,
-                'lineItems' => [
-                    [
-                        'product' => [
-                            'name' => $plan->nombre,
-                            'price' => $suscripcion->monto
-                        ],
-                        'quantity' => 1
-                    ]
+            $chargeData = [
+                'customer' => [
+                    'name' => $request->input('customer.name'),
+                    'email' => $request->input('customer.email'),
+                    'phoneNumber' => $request->input('customer.phoneNumber')
                 ],
-                'description' => $plan->descripcion,
-                'name' => $plan->nombre
-            ],
-            'billingInfo' => [
-                'countryCode' => $metodoPago->codigo_pais,
-                'stateCode' => $request->input('billingInfo.stateCode'),
-                'zipCode' => $request->input('billingInfo.zipCode')
-            ]
-        ];
+                'cardId' => $metodoPago->id_tarjeta,
+                'order' => [
+                    'id' => $ordenPago->id_orden,
+                    'lineItems' => [
+                        [
+                            'product' => [
+                                'name' => $plan->nombre,
+                                'price' => $suscripcion->monto
+                            ],
+                            'quantity' => 1
+                        ]
+                    ],
+                    'description' => $plan->descripcion,
+                    'name' => $plan->nombre
+                ],
+                'billingInfo' => [
+                    'countryCode' => $metodoPago->codigo_pais,
+                    'stateCode' => $request->input('billingInfo.stateCode'),
+                    'zipCode' => $request->input('billingInfo.zipCode')
+                ]
+            ];
 
-        $chargeResult = $this->n1coGateway->createCharge($chargeData);
+            $chargeResult = $this->n1coGateway->createCharge($chargeData);
 
-        if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
-            $authenticationId = $chargeResult['data']['authentication']['id'];
-            $authenticationUrl = $chargeResult['data']['authentication']['url'];
+            if (!$chargeResult['success']) {
+                Log::channel('payments_error')->error('Error al crear cargo con método existente', [
+                    'error' => $chargeResult['error']
+                ]);
+                // Si falla el cargo, se hace rollback automáticamente
+                throw new \Exception('Error al crear cargo: ' . $chargeResult['error']);
+            }
 
-            $ordenPago->updateStatusAuthentication3DS(
-                $authenticationId,
-                $authenticationUrl,
-                config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
-            );
+            if ($chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                $authenticationId = $chargeResult['data']['authentication']['id'];
+                $authenticationUrl = $chargeResult['data']['authentication']['url'];
+
+                $ordenPago->updateStatusAuthentication3DS(
+                    $authenticationId,
+                    $authenticationUrl,
+                    config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                );
+
+                return response()->json([
+                    'success' => true,
+                    'requires_3ds' => true,
+                    'authentication_url' => $authenticationUrl,
+                    'authentication_id' => $authenticationId,
+                    'order_id' => $ordenPago->id_orden
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
-                'requires_3ds' => true,
-                'authentication_url' => $authenticationUrl,
-                'authentication_id' => $authenticationId,
-                'order_id' => $ordenPago->id_orden
+                'message' => 'Cargo creado exitosamente',
+                'data' => $chargeResult['data']
             ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cargo creado exitosamente',
-            'data' => $chargeResult['data']
-        ]);
+        });
     }
 
     public function updateMethodPayment(Request $request)
@@ -564,152 +578,155 @@ class N1coChargeController extends Controller
                 ], 400);
             }
 
-            // Obtener el método de pago
-            $metodoPago = MetodoPago::where('id', $request->metodo_pago_id)
-                ->where('id_usuario', $request->id_usuario)
-                ->where('esta_activo', true)
-                ->first();
+            return DB::transaction(function () use ($request) {
+                // Obtener el método de pago
+                $metodoPago = MetodoPago::where('id', $request->metodo_pago_id)
+                    ->where('id_usuario', $request->id_usuario)
+                    ->where('esta_activo', true)
+                    ->first();
 
-            if (!$metodoPago) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Método de pago no encontrado o no está activo'
-                ], 404);
-            }
-
-            // Obtener el plan
-            $plan = Plan::find($request->plan_id);
-
-            // Obtener la suscripción
-            $usuario = User::find($request->id_usuario);
-            $suscripcion = Suscripcion::where('empresa_id', $usuario->id_empresa)
-                ->where('plan_id', $request->plan_id)
-                ->first();
-
-            if (!$plan) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Plan no encontrado'
-                ], 404);
-            }
-
-            // Crear orden de pago
-            $ordenPago = OrdenPago::create([
-                'id_usuario' => $request->id_usuario,
-                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
-                'id_orden_n1co' => null,
-                'id_autorizacion_3ds' => null,
-                'autorizacion_url' => null,
-                'id_plan' => $plan->id,
-                'nombre_cliente' => $request->customer_name,
-                'email_cliente' => $request->customer_email,
-                'telefono_cliente' => $request->customer_phone,
-                'plan' => $plan->nombre,
-                'monto' => $suscripcion->monto,
-                'estado' => 'pendiente',
-                'divisa' => 'USD'
-            ]);
-
-            // Preparar datos para el cargo
-            $chargeData = [
-                'customer' => [
-                    'name' => $request->customer_name,
-                    'email' => $request->customer_email,
-                    'phoneNumber' => $request->customer_phone
-                ],
-                'cardId' => $metodoPago->id_tarjeta,
-                'order' => [
-                    'id' => $ordenPago->id_orden,
-                    'lineItems' => [
-                        [
-                            'product' => [
-                                'name' => $plan->nombre,
-                                'price' => $ordenPago->monto
-                            ],
-                            'quantity' => 1
-                        ]
-                    ],
-                    'description' => $plan->descripcion ?? "Pago de suscripción del plan {$plan->nombre}",
-                    'name' => $plan->nombre
-                ],
-                'billingInfo' => [
-                    'countryCode' => $metodoPago->codigo_pais,
-                    'stateCode' => $metodoPago->codigo_estado,
-                    'zipCode' => $metodoPago->codigo_postal
-                ]
-            ];
-
-            // Realizar el cargo
-            $chargeResult = $this->n1coGateway->createCharge($chargeData);
-
-            Log::channel('payments_success')->info('Resultado de la creación del cargo', [
-                'charge_result' => $chargeResult
-            ]);
-
-            // Si requiere autenticación 3DS
-            if (isset($chargeResult['data']['status']) && $chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
-                $authenticationId = $chargeResult['data']['authentication']['id'];
-                $authenticationUrl = $chargeResult['data']['authentication']['url'];
-
-                $ordenPago->updateStatusAuthentication3DS(
-                    $authenticationId,
-                    $authenticationUrl,
-                    config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
-                );
-
-                return response()->json([
-                    'success' => true,
-                    'requires_3ds' => true,
-                    'authentication_url' => $authenticationUrl,
-                    'authentication_id' => $authenticationId,
-                    'order_id' => $ordenPago->id_orden
-                ]);
-            }
-
-            // Si el cargo fue exitoso
-            if ($chargeResult['success']) {
-                // Actualizar la orden de pago
-                $ordenPago->update([
-                    'id_orden_n1co' => $chargeResult['data']['id'],
-                    'estado' => 'completado',
-                    'fecha_transaccion' => now()
-                ]);
-
-                // Crear o actualizar suscripción
-                $empresa = Empresa::find($request->empresa_id);
-                if ($empresa) {
-                    $suscripcion = Suscripcion::updateOrCreate(
-                        ['empresa_id' => $empresa->id, 'estado' => 'activo'],
-                        [
-                            'plan_id' => $plan->id,
-                            'usuario_id' => $request->id_usuario,
-                            'tipo_plan' => 'mensual', // O el valor que corresponda
-                            'monto' => $ordenPago->monto,
-                            'fecha_inicio' => now(),
-                            'fecha_ultimo_pago' => now(),
-                            'fecha_proximo_pago' => now()->addMonth(),
-                            'estado' => 'activo'
-                        ]
-                    );
+                if (!$metodoPago) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Método de pago no encontrado o no está activo'
+                    ], 404);
                 }
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pago procesado exitosamente',
-                    'data' => $chargeResult['data']
-                ]);
-            } else {
-                    // Si hubo un error en el cargo
-                $ordenPago->update([
-                    'estado' => 'fallido'
+                // Obtener el plan
+                $plan = Plan::find($request->plan_id);
+
+                // Obtener la suscripción
+                $usuario = User::find($request->id_usuario);
+                $suscripcion = Suscripcion::where('empresa_id', $usuario->id_empresa)
+                    ->where('plan_id', $request->plan_id)
+                    ->first();
+
+                if (!$plan) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Plan no encontrado'
+                    ], 404);
+                }
+
+                // Crear orden de pago
+                $ordenPago = OrdenPago::create([
+                    'id_usuario' => $request->id_usuario,
+                    'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                    'id_orden_n1co' => null,
+                    'id_autorizacion_3ds' => null,
+                    'autorizacion_url' => null,
+                    'id_plan' => $plan->id,
+                    'nombre_cliente' => $request->customer_name,
+                    'email_cliente' => $request->customer_email,
+                    'telefono_cliente' => $request->customer_phone,
+                    'plan' => $plan->nombre,
+                    'monto' => $suscripcion->monto,
+                    'estado' => 'pendiente',
+                    'divisa' => 'USD'
                 ]);
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error al procesar el pago',
-                    'error' => $chargeResult['error'] ?? 'Error desconocido'
-                ], 500);
-            }
+                // Preparar datos para el cargo
+                $chargeData = [
+                    'customer' => [
+                        'name' => $request->customer_name,
+                        'email' => $request->customer_email,
+                        'phoneNumber' => $request->customer_phone
+                    ],
+                    'cardId' => $metodoPago->id_tarjeta,
+                    'order' => [
+                        'id' => $ordenPago->id_orden,
+                        'lineItems' => [
+                            [
+                                'product' => [
+                                    'name' => $plan->nombre,
+                                    'price' => $ordenPago->monto
+                                ],
+                                'quantity' => 1
+                            ]
+                        ],
+                        'description' => $plan->descripcion ?? "Pago de suscripción del plan {$plan->nombre}",
+                        'name' => $plan->nombre
+                    ],
+                    'billingInfo' => [
+                        'countryCode' => $metodoPago->codigo_pais,
+                        'stateCode' => $metodoPago->codigo_estado,
+                        'zipCode' => $metodoPago->codigo_postal
+                    ]
+                ];
+
+                // Realizar el cargo
+                $chargeResult = $this->n1coGateway->createCharge($chargeData);
+
+                Log::channel('payments_success')->info('Resultado de la creación del cargo', [
+                    'charge_result' => $chargeResult
+                ]);
+
+                // Si requiere autenticación 3DS
+                if (isset($chargeResult['data']['status']) && $chargeResult['data']['status'] === 'AUTHENTICATION_REQUIRED') {
+                    $authenticationId = $chargeResult['data']['authentication']['id'];
+                    $authenticationUrl = $chargeResult['data']['authentication']['url'];
+
+                    $ordenPago->updateStatusAuthentication3DS(
+                        $authenticationId,
+                        $authenticationUrl,
+                        config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+                    );
+
+                    return response()->json([
+                        'success' => true,
+                        'requires_3ds' => true,
+                        'authentication_url' => $authenticationUrl,
+                        'authentication_id' => $authenticationId,
+                        'order_id' => $ordenPago->id_orden
+                    ]);
+                }
+
+                // Si el cargo fue exitoso
+                if ($chargeResult['success']) {
+                    // Actualizar la orden de pago
+                    $ordenPago->update([
+                        'id_orden_n1co' => $chargeResult['data']['id'],
+                        'estado' => 'completado',
+                        'fecha_transaccion' => now()
+                    ]);
+
+                    // Crear o actualizar suscripción
+                    $empresa = Empresa::find($request->empresa_id);
+                    if ($empresa) {
+                        $suscripcion = Suscripcion::updateOrCreate(
+                            ['empresa_id' => $empresa->id, 'estado' => 'activo'],
+                            [
+                                'plan_id' => $plan->id,
+                                'usuario_id' => $request->id_usuario,
+                                'tipo_plan' => 'mensual', // O el valor que corresponda
+                                'monto' => $ordenPago->monto,
+                                'fecha_inicio' => now(),
+                                'fecha_ultimo_pago' => now(),
+                                'fecha_proximo_pago' => now()->addMonth(),
+                                'estado' => 'activo'
+                            ]
+                        );
+                    }
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Pago procesado exitosamente',
+                        'data' => $chargeResult['data']
+                    ]);
+                } else {
+                    // Si hubo un error en el cargo
+                    $ordenPago->update([
+                        'estado' => 'fallido'
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error al procesar el pago',
+                        'error' => $chargeResult['error'] ?? 'Error desconocido'
+                    ], 500);
+                }
+            });
+
         } catch (\Exception $e) {
             Log::channel('payments_error')->error('Error en processChargeReady:', [
                 'message' => $e->getMessage(),
