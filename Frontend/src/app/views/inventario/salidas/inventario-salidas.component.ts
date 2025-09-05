@@ -96,6 +96,13 @@ export class InventarioSalidasComponent implements OnInit {
                     this.apiService.store('salida/aprobar/' + salida.id, {}).subscribe(data => {
                         this.alertService.success('Salida aprobada correctamente', 'El registro fue aprobado exitosamente.');
                         this.filtrar();
+
+                        //Generar partida contable
+                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                            this.apiService.store('salida/partida-contable/' + data.id, {}).subscribe(salida => {
+                            },error => {this.alertService.error(error);});
+                        }
+
                     }, error => {this.alertService.error(error); });
                 }
             });
@@ -171,6 +178,32 @@ export class InventarioSalidasComponent implements OnInit {
         }, error => {
             this.alertService.error(error);
             this.saving = false;
+        });
+    }
+
+    generarPartidaContable(salida: any) {
+        Swal.fire({
+            title: '¿Generar partida contable?',
+            text: '¿Estás seguro de que deseas generar la partida contable para esta salida?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, generar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.loading = true;
+                this.apiService.store('salida/partida-contable/' + salida.id, {}).subscribe(
+                    (response) => {
+                        this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+                        this.loading = false;
+                        this.filtrar();
+                    },
+                    (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                );
+            }
         });
     }
 

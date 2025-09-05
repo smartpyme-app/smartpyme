@@ -96,6 +96,13 @@ export class InventarioEntradasComponent implements OnInit {
                     this.apiService.store('entrada/aprobar/' + entrada.id, {}).subscribe(data => {
                         this.alertService.success('Entrada aprobada correctamente', 'El registro fue aprobado exitosamente.');
                         this.filtrar();
+
+                        //Generar partida contable
+                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                            this.apiService.store('entrada/partida-contable/' + data.id, {}).subscribe(entrada => {
+                            },error => {this.alertService.error(error);});
+                        }
+
                     }, error => {this.alertService.error(error); });
                 }
             });
@@ -171,6 +178,32 @@ export class InventarioEntradasComponent implements OnInit {
         }, error => {
             this.alertService.error(error);
             this.saving = false;
+        });
+    }
+
+    generarPartidaContable(entrada: any) {
+        Swal.fire({
+            title: '¿Generar partida contable?',
+            text: '¿Estás seguro de que deseas generar la partida contable para esta entrada?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, generar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.loading = true;
+                this.apiService.store('entrada/partida-contable/' + entrada.id, {}).subscribe(
+                    (response) => {
+                        this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+                        this.loading = false;
+                        this.filtrar();
+                    },
+                    (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                );
+            }
         });
     }
 

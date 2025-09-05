@@ -34,6 +34,7 @@ class Configuracion extends Model
 
         'generar_partidas', // Manual, Auto
         'id_cuenta_pedidos_transito',
+        'id_cuenta_inventario_transitorio',
         'id_empresa',
     ];
 
