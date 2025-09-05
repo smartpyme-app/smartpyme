@@ -4,6 +4,9 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { Subject, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 import * as moment from 'moment';
 
@@ -32,6 +35,19 @@ export class FacturacionCompraComponent implements OnInit {
     public duplicarcompra = false;
     public facturarCotizacion = false;
     public imprimir:boolean = false;
+    public jsonContent: string = '';
+    public processingJson: boolean = false;
+    public productosNoEncontrados: any[] = [];
+    public modalProductos!: BsModalRef;
+    public productosEncontrados: any[] = []; // Cache de productos ya encontrados
+    public buscandoProductos: boolean = false;
+
+    // Propiedades para la búsqueda dinámica
+    public searchTerm: string = '';
+    public searchResults: any[] = [];
+    public searchLoading: boolean = false;
+    public searchProductos$ = new Subject<string>();
+
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -41,6 +57,10 @@ export class FacturacionCompraComponent implements OnInit {
 
     @ViewChild('mcredito')
     public creditoTemplate!: TemplateRef<any>;
+    
+    @ViewChild('productosAjuste')
+    public productosAjusteTemplate!: TemplateRef<any>;
+    
 
     
     constructor( 
@@ -49,6 +69,33 @@ export class FacturacionCompraComponent implements OnInit {
         private route: ActivatedRoute, private router: Router,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        
+        // Configurar búsqueda dinámica
+        this.searchProductos$.pipe(
+            debounceTime(300), // Esperar 300ms después de que el usuario deje de escribir
+            distinctUntilChanged(), // Solo buscar si el término cambió
+            switchMap(term => {
+                if (!term || term.length < 2) {
+                    return of([]);
+                }
+                this.searchLoading = true;
+                this.searchTerm = term;
+                
+                return this.apiService.store('productos/buscar-modal', {
+                    termino: term,
+                    id_empresa: this.apiService.auth_user().id_empresa,
+                    limite: 15
+                }).pipe(
+                    catchError(error => {
+                        console.error('Error en búsqueda:', error);
+                        return of([]);
+                    })
+                );
+            })
+        ).subscribe(results => {
+            this.searchResults = results || [];
+            this.searchLoading = false;
+        });
     }
 
     ngOnInit() {
@@ -278,7 +325,7 @@ export class FacturacionCompraComponent implements OnInit {
 
     public setBodega(){
         this.compra.id_sucursal = this.bodegas.find((item:any) => item.id == this.compra.id_bodega).id_sucursal;
-        console.log(this.compra);
+        // console.log(this.compra);
     }
 
     public updatecompra(compra:any) {
@@ -289,7 +336,7 @@ export class FacturacionCompraComponent implements OnInit {
     public selectTipoDocumento(){
         if(this.compra.tipo_documento == 'Sujeto excluido'){
             let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
-            console.log(documento);
+            // console.log(documento);
             this.compra.referencia = documento.correlativo;
         }
     }
@@ -360,7 +407,441 @@ export class FacturacionCompraComponent implements OnInit {
 
     public isColumnEnabled(columnName: string): boolean {
         return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
-        }
+    }
 
+
+    openJsonImport(template: TemplateRef<any>) {
+        this.jsonContent = '';
+        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+      /**
+     * Maneja la selección de archivo JSON
+     */
+    handleFileInput(event: any) {
+        const file = event.target.files[0];
+        if (file) {
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            this.jsonContent = e.target.result;
+        };
+        reader.readAsText(file);
+        }
+    }
+
+    processJsonData() {
+        this.processingJson = true;
+    
+        try {
+          // Parsear el JSON
+          const jsonData = JSON.parse(this.jsonContent);
+    
+          // Mapear los datos del JSON al modelo de Compra
+          this.mapJsonToCompra(jsonData);
+    
+          // Cerrar el modal y mostrar mensaje de éxito
+          this.modalRef?.hide();
+          this.alertService.success(
+            'Datos importados',
+            'Los datos del JSON han sido importados exitosamente.'
+          );
+        } catch (error) {
+          this.alertService.error('Error al procesar el JSON: ' + error);
+        } finally {
+          this.processingJson = false;
+        }
+      }
+
+      getTipoDocumento(tipoDte: string) {
+        const tiposDte = {
+          '01': 'Factura',
+          '03': 'Crédito fiscal',
+          '05': 'Nota de débito',
+          '06': 'Nota de crédito',
+          '07': 'Comprobante de retención',
+          '11': 'Factura de exportación',
+          '14': 'Sujeto excluido'
+        };
+        return tiposDte[tipoDte as keyof typeof tiposDte] || 'Factura';
+      }
+
+      getProveedor(proveedor: any) {
+        // Buscar primero por NIT
+        //console.log('Buscando proveedor del DTE:', proveedor);
+        let proveedorEncontrado = this.searchNit(proveedor.nit);
+        if (!proveedorEncontrado) {
+          // Si no lo encuentra por NIT, buscar por nombre
+          proveedorEncontrado = this.searchNombre(proveedor.nombre);
+        }
+        
+        // Si no encuentra por NIT ni por nombre, NO se selecciona nada
+        if (!proveedorEncontrado) {
+          console.log('No se encontró proveedor específico, no se selecciona ninguno');
+        }
+        
+        //console.log('Proveedor final seleccionado:', proveedorEncontrado);
+        return proveedorEncontrado;
+      }
+
+      searchNit(nit: string) {
+        // console.log('Buscando proveedor por NIT:', nit);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando NIT:', proveedor.nit, 'con:', nit);
+          return proveedor.nit === nit || proveedor.nit == nit;
+        });
+        
+        // console.log('Proveedor encontrado por NIT:', proveedor);
+        return proveedor;
+      }
+
+      searchNombre(nombre: string) {
+        // console.log('Buscando proveedor por nombre:', nombre);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          //console.log('Comparando nombres:', proveedor.nombre_empresa, 'con:', nombre);
+          return proveedor.nombre_empresa === nombre || 
+                 proveedor.nombre_empresa == nombre ||
+                 proveedor.nombre === nombre ||
+                 proveedor.nombre == nombre;
+        });
+        
+        // console.log('Proveedor encontrado por nombre:', proveedor);
+        return proveedor;
+      }
+
+      async procesarProductosDTE(cuerpoDocumento: any[]) {
+        this.compra.detalles = [];
+        this.productosNoEncontrados = [];
+        this.buscandoProductos = true;
+        
+        let todosEncontrados = true;
+    
+        // Procesar cada item de forma secuencial para evitar sobrecarga
+        for (const item of cuerpoDocumento) {
+            try {
+                const productoEncontrado = await this.buscarProductoOptimizado(item.codigo, item.descripcion);
+    
+                if (productoEncontrado) {
+                    // Producto encontrado, agregar al detalle
+                    const detalle = this.crearDetalleDesdeItem(item, productoEncontrado);
+                    this.compra.detalles.push(detalle);
+                    // Guardar en cache
+                    this.productosEncontrados.push(productoEncontrado);
+                } else {
+                    // Producto no encontrado
+                    this.productosNoEncontrados.push({
+                        numItem: item.numItem,
+                        codigo: item.codigo,
+                        descripcion: item.descripcion,
+                        cantidad: item.cantidad,
+                        precioUni: item.precioUni,
+                        productoSeleccionado: null,
+                        sugerencias: [] // Para almacenar sugerencias de búsqueda
+                    });
+                    todosEncontrados = false;
+                }
+            } catch (error) {
+                console.error('Error buscando producto:', error);
+                todosEncontrados = false;
+            }
+        }
+    
+        this.buscandoProductos = false;
+    
+        if (!todosEncontrados) {
+            // Cargar sugerencias para productos no encontrados
+            await this.cargarSugerenciasProductos();
+            this.mostrarModalAjusteProductos();
+        } else {
+            this.sumTotal();
+            this.alertService.success('Productos importados', 'Todos los productos fueron reconocidos automáticamente.');
+        }
+    }
+
+    async buscarProductoOptimizado(codigo: string, descripcion: string): Promise<any> {
+        // Primero verificar cache local
+        const enCache = this.productosEncontrados.find(p => 
+            p.cod_proveed_prod === codigo || 
+            (p.nombre && descripcion && p.nombre.toLowerCase().includes(descripcion.toLowerCase()))
+        );
+        
+        if (enCache) return enCache;
+    
+        try {
+            // Búsqueda por código de proveedor
+            if (codigo) {
+                const porCodigo = await this.buscarPorCodigoProveedor(codigo).toPromise();
+                if (porCodigo && porCodigo.length > 0) {
+                    return porCodigo[0];
+                }
+            }
+    
+            // Búsqueda por nombre si no se encontró por código
+            if (descripcion) {
+                const porNombre = await this.buscarPorNombre(descripcion).toPromise();
+                if (porNombre && porNombre.length > 0) {
+                    return porNombre[0];
+                }
+            }
+    
+            return null;
+        } catch (error) {
+            console.error('Error en búsqueda optimizada:', error);
+            return null;
+        }
+    }
+
+    buscarPorCodigoProveedor(codigo: string) {
+        return this.apiService.store('productos/buscar-por-codigo-proveedor', { 
+            cod_proveed_prod: codigo,
+            id_empresa: this.apiService.auth_user().id_empresa 
+        });
+    }
+    
+    // Servicio para buscar por nombre específico
+    buscarPorNombre(nombre: string) {
+        return this.apiService.store('productos/buscar-por-nombre', { 
+            nombre: nombre,
+            id_empresa: this.apiService.auth_user().id_empresa,
+            limite: 5 // Limitar resultados para performance
+        });
+    }
+
+    async cargarSugerenciasProductos() {
+        for (const item of this.productosNoEncontrados) {
+            try {
+                // Búsqueda amplia para sugerencias
+                const sugerencias = await this.buscarSugerencias(item.descripcion).toPromise();
+                item.sugerencias = sugerencias || [];
+            } catch (error) {
+                console.error('Error cargando sugerencias para:', item.descripcion, error);
+                item.sugerencias = [];
+            }
+        }
+    }
+
+    buscarSugerencias(termino: string) {
+        // Dividir el término en palabras y buscar coincidencias parciales
+        const palabras = termino.toLowerCase().split(' ').filter(p => p.length > 2);
+        const terminoBusqueda = palabras.join(' ');
+    
+        return this.apiService.store('productos/buscar-sugerencias', {
+            termino: terminoBusqueda,
+            palabras: palabras,
+            id_empresa: this.apiService.auth_user().id_empresa,
+            limite: 10
+        });
+    }
+
+    buscarProductosModal(termino: string) {
+        if (!termino || termino.length < 2) {
+            return Promise.resolve([]);
+        }
+    
+        return this.apiService.store('productos/buscar-modal', {
+            termino: termino,
+            id_empresa: this.apiService.auth_user().id_empresa,
+            limite: 20
+        }).toPromise();
+    }
+
+    crearDetalleDesdeItem(item: any, producto: any) {
+        // Calcular total de forma segura
+        const ventaGravada = parseFloat(item.ventaGravada) || 0;
+        const ventaExenta = parseFloat(item.ventaExenta) || 0;
+        const ventaNoSuj = parseFloat(item.ventaNoSuj) || 0;
+        const totalCalculado = ventaGravada + ventaExenta + ventaNoSuj;
+        
+        // Si no hay total del DTE, calcular basado en cantidad y precio
+        const cantidad = parseFloat(item.cantidad) || 0;
+        const precio = parseFloat(item.precioUni) || 0;
+        const descuento = parseFloat(item.montoDescu) || 0;
+        const totalFinal = totalCalculado > 0 ? totalCalculado : (cantidad * precio - descuento);
+
+        return {
+            id: null,
+            id_producto: producto.id,
+            nombre: producto.nombre,
+            nombre_producto: producto.nombre, // Campo requerido por el template
+            descripcion: producto.descripcion || item.descripcion,
+            cantidad: cantidad,
+            precio: precio,
+            costo: producto.costo || 0, // Campo requerido por el template
+            descuento: descuento,
+            total: totalFinal,
+            total_costo: cantidad * (producto.costo || 0),
+            codigo: producto.codigo,
+            marca: producto.marca,
+            tipo: producto.tipo,
+            img: producto.img || 'default-product.png', // Imagen por defecto
+            // Para servicios, no aplicamos stock
+            stock: producto.tipo === 'Servicio' ? null : (producto.stock || 0)
+        };
+    }
+
+    async confirmarAjusteProductos() {
+        let todosAsignados = true;
+    
+        this.productosNoEncontrados.forEach((itemNoEncontrado: any) => {
+            if (itemNoEncontrado.productoSeleccionado && itemNoEncontrado.productoSeleccionado.id) {
+                const detalle = this.crearDetalleDesdeItem(itemNoEncontrado, itemNoEncontrado.productoSeleccionado);
+                this.compra.detalles.push(detalle);
+                // Agregar al cache para futuras búsquedas
+                this.productosEncontrados.push(itemNoEncontrado.productoSeleccionado);
+            } else {
+                todosAsignados = false;
+            }
+        });
+    
+        if (!todosAsignados) {
+            this.alertService.error('Por favor, seleccione un producto para todos los items no encontrados.');
+            return;
+        }
+    
+        // Cerrar modal y recalcular
+        this.modalProductos.hide();
+        this.productosNoEncontrados = [];
+        this.sumTotal();
+        
+        this.alertService.success('Productos asignados', 'Los productos han sido asignados correctamente.');
+    }
+
+    mostrarModalAjusteProductos() {
+        this.modalProductos = this.modalService.show(this.productosAjusteTemplate, {
+            class: 'modal-xl', // Modal más grande para mejor visualización
+            backdrop: 'static'
+        });
+    }
+    
+    // Cancelar ajuste
+    cancelarAjusteProductos() {
+        this.modalProductos.hide();
+        this.productosNoEncontrados = [];
+        
+        // Limpiar los totales ya que se cancela la importación
+        this.compra.detalles = [];
+        this.compra.sub_total = 0;
+        this.compra.iva = 0;
+        this.compra.total = 0;
+        this.compra.descuento = 0;
+        this.compra.percepcion = 0;
+        this.compra.iva_retenido = 0;
+        this.compra.renta_retenida = 0;
+        this.compra.total_costo = 0;
+        
+        this.alertService.warning('Importación cancelada', 'La importación de productos ha sido cancelada.');
+    }
+
+    // Abrir ajuste manual
+    abrirAjusteManual() {
+        this.modalProductos.hide();
+        this.productosNoEncontrados = [];
+        
+        // Limpiar los totales ya que se cancela la importación
+        this.compra.detalles = [];
+        this.compra.sub_total = 0;
+        this.compra.iva = 0;
+        this.compra.total = 0;
+        this.compra.descuento = 0;
+        this.compra.percepcion = 0;
+        this.compra.iva_retenido = 0;
+        this.compra.renta_retenida = 0;
+        this.compra.total_costo = 0;
+        
+        this.alertService.info('Ajuste manual', 'Puede agregar productos manualmente usando el botón "Agregar Producto" en la parte superior.');
+    }
+    
+    // Métodos helper
+    getProductosAsignados(): number {
+        const asignados = this.productosNoEncontrados.filter(item => {
+            const tieneProducto = item.productoSeleccionado && item.productoSeleccionado.id;
+            // console.log(`Item ${item.numItem}:`, {
+            //     productoSeleccionado: item.productoSeleccionado,
+            //     tieneId: item.productoSeleccionado?.id,
+            //     asignado: tieneProducto
+            // });
+            return tieneProducto;
+        }).length;
+        // console.log('Total asignados:', asignados);
+        return asignados;
+    }
+    
+    getProductosPendientes(): number {
+        const pendientes = this.productosNoEncontrados.filter(item => {
+            const noTieneProducto = !item.productoSeleccionado || !item.productoSeleccionado.id;
+            return noTieneProducto;
+        }).length;
+        // console.log('Total pendientes:', pendientes);
+        return pendientes;
+    }
+
+    // Método para comparar productos en ng-select
+    compareProductos(producto1: any, producto2: any): boolean {
+        if (!producto1 || !producto2) return false;
+        return producto1.id === producto2.id;
+    }
+
+    // Método para manejar la selección de productos
+    onProductoSeleccionado(item: any, producto: any) {
+        // console.log('Producto seleccionado:', producto);
+        item.productoSeleccionado = producto;
+        // Forzar detección de cambios
+        setTimeout(() => {
+            //console.log('Estado actualizado:', item.productoSeleccionado);
+        }, 0);
+    }
+    
+    // Método para actualizar mapJsonToCompra con la nueva lógica
+    mapJsonToCompra(jsonData: any) {
+        if (jsonData.identificacion.fecEmi) {
+            this.compra.fecha = jsonData.identificacion.fecEmi;
+        }
+    
+        this.compra.id_usuario = this.apiService.auth_user().id;
+        this.compra.id_bodega = this.apiService.auth_user().id_bodega;
+    
+        if (jsonData.identificacion.tipoDte) {
+            this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
+        }
+    
+        let proveedor = this.getProveedor(jsonData.emisor);
+        if(proveedor && proveedor.id){
+            this.compra.id_proveedor = proveedor.id;
+            //console.log('Proveedor asignado:', proveedor.nombre_empresa || proveedor.nombre, 'ID:', proveedor.id);
+        } else {
+            console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
+        }
+    
+        // Procesar totales del resumen
+        if (jsonData.resumen) {
+            this.compra.sub_total = jsonData.resumen.subTotal || jsonData.resumen.subTotalVentas || 0;
+            this.compra.total = jsonData.resumen.totalPagar || jsonData.resumen.montoTotalOperacion || 0;
+            
+            // Procesar IVA
+            if (jsonData.resumen.tributos) {
+                const iva = jsonData.resumen.tributos.find((t: any) => t.codigo === '20');
+                if (iva) {
+                    this.compra.iva = iva.valor;
+                    this.compra.cobrar_impuestos = true;
+                }
+            }
+        }
+    
+        // Procesar productos del cuerpoDocumento de forma optimizada
+        if (jsonData.cuerpoDocumento && jsonData.cuerpoDocumento.length > 0) {
+            this.procesarProductosDTE(jsonData.cuerpoDocumento);
+        }
+    }
+
+    // Método para activar la búsqueda desde el template
+    onSearchProducts(term: string) {
+        this.searchProductos$.next(term);
+    }
+    
+    
+    
+    
 
 }
