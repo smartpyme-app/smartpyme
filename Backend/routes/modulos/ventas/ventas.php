@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('/venta/facturacion/consigna',  [VentasController::class, 'facturacionConsigna']);
     Route::get('/venta/facturacion/impresion/{id}',  [VentasController::class, 'generarDoc']);
 
-    Route::post('/venta/generar-traslado-empresa',  [VentasController::class, 'generarTrasladoEmpresa']);
-
     Route::get('/ventas/pendientes',       [VentasController::class, 'pendientes']);
     Route::get('/ventas/sin-devolucion',       [VentasController::class, 'sinDevolucion']);
 
