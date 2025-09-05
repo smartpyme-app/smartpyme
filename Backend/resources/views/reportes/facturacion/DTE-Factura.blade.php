@@ -205,10 +205,18 @@
             @foreach($DTE['cuerpoDocumento'] as $detalle)
             <tr>
                 <td class="border-bottom">   {{ $detalle['numItem']  }}</td>
-                <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 4) }}</td>
+                <td class="border-bottom">   {{ number_format($detalle['cantidad'] , 2) }}</td>
                 <td class="border-bottom">   {{ $detalle['codigo']  }}</td>
-                <td class="border-bottom">   {{ $detalle['descripcion']  }}</td>
-                <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 4) }}</td>
+                <td class="border-bottom">
+                    {{ $detalle['descripcion']  }}
+                    @if ($registro->detalles->where('descripcion', $detalle['descripcion'])->first() && $registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto)
+                        <br>
+                        <span class="text-muted">
+                            {!! nl2br(e($registro->detalles->where('descripcion', $detalle['descripcion'])->first()->producto->descripcion)) !!}
+                        </span>
+                    @endif
+                </td>
+                <td class="border-bottom text-right">   ${{number_format($detalle['precioUni'] , 2) }}</td>
                 <td class="border-bottom text-right">   ${{number_format($detalle['montoDescu'] , 2) }}</td>
                 @if ($detalle['noGravado'])
                     <td class="border-bottom text-right">   ${{ number_format($detalle['noGravado'], 2) }}</th>
@@ -312,6 +320,16 @@
                     @endif
                 </td>
             </tr>
+            @if (isset($DTE['apendice']))
+                @foreach ($DTE['apendice'] as $atributo)
+                <tr>
+                    <td colspan="2">
+                        <b>{{ $atributo['etiqueta'] }}:</b>
+                        {{ $atributo['valor'] }}
+                    </td>
+                </tr>
+                @endforeach
+            @endif
         </tbody>
     </table>
 

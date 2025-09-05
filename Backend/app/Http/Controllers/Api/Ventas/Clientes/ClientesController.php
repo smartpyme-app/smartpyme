@@ -144,29 +144,30 @@ class ClientesController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $rules = [
             'nombre'         => 'required_if:tipo,"Persona"',
             'apellido'       => 'required_if:tipo,"Persona"',
-            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
-            // 'registro'       => 'nullable|unique:clientes,registro,'. $request->id,
-            // 'dui'            => 'nullable|unique:clientes,dui,'. $request->id,
-            // 'nit'            => 'nullable|unique:clientes,nit,'. $request->id,
-            'id_usuario'     => 'required|numeric',
+            'nombre_empresa' => 'required_if:tipo,"Empresa"',
             'id_empresa'     => 'required|numeric|exists:empresas,id',
-        ], [
+        ];
+
+        // Si es creación (no hay id), id_usuario es requerido
+        if (!$request->id) {
+            $rules['id_usuario'] = 'required|numeric';
+        } else {
+            // Si es edición (hay id), id_usuario debe existir y ser numérico si se envía
+            $rules['id_usuario'] = 'sometimes';
+        }
+
+        $request->validate($rules, [
             'nombre.required_if' => 'El campo nombre es obligatorio.',
             'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
         ]);
-        // }
 
-        // Log::info($request->all());
         if ($request->id)
             $cliente = Cliente::findOrFail($request->id);
         else
             $cliente = new Cliente;
-
-        // $cliente->fill($request->all());
-        // $cliente->save();
 
         $cliente->fill($request->except('contactos'));
         $cliente->save();
@@ -176,7 +177,6 @@ class ClientesController extends Controller
             if ($request->id) {
                 ContactoCliente::where('id_cliente', $cliente->id)->delete();
             }
-
 
             foreach ($request->contactos as $contactoData) {
                 ContactoCliente::create([
@@ -196,6 +196,59 @@ class ClientesController extends Controller
 
         ///return Response()->json($cliente, 200);
         $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
+        return Response()->json($cliente, 200);
+    }
+
+    public function update(Request $request)
+    {
+        $cliente = Cliente::findOrFail($request->id);
+        
+        $rules = [
+            'nombre'         => 'required_if:tipo,"Persona"',
+            'apellido'       => 'required_if:tipo,"Persona"',
+            'nombre_empresa' => 'required_if:tipo,"Empresa"',
+            'id_empresa'     => 'required|numeric|exists:empresas,id',
+        ];
+        
+        $request->validate($rules, [
+            'nombre.required_if' => 'El campo nombre es obligatorio.',
+            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
+            'id_empresa.required' => 'El campo empresa es obligatorio.',
+            'id_empresa.exists' => 'La empresa seleccionada no es válida.',
+        ]);
+        
+        $cliente->fill($request->except('contactos'));
+        $cliente->save();
+        
+        if ($request->has('contactos') && is_array($request->contactos) && $request->tipo == 'Empresa') {
+            ContactoCliente::where('id_cliente', $cliente->id)->delete();
+            
+            // Crear nuevos contactos
+            foreach ($request->contactos as $contactoData) {
+                // Validar que al menos tenga nombre o correo
+                if (empty($contactoData['nombre']) && empty($contactoData['name']) && 
+                    empty($contactoData['correo']) && empty($contactoData['email'])) {
+                    continue; // Saltar contactos vacíos
+                }
+                
+                ContactoCliente::create([
+                    'id_cliente' => $cliente->id,
+                    'nombre' => $contactoData['nombre'] ?? $contactoData['name'] ?? null,
+                    'apellido' => $contactoData['apellido'] ?? $contactoData['lastname'] ?? null,
+                    'correo' => $contactoData['correo'] ?? $contactoData['email'] ?? null,
+                    'telefono' => $contactoData['telefono'] ?? null,
+                    'cargo' => $contactoData['cargo'] ?? null,
+                    'sexo' => $contactoData['sexo'] ?? null,
+                    'red_social' => $contactoData['red_social'] ?? null,
+                    'fecha_nacimiento' => $contactoData['fecha_nacimiento'] ?? null,
+                    'nota' => $contactoData['nota'] ?? null
+                ]);
+            }
+        }
+        
+        // Retornar el cliente actualizado con sus contactos
+        $cliente = Cliente::with('contactos')->findOrFail($cliente->id);
+        
         return Response()->json($cliente, 200);
     }
 

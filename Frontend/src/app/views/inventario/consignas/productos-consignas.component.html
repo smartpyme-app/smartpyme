@@ -24,17 +24,17 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-md-6 d-flex gap-2 mb-3">
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas">Consignas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
         </div>
-        <div class="col-md-6 d-flex gap-2 justify-content-end mb-3">
-            <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default  w-auto">
+        <div class="ms-auto d-flex gap-2">
+            <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
                 <ng-option *ngFor="let categoria of categorias" [value]="categoria.nombre">
                     {{categoria.nombre}}

@@ -176,6 +176,45 @@ class ProductosController extends Controller
         return Response()->json($productos, 200);
     }
 
+    public function searchByQueryWithBodega(Request $request)
+    {
+        $query = $request->query('query');
+        $id_bodega = $request->query('id_bodega');
+
+        if ($id_bodega) {
+            // Si se especifica bodega, filtrar productos que tengan inventario en esa bodega
+            $productos = Producto::where('enable', true)
+                ->with(['inventarios' => function($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                }])
+                ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
+                ->whereHas('inventarios', function($q) use ($id_bodega) {
+                    $q->where('id_bodega', $id_bodega);
+                })
+                ->where(function ($q) use ($query) {
+                    $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('barcode', 'like', "%$query%")
+                        ->orWhere('codigo', 'like', "%$query%")
+                        ->orWhere('etiquetas', 'like', "%$query%");
+                })
+                ->take(15)
+                ->get();
+        } else {
+            // Si no se especifica bodega, usar la búsqueda normal
+            $productos = Producto::where('enable', true)->with('inventarios', 'composiciones.opciones', 'composiciones.compuesto.inventarios')->with('precios')
+                ->where(function ($q) use ($query) {
+                    $q->where('nombre', 'like', "%$query%")
+                        ->orWhere('barcode', 'like', "%$query%")
+                        ->orWhere('codigo', 'like', "%$query%")
+                        ->orWhere('etiquetas', 'like', "%$query%");
+                })
+                ->take(15)
+                ->get();
+        }
+
+        return Response()->json($productos, 200);
+    }
+
 
     public function porCodigo($codigo)
     {
@@ -501,23 +540,30 @@ class ProductosController extends Controller
         $request->validate([
             'archivo' => 'required|file|mimes:xlsx,xls,csv',
             'detalle' => 'required|string',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
         ]);
 
-        $importador = new InventarioImport($request->detalle);
+        $importador = new InventarioImport($request->detalle, $request->id_bodega);
         Excel::import($importador, $request->file('archivo'));
 
-        // Verificar si se actualizó algún producto
+        // Generar log con estadísticas completas
+        $importador->logEstadisticasFinales();
+        
+        // Obtener estadísticas completas
+        $estadisticas = $importador->getEstadisticas();
         $actualizados = $importador->getActualizados();
 
         if ($actualizados > 0) {
             return Response()->json([
-                'message' => "Ajuste de inventario realizado exitosamente. Se actualizaron {$actualizados} productos.",
-                'actualizados' => $actualizados
+                'message' => "Ajuste de inventario realizado exitosamente. Se actualizaron {$actualizados} de {$estadisticas['procesados']} productos procesados.",
+                'actualizados' => $actualizados,
+                'estadisticas' => $estadisticas
             ], 200);
         } else {
             return Response()->json([
-                'message' => 'No se realizó ningún cambio en el inventario. Verifica que los datos sean correctos.',
-                'actualizados' => 0
+                'message' => "No se realizó ningún cambio en el inventario. Se procesaron {$estadisticas['procesados']} productos. Verifica que los datos sean correctos.",
+                'actualizados' => 0,
+                'estadisticas' => $estadisticas
             ], 200);
         }
     }

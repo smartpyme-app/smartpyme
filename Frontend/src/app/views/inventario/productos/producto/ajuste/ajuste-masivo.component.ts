@@ -24,6 +24,7 @@ export class AjusteMasivoComponent implements OnInit {
     };
     
     public productosMap: Map<number, any> = new Map();
+    public bodegaSeleccionada: any = null;
 
     modalRef!: BsModalRef;
 
@@ -203,12 +204,19 @@ export class AjusteMasivoComponent implements OnInit {
     }
 
     public openModalImportar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        // Inicializar bodega seleccionada
+        this.bodegaSeleccionada = this.bodegas.length > 0 ? this.bodegas[0] : null;
+        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public importarAjustes(fileInput: HTMLInputElement, detalle: string) {
         if (!detalle) {
             this.alertService.warning('Debe proporcionar una descripción para el ajuste.','Descripción requerida');
+            return;
+        }
+
+        if (!this.bodegaSeleccionada) {
+            this.alertService.warning('Debe seleccionar una bodega para el ajuste.','Bodega requerida');
             return;
         }
     
@@ -221,13 +229,36 @@ export class AjusteMasivoComponent implements OnInit {
         const formData = new FormData();
         formData.append('archivo', file);
         formData.append('detalle', detalle);
+        formData.append('id_bodega', this.bodegaSeleccionada.id);
         formData.append('id_usuario', this.apiService.auth_user().id);
         formData.append('id_empresa', this.apiService.auth_user().id_empresa);
     
         this.saving = true;
         this.apiService.upload('productos/ajuste-masivo/importar', formData).subscribe(
             respuesta => {
-                this.alertService.success('Ajuste masivo importado', ' productos exitosamente.');
+                const stats = (respuesta as any).estadisticas;
+                let mensaje = `<div><strong>Importación completada:</strong></div>`;
+                mensaje += `<ul style="margin: 10px 0; padding-left: 20px;">`;
+                mensaje += `<li>Productos procesados: <strong>${stats.procesados}</strong></li>`;
+                mensaje += `<li>Productos actualizados: <strong>${stats.actualizados}</strong></li>`;
+                if (stats.sin_cambios > 0) {
+                    mensaje += `<li>Productos sin cambios: <strong>${stats.sin_cambios}</strong></li>`;
+                }
+                if (stats.sin_inventario > 0) {
+                    mensaje += `<li style="color: orange;">Productos sin inventario en la bodega: <strong>${stats.sin_inventario}</strong></li>`;
+                }
+                if (stats.errores > 0) {
+                    mensaje += `<li style="color: red;">Errores encontrados: <strong>${stats.errores}</strong></li>`;
+                }
+                mensaje += `</ul>`;
+                
+                if (stats.sin_inventario > 0 || stats.errores > 0) {
+                    mensaje += `<div style="margin-top: 10px; padding: 8px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">`;
+                    mensaje += `<small><i class="fa fa-info-circle"></i> Revisa los logs para más detalles sobre los productos no procesados.</small>`;
+                    mensaje += `</div>`;
+                }
+
+                this.alertService.success('Importación de ajuste masivo', mensaje);
                 this.modalRef.hide();
                 this.saving = false;
                 this.loadAll();

@@ -77,8 +77,9 @@ export class CrearClienteComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
+        let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
 
-        this.apiService.store('cliente', this.cliente).subscribe({
+        this.apiService.store(routeUrl, this.cliente).subscribe({
             next: (cliente) => {
                 const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
                 const mensaje = this.esNuevo
