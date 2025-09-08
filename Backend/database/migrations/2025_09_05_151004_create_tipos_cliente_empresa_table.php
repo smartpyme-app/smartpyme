@@ -32,13 +32,13 @@ class CreateTiposClienteEmpresaTable extends Migration
             
             // Control de default
             $table->boolean('is_default')->default(false)->comment('único por empresa');
-            $table->integer('default_key')->storedAs('CASE WHEN is_default = 1 THEN CONCAT(id_empresa, "_", nivel) ELSE NULL END');
+            $table->string('default_key', 50)->nullable()->storedAs('CASE WHEN is_default = 1 THEN CONCAT(id_empresa, "_", nivel) ELSE NULL END');
 
-            
+            $table->softDeletes();
             $table->timestamps();
             
             // Constraint: solo un default por empresa
-            $table->unique(['id_empresa', 'nivel', 'default_key']);
+            $table->unique(['id_empresa', 'nivel', 'default_key'], 'id_empresa_nivel_default_key');
         });
     }
 

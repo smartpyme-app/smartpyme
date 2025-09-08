@@ -146,18 +146,71 @@ class ConfiguracionFidelizacionSeeder extends Seeder
             'valor_punto' => 0.01, // $0.01 por punto al canjear
             'multiplicador_especial' => false,
             'descuento_cumpleanos' => false,
+            'upgrade_automatico' => [
+                'habilitado' => true,
+                'reglas' => []
+            ]
         ];
 
         switch($code) {
             case 'STANDARD':
-                return $baseConfig;
+                return array_merge($baseConfig, [
+                    'upgrade_automatico' => [
+                        'habilitado' => true,
+                        'reglas' => [
+                            [
+                                'tipo' => 'gasto_total',
+                                'umbral' => 500.00,
+                                'nivel_destino' => 2,
+                                'descripcion' => 'Upgrade a VIP por $500+ gastados',
+                                'activo' => true
+                            ],
+                            [
+                                'tipo' => 'puntos_acumulados',
+                                'umbral' => 800,
+                                'nivel_destino' => 2,
+                                'descripcion' => 'Upgrade a VIP por 800+ puntos acumulados',
+                                'activo' => true
+                            ]
+                        ]
+                    ]
+                ]);
+
             case 'VIP':
                 return array_merge($baseConfig, [
                     'multiplicador_especial' => true,
                     'multiplicador_valor' => 1.2,
                     'descuento_cumpleanos' => true,
                     'descuento_cumpleanos_porcentaje' => 5,
+                    'upgrade_automatico' => [
+                        'habilitado' => true,
+                        'reglas' => [
+                            [
+                                'tipo' => 'gasto_total',
+                                'umbral' => 2000.00,
+                                'nivel_destino' => 3,
+                                'descripcion' => 'Upgrade a Ultra VIP por $2000+ gastados',
+                                'activo' => true
+                            ],
+                            [
+                                'tipo' => 'puntos_acumulados',
+                                'umbral' => 3000,
+                                'nivel_destino' => 3,
+                                'descripcion' => 'Upgrade a Ultra VIP por 3000+ puntos',
+                                'activo' => true
+                            ],
+                            [
+                                'tipo' => 'compras_periodo',
+                                'umbral' => 15,
+                                'periodo_meses' => 6,
+                                'nivel_destino' => 3,
+                                'descripcion' => 'Upgrade a Ultra VIP por 15+ compras en 6 meses',
+                                'activo' => true
+                            ]
+                        ]
+                    ]
                 ]);
+
             case 'ULTRAVIP':
                 return array_merge($baseConfig, [
                     'multiplicador_especial' => true,
@@ -166,7 +219,19 @@ class ConfiguracionFidelizacionSeeder extends Seeder
                     'descuento_cumpleanos_porcentaje' => 10,
                     'acceso_exclusivo' => true,
                     'soporte_prioritario' => true,
+                    'beneficios_exclusivos' => [
+                        'descuento_maximo_adicional' => 15, // 15% descuento extra
+                        'puntos_bienvenida_anual' => 500,  // 500 puntos gratis cada año
+                        'acceso_eventos_vip' => true,
+                        'entrega_express_gratis' => true,
+                        'asistente_personal' => true
+                    ],
+                    'upgrade_automatico' => [
+                        'habilitado' => false, // Ultra VIP es el máximo nivel
+                        'reglas' => []
+                    ]
                 ]);
+
             default:
                 return $baseConfig;
         }
