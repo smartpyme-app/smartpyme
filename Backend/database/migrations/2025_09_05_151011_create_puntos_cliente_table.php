@@ -15,7 +15,7 @@ class CreatePuntosClienteTable extends Migration
     {
         Schema::create('puntos_cliente', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_cliente')->constrained('clientes');
+            $table->unsignedInteger('id_cliente')->constrained('clientes');
             $table->unsignedInteger('id_empresa')->constrained('empresas');
             $table->integer('puntos_disponibles')->default(0);
             $table->integer('puntos_totales_ganados')->default(0);
@@ -24,7 +24,7 @@ class CreatePuntosClienteTable extends Migration
             $table->timestamps();
             
             // Un registro único por cliente-empresa
-            $table->unique(['id_cliente', 'id_empresa']);
+            $table->unique(['id_cliente', 'id_empresa'], 'id_cliente_id_empresa');
         });
     }
 

@@ -14,8 +14,8 @@ class AddTipoClienteIdToClientesTable extends Migration
     public function up()
     {
         Schema::table('clientes', function (Blueprint $table) {
-            $table->integer('nivel_cliente')->default(1)->after('id_empresa')->comment('DEFAULT 1 (STANDARD)')
-            ->comment('NULL usa nivel_cliente');
+            $table->integer('nivel')->default(1)->after('id_empresa')->comment('DEFAULT 1 (STANDARD)')
+            ->comment('NULL usa nivel');
 
         });
     }
@@ -28,8 +28,8 @@ class AddTipoClienteIdToClientesTable extends Migration
     public function down()
     {
         Schema::table('clientes', function (Blueprint $table) {
-            $table->dropForeign(['id_tipo_cliente']);
-            $table->dropColumn('id_tipo_cliente');
+            $table->dropForeign(['nivel']);
+            $table->dropColumn('nivel');
         });
     }
 }

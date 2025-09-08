@@ -27,7 +27,7 @@ class AddIndexesToFidelizacionTables extends Migration
         });
 
         Schema::table('tipos_cliente_empresa', function (Blueprint $table) {
-            $table->index('nivel_cliente');
+            $table->index('nivel');
         });
 
         // Índices para clientes
@@ -69,7 +69,7 @@ class AddIndexesToFidelizacionTables extends Migration
         });
 
         Schema::table('clientes', function (Blueprint $table) {
-            $table->index(['id_empresa', 'nivel_cliente']);
+            $table->index(['id_empresa', 'nivel']);
         });
     }
 
@@ -107,7 +107,7 @@ class AddIndexesToFidelizacionTables extends Migration
     
             Schema::table('clientes', function (Blueprint $table) {
                 $table->dropIndex(['id_empresa', 'enable']);
-                $table->dropIndex(['id_empresa', 'nivel_cliente']);
+                $table->dropIndex(['id_empresa', 'nivel']);
                 $table->dropIndex(['email']);
                 $table->dropIndex(['telefono']);
             });
@@ -123,11 +123,11 @@ class AddIndexesToFidelizacionTables extends Migration
             });
 
             Schema::table('clientes', function (Blueprint $table) {
-                $table->dropIndex(['id_empresa', 'nivel_cliente']);
+                $table->dropIndex(['id_empresa', 'nivel']);
             });
 
             Schema::table('tipos_cliente_empresa', function (Blueprint $table) {
-                $table->dropIndex(['nivel_cliente']);
+                $table->dropIndex(['nivel']);
             });
         });
     }
