@@ -1,18 +1,14 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\FidelizacionCliente;
 
-use Carbon\Carbon;
+
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\FidelizacionClientes\TipoClienteBase;
+use Carbon\Carbon;
 
-class TiposClienteBaseSeeder extends Seeder
+class TipoClienteBaseSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
     public function run()
     {
         $now = Carbon::now();
@@ -48,10 +44,12 @@ class TiposClienteBaseSeeder extends Seeder
         ];
 
         foreach ($tiposBase as $tipo) {
-            DB::table('tipos_cliente_base')->updateOrInsert(
+            TipoClienteBase::firstOrCreate(
                 ['code' => $tipo['code']],
                 $tipo
             );
         }
+
+        $this->command->info('✅ Tipos de cliente base creados correctamente.');
     }
 }
