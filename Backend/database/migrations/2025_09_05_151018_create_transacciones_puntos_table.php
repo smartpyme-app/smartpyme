@@ -16,7 +16,7 @@ class CreateTransaccionesPuntosTable extends Migration
         Schema::create('transacciones_puntos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_cliente')->constrained('clientes');
-            $table->foreignId('id_empresa')->constrained('empresas');
+            $table->unsignedInteger('id_empresa')->constrained('empresas');
             $table->foreignId('id_venta')->nullable()->constrained('ventas');
             $table->enum('tipo', ['ganancia', 'canje', 'ajuste', 'expiracion']);
             $table->double('puntos')->comment('+ ganancia, - canje/exp');

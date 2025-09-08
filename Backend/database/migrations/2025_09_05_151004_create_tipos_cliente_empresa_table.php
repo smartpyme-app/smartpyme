@@ -15,7 +15,7 @@ class CreateTiposClienteEmpresaTable extends Migration
     {
         Schema::create('tipos_cliente_empresa', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_empresa')->constrained('empresas');
+            $table->unsignedInteger('id_empresa')->constrained('empresas');
             $table->foreignId('id_tipo_base')->nullable()->constrained('tipos_cliente_base');
             $table->integer('nivel')->nullable()->comment('1=STANDARD, 2=VIP, 3=ULTRAVIP');
             $table->string('nombre_personalizado')->nullable();

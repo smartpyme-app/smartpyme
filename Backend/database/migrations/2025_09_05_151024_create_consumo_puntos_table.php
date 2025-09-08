@@ -15,7 +15,7 @@ class CreateConsumoPuntosTable extends Migration
     {
         Schema::create('consumo_puntos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('id_empresa')->constrained('empresas');
+            $table->unsignedInteger('id_empresa')->constrained('empresas');
             $table->foreignId('id_cliente')->constrained('clientes');
             $table->foreignId('id_canje_tx')->constrained('transacciones_puntos')->comment('tipo = canje');
             $table->foreignId('id_ganancia_tx')->constrained('transacciones_puntos')->comment('tipo = ganancia');
