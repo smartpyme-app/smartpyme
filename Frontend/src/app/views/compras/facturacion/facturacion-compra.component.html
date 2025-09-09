@@ -1,8 +1,15 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 *ngIf="compra.cotizacion == 1">Orden de compra</h3>
     <h3 *ngIf="compra.cotizacion == 0">Compra</h3>
-    <button *ngIf="compra.cotizacion == 1" class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i class="fa fa-arrow-left"></i> Regresar</button>
-    <button *ngIf="compra.cotizacion == 0" class="btn btn-light text-danger" routerLink="/compras"><i class="fa fa-arrow-left"></i> Regresar</button>
+
+    <div class="d-flex align-items-center float-end gap-3">
+        <button class="btn btn-primary me-2" *ngIf="!compra.id" (click)="openJsonImport(jsonImportTemplate)">
+            <i class="fa fa-file-import"></i> Importar JSON
+        </button>
+        <button *ngIf="compra.cotizacion == 1" class="btn btn-light text-danger" routerLink="/ordenes-de-compras"><i class="fa fa-arrow-left"></i> Regresar</button>
+        <button *ngIf="compra.cotizacion == 0" class="btn btn-light text-danger" routerLink="/compras"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
+    
 </div>
 
 <section class="card border-0 p-3 mb-3">
@@ -123,7 +130,7 @@
                         <td style="width: 50px;"></td>
                     </tr>
                     <tr>
-                        <td class="text-right"> <b>Persepción (1%)</b></td>
+                        <td class="text-right"> <b>Percepción (1%)</b></td>
                         <td style="width: 150px;" class="text-right"> {{ compra.percepcion | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
@@ -325,3 +332,239 @@
     </div>
   </div>
 </ng-template>
+
+<ng-template #jsonImportTemplate>
+    <div class="modal-header">
+      <h4 class="modal-title">Importar Compra desde JSON</h4>
+      <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-3">
+        <label for="jsonFile" class="form-label">Seleccionar archivo JSON</label>
+        <input type="file" class="form-control" id="jsonFile" (change)="handleFileInput($event)" accept=".json">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">O pegar contenido JSON</label>
+        <textarea class="form-control" rows="10" [(ngModel)]="jsonContent" name="jsonContent"></textarea>
+      </div>
+      <div class="d-grid">
+        <button type="button" [disabled]="processingJson || !jsonContent.trim()" class="btn btn-primary" (click)="processJsonData()">
+            <span *ngIf="!processingJson">Procesar</span>
+            <span *ngIf="processingJson">Procesando...</span>
+          </button>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #productosAjuste>
+    <div class="modal-header">
+      <h4 class="modal-title">Ajustar Productos No Reconocidos</h4>
+      <button type="button" class="btn-close" (click)="cancelarAjusteProductos()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-warning">
+        <i class="fa fa-exclamation-triangle"></i>
+        Los siguientes productos del DTE no fueron reconocidos automáticamente. 
+        Por favor, seleccione el producto correspondiente para cada item.
+      </div>
+  
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th style="width: 60px;">Item</th>
+              <th style="width: 120px;">Código DTE</th>
+              <th style="width: 200px;">Descripción DTE</th>
+              <th style="width: 80px;">Cant.</th>
+              <th style="width: 100px;">Precio Unit.</th>
+              <th>Producto a Asignar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of productosNoEncontrados; let i = index">
+              <td>
+                <span class="badge bg-primary">{{ item.numItem }}</span>
+              </td>
+              <td>
+                <code class="small">{{ item.codigo || 'Sin código' }}</code>
+              </td>
+              <td>
+                <strong class="small">{{ item.descripcion }}</strong>
+              </td>
+              <td class="text-center">
+                {{ item.cantidad }}
+              </td>
+              <td class="text-end">
+                {{ item.precioUni | currency:'USD':'symbol':'1.2' }}
+              </td>
+              <td>
+                <!-- Mostrar sugerencias automáticas si las hay -->
+                <div *ngIf="item.sugerencias && item.sugerencias.length > 0" class="mb-2">
+                  <small class="text-muted">Sugerencias:</small>
+                  <div class="d-flex flex-wrap gap-1">
+                    <button 
+                      *ngFor="let sugerencia of item.sugerencias.slice(0, 3)" 
+                      class="btn btn-outline-primary btn-sm"
+                      (click)="item.productoSeleccionado = sugerencia"
+                      type="button">
+                      {{ sugerencia.nombre }}
+                    </button>
+                  </div>
+                </div>
+  
+                <!-- Selector con búsqueda dinámica -->
+                <ng-select 
+                  [(ngModel)]="item.productoSeleccionado"
+                  [typeahead]="searchProductos$"
+                  [typeaheadLoading]="searchLoading"
+                  [clearable]="true"
+                  placeholder="Escriba para buscar productos..."
+                  class="form-select"
+                  bindLabel="nombre"
+                  [compareWith]="compareProductos"
+                  (change)="onProductoSeleccionado(item, $event)">
+                  
+                  <ng-option-highlight [term]="searchTerm"></ng-option-highlight>
+                  
+                  <ng-option *ngFor="let producto of searchResults" [value]="producto">
+                    <div class="d-flex justify-content-between">
+                      <div class="flex-grow-1">
+                        <!-- Nombre del producto en su propia línea -->
+                        <div class="mb-1">
+                          <strong class="d-block">{{ producto.nombre }}</strong>
+                        </div>
+                        
+                        <!-- Badge del tipo en su propia línea -->
+                        <div class="mb-1">
+                          <span class="badge" 
+                                [ngClass]="{
+                                  'bg-primary': producto.tipo === 'Producto',
+                                  'bg-success': producto.tipo === 'Servicio',
+                                  'bg-warning': producto.tipo === 'Compuesto'
+                                }">
+                            {{ producto.tipo }}
+                          </span>
+                        </div>
+                        
+                        <!-- Detalles adicionales -->
+                        <small class="text-muted">
+                          <span *ngIf="producto.marca">{{ producto.marca }} | </span>
+                          <span *ngIf="producto.codigo">Cód: {{ producto.codigo }} | </span>
+                          <span *ngIf="producto.cod_proveed_prod">Cód. Prov: {{ producto.cod_proveed_prod }}</span>
+                        </small>
+                      </div>
+                      
+                      <!-- Información de precio y stock alineada a la derecha -->
+                      <div class="text-end ms-3">
+                        <small class="text-success d-block">
+                          ${{ producto.precio | number:'1.2-2' }}
+                        </small>
+                        <small class="text-muted" *ngIf="producto.tipo !== 'Servicio'">
+                          Stock: {{ producto.stock || 0 }}
+                        </small>
+                        <small class="text-info" *ngIf="producto.tipo === 'Servicio'">
+                          Servicio
+                        </small>
+                      </div>
+                    </div>
+                  </ng-option>
+  
+                  <ng-option-highlight [term]="searchTerm"></ng-option-highlight>
+                </ng-select>
+  
+                <!-- Mostrar información del producto seleccionado -->
+                <div *ngIf="item.productoSeleccionado" class="mt-2 p-2 bg-light rounded small">
+                  <div class="row">
+                    <div class="col-8">
+                      <div class="d-flex align-items-center gap-2">
+                        <strong>{{ item.productoSeleccionado.nombre }}</strong>
+                        <span class="badge" 
+                              [ngClass]="{
+                                'bg-primary': item.productoSeleccionado.tipo === 'Producto',
+                                'bg-success': item.productoSeleccionado.tipo === 'Servicio',
+                                'bg-warning': item.productoSeleccionado.tipo === 'Compuesto'
+                              }">
+                          {{ item.productoSeleccionado.tipo }}
+                        </span>
+                      </div>
+                      <br>
+                      <span class="text-muted">{{ item.productoSeleccionado.descripcion }}</span>
+                    </div>
+                    <div class="col-4 text-end">
+                      <div class="text-success">Precio: ${{ item.productoSeleccionado.precio }}</div>
+                      <div class="text-muted" *ngIf="item.productoSeleccionado.tipo !== 'Servicio'">
+                        Stock: {{ item.productoSeleccionado.stock || 0 }}
+                      </div>
+                      <div class="text-info" *ngIf="item.productoSeleccionado.tipo === 'Servicio'">
+                        Servicio
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+  
+      <!-- Panel de resumen -->
+      <div class="mt-4 p-3 bg-light rounded">
+        <div class="row">
+          <div class="col-md-8">
+            <h6 class="mb-0">Progreso de Asignaciones</h6>
+            <div class="progress mt-2" style="height: 8px;">
+              <div 
+                class="progress-bar bg-success" 
+                role="progressbar" 
+                [style.width.%]="(getProductosAsignados() / productosNoEncontrados.length) * 100">
+              </div>
+            </div>
+            <small class="text-muted">
+              {{ getProductosAsignados() }} de {{ productosNoEncontrados.length }} productos asignados
+            </small>
+          </div>
+          <div class="col-md-4 text-end">
+            <div class="d-flex justify-content-end gap-3">
+              <div class="text-center">
+                <span class="badge bg-success fs-6">{{ getProductosAsignados() }}</span>
+                <br>
+                <small class="text-muted">Listos</small>
+              </div>
+              <div class="text-center">
+                <span class="badge bg-warning fs-6">{{ getProductosPendientes() }}</span>
+                <br>
+                <small class="text-muted">Pendientes</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+  
+      <!-- Información adicional -->
+      <div class="mt-3">
+        <small class="text-muted">
+          <i class="fa fa-info-circle"></i>
+          Tip: Use las sugerencias automáticas o escriba en el campo de búsqueda para encontrar productos similares.
+        </small>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="btn" (click)="cancelarAjusteProductos()">
+        <i class="fa fa-times"></i> Cancelar Importación
+      </button>
+      <button type="button" class="btn btn-default" (click)="abrirAjusteManual()">
+        Ajuste Manual
+      </button>
+      <button type="button" 
+              class="btn btn-primary" 
+              (click)="confirmarAjusteProductos()"
+              [disabled]="getProductosPendientes() > 0">
+        <i class="fa fa-check"></i> 
+        <span *ngIf="getProductosPendientes() === 0">Confirmar Todos los Productos</span>
+        <span *ngIf="getProductosPendientes() > 0">
+          Faltan {{ getProductosPendientes() }} productos
+        </span>
+      </button>
+    </div>
+  </ng-template>

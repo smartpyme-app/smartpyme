@@ -42,6 +42,8 @@ export class CalendarioComponent implements OnInit {
   usuarios: any = [];
   clientes: any = [];
   sucursales: any = [];
+  usuarioActual: any = {};
+
 
   constructor(public apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
@@ -59,7 +61,16 @@ export class CalendarioComponent implements OnInit {
   timeGridMinTime = '08:00:00';
   timeGridMaxTime = '17:30:00';
   ngOnInit() {
-    this.filtros.id_usuario = this.apiService.auth_user().id;
+    this.usuarioActual = this.apiService.auth_user();
+
+    // Solo filtrar por usuario si es de tipo Citas
+    if (this.isCitas()) {
+      this.filtros.id_usuario = this.usuarioActual.id;
+    } else {
+      // Si no es Citas, no filtrar por usuario para mostrar todos los eventos
+      this.filtros.id_usuario = null;
+    }
+
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
@@ -145,7 +156,7 @@ export class CalendarioComponent implements OnInit {
             meridiem: 'short'
           },
           headerToolbar: false,
-          
+
           events: [
 
           ]
@@ -156,7 +167,7 @@ export class CalendarioComponent implements OnInit {
             year: 'numeric'
           },
           headerToolbar: false,
-          
+
 
         }
       },
@@ -174,8 +185,22 @@ export class CalendarioComponent implements OnInit {
     this.filtros.orden = 'inicio';
     this.filtros.direccion = 'desc';
 
+    // Crear una copia de los filtros para no modificar el original
+    const filtrosEnvio = { ...this.filtros };
+
+    // Si los filtros son null, undefined o string vacío, no enviarlos en la petición
+    if (!filtrosEnvio.id_usuario) {
+      delete filtrosEnvio.id_usuario;
+    }
+    if (!filtrosEnvio.id_cliente) {
+      delete filtrosEnvio.id_cliente;
+    }
+    if (!filtrosEnvio.id_sucursal) {
+      delete filtrosEnvio.id_sucursal;
+    }
+
     this.loading = true;
-    this.apiService.getAll('eventos/list', this.filtros).subscribe(eventos => {
+    this.apiService.getAll('eventos/list', filtrosEnvio).subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
         this.calendarOptions.events = [...eventos];
@@ -189,6 +214,21 @@ export class CalendarioComponent implements OnInit {
       this.update.emit();
     }, error => { this.alertService.error(error); this.loading = false; });
   }
+
+
+  isCitas() {
+    return this.usuarioActual.tipo === 'Citas';
+  }
+
+  isVentas() {
+    return this.usuarioActual.tipo === 'Ventas';
+  }
+
+  isVentasOrCitas() {
+    return this.isVentas() || this.isCitas();
+  }
+
+
   updateMinMaxTime(events: any[]) {
     // if (events.length == 0) return;
     let minTime = moment().set('hour', 8).set('minute', 0).set('second', 0).format('HH:mm:ss');
@@ -207,8 +247,6 @@ export class CalendarioComponent implements OnInit {
     }
     this.timeGridMinTime = minTime;
     this.timeGridMaxTime = maxTime;
-
-
 
     //set slotMinTime and slotMaxTime on HH:00:00 format of minTime and maxTime
     // this.calendar?.setOption('slotMinTime', moment(this.timeGridMinTime).format('HH:00:00'));

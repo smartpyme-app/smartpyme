@@ -76,6 +76,38 @@ class ClientesController extends Controller
         return Response()->json($clientes, 200);
     }
 
+    public function searchClientes(Request $request)
+    {
+        $term = $request->get('q', ''); // Término de búsqueda
+        $limit = $request->get('limit', 50); // Límite de resultados (default 50)
+        
+        if (strlen($term) < 2) {
+            return response()->json([], 200);
+        }
+        
+        $clientes = Cliente::where('enable', true)
+            ->where(function ($query) use ($term) {
+                $query->where('nombre', 'LIKE', "%{$term}%")
+                ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
+                ->orWhere('correo', 'LIKE', "%{$term}%")
+                ->orWhere('telefono', 'LIKE', "%{$term}%")
+                ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
+            })
+            ->orderByRaw("
+                CASE 
+                    WHEN nombre LIKE '{$term}%' THEN 1
+                    WHEN nombre_empresa LIKE '{$term}%' THEN 2
+                    WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
+                    ELSE 4
+                END
+            ")
+            ->orderBy('nombre', 'asc')
+            ->limit($limit)
+            ->get();
+        
+        return response()->json($clientes, 200);
+    }
+
     public function search($txt)
     {
         $txtClean = str_replace('-', '', $txt);

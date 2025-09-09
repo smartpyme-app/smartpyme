@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
     Route::get('/productos/list',               [ProductosController::class, 'list']);
     Route::get('/productos/list/search',        [ProductosController::class, 'searchForList']);
     Route::get('/productos/{id}/inventarios', [ProductosController::class, 'inventarios']);
+    Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
     Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
@@ -37,6 +38,12 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
+
+    // Rutas para búsqueda dinámica en facturación de compras
+    Route::post('/productos/buscar-modal',      [ProductosController::class, 'buscarModal']);
+    Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
+    Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
+    Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
 
 // Composisiones
 Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);

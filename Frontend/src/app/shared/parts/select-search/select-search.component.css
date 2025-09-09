@@ -1,0 +1,38 @@
+/* select-search.component.css */
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+ng-select {
+  width: 100% !important;
+}
+
+ng-select.ng-select {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+ng-select .ng-select-container {
+  width: 100% !important;
+}
+
+/* Asegurar que el componente se ajuste al contenedor padre */
+:host ::ng-deep ng-select {
+  width: 100% !important;
+}
+
+:host ::ng-deep ng-select .ng-select-container {
+  width: 100% !important;
+}
+
+:host ::ng-deep ng-select .ng-arrow-wrapper {
+  width: 25px !important;
+}
+
+/* Opcional: estilos adicionales para mejorar la apariencia */
+:host ::ng-deep ng-select.ng-select.ng-select-focused .ng-select-container {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}

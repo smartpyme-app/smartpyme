@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
 import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
@@ -49,6 +50,8 @@ import { AuthorizationViewComponent } from './authorization/authorization-view/a
 import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
 import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
 
+import { SelectSearchComponent } from './parts/select-search/select-search.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -61,7 +64,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
     FocusModule.forRoot(),
-    PopoverModule.forRoot()
+    PopoverModule.forRoot(),
+    TypeaheadModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
@@ -99,7 +103,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     AuthorizationRequestModalComponent,
     AuthorizationViewComponent,
     CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent
+    CrearAreaEmpresaComponent,
+    SelectSearchComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -137,7 +142,8 @@ import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-are
     AuthorizationRequestModalComponent,
     AuthorizationViewComponent,
     CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent
+    CrearAreaEmpresaComponent,
+    SelectSearchComponent
   ],
   providers: [AlertService],
 })

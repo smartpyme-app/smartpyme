@@ -30,6 +30,7 @@ export class CitasComponent implements OnInit {
   public canales: any = [];
   public filtros: any = {};
   public filtrado: boolean = false;
+  public usuarioActual: any = {};
   // public filtros:any = {};
 
   modalRef!: BsModalRef;
@@ -40,7 +41,6 @@ export class CitasComponent implements OnInit {
 
   ngOnInit() {
     this.loadAll();
-
   }
 
   public setOrden(columna: string) {
@@ -52,6 +52,16 @@ export class CitasComponent implements OnInit {
     }
 
     this.filtrarEventos();
+
+    this.usuarioActual = this.apiService.auth_user();
+    
+    if (this.isCitas()) {
+      this.filtros.id_usuario = this.usuarioActual.id;
+    }
+  }
+
+  isCitas() {
+    return this.apiService.auth_user().rol === 'Citas';
   }
 
   public loadAll() {
@@ -93,14 +103,18 @@ export class CitasComponent implements OnInit {
       this.eventos = eventos;
       this.filtrarEventos();
 
-      // console.log('siu');
       // this.update.emit();
     }, error => { this.alertService.error(error); this.loading = false; });
   }
 
-
+  // Cuando se abra un modal, comprueba si no existen datos en clientes y si no existen, obtenerlas
   public openModal(template: TemplateRef<any>, evento: any) {
     this.evento = evento;
+
+    // Comprobar si no existen datos en clientes y si no existen, obtenerlas
+    if (!this.clientes || this.clientes.length === 0) {
+      this.obtenerClientes();
+    }
 
     if (!this.evento.id) {
       this.evento.id_empresa = this.apiService.auth_user().id_empresa;
@@ -212,21 +226,24 @@ export class CitasComponent implements OnInit {
     }, error => { this.alertService.error(error); this.saving = false; });
   }
 
-
+  // Cuando se abra un modal de filtro, comprueba si no existen datos en clientes y si no existen, obtenerlas
   public openFilter(template: TemplateRef<any>) {
     this.filtros.inicio = '';
     this.filtros.fin = '';
 
-    if (!this.clientes.length) {
-      this.apiService.getAll('clientes/list').subscribe(clientes => {
-        this.clientes = clientes;
-      }, error => { this.alertService.error(error); });
+    if (!this.clientes || this.clientes.length === 0) {
+      this.obtenerClientes();
     }
-
 
     this.modalRef = this.modalService.show(template);
   }
 
-
+  obtenerClientes() {
+    this.apiService.getAll('clientes/list').subscribe(clientes => {
+      this.clientes = clientes;
+    }, error => {
+      this.alertService.error(error);
+    });
+  }
 
 }
