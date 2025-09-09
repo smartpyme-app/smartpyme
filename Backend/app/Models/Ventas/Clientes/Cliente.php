@@ -2,6 +2,10 @@
 
 namespace App\Models\Ventas\Clientes;
 
+use App\Models\FidelizacionClientes\ConsumoPuntos;
+use App\Models\FidelizacionClientes\PuntosCliente;
+use App\Models\FidelizacionClientes\TipoClienteEmpresa;
+use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\MH\ActividadEconomica;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +43,7 @@ class Cliente extends Model {
        'etiquetas',
        'id_usuario',
        'id_empresa',
+       'id_tipo_cliente',
 
        'cod_giro',
        'cod_municipio',
@@ -122,5 +127,62 @@ class Cliente extends Model {
     public function actividadEconomica()
     {
         return $this->belongsTo(ActividadEconomica::class, 'cod_giro', 'cod');
+    }
+
+    public function tipoCliente()
+    {
+        return $this->belongsTo(TipoClienteEmpresa::class, 'id_tipo_cliente');
+    }
+
+    public function puntosCliente()
+    {
+        return $this->hasOne(PuntosCliente::class, 'id_cliente');
+    }
+
+    public function transaccionesPuntos()
+    {
+        return $this->hasMany(TransaccionPuntos::class, 'id_cliente');
+    }
+
+    public function consumosPuntos()
+    {
+        return $this->hasMany(ConsumoPuntos::class, 'id_cliente');
+    }
+
+    public function getTipoClienteEfectivo()
+    {
+        return $this->tipoCliente ?: $this->empresa->getTipoClienteDefault();
+    }
+
+    public function getPuntosDisponibles()
+    {
+        return $this->puntosCliente->puntos_disponibles ?? 0;
+    }
+
+    public function getPuntosTotalesGanados()
+    {
+        return $this->puntosCliente->puntos_totales_ganados ?? 0;
+    }
+
+    public function getPuntosTotalesCanjeados()
+    {
+        return $this->puntosCliente->puntos_totales_canjeados ?? 0;
+    }
+
+    public function getUltimaActividad()
+    {
+        return $this->puntosCliente->fecha_ultima_actividad;
+    }
+
+    public function isVip()
+    {
+        $tipo = $this->getTipoClienteEfectivo();
+        return $tipo && in_array($tipo->tipoBase->code ?? '', ['VIP', 'ULTRAVIP']);
+    }
+
+    public function isUltraVip()
+    {
+        $tipo = $this->getTipoClienteEfectivo();
+        return $tipo && ($tipo->tipoBase->code ?? '') === 'ULTRAVIP';
     }
 }

@@ -3,6 +3,10 @@
 namespace App\Models\Admin;
 
 use App\Models\Currency;
+use App\Models\FidelizacionClientes\ConsumoPuntos;
+use App\Models\FidelizacionClientes\PuntosCliente;
+use App\Models\FidelizacionClientes\TipoClienteEmpresa;
+use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\Planilla\CargoEmpresa;
 use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\Suscripcion;
@@ -434,6 +438,32 @@ class Empresa extends Model
     public function canal()
     {
         return $this->belongsTo('App\Models\Admin\Canal', 'woocommerce_canal_id');
+    }
+
+    public function tiposClienteEmpresa()
+    {
+        return $this->hasMany(TipoClienteEmpresa::class, 'id_empresa');
+    }
+
+    public function tipoClienteDefault()
+    {
+        return $this->hasOne(TipoClienteEmpresa::class, 'id_empresa')
+                    ->where('is_default', true);
+    }
+
+    public function puntosCliente()
+    {
+        return $this->hasMany(PuntosCliente::class, 'id_empresa');
+    }
+
+    public function transaccionesPuntos()
+    {
+        return $this->hasMany(TransaccionPuntos::class, 'id_empresa');
+    }
+
+    public function consumosPuntos()
+    {
+        return $this->hasMany(ConsumoPuntos::class, 'id_empresa');
     }
 
     public function getCurrencySymbolAttribute()
