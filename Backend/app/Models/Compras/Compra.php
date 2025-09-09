@@ -62,20 +62,7 @@ class Compra extends Model {
 
         if (Auth::check()) {
             static::addGlobalScope('empresa', function (Builder $builder) {
-                $user = Auth::user();
-
-                $licencia = $user->empresa()->first()->licencia()->first();
-
-                if ($licencia) {
-                    $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
-                    if (!empty($empresasLicencia)) {
-                        $builder->whereIn('id_empresa', $empresasLicencia)->where('estado', 'Pendiente');
-                    } else {
-                        $builder->where('id_empresa', $user->id_empresa);
-                    }
-                } else {
-                    $builder->where('id_empresa', $user->id_empresa);
-                }
+                $builder->where('id_empresa', Auth::user()->id_empresa);
             });
         }
     }
