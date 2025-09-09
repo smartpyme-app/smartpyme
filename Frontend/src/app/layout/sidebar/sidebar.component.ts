@@ -20,7 +20,7 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
-
+    public fidelizacionIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -74,7 +74,11 @@ export class SidebarComponent implements OnInit {
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
         }
-        
+        if (!localStorage.getItem('fidelizacionIsCollapsed')) {
+            localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
+        }else{
+            this.fidelizacionIsCollapsed = JSON.parse(localStorage.getItem('fidelizacionIsCollapsed')!);
+        }
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -185,6 +189,16 @@ export class SidebarComponent implements OnInit {
     }
 
 
+    toggleFidelizacion() {
+        if(this.fidelizacionIsCollapsed){
+            this.closeAll();
+        }
+        this.fidelizacionIsCollapsed = !this.fidelizacionIsCollapsed;
+        localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
             this.sidebarCollapsed = false;
@@ -206,7 +220,9 @@ export class SidebarComponent implements OnInit {
         this.planillaIsCollapsed = true;
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
-        localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
+        this.fidelizacionIsCollapsed = true;
+        localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
     }
 
     public onSubmit(){

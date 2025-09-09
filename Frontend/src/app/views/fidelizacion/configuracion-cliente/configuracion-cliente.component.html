@@ -1,0 +1,683 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Configuración de Tipos de Cliente</h2>
+  <button class="btn btn-default tcla-F4" (click)="openCreateModal()" [disabled]="loading"
+    tooltip="Crear tipo de cliente (F4)">
+    <img src="/assets/icons/plus.png" class="icon me-2">
+    Añadir tipo
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span class="text-muted d-flex align-items-center gap-2" *ngIf="tiposCliente?.length">
+        Mostrando
+        <select name="paginate" class="form-select w-auto" (change)="filtrarTiposCliente()"
+          [(ngModel)]="filtros.paginate">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        de {{ tiposCliente?.length + ' registros' }}
+      </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <button [disabled]="downloading" tooltip="Descargar tipos de cliente" (click)="descargar()"
+          class="btn btn-default tcla-F6">
+          <img src="/assets/icons/download.png" class="icon">
+        </button>
+        <form class="d-flex input-group" name="form" (ngSubmit)="filtrarTiposCliente()" autocomplete="off">
+          <input type="text" name="search" class="form-control pull-right" placeholder="Buscar"
+            [(ngModel)]="filtros.buscador">
+        </form>
+        <!-- <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button> -->
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex mb-3">
+    <div class="col d-flex gap-2 jus">
+      <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)" (click)="loadAll()">Todos</button>
+    </div>
+    <div class="col d-flex gap-2 justify-content-end">
+      <select name="estado" (change)="filtrarTiposCliente()" [(ngModel)]="filtros.estado"
+        class="form-select bg-default w-auto">
+        <option value="">Estado</option>
+        <option value="Activo">Activo</option>
+        <option value="Inactivo">Inactivo</option>
+      </select>
+
+      <select name="tipo" (change)="filtrarTiposCliente()" [(ngModel)]="filtros.tipo"
+        class="form-select bg-default w-auto">
+        <option value="">Tipo</option>
+        <option value="Personalizado">Personalizado</option>
+        <option value="Basado">Basado</option>
+      </select>
+    </div>
+
+  </div>
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th (click)="setOrden('nivel')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'nivel' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nivel' && filtros.direccion == 'desc'}"
+              class="click">Nivel</th>
+            <th (click)="setOrden('nombre_efectivo')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'nombre_efectivo' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'nombre_efectivo' && filtros.direccion == 'desc'}"
+              class="click">Nombre</th>
+            <th>Tipo</th>
+            <th (click)="setOrden('puntos_por_dolar')"
+              [ngClass]="{'sorted-asc': filtros.orden == 'puntos_por_dolar' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'puntos_por_dolar' && filtros.direccion == 'desc'}"
+              class="click">Puntos por $</th>
+            <th>Canje Mín/Máx</th>
+            <th>Expiración</th>
+            <th>Estado</th>
+            <th class="text-center">Más</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="loading">
+            <td colspan="8" class="text-center">
+              <span class="badge bg-primary">Cargando...</span>
+            </td>
+          </tr>
+          <tr *ngIf="!loading && tiposCliente.length === 0">
+            <td colspan="8" class="text-center">
+              <span class="badge bg-primary">No hay tipos de cliente configurados</span>
+            </td>
+          </tr>
+          <tr class="animated fadeIn" *ngFor="let tipo of tiposCliente" [hidden]="loading">
+            <td>
+              <span class=" py-2 position-relative">
+                {{ getNivelNombre(tipo.nivel) }}
+              </span>
+              <span *ngIf="tipo.is_default" class="badge bg-success py-2 position-relative ms-1">Por Defecto</span>
+            </td>
+            <td>
+              <strong>{{ tipo.nombre_efectivo }}</strong>
+              <br>
+              <small class="text-muted">{{ getTipoBaseDescripcion(tipo) }}</small>
+            </td>
+            <td>
+              <span *ngIf="!isPersonalizado(tipo)" class="badge py-2 position-relative"
+                [ngClass]="{'bg-info': !isPersonalizado(tipo)}">
+                {{ tipo.code_efectivo }}
+              </span>
+              <span *ngIf="isPersonalizado(tipo)" class="badge py-2 position-relative"
+                [ngClass]="{'bg-warning': isPersonalizado(tipo)}">
+                Personalizado
+              </span>
+            </td>
+            <td>
+              <span class="fw-bold">{{ tipo.puntos_por_dolar | number:'1.2-4' }}</span>
+            </td>
+            <td>
+              <small>
+                Mín: <span class="fw-bold">{{ tipo.minimo_canje | number }}</span><br>
+                Máx: <span class="fw-bold">{{ tipo.maximo_canje | number }}</span>
+              </small>
+            </td>
+            <td>
+              <span class="fw-bold">{{ tipo.expiracion_meses }}</span> meses
+            </td>
+            <td>
+              <span class="badge py-2 position-relative"
+                [ngClass]="{'bg-success': tipo.activo, 'bg-danger': !tipo.activo}">
+                {{ tipo.activo ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                <i class="fa fa-ellipsis-vertical fa-fw text-dark"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="d-flex flex-column">
+                  <button type="button" (click)="openEditModal(tipo)" class="btn text-start border-0">
+                    <i class="fa fa-fw fa-edit me-2"></i> Editar
+                  </button>
+                  <button type="button" (click)="openUpgradeRulesModal(tipo)" class="btn text-start border-0">
+                    <i class="fa fa-fw fa-cog me-2"></i> Reglas de Upgrade
+                    <span class="badge bg-primary ms-2"
+                      *ngIf="tipo.configuracion_avanzada?.upgrade_automatico?.reglas?.length > 0">
+                      {{ tipo.configuracion_avanzada.upgrade_automatico.reglas.length }}
+                    </span>
+                  </button>
+                  <button type="button" (click)="toggleStatus(tipo)" class="btn text-start border-0">
+                    <i class="fa fa-fw me-2" [ngClass]="tipo.activo ? 'fa-toggle-off' : 'fa-toggle-on'"></i>
+                    {{ tipo.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                  <button *ngIf="!tipo.is_default" type="button" (click)="setAsDefault(tipo)"
+                    class="btn text-start border-0">
+                    <i class="fa fa-fw fa-star me-2"></i> Establecer por defecto
+                  </button>
+                  <hr class="my-1">
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Modal para crear/editar tipo de cliente -->
+<div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1"
+  *ngIf="showModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ editingTipo ? 'Editar Tipo de Cliente' : 'Nuevo Tipo de Cliente' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="saveTipoCliente()" #tipoForm="ngForm">
+          <div class="row">
+            <!-- Tipo Base -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tipo Base</label>
+              <select class="form-select" [(ngModel)]="formData.id_tipo_base" name="id_tipo_base">
+                <option value="">Seleccionar tipo base</option>
+                <option *ngFor="let tipoBase of tiposBase" [value]="tipoBase.id">
+                  {{ tipoBase.nombre }} - {{ tipoBase.descripcion }}
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Dejar vacío para crear un tipo personalizado
+              </small>
+            </div>
+
+            <!-- Nivel -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nivel</label>
+              <select class="form-select" [(ngModel)]="formData.nivel" name="nivel" required>
+                <option value="1">1 - Standard</option>
+                <option value="2">2 - VIP</option>
+                <option value="3">3 - Ultra VIP</option>
+              </select>
+            </div>
+
+            <!-- Nombre Personalizado -->
+            <div class="col-md-6 mb-3" *ngIf="!formData.id_tipo_base">
+              <label class="form-label">Nombre Personalizado</label>
+              <input type="text" class="form-control" [(ngModel)]="formData.nombre_personalizado"
+                name="nombre_personalizado" placeholder="Ej: Cliente Premium">
+            </div>
+
+            <!-- Puntos por Dólar -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Puntos por Dólar</label>
+              <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar" name="puntos_por_dolar"
+                step="0.0001" min="0" required>
+              <small class="form-text text-muted">
+                Cantidad de puntos que gana por cada dólar gastado
+              </small>
+            </div>
+
+            <!-- Valor del Punto -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Valor del Punto ($)</label>
+              <input type="number" class="form-control" [(ngModel)]="formData.configuracion_avanzada.valor_punto"
+                name="valor_punto" step="0.01" min="0" required>
+              <small class="form-text text-muted">
+                Valor en dólares de cada punto al canjear
+              </small>
+            </div>
+
+            <!-- Mínimo Canje -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Mínimo de Canje</label>
+              <input type="number" class="form-control" [(ngModel)]="formData.minimo_canje" name="minimo_canje" min="1"
+                required>
+              <small class="form-text text-muted">
+                Mínimo de puntos para poder canjear
+              </small>
+            </div>
+
+            <!-- Máximo Canje -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Máximo de Canje</label>
+              <input type="number" class="form-control" [(ngModel)]="formData.maximo_canje" name="maximo_canje" min="1"
+                required>
+              <small class="form-text text-muted">
+                Máximo de puntos que puede canjear por transacción
+              </small>
+            </div>
+
+            <!-- Expiración -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Expiración (meses)</label>
+              <input type="number" class="form-control" [(ngModel)]="formData.expiracion_meses" name="expiracion_meses"
+                min="1" required>
+              <small class="form-text text-muted">
+                Meses antes de que expiren los puntos
+              </small>
+            </div>
+            <!-- Por Defecto -->
+            <div class="col-md-6 mb-3">
+              <div class="">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="formData.is_default" name="is_default">
+                <label class="form-check-label">
+                  Tipo por defecto para este nivel
+                </label>
+              </div>
+              <small class="form-text text-muted">
+                Solo puede haber un tipo por defecto por nivel
+              </small>
+            </div>
+          </div>
+
+          <!-- Configuración Avanzada -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <h6 class="text-primary border-bottom pb-2 mb-3">
+                <i class="fa fa-cog me-2"></i>Configuración Avanzada
+              </h6>
+            </div>
+
+            <!-- Multiplicador Especial -->
+            <div class="col-md-6 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                  [(ngModel)]="formData.configuracion_avanzada.multiplicador_especial" name="multiplicador_especial">
+                <label class="form-check-label">
+                  Multiplicador Especial
+                </label>
+              </div>
+            </div>
+
+            <!-- Valor del Multiplicador -->
+            <div class="col-md-6 mb-3" *ngIf="formData.configuracion_avanzada.multiplicador_especial">
+              <label class="form-label">Valor del Multiplicador</label>
+              <input type="number" class="form-control"
+                [(ngModel)]="formData.configuracion_avanzada.multiplicador_valor" name="multiplicador_valor" step="0.1"
+                min="1">
+              <small class="form-text text-muted">
+                Factor multiplicador para puntos especiales
+              </small>
+            </div>
+
+            <!-- Descuento Cumpleaños -->
+            <div class="col-md-6 mb-3">
+              <div class="">
+                <input class="form-check-input" type="checkbox"
+                  [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos" name="descuento_cumpleanos">
+                <label class="form-check-label">
+                  Descuento por Cumpleaños
+                </label>
+              </div>
+            </div>
+
+            <!-- Porcentaje Descuento Cumpleaños -->
+            <div class="col-md-6 mb-3" *ngIf="formData.configuracion_avanzada.descuento_cumpleanos">
+              <label class="form-label">Porcentaje de Descuento (%)</label>
+              <input type="number" class="form-control"
+                [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos_porcentaje"
+                name="descuento_cumpleanos_porcentaje" min="1" max="100">
+              <small class="form-text text-muted">
+                Porcentaje de descuento en cumpleaños
+              </small>
+            </div>
+
+            <!-- Acceso Exclusivo (solo para niveles altos) -->
+            <div class="col-md-6 mb-3" *ngIf="formData.nivel >= 2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                  [(ngModel)]="formData.configuracion_avanzada.acceso_exclusivo" name="acceso_exclusivo">
+                <label class="form-check-label">
+                  Acceso Exclusivo
+                </label>
+              </div>
+            </div>
+
+            <!-- Soporte Prioritario (solo para niveles altos) -->
+            <div class="col-md-6 mb-3" *ngIf="formData.nivel >= 2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                  [(ngModel)]="formData.configuracion_avanzada.soporte_prioritario" name="soporte_prioritario">
+                <label class="form-check-label">
+                  Soporte Prioritario
+                </label>
+              </div>
+            </div>
+
+            <!-- Beneficios Exclusivos (solo para Ultra VIP) -->
+            <div class="col-12 mb-3" *ngIf="formData.nivel >= 3">
+              <h6 class="text-secondary mb-3">Beneficios Exclusivos</h6>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Descuento Máximo Adicional (%)</label>
+                  <input type="number" class="form-control"
+                    [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.descuento_maximo_adicional"
+                    name="descuento_maximo_adicional" min="0" max="50">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Puntos Bienvenida Anual</label>
+                  <input type="number" class="form-control"
+                    [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.puntos_bienvenida_anual"
+                    name="puntos_bienvenida_anual" min="0">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.acceso_eventos_vip"
+                      name="acceso_eventos_vip">
+                    <label class="form-check-label">
+                      Acceso a Eventos VIP
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.entrega_express_gratis"
+                      name="entrega_express_gratis">
+                    <label class="form-check-label">
+                      Entrega Express Gratis
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox"
+                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.asistente_personal"
+                      name="asistente_personal">
+                    <label class="form-check-label">
+                      Asistente Personal
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upgrade Automático -->
+            <div class="col-12 mb-3">
+              <h6 class="text-secondary mb-3">Upgrade Automático</h6>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <div class="">
+                    <input class="form-check-input" type="checkbox"
+                      [(ngModel)]="formData.configuracion_avanzada.upgrade_automatico.habilitado"
+                      name="upgrade_automatico_habilitado">
+                    <label class="form-check-label">
+                      Habilitar Upgrade Automático
+                    </label>
+                  </div>
+                  <small class="form-text text-muted">
+                    Los clientes pueden subir de nivel automáticamente. Use el menú de acciones para configurar las
+                    reglas.
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveTipoCliente()" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-2"></span>
+          {{ editingTipo ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal -->
+<div class="modal-backdrop fade show" *ngIf="showModal"></div>
+
+<!-- Modal para crear/editar reglas de upgrade -->
+<div class="modal fade" [class.show]="showReglaModal" [style.display]="showReglaModal ? 'block' : 'none'" tabindex="-1"
+  *ngIf="showReglaModal" style="z-index: 1060;">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ editingRegla ? 'Editar Regla de Upgrade' : 'Nueva Regla de Upgrade' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeReglaModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <form (ngSubmit)="saveRegla()" #reglaFormTemplate="ngForm">
+          <div class="row">
+            <!-- Tipo de Regla -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tipo de Regla</label>
+              <select class="form-select" [ngModel]="reglaForm.tipo" (ngModelChange)="onTipoReglaChange($event)"
+                name="tipo" required>
+                <option value="">Seleccionar tipo de regla</option>
+                <option *ngFor="let tipo of getTiposReglas(); trackBy: trackByTipo" [value]="tipo.value"
+                  [selected]="reglaForm.tipo === tipo.value">
+                  {{ tipo.label }}
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                {{ getTipoReglaDescription(reglaForm.tipo) }}
+              </small>
+            </div>
+
+            <!-- Umbral -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Umbral</label>
+              <input type="number" class="form-control" [(ngModel)]="reglaForm.umbral" name="umbral" min="1" step="0.01"
+                required>
+              <small class="form-text text-muted">
+                <span *ngIf="reglaForm.tipo === 'gasto_total'">Monto mínimo en dólares</span>
+                <span *ngIf="reglaForm.tipo === 'puntos_acumulados'">Puntos mínimos acumulados</span>
+                <span *ngIf="reglaForm.tipo === 'compras_periodo'">Número mínimo de compras</span>
+              </small>
+            </div>
+
+            <!-- Nivel Destino -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nivel Destino</label>
+              <select class="form-select" [(ngModel)]="reglaForm.nivel_destino" name="nivel_destino" required>
+                <option *ngFor="let nivel of getNivelesDisponibles()" [value]="nivel.value">
+                  {{ nivel.label }}
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Nivel al que se upgradeará el cliente
+              </small>
+            </div>
+
+            <!-- Período en Meses (solo para compras_periodo) -->
+            <div class="col-md-6 mb-3" *ngIf="reglaForm.tipo === 'compras_periodo'">
+              <label class="form-label">Período en Meses</label>
+              <input type="number" class="form-control" [(ngModel)]="reglaForm.periodo_meses" name="periodo_meses"
+                min="1" max="24" required>
+              <small class="form-text text-muted">
+                Período de tiempo para contar las compras
+              </small>
+            </div>
+
+            <!-- Descripción -->
+            <div class="col-12 mb-3">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" [(ngModel)]="reglaForm.descripcion" name="descripcion" rows="3" required
+                placeholder="Describe esta regla de upgrade..."></textarea>
+              <small class="form-text text-muted">
+                Descripción clara de cuándo se aplica esta regla
+              </small>
+            </div>
+
+            <!-- Estado -->
+            <div class="col-md-6 mb-3">
+              <div class="">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="reglaForm.activo" name="activo">
+                <label class="form-check-label">
+                  Regla Activa
+                </label>
+              </div>
+              <small class="form-text text-muted">
+                Solo las reglas activas se aplicarán automáticamente
+              </small>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeReglaModal()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="saveRegla()">
+          {{ editingRegla ? 'Actualizar' : 'Crear' }} Regla
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal de reglas -->
+<div class="modal-backdrop fade show" *ngIf="showReglaModal" style="z-index: 1055;"></div>
+
+<!-- Modal para gestionar reglas de upgrade -->
+<div class="modal fade" [class.show]="showUpgradeRulesModal" [style.display]="showUpgradeRulesModal ? 'block' : 'none'"
+  tabindex="-1" *ngIf="showUpgradeRulesModal">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa fa-cog me-2"></i>Reglas de Upgrade - {{ currentTipoForRules?.nombre_efectivo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="closeUpgradeRulesModal()"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Reglas de Upgrade Automático</h6>
+                <small class="text-muted">
+                  Configure las condiciones para que los clientes suban de nivel automáticamente
+                </small>
+              </div>
+              <button type="button" class="btn btn-primary" (click)="openAddReglaModal()">
+                <i class="fa fa-plus me-1"></i> Agregar Regla
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de reglas existentes -->
+        <div class="table-responsive"
+          *ngIf="currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas?.length > 0">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Umbral</th>
+                <th>Nivel Destino</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th width="150">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let regla of currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas; let i = index">
+                <td>
+                  <span class="badge bg-info">
+                    {{ getTipoReglaLabel(regla.tipo) }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="regla.tipo === 'gasto_total'">${{ regla.umbral | number:'1.2-2' }}</span>
+                  <span *ngIf="regla.tipo === 'puntos_acumulados'">{{ regla.umbral }} pts</span>
+                  <span *ngIf="regla.tipo === 'compras_periodo'">{{ regla.umbral }} compras</span>
+                </td>
+                <td>
+                  <span class="badge bg-success">
+                    Nivel {{ regla.nivel_destino }} - {{ regla.nivel_destino === 2 ? 'VIP' : 'Ultra VIP' }}
+                  </span>
+                  <small class="d-block text-muted" *ngIf="regla.periodo_meses">
+                    En {{ regla.periodo_meses }} meses
+                  </small>
+                </td>
+                <td>
+                  <small>{{ regla.descripcion }}</small>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="{'bg-success': regla.activo, 'bg-secondary': !regla.activo}">
+                    {{ regla.activo ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn" (click)="openEditReglaModal(regla, i)" title="Editar">
+                      <i class="fa fa-edit text-primary"></i>
+                    </button>
+                    <button type="button" class="btn" (click)="toggleReglaStatus(i)"
+                      [title]="regla.activo ? 'Desactivar' : 'Activar'">
+                      <i class="fa"
+                        [ngClass]="regla.activo ? 'fa-toggle-off text-danger' : 'fa-toggle-on text-success'"></i>
+                    </button>
+                    <!-- <button type="button" class="btn" 
+                            (click)="removeRegla(i)" 
+                            title="Eliminar">
+                      <i class="fa fa-trash"></i>
+                    </button> -->
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mensaje cuando no hay reglas -->
+        <div class="alert alert-info"
+          *ngIf="!currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas?.length">
+          <i class="fa fa-info-circle me-2"></i>
+          No hay reglas de upgrade configuradas. Haga clic en "Agregar Regla" para crear una nueva.
+        </div>
+
+        <!-- Información adicional -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="alert alert-light">
+              <h6 class="alert-heading">
+                <i class="fa fa-lightbulb me-2"></i>Tipos de Reglas Disponibles
+              </h6>
+              <ul class="mb-0">
+                <li><strong>Gasto Total:</strong> Basado en el monto total gastado por el cliente</li>
+                <li><strong>Puntos Acumulados:</strong> Basado en los puntos acumulados por el cliente</li>
+                <li><strong>Compras en Período:</strong> Basado en el número de compras realizadas en un período
+                  específico</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeUpgradeRulesModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal de reglas de upgrade -->
+<div class="modal-backdrop fade show" *ngIf="showUpgradeRulesModal"></div>
