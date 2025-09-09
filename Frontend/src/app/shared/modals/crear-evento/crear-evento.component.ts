@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
 
@@ -8,23 +8,26 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 import { CrearProductoComponent } from '../crear-producto/crear-producto.component';
 import Swal from 'sweetalert2';
+import { Observable, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-crear-evento',
   templateUrl: './crear-evento.component.html'
 })
-export class CrearEventoComponent implements OnInit {
+export class CrearEventoComponent implements OnInit, OnChanges {
 
   @Input() evento: any = {};
   public productos: any = [];
   public clientes: any = [];
   public usuarios: any = [];
+  public usuarioActual: any = {};
   public detalle: any = {};
   public productoSeleccionado: any = undefined;
   @Output() update = new EventEmitter();
   public loading = false;
   public saving: boolean = false;
-
+  public sucursales: any = [];
   modalRef?: BsModalRef;
   @ViewChild("createProductModal") createProductModal!: any;
   @ViewChild("eventosEnConflictoModal") eventosEnConflictoModal!: any;
@@ -39,20 +42,89 @@ export class CrearEventoComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    console.log(this.evento);
 
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('productos/list').subscribe(productos => {
-      this.productos = productos;
-    }, error => { this.alertService.error(error); });
-
     this.apiService.getAll('clientes/list').subscribe(clientes => {
       this.clientes = clientes;
+      // Si estamos editando un evento y tiene un cliente asignado, 
+      // asegurarnos de que el cliente esté en la lista para que se muestre correctamente
+      if (this.evento && this.evento.id_cliente) {
+        const clienteExistente = this.clientes.find((c: any) => c.id === this.evento.id_cliente);
+        if (!clienteExistente && this.evento.cliente) {
+          // Si el cliente no está en la lista pero viene en el evento, agregarlo
+          this.clientes.push(this.evento.cliente);
+        } else if (!clienteExistente) {
+          // Si el cliente no está en la lista, intentar cargarlo individualmente
+          this.apiService.read('clientes/', this.evento.id_cliente).subscribe((cliente: any) => {
+            if (cliente) {
+              this.clientes.push(cliente);
+            }
+          }, (error: any) => {
+            console.error('Error cargando cliente:', error);
+          });
+        }
+      }
     }, error => { this.alertService.error(error); });
+
+    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+      this.sucursales = sucursales;
+    }, error => { this.alertService.error(error); });
+
+    this.usuarioActual = this.apiService.auth_user();
+    console.log(this.usuarioActual);
+    
+    if (this.isCitas()) {
+      this.evento.id_usuario = this.usuarioActual.id;
+    }
+
   }
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Cuando cambia el evento (al editar), asegurarse de que los productos tengan los datos correctos
+    if (changes['evento'] && changes['evento'].currentValue) {
+      const evento = changes['evento'].currentValue;
+      console.log('Evento recibido en ngOnChanges:', evento);
+      
+      // Debug productos
+      if (evento.productos && evento.productos.length > 0) {
+        console.log('Productos del evento:', evento.productos);
+        evento.productos.forEach((producto: any, index: number) => {
+          console.log(`Producto ${index}:`, {
+            id: producto.id,
+            nombre_producto: producto.nombre_producto,
+            precio_producto: producto.precio_producto,
+            cantidad: producto.cantidad,
+            total_calculado: (producto.precio_producto || 0) * (producto.cantidad || 0)
+          });
+        });
+        
+        // Asegurar que los productos tengan los datos correctos
+        this.ensureProductosData(evento.productos);
+      }
+      
+      if (evento.id_cliente && this.clientes.length > 0) {
+        const clienteExistente = this.clientes.find((c: any) => c.id === evento.id_cliente);
+        if (!clienteExistente && evento.cliente) {
+          // Si el cliente no está en la lista pero viene en el evento, agregarlo
+          this.clientes.push(evento.cliente);
+        } else if (!clienteExistente) {
+          // Si el cliente no está en la lista, intentar cargarlo individualmente
+          this.apiService.read('clientes/', evento.id_cliente).subscribe((cliente: any) => {
+            if (cliente) {
+              this.clientes.push(cliente);
+            }
+          }, (error: any) => {
+            console.error('Error cargando cliente:', error);
+          });
+        }
+      }
+    }
+  }
+
+
 
   setTipo() {
     if (this.evento.tipo = 'Confirmado') {
@@ -60,8 +132,12 @@ export class CrearEventoComponent implements OnInit {
     } else {
       this.evento.tipo = 'Confirmado';
     }
-    console.log(this.evento);
   }
+
+  isCitas() {
+    return this.usuarioActual.tipo === 'Citas';
+  }
+
 
   setTime() {
     let fecha = moment(this.evento.inicio);
@@ -154,8 +230,8 @@ export class CrearEventoComponent implements OnInit {
       this.detalle.id_producto = this.productoSeleccionado.id;
       this.detalle.cantidad = 1;
       this.detalle.id_evento = this.evento.id;
-      this.detalle.costo = this.productoSeleccionado.costo;
-      this.detalle.precio = this.productoSeleccionado.precio;
+      // Agregar precio_producto para que se muestre inmediatamente
+      this.detalle.precio_producto = this.productoSeleccionado.precio;
 
       let detalle = Object.assign({}, this.detalle);
       if (!this.evento.productos) this.evento.productos = [];
@@ -169,6 +245,29 @@ export class CrearEventoComponent implements OnInit {
 
   public eliminarDetalle(index: number) {
     this.evento.productos.splice(index, 1);
+  }
+
+  public recalcularTotal(producto: any) {
+    // El total se calcula automáticamente en el template
+    // Este método se mantiene por si necesitamos lógica adicional en el futuro
+    console.log('Recalculando total para producto:', producto.nombre_producto);
+  }
+
+  // Función para asegurar que los productos tengan los datos correctos
+  private ensureProductosData(productos: any[]) {
+    productos.forEach((producto: any) => {
+      // Si el producto no tiene precio_producto, intentar cargarlo del producto original
+      if (!producto.precio_producto) {
+        this.apiService.read('productos/', producto.id_producto).subscribe((productoOriginal: any) => {
+          if (productoOriginal) {
+            producto.precio_producto = productoOriginal.precio;
+            console.log('Producto actualizado con datos del original:', producto);
+          }
+        }, (error: any) => {
+          console.error('Error cargando producto original:', error);
+        });
+      }
+    });
   }
   crearProducto() {
     this.modalCreateProductRef = this.modalService.show(this.createProductModal, { backdrop: 'static' });
@@ -218,7 +317,73 @@ export class CrearEventoComponent implements OnInit {
     });
   }
 
+  // Función de búsqueda para clientes en servidor, con manejo de errores y respuesta flexible
+  searchClientes = (term: string): Observable<any[]> => {
+    if (!term || term.length < 2) {
+      return of([]); // No buscar si el término es muy corto
+    }
+    
+    return this.apiService.getAll(`clientes/search?q=${encodeURIComponent(term)}`)
+      .pipe(
+        map((response: any) => {
+          // Si la respuesta viene envuelta en un objeto data
+          return Array.isArray(response) ? response : (response.data || []);
+        }),
+        catchError((error) => {
+          console.error('Error buscando clientes:', error);
+          this.alertService.error('Error al buscar clientes');
+          return of([]); // Retornar array vacío en caso de error
+        })
+      );
+  };
 
+  // Función personalizada para mostrar clientes
+  getClienteDisplay = (cliente: any): string => {
+    return cliente.tipo === 'Persona' 
+      ? cliente.nombre_completo 
+      : cliente.nombre_empresa;
+  };
 
+  // Función para mostrar productos
+  getProductoDisplay = (producto: any): string => {
+    return `${producto.nombre} - ${producto.precio}`;
+  };
+
+  // Búsqueda de productos en servidor
+  searchProductos = (term: string): Observable<any[]> => {
+    if (!term || term.length < 2) {
+      return of([]);
+    }
+    
+    return this.apiService.getAll(`productos/search?q=${encodeURIComponent(term)}&limit=15`)
+      .pipe(
+        map((response: any) => Array.isArray(response) ? response : (response.data || [])),
+        catchError(() => of([]))
+      );
+  };
+
+  // Callbacks cuando cambia la selección
+  onClienteChange(cliente: any) {
+    console.log('Cliente seleccionado:', cliente);
+    if (cliente) {
+      // Puedes hacer lógica adicional aquí
+      console.log('Datos del cliente:', cliente);
+    }
+  }
+
+  onProductoChange(producto: any) {
+    console.log('Producto seleccionado:', producto);
+    this.productoSeleccionado = producto;
+    // Automáticamente agregar el detalle cuando se selecciona un producto
+    if (producto) {
+      this.agregarDetalle();
+    }
+  }
+
+  onUsuarioChange(usuario: any) {
+    console.log('Usuario seleccionado:', usuario);
+  }
+
+  // Puedes agregar otros métodos o lógica aquí según sea necesario
 
 }

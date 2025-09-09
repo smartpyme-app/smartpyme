@@ -24,12 +24,17 @@
           </thead>
           <tbody>
             <tr>
+             <td></td>
+             <td></td>
               <td colspan="2" class="text-center" *ngIf="eventos?.total < 1 && !loading">
                 <span class="badge bg-primary">No tiene citas próximas</span>
               </td>
               <td colspan="2" class="text-center" *ngIf="loading">
                 <span class="badge bg-primary">Cargando...</span>
               </td>
+             <td></td>
+             <td></td>
+
             </tr>
             <!-- eventos traidos del componente -->
             <tr *ngFor=" let evento of eventos?.data">

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
     Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
