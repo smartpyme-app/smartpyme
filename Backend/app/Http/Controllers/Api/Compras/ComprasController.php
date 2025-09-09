@@ -588,5 +588,105 @@ class ComprasController extends Controller
         return Response()->json($numsIds, 200);
      }
 
+    public function generarCompraDesdeOrdenCompra(Request $request){
+        $request->validate([
+            'num_orden' => 'required',
+            'fecha' => 'required',
+            'estado' => 'required',
+            'forma_pago' => 'required',
+            'id_usuario' => 'required',
+            'id_empresa' => 'required',
+            'id_bodega' => 'required',
+            'id_sucursal' => 'required',
+        ]);
+
+        DB::beginTransaction();
+        
+        try {
+            // Buscar la orden de compra (cotización)
+            $orden_compra = Compra::where('id', $request->num_orden)
+                ->where('cotizacion', 1)
+                ->with('detalles', 'proveedor')
+                ->firstOrFail();
+            
+            // Crear la nueva compra basada en la orden
+            $compra = new Compra();
+            
+            // Copiar los datos de la orden de compra
+            $compra->fill($orden_compra->toArray());
+            
+            // Actualizar campos específicos para la compra
+            $compra->fecha = date('Y-m-d');
+            $compra->estado = 'Pagada';
+            $compra->tipo_documento = $request->nombre_documento;
+            $compra->referencia = $request->correlativo;
+            $compra->forma_pago = $request->forma_pago;
+            $compra->id_usuario = $request->id_usuario;
+            $compra->id_empresa = $request->id_empresa;
+            $compra->id_bodega = $request->id_bodega;
+            $compra->id_sucursal = $request->id_sucursal;
+            $compra->id_empresa = $orden_compra->id_empresa;
+            $compra->cotizacion = 0; // Marcar como compra real, no cotización
+            $compra->id = null; // Permitir que se genere un nuevo ID
+            
+            $compra->save();
+
+            // Copiar los detalles de la orden de compra
+            foreach ($orden_compra->detalles as $detalle_orden) {
+                $detalle_compra = new Detalle();
+                $detalle_compra->fill($detalle_orden->toArray());
+                $detalle_compra->id_compra = $compra->id;
+                $detalle_compra->id = null; // Permitir que se genere un nuevo ID
+                $detalle_compra->save();
+
+                // Aplicar el proceso de facturación para cada detalle
+                if ($request->estado != 'Anulada' && $request->estado != 'Pre-compra') {
+                    // Actualizar inventario
+                    $inventario = Inventario::where('id_producto', $detalle_compra->id_producto)
+                        ->where('id_bodega', $compra->id_bodega)
+                        ->first();
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle_compra->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle_compra->cantidad);
+                    }
+
+                    // Actualizar costo del producto
+                    $producto = Producto::where('id', $detalle_compra->id_producto)
+                        ->with('inventarios')
+                        ->first();
+                    
+                    if ($producto) {
+                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $detalle_compra->cantidad;
+                        $stock_actual = $detalle_compra->cantidad;
+                        $stock_total = $stock_anterior + $stock_actual;
+
+                        if ($stock_total > 0) {
+                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $detalle_compra->costo)) / $stock_total;
+                        } else {
+                            $costo_promedio = $detalle_compra->costo;
+                        }
+
+                        $producto->costo_anterior = $producto->costo;
+                        $producto->costo = $detalle_compra->costo;
+                        $producto->costo_promedio = $costo_promedio;
+                        $producto->save();
+                    }
+                }
+            }
+
+            DB::commit();
+            return Response()->json($compra, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
 
 }

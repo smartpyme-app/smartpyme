@@ -381,7 +381,17 @@ export class FacturacionComponent implements OnInit {
     // Facturar orden de compra
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
       this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
-            
+        this.venta.num_orden = ordenCompra.id;
+        
+        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
+          if(empresa.length > 0){
+            this.setCliente(empresa[0]);
+            console.log(empresa);
+          }else{
+            alert('No se encontró el cliente');
+          }
+        });
+
         ordenCompra.detalles.forEach((detalleCompra: any) => {
           this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
             let detalle: any = {};
@@ -401,6 +411,7 @@ export class FacturacionComponent implements OnInit {
         });
       }, (error) => { this.alertService.error(error); this.loading = false; }
     );
+    console.log(this.venta);
     }
 
     // Cita a venta
