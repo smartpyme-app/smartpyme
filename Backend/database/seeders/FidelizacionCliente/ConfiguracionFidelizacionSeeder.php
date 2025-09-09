@@ -53,6 +53,7 @@ class ConfiguracionFidelizacionSeeder extends Seeder
                     'nombre_personalizado' => null, // Usará el nombre del tipo base
                     'activo' => true,
                     'puntos_por_dolar' => $this->getPuntosPorDolar($tipoBase->code),
+                    'valor_punto' => $this->getValorPunto($tipoBase->code),
                     'minimo_canje' => $this->getMinimoCanje($tipoBase->code),
                     'maximo_canje' => $this->getMaximoCanje($tipoBase->code),
                     'expiracion_meses' => $this->getExpiracionMeses($tipoBase->code),
@@ -78,11 +79,32 @@ class ConfiguracionFidelizacionSeeder extends Seeder
             case 'STANDARD':
                 return 1.0;
             case 'VIP':
-                return 1.5;
+                return 1.25;
             case 'ULTRAVIP':
-                return 2.0;
+                return 1.5;
             default:
                 return 1.0;
+        }
+    }
+
+    /**
+     * Obtener valor del punto según el tipo
+     *
+     * STANDARD: 0.010
+     * VIP: 0.0105 (puedes ajustar a 0.012 si quieres el extremo superior)
+     * ULTRAVIP: 0.012 (puedes ajustar a 0.015 si quieres el extremo superior)
+     */
+    private function getValorPunto(string $code): float
+    {
+        switch($code) {
+            case 'STANDARD':
+                return 0.010;
+            case 'VIP':
+                return 0.011; // valor intermedio recomendado
+            case 'ULTRAVIP':
+                return 0.0135; // valor intermedio recomendado
+            default:
+                return 0.010;
         }
     }
 
@@ -93,13 +115,13 @@ class ConfiguracionFidelizacionSeeder extends Seeder
     {
         switch($code) {
             case 'STANDARD':
-                return 100;
+                return 300;
             case 'VIP':
-                return 50;
+                return 200;
             case 'ULTRAVIP':
-                return 25;
+                return 150;
             default:
-                return 100;
+                return 300;
         }
     }
 
@@ -110,13 +132,13 @@ class ConfiguracionFidelizacionSeeder extends Seeder
     {
         switch($code) {
             case 'STANDARD':
-                return 1000;
+                return 1500;
             case 'VIP':
-                return 2000;
+                return 1800;
             case 'ULTRAVIP':
-                return 5000;
+                return 2200;
             default:
-                return 1000;
+                return 1500;
         }
     }
 
@@ -143,9 +165,9 @@ class ConfiguracionFidelizacionSeeder extends Seeder
     private function getConfiguracionAvanzada(string $code): array
     {
         $baseConfig = [
-            'valor_punto' => 0.01, // $0.01 por punto al canjear
             'multiplicador_especial' => false,
             'descuento_cumpleanos' => false,
+            'tope_canje_porcentaje_ticket' => 0.15, // default 15%
             'upgrade_automatico' => [
                 'habilitado' => true,
                 'reglas' => []
@@ -155,6 +177,7 @@ class ConfiguracionFidelizacionSeeder extends Seeder
         switch($code) {
             case 'STANDARD':
                 return array_merge($baseConfig, [
+                    'tope_canje_porcentaje_ticket' => 0.15, // 15%
                     'upgrade_automatico' => [
                         'habilitado' => true,
                         'reglas' => [
@@ -179,9 +202,10 @@ class ConfiguracionFidelizacionSeeder extends Seeder
             case 'VIP':
                 return array_merge($baseConfig, [
                     'multiplicador_especial' => true,
-                    'multiplicador_valor' => 1.2,
+                    'multiplicador_valor' => 1.1,
                     'descuento_cumpleanos' => true,
                     'descuento_cumpleanos_porcentaje' => 5,
+                    'tope_canje_porcentaje_ticket' => 0.20, // 20%
                     'upgrade_automatico' => [
                         'habilitado' => true,
                         'reglas' => [
@@ -214,9 +238,10 @@ class ConfiguracionFidelizacionSeeder extends Seeder
             case 'ULTRAVIP':
                 return array_merge($baseConfig, [
                     'multiplicador_especial' => true,
-                    'multiplicador_valor' => 1.5,
+                    'multiplicador_valor' => 1.2,
                     'descuento_cumpleanos' => true,
                     'descuento_cumpleanos_porcentaje' => 10,
+                    'tope_canje_porcentaje_ticket' => 0.30, // 30%
                     'acceso_exclusivo' => true,
                     'soporte_prioritario' => true,
                     'beneficios_exclusivos' => [
