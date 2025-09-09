@@ -3,9 +3,7 @@
 
     <h4>Detalles</h4>
     <div class="text-primary">
-      <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)">
-        Crear cliente
-      </app-crear-cliente>
+
     </div>
   </div>
 
@@ -22,26 +20,38 @@
       <label for="id_usuario">
         Encargado
         <i class="fa-regular fa-user"></i>
-
       </label>
-      <ng-select name="id_usuario" [(ngModel)]="evento.id_usuario" class="form-select p-0">
+      <ng-select name="id_usuario"
+                 [(ngModel)]="evento.id_usuario"
+                 class="form-select p-0"
+                 [disabled]="isCitas()">
         <ng-option [value]="usuario.id" *ngFor="let usuario of usuarios">
           {{ usuario.name }}
         </ng-option>
       </ng-select>
     </div>
+    
 
     <div class="form-group col-12 col-md-4">
       <label for="">Cliente
         <i class="fa-regular fa-user"></i>
       </label>
       <div class="input-group flex-nowrap">
-        <ng-select name="id_cliente" [(ngModel)]="evento.id_cliente" class="form-select p-0">
-          <ng-option value=""> Seleccione aquí </ng-option>
-          <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-            {{ cliente.tipo == 'Persona' ? cliente.nombre_completo : cliente.nombre_empresa }}
-          </ng-option>
-        </ng-select>
+        <app-select-search
+            name="id_cliente"
+            [(ngModel)]="evento.id_cliente"
+            [items]="clientes"
+            displayProperty="nombre_completo"
+            valueProperty="id"
+            [customDisplayFunction]="getClienteDisplay"
+            [searchFunction]="searchClientes"
+            placeholder="Seleccione un cliente"
+            cssClass="form-select p-0"
+            (selectionChange)="onClienteChange($event)">
+        </app-select-search>
+        <app-crear-cliente [id_cliente]="evento.id_cliente" (update)="setCliente($event)">
+          Crear cliente
+        </app-crear-cliente>
 
       </div>
     </div>
@@ -98,6 +108,15 @@
         <option value="Pendiente">Pendiente</option>
       </select>
     </div>
+
+    <div class="form-group col-md-4">
+      <label class="form-label font-weight-bold">Sucursal <i class="fa-regular fa-location-dot"></i></label>
+      <select name="id_sucursal" [(ngModel)]="evento.id_sucursal" class="form-control form-select">
+        <option value="">Seleccione una sucursal</option>
+        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">{{ sucursal.nombre }}</option>
+      </select>
+    </div>
+
     <div class="form-group col-md-12">
       <label class="form-label font-weight-bold">Detalles del evento</label>
       <textarea class="form-control" placeholder="Escribe aquí (Opcional)" name="detalles" [(ngModel)]="evento.detalles"
@@ -108,16 +127,19 @@
   <div class="row">
     <h5 class="col-6">Productos y servicios</h5>
     <div class="form-group col-md-6">
+      <small class="text-muted mb-2 d-block">El producto se agregará automáticamente al seleccionarlo</small>
       <div class="d-flex">
-
-        <ng-select placeholder="Selecciona un producto aquí" name="productoSeleccionado"
-          [(ngModel)]="productoSeleccionado" (change)="agregarDetalle()" class="form-select p-0">
-          <ng-option [value]="producto" *ngFor="let producto of productos">
-            {{ producto.nombre }}
-          </ng-option>
-        </ng-select>
-        <!-- <button type="button" class="btn btn-default" tooltip="Crear producto" (click)="crearProducto()"> <i
-            class="fa fa-plus"></i> </button> -->
+        <app-select-search
+          name="id_producto"
+          [(ngModel)]="productoSeleccionado"
+          [items]="productos"
+          displayProperty="nombre"
+          valueProperty="id"
+          [searchFunction]="searchProductos"
+          placeholder="Seleccione un producto"
+          cssClass="form-select p-0"
+          (selectionChange)="onProductoChange($event)">
+        </app-select-search>
       </div>
     </div>
     <div class="col-12">
@@ -138,16 +160,16 @@
             <td> {{ det.nombre_producto }} </td>
             <td>
               <input type="number" min="0" [(ngModel)]="det.cantidad" name="cantidad{{det.id}}" style="max-width: 70px;"
-                class="form-control">
+                class="form-control" (ngModelChange)="recalcularTotal(det)">
             </td>
             <!-- <td class="text-end">
               {{ det.costo | currency:'USD':'symbol':'1.2'}}
             </td> -->
             <td class="text-end">
-              {{ det.precio | currency:'USD':'symbol':'1.2'}}
+              {{ det.precio_producto | currency:'USD':'symbol':'1.2'}}
             </td>
             <td class="text-end">
-              {{ (det.cantidad||0) * det.precio | currency:'USD':'symbol':'1.2'}}
+              {{ (det.precio_producto || 0) * (det.cantidad || 0) | currency:'USD':'symbol':'1.2'}}
             </td>
             <td><button class="btn" (click)="eliminarDetalle(i)">
                 <i class="fa-regular fa-trash-can text-danger"></i>
