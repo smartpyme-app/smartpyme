@@ -36,6 +36,12 @@ use Illuminate\Support\Facades\Route;
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
 
+    // Rutas para búsqueda dinámica en facturación de compras
+    Route::post('/productos/buscar-modal',      [ProductosController::class, 'buscarModal']);
+    Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
+    Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
+    Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
+
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);
     Route::delete('/producto/composicion/{id}', [ComposicionesController::class, 'delete']);

@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\ShopifyExport;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ProductosController extends Controller
 {
@@ -221,7 +222,7 @@ class ProductosController extends Controller
 
         $producto = Producto::where('codigo', $codigo)
             ->wherehas('sucursales', function ($q) {
-                $q->where('sucursal_id', \JWTAuth::parseToken()->authenticate()->sucursal_id)
+                $q->where('sucursal_id', JWTAuth::parseToken()->authenticate()->sucursal_id)
                     ->where('activo', true);
             })
             ->with('inventarios', 'precios')->get();
@@ -349,13 +350,13 @@ class ProductosController extends Controller
         $sucursales = \App\Models\Admin\Sucursal::all();
 
         foreach ($sucursales as $sucursal) {
-            $producto_sucursal = new \App\Models\Inventario\Sucursal();
-            $producto_sucursal->producto_id = $producto->id;
-            // $producto_sucursal->inventario = true;
-            // $producto_sucursal->bodega_venta_id = $sucursal->bodegas()->first()->id;
-            $producto_sucursal->activo = true;
-            $producto_sucursal->sucursal_id = $sucursal->id;
-            $producto_sucursal->save();
+            DB::table('producto_sucursales')->insert([
+                'producto_id' => $producto->id,
+                'sucursal_id' => $sucursal->id,
+                'activo' => true,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
 
 
             $inventario = new Inventario;
@@ -922,5 +923,136 @@ class ProductosController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Búsqueda dinámica para modal de productos
+     */
+    public function buscarModal(Request $request)
+    {
+        $request->validate([
+            'termino' => 'required|string|min:2',
+            'id_empresa' => 'required|integer',
+            'limite' => 'nullable|integer|max:50'
+        ]);
+
+        $termino = $request->termino;
+        $limite = $request->limite ?? 15;
+
+        $productos = Producto::where('enable', true)
+            ->where('id_empresa', $request->id_empresa)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+            ->with(['inventarios', 'precios'])
+            ->where(function ($q) use ($termino) {
+                $q->where('nombre', 'like', "%$termino%")
+                    ->orWhere('codigo', 'like', "%$termino%")
+                    ->orWhere('barcode', 'like', "%$termino%")
+                    ->orWhere('etiquetas', 'like', "%$termino%")
+                    ->orWhere('marca', 'like', "%$termino%")
+                    ->orWhere('descripcion', 'like', "%$termino%");
+            })
+            ->orderBy('nombre', 'asc')
+            ->take($limite)
+            ->get();
+
+        return response()->json($productos, 200);
+    }
+
+    /**
+     * Búsqueda por código de proveedor
+     */
+    public function buscarPorCodigoProveedor(Request $request)
+    {
+        $request->validate([
+            'cod_proveed_prod' => 'required|string',
+            'id_empresa' => 'required|integer'
+        ]);
+
+        $productos = Producto::where('enable', true)
+            ->where('id_empresa', $request->id_empresa)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+            ->with(['inventarios', 'precios', 'proveedores.proveedor'])
+            ->whereHas('proveedores', function ($q) use ($request) {
+                $q->where('cod_proveed_prod', $request->cod_proveed_prod);
+            })
+            ->get();
+
+        return response()->json($productos, 200);
+    }
+
+    /**
+     * Búsqueda por nombre específico
+     */
+    public function buscarPorNombre(Request $request)
+    {
+        $request->validate([
+            'nombre' => 'required|string|min:2',
+            'id_empresa' => 'required|integer',
+            'limite' => 'nullable|integer|max:20'
+        ]);
+
+        $limite = $request->limite ?? 5;
+
+        $productos = Producto::where('enable', true)
+            ->where('id_empresa', $request->id_empresa)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+            ->with(['inventarios', 'precios'])
+            ->where('nombre', 'like', "%{$request->nombre}%")
+            ->orderBy('nombre', 'asc')
+            ->take($limite)
+            ->get();
+
+        return response()->json($productos, 200);
+    }
+
+    /**
+     * Búsqueda de sugerencias con palabras clave
+     */
+    public function buscarSugerencias(Request $request)
+    {
+        $request->validate([
+            'termino' => 'required|string|min:2',
+            'palabras' => 'nullable|array',
+            'id_empresa' => 'required|integer',
+            'limite' => 'nullable|integer|max:20'
+        ]);
+
+        $limite = $request->limite ?? 10;
+        $termino = $request->termino;
+        $palabras = $request->palabras ?? [];
+
+        $query = Producto::where('enable', true)
+            ->where('id_empresa', $request->id_empresa)
+            ->whereIn('tipo', ['Producto', 'Compuesto', 'Servicio'])
+            ->with(['inventarios', 'precios']);
+
+        // Búsqueda principal por término completo
+        $query->where(function ($q) use ($termino) {
+            $q->where('nombre', 'like', "%$termino%")
+                ->orWhere('codigo', 'like', "%$termino%")
+                ->orWhere('barcode', 'like', "%$termino%")
+                ->orWhere('etiquetas', 'like', "%$termino%")
+                ->orWhere('marca', 'like', "%$termino%")
+                ->orWhere('descripcion', 'like', "%$termino%");
+        });
+
+        // Si hay palabras específicas, buscar también por ellas
+        if (!empty($palabras)) {
+            $query->orWhere(function ($q) use ($palabras) {
+                foreach ($palabras as $palabra) {
+                    if (strlen($palabra) > 2) {
+                        $q->orWhere('nombre', 'like', "%$palabra%")
+                            ->orWhere('descripcion', 'like', "%$palabra%")
+                            ->orWhere('etiquetas', 'like', "%$palabra%");
+                    }
+                }
+            });
+        }
+
+        $productos = $query->orderBy('nombre', 'asc')
+            ->take($limite)
+            ->get();
+
+        return response()->json($productos, 200);
     }
 }
