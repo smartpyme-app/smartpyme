@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
-    <h2 class="page-heading">Órdenes de compra</h2>
-    <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de compra</button>
+    <h2 class="page-heading">Solicitudes de compra</h2>
+    <button *ngIf="apiService.canEdit()" routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear solicitud de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir solicitud de compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -13,7 +13,7 @@
 
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
-                <button [disabled]="downloading" tooltip="Descargar cotizaciones" (click)="descargar()" class="btn btn-default tcla-F6">
+                <button [disabled]="downloading" tooltip="Descargar solicitudes" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
@@ -43,6 +43,7 @@
                 <thead>
                     <tr>
                         <th (click)="setOrden('fecha')" [ngClass]="{'sorted-asc': filtros.orden == 'fecha' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'fecha' && filtros.direccion == 'desc'}" class="click">Fecha</th>
+                        <th>Empresa</th>
                         <th>Usuario</th>
                         <th>Proveedor</th>
                         <th>Correlativo</th>
@@ -54,7 +55,7 @@
                 <tbody>
                     <tr>
                         <td colspan="10" class="text-center" *ngIf="compras?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene órdenes de compra registradas</span>
+                            <span class="badge bg-primary">No tiene solicitudes de compra registradas</span>
                         </td>
                         <td colspan="10" class="text-center" *ngIf="loading">
                             <span class="badge bg-primary">Cargando...</span>
@@ -64,21 +65,14 @@
                     <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
                         
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>
-                            {{compra.nombre_usuario }}
-                            <span class="text-muted" *ngIf="compra.id_empresa != apiService.auth_user().id_empresa">
-                                <br>
-                                {{ compra.empresa_nombre }}
-                            </span>
-                        </td>
-                        <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{ compra.empresa_nombre }} </td>
+                        <td>{{ compra.nombre_usuario }} </td>
+                        <td>{{ compra?.proveedor?.nombre_empresa ?? compra?.proveedor?.nombre_completo }}</td>
                         <td>{{compra.referencia ?? '-'}}</td>
                         <td>
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(compra)" [(ngModel)]="compra.estado" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada'}">
-                                <option value="Pendiente">Pendiente</option>
-                                <option value="Aceptada">Aceptada</option>
-                                <option value="Anulada">Anulada</option>
-                            </select>
+                            <span class="badge py-2 position-relative text-dark" [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada'}">
+                                {{ compra.estado }}
+                            </span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
@@ -87,17 +81,15 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="compra.estado == 'Pendiente' && apiService.canEdit()" routerLink="/compra/editar/{{compra.id}}" class="btn">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
+                                    
+                                    <!-- <a routerLink="/orden-de-compra/{{compra.id}}" class="btn">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a>
-                                    <a *ngIf="compra.estado == 'Pendiente'" routerLink="/compra/crear" [queryParams]="{ facturar_cotizacion: 1, id_compra: compra.id }" class="btn">
-                                        <i class="fa fa-fw fa-money-bill"></i> Facturar
-                                    </a>
-                                    <a (click)="imprimir(compra)" class="btn">
+                                    </a> -->
+                                    <!-- <a (click)="imprimir(compra)" class="btn">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
+                                    </a> -->
+                                    <a *ngIf="compra.id_empresa != apiService.auth_user().id_empresa" routerLink="/venta/crear" [queryParams]="{ facturar_orden_compra: 1, id_orden_compra: compra.id }" class="btn">
+                                        <i class="fa fa-fw fa-money-bill"></i> Facturar
                                     </a>
                                     <!-- <a routerLink="/devolucion-compra/nueva" class="btn text-danger">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar

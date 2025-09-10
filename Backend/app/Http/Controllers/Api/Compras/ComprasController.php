@@ -590,89 +590,73 @@ class ComprasController extends Controller
 
     public function generarCompraDesdeOrdenCompra(Request $request){
         $request->validate([
+            'id' => 'required', // ID de la venta
             'num_orden' => 'required',
-            'fecha' => 'required',
-            'estado' => 'required',
-            'forma_pago' => 'required',
-            'id_usuario' => 'required',
-            'id_empresa' => 'required',
-            'id_bodega' => 'required',
-            'id_sucursal' => 'required',
         ]);
 
         DB::beginTransaction();
         
         try {
-            // Buscar la orden de compra (cotización)
-            $orden_compra = Compra::where('id', $request->num_orden)
+            // Buscar la venta
+            $venta = \App\Models\Ventas\Venta::where('id', $request->id)
+                ->with('detalles', function($query) use ($request){
+                    $query->withoutGlobalScope('empresa');
+                }, 'cliente')
+                ->firstOrFail();
+            
+            $orden_compra = Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
                 ->where('cotizacion', 1)
                 ->with('detalles', 'proveedor')
                 ->firstOrFail();
             
-            // Crear la nueva compra basada en la orden
+            // Crear la nueva compra basada en la venta
             $compra = new Compra();
             
-            // Copiar los datos de la orden de compra
-            $compra->fill($orden_compra->toArray());
-            
-            // Actualizar campos específicos para la compra
+            // Configurar campos básicos de la compra
             $compra->fecha = date('Y-m-d');
-            $compra->estado = 'Pagada';
-            $compra->tipo_documento = $request->nombre_documento;
-            $compra->referencia = $request->correlativo;
-            $compra->forma_pago = $request->forma_pago;
-            $compra->id_usuario = $request->id_usuario;
-            $compra->id_empresa = $request->id_empresa;
-            $compra->id_bodega = $request->id_bodega;
-            $compra->id_sucursal = $request->id_sucursal;
+            $compra->estado = $venta->estado;
+            $compra->tipo_documento = $venta->nombre_documento;
+            $compra->referencia = $venta->correlativo;
+            $compra->forma_pago = $venta->forma_pago;
+            $compra->fecha_pago = $venta->fecha_pago;
+            $compra->id_usuario = $orden_compra->id_usuario;
             $compra->id_empresa = $orden_compra->id_empresa;
+            $compra->id_bodega = $orden_compra->id_bodega;
+            $compra->id_sucursal = $orden_compra->id_sucursal;
             $compra->cotizacion = 0; // Marcar como compra real, no cotización
-            $compra->id = null; // Permitir que se genere un nuevo ID
+            $compra->id_proveedor = $orden_compra->id_proveedor; // Usar el cliente como proveedor
+            
+            $compra->sub_total = $venta->sub_total;
+            $compra->iva = $venta->iva;
+            $compra->total = $venta->total;
             
             $compra->save();
+            
+            // Crear detalles de la compra a partir de los detalles de la venta
+            foreach ($venta->detalles as $detalle_venta) {
+                // Obtener el código del producto de la venta
+                $producto_venta = \App\Models\Inventario\Producto::withoutGlobalScope('empresa')->where('id_empresa', $orden_compra->id_empresa)->where('codigo', $detalle_venta->codigo)->firstOrFail();
+                if ($producto_venta) {
+                        $detalle_compra = new Detalle();
+                        $detalle_compra->id_producto = $producto_venta->id; // ID del producto en la empresa hija
+                        $detalle_compra->cantidad = $detalle_venta->cantidad;
+                        $detalle_compra->costo = $detalle_venta->precio; // Precio de la venta como costo
+                        $detalle_compra->total = $detalle_venta->total;
+                        $detalle_compra->descuento = $detalle_venta->descuento ?? 0;
+                        $detalle_compra->id_compra = $compra->id;
+                        $detalle_compra->save();
 
-            // Copiar los detalles de la orden de compra
-            foreach ($orden_compra->detalles as $detalle_orden) {
-                $detalle_compra = new Detalle();
-                $detalle_compra->fill($detalle_orden->toArray());
-                $detalle_compra->id_compra = $compra->id;
-                $detalle_compra->id = null; // Permitir que se genere un nuevo ID
-                $detalle_compra->save();
+                        // Actualizar inventario
+                        $inventario = Inventario::withoutGlobalScope('empresa')->where('id_producto', $producto_venta->id)
+                            ->where('id_bodega', $compra->id_bodega)
+                            ->first();
 
-                // Aplicar el proceso de facturación para cada detalle
-                if ($request->estado != 'Anulada' && $request->estado != 'Pre-compra') {
-                    // Actualizar inventario
-                    $inventario = Inventario::where('id_producto', $detalle_compra->id_producto)
-                        ->where('id_bodega', $compra->id_bodega)
-                        ->first();
-
-                    if ($inventario) {
-                        $inventario->stock += $detalle_compra->cantidad;
-                        $inventario->save();
-                        $inventario->kardex($compra, $detalle_compra->cantidad);
-                    }
-
-                    // Actualizar costo del producto
-                    $producto = Producto::where('id', $detalle_compra->id_producto)
-                        ->with('inventarios')
-                        ->first();
-                    
-                    if ($producto) {
-                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $detalle_compra->cantidad;
-                        $stock_actual = $detalle_compra->cantidad;
-                        $stock_total = $stock_anterior + $stock_actual;
-
-                        if ($stock_total > 0) {
-                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $detalle_compra->costo)) / $stock_total;
-                        } else {
-                            $costo_promedio = $detalle_compra->costo;
+                        if ($inventario) {
+                            $inventario->stock += $detalle_venta->cantidad;
+                            $inventario->save();
+                            $inventario->kardex($compra, $detalle_venta->cantidad);
                         }
 
-                        $producto->costo_anterior = $producto->costo;
-                        $producto->costo = $detalle_compra->costo;
-                        $producto->costo_promedio = $costo_promedio;
-                        $producto->save();
-                    }
                 }
             }
 

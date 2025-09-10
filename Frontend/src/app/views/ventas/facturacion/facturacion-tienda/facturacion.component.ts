@@ -380,7 +380,7 @@ export class FacturacionComponent implements OnInit {
 
     // Facturar orden de compra
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
-      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
+      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
         this.venta.num_orden = ordenCompra.id;
         
         this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {

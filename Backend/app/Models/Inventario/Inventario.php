@@ -140,7 +140,7 @@ class Inventario extends Model {
             // return null;
         }
 
-        $producto = $this->producto()->first();
+        $producto = $this->producto()->withoutGlobalScope('empresa')->first();
 
         if (!$precio) {
             $precio = $producto->precio;

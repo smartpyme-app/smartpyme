@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
@@ -51,6 +52,8 @@ const routes: Routes = [
         { path: 'cotizaciones', component: CotizacionesComponent, title: 'Cotizaciones' },
         { path: 'cotizacion/crear', component: FacturacionComponent, title: 'Cotización' },
         { path: 'cotizacion/editar/:id', component: FacturacionComponent, title: 'Cotización' },
+        
+        { path: 'solicitudes-compra', component: SolicitudesCompraComponent, title: 'Solicitudes de compra' },
     // 
         { path: 'canales', canActivate: [AdminGuard], component: CanalesComponent, title: 'Canales de venta'},
         { path: 'formas-de-pago', canActivate: [AdminGuard], component: FormasDePagoComponent, title: 'Formas de pago'},
