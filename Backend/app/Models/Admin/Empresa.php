@@ -588,6 +588,31 @@ class Empresa extends Model
     }
 
     /**
+     * Obtener el tipo de cliente por defecto para la empresa
+     * 
+     * @return TipoClienteEmpresa|null
+     */
+    public function getTipoClienteDefault()
+    {
+        return $this->tipoClienteDefault;
+    }
+
+    /**
+     * Verificar si la empresa tiene habilitado el módulo de fidelización
+     * 
+     * @return bool
+     */
+    public function tieneFidelizacionHabilitada()
+    {
+        return $this->hasMany(\App\Models\Admin\EmpresaFuncionalidad::class, 'id_empresa')
+                    ->whereHas('funcionalidad', function($query) {
+                        $query->where('slug', 'fidelizacion-clientes');
+                    })
+                    ->where('activo', true)
+                    ->exists();
+    }
+
+    /**
      * Habilitar/deshabilitar una columna
      */
     public function toggleColumn($columnName, $enabled = null)
