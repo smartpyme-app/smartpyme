@@ -23,6 +23,7 @@ class CreateTiposClienteEmpresaTable extends Migration
             
             // Configuración COR
             $table->decimal('puntos_por_dolar', 8, 4)->default(1.0000)->comment('CORE - DEFAULT 1.0000');
+            $table->decimal('valor_punto', 8, 4)->default(0.0100)->comment('CORE - DEFAULT 0.0001');
             $table->integer('minimo_canje')->default(100)->comment('CORE - DEFAULT 100');
             $table->integer('maximo_canje')->default(1000)->comment('CORE - DEFAULT 1000');
             $table->integer('expiracion_meses')->default(12)->comment('CORE - DEFAULT 12');
