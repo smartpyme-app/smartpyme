@@ -79,8 +79,9 @@ class GlobalDttesExport
             ];
         }
 
-        // Resto del código sin cambios...
         $countDtes = 0;
+        $tempFiles = [];
+        
         foreach ($ventas as $venta) {
 
             if (empty($venta->dte)) {
@@ -108,19 +109,35 @@ class GlobalDttesExport
             $fileName = $codigoGeneracion . '.json';
             $filePath = $tempDir . '/' . $fileName;
 
-            file_put_contents($filePath, json_encode($dte, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-            $zip->addFile($filePath, $fileName);
-            $countDtes++;
+            $fileContent = json_encode($dte, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            
+            if ($zip->addFromString($fileName, $fileContent)) {
+                $countDtes++;
+                $tempFiles[] = $filePath;
+            } else {
+                Log::error('Error al agregar archivo al ZIP: ' . $fileName);
+            }
         }
 
-        $zip->close();
-
-        // Eliminar archivos temporales
-        foreach (glob($tempDir . '/*.json') as $file) {
-            unlink($file);
+        // Cerrar el ZIP antes de limpiar archivos temporales
+        if (!$zip->close()) {
+            return [
+                'success' => false,
+                'message' => 'Error al cerrar el archivo ZIP.'
+            ];
         }
-        rmdir($tempDir);
+
+        // Eliminar archivos temporales después de cerrar el ZIP
+        foreach ($tempFiles as $file) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
+        
+        // Eliminar directorio temporal
+        if (is_dir($tempDir)) {
+            rmdir($tempDir);
+        }
 
         return [
             'success' => true,

@@ -604,12 +604,34 @@ class LibrosIVAController extends Controller
                     ->header('Content-Type', 'text/plain');
             }
             
+            $filePath = storage_path('app/' . $result['path']);
+            
+            // Verificar que el archivo existe y es válido
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP no encontrado: ' . $filePath);
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+            
+            // Verificar que es un archivo ZIP válido
+            $zip = new \ZipArchive();
+            if ($zip->open($filePath) !== true) {
+                Log::error('Archivo ZIP corrupto: ' . $filePath);
+                return response('Archivo ZIP corrupto', 500)
+                    ->header('Content-Type', 'text/plain');
+            }
+            $zip->close();
+            
             return response()->download(
-                storage_path('app/' . $result['path']),
+                $filePath,
                 $result['filename'],
                 [
                     'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename=' . $result['filename']
+                    'Content-Disposition' => 'attachment; filename="' . $result['filename'] . '"',
+                    'Content-Length' => filesize($filePath),
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0'
                 ]
             )->deleteFileAfterSend(true);
         } catch (\Exception $e) {
