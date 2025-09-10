@@ -591,6 +591,11 @@ class LibrosIVAController extends Controller
     public function GlobalDttesExport(Request $request)
     {
         try {
+            Log::info('=== INICIO CONTROLADOR GlobalDttesExport ===');
+            Log::info('Headers de la request:', $request->headers->all());
+            Log::info('User Agent: ' . $request->header('User-Agent'));
+            Log::info('IP del cliente: ' . $request->ip());
+            
             $dttes = new GlobalDttesExport();
             $dttes->filter($request);
             
@@ -604,24 +609,57 @@ class LibrosIVAController extends Controller
                     ->header('Content-Type', 'text/plain');
             }
             
+            $filePath = storage_path('app/' . $result['path']);
+            Log::info('Ruta del archivo a descargar: ' . $filePath);
+            
+            // Verificar que el archivo existe y es válido
+            if (!file_exists($filePath)) {
+                Log::error('Archivo ZIP no encontrado: ' . $filePath);
+                return response('Archivo no encontrado', 404)
+                    ->header('Content-Type', 'text/plain');
+            }
+            
+            $fileSize = filesize($filePath);
+            Log::info('Tamaño del archivo: ' . $fileSize . ' bytes');
+            
+            // Verificar que es un archivo ZIP válido
+            $zip = new \ZipArchive();
+            $zipTestResult = $zip->open($filePath);
+            Log::info('Test de apertura ZIP: ' . ($zipTestResult === true ? 'VÁLIDO' : 'INVÁLIDO - Código: ' . $zipTestResult));
+            
+            if ($zipTestResult !== true) {
+                Log::error('Archivo ZIP corrupto: ' . $filePath . ' - Código: ' . $zipTestResult);
+                return response('Archivo ZIP corrupto', 500)
+                    ->header('Content-Type', 'text/plain');
+            }
+            
+            Log::info('Número de archivos en ZIP: ' . $zip->numFiles);
+            $zip->close();
+            
+            Log::info('Iniciando descarga del archivo...');
+            
             return response()->download(
-                storage_path('app/' . $result['path']),
+                $filePath,
                 $result['filename'],
                 [
                     'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename=' . $result['filename']
+                    'Content-Disposition' => 'attachment; filename="' . $result['filename'] . '"',
+                    'Content-Length' => $fileSize,
+                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                    'Pragma' => 'no-cache',
+                    'Expires' => '0'
                 ]
             )->deleteFileAfterSend(true);
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
-            Log::error($e->getTraceAsString());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             
             // Devolver texto plano en lugar de JSON
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
     }
-
+    
     public function libroRetencion1Export(Request $request)
     {
         $retencion = new LibroRetencion1Export();
