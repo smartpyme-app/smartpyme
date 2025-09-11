@@ -242,9 +242,17 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva_percibido = 0;
     this.venta.iva_retenido = 0;
     this.venta.cotizacion = 0;
+    if(this.canales.length > 0){
+      this.venta.id_canal = this.canales[0].id;
+    }
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    if(this.impuestos.length > 0){
+      this.venta.impuestos = this.impuestos;
+    }else{
+      this.venta.impuestos = [];
+    }
     this.detalle = {};
     this.venta.cobrar_impuestos =
       this.apiService.auth_user().empresa.cobra_iva == 'Si' ? true : false;
@@ -472,6 +480,16 @@ export class FacturacionComponent implements OnInit {
   }
 
   public sumTotal() {
+    // Asegurar que detalles existe y es un array
+    if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.venta.detalles = [];
+    }
+
+    // Asegurar que impuestos existe y es un array
+    if (!this.venta.impuestos || !Array.isArray(this.venta.impuestos)) {
+      this.venta.impuestos = [];
+    }
+
     this.venta.sub_total = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total')
     ).toFixed(4);
@@ -536,7 +554,7 @@ export class FacturacionComponent implements OnInit {
     }
 
     // Asignar tipo renta
-    if (this.venta.detalles.length > 0) {
+    if (this.venta.detalles && this.venta.detalles.length > 0) {
         if (this.venta.detalles[0].tipo == 'Servicio'){
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
         }else{
