@@ -15,7 +15,7 @@ class VentaObserver
     /**
      * Handle the Venta "created" event.
      *
-     * @param  \App\Models\Venta  $venta
+     * @param  \App\Models\Ventas\Venta  $venta
      * @return void
      */
     public function created(Venta $venta)
@@ -84,18 +84,15 @@ class VentaObserver
 
         // 4. Verificar si la empresa tiene fidelización habilitada (con cache)
         $empresaId = $venta->id_empresa;
-        $tieneFidelizacion = cache()->remember(
-            "empresa_fidelizacion_{$empresaId}",
-            now()->addMinutes(30),
-            function () use ($empresaId) {
-                return \App\Models\Admin\EmpresaFuncionalidad::where('id_empresa', $empresaId)
-                    ->whereHas('funcionalidad', function($query) {
-                        $query->where('slug', 'fidelizacion-clientes');
-                    })
-                    ->where('activo', true)
-                    ->exists();
-            }
-        );
+        Log::info('Empresa ID: ' . $empresaId);
+        Log::info("Iniciando verificación de fidelización para empresa", ['empresa_id' => $empresaId]);
+
+        $tieneFidelizacion = $this->verificarFidelizacionHabilitada($empresaId);
+
+        Log::info("Resultado final de tieneFidelizacion", [
+            'empresa_id' => $empresaId,
+            'tieneFidelizacion' => $tieneFidelizacion
+        ]);
 
         if (!$tieneFidelizacion) {
             Log::debug('Empresa no tiene fidelización habilitada', ['empresa_id' => $empresaId]);
@@ -250,7 +247,7 @@ class VentaObserver
     /**
      * Handle the Venta "updated" event.
      *
-     * @param  \App\Models\Venta  $venta
+     * @param  \App\Models\Ventas\Venta  $venta
      * @return void
      */
     public function updated(Venta $venta)
@@ -263,7 +260,7 @@ class VentaObserver
     /**
      * Handle the Venta "deleted" event.
      *
-     * @param  \App\Models\Venta  $venta
+     * @param  \App\Models\Ventas\Venta  $venta
      * @return void
      */
     public function deleted(Venta $venta)
@@ -275,7 +272,7 @@ class VentaObserver
     /**
      * Handle the Venta "restored" event.
      *
-     * @param  \App\Models\Venta  $venta
+     * @param  \App\Models\Ventas\Venta  $venta
      * @return void
      */
     public function restored(Venta $venta)
@@ -286,7 +283,7 @@ class VentaObserver
     /**
      * Handle the Venta "force deleted" event.
      *
-     * @param  \App\Models\Venta  $venta
+     * @param  \App\Models\Ventas\Venta  $venta
      * @return void
      */
     public function forceDeleted(Venta $venta)
@@ -335,6 +332,54 @@ class VentaObserver
             'venta_id' => $venta->id,
             'created_at' => now()
         ], now()->addHours(1));
+    }
+
+    /**
+     * Verificar si la empresa tiene fidelización habilitada con cache
+     *
+     * @param int $empresaId
+     * @return bool
+     */
+    private function verificarFidelizacionHabilitada($empresaId)
+    {
+        $cacheKey = "empresa_fidelizacion_{$empresaId}";
+        
+        // Primero intentar obtener del cache
+        $cachedValue = cache()->get($cacheKey);
+        
+        // Si no hay cache o es false, verificar directamente en la base de datos
+        if ($cachedValue === null || $cachedValue === false) {
+            Log::info("Consultando EmpresaFuncionalidad para empresa (sin cache)", ['empresa_id' => $empresaId]);
+            
+            $query = \App\Models\Admin\EmpresaFuncionalidad::where('id_empresa', $empresaId)
+                ->whereHas('funcionalidad', function($query) {
+                    Log::info("Filtrando funcionalidad por slug 'fidelizacion-clientes'");
+                    $query->where('slug', 'fidelizacion-clientes');
+                })
+                ->where('activo', true);
+
+            $existe = $query->exists();
+            
+            Log::info("Resultado de existencia de funcionalidad de fidelización", [
+                'empresa_id' => $empresaId,
+                'existe' => $existe
+            ]);
+            
+            // Solo cachear si el resultado es true, para evitar cachear falsos negativos
+            if ($existe) {
+                cache()->put($cacheKey, true, now()->addMinutes(30));
+            }
+            
+            return $existe;
+        }
+        
+        // Si hay cache y es true, usar el valor cacheado
+        Log::info("Usando valor del cache para empresa", [
+            'empresa_id' => $empresaId,
+            'cached_value' => $cachedValue
+        ]);
+        
+        return $cachedValue;
     }
 
     /**
