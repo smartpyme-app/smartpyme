@@ -28,18 +28,29 @@ class ClientesController extends Controller
 
     public function index(Request $request)
     {
-
-        $clientes = Cliente::with('contactos')->where('id', '!=', 1)->withSum('ventas', 'total')
+        // Optimización: Remover withSum que es muy lento y usar lazy loading si es necesario
+        $clientes = Cliente::select([
+                'id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'tipo_contribuyente',
+                'nit', 'dui', 'ncr', 'giro', 'telefono', 'correo', 'direccion', 
+                'red_social', 'enable', 'fecha_cumpleanos', 'created_at', 'updated_at'
+            ])
+            ->with(['contactos' => function($query) {
+                $query->select('id', 'id_cliente', 'nombre', 'telefono', 'correo', 'estado');
+            }])
+            ->where('id', '!=', 1)
             ->when($request->buscador, function ($query) use ($request) {
-                return $query->where('nombre', 'like', '%' . $request->buscador . '%')
-                    ->orwhere('apellido', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nombre_empresa', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('nit', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('giro', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('telefono', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('red_social', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('ncr', 'like',  '%' . $request->buscador . '%')
-                    ->orwhere('dui', 'like',  '%' . $request->buscador . '%');
+                $searchTerm = '%' . $request->buscador . '%';
+                return $query->where(function($q) use ($searchTerm) {
+                    $q->where('nombre', 'like', $searchTerm)
+                      ->orWhere('apellido', 'like', $searchTerm)
+                      ->orWhere('nombre_empresa', 'like', $searchTerm)
+                      ->orWhere('nit', 'like', $searchTerm)
+                      ->orWhere('giro', 'like', $searchTerm)
+                      ->orWhere('telefono', 'like', $searchTerm)
+                      ->orWhere('red_social', 'like', $searchTerm)
+                      ->orWhere('ncr', 'like', $searchTerm)
+                      ->orWhere('dui', 'like', $searchTerm);
+                });
             })
             ->when($request->nombre, function ($q) use ($request) {
                 $q->where('nombre', $request->nombre);
@@ -62,14 +73,17 @@ class ClientesController extends Controller
             ->orderBy($request->orden ? $request->orden : 'id', $request->direccion ? $request->direccion : 'desc')
             ->paginate($request->paginate);
 
+        // Si necesitas el total de ventas, puedes agregarlo como un endpoint separado
+        // o calcularlo solo cuando sea necesario para clientes específicos
+        
         return Response()->json($clientes, 200);
     }
 
     public function list()
     {
-
-        $clientes = Cliente::orderBy('nombre', 'asc')
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo'])
             ->where('enable', true)
+            ->orderBy('nombre', 'asc')
             ->get();
 
         return Response()->json($clientes, 200);
@@ -84,7 +98,8 @@ class ClientesController extends Controller
             return response()->json([], 200);
         }
         
-        $clientes = Cliente::where('enable', true)
+        $clientes = Cliente::select(['id', 'nombre', 'apellido', 'nombre_empresa', 'tipo', 'correo', 'telefono'])
+            ->where('enable', true)
             ->where(function ($query) use ($term) {
                 $query->where('nombre', 'LIKE', "%{$term}%")
                 ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
@@ -136,10 +151,22 @@ class ClientesController extends Controller
 
     public function read($id)
     {
-
         $cliente = Cliente::with('contactos')->findOrFail($id);
 
         return Response()->json($cliente, 200);
+    }
+
+    /**
+     * Obtener el total de ventas de un cliente específico
+     */
+    public function totalVentas($id)
+    {
+        $totalVentas = Cliente::where('id', $id)
+            ->withSum('ventas', 'total')
+            ->first()
+            ->ventas_sum_total ?? 0;
+
+        return Response()->json(['total_ventas' => $totalVentas], 200);
     }
 
     public function store(Request $request)

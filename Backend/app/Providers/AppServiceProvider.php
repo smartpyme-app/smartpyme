@@ -49,7 +49,7 @@ class AppServiceProvider extends ServiceProvider
             Producto::observe(ProductoObserver::class);
         }
 
-        // Registrar el observer de Venta para fidelización de clientes
+        // Registrar el observer de Venta para fidelización de clientes (optimizado)
         Venta::observe(VentaObserver::class);
 
         Inventario::observe(ShopifyInventarioObserver::class);
