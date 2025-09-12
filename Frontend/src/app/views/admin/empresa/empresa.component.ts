@@ -184,6 +184,10 @@ export class EmpresaComponent implements OnInit {
             this.empresa.moneda = 'PAB';
             this.empresa.iva = 7;
         }
+        if(this.empresa.pais == 'México'){
+            this.empresa.moneda = 'MXN';
+            this.empresa.iva = 16;
+        }
 
         this.empresa.cod_departamento= " ";
         this.empresa.cod_municipio= " ";
