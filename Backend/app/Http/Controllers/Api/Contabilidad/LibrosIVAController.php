@@ -361,7 +361,7 @@ class LibrosIVAController extends Controller
                 'num_documento'         => $gasto->referencia,
                 'nit_nrc'               => $proveedor->ncr ?? $proveedor->nit,
                 'nombre_proveedor'      => $gasto->nombre_proveedor,
-                'compras_exentas'       => 0,
+                'compras_exentas'       => $gasto->total_otros_impuestos,
                 'importaciones_exentas' => 0,
                 'compras_gravadas'      => 0,
                 'importaciones_gravadas' => 0,

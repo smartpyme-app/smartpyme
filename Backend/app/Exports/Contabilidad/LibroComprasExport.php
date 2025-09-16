@@ -114,7 +114,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             $compra->referencia,
             $proveedor->nit ?? $proveedor->ncr,
             $compra->nombre_proveedor,
-            0, // compras_exentas
+            $compra->total_otros_impuestos ?? 0, // compras_exentas
             0, // compras_no_sujetas
             0, // importaciones_exentas
             0, // compras_gravadas
