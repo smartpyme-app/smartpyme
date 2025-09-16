@@ -49,7 +49,11 @@ class ProcesarPuntosVentasExistentes extends Command
         // Construir query para ventas sin puntos generados
         $query = Venta::whereHas('cliente')
             ->whereHas('empresa', function($q) {
-                $q->where('fidelizacion_habilitada', true);
+                $q->whereHas('empresaFuncionalidades', function($subQ) {
+                    $subQ->whereHas('funcionalidad', function($funcQ) {
+                        $funcQ->where('slug', 'fidelizacion-clientes');
+                    })->where('activo', true);
+                });
             })
             ->where(function($q) {
                 $q->whereNull('puntos_ganados')

@@ -13,7 +13,6 @@ use App\Observers\InventarioObserver;
 use App\Observers\ProductoObserver;
 use App\Observers\ShopifyInventarioObserver;
 use App\Observers\ShopifyProductoObserver;
-use App\Observers\FidelizacionCliente\VentaObserver;
 use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,8 +48,6 @@ class AppServiceProvider extends ServiceProvider
             Producto::observe(ProductoObserver::class);
         }
 
-        // Registrar el observer de Venta para fidelización de clientes (optimizado)
-        Venta::observe(VentaObserver::class);
 
         Inventario::observe(ShopifyInventarioObserver::class);
         Producto::observe(ShopifyProductoObserver::class);

@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\ConsumoPuntosService;
 use League\CommonMark\Block\Element\Document;
 
 class WooCommerceController extends Controller
@@ -128,6 +129,20 @@ class WooCommerceController extends Controller
 
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
+
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en WooCommerce', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
+            }
 
             DB::commit();
 
