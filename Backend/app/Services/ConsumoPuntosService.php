@@ -6,6 +6,7 @@ use App\Models\Ventas\Venta;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
+use App\Services\NotificacionPuntosService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -158,6 +159,9 @@ class ConsumoPuntosService
                 'tipo_cliente' => $tipoCliente->nombre_efectivo
             ]);
 
+            // Enviar notificación por email al cliente
+            $this->enviarNotificacionPuntos($venta, $puntosCalculados);
+
             return true;
         } catch (\Exception $e) {
             Log::error('Error al crear transacción de puntos', [
@@ -293,5 +297,31 @@ class ConsumoPuntosService
         // Por ahora, procesamos de forma síncrona pero con logging
         Log::info('Procesando puntos de forma asíncrona para venta', ['venta_id' => $venta->id]);
         $this->procesarAcumulacionPuntosSync($venta);
+    }
+
+    /**
+     * Enviar notificación de puntos ganados por email
+     *
+     * @param Venta $venta
+     * @param int $puntosGanados
+     * @return void
+     */
+    private function enviarNotificacionPuntos(Venta $venta, int $puntosGanados): void
+    {
+        try {
+            $notificacionService = new NotificacionPuntosService();
+            
+            // Verificar si se debe enviar notificación
+            if ($notificacionService->debeEnviarNotificacion($venta->id_empresa)) {
+                $notificacionService->enviarNotificacionPuntosGanados($venta, $puntosGanados);
+            }
+        } catch (\Exception $e) {
+            // Log del error pero no interrumpir el proceso de puntos
+            Log::error('Error al enviar notificación de puntos', [
+                'venta_id' => $venta->id,
+                'puntos_ganados' => $puntosGanados,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }
