@@ -126,12 +126,12 @@
                 </div>
             </li>
             <li class="mb-1">
-                <button (click)="toggleFidelizacion()" tooltip="Fidelización" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!fidelizacionIsCollapsed" aria-controls="collapseFidelizacion">
-                    <img src="/assets/icons/clipboard.png" class="icon me-2">Fidelización
+                <button (click)="toggleLealtadClientes()" tooltip="Fidelización" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!lealtadClientesIsCollapsed" aria-controls="collapseLealtadClientes">
+                    <img src="/assets/icons/star.png" class="icon me-2">Lealtad Clientes
                 </button>
-                <div [collapse]="fidelizacionIsCollapsed" [isAnimated]="true">
+                <div [collapse]="lealtadClientesIsCollapsed" [isAnimated]="true">
                   <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Clientes</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Clientes</a></li>
                     <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/fidelizacion/configuracion-cliente']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Cliente</a></li>
                     <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
                   </ul>

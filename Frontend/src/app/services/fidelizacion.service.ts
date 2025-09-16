@@ -11,6 +11,71 @@ import {
   PaginatedResponse 
 } from '../models/fidelizacion.interface';
 
+// Interfaces para clientes con fidelización
+export interface ClienteFidelizacion {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  dui?: string;
+  ncr?: string;
+  tipo: string;
+  enable: boolean;
+  tipo_cliente_fidelizacion?: TipoClienteEmpresa;
+  puntos_acumulados?: number;
+  puntos_disponibles?: number;
+  puntos_vencidos?: number;
+  ultima_compra?: string;
+  total_compras?: number;
+  total_gastado?: number;
+  nivel_actual?: number;
+  fecha_registro?: string;
+  fecha_ultima_actividad?: string;
+}
+
+export interface ClienteDetalles {
+  id: number;
+  nombre: string;
+  correo: string;
+  telefono: string;
+  dui?: string;
+  ncr?: string;
+  tipo: string;
+  enable: boolean;
+  tipo_cliente_fidelizacion?: TipoClienteEmpresa;
+  puntos_acumulados?: number;
+  puntos_disponibles?: number;
+  puntos_vencidos?: number;
+  puntos_por_ganar?: number;
+  ultima_compra?: string;
+  total_compras?: number;
+  total_gastado?: number;
+  nivel_actual?: number;
+  fecha_registro?: string;
+  fecha_ultima_actividad?: string;
+}
+
+export interface HistorialPunto {
+  id: number;
+  fecha: string;
+  descripcion: string;
+  puntos: number;
+  tipo: 'ganado' | 'canjeado' | 'ajustado' | 'vencido' | 'otro';
+  referencia?: string;
+  monto_asociado?: number;
+  fecha_expiracion?: string;
+}
+
+export interface Beneficio {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  puntos_requeridos: number;
+  descuento_porcentaje?: number;
+  descuento_monto?: number;
+  disponible: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -149,5 +214,129 @@ export class FidelizacionService {
     }
 
     return errors;
+  }
+
+  // ===== MÉTODOS PARA CLIENTES CON FIDELIZACIÓN =====
+
+  /**
+   * Obtener todos los clientes con información de fidelización
+   */
+  getClientesFidelizacion(params?: any): Observable<PaginatedResponse<ClienteFidelizacion>> {
+    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes`;
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+          queryParams.append(key, params[key]);
+        }
+      });
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+    }
+    
+    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url);
+  }
+
+  /**
+   * Obtener clientes por tipo específico
+   */
+  getClientesPorTipo(tipoId: number, params?: any): Observable<PaginatedResponse<ClienteFidelizacion>> {
+    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes/tipo/${tipoId}`;
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+          queryParams.append(key, params[key]);
+        }
+      });
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+    }
+    
+    return this.http.get<PaginatedResponse<ClienteFidelizacion>>(url);
+  }
+
+  /**
+   * Obtener detalles completos de un cliente
+   */
+  getClienteDetalles(clienteId: number): Observable<ApiResponse<ClienteDetalles>> {
+    return this.http.get<ApiResponse<ClienteDetalles>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/clientes/${clienteId}/detalles`
+    );
+  }
+
+  /**
+   * Cambiar tipo de cliente
+   */
+  cambiarTipoCliente(clienteId: number, tipoId: number): Observable<ApiResponse<any>> {
+    return this.http.patch<ApiResponse<any>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/clientes/${clienteId}/cambiar-tipo`,
+      { id_tipo_cliente: tipoId }
+    );
+  }
+
+  /**
+   * Obtener historial de puntos de un cliente
+   */
+  getHistorialPuntos(clienteId: number, params?: any): Observable<PaginatedResponse<HistorialPunto>> {
+    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes/${clienteId}/historial-puntos`;
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+          queryParams.append(key, params[key]);
+        }
+      });
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+    }
+    
+    return this.http.get<PaginatedResponse<HistorialPunto>>(url);
+  }
+
+  /**
+   * Obtener beneficios disponibles para un cliente
+   */
+  getBeneficiosDisponibles(clienteId: number): Observable<ApiResponse<Beneficio[]>> {
+    return this.http.get<ApiResponse<Beneficio[]>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/clientes/${clienteId}/beneficios-disponibles`
+    );
+  }
+
+  /**
+   * Canjear puntos de un cliente
+   */
+  canjearPuntos(clienteId: number, data: { puntos: number, descripcion: string }): Observable<ApiResponse<any>> {
+    return this.http.post<ApiResponse<any>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/clientes/${clienteId}/canjear-puntos`,
+      data
+    );
+  }
+
+  /**
+   * Exportar clientes con fidelización
+   */
+  exportarClientes(params?: any): Observable<ApiResponse<any>> {
+    let url = `${this.apiService.baseUrl}/api/fidelizacion/clientes/exportar`;
+    
+    if (params) {
+      const queryParams = new URLSearchParams();
+      Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+          queryParams.append(key, params[key]);
+        }
+      });
+      if (queryParams.toString()) {
+        url += `?${queryParams.toString()}`;
+      }
+    }
+    
+    return this.http.get<ApiResponse<any>>(url);
   }
 }

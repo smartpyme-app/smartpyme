@@ -20,7 +20,7 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
-    public fidelizacionIsCollapsed:boolean = true;
+    public lealtadClientesIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -74,10 +74,10 @@ export class SidebarComponent implements OnInit {
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
         }
-        if (!localStorage.getItem('fidelizacionIsCollapsed')) {
-            localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
+        if (!localStorage.getItem('lealtadClientesIsCollapsed')) {
+            localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
         }else{
-            this.fidelizacionIsCollapsed = JSON.parse(localStorage.getItem('fidelizacionIsCollapsed')!);
+            this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
         }
         this.usuario = this.apiService.auth_user();
 
@@ -189,12 +189,12 @@ export class SidebarComponent implements OnInit {
     }
 
 
-    toggleFidelizacion() {
-        if(this.fidelizacionIsCollapsed){
-            this.closeAll();
+    toggleLealtadClientes() {
+        if(this.lealtadClientesIsCollapsed){
+            this.closeAll();    
         }
-        this.fidelizacionIsCollapsed = !this.fidelizacionIsCollapsed;
-        localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
+        this.lealtadClientesIsCollapsed = !this.lealtadClientesIsCollapsed;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 
@@ -221,8 +221,8 @@ export class SidebarComponent implements OnInit {
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
         localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
-        this.fidelizacionIsCollapsed = true;
-        localStorage.setItem('fidelizacionIsCollapsed', this.fidelizacionIsCollapsed.toString());
+        this.lealtadClientesIsCollapsed = true;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
     }
 
     public onSubmit(){

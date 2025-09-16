@@ -61,11 +61,13 @@ class Cliente extends Model {
     {
         parent::boot();
 
-        if (Auth::check()) {
-            static::addGlobalScope('empresa', function (Builder $builder) {
-                $builder->where('id_empresa', Auth::user()->id_empresa);
-            });
-        }
+    if (Auth::check()) {
+        static::addGlobalScope('empresa', function (Builder $builder) {
+            // Especificar explícitamente la tabla para evitar ambigüedad
+            $builder->where('clientes.id_empresa', Auth::user()->id_empresa);
+        });
+    }
+
     }
 
     public function getNombreCompletoAttribute() 

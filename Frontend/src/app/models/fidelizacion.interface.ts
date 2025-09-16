@@ -14,6 +14,7 @@ export interface TipoClienteEmpresa {
   code_efectivo: string;
   activo: boolean;
   puntos_por_dolar: number;
+  valor_punto: number;
   minimo_canje: number;
   maximo_canje: number;
   expiracion_meses: number;
