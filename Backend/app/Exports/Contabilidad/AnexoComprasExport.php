@@ -99,7 +99,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 str_replace('-', '', $compra->referencia), //D Num Documento
                 $proveedor->ncr ? $proveedor->ncr : $proveedor->nit,  // E - NIT o NRC
                 $compra->nombre_proveedor,  // F - NOMBRE, RAZ N SOCIAL O DENOMINACI N
-                '0',  // G - Compras internas exentas
+                number_format($compra->total_otros_impuestos, 2, '.', '') ?? '0',  // G - Compras internas exentas
                 number_format($compra->exenta, 2, '.', '') ?? '0' ,  // H - Internaciones exentas
                 '0',  // I - Importaciones exentas
                 number_format($compra->gravada, 2, '.', ''),  // J - Compras gravadas
