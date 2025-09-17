@@ -110,9 +110,11 @@
 <body>
     <div class="container">
         <div class="header">
-            @if($empresa->logo && $empresa->logo !== 'empresas/default.jpg')
-                <img src="{{ asset('storage/' . $empresa->logo) }}" alt="{{ $empresa->nombre }}" class="logo">
-            @endif
+            <!-- Logo de SmartPyme -->
+            <div style="text-align: center; padding: 20px 0;">
+                <img width="150px" src="https://www.smartpyme.sv/wp-content/uploads/2022/09/logo-web-smartpyme-2022-new.png" alt="Logo SmartPyme">
+                <div style="margin-top: 15px; border-bottom: 1px solid #cecece;"></div>
+            </div>
             <div class="empresa-nombre">{{ $empresa->nombre }}</div>
         </div>
 
@@ -154,13 +156,12 @@
         </div>
 
         <div class="footer">
-            <p>Este es un mensaje automático del sistema de fidelización de {{ $empresa->nombre }}.</p>
-            <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
-            @if($empresa->correo)
-                <p>Email: {{ $empresa->correo }}</p>
-            @endif
+            <p style="margin: 5px;">{{ $empresa->nombre }} &copy; {{ date('Y') }}</p>
             @if($empresa->telefono)
-                <p>Teléfono: {{ $empresa->telefono }}</p>
+                <p><b>Teléfono: </b>{{ $empresa->telefono }}</p>
+            @endif
+            @if($empresa->correo)
+                <p><b>Correo: </b>{{ $empresa->correo }}</p>
             @endif
         </div>
     </div>

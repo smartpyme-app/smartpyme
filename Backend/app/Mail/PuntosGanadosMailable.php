@@ -35,7 +35,11 @@ class PuntosGanadosMailable extends Mailable
         $empresa = $this->datosEmail['empresa'];
         $puntosGanados = $this->datosEmail['puntos_ganados'];
         
-        return $this->subject("¡Has ganado {$puntosGanados} puntos en {$empresa->nombre}!")
+        $fromName = $empresa->nombre ?? config('app.name');
+        $fromEmail = config('mail.from.address');
+        
+        return $this->from($fromEmail, $fromName)
+                    ->subject("¡Has ganado {$puntosGanados} puntos en {$empresa->nombre}!")
                     ->view('emails.puntos-ganados')
                     ->with([
                         'cliente' => $this->datosEmail['cliente'],
