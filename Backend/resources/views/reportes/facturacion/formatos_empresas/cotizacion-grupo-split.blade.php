@@ -169,8 +169,6 @@
                 <td style="width: 40%; padding: 20px; text-align: center;">
                     ____________________________ <br>
                     GRUPO SPLIT SA DE CV <br>
-                    Christian Escalante <br>
-                    Gerente Administrativo <br>
                 </td>
                 <td style="width: 40%; padding: 20px; text-align: center;">
                     ____________________________ <br>
