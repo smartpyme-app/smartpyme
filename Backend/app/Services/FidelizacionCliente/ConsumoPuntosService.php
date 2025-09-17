@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\FidelizacionCliente;
 
 use App\Models\Ventas\Venta;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
-use App\Services\NotificacionPuntosService;
+use App\Services\FidelizacionCliente\NotificacionPuntosService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;

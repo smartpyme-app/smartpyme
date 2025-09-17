@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\FidelizacionCliente;
 
 use App\Mail\PuntosGanadosMailable;
 use App\Models\Ventas\Venta;

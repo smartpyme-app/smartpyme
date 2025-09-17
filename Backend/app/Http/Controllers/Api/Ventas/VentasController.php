@@ -42,7 +42,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use App\Services\ConsumoPuntosService;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class VentasController extends Controller
 {

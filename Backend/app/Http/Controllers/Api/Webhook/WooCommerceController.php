@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use App\Services\ConsumoPuntosService;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 use League\CommonMark\Block\Element\Document;
 
 class WooCommerceController extends Controller

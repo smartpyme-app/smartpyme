@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use App\Services\ShopifySyncCache;
-use App\Services\ConsumoPuntosService;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class ShopifyController extends Controller
 {

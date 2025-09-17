@@ -91,10 +91,11 @@ export class ConfiguracionClienteComponent implements OnInit {
   loadTiposCliente(): void {
     this.loading = true;
     
-    // Preparar parámetros para la consulta
+    // Preparar parámetros para la consulta con cache busting
     const params = {
       page: this.pagination.current_page,
       paginate: this.filtros.paginate,
+      _t: Date.now(), // Cache busting timestamp
       ...(this.filtros.buscador && { search: this.filtros.buscador }),
       ...(this.filtros.orden && { order: this.filtros.orden }),
       ...(this.filtros.direccion && { direction: this.filtros.direccion }),
@@ -139,6 +140,20 @@ export class ConfiguracionClienteComponent implements OnInit {
         console.error('Error al cargar tipos base:', error);
       }
     });
+  }
+
+  /**
+   * Forzar recarga completa de datos (útil para evitar problemas de caché)
+   */
+  private forceReloadData(): void {
+    // Limpiar datos actuales
+    this.tiposCliente = [];
+    this.tiposBase = [];
+    
+    // Recargar con un pequeño delay para asegurar que el servidor haya procesado los cambios
+    setTimeout(() => {
+      this.loadAll();
+    }, 200);
   }
 
   /**
@@ -340,7 +355,12 @@ export class ConfiguracionClienteComponent implements OnInit {
       return;
     }
 
-    const reglas = this.currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas;
+    if (!this.currentTipoForRules) {
+      this.alertService.error('No se encontró el tipo de cliente para actualizar');
+      return;
+    }
+
+    const reglas = this.currentTipoForRules.configuracion_avanzada?.upgrade_automatico?.reglas;
     
     if (this.editingRegla) {
       // Editar regla existente
@@ -357,8 +377,55 @@ export class ConfiguracionClienteComponent implements OnInit {
       }
     }
 
-    this.closeReglaModal();
-    this.alertService.success('Éxito', 'Regla de upgrade guardada exitosamente');
+    // Guardar los cambios en la base de datos
+    this.guardarReglasUpgrade();
+  }
+
+  /**
+   * Guardar las reglas de upgrade en la base de datos
+   */
+  private guardarReglasUpgrade(): void {
+    if (!this.currentTipoForRules) {
+      return;
+    }
+
+    this.loading = true;
+
+    const updateData: UpdateTipoClienteRequest = {
+      id_tipo_base: this.currentTipoForRules.tipo_base?.id,
+      nivel: this.currentTipoForRules.nivel,
+      nombre_personalizado: this.currentTipoForRules.is_personalizado ? this.currentTipoForRules.nombre_efectivo : undefined,
+      puntos_por_dolar: this.currentTipoForRules.puntos_por_dolar,
+      minimo_canje: this.currentTipoForRules.minimo_canje,
+      maximo_canje: this.currentTipoForRules.maximo_canje,
+      expiracion_meses: this.currentTipoForRules.expiracion_meses,
+      is_default: this.currentTipoForRules.is_default,
+      activo: this.currentTipoForRules.activo,
+      configuracion_avanzada: this.currentTipoForRules.configuracion_avanzada
+    };
+
+    this.fidelizacionService.updateTipoCliente(this.currentTipoForRules.id, updateData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          // Actualizar el objeto currentTipoForRules con los nuevos datos
+          if (response.data) {
+            this.currentTipoForRules = response.data;
+          }
+          this.alertService.success('Éxito', 'Reglas de upgrade guardadas exitosamente');
+          this.closeReglaModal();
+          
+          // Forzar recarga completa para evitar problemas de caché
+          this.forceReloadData();
+        } else {
+          this.alertService.error(response.message || 'Error al guardar las reglas de upgrade');
+        }
+        this.loading = false;
+      },
+      error: (error) => {
+        this.alertService.error('Error al guardar las reglas de upgrade');
+        this.loading = false;
+      }
+    });
   }
 
   /**
@@ -369,7 +436,8 @@ export class ConfiguracionClienteComponent implements OnInit {
       const reglas = this.currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas;
       if (reglas) {
         reglas.splice(index, 1);
-        this.alertService.success('Éxito', 'Regla de upgrade eliminada');
+        // Guardar los cambios en la base de datos
+        this.guardarReglasUpgrade();
       }
     }
   }
@@ -381,6 +449,8 @@ export class ConfiguracionClienteComponent implements OnInit {
     const reglas = this.currentTipoForRules?.configuracion_avanzada?.upgrade_automatico?.reglas;
     if (reglas && reglas[index]) {
       reglas[index].activo = !reglas[index].activo;
+      // Guardar los cambios en la base de datos
+      this.guardarReglasUpgrade();
     }
   }
 
@@ -547,11 +617,22 @@ export class ConfiguracionClienteComponent implements OnInit {
         activo: this.editingTipo.activo
       };
 
+      console.log('Datos a enviar para actualización:', updateData);
+      console.log('Configuración avanzada a enviar:', updateData.configuracion_avanzada);
+
       this.fidelizacionService.updateTipoCliente(this.editingTipo.id, updateData).subscribe({
         next: (response) => {
+          console.log('Respuesta del servidor:', response);
           if (response.success) {
+            // Actualizar el objeto editingTipo con los nuevos datos
+            if (response.data) {
+              this.editingTipo = response.data;
+            }
             this.alertService.success('success','Tipo de cliente actualizado exitosamente');
-            this.loadTiposCliente();
+            
+            // Forzar recarga completa para evitar problemas de caché
+            this.forceReloadData();
+            
             this.closeModal();
           } else {
             this.alertService.error(response.message || 'Error al actualizar el tipo de cliente');
@@ -559,6 +640,7 @@ export class ConfiguracionClienteComponent implements OnInit {
           this.loading = false;
         },
         error: (error) => {
+          console.error('Error al actualizar:', error);
           this.alertService.error('Error al actualizar el tipo de cliente');
           this.loading = false;
         }
@@ -588,6 +670,10 @@ export class ConfiguracionClienteComponent implements OnInit {
    * Guardar tipo de cliente
    */
   saveTipoCliente(): void {
+    // Debug: Mostrar el estado actual del formulario
+    console.log('Estado actual del formulario:', this.formData);
+    console.log('Configuración avanzada actual:', this.formData.configuracion_avanzada);
+    
     // Mostrar simulación antes de guardar
     this.mostrarSimulacionVenta();
   }

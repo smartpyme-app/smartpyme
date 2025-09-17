@@ -104,7 +104,14 @@ export class FidelizacionService {
       }
     }
     
-    return this.http.get<PaginatedResponse<TipoClienteEmpresa>>(url);
+    // Agregar headers para evitar caché
+    const headers = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+    
+    return this.http.get<PaginatedResponse<TipoClienteEmpresa>>(url, { headers });
   }
 
   /**
@@ -130,9 +137,17 @@ export class FidelizacionService {
    * Actualizar tipo de cliente
    */
   updateTipoCliente(id: number, data: UpdateTipoClienteRequest): Observable<ApiResponse<TipoClienteEmpresa>> {
+    // Agregar headers para evitar caché
+    const headers = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    };
+    
     return this.http.put<ApiResponse<TipoClienteEmpresa>>(
       `${this.apiService.baseUrl}/api/fidelizacion/tipos-cliente/${id}`,
-      data
+      data,
+      { headers }
     );
   }
 
