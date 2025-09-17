@@ -187,4 +187,14 @@ class Cliente extends Model {
         $tipo = $this->getTipoClienteEfectivo();
         return $tipo && ($tipo->tipoBase->code ?? '') === 'ULTRAVIP';
     }
+
+    public function getTelefonoEfectivo()
+    {
+        return $this->tipo === 'Empresa' ? $this->empresa_telefono : $this->telefono;
+    }
+
+    public function getDireccionEfectiva()
+    {
+        return $this->tipo === 'Empresa' ? $this->empresa_direccion : $this->direccion;
+    }
 }

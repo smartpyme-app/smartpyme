@@ -471,4 +471,26 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
   volver(): void {
     this.router.navigate(['/fidelizacion/clientes']);
   }
+
+  /**
+   * Enviar correo electrónico al cliente
+   */
+  enviarCorreo(): void {
+    if (this.cliente?.correo) {
+      window.open(`mailto:${this.cliente.correo}`, '_blank');
+    }
+  }
+
+  /**
+   * Enviar WhatsApp al cliente
+   */
+  enviarWhatsApp(): void {
+    if (this.cliente?.telefono) {
+      // Limpiar el número de teléfono, solo números
+      const telefonoLimpio = this.cliente.telefono.replace(/[^0-9]/g, '');
+      // Agregar código de país si no lo tiene (El Salvador es 503)
+      const telefonoCompleto = telefonoLimpio.startsWith('503') ? telefonoLimpio : `503${telefonoLimpio}`;
+      window.open(`https://wa.me/${telefonoCompleto}`, '_blank');
+    }
+  }
 }

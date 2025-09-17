@@ -125,7 +125,7 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1">
+            <li *ngIf="tieneFidelizacionHabilitada" class="mb-1">
                 <button (click)="toggleLealtadClientes()" tooltip="Fidelización" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!lealtadClientesIsCollapsed" aria-controls="collapseLealtadClientes">
                     <img src="/assets/icons/star.png" class="icon me-2">Lealtad Clientes
                 </button>

@@ -331,7 +331,7 @@ class ClienteFidelizacionController extends Controller
     {
         try {
             $empresaId = $request->user()->id_empresa;
-
+    
             $cliente = Cliente::with([
                 'tipoCliente' => function($q) use ($empresaId) {
                     $q->withoutGlobalScopes()
@@ -350,25 +350,32 @@ class ClienteFidelizacionController extends Controller
             ])
             ->where('clientes.id_empresa', $empresaId)
             ->find($id);
-
+    
             if (!$cliente) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cliente no encontrado'
                 ], 404);
             }
-
+    
             $puntosCliente = $cliente->puntosCliente;
             $ultimaVenta = $cliente->ventas->first();
             $tipoCliente = $cliente->tipoCliente;
-
+    
+            // Determinar el teléfono correcto según el tipo
+            $telefono = $cliente->getTelefonoEfectivo();
+    
+            // Determinar la dirección correcta según el tipo
+            $direccion = $cliente->getDireccionEfectiva();
+    
             $detalles = [
                 'id' => $cliente->id,
                 'nombre' => $cliente->tipo === 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre_completo,
                 'correo' => $cliente->correo,
-                'telefono' => $cliente->telefono,
+                'telefono' => $telefono,
                 'dui' => $cliente->dui,
                 'ncr' => $cliente->ncr,
+                'direccion' => $direccion,
                 'tipo' => $cliente->tipo,
                 'enable' => $cliente->enable,
                 'tipo_cliente_fidelizacion' => $tipoCliente ? [
@@ -394,13 +401,13 @@ class ClienteFidelizacionController extends Controller
                 'fecha_registro' => $cliente->created_at->format('Y-m-d'),
                 'fecha_ultima_actividad' => $puntosCliente->fecha_ultima_actividad ?? null,
             ];
-
+    
             return response()->json([
                 'success' => true,
                 'data' => $detalles,
                 'message' => 'Detalles del cliente obtenidos exitosamente'
             ]);
-
+    
         } catch (\Exception $e) {
             Log::error('Error al obtener detalles del cliente: ' . $e->getMessage());
             return response()->json([
@@ -410,7 +417,6 @@ class ClienteFidelizacionController extends Controller
             ], 500);
         }
     }
-
     /**
      * Cambiar tipo de cliente
      */
