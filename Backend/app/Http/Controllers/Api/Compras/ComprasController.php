@@ -608,12 +608,26 @@ class ComprasController extends Controller
                 ->where('cotizacion', 1)
                 ->with('detalles', 'proveedor')
                 ->firstOrFail();
+
+            // Buscar si ya existe una compra con el mismo tipo de documento, proveedor y correlativo
+            $compraExistente = Compra::withoutGlobalScope('empresa')->where('tipo_documento', $venta->nombre_documento)
+                ->where('id_proveedor', $orden_compra->id_proveedor)
+                ->where('referencia', $venta->correlativo)
+                ->where('id_empresa', $orden_compra->id_empresa)
+                ->where('cotizacion', 0)
+                ->first();
+
+            if ($compraExistente) {
+                return Response()->json([
+                    'error' => 'Ya existe una compra con este tipo de documento, proveedor y correlativo.',
+                ], 403);
+            }
             
             // Crear la nueva compra basada en la venta
             $compra = new Compra();
             
             // Configurar campos básicos de la compra
-            $compra->fecha = date('Y-m-d');
+            $compra->fecha = $venta->fecha;
             $compra->estado = $venta->estado;
             $compra->tipo_documento = $venta->nombre_documento;
             $compra->referencia = $venta->correlativo;
@@ -659,6 +673,9 @@ class ComprasController extends Controller
 
                 }
             }
+
+            $orden_compra->estado = 'Aceptada';
+            $orden_compra->save();
 
             DB::commit();
             return Response()->json($compra, 200);

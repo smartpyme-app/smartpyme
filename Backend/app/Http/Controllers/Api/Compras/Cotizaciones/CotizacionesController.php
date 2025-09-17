@@ -236,6 +236,9 @@ class CotizacionesController extends Controller
     public function solicitudes(Request $request){
         $user = Auth::user();
         $licencia = $user->empresa()->first()->licencia()->first();
+        if(!$licencia){
+            return Response()->json(['error' => ['No tienes una licencia'], 'code' => 403], 403);
+        }
         $empresaPadre = $licencia->empresa()->first(); // Empresa padre de la licencia
         $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
         
