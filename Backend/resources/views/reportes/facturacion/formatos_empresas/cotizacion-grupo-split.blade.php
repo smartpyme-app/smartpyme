@@ -26,6 +26,10 @@
             border-collapse: collapse;
             padding: 5px 5px;
             text-align: left;
+            font-size: 12px;
+        }
+        p{
+            font-size: 13px;
         }
         .text-right{
             text-align: right !important;
@@ -50,6 +54,7 @@
                     <td class="text-left" style="vertical-align: top;">
                         <img height="100" src="{{ asset('img/logo-grupo-split.jpg') }}" alt="Logo">
                         <br>
+                        <p>
                         @php
                             setlocale(LC_TIME, 'es_ES.UTF-8');
                             $fecha = \Carbon\Carbon::parse($venta->fecha);
@@ -63,6 +68,7 @@
                         {{ $venta->empresa()->pluck('nombre')->first() }} <br>
                         Presente
                         <br> <br>
+                        </p>
                     </td>
                     <td class="text-right" style="vertical-align: top;">
                         <h2>{{ $venta->empresa()->pluck('nombre')->first() }}</h2>
@@ -71,8 +77,10 @@
                         <br>
                         <br>
                         <br>
+                        <p>
                         Atención a: <br>
-                        <p>{{ $venta->nombre_cliente }}</p>
+                        {{ $venta->nombre_cliente }}
+                        </p>
                     </td>
                 </tr>
                 <tr>
@@ -155,11 +163,9 @@
 
         <br>
 
-        <br>
         <p class="text-center">Agradeciendo su atención y esperando nuestra cotización sea conveniente a los intereses de su vivienda o empresa, aprovechamos la   
         ocasión, para saludarles.  </p>
         <br>
-
 
         <table style="width: 100%; margin-top: 30px;">
             <tr>
@@ -168,13 +174,11 @@
                 </td>
                 <td style="width: 40%; padding: 20px; text-align: center;">
                     ____________________________ <br>
-                    GRUPO SPLIT SA DE CV <br>
+                    GRUPO SPLIT SA DE CV
                 </td>
                 <td style="width: 40%; padding: 20px; text-align: center;">
                     ____________________________ <br>
-                    Firma y sello de <br>
-                    aceptado <br>
-                    <br>
+                    Firma y sello de aceptado
                 </td>
             </tr>
         </table>
