@@ -11,10 +11,12 @@ import {
   ReglaUpgrade
 } from '../../../models/fidelizacion.interface';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-configuracion-cliente',
-  templateUrl: './configuracion-cliente.component.html'
+  templateUrl: './configuracion-cliente.component.html',
+  styleUrls: ['./configuracion-cliente.component.css']
 })
 export class ConfiguracionClienteComponent implements OnInit {
 
@@ -445,9 +447,90 @@ export class ConfiguracionClienteComponent implements OnInit {
   }
 
   /**
-   * Guardar tipo de cliente
+   * Mostrar simulación de venta con la configuración actual
    */
-  saveTipoCliente(): void {
+  private mostrarSimulacionVenta(): void {
+    const valorPunto = this.formData.configuracion_avanzada?.valor_punto || 0.01;
+    const puntosPorDolar = this.formData.puntos_por_dolar || 1.0;
+    const minimoCanje = this.formData.minimo_canje || 100;
+    const maximoCanje = this.formData.maximo_canje || 1000;
+    
+    // Ejemplos de ventas con diferentes montos
+    const ejemplosVentas = [50, 100, 250, 500];
+    
+    const generarEjemploVenta = (monto: number) => {
+      const puntosObtenidos = monto * puntosPorDolar;
+      const valorPuntosEnDolares = puntosObtenidos * valorPunto;
+      const puntosCanje = Math.min(puntosObtenidos, maximoCanje);
+      const descuentoCanje = puntosCanje * valorPunto;
+      
+      return `
+        <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #28a745;">
+          <h6 style="color: #28a745; margin-bottom: 8px; font-weight: 600;">🛒 Venta: $${monto}</h6>
+          <div style="font-size: 13px;">
+            <div><strong>Puntos obtenidos:</strong> ${puntosObtenidos.toFixed(0)} puntos</div>
+            <div><strong>Valor de puntos:</strong> $${valorPuntosEnDolares.toFixed(2)}</div>
+            <div><strong>Descuento máximo:</strong> $${descuentoCanje.toFixed(2)}</div>
+          </div>
+        </div>
+      `;
+    };
+    
+    const ejemplosHtml = ejemplosVentas.map(monto => generarEjemploVenta(monto)).join('');
+    
+    const htmlContent = `
+      <div style="text-align: left; font-family: Arial, sans-serif;">
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #dee2e6;">
+          <h5 style="color: #495057; margin-bottom: 10px;">💰 Configuración Actual:</h5>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+            <div><strong>Valor del punto:</strong> $${valorPunto.toFixed(2)}</div>
+            <div><strong>Puntos por dólar:</strong> ${puntosPorDolar}</div>
+            <div><strong>Mínimo canje:</strong> ${minimoCanje} puntos</div>
+            <div><strong>Máximo canje:</strong> ${maximoCanje} puntos</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+          <h5 style="color: #495057; margin-bottom: 10px;">📈 Ejemplos de Ventas:</h5>
+          ${ejemplosHtml}
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: #d1ecf1; border-radius: 6px; border-left: 4px solid #17a2b8;">
+          <small style="color: #0c5460; display: block; margin-bottom: 5px;">
+            <strong>💡 Nota:</strong> Esta es una simulación basada en la configuración actual.
+          </small>
+          <small style="color: #0c5460;">
+            Los valores reales pueden variar según las reglas específicas del negocio y promociones activas.
+          </small>
+        </div>
+      </div>
+    `;
+
+    Swal.fire({
+      title: 'Simulación de Ventas',
+      html: htmlContent,
+      width: '700px',
+      showCancelButton: true,
+      confirmButtonText: 'Aceptar y Guardar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#28a745',
+      cancelButtonColor: '#6c757d',
+      reverseButtons: true,
+      customClass: {
+        popup: 'swal2-popup-custom',
+        htmlContainer: 'swal2-html-container-custom'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.procederConGuardado();
+      }
+    });
+  }
+
+  /**
+   * Proceder con el guardado después de mostrar la simulación
+   */
+  private procederConGuardado(): void {
     // Validar datos
     const errors = this.fidelizacionService.validatePuntosConfig(this.formData);
     if (errors.length > 0) {
@@ -499,6 +582,14 @@ export class ConfiguracionClienteComponent implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Guardar tipo de cliente
+   */
+  saveTipoCliente(): void {
+    // Mostrar simulación antes de guardar
+    this.mostrarSimulacionVenta();
   }
 
   /**

@@ -1,0 +1,181 @@
+/* Estilos personalizados para SweetAlert2 */
+.swal2-popup-custom {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.swal2-html-container-custom {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Estilos para mejorar la apariencia de la simulación */
+.swal2-html-container-custom h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.swal2-html-container-custom h5 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.swal2-html-container-custom ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.swal2-html-container-custom li {
+  margin-bottom: 8px;
+  padding-left: 20px;
+  position: relative;
+}
+
+.swal2-html-container-custom li:before {
+  content: "•";
+  color: #007bff;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.swal2-html-container-custom strong {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+/* Animación suave para los botones */
+.swal2-confirm {
+  transition: all 0.3s ease;
+}
+
+.swal2-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.swal2-cancel {
+  transition: all 0.3s ease;
+}
+
+.swal2-cancel:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* Estilos para el modal de 3 columnas */
+.modal-xl {
+  max-width: 1200px;
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+/* Estilos para las columnas del formulario */
+.modal-body .col-md-4 {
+  padding: 0 15px;
+}
+
+.modal-body .col-md-4:first-child {
+  border-right: 1px solid #e9ecef;
+  padding-right: 20px;
+}
+
+.modal-body .col-md-4:nth-child(2) {
+  border-right: 1px solid #e9ecef;
+  padding-right: 20px;
+  padding-left: 20px;
+}
+
+.modal-body .col-md-4:last-child {
+  padding-left: 20px;
+}
+
+/* Estilos para los títulos de sección */
+.modal-body h6 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.modal-body h6.text-primary {
+  color: #0d6efd !important;
+}
+
+.modal-body h6.text-success {
+  color: #198754 !important;
+}
+
+.modal-body h6.text-warning {
+  color: #fd7e14 !important;
+}
+
+.modal-body h6.text-info {
+  color: #0dcaf0 !important;
+}
+
+/* Estilos para los campos del formulario */
+.modal-body .form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilos para los checkboxes */
+.modal-body .form-check {
+  margin-bottom: 0.75rem;
+}
+
+.modal-body .form-check-input {
+  margin-top: 0.25rem;
+}
+
+.modal-body .form-check-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Estilos para el texto de ayuda */
+.modal-body .form-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-top: 0.25rem;
+}
+
+/* Responsive para pantallas más pequeñas */
+@media (max-width: 1200px) {
+  .modal-xl {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-body .col-md-4 {
+    border-right: none !important;
+    border-bottom: 1px solid #e9ecef;
+    padding: 15px !important;
+    margin-bottom: 1rem;
+  }
+  
+  .modal-body .col-md-4:last-child {
+    border-bottom: none;
+  }
+}

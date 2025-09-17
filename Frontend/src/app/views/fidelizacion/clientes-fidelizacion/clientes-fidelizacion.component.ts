@@ -225,7 +225,7 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
    * Ver detalles del cliente
    */
   viewClienteDetails(cliente: ClienteFidelizacion): void {
-    this.router.navigate(['/fidelizacion/cliente-detalles', cliente.id]);
+    this.router.navigate(['/cliente/detalles', cliente.id]);
   }
 
   /**

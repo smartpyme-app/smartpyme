@@ -169,7 +169,7 @@
 <!-- Modal para crear/editar tipo de cliente -->
 <div class="modal fade" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1"
   *ngIf="showModal">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">
@@ -181,247 +181,261 @@
       <div class="modal-body">
         <form (ngSubmit)="saveTipoCliente()" #tipoForm="ngForm">
           <div class="row">
-            <!-- Tipo Base -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Tipo Base</label>
-              <select class="form-select" [(ngModel)]="formData.id_tipo_base" name="id_tipo_base">
-                <option value="">Seleccionar tipo base</option>
-                <option *ngFor="let tipoBase of tiposBase" [value]="tipoBase.id">
-                  {{ tipoBase.nombre }} - {{ tipoBase.descripcion }}
-                </option>
-              </select>
-              <small class="form-text text-muted">
-                Dejar vacío para crear un tipo personalizado
-              </small>
-            </div>
-
-            <!-- Nivel -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Nivel</label>
-              <select class="form-select" [(ngModel)]="formData.nivel" name="nivel" required>
-                <option value="1">1 - Standard</option>
-                <option value="2">2 - VIP</option>
-                <option value="3">3 - Ultra VIP</option>
-              </select>
-            </div>
-
-            <!-- Nombre Personalizado -->
-            <div class="col-md-6 mb-3" *ngIf="!formData.id_tipo_base">
-              <label class="form-label">Nombre Personalizado</label>
-              <input type="text" class="form-control" [(ngModel)]="formData.nombre_personalizado"
-                name="nombre_personalizado" placeholder="Ej: Cliente Premium">
-            </div>
-
-            <!-- Puntos por Dólar -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Puntos por Dólar</label>
-              <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar" name="puntos_por_dolar"
-                step="0.0001" min="0" required>
-              <small class="form-text text-muted">
-                Cantidad de puntos que gana por cada dólar gastado
-              </small>
-            </div>
-
-            <!-- Valor del Punto -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Valor del Punto ($)</label>
-              <input type="number" class="form-control" [(ngModel)]="formData.configuracion_avanzada.valor_punto"
-                name="valor_punto" step="0.01" min="0" required>
-              <small class="form-text text-muted">
-                Valor en dólares de cada punto al canjear
-              </small>
-            </div>
-
-            <!-- Mínimo Canje -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Mínimo de Canje</label>
-              <input type="number" class="form-control" [(ngModel)]="formData.minimo_canje" name="minimo_canje" min="1"
-                required>
-              <small class="form-text text-muted">
-                Mínimo de puntos para poder canjear
-              </small>
-            </div>
-
-            <!-- Máximo Canje -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Máximo de Canje</label>
-              <input type="number" class="form-control" [(ngModel)]="formData.maximo_canje" name="maximo_canje" min="1"
-                required>
-              <small class="form-text text-muted">
-                Máximo de puntos que puede canjear por transacción
-              </small>
-            </div>
-
-            <!-- Expiración -->
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Expiración (meses)</label>
-              <input type="number" class="form-control" [(ngModel)]="formData.expiracion_meses" name="expiracion_meses"
-                min="1" required>
-              <small class="form-text text-muted">
-                Meses antes de que expiren los puntos
-              </small>
-            </div>
-            <!-- Por Defecto -->
-            <div class="col-md-6 mb-3">
-              <div class="">
-                <input class="form-check-input" type="checkbox" [(ngModel)]="formData.is_default" name="is_default">
-                <label class="form-check-label">
-                  Tipo por defecto para este nivel
-                </label>
+            <!-- Columna 1: Configuración Básica -->
+            <div class="col-md-4">
+              <h6 class="text-primary border-bottom pb-2 mb-3">
+                <i class="fa fa-cog me-2"></i>Configuración Básica
+              </h6>
+              
+              <!-- Tipo Base -->
+              <div class="mb-3">
+                <label class="form-label">Tipo Base</label>
+                <select class="form-select" [(ngModel)]="formData.id_tipo_base" name="id_tipo_base">
+                  <option value="">Seleccionar tipo base</option>
+                  <option *ngFor="let tipoBase of tiposBase" [value]="tipoBase.id">
+                    {{ tipoBase.nombre }} - {{ tipoBase.descripcion }}
+                  </option>
+                </select>
+                <small class="form-text text-muted">
+                  Dejar vacío para crear un tipo personalizado
+                </small>
               </div>
-              <small class="form-text text-muted">
-                Solo puede haber un tipo por defecto por nivel
-              </small>
+
+              <!-- Nivel -->
+              <div class="mb-3">
+                <label class="form-label">Nivel</label>
+                <select class="form-select" [(ngModel)]="formData.nivel" name="nivel" required>
+                  <option value="1">1 - Standard</option>
+                  <option value="2">2 - VIP</option>
+                  <option value="3">3 - Ultra VIP</option>
+                </select>
+              </div>
+
+              <!-- Nombre Personalizado -->
+              <div class="mb-3" *ngIf="!formData.id_tipo_base">
+                <label class="form-label">Nombre Personalizado</label>
+                <input type="text" class="form-control" [(ngModel)]="formData.nombre_personalizado"
+                  name="nombre_personalizado" placeholder="Ej: Cliente Premium">
+              </div>
+
+              <!-- Por Defecto -->
+              <div class="mb-3">
+                <div class="">
+                  <input class="form-check-input" type="checkbox" [(ngModel)]="formData.is_default" name="is_default">
+                  <label class="form-check-label">
+                    Tipo por defecto para este nivel
+                  </label>
+                </div>
+                <small class="form-text text-muted">
+                  Solo puede haber un tipo por defecto por nivel
+                </small>
+              </div>
+            </div>
+
+            <!-- Columna 2: Configuración de Puntos -->
+            <div class="col-md-4">
+              <h6 class="text-success border-bottom pb-2 mb-3">
+                <i class="fa fa-star me-2"></i>Configuración de Puntos
+              </h6>
+              
+              <!-- Puntos por Dólar -->
+              <div class="mb-3">
+                <label class="form-label">Puntos por Dólar</label>
+                <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar" name="puntos_por_dolar"
+                  step="0.0001" min="0" required>
+                <small class="form-text text-muted">
+                  Cantidad de puntos que gana por cada dólar gastado
+                </small>
+              </div>
+
+              <!-- Valor del Punto -->
+              <div class="mb-3">
+                <label class="form-label">Valor del Punto ($)</label>
+                <input type="number" class="form-control" [(ngModel)]="formData.configuracion_avanzada.valor_punto"
+                  name="valor_punto" step="0.01" min="0" required>
+                <small class="form-text text-muted">
+                  Valor en dólares de cada punto al canjear
+                </small>
+              </div>
+
+              <!-- Mínimo Canje -->
+              <div class="mb-3">
+                <label class="form-label">Mínimo de Canje</label>
+                <input type="number" class="form-control" [(ngModel)]="formData.minimo_canje" name="minimo_canje" min="1"
+                  required>
+                <small class="form-text text-muted">
+                  Mínimo de puntos para poder canjear
+                </small>
+              </div>
+
+              <!-- Máximo Canje -->
+              <div class="mb-3">
+                <label class="form-label">Máximo de Canje</label>
+                <input type="number" class="form-control" [(ngModel)]="formData.maximo_canje" name="maximo_canje" min="1"
+                  required>
+                <small class="form-text text-muted">
+                  Máximo de puntos que puede canjear por transacción
+                </small>
+              </div>
+
+              <!-- Expiración -->
+              <div class="mb-3">
+                <label class="form-label">Expiración (meses)</label>
+                <input type="number" class="form-control" [(ngModel)]="formData.expiracion_meses" name="expiracion_meses"
+                  min="1" required>
+                <small class="form-text text-muted">
+                  Meses antes de que expiren los puntos
+                </small>
+              </div>
+            </div>
+
+            <!-- Columna 3: Configuración Avanzada -->
+            <div class="col-md-4">
+              <h6 class="text-warning border-bottom pb-2 mb-3">
+                <i class="fa fa-magic me-2"></i>Configuración Avanzada
+              </h6>
+              
+              <!-- Multiplicador Especial -->
+              <div class="mb-3">
+                <div class="">
+                  <input class="form-check-input" type="checkbox"
+                    [(ngModel)]="formData.configuracion_avanzada.multiplicador_especial" name="multiplicador_especial">
+                  <label class="form-check-label">
+                    Multiplicador Especial
+                  </label>
+                </div>
+              </div>
+
+              <!-- Valor del Multiplicador -->
+              <div class="mb-3" *ngIf="formData.configuracion_avanzada.multiplicador_especial">
+                <label class="form-label">Valor del Multiplicador</label>
+                <input type="number" class="form-control"
+                  [(ngModel)]="formData.configuracion_avanzada.multiplicador_valor" name="multiplicador_valor" step="0.1"
+                  min="1">
+                <small class="form-text text-muted">
+                  Factor multiplicador para puntos especiales
+                </small>
+              </div>
+
+              <!-- Descuento Cumpleaños -->
+              <div class="mb-3">
+                <div class="">
+                  <input class="form-check-input" type="checkbox"
+                    [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos" name="descuento_cumpleanos">
+                  <label class="form-check-label">
+                    Descuento por Cumpleaños
+                  </label>
+                </div>
+              </div>
+
+              <!-- Porcentaje Descuento Cumpleaños -->
+              <div class="mb-3" *ngIf="formData.configuracion_avanzada.descuento_cumpleanos">
+                <label class="form-label">Porcentaje de Descuento (%)</label>
+                <input type="number" class="form-control"
+                  [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos_porcentaje"
+                  name="descuento_cumpleanos_porcentaje" min="1" max="100">
+                <small class="form-text text-muted">
+                  Porcentaje de descuento en cumpleaños
+                </small>
+              </div>
+
+              <!-- Acceso Exclusivo (solo para niveles altos) -->
+              <div class="mb-3" *ngIf="formData.nivel >= 2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                    [(ngModel)]="formData.configuracion_avanzada.acceso_exclusivo" name="acceso_exclusivo">
+                  <label class="form-check-label">
+                    Acceso Exclusivo
+                  </label>
+                </div>
+              </div>
+
+              <!-- Soporte Prioritario (solo para niveles altos) -->
+              <div class="mb-3" *ngIf="formData.nivel >= 2">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                    [(ngModel)]="formData.configuracion_avanzada.soporte_prioritario" name="soporte_prioritario">
+                  <label class="form-check-label">
+                    Soporte Prioritario
+                  </label>
+                </div>
+              </div>
+
+              <!-- Upgrade Automático -->
+              <div class="mb-3">
+                <div class="">
+                  <input class="form-check-input" type="checkbox"
+                    [(ngModel)]="formData.configuracion_avanzada.upgrade_automatico.habilitado"
+                    name="upgrade_automatico_habilitado">
+                  <label class="form-check-label">
+                    Habilitar Upgrade Automático
+                  </label>
+                </div>
+                <small class="form-text text-muted">
+                  Los clientes pueden subir de nivel automáticamente
+                </small>
+              </div>
             </div>
           </div>
 
-          <!-- Configuración Avanzada -->
-          <div class="row mt-4">
+          <!-- Beneficios Exclusivos (solo para Ultra VIP) -->
+          <div class="row mt-4" *ngIf="formData.nivel >= 3">
             <div class="col-12">
-              <h6 class="text-primary border-bottom pb-2 mb-3">
-                <i class="fa fa-cog me-2"></i>Configuración Avanzada
+              <h6 class="text-info border-bottom pb-2 mb-3">
+                <i class="fa fa-crown me-2"></i>Beneficios Exclusivos (Ultra VIP)
               </h6>
             </div>
 
-            <!-- Multiplicador Especial -->
-            <div class="col-md-6 mb-3">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox"
-                  [(ngModel)]="formData.configuracion_avanzada.multiplicador_especial" name="multiplicador_especial">
-                <label class="form-check-label">
-                  Multiplicador Especial
-                </label>
-              </div>
-            </div>
-
-            <!-- Valor del Multiplicador -->
-            <div class="col-md-6 mb-3" *ngIf="formData.configuracion_avanzada.multiplicador_especial">
-              <label class="form-label">Valor del Multiplicador</label>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Descuento Máximo Adicional (%)</label>
               <input type="number" class="form-control"
-                [(ngModel)]="formData.configuracion_avanzada.multiplicador_valor" name="multiplicador_valor" step="0.1"
-                min="1">
+                [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.descuento_maximo_adicional"
+                name="descuento_maximo_adicional" min="0" max="50">
               <small class="form-text text-muted">
-                Factor multiplicador para puntos especiales
+                Descuento adicional para clientes Ultra VIP
               </small>
             </div>
 
-            <!-- Descuento Cumpleaños -->
-            <div class="col-md-6 mb-3">
-              <div class="">
-                <input class="form-check-input" type="checkbox"
-                  [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos" name="descuento_cumpleanos">
-                <label class="form-check-label">
-                  Descuento por Cumpleaños
-                </label>
-              </div>
-            </div>
-
-            <!-- Porcentaje Descuento Cumpleaños -->
-            <div class="col-md-6 mb-3" *ngIf="formData.configuracion_avanzada.descuento_cumpleanos">
-              <label class="form-label">Porcentaje de Descuento (%)</label>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Puntos Bienvenida Anual</label>
               <input type="number" class="form-control"
-                [(ngModel)]="formData.configuracion_avanzada.descuento_cumpleanos_porcentaje"
-                name="descuento_cumpleanos_porcentaje" min="1" max="100">
+                [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.puntos_bienvenida_anual"
+                name="puntos_bienvenida_anual" min="0">
               <small class="form-text text-muted">
-                Porcentaje de descuento en cumpleaños
+                Puntos de bienvenida anuales
               </small>
             </div>
 
-            <!-- Acceso Exclusivo (solo para niveles altos) -->
-            <div class="col-md-6 mb-3" *ngIf="formData.nivel >= 2">
+            <div class="col-md-4 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"
-                  [(ngModel)]="formData.configuracion_avanzada.acceso_exclusivo" name="acceso_exclusivo">
+                  [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.acceso_eventos_vip"
+                  name="acceso_eventos_vip">
                 <label class="form-check-label">
-                  Acceso Exclusivo
+                  Acceso a Eventos VIP
                 </label>
               </div>
             </div>
 
-            <!-- Soporte Prioritario (solo para niveles altos) -->
-            <div class="col-md-6 mb-3" *ngIf="formData.nivel >= 2">
+            <div class="col-md-4 mb-3">
               <div class="form-check">
                 <input class="form-check-input" type="checkbox"
-                  [(ngModel)]="formData.configuracion_avanzada.soporte_prioritario" name="soporte_prioritario">
+                  [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.entrega_express_gratis"
+                  name="entrega_express_gratis">
                 <label class="form-check-label">
-                  Soporte Prioritario
+                  Entrega Express Gratis
                 </label>
               </div>
             </div>
 
-            <!-- Beneficios Exclusivos (solo para Ultra VIP) -->
-            <div class="col-12 mb-3" *ngIf="formData.nivel >= 3">
-              <h6 class="text-secondary mb-3">Beneficios Exclusivos</h6>
-
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Descuento Máximo Adicional (%)</label>
-                  <input type="number" class="form-control"
-                    [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.descuento_maximo_adicional"
-                    name="descuento_maximo_adicional" min="0" max="50">
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <label class="form-label">Puntos Bienvenida Anual</label>
-                  <input type="number" class="form-control"
-                    [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.puntos_bienvenida_anual"
-                    name="puntos_bienvenida_anual" min="0">
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox"
-                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.acceso_eventos_vip"
-                      name="acceso_eventos_vip">
-                    <label class="form-check-label">
-                      Acceso a Eventos VIP
-                    </label>
-                  </div>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox"
-                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.entrega_express_gratis"
-                      name="entrega_express_gratis">
-                    <label class="form-check-label">
-                      Entrega Express Gratis
-                    </label>
-                  </div>
-                </div>
-
-                <div class="col-md-6 mb-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox"
-                      [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.asistente_personal"
-                      name="asistente_personal">
-                    <label class="form-check-label">
-                      Asistente Personal
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Upgrade Automático -->
-            <div class="col-12 mb-3">
-              <h6 class="text-secondary mb-3">Upgrade Automático</h6>
-
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <div class="">
-                    <input class="form-check-input" type="checkbox"
-                      [(ngModel)]="formData.configuracion_avanzada.upgrade_automatico.habilitado"
-                      name="upgrade_automatico_habilitado">
-                    <label class="form-check-label">
-                      Habilitar Upgrade Automático
-                    </label>
-                  </div>
-                  <small class="form-text text-muted">
-                    Los clientes pueden subir de nivel automáticamente. Use el menú de acciones para configurar las
-                    reglas.
-                  </small>
-                </div>
+            <div class="col-md-4 mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox"
+                  [(ngModel)]="formData.configuracion_avanzada.beneficios_exclusivos.asistente_personal"
+                  name="asistente_personal">
+                <label class="form-check-label">
+                  Asistente Personal
+                </label>
               </div>
             </div>
           </div>

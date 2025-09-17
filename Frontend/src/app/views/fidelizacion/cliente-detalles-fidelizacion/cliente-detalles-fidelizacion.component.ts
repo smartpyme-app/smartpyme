@@ -15,7 +15,8 @@ import {
 
 @Component({
   selector: 'app-cliente-detalles-fidelizacion',
-  templateUrl: './cliente-detalles-fidelizacion.component.html'
+  templateUrl: './cliente-detalles-fidelizacion.component.html',
+  styleUrls: ['./cliente-detalles-fidelizacion.component.css']
 })
 export class ClienteDetallesFidelizacionComponent implements OnInit {
 
