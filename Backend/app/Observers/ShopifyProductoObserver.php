@@ -25,9 +25,17 @@ class ShopifyProductoObserver
             return;
         }
 
+        // PREVENIR CICLO: No sincronizar productos que están siendo actualizados desde Shopify
+        if ($producto->syncing_from_shopify) {
+            // Resetear el flag después de la sincronización desde Shopify
+            $producto->update(['syncing_from_shopify' => false]);
+            return;
+        }
+
         if ($this->cache->isLocked($producto->id)) {
             return;
         }
+        
         $camposRelevantes = ['precio', 'costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
         $hayCambios = false;
 
@@ -59,6 +67,9 @@ class ShopifyProductoObserver
         if (!$this->cache->hasProductChanged($producto)) {
             return;
         }
+        
+        // SINCRONIZAR A SHOPIFY: Tanto productos locales como productos que vinieron de Shopify
+        // pero que ahora se están editando desde el sistema local
         $success = $this->stockService->actualizarProductoCompletoEnShopify(
             $producto->id,
             $usuario->id,
@@ -72,6 +83,16 @@ class ShopifyProductoObserver
 
     public function created(Producto $producto)
     {
+        // PREVENIR CICLO: No sincronizar productos que vienen de Shopify
+        if ($producto->shopify_product_id || $producto->syncing_from_shopify) {
+            return;
+        }
+
+        // Verificar si está en proceso de sincronización desde webhook
+        if ($this->cache->isLocked($producto->id)) {
+            return;
+        }
+
         $empresa = Empresa::where('id', $producto->id_empresa)
             ->whereNotNull('shopify_store_url')
             ->whereNotNull('shopify_consumer_secret')

@@ -58,7 +58,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento', 'total_otros_impuestos'];
 
     protected static function boot()
     {
@@ -105,6 +105,27 @@ class Gasto extends Model {
     public function getNombreProyectoAttribute()
     {
         return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    public function getTotalOtrosImpuestosAttribute()
+    {
+        // Si el campo es null, vacío o no es un array, retorna 0
+        if (!$this->otros_impuestos || !is_array($this->otros_impuestos)) {
+            return 0;
+        }
+
+        $total = 0;
+
+        // Verificar si existe la estructura con 'valores'
+        if (isset($this->otros_impuestos['valores']) && is_array($this->otros_impuestos['valores'])) {
+            foreach ($this->otros_impuestos['valores'] as $impuesto) {
+                if (isset($impuesto['valor']) && is_numeric($impuesto['valor'])) {
+                    $total += (float) $impuesto['valor'];
+                }
+            }
+        }
+
+        return $total;
     }
 
     public function usuario(){

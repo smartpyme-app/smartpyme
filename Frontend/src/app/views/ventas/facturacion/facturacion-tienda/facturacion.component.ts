@@ -258,9 +258,17 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva_percibido = 0;
     this.venta.iva_retenido = 0;
     this.venta.cotizacion = 0;
+    if(this.canales.length > 0){
+      this.venta.id_canal = this.canales[0].id;
+    }
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    if(this.impuestos.length > 0){
+      this.venta.impuestos = this.impuestos;
+    }else{
+      this.venta.impuestos = [];
+    }
     this.detalle = {};
     this.venta.cobrar_impuestos =
       this.apiService.auth_user().empresa.cobra_iva == 'Si' ? true : false;
@@ -279,11 +287,13 @@ export class FacturacionComponent implements OnInit {
       this.venta.corte_id = JSON.parse(sessionStorage.getItem('SP_corte')!).id;
     }
 
+    // Para proyectos
     if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
       this.venta.id_proyecto =
         +this.route.snapshot.queryParamMap.get('id_proyecto')!;
     }
 
+    // Para cotizaciones Pre-venta
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
@@ -555,7 +565,7 @@ export class FacturacionComponent implements OnInit {
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     ).total;
-
+    console.log(this.venta);
   }
 
   public sumTotal() {
@@ -570,6 +580,17 @@ export class FacturacionComponent implements OnInit {
       this.venta.cobrar_impuestos = false;
       return;
     }
+
+    // Asegurar que detalles existe y es un array
+    if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.venta.detalles = [];
+    }
+
+    // Asegurar que impuestos existe y es un array
+    if (!this.venta.impuestos || !Array.isArray(this.venta.impuestos)) {
+      this.venta.impuestos = [];
+    }
+
     this.venta.sub_total = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total')
     ).toFixed(4);
@@ -625,6 +646,8 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
 
+
+    // Asignar tipoOperacion según los detalles
     if (this.venta.cobrar_impuestos) {
       this.venta.tipo_operacion = 'Gravada'; // Aplica IVA
     } else {
@@ -632,12 +655,12 @@ export class FacturacionComponent implements OnInit {
     }
 
     // Asignar tipo renta
-    if (this.venta.detalles.length > 0) {
-      if (this.venta.detalles[0].tipo == 'Servicio') {
-        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
-      } else {
-        this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
-      }
+    if (this.venta.detalles && this.venta.detalles.length > 0) {
+        if (this.venta.detalles[0].tipo == 'Servicio'){
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
+        }else{
+            this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
+        }
     }
 
   }
