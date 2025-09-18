@@ -5,6 +5,7 @@ import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { environment } from './../../environments/environment';
 import { ChatService } from '@services/chat/chat.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import * as moment from 'moment';
 declare let $:any;
@@ -17,7 +18,7 @@ export class ApiService {
     public baseUrl: string = environment.API_URL;
     public apiUrl =  this.baseUrl + '/api/';
 
-    constructor(private http: HttpClient, private alertService: AlertService) { }
+    constructor(private http: HttpClient, private alertService: AlertService, private funcionalidadesService: FuncionalidadesService) { }
 
     getToUrl(url:string) {return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError) )}
 
@@ -36,7 +37,7 @@ export class ApiService {
     paginate(url:string, filtros:any = {}) {return this.http.get<any>(url, { params: filtros }).pipe(retry(0), catchError(this.handleError) )}
 
     upload (url: string, formData: any) {let headers = new HttpHeaders(); headers.append('Accept', 'application/json'); headers.append('Authorization','Bearer ' + JSON.parse(localStorage.getItem('SP_token')!) ); let options = {headers}; return this.http.post(this.apiUrl + url, formData, options).pipe(retry(0), catchError(this.handleError)) }
-    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user));   this.loadConstants(); } }) ); }
+    login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); this.funcionalidadesService.limpiarCache(); this.loadConstants(); } }) ); }
     register(user:any) {return this.http.post<any>(this.apiUrl + 'register', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data) {localStorage.setItem('SP_user_register', JSON.stringify(data)); } })); }
 
     export(url:string, filtros: any): Observable<Blob> {
@@ -76,6 +77,7 @@ export class ApiService {
             this.store('logout', data).subscribe(ivas => {
             }, error => {this.alertService.error(error); });
         }
+        this.funcionalidadesService.limpiarCache();
         localStorage.clear();
     }
 

@@ -42,6 +42,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class VentasController extends Controller
 {
@@ -562,6 +563,19 @@ class VentasController extends Controller
                 }
             }
 
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->estado == 'Pagada' && $venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización en facturación', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
+            }
 
             DB::commit();
             return Response()->json($venta, 200);
@@ -655,6 +669,20 @@ class VentasController extends Controller
             $venta->fecha = $request->fecha;
             $venta->estado = 'Pagada';
             $venta->save();
+
+            // Procesar puntos de fidelización si la venta está pagada
+            if ($venta->id_cliente) {
+                try {
+                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService->procesarAcumulacionPuntos($venta);
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar puntos de fidelización al pagar venta', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // No se interrumpe la transacción por errores en puntos
+                }
+            }
 
             DB::commit();
             return Response()->json($venta, 200);

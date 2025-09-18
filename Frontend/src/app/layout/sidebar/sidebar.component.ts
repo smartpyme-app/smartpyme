@@ -1,16 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter as rxFilter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html'
 })
 
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -20,7 +23,7 @@ export class SidebarComponent implements OnInit {
     public finanzasIsCollapsed:boolean = true;
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
-
+    public lealtadClientesIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -28,10 +31,11 @@ export class SidebarComponent implements OnInit {
     public items: any = [];
     public notificaciones: any = [];
     public authUser: any = {};
+    public tieneFidelizacionHabilitada: boolean = false;
 
     searchControl = new FormControl();
 
-    constructor(public apiService: ApiService, public alertService: AlertService) {}
+    constructor(public apiService: ApiService, public alertService: AlertService, private funcionalidadesService: FuncionalidadesService, private router: Router) {}
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {
@@ -74,7 +78,11 @@ export class SidebarComponent implements OnInit {
         }else{
             this.paquetesIsCollapsed = JSON.parse(localStorage.getItem('paquetesIsCollapsed')!);
         }
-        
+        if (!localStorage.getItem('lealtadClientesIsCollapsed')) {
+            localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        }else{
+            this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
+        }
         this.usuario = this.apiService.auth_user();
 
         this.searchControl.valueChanges
@@ -91,6 +99,19 @@ export class SidebarComponent implements OnInit {
 
         this.loadNotificaciones();
         this.usuarioLogueado();
+        this.verificarFidelizacionHabilitada();
+        
+        // Suscribirse a cambios de ruta para verificar funcionalidades cuando el usuario cambie
+        this.router.events
+            .pipe(rxFilter(event => event instanceof NavigationEnd))
+            .subscribe(() => {
+                // Verificar si el usuario ha cambiado (nuevo login)
+                const currentUser = this.apiService.auth_user();
+                if (currentUser && (!this.authUser || this.authUser.id !== currentUser.id)) {
+                    this.usuarioLogueado();
+                    this.verificarFidelizacionHabilitada();
+                }
+            });
     }
 
 
@@ -185,6 +206,16 @@ export class SidebarComponent implements OnInit {
     }
 
 
+    toggleLealtadClientes() {
+        if(this.lealtadClientesIsCollapsed){
+            this.closeAll();    
+        }
+        this.lealtadClientesIsCollapsed = !this.lealtadClientesIsCollapsed;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+
     toggleSidebarMenu() {
         if (this.sidebarCollapsed) {
             this.sidebarCollapsed = false;
@@ -206,7 +237,9 @@ export class SidebarComponent implements OnInit {
         this.planillaIsCollapsed = true;
         localStorage.setItem('planillaIsCollapsed', this.planillaIsCollapsed.toString());
         this.paquetesIsCollapsed = true;
-        localStorage.setItem('paquetesIsCollapsed', this.finanzasIsCollapsed.toString());
+        localStorage.setItem('paquetesIsCollapsed', this.paquetesIsCollapsed.toString());
+        this.lealtadClientesIsCollapsed = true;
+        localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
     }
 
     public onSubmit(){
@@ -227,6 +260,22 @@ export class SidebarComponent implements OnInit {
 
     public usuarioLogueado() {
         this.authUser = this.apiService.auth_user();
-      }
+    }
+
+    private verificarFidelizacionHabilitada() {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneFidelizacionHabilitada = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a fidelización:', error);
+                this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
+
+    ngOnDestroy() {
+        // Limpiar suscripciones si es necesario
+    }
 
 }

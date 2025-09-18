@@ -17,7 +17,7 @@ class TipoClienteBaseSeeder extends Seeder
             [
                 'code' => 'STANDARD',
                 'nombre' => 'Cliente Estándar',
-                'descripcion' => 'Cliente regular con beneficios básicos del programa de fidelización',
+                'descripcion' => 'Cliente regular con beneficios básicos del programa de Lealtad',
                 'orden' => 1,
                 'activo' => true,
                 'created_at' => $now,

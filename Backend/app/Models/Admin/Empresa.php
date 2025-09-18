@@ -592,10 +592,10 @@ class Empresa extends Model
      * 
      * @return TipoClienteEmpresa|null
      */
-    public function getTipoClienteDefault()
-    {
-        return $this->tipoClienteDefault;
-    }
+    // public function getTipoClienteDefault()
+    // {
+    //     return $this->tipoClienteDefault;
+    // }
 
     /**
      * Verificar si la empresa tiene habilitado el módulo de fidelización
