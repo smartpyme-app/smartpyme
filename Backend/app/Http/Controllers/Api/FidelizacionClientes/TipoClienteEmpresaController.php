@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\FidelizacionClientes;
 use App\Http\Controllers\Controller;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\TipoClienteBase;
+use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -13,20 +14,36 @@ use Illuminate\Validation\ValidationException;
 
 class TipoClienteEmpresaController extends Controller
 {
+    protected $licenciaService;
+
+    public function __construct(LicenciaFidelizacionService $licenciaService)
+    {
+        $this->licenciaService = $licenciaService;
+    }
     /**
      * Obtener todos los tipos de cliente de la empresa
      */
     public function index(Request $request): JsonResponse
     {
         try {
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresa = $user->empresa;
+            $empresaId = $user->id_empresa;
+            
+            // Verificar que el usuario tenga una empresa asociada
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario sin empresa asociada'
+                ], 400);
+            }
 
             // Obtener parámetros de paginación
             $perPage = (int) $request->input('paginate', 25);
             $page = (int) $request->input('page', 1);
 
             $query = TipoClienteEmpresa::with(['tipoBase'])
-                ->porEmpresa($empresaId)
+                ->porEmpresaConLicencia($empresaId)
                 ->orderBy('nivel')
                 ->orderBy('created_at');
 
@@ -124,11 +141,25 @@ class TipoClienteEmpresaController extends Controller
                 'configuracion_avanzada' => 'nullable|array',
             ]);
 
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresa = $user->empresa;
+            $empresaId = $user->id_empresa;
+            
+            // Verificar que el usuario tenga una empresa asociada
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario sin empresa asociada'
+                ], 400);
+            }
+            
+            // Si la empresa tiene licencia, usar la empresa padre para las configuraciones
+            $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+            $empresaEfectivaId = $empresaEfectiva->id;
 
             // Validar que no exista otro tipo con el mismo nivel como default
             if ($request->is_default) {
-                $existingDefault = TipoClienteEmpresa::porEmpresa($empresaId)
+                $existingDefault = TipoClienteEmpresa::porEmpresa($empresaEfectivaId)
                     ->porNivel($request->nivel)
                     ->where('is_default', true)
                     ->first();
@@ -144,7 +175,7 @@ class TipoClienteEmpresaController extends Controller
             DB::beginTransaction();
 
             $tipoCliente = TipoClienteEmpresa::create([
-                'id_empresa' => $empresaId,
+                'id_empresa' => $empresaEfectivaId,
                 'id_tipo_base' => $request->id_tipo_base,
                 'nivel' => $request->nivel,
                 'nombre_personalizado' => $request->nombre_personalizado,
@@ -305,6 +336,42 @@ class TipoClienteEmpresaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al cambiar el estado: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener información de licencia para fidelización
+     */
+    public function getInfoLicencia(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $empresa = $user->empresa;
+            
+            // Verificar que el usuario tenga una empresa asociada
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario sin empresa asociada'
+                ], 400);
+            }
+            
+            $infoLicencia = $this->licenciaService->getInfoLicencia($empresa);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $infoLicencia
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo información de licencia', [
+                'error' => $e->getMessage(),
+                'empresa_id' => $request->user()->id_empresa ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener información de licencia: ' . $e->getMessage()
             ], 500);
         }
     }

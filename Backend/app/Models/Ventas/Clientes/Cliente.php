@@ -9,7 +9,7 @@ use App\Models\FidelizacionClientes\TransaccionPuntos;
 use App\Models\MH\ActividadEconomica;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Auth;
+use Illuminate\Support\Facades\Auth;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cliente extends Model {
@@ -63,8 +63,27 @@ class Cliente extends Model {
 
     if (Auth::check()) {
         static::addGlobalScope('empresa', function (Builder $builder) {
-            // Especificar explícitamente la tabla para evitar ambigüedad
-            $builder->where('clientes.id_empresa', Auth::user()->id_empresa);
+            $user = Auth::user();
+            $empresa = $user->empresa;
+            
+            if ($empresa) {
+                // Si la empresa tiene licencia, mostrar clientes de todas las empresas de la licencia
+                if ($empresa->esEmpresaPadre() || $empresa->esEmpresaHija()) {
+                    $empresasLicenciaIds = $empresa->getEmpresasLicenciaIds();
+                    
+                    // Debug temporal
+                    \Log::info('Cliente Global Scope - Empresa ID: ' . $empresa->id);
+                    \Log::info('Cliente Global Scope - Es empresa padre: ' . ($empresa->esEmpresaPadre() ? 'Sí' : 'No'));
+                    \Log::info('Cliente Global Scope - Es empresa hija: ' . ($empresa->esEmpresaHija() ? 'Sí' : 'No'));
+                    \Log::info('Cliente Global Scope - IDs empresas licencia: ' . json_encode($empresasLicenciaIds));
+                    
+                    $builder->whereIn('clientes.id_empresa', $empresasLicenciaIds);
+                } else {
+                    // Empresa normal sin licencia
+                    \Log::info('Cliente Global Scope - Empresa sin licencia, ID: ' . $user->id_empresa);
+                    $builder->where('clientes.id_empresa', $user->id_empresa);
+                }
+            }
         });
     }
 
@@ -153,7 +172,17 @@ class Cliente extends Model {
 
     public function getTipoClienteEfectivo()
     {
-        return $this->tipoCliente ?: $this->empresa->getTipoClienteDefault();
+        if ($this->tipoCliente) {
+            return $this->tipoCliente;
+        }
+        
+        // Si la empresa tiene licencia, usar la configuración de la empresa padre
+        $empresaEfectiva = $this->empresa;
+        if ($empresaEfectiva && $empresaEfectiva->esEmpresaHija()) {
+            $empresaEfectiva = $empresaEfectiva->getEmpresaPadre();
+        }
+        
+        return $empresaEfectiva ? $empresaEfectiva->tipoClienteDefault : null;
     }
 
     public function getPuntosDisponibles()

@@ -51,6 +51,19 @@ class PuntosCliente extends Model
         return $query->where('id_empresa', $empresaId);
     }
 
+    public function scopePorEmpresaConLicencia($query, $empresaId)
+    {
+        $empresa = Empresa::find($empresaId);
+        
+        if ($empresa && ($empresa->esEmpresaPadre() || $empresa->esEmpresaHija())) {
+            // Si la empresa tiene licencia, obtener puntos de todas las empresas de la licencia
+            $empresasLicenciaIds = $empresa->getEmpresasLicenciaIds();
+            return $query->whereIn('id_empresa', $empresasLicenciaIds);
+        }
+        
+        return $query->where('id_empresa', $empresaId);
+    }
+
     public function scopeActivosRecientes($query, $dias = 30)
     {
         return $query->where('fecha_ultima_actividad', '>=', now()->subDays($dias));

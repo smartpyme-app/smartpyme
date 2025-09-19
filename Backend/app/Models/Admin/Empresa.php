@@ -230,6 +230,72 @@ class Empresa extends Model
         return $this->hasOne('App\Models\Licencias\Licencia', 'id_empresa');
     }
 
+    public function licenciaEmpresa()
+    {
+        return $this->hasOne('App\Models\Licencias\Empresa', 'id_empresa');
+    }
+
+    public function empresasHijas()
+    {
+        if ($this->licencia) {
+            return $this->licencia->empresas()->where('id_empresa', '!=', $this->id);
+        }
+        return collect();
+    }
+
+    public function esEmpresaPadre()
+    {
+        $tieneLicencia = $this->licencia()->exists();
+        return $tieneLicencia;
+    }
+
+    public function esEmpresaHija()
+    {
+        $esHija = $this->licenciaEmpresa()->exists();
+        return $esHija;
+    }
+
+    public function getEmpresaPadre()
+    {
+        if ($this->esEmpresaHija()) {
+            $licenciaEmpresa = $this->licenciaEmpresa;
+            if ($licenciaEmpresa && $licenciaEmpresa->licencia) {
+                return $licenciaEmpresa->licencia->empresa;
+            }
+        }
+        return $this;
+    }
+
+    public function getEmpresasLicencia()
+    {
+        // Priorizar empresa padre sobre empresa hija si es ambas
+        if ($this->esEmpresaPadre()) {
+            $licencia = $this->licencia;
+            if ($licencia) {
+                // Incluir la empresa padre + todas las empresas hijas
+                $empresasHijas = $licencia->empresas->pluck('empresa');
+                $resultado = $empresasHijas->prepend($this); // Agregar la empresa padre al inicio
+                
+                return $resultado;
+            }
+        } elseif ($this->esEmpresaHija()) {
+            $empresaPadre = $this->getEmpresaPadre();
+            if ($empresaPadre && $empresaPadre->licencia) {
+                // Incluir la empresa padre + todas las empresas hijas
+                $empresasHijas = $empresaPadre->licencia->empresas->pluck('empresa');
+                $resultado = $empresasHijas->prepend($empresaPadre); // Agregar la empresa padre al inicio
+
+                return $resultado;
+            }
+        }
+        return collect([$this]);
+    }
+
+    public function getEmpresasLicenciaIds()
+    {
+        return $this->getEmpresasLicencia()->pluck('id')->toArray();
+    }
+
     public function dashboards()
     {
         return $this->hasMany('App\Models\Admin\Dashboard', 'id_empresa');

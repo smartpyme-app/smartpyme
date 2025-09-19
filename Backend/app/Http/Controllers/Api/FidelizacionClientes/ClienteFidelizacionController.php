@@ -8,6 +8,7 @@ use App\Models\Ventas\Clientes\Cliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
+use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,12 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ClienteFidelizacionController extends Controller
 {
+    protected $licenciaService;
+
+    public function __construct(LicenciaFidelizacionService $licenciaService)
+    {
+        $this->licenciaService = $licenciaService;
+    }
     /**
      * Obtener todos los clientes con información de lealtad
      */
@@ -39,7 +46,17 @@ class ClienteFidelizacionController extends Controller
                 'estado' => 'boolean'
             ]);
 
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresa = $user->empresa;
+            $empresaId = $user->id_empresa;
+            
+            // Verificar que el usuario tenga una empresa asociada
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario sin empresa asociada'
+                ], 400);
+            }
             
             // Parámetros con valores por defecto
             $perPage = (int) $request->input('paginate', 25);
@@ -48,10 +65,10 @@ class ClienteFidelizacionController extends Controller
             $direction = $request->input('direction', 'asc');
 
             // Query base con eager loading optimizado
-            $query = $this->buildBaseQuery($empresaId);
+            $query = $this->buildBaseQuery($empresaId, $empresa);
             
             // Aplicar todos los filtros
-            $query = $this->aplicarFiltros($query, $request, $empresaId);
+            $query = $this->aplicarFiltros($query, $request, $empresaId, $empresa);
             
             // Aplicar ordenamiento
             $query = $this->aplicarOrdenamiento($query, $order, $direction, $empresaId);
@@ -85,30 +102,37 @@ class ClienteFidelizacionController extends Controller
     /**
      * Construye la query base con eager loading optimizado
      */
-    private function buildBaseQuery(int $empresaId): Builder
+    private function buildBaseQuery(int $empresaId, $empresa = null): Builder
     {
+        // Determinar la empresa efectiva para tipos de cliente
+        $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+        $empresaEfectivaId = $empresaEfectiva->id;
+        
+        // Obtener IDs de empresas de la licencia
+        $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+        
         return Cliente::with([
-            'tipoCliente' => function($q) use ($empresaId) {
+            'tipoCliente' => function($q) use ($empresaEfectivaId) {
                 $q->withoutGlobalScopes()
-                  ->where('tipos_cliente_empresa.id_empresa', $empresaId)
+                  ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
                   ->with('tipoBase');
             },
-            'puntosCliente' => function($q) use ($empresaId) {
+            'puntosCliente' => function($q) use ($empresaEfectivaId) {
                 $q->withoutGlobalScopes()
-                  ->where('puntos_cliente.id_empresa', $empresaId);
+                  ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
             },
             'ventas' => function($q) {
                 $q->select('id', 'id_cliente', 'total', 'created_at')
                   ->orderBy('created_at', 'desc')
                   ->limit(1);
             }
-        ])->where('clientes.id_empresa', $empresaId);
+        ])->whereIn('clientes.id_empresa', $empresasLicenciaIds);
     }
 
     /**
      * Aplica todos los filtros a la query
      */
-    private function aplicarFiltros(Builder $query, Request $request, int $empresaId): Builder
+    private function aplicarFiltros(Builder $query, Request $request, int $empresaId, $empresa = null): Builder
     {
         return $query
             ->when($request->search, fn($q) => $this->aplicarFiltrosBusqueda($q, $request->search))
@@ -229,11 +253,20 @@ class ClienteFidelizacionController extends Controller
     public function getByTipo(Request $request, $tipoId): JsonResponse
     {
         try {
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresaId = $user->id_empresa;
+            $empresa = $user->empresa;
 
-            // Verificar que el tipo de cliente pertenece a la empresa
+            // Obtener empresa efectiva para tipos de cliente
+            $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+            $empresaEfectivaId = $empresaEfectiva->id;
+            
+            // Obtener IDs de empresas de la licencia
+            $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+
+            // Verificar que el tipo de cliente pertenece a la empresa efectiva
             $tipoCliente = TipoClienteEmpresa::where('id', $tipoId)
-                ->where('id_empresa', $empresaId)
+                ->where('id_empresa', $empresaEfectivaId)
                 ->first();
 
             if (!$tipoCliente) {
@@ -249,14 +282,14 @@ class ClienteFidelizacionController extends Controller
 
             // Mostrar todos los clientes sin filtrar por tipo específico
             $clientes = Cliente::with([
-                'tipoCliente' => function($q) use ($empresaId) {
+                'tipoCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
-                      ->where('tipos_cliente_empresa.id_empresa', $empresaId)
+                      ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
                       ->with('tipoBase');
                 },
-                'puntosCliente' => function($q) use ($empresaId) {
+                'puntosCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
-                      ->where('puntos_cliente.id_empresa', $empresaId);
+                      ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
                 },
                 'ventas' => function($q) {
                     $q->select('id', 'id_cliente', 'total', 'created_at')
@@ -264,7 +297,7 @@ class ClienteFidelizacionController extends Controller
                       ->limit(1);
                 }
             ])
-            ->where('clientes.id_empresa', $empresaId)
+            ->whereIn('clientes.id_empresa', $empresasLicenciaIds)
             ->orderBy('nombre')
             ->paginate($perPage, ['*'], 'page', $page);
 
