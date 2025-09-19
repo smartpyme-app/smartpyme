@@ -5,6 +5,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 
@@ -387,32 +388,96 @@ export class FacturacionComponent implements OnInit {
           if(empresa.length > 0){
             this.setCliente(empresa[0]);
             console.log(empresa);
+            
+            // Solo procesar productos si el cliente existe
+            this.procesarProductosOrdenCompra(ordenCompra.detalles);
           }else{
-            alert('No se encontró el cliente');
+            Swal.fire({
+              title: 'Cliente no encontrado',
+              html: `
+                <div class="text-left">
+                  <p><strong>No se encontró el cliente para poder facturar.</strong></p>
+                  <p>Debe crear el cliente con los siguientes datos:</p>
+                  <ul class="list-unstyled mt-3">
+                    <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
+                    <li><strong>DUI o NIT:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                  </ul>
+                </div>
+              `,
+              icon: 'warning',
+              confirmButtonText: 'Entendido',
+              confirmButtonColor: '#3085d6'
+            }).then(() => {
+              window.history.back();
+            });
+            // No procesar productos si el cliente no existe
+            return;
           }
-        });
-
-        ordenCompra.detalles.forEach((detalleCompra: any) => {
-          this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
-            let detalle: any = {};
-            detalle.cantidad = detalleCompra.cantidad;
-            detalle.descripcion = producto.nombre;
-            detalle.id_producto = producto.id;
-            detalle.precio = parseFloat(producto.precio);
-            detalle.costo = parseFloat(producto.costo);
-            detalle.gravada = detalle.total;
-            detalle.exenta = 0;
-            detalle.no_sujeta = 0;
-            detalle.cuenta_a_terceros = 0;
-            detalle.total = detalle.precio * detalle.cantidad;
-            this.venta.detalles.push(detalle);
-            this.sumTotal();
-          });
         });
       }, (error) => { this.alertService.error(error); this.loading = false; }
     );
     console.log(this.venta);
     }
+  }
+    // Método para procesar productos de orden de compra
+  public procesarProductosOrdenCompra(detalles: any[]) {
+    detalles.forEach((detalleCompra: any) => {
+      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+        if (producto && producto.length > 0) {
+          let detalle: any = {};
+          detalle.cantidad = detalleCompra.cantidad;
+          detalle.descripcion = producto[0].nombre;
+          detalle.id_producto = producto[0].id;
+          detalle.precio = parseFloat(producto[0].precio);
+          detalle.costo = parseFloat(producto[0].costo);
+          detalle.gravada = detalle.total;
+          detalle.exenta = 0;
+          detalle.no_sujeta = 0;
+          detalle.cuenta_a_terceros = 0;
+          detalle.total = detalle.precio * detalle.cantidad;
+          this.venta.detalles.push(detalle);
+          this.sumTotal();
+        } else {
+           Swal.fire({
+             title: 'Producto no encontrado',
+             html: `
+               <div class="text-left">
+                 <p><strong>No se encontró el producto para poder facturar.</strong></p>
+                 <p>Debe verificar o crear el producto con el siguiente código:</p>
+                 <ul class="list-unstyled mt-3">
+                   <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                   <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+                 </ul>
+               </div>
+             `,
+             icon: 'warning',
+             confirmButtonText: 'Entendido',
+             confirmButtonColor: '#3085d6'
+           }).then(() => {
+             window.history.back();
+           });
+        }
+      }, (error) => {
+        Swal.fire({
+          title: 'Error al buscar producto',
+          html: `
+            <div class="text-left">
+              <p><strong>Error al buscar el producto.</strong></p>
+              <p>No se pudo encontrar el producto con el siguiente código:</p>
+              <ul class="list-unstyled mt-3">
+                <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+              </ul>
+            </div>
+          `,
+          icon: 'error',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#3085d6'
+        }).then(() => {
+          window.history.back();
+        });
+      });
+    });
 
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
@@ -916,5 +981,6 @@ export class FacturacionComponent implements OnInit {
 
   public isColumnEnabled(columnName: string): boolean {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
-}
+  }
+
 }
