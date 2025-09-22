@@ -239,7 +239,7 @@ class TipoClienteEmpresaController extends Controller
 
             $empresaId = $request->user()->id_empresa;
 
-            $tipoCliente = TipoClienteEmpresa::porEmpresa($empresaId)
+            $tipoCliente = TipoClienteEmpresa::porEmpresaConLicencia($empresaId)
                 ->findOrFail($id);
 
             // Validar que no exista otro tipo con el mismo nivel como default
@@ -312,7 +312,7 @@ class TipoClienteEmpresaController extends Controller
         try {
             $empresaId = $request->user()->id_empresa;
 
-            $tipoCliente = TipoClienteEmpresa::porEmpresa($empresaId)
+            $tipoCliente = TipoClienteEmpresa::porEmpresaConLicencia($empresaId)
                 ->findOrFail($id);
 
             $tipoCliente->update(['activo' => !$tipoCliente->activo]);

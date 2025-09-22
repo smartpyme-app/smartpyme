@@ -67,23 +67,26 @@ class Cliente extends Model {
             $empresa = $user->empresa;
             
             if ($empresa) {
-                // Si la empresa tiene licencia, mostrar clientes de todas las empresas de la licencia
-                if ($empresa->esEmpresaPadre() || $empresa->esEmpresaHija()) {
-                    $empresasLicenciaIds = $empresa->getEmpresasLicenciaIds();
-                    
-                    // Debug temporal
-                    \Log::info('Cliente Global Scope - Empresa ID: ' . $empresa->id);
-                    \Log::info('Cliente Global Scope - Es empresa padre: ' . ($empresa->esEmpresaPadre() ? 'Sí' : 'No'));
-                    \Log::info('Cliente Global Scope - Es empresa hija: ' . ($empresa->esEmpresaHija() ? 'Sí' : 'No'));
-                    \Log::info('Cliente Global Scope - IDs empresas licencia: ' . json_encode($empresasLicenciaIds));
-                    
-                    $builder->whereIn('clientes.id_empresa', $empresasLicenciaIds);
+                if ($empresa->esEmpresaPadre()) {
+                    // Empresa padre: solo ve sus propios clientes
+                    $builder->where('clientes.id_empresa', $user->id_empresa);
+                } elseif ($empresa->esEmpresaHija()) {
+                    // Empresa hija: ve clientes de todas las empresas hijas (sin incluir empresa padre)
+                    $empresaPadre = $empresa->getEmpresaPadre();
+                    if ($empresaPadre && $empresaPadre->licencia) {
+                        $empresasHijasIds = $empresaPadre->licencia->empresas->pluck('id_empresa')->toArray();
+                        $builder->whereIn('clientes.id_empresa', $empresasHijasIds);
+                    } else {
+                        // Fallback: solo sus propios clientes
+                        $builder->where('clientes.id_empresa', $user->id_empresa);
+                    }
                 } else {
                     // Empresa normal sin licencia
-                    \Log::info('Cliente Global Scope - Empresa sin licencia, ID: ' . $user->id_empresa);
                     $builder->where('clientes.id_empresa', $user->id_empresa);
                 }
             }
+
+            
         });
     }
 
