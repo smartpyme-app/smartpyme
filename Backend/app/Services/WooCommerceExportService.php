@@ -179,6 +179,13 @@ class WooCommerceExportService
             ];
         }
 
+        // Calcular precio con IVA si está habilitado
+        $precio = $producto->precio;
+        $empresa = $producto->empresa;
+        
+        if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
+            $precio = $producto->precio * (1 + ($empresa->iva / 100));
+        }
 
         $productData = [
             'name' => $producto->nombre,
@@ -187,8 +194,8 @@ class WooCommerceExportService
             'featured' => false,
             'catalog_visibility' => 'visible',
             'sku' => $producto->codigo ?: $producto->barcode,
-            'price' => (string)$producto->precio,
-            'regular_price' => (string)$producto->precio,
+            'price' => (string)$precio,
+            'regular_price' => (string)$precio,
             'manage_stock' => true,
             'stock_quantity' => $stock,
             'stock_status' => $stock > 0 ? 'instock' : 'outofstock'
