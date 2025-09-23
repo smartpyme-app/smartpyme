@@ -183,23 +183,10 @@ class WooCommerceExportService
         $precio = $producto->precio;
         $empresa = $producto->empresa;
         
-        Log::info("Calculando precio para WooCommerce Export", [
-            'producto_id' => $producto->id,
-            'precio_base' => $producto->precio,
-            'empresa_cobra_iva' => $empresa ? $empresa->cobra_iva : 'No empresa',
-            'empresa_iva' => $empresa ? $empresa->iva : 'No empresa'
-        ]);
         
         if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
             $ivaDecimal = $empresa->iva / 100;
             $precio = $producto->precio * (1 + $ivaDecimal);
-            Log::info("Precio con IVA calculado Export", [
-                'producto_id' => $producto->id,
-                'precio_original' => $producto->precio,
-                'iva_porcentaje' => $empresa->iva,
-                'iva_decimal' => $ivaDecimal,
-                'precio_final' => $precio
-            ]);
         }
         
         // Formatear el precio correctamente para WooCommerce
