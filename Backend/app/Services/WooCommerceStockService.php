@@ -255,9 +255,30 @@ class WooCommerceStockService
         $precio = $producto->precio;
         $empresa = $producto->empresa;
         
+        Log::info("Calculando precio para WooCommerce", [
+            'producto_id' => $producto->id,
+            'precio_base' => $producto->precio,
+            'empresa_cobra_iva' => $empresa ? $empresa->cobra_iva : 'No empresa',
+            'empresa_iva' => $empresa ? $empresa->iva : 'No empresa'
+        ]);
+        
         if ($empresa && $empresa->cobra_iva === 'Si' && !empty($empresa->iva) && $empresa->iva > 0) {
-            $precio = $producto->precio * (1 + ($empresa->iva / 100));
+            $ivaDecimal = $empresa->iva / 100;
+            $precio = $producto->precio * (1 + $ivaDecimal);
+            
+            Log::info("Precio con IVA calculado", [
+                'producto_id' => $producto->id,
+                'precio_original' => $producto->precio,
+                'iva_porcentaje' => $empresa->iva,
+                'iva_decimal' => $ivaDecimal,
+                'multiplicador' => (1 + $ivaDecimal),
+                'precio_final' => $precio,
+                'precio_final_formateado' => number_format($precio, 2, '.', '')
+            ]);
         }
+        
+        // Formatear el precio correctamente para WooCommerce
+        $precio = number_format($precio, 2, '.', '');
 
         $productData = [
             'name' => $producto->nombre,
@@ -266,8 +287,8 @@ class WooCommerceStockService
             'featured' => false,
             'catalog_visibility' => 'visible',
             'sku' => $producto->codigo,
-            'price' => (string)$precio,
-            'regular_price' => (string)$precio,
+            'price' => $precio,
+            'regular_price' => $precio,
             'manage_stock' => true,
             'stock_quantity' => $stock,
             'stock_status' => $stock > 0 ? 'instock' : 'outofstock'
