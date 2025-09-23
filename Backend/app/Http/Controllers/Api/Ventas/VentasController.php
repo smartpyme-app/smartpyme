@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 
 use JWTAuth;
 use Carbon\Carbon;
+use App\Services\FidelizacionCliente\ConsumoPuntosService as FidelizacionConsumoPuntosService;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
@@ -42,7 +43,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use App\Services\FidelizacionCliente\ConsumoPuntosService;
 
 class VentasController extends Controller
 {
@@ -563,17 +563,49 @@ class VentasController extends Controller
                 }
             }
 
-            // Procesar puntos de fidelización si la venta está pagada
+            // Procesar canje de puntos si se especifica
+            if ($venta->puntos_canjeados > 0 && $venta->id_cliente && $venta->estado == 'Pagada') {
+                try {
+                    $consumoPuntosService = app(FidelizacionConsumoPuntosService::class);
+                    $resultadoCanje = $consumoPuntosService->canjearPuntos(
+                        $venta->id_cliente,
+                        $venta->id_empresa,
+                        $venta->puntos_canjeados,
+                        "Canje aplicado en venta #{$venta->id}"
+                    );
+                    
+                    if (!$resultadoCanje['success']) {
+                        throw new \Exception('Error en el canje de puntos: ' . $resultadoCanje['error']);
+                    }
+                    
+                    Log::info('Canje de puntos procesado exitosamente en venta', [
+                        'venta_id' => $venta->id,
+                        'cliente_id' => $venta->id_cliente,
+                        'puntos_canjeados' => $venta->puntos_canjeados,
+                        'descuento_aplicado' => $venta->descuento_puntos
+                    ]);
+                    
+                } catch (\Exception $e) {
+                    Log::error('Error al procesar canje de puntos en venta', [
+                        'venta_id' => $venta->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Revertir la transacción si falla el canje
+                    throw $e;
+                }
+            }
+
+            // Procesar puntos de fidelización (acumulación) si la venta está pagada
             if ($venta->estado == 'Pagada' && $venta->id_cliente) {
                 try {
-                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService = app(FidelizacionConsumoPuntosService::class);
                     $consumoPuntosService->procesarAcumulacionPuntos($venta);
                 } catch (\Exception $e) {
                     Log::error('Error al procesar puntos de fidelización en facturación', [
                         'venta_id' => $venta->id,
                         'error' => $e->getMessage()
                     ]);
-                    // No se interrumpe la transacción por errores en puntos
+                    // No se interrumpe la transacción por errores en puntos de acumulación
                 }
             }
 
@@ -673,7 +705,7 @@ class VentasController extends Controller
             // Procesar puntos de fidelización si la venta está pagada
             if ($venta->id_cliente) {
                 try {
-                    $consumoPuntosService = app(ConsumoPuntosService::class);
+                    $consumoPuntosService = app(FidelizacionConsumoPuntosService::class);
                     $consumoPuntosService->procesarAcumulacionPuntos($venta);
                 } catch (\Exception $e) {
                     Log::error('Error al procesar puntos de fidelización al pagar venta', [

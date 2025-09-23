@@ -25,8 +25,6 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
   public beneficios: Beneficio[] = [];
   public loading: boolean = false;
   public activeTab: string = 'recent';
-  public showRedeemModal: boolean = false;
-  public redeemAmount: number = 0;
 
   constructor(
     private fidelizacionService: FidelizacionService,
@@ -306,21 +304,6 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
     return 'Nivel Máximo';
   }
 
-  /**
-   * Abrir modal de canje de puntos
-   */
-  openRedeemModal(): void {
-    this.showRedeemModal = true;
-    this.redeemAmount = 0;
-  }
-
-  /**
-   * Cerrar modal de canje de puntos
-   */
-  closeRedeemModal(): void {
-    this.showRedeemModal = false;
-    this.redeemAmount = 0;
-  }
 
   /**
    * Obtener el valor de un punto según el tipo de cliente
@@ -412,44 +395,7 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
     return beneficios;
   }
 
-  /**
-   * Obtener el mínimo de puntos para canje según el tipo de cliente
-   */
-  getMinimoCanje(): number {
-    if (!this.cliente?.tipo_cliente_fidelizacion) return 100;
-    return this.cliente.tipo_cliente_fidelizacion.minimo_canje || 100;
-  }
 
-  /**
-   * Obtener el máximo de puntos para canje según el tipo de cliente
-   */
-  getMaximoCanje(): number {
-    if (!this.cliente?.tipo_cliente_fidelizacion) return 1000;
-    
-    return this.cliente.tipo_cliente_fidelizacion.maximo_canje || 1000;
-  }
-
-  /**
-   * Procesar canje de puntos
-   */
-  processRedemption(): void {
-    const minimo = this.getMinimoCanje();
-    const maximo = Math.min(this.getMaximoCanje(), this.cliente?.puntos_disponibles || 0);
-    
-    if (!this.cliente || this.redeemAmount < minimo || this.redeemAmount > maximo) {
-      this.alertService.warning('Error', `Cantidad de puntos inválida. Mínimo: ${minimo}, Máximo: ${maximo}`);
-      return;
-    }
-
-    const valorDescuento = this.redeemAmount * this.getPuntoValor();
-
-    this.alertService.success('Éxito', `Has canjeado ${this.redeemAmount} puntos por $${valorDescuento.toFixed(2)} de descuento`);
-    this.closeRedeemModal();
-
-    if (this.cliente) {
-      this.loadClienteDetalle(this.cliente.id);
-    }
-  }
 
   /**
    * Ver historial de transacciones
@@ -457,6 +403,8 @@ export class ClienteDetallesFidelizacionComponent implements OnInit {
   viewTransactionHistory(): void {
     this.setActiveTab('history');
   }
+
+
 
   /**
    * Cambiar tipo de cliente

@@ -20,6 +20,7 @@ import { TiendaVentaPaquetesComponent } from './facturacion-tienda/paquetes/tien
 import { TiendaVentaCitasComponent } from './facturacion-tienda/citas/tienda-venta-citas.component';
 import { VentaDetallesComponent } from './facturacion-tienda/detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
+import { PuntosClienteVentaComponent } from '../components/puntos-cliente-venta/puntos-cliente-venta.component';
 
 @NgModule({
   imports: [
@@ -44,6 +45,7 @@ import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/met
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    PuntosClienteVentaComponent,
   ],
   exports: [
     FacturacionComponent,
@@ -54,6 +56,7 @@ import { MetodosDePagoComponent } from './facturacion-tienda/metodos-de-pago/met
     TiendaVentaCitasComponent,
     VentaDetallesComponent,
     MetodosDePagoComponent,
+    PuntosClienteVentaComponent,
   ]
 })
 export class FacturacionModule { }

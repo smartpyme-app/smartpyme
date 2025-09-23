@@ -159,9 +159,6 @@
                     <i class="fa fa-bolt me-2"></i>Acciones Rápidas
                 </h6>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" (click)="openRedeemModal()">
-                        <i class="fa fa-gift me-2"></i>Canjear Puntos
-                    </button>
                     <button class="btn btn-outline-secondary" (click)="viewTransactionHistory()">
                         <i class="fa fa-history me-2"></i>Ver Historial
                     </button>
@@ -401,36 +398,6 @@
                         </div>
                     </div>
 
-                    <!-- Límites de canje -->
-                    <div class="row mb-4">
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-0" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fa fa-arrow-up fa-lg text-success me-3"></i>
-                                        <h6 class="mb-0">Mínimo de Canje</h6>
-                                    </div>
-                                    <p class="text-muted small mb-2">Puntos mínimos para canjear:</p>
-                                    <div class="fw-bold text-primary fs-4">{{ getMinimoCanje() }} puntos</div>
-                                    <!-- <div class="small text-muted">(${{ formatNumber(getMinimoCanje() * getPuntoValor()) }}.00)</div> -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <div class="card border-0" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center mb-2">
-                                        <i class="fa fa-arrow-down fa-lg text-danger me-3"></i>
-                                        <h6 class="mb-0">Máximo de Canje</h6>
-                                    </div>
-                                    <p class="text-muted small mb-2">Puntos máximos por canje:</p>
-                                    <div class="fw-bold text-primary fs-4">{{ getMaximoCanje() }} puntos</div>
-                                    <!-- <div class="small text-muted">(${{ formatNumber(getMaximoCanje() * getPuntoValor()) }}.00)</div> -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Reglas de upgrade -->
                     <div class="row mb-4" *ngIf="getReglasUpgrade().length > 0">
@@ -498,61 +465,3 @@
         </div>
     </div>
 </div>
-
-<!-- Modal para canjear puntos -->
-<div class="modal fade" [class.show]="showRedeemModal" [style.display]="showRedeemModal ? 'block' : 'none'"
-    tabindex="-1" *ngIf="showRedeemModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content"
-            style="border-radius: 20px; border: none; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);">
-            <div class="modal-header border-0 text-center">
-                <h3 class="modal-title w-100">
-                    <i class="fa fa-gift me-2"></i>Canjear Puntos
-                </h3>
-                <p class="text-muted">Convierte tus puntos en descuentos</p>
-                <button type="button" class="btn-close position-absolute" style="top: 20px; right: 20px;"
-                    (click)="closeRedeemModal()"></button>
-            </div>
-            <div class="modal-body text-center">
-                <div class="mb-4">
-                    <div class="display-6 text-primary fw-bold">{{ formatNumber(cliente?.puntos_disponibles || 0) }}
-                    </div>
-                    <div class="text-muted">puntos disponibles</div>
-                    <div class="small text-success mt-1">
-                        = ${{ formatNumber((cliente?.puntos_disponibles || 0) * getPuntoValor()) }}.00 USD en descuentos
-                        máximos
-                    </div>
-                </div>
-
-                <input type="number" class="form-control form-control-lg text-center mb-3"
-                    placeholder="Ingresa cantidad de puntos" [min]="getMinimoCanje()"
-                    [max]="Math.min(getMaximoCanje(), cliente?.puntos_disponibles || 0)" [(ngModel)]="redeemAmount"
-                    style="border-radius: 12px; border: 2px solid #e2e8f0; font-weight: 600;">
-
-                <div class="alert alert-info" *ngIf="redeemAmount >= getMinimoCanje()">
-                    <div class="fw-bold text-success">
-                        Recibirás: ${{ formatNumber(redeemAmount * getPuntoValor()) }}.00 de descuento
-                    </div>
-                    <div class="small text-muted">
-                        Te quedarán {{ formatNumber((cliente?.puntos_disponibles || 0) - redeemAmount) }} puntos
-                    </div>
-                </div>
-
-                <div class="small text-muted mb-3">
-                    Mínimo: {{ getMinimoCanje() }} puntos (${{ formatNumber(getMinimoCanje() * getPuntoValor()) }}.00) •
-                    Máximo: {{ formatNumber(Math.min(getMaximoCanje(), cliente?.puntos_disponibles || 0)) }} puntos (${{
-                    formatNumber(Math.min(getMaximoCanje(), cliente?.puntos_disponibles || 0) * getPuntoValor()) }}.00)
-                </div>
-
-                <button class="btn btn-primary btn-lg w-100" (click)="processRedemption()"
-                    [disabled]="redeemAmount < getMinimoCanje() || redeemAmount > Math.min(getMaximoCanje(), cliente?.puntos_disponibles || 0)"
-                    style="border-radius: 12px; font-weight: 700;">
-                    <i class="fa fa-gift me-2"></i>Canjear Puntos
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Backdrop del modal -->
-<div class="modal-backdrop fade show" *ngIf="showRedeemModal"></div>
