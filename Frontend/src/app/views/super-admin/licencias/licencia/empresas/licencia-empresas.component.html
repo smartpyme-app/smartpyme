@@ -31,10 +31,10 @@
                 </tr>        
                 <tr *ngFor=" let empresa of licencia.empresas">
                     <td>{{ empresa?.nombre_empresa }}</td>
-                    <td>{{ empresa?.empresa.correo }}</td>
-                    <td>{{ empresa?.empresa.telefono }}</td>
-                    <td>{{ empresa?.empresa.dui }}</td>
-                    <td>{{ empresa?.empresa.ncr }}</td>
+                    <td>{{ empresa?.empresa?.correo }}</td>
+                    <td>{{ empresa?.empresa?.telefono }}</td>
+                    <td>{{ empresa?.empresa?.dui }}</td>
+                    <td>{{ empresa?.empresa?.ncr }}</td>
                     <td class="text-center">
                         <a (click)="delete(empresa)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
                     </td>
