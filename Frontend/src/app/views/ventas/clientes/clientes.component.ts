@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
   selector: 'app-clientes',
@@ -18,12 +19,18 @@ export class ClientesComponent implements OnInit {
     public filtros:any = {};
     public producto:any = {};
     public categorias:any = [];
+    public tieneFidelizacionHabilitada: boolean = false;
     modalRef!: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( 
+        public apiService:ApiService, 
+        private alertService:AlertService, 
+        private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
+    ){}
 
     ngOnInit() {
-
+        this.verificarFidelizacionHabilitada();
         this.loadAll();
     }
 
@@ -165,5 +172,19 @@ export class ClientesComponent implements OnInit {
         );
     }
 
+    /**
+     * Verificar si la empresa tiene fidelización habilitada
+     */
+    private verificarFidelizacionHabilitada(): void {
+        this.funcionalidadesService.verificarAcceso('fidelizacion-clientes').subscribe({
+            next: (tieneAcceso: boolean) => {
+                this.tieneFidelizacionHabilitada = tieneAcceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a fidelización:', error);
+                this.tieneFidelizacionHabilitada = false;
+            }
+        });
+    }
 
 }

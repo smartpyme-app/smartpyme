@@ -232,7 +232,7 @@ export class ClientesFidelizacionComponent implements OnInit, OnDestroy {
    * Ver detalles de lealtad del cliente
    */
   viewClienteLealtad(cliente: ClienteFidelizacion): void {
-    this.router.navigate(['/fidelizacion/cliente-detalles', cliente.id]);
+    this.router.navigate(['/cliente/vista-360/', cliente.id]);
   }
 
   /**

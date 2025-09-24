@@ -30,14 +30,13 @@ class ClienteFidelizacionController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            ini_set('pcre.jit', '0');
             
             // Validación de entrada
             $request->validate([
                 'page' => 'integer|min:1',
                 'paginate' => 'integer|min:1|max:100',
                 'search' => 'string|max:255',
-                'order' => 'in:nombre,puntos,puntos_acumulados,ultima_compra',
+                'order' => 'in:nombre,puntos,puntos_disponibles,puntos_acumulados,ultima_compra',
                 'direction' => 'in:asc,desc',
                 'tipo_cliente' => 'string|max:50',
                 'nivel' => 'integer|min:1',

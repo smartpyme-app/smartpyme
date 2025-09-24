@@ -99,6 +99,9 @@
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
+                                    <a *ngIf="tieneFidelizacionHabilitada" routerLink="/fidelizacion/cliente-detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
+                                      <i class="fa fa-fw fa-star"></i> Detalles lealtad
+                                  </a>
                                     <a *ngIf="cliente.enable && apiService.canEdit()" (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-ban"></i> Deshabilitar
                                     </a>
