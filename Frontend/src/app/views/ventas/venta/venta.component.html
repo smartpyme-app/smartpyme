@@ -179,6 +179,10 @@
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"> <b>Cuenta a terceros</b> </td>
                         <td class="text-end"><b> {{ venta.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
                     </tr>
+                    <tr *ngIf="venta.propina > 0">
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Propina:</b></td>
+                        <td class="text-end"><b>{{ venta.propina | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Total:</b></td>
                         <td class="text-end"><b>{{ venta?.total | currency:'USD':'symbol':'1.2' }}</b></td>

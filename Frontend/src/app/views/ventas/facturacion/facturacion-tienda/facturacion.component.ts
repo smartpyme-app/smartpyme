@@ -5,6 +5,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 import * as moment from 'moment';
 
@@ -38,6 +39,7 @@ export class FacturacionComponent implements OnInit {
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
+  public tieneAccesoPropina: boolean = false;
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -55,7 +57,8 @@ export class FacturacionComponent implements OnInit {
     private modalService: BsModalService,
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private funcionalidadesService: FuncionalidadesService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -65,6 +68,7 @@ export class FacturacionComponent implements OnInit {
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();
+    this.verificarAccesoPropina();
   }
 
   public loadData() {
@@ -540,6 +544,11 @@ export class FacturacionComponent implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
+    // Inicializar propina si no existe
+    if (!this.venta.propina) {
+      this.venta.propina = 0;
+    }
+    
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
@@ -548,7 +557,8 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida)
+      parseFloat(this.venta.renta_retenida) +
+      parseFloat(this.venta.propina || 0)
     ).toFixed(4);
 
 
@@ -567,11 +577,10 @@ export class FacturacionComponent implements OnInit {
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
-
   }
 
   // Cliente
-  public setCliente(cliente:any){
+    public setCliente(cliente:any){
         if(cliente.id){
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
@@ -584,98 +593,97 @@ export class FacturacionComponent implements OnInit {
         console.log(cliente);
     }
 
-  // Proyecto
-  public setProyecto(proyecto: any) {
-    if (!this.venta.id_proyecto) {
-      this.proyectos.push(proyecto);
-    }
-    this.venta.id_proyecto = proyecto.id;
-  }
-
-  public setCredito() {
-    if (this.venta.credito) {
-      this.venta.estado = 'Pendiente';
-      this.venta.condicion = 'Crédito'
-      this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
-    } else {
-      this.venta.estado = 'Pagada';
-      this.venta.condicion = 'Contado'
-      this.venta.fecha_pago = moment().format('YYYY-MM-DD');
-    }
-  }
-
-  public setConsigna() {
-    if (this.venta.consigna) {
-      this.venta.estado = 'Consigna';
-    } else {
-      this.setCredito();
-    }
-  }
-
-  public updateVenta(venta: any) {
-    this.venta = venta;
-    this.sumTotal();
-  }
-
-  public cambioMetodoDePago() {
-    if (this.venta.forma_pago != 'Multiple') {
-      this.venta.metodos_de_pago = [];
-      this.venta.efectivo = this.venta.total;
-      this.formaPagos.forEach((item: any) => {
-        item.total = null;
-      });
-    }
-    console.log(this.venta);
-  }
-
-  public setDocumento(id_documento: any) {
-    let documento = this.documentos.find((x: any) => x.id == id_documento);
-    this.venta.nombre_documento = documento.nombre;
-    this.venta.id_documento = documento.id;
-    this.venta.correlativo = documento.correlativo;
-
-    if (this.venta.nombre_documento == 'Factura de exportación') {
-      this.apiService.getAll('recintos').subscribe(
-        (recintos) => {
-          this.recintos = recintos;
-        },
-        (error) => {
-          this.alertService.error(error);
+    // Proyecto
+    public setProyecto(proyecto: any) {
+        if (!this.venta.id_proyecto) {
+            this.proyectos.push(proyecto);
         }
-      );
-      this.apiService.getAll('regimenes').subscribe(
-        (regimenes) => {
-          this.regimenes = regimenes;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-      this.apiService.getAll('incoterms').subscribe(
-        (incoterms) => {
-          this.incoterms = incoterms;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+        this.venta.id_proyecto = proyecto.id;
     }
-  }
 
-  setIncoterm() {
-    this.venta.incoterm = this.incoterms.find(
-      (item: any) => item.cod == this.venta.cod_incoterm
-    ).nombre;
-  }
+    public setCredito() {
+        if (this.venta.credito) {
+            this.venta.estado = 'Pendiente';
+            this.venta.condicion = 'Crédito'
+            this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+        } else {
+            this.venta.estado = 'Pagada';
+            this.venta.condicion = 'Contado'
+            this.venta.fecha_pago = moment().format('YYYY-MM-DD');
+        }
+    }
 
-  // Facturar
+    public setConsigna() {
+        if (this.venta.consigna) {
+            this.venta.estado = 'Consigna';
+        } else {
+            this.setCredito();
+        }
+    }
 
-  public openModalFacturar(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-md',
-      backdrop: 'static',
-    });
-  }
+    public updateVenta(venta: any) {
+        this.venta = venta;
+        this.sumTotal();
+    }
+
+    public cambioMetodoDePago() {
+        if (this.venta.forma_pago != 'Multiple') {
+            this.venta.metodos_de_pago = [];
+            this.venta.efectivo = this.venta.total;
+            this.formaPagos.forEach((item: any) => {
+                item.total = null;
+            });
+        }
+        console.log(this.venta);
+    }
+
+    public setDocumento(id_documento: any) {
+        let documento = this.documentos.find((x: any) => x.id == id_documento);
+        this.venta.nombre_documento = documento.nombre;
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
+
+        if (this.venta.nombre_documento == 'Factura de exportación') {
+            this.apiService.getAll('recintos').subscribe(
+                (recintos) => {
+                    this.recintos = recintos;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+            this.apiService.getAll('regimenes').subscribe(
+                (regimenes) => {
+                    this.regimenes = regimenes;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+            this.apiService.getAll('incoterms').subscribe(
+                (incoterms) => {
+                    this.incoterms = incoterms;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+        }
+    }
+
+    setIncoterm() {
+        this.venta.incoterm = this.incoterms.find(
+            (item: any) => item.cod == this.venta.cod_incoterm
+        ).nombre;
+    }
+
+    // Facturar
+    public openModalFacturar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: 'static',
+        });
+    }
 
   public onFacturar() {
     if (
@@ -904,5 +912,18 @@ export class FacturacionComponent implements OnInit {
 
   public isColumnEnabled(columnName: string): boolean {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
-}
+  }
+
+    public verificarAccesoPropina() {
+        this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+            (acceso) => {
+                this.tieneAccesoPropina = acceso;
+            },
+            (error) => {
+                console.error('Error al verificar acceso a propina:', error);
+                this.tieneAccesoPropina = false;
+            }
+        );
+    }
+
 }
