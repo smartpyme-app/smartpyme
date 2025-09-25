@@ -431,6 +431,7 @@ export class FacturacionComponent implements OnInit {
           detalle.precio = parseFloat(producto.precio);
           detalle.costo = parseFloat(producto.costo);
           detalle.gravada = detalle.total;
+          detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
