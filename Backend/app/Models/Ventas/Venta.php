@@ -41,6 +41,7 @@ class Venta extends Model
         'gravada',
         'cuenta_a_terceros',
         'total',
+        'propina',
         'observaciones',
         'recurrente',
         'cotizacion',
