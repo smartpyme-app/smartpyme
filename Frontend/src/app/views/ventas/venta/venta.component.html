@@ -188,6 +188,10 @@
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Abonos:</b></td>
                         <td class="text-end"><b>{{ venta?.abonos | sum:'total' | currency }}</b></td>
                     </tr>
+                    <tr *ngIf="venta.propina > 0">
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Propina:</b></td>
+                        <td class="text-end"><b>{{ venta.propina | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
                     <tr *ngIf="venta?.abonos?.length > 0">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Saldo:</b></td>
                         <td class="text-end"><b>{{ venta.total - (venta?.abonos | sum:'total') | currency }}</b></td>

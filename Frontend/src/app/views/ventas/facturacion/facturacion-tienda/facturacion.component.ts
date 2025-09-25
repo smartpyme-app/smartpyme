@@ -233,6 +233,11 @@ export class FacturacionComponent implements OnInit {
         this.loading = false;
       }
     );
+
+    if (!this.venta.propina) {
+      this.venta.propina = 0;
+    }
+
   }
 
   public cargarDocumentos() {
@@ -732,8 +737,10 @@ if (
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(this.venta.exenta) +
       parseFloat(this.venta.no_sujeta) +
-      parseFloat(this.venta.iva_percibido) -
-      parseFloat(this.venta.iva_retenido)
+      parseFloat(this.venta.iva_percibido || 0) -
+      parseFloat(this.venta.iva_retenido || 0) -
+      parseFloat(this.venta.renta_retenida || 0) +
+      parseFloat(this.venta.propina || 0)
     ).toFixed(4);
   }
 
