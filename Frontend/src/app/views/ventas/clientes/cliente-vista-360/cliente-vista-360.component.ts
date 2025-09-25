@@ -43,13 +43,7 @@ export class ClienteVista360Component implements OnInit {
   public monthlySales: any[] = [];
   public topProducts: any[] = [];
   public transactions: any[] = [];
-
-  // Mantener datos estáticos como fallback o ejemplo
-  public categories = [
-    { name: '📦 Ingredientes Básicos', percentage: 65 },
-    { name: '🌿 Condimentos Premium', percentage: 25 },
-    { name: '🥫 Conservas Gourmet', percentage: 10 }
-  ];
+  public categories: any[] = [];
 
   public visits = [
     // ... mantener datos estáticos como ejemplo
@@ -136,12 +130,12 @@ export class ClienteVista360Component implements OnInit {
       // Cargar métricas (usando los nombres correctos del servicio)
       if (data.metrics) {
         this.metrics = {
-          clv: data.metrics.totalVentas || data.metrics.clv || 0,
-          averagePurchase: data.metrics.averagePurchase || 0,
+          clv: parseFloat(data.metrics.clv) || parseFloat(data.metrics.totalVentas) || 0,
+          averagePurchase: parseFloat(data.metrics.averagePurchase) || 0,
           healthScore: data.metrics.healthScore || 0,
           recency: data.metrics.recency || 0,
           frequency: data.metrics.frequency || 0,
-          monetary: data.metrics.monetary || 0
+          monetary: parseFloat(data.metrics.monetary) || 0
         };
       }
 
@@ -191,6 +185,18 @@ export class ClienteVista360Component implements OnInit {
           reference: transaccion.reference || '',
           amount: parseFloat(transaccion.amount) || 0,
           status: transaccion.status || 'unknown'
+        }));
+      }
+
+      // Cargar categorías
+      if (data.categorias && Array.isArray(data.categorias)) {
+        this.categories = data.categorias.map((categoria: any) => ({
+          name: categoria.name || 'Sin nombre',
+          percentage: parseFloat(categoria.percentage) || 0,
+          total: parseFloat(categoria.total) || 0,
+          products: categoria.products || 0,
+          purchases: categoria.purchases || 0,
+          emoji: categoria.emoji || '📦'
         }));
       }
       

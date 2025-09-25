@@ -122,9 +122,6 @@
                         [class.active]="activeTab === 'analytics'"
                         (click)="showTab('analytics')">📊 Analisis</button>
                 <button class="tab-btn" 
-                        [class.active]="activeTab === 'products'"
-                        (click)="showTab('products')">🛍️ Productos</button>
-                <button class="tab-btn" 
                         [class.active]="activeTab === 'history'"
                         (click)="showTab('history')">📋 Historial</button>
             </div>
@@ -188,11 +185,9 @@
                         <div class="stat-label">Health Score</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Products Tab -->
-            <div *ngIf="activeTab === 'products'" class="tab-content">
-                <div class="products-section">
+                <!-- Products Section -->
+                <div class="products-section" style="margin-top: 32px;">
                     <div class="section-title">
                         <span>🏆</span> Top Productos Más Comprados
                     </div>
@@ -224,12 +219,22 @@
                         </div>
                         
                         <div class="category-item" *ngFor="let category of categories">
-                            <div class="category-name">{{ category.name }}</div>
-                            <div class="category-percentage">{{ category.percentage }}%</div>
+                            <div class="category-info">
+                                <div class="category-emoji">{{ category.emoji }}</div>
+                                <div class="category-details">
+                                    <div class="category-name">{{ category.name }}</div>
+                                    <div class="category-stats">{{ category.products }} productos • {{ category.purchases }} compras</div>
+                                </div>
+                            </div>
+                            <div class="category-metrics">
+                                <div class="category-percentage">{{ formatNumber(category.percentage) }}%</div>
+                                <div class="category-total">${{ formatNumber(category.total) }}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- History Tab -->
             <div *ngIf="activeTab === 'history'" class="tab-content">

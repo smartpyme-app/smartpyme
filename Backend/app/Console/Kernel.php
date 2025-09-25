@@ -15,7 +15,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         'App\Console\Commands\Notificaciones',
-        'App\Console\Commands\VerificarSuscripcion'
+        'App\Console\Commands\VerificarSuscripcion',
+        'App\Console\Commands\cliente360\CalcularClientes360Command',
     ];
 
     /**
@@ -31,8 +32,8 @@ class Kernel extends ConsoleKernel
         // $schedule->command('reporte:ventas-por-vendedor')
         //      ->dailyAt('23:59');
         $schedule->command('reportes:enviar')
-             ->everyFiveMinutes()
-             ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
+            ->everyFiveMinutes()
+            ->appendOutputTo(storage_path('logs/reportes-automaticos.log'));
 
         $schedule->command('metricas:empresas')
             ->dailyAt('03:00')
@@ -72,8 +73,8 @@ class Kernel extends ConsoleKernel
             );
 
         $schedule->command('empleados:actualizar-estado')
-        ->dailyAt('00:01')
-        ->appendOutputTo(storage_path('logs/empleados-estado.log'));
+            ->dailyAt('00:01')
+            ->appendOutputTo(storage_path('logs/empleados-estado.log'));
 
         // Agregar el nuevo comando de verificación de suscripciones
         $schedule->command('suscripciones:verificar')
@@ -84,42 +85,63 @@ class Kernel extends ConsoleKernel
         // ============================================
         // ACTUALIZACIÓN DE AGREGADOS CLIENTE360
         // ============================================
-        
-        // Actualizar métricas RFM cada noche a las 2 AM
-        $schedule->command('cliente360:actualizar-agregados --tipo=rfm')
-                 ->dailyAt('02:00')
-                 ->withoutOverlapping()
-                 ->runInBackground();
 
-        // Actualizar top productos cada noche a las 3 AM
-        $schedule->command('cliente360:actualizar-agregados --tipo=productos')
-                 ->dailyAt('03:00')
-                 ->withoutOverlapping()
-                 ->runInBackground();
+        // Actualizar métricas RFM masivamente cada noche a las 1:00 AM
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=rfm')
+            ->dailyAt('01:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-rfm.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
 
-        // Actualizar ventas mensuales el primer día de cada mes
-        $schedule->command('cliente360:actualizar-agregados --tipo=mensuales')
-                 ->monthlyOn(1, '04:00')
-                 ->withoutOverlapping()
-                 ->runInBackground();
+        // Actualizar top productos masivamente cada noche a las 1:15 AM
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=productos')
+            ->dailyAt('01:15')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-productos.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
 
-        // Actualizar snapshot fidelización cada 6 horas
-        $schedule->command('cliente360:actualizar-agregados --tipo=fidelizacion')
-                 ->everySixHours()
-                 ->withoutOverlapping()
-                 ->runInBackground();
+        // Actualizar categorías preferidas masivamente cada noche a las 1:30 AM
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=categorias')
+            ->dailyAt('01:30')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-categorias.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
 
-        // Actualizar actividad reciente cada hora
-        $schedule->command('cliente360:actualizar-agregados --tipo=actividad')
-                 ->hourly()
-                 ->withoutOverlapping()
-                 ->runInBackground();
+        // Actualizar ventas mensuales masivamente el primer día de cada mes a las 1:45 AM
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=mensuales')
+            ->monthlyOn(1, '01:45')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-mensuales.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
 
-        // Actualización completa semanal (domingos a las 1 AM)
-        $schedule->command('cliente360:actualizar-agregados --tipo=all --force')
-                 ->weeklyOn(0, '01:00')
-                 ->withoutOverlapping()
-                 ->runInBackground();
+        // Actualizar snapshot fidelización masivamente cada 6 horas
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=fidelizacion')
+            ->everySixHours()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-fidelizacion.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
+
+        // Actualizar actividad reciente masivamente cada 4 horas
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=actividad')
+            ->cron('0 */4 * * *')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-actividad.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
+
+        // Actualización completa masiva semanal con force (domingos a las 00:30 AM)
+        $schedule->command('cliente360:actualizar-agregados --masivo --tipo=all --force')
+            ->weeklyOn(0, '00:30')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->appendOutputTo(storage_path('logs/cliente360-completo.log'))
+            ->emailOutputOnFailure('joseespana94@gmail.com');
+
 
         $schedule->call(function () {
             Log::info('Working');

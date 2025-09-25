@@ -24,7 +24,7 @@ return new class extends Migration
             $table->integer('total_compras')->default(0);
             $table->decimal('total_gastado', 15, 2)->default(0);
             $table->decimal('porcentaje_gasto', 5, 2)->default(0);
-            $table->tinyInteger('ranking')->default(0);
+            $table->integer('ranking')->default(0);
             
             $table->timestamps();
             

@@ -10,7 +10,7 @@ class CalcularClientes360Command extends Command
 {
     protected $signature = 'cliente360:actualizar-agregados 
     {--cliente= : ID específico de cliente}
-    {--tipo= : Tipo de agregado (rfm, productos, mensuales, fidelizacion, actividad, all)}
+    {--tipo= : Tipo de agregado (rfm, productos, mensuales, fidelizacion, actividad, categorias, all)}
     {--masivo : Procesamiento masivo ultra-rápido (recomendado)}
     {--force : Forzar actualización aunque esté reciente}';
 
@@ -82,6 +82,13 @@ class CalcularClientes360Command extends Command
             $this->calcularActividadMasivo();
             $this->tiemposEjecucion['Actividad'] = microtime(true) - $inicio;
         }
+
+        if ($tipo === 'all' || $tipo === 'categorias') {
+            $inicio = microtime(true);
+            $this->info('🏷️ Calculando categorías preferidas masivas...');
+            $this->calcularCategoriasPreferidas();
+            $this->tiemposEjecucion['Categorías Preferidas'] = microtime(true) - $inicio;
+        }
     }
 
     private function mostrarResumen($tiempoTotal, $tipo)
@@ -127,6 +134,7 @@ class CalcularClientes360Command extends Command
     {
         DB::beginTransaction();
         try {
+
             // Limpiar tabla
             DB::table('cliente_metricas_rfm')->truncate();
 
@@ -201,6 +209,8 @@ class CalcularClientes360Command extends Command
     {
         DB::beginTransaction();
         try {
+
+            // Limpiar tabla
             DB::table('cliente_productos_top')->truncate();
 
             // Insertar top 10 productos por cliente
@@ -254,6 +264,8 @@ class CalcularClientes360Command extends Command
     {
         DB::beginTransaction();
         try {
+
+            // Limpiar tabla
             DB::table('cliente_ventas_mensuales')->truncate();
 
             DB::statement("
@@ -297,6 +309,8 @@ class CalcularClientes360Command extends Command
     {
         DB::beginTransaction();
         try {
+
+            // Limpiar tabla
             DB::table('cliente_fidelizacion_snapshot')->truncate();
 
             DB::statement("
@@ -364,6 +378,8 @@ class CalcularClientes360Command extends Command
     {
         DB::beginTransaction();
         try {
+
+            // Limpiar tabla
             DB::table('cliente_actividad_reciente')->truncate();
 
             // Insertar últimas 10 ventas por cliente
@@ -433,6 +449,70 @@ class CalcularClientes360Command extends Command
         }
     }
 
+    private function calcularCategoriasPreferidas()
+    {
+        DB::beginTransaction();
+        try {
+
+            // Limpiar tabla
+            DB::table('cliente_categorias_preferidas')->truncate();
+
+            // INSERT MASIVO - Calcular categorías por cliente con ranking
+            DB::statement("
+                INSERT INTO cliente_categorias_preferidas (
+                    id_cliente, id_categoria, nombre_categoria, cantidad_productos,
+                    total_compras, total_gastado, porcentaje_gasto, ranking,
+                    created_at, updated_at
+                )
+                SELECT 
+                    cliente_stats.id_cliente,
+                    cliente_stats.id_categoria,
+                    cliente_stats.nombre_categoria,
+                    cliente_stats.cantidad_productos,
+                    cliente_stats.total_compras,
+                    cliente_stats.total_gastado,
+                    ROUND((cliente_stats.total_gastado / cliente_totals.total_cliente) * 100, 2) as porcentaje_gasto,
+                    ROW_NUMBER() OVER (PARTITION BY cliente_stats.id_cliente ORDER BY cliente_stats.total_gastado DESC) as ranking,
+                    NOW(),
+                    NOW()
+                FROM (
+                    SELECT 
+                        v.id_cliente,
+                        COALESCE(p.id_categoria, 0) as id_categoria,
+                        COALESCE(cat.nombre, 'Sin Categoría') as nombre_categoria,
+                        COUNT(DISTINCT p.id) as cantidad_productos,
+                        COUNT(DISTINCT v.id) as total_compras,
+                        SUM(dv.total) as total_gastado
+                    FROM ventas v
+                    INNER JOIN detalles_venta dv ON v.id = dv.id_venta
+                    INNER JOIN productos p ON dv.id_producto = p.id
+                    LEFT JOIN categorias cat ON p.id_categoria = cat.id
+                    INNER JOIN clientes c ON v.id_cliente = c.id
+                    WHERE v.estado != 'anulada'
+                    GROUP BY v.id_cliente, p.id_categoria, cat.nombre
+                ) cliente_stats
+                INNER JOIN (
+                    SELECT 
+                        v.id_cliente,
+                        SUM(dv.total) as total_cliente
+                    FROM ventas v
+                    INNER JOIN detalles_venta dv ON v.id = dv.id_venta
+                    INNER JOIN clientes c ON v.id_cliente = c.id
+                    WHERE v.estado != 'anulada'
+                    GROUP BY v.id_cliente
+                ) cliente_totals ON cliente_stats.id_cliente = cliente_totals.id_cliente
+                WHERE cliente_stats.total_gastado > 0
+                ORDER BY cliente_stats.id_cliente, cliente_stats.total_gastado DESC
+            ");
+
+            DB::commit();
+            $this->info('   ✓ Categorías Preferidas completado');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->error('Error en Categorías Preferidas: ' . $e->getMessage());
+        }
+    }
+
     // ============================================
     // PROCESAMIENTO INDIVIDUAL (para cliente específico)
     // ============================================
@@ -478,7 +558,8 @@ class CalcularClientes360Command extends Command
             'actualizarTopProductos' => 'Top Productos',
             'actualizarVentasMensuales' => 'Ventas Mensuales',
             'actualizarSnapshotFidelizacion' => 'Snapshot Fidelización',
-            'actualizarActividadReciente' => 'Actividad Reciente'
+            'actualizarActividadReciente' => 'Actividad Reciente',
+            'actualizarCategoriasPreferidas' => 'Categorías Preferidas'
         ];
 
         if ($tipo === 'all') {
@@ -490,10 +571,72 @@ class CalcularClientes360Command extends Command
             'productos' => ['actualizarTopProductos' => 'Top Productos'],
             'mensuales' => ['actualizarVentasMensuales' => 'Ventas Mensuales'],
             'fidelizacion' => ['actualizarSnapshotFidelizacion' => 'Snapshot Fidelización'],
-            'actividad' => ['actualizarActividadReciente' => 'Actividad Reciente']
+            'actividad' => ['actualizarActividadReciente' => 'Actividad Reciente'],
+            'categorias' => ['actualizarCategoriasPreferidas' => 'Categorías Preferidas'] 
         ];
 
         return $mapeo[$tipo] ?? $todosLosMetodos;
+    }
+
+    // ============================================
+    // ACTUALIZAR CATEGORÍAS PREFERIDAS (Individual)
+    // ============================================
+    private function actualizarCategoriasPreferidas($idCliente, $force)
+    {
+        // Calcular el total gastado por el cliente para porcentajes
+        $totalCliente = DB::table('ventas')
+            ->join('detalles_venta', 'ventas.id', '=', 'detalles_venta.id_venta')
+            ->where('ventas.id_cliente', $idCliente)
+            ->where('ventas.estado', '!=', 'anulada')
+            ->sum('detalles_venta.total');
+
+        if ($totalCliente == 0) {
+            return; // Cliente sin compras
+        }
+
+        // Obtener estadísticas por categoría
+        $categorias = DB::table('ventas as v')
+            ->join('detalles_venta as dv', 'v.id', '=', 'dv.id_venta')
+            ->join('productos as p', 'dv.id_producto', '=', 'p.id')
+            ->leftJoin('categorias as cat', 'p.id_categoria', '=', 'cat.id')
+            ->where('v.id_cliente', $idCliente)
+            ->where('v.estado', '!=', 'anulada')
+            ->select(
+                DB::raw('COALESCE(p.id_categoria, 0) as id_categoria'),
+                DB::raw('COALESCE(cat.nombre, "Sin Categoría") as nombre_categoria'),
+                DB::raw('COUNT(DISTINCT p.id) as cantidad_productos'),
+                DB::raw('COUNT(DISTINCT v.id) as total_compras'),
+                DB::raw('SUM(dv.total) as total_gastado')
+            )
+            ->groupBy('p.id_categoria', 'cat.nombre')
+            ->orderBy('total_gastado', 'desc')
+            ->get();
+
+        // Limpiar categorías anteriores del cliente
+        DB::table('cliente_categorias_preferidas')
+            ->where('id_cliente', $idCliente)
+            ->delete();
+
+        // Insertar nuevas categorías con ranking
+        $ranking = 1;
+        foreach ($categorias as $categoria) {
+            $porcentajeGasto = ($categoria->total_gastado / $totalCliente) * 100;
+
+            DB::table('cliente_categorias_preferidas')->insert([
+                'id_cliente' => $idCliente,
+                'id_categoria' => $categoria->id_categoria == 0 ? null : $categoria->id_categoria,
+                'nombre_categoria' => $categoria->nombre_categoria,
+                'cantidad_productos' => $categoria->cantidad_productos,
+                'total_compras' => $categoria->total_compras,
+                'total_gastado' => $categoria->total_gastado,
+                'porcentaje_gasto' => round($porcentajeGasto, 2),
+                'ranking' => $ranking,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            $ranking++;
+        }
     }
 
     // ============================================
