@@ -3,9 +3,6 @@
 namespace App\Services\Cliente360;
 
 use App\Models\Ventas\Clientes\Cliente;
-use App\Models\Ventas\Venta;
-use App\Models\FidelizacionClientes\PuntosCliente;
-use App\Models\FidelizacionClientes\TransaccionPuntos;
 use Illuminate\Support\Facades\DB;
 
 class Cliente360Service
@@ -27,7 +24,7 @@ class Cliente360Service
             return null;
         }
 
-        // Usar tablas agregadas en lugar de calcular en tiempo real
+        // Usar tablas agregadas - SIN FALLBACKS PESADOS
         $ventasMetrics = $this->getVentasMetrics($id_cliente);
         $fidelizacionData = $this->getFidelizacionData($id_cliente);
         $transacciones = $this->getTransacciones($id_cliente);
@@ -47,24 +44,16 @@ class Cliente360Service
     }
 
     /**
-     * Obtener métricas de ventas desde tabla agregada (OPTIMIZADO)
+     * Obtener métricas de ventas desde tabla agregada (SIN FALLBACK PESADO)
      */
     private function getVentasMetrics($id_cliente)
     {
-        // Consulta simple a tabla agregada
         $metricas = DB::table('cliente_metricas_rfm')
             ->where('id_cliente', $id_cliente)
             ->first();
 
         if (!$metricas) {
-            // Si no existe, calcular y guardar
-            return $this->calcularYGuardarMetricasRFM($id_cliente);
-        }
-
-        // Verificar si los datos están desactualizados (más de 2 días para ser menos agresivo)
-        $fechaCalculo = \Carbon\Carbon::parse($metricas->fecha_calculo);
-        if ($fechaCalculo->diffInHours(now()) > 48) {
-            return $this->calcularYGuardarMetricasRFM($id_cliente);
+            return $this->getEmptyMetrics();
         }
 
         return [
@@ -81,7 +70,7 @@ class Cliente360Service
     }
 
     /**
-     * Obtener datos de fidelización desde snapshot (OPTIMIZADO)
+     * Obtener datos de fidelización desde snapshot (SIN FALLBACK PESADO)
      */
     private function getFidelizacionData($id_cliente)
     {
@@ -90,13 +79,7 @@ class Cliente360Service
             ->first();
 
         if (!$snapshot) {
-            return $this->calcularYGuardarSnapshotFidelizacion($id_cliente);
-        }
-
-        // Verificar si los datos están desactualizados (más de 1 día)
-        $fechaSnapshot = \Carbon\Carbon::parse($snapshot->fecha_snapshot);
-        if ($fechaSnapshot->diffInHours(now()) > 24) {
-            return $this->calcularYGuardarSnapshotFidelizacion($id_cliente);
+            return $this->getEmptyFidelizacion();
         }
 
         return [
@@ -117,11 +100,10 @@ class Cliente360Service
     }
 
     /**
-     * Obtener transacciones desde caché (OPTIMIZADO)
+     * Obtener transacciones desde caché (SIN FALLBACK PESADO)
      */
     private function getTransacciones($id_cliente)
     {
-        // Leer directamente de la tabla de actividad reciente
         $actividades = DB::table('cliente_actividad_reciente')
             ->where('id_cliente', $id_cliente)
             ->orderBy('fecha_actividad', 'desc')
@@ -129,8 +111,7 @@ class Cliente360Service
             ->get();
 
         if ($actividades->isEmpty()) {
-            // Si no hay caché, construir y guardar
-            return $this->construirYGuardarActividadReciente($id_cliente);
+            return collect([]); // Retorna colección vacía
         }
 
         return $actividades->map(function ($actividad) {
@@ -148,7 +129,7 @@ class Cliente360Service
     }
 
     /**
-     * Obtener top productos desde tabla agregada (OPTIMIZADO)
+     * Obtener top productos desde tabla agregada (SIN FALLBACK PESADO)
      */
     private function getTopProducts($id_cliente)
     {
@@ -169,7 +150,7 @@ class Cliente360Service
             ->get();
 
         if ($topProducts->isEmpty()) {
-            return $this->calcularYGuardarTopProductos($id_cliente);
+            return collect([]); // Retorna colección vacía
         }
 
         return $topProducts->map(function ($producto) {
@@ -185,7 +166,7 @@ class Cliente360Service
     }
 
     /**
-     * Obtener ventas mensuales desde tabla agregada (OPTIMIZADO)
+     * Obtener ventas mensuales desde tabla agregada (SIN FALLBACK PESADO)
      */
     private function getVentasMensuales($id_cliente)
     {
@@ -197,22 +178,13 @@ class Cliente360Service
             ->get();
 
         if ($ventasMensuales->isEmpty()) {
-            return $this->calcularYGuardarVentasMensuales($id_cliente);
+            return $this->getEmptyVentasMensuales(); // Retorna 12 meses con datos en 0
         }
 
         $meses = [
-            1 => 'Ene',
-            2 => 'Feb',
-            3 => 'Mar',
-            4 => 'Abr',
-            5 => 'May',
-            6 => 'Jun',
-            7 => 'Jul',
-            8 => 'Ago',
-            9 => 'Sep',
-            10 => 'Oct',
-            11 => 'Nov',
-            12 => 'Dic'
+            1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+            5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic'
         ];
 
         $ventasPorMes = [];
@@ -238,6 +210,9 @@ class Cliente360Service
         return $ventasPorMes;
     }
 
+    /**
+     * Obtener categorías preferidas desde tabla agregada (SIN FALLBACK PESADO)
+     */
     private function getCategoriasPreferidas($id_cliente)
     {
         $categorias = DB::table('cliente_categorias_preferidas')
@@ -247,7 +222,7 @@ class Cliente360Service
             ->get();
 
         if ($categorias->isEmpty()) {
-            return $this->calcularYGuardarCategoriasPreferidas($id_cliente);
+            return collect([]); // Retorna colección vacía
         }
 
         return $categorias->map(function ($categoria) {
@@ -264,473 +239,65 @@ class Cliente360Service
     }
 
     // ============================================
-    // MÉTODOS DE CÁLCULO Y GUARDADO (Fallback)
+    // MÉTODOS PARA RETORNAR DATOS VACÍOS (SIN CÁLCULOS PESADOS)
     // ============================================
 
-    private function calcularYGuardarMetricasRFM($id_cliente)
+    private function getEmptyMetrics()
     {
-        $ventas = Venta::where('id_cliente', $id_cliente)
-            ->where('estado', '!=', 'anulada')
-            ->get();
-
-        $totalVentas = $ventas->sum('total');
-        $cantidadVentas = $ventas->count();
-        $promedioCompra = $cantidadVentas > 0 ? $totalVentas / $cantidadVentas : 0;
-
-        $ultimaVenta = $ventas->sortByDesc('fecha')->first();
-        $fechaUltimaCompra = null;
-        $diasUltimaCompra = null;
-
-        if ($ultimaVenta) {
-            $fechaUltimaCompra = $ultimaVenta->fecha;
-            $diasUltimaCompra = now()->diffInDays($fechaUltimaCompra);
-        }
-
-        $fechaHace12Meses = now()->subMonths(12);
-        $fechaHace6Meses = now()->subMonths(6);
-        $fechaHace3Meses = now()->subMonths(3);
-
-        $compras12Meses = $ventas->where('fecha', '>=', $fechaHace12Meses)->count();
-        $compras6Meses = $ventas->where('fecha', '>=', $fechaHace6Meses)->count();
-        $compras3Meses = $ventas->where('fecha', '>=', $fechaHace3Meses)->count();
-
-        $gasto12Meses = $ventas->where('fecha', '>=', $fechaHace12Meses)->sum('total');
-        $gasto6Meses = $ventas->where('fecha', '>=', $fechaHace6Meses)->sum('total');
-        $gasto3Meses = $ventas->where('fecha', '>=', $fechaHace3Meses)->sum('total');
-
-        // Calcular scores
-        $recencyScore = $diasUltimaCompra !== null ? max(0, 100 - ($diasUltimaCompra * 2)) : 0;
-        $frequencyScore = min(100, $compras12Meses * 10);
-        $monetaryScore = min(100, ($gasto12Meses / 1000) * 10);
-        $healthScore = round(($recencyScore * 0.5) + ($frequencyScore * 0.3) + ($monetaryScore * 0.2));
-
-        // Determinar segmento RFM
-        $segmento = $this->determinarSegmentoRFM($recencyScore, $frequencyScore, $monetaryScore);
-
-        // Guardar en tabla agregada
-        DB::table('cliente_metricas_rfm')->updateOrInsert(
-            ['id_cliente' => $id_cliente],
-            [
-                'fecha_ultima_compra' => $fechaUltimaCompra,
-                'dias_ultima_compra' => $diasUltimaCompra,
-                'total_compras' => $cantidadVentas,
-                'compras_ultimos_12_meses' => $compras12Meses,
-                'compras_ultimos_6_meses' => $compras6Meses,
-                'compras_ultimos_3_meses' => $compras3Meses,
-                'total_gastado' => $totalVentas,
-                'gasto_ultimos_12_meses' => $gasto12Meses,
-                'gasto_ultimos_6_meses' => $gasto6Meses,
-                'gasto_ultimos_3_meses' => $gasto3Meses,
-                'ticket_promedio' => $promedioCompra,
-                'recency_score' => $recencyScore,
-                'frequency_score' => $frequencyScore,
-                'monetary_score' => $monetaryScore,
-                'health_score' => $healthScore,
-                'segmento_rfm' => $segmento,
-                'fecha_calculo' => now(),
-                'updated_at' => now()
-            ]
-        );
-
         return [
-            'clv' => $totalVentas,
-            'averagePurchase' => round($promedioCompra, 2),
-            'healthScore' => $healthScore,
-            'recency' => $diasUltimaCompra,
-            'frequency' => $compras12Meses,
-            'monetary' => round($gasto12Meses, 2),
-            'totalVentas' => $totalVentas,
-            'cantidadVentas' => $cantidadVentas,
-            'segmento' => $segmento
+            'clv' => 0,
+            'averagePurchase' => 0,
+            'healthScore' => 0,
+            'recency' => null,
+            'frequency' => 0,
+            'monetary' => 0,
+            'totalVentas' => 0,
+            'cantidadVentas' => 0,
+            'segmento' => 'New'
         ];
     }
 
-    private function determinarSegmentoRFM($recencyScore, $frequencyScore, $monetaryScore)
+    private function getEmptyFidelizacion()
     {
-        $avgScore = ($recencyScore + $frequencyScore + $monetaryScore) / 3;
-
-        if ($recencyScore >= 80 && $frequencyScore >= 80 && $monetaryScore >= 80) {
-            return 'Champions';
-        } elseif ($recencyScore >= 60 && $frequencyScore >= 60) {
-            return 'Loyal';
-        } elseif ($recencyScore >= 60 && $monetaryScore >= 60) {
-            return 'Big Spenders';
-        } elseif ($recencyScore < 40 && $frequencyScore >= 60) {
-            return 'At Risk';
-        } elseif ($recencyScore < 40 && $frequencyScore < 40) {
-            return 'Lost';
-        } elseif ($avgScore >= 50) {
-            return 'Potential';
-        } else {
-            return 'New';
-        }
-    }
-
-    private function calcularYGuardarSnapshotFidelizacion($id_cliente)
-    {
-        $puntosCliente = PuntosCliente::where('id_cliente', $id_cliente)->first();
-
-        if (!$puntosCliente) {
-            return [
-                'balance' => 0,
-                'redeemed' => 0,
-                'saved' => 0,
-                'puntosDisponibles' => 0,
-                'puntosTotalesGanados' => 0,
-                'puntosTotalesCanjeados' => 0,
-                'fechaUltimaActividad' => null,
-                'tasaRedencion' => 0,
-                'actividadReciente' => [
-                    'transacciones_30_dias' => 0,
-                    'puntos_ganados_30_dias' => 0,
-                    'puntos_canjeados_30_dias' => 0
-                ]
-            ];
-        }
-
-        // Calcular métricas de últimos 30 días
-        $hace30Dias = now()->subDays(30);
-        $transacciones30Dias = TransaccionPuntos::where('id_cliente', $id_cliente)
-            ->where('created_at', '>=', $hace30Dias)
-            ->get();
-
-        $puntosGanados30 = $transacciones30Dias->where('tipo', 'ganancia')->sum('puntos');
-        $puntosCanjeados30 = $transacciones30Dias->where('tipo', 'canje')->sum('puntos');
-
-        $ultimaGanancia = DB::table('transacciones_puntos')
-            ->where('id_cliente', $id_cliente)
-            ->where('tipo', 'ganancia')
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
-
-        $ultimoCanje = DB::table('transacciones_puntos')
-            ->where('id_cliente', $id_cliente)
-            ->where('tipo', 'canje')
-            ->orderBy('created_at', 'desc')
-            ->value('created_at');
-
-        $tasaRedencion = $puntosCliente->puntos_totales_ganados > 0
-            ? ($puntosCliente->puntos_totales_canjeados / $puntosCliente->puntos_totales_ganados) * 100
-            : 0;
-
-        DB::table('cliente_fidelizacion_snapshot')->updateOrInsert(
-            ['id_cliente' => $id_cliente],
-            [
-                'puntos_disponibles' => $puntosCliente->puntos_disponibles ?? 0,
-                'puntos_totales_ganados' => $puntosCliente->puntos_totales_ganados ?? 0,
-                'puntos_totales_canjeados' => $puntosCliente->puntos_totales_canjeados ?? 0,
-                'valor_puntos_canjeados' => ($puntosCliente->puntos_totales_canjeados ?? 0) * 0.1,
-                'transacciones_ultimos_30_dias' => $transacciones30Dias->count(),
-                'puntos_ganados_ultimos_30_dias' => $puntosGanados30,
-                'puntos_canjeados_ultimos_30_dias' => $puntosCanjeados30,
-                'fecha_ultima_ganancia' => $ultimaGanancia,
-                'fecha_ultimo_canje' => $ultimoCanje,
-                'tasa_redencion' => round($tasaRedencion, 2),
-                'fecha_snapshot' => now(),
-                'updated_at' => now()
-            ]
-        );
-
         return [
-            'balance' => $puntosCliente->puntos_disponibles,
-            'redeemed' => $puntosCliente->puntos_totales_canjeados,
-            'saved' => round(($puntosCliente->puntos_totales_canjeados ?? 0) * 0.1, 2),
-            'puntosDisponibles' => $puntosCliente->puntos_disponibles,
-            'puntosTotalesGanados' => $puntosCliente->puntos_totales_ganados,
-            'puntosTotalesCanjeados' => $puntosCliente->puntos_totales_canjeados,
-            'fechaUltimaActividad' => $ultimaGanancia,
-            'tasaRedencion' => round($tasaRedencion, 2),
+            'balance' => 0,
+            'redeemed' => 0,
+            'saved' => 0,
+            'puntosDisponibles' => 0,
+            'puntosTotalesGanados' => 0,
+            'puntosTotalesCanjeados' => 0,
+            'fechaUltimaActividad' => null,
+            'tasaRedencion' => 0,
             'actividadReciente' => [
-                'transacciones_30_dias' => $transacciones30Dias->count(),
-                'puntos_ganados_30_dias' => $puntosGanados30,
-                'puntos_canjeados_30_dias' => $puntosCanjeados30
+                'transacciones_30_dias' => 0,
+                'puntos_ganados_30_dias' => 0,
+                'puntos_canjeados_30_dias' => 0
             ]
         ];
     }
 
-    private function calcularYGuardarTopProductos($id_cliente)
+    private function getEmptyVentasMensuales()
     {
-        // Usar la misma columna que el comando: 'precio' no 'precio_unitario'
-        $topProducts = DB::table('detalles_venta as dv')
-            ->join('ventas as v', 'dv.id_venta', '=', 'v.id')
-            ->join('clientes as c', 'v.id_cliente', '=', 'c.id')  // Agregado para consistencia
-            ->join('productos as p', 'dv.id_producto', '=', 'p.id')  // Agregado para consistencia
-            ->where('v.id_cliente', $id_cliente)
-            ->where('v.estado', '!=', 'anulada')
-            ->select(
-                'dv.id_producto',
-                'p.nombre',  // Obtener nombre directamente
-                DB::raw('SUM(dv.cantidad) as total_cantidad'),
-                DB::raw('SUM(dv.total) as total_monto'),
-                DB::raw('COUNT(DISTINCT v.id) as total_compras'),
-                DB::raw('MAX(v.fecha) as ultima_compra'),
-                DB::raw('AVG(dv.precio) as precio_promedio')  // Cambiado de precio_unitario a precio
-            )
-            ->groupBy('dv.id_producto', 'p.nombre')
-            ->orderBy('total_cantidad', 'desc')
-            ->limit(10)
-            ->get();
+        $meses = [
+            1 => 'Ene', 2 => 'Feb', 3 => 'Mar', 4 => 'Abr',
+            5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Ago',
+            9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dic'
+        ];
 
-        // Limpiar productos anteriores del cliente
-        DB::table('cliente_productos_top')
-            ->where('id_cliente', $id_cliente)
-            ->delete();
+        $ventasPorMes = [];
 
-        // Insertar nuevos top productos
-        $ranking = 1;
-        $productos = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $fecha = now()->subMonths($i);
+            $mes = $fecha->month;
 
-        foreach ($topProducts as $producto) {
-            $diasUltimaCompra = $producto->ultima_compra
-                ? now()->diffInDays(\Carbon\Carbon::parse($producto->ultima_compra))
-                : null;
-
-            DB::table('cliente_productos_top')->insert([
-                'id_cliente' => $id_cliente,
-                'id_producto' => $producto->id_producto,
-                'total_cantidad' => $producto->total_cantidad,
-                'total_monto' => $producto->total_monto,
-                'total_compras' => $producto->total_compras,
-                'ultima_compra' => $producto->ultima_compra,
-                'dias_ultima_compra' => $diasUltimaCompra,
-                'precio_promedio' => $producto->precio_promedio ?? 0,
-                'ranking' => $ranking,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            // Agregar al array de respuesta
-            $productos[] = [
-                'rank' => $ranking,
-                'emoji' => '📦',
-                'name' => $producto->nombre,  // Ya tenemos el nombre
-                'purchases' => $producto->total_compras,
-                'lastPurchase' => $diasUltimaCompra ? "hace {$diasUltimaCompra} días" : 'Nunca',
-                'total' => $producto->total_monto
+            $ventasPorMes[] = [
+                'month' => $meses[$mes],
+                'amount' => 0,
+                'height' => 0,
+                'high' => false
             ];
-
-            $ranking++;
         }
 
-        return collect($productos);
-    }
-
-    private function calcularYGuardarVentasMensuales($id_cliente)
-    {
-        // Agregar validación de fechas como en el comando
-        $ventasMensuales = DB::table('ventas')
-            ->where('id_cliente', $id_cliente)
-            ->where('estado', '!=', 'anulada')
-            ->where('fecha', '>=', now()->subMonths(24))
-            ->where('fecha', '>=', '1900-01-01')  // Validación agregada
-            ->where('fecha', '<=', now())        // Validación agregada
-            ->select(
-                DB::raw('YEAR(fecha) as año'),
-                DB::raw('MONTH(fecha) as mes'),
-                DB::raw('COUNT(*) as cantidad_ventas'),
-                DB::raw('SUM(total) as total_ventas'),
-                DB::raw('AVG(total) as ticket_promedio')
-            )
-            ->groupBy(DB::raw('YEAR(fecha), MONTH(fecha)'))
-            ->orderBy(DB::raw('YEAR(fecha), MONTH(fecha)'))  // Ordenar correctamente
-            ->get();
-
-        if ($ventasMensuales->isEmpty()) {
-            return [];
-        }
-
-        $maxVenta = $ventasMensuales->max('total_ventas');
-        $umbralAlto = $maxVenta * 0.8;
-
-        // Limpiar datos anteriores
-        DB::table('cliente_ventas_mensuales')
-            ->where('id_cliente', $id_cliente)
-            ->delete();
-
-        // Insertar datos mensuales con cálculo mejorado de variación
-        $ventasArray = $ventasMensuales->values();
-
-        foreach ($ventasArray as $index => $venta) {
-            $variacion = null;
-            if ($index > 0) {
-                $ventaAnterior = $ventasArray[$index - 1];
-                if ($ventaAnterior->total_ventas > 0) {
-                    $variacion = (($venta->total_ventas - $ventaAnterior->total_ventas) / $ventaAnterior->total_ventas) * 100;
-                }
-            }
-
-            // Calcular productos únicos e items totales como en el comando
-            $productosUnicos = DB::table('detalles_venta as dv')
-                ->join('ventas as v', 'dv.id_venta', '=', 'v.id')
-                ->join('productos as p', 'dv.id_producto', '=', 'p.id')
-                ->where('v.id_cliente', $id_cliente)
-                ->where('v.estado', '!=', 'anulada')
-                ->whereYear('v.fecha', $venta->año)
-                ->whereMonth('v.fecha', $venta->mes)
-                ->where('v.fecha', '>=', '1900-01-01')
-                ->where('v.fecha', '<=', now())
-                ->distinct('dv.id_producto')
-                ->count('dv.id_producto');
-
-            $itemsTotales = DB::table('detalles_venta as dv')
-                ->join('ventas as v', 'dv.id_venta', '=', 'v.id')
-                ->join('productos as p', 'dv.id_producto', '=', 'p.id')
-                ->where('v.id_cliente', $id_cliente)
-                ->where('v.estado', '!=', 'anulada')
-                ->whereYear('v.fecha', $venta->año)
-                ->whereMonth('v.fecha', $venta->mes)
-                ->where('v.fecha', '>=', '1900-01-01')
-                ->where('v.fecha', '<=', now())
-                ->sum('dv.cantidad');
-
-            DB::table('cliente_ventas_mensuales')->insert([
-                'id_cliente' => $id_cliente,
-                'año' => $venta->año,
-                'mes' => $venta->mes,
-                'cantidad_ventas' => $venta->cantidad_ventas,
-                'total_ventas' => $venta->total_ventas,
-                'ticket_promedio' => $venta->ticket_promedio,
-                'productos_unicos' => $productosUnicos,
-                'items_totales' => $itemsTotales,
-                'es_mes_alto' => $venta->total_ventas >= $umbralAlto,
-                'variacion_mes_anterior' => $variacion,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
-
-        return $this->getVentasMensuales($id_cliente);
-    }
-
-    private function construirYGuardarActividadReciente($id_cliente)
-    {
-        // Limpiar actividades anteriores
-        DB::table('cliente_actividad_reciente')
-            ->where('id_cliente', $id_cliente)
-            ->delete();
-
-        // Obtener últimas ventas con validación de fechas como en el comando
-        $ventas = Venta::where('id_cliente', $id_cliente)
-            ->where('estado', '!=', 'anulada')
-            ->where('fecha', '>=', '1900-01-01')  // Validación agregada
-            ->where('fecha', '<=', now())        // Validación agregada
-            ->orderBy('fecha', 'desc')
-            ->limit(10)
-            ->get();
-
-        foreach ($ventas as $venta) {
-            DB::table('cliente_actividad_reciente')->insert([
-                'id_cliente' => $id_cliente,
-                'tipo_actividad' => 'venta',
-                'id_referencia' => $venta->id,
-                'titulo' => 'Compra en tienda',
-                'descripcion' => 'Factura #' . $venta->correlativo,
-                'monto' => $venta->total,
-                'icono' => '$',
-                'estado' => 'completado',
-                'fecha_actividad' => $venta->fecha,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
-
-        // Obtener últimas transacciones de puntos
-        $transacciones = TransaccionPuntos::where('id_cliente', $id_cliente)
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        foreach ($transacciones as $transaccion) {
-            DB::table('cliente_actividad_reciente')->insert([
-                'id_cliente' => $id_cliente,
-                'tipo_actividad' => $transaccion->tipo === 'ganancia' ? 'puntos_ganados' : 'puntos_canjeados',
-                'id_referencia' => $transaccion->id,
-                'titulo' => $transaccion->tipo === 'ganancia' ? 'Ganancia de puntos' : 'Canje de puntos',
-                'descripcion' => $transaccion->descripcion,
-                'puntos' => $transaccion->puntos,
-                'icono' => $transaccion->tipo === 'ganancia' ? '🎁' : '💸',
-                'estado' => $transaccion->tipo === 'ganancia' ? 'earned' : 'redeemed',
-                'fecha_actividad' => $transaccion->created_at,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
-
-        return $this->getTransacciones($id_cliente);
-    }
-
-    private function calcularYGuardarCategoriasPreferidas($id_cliente)
-    {
-        // Calcular el total gastado por el cliente para porcentajes
-        $totalCliente = DB::table('ventas')
-            ->join('detalles_venta', 'ventas.id', '=', 'detalles_venta.id_venta')
-            ->where('ventas.id_cliente', $id_cliente)
-            ->where('ventas.estado', '!=', 'anulada')
-            ->sum('detalles_venta.total');
-
-        if ($totalCliente == 0) {
-            return collect([]); // Cliente sin compras
-        }
-
-        // Obtener estadísticas por categoría
-        $categorias = DB::table('ventas as v')
-            ->join('detalles_venta as dv', 'v.id', '=', 'dv.id_venta')
-            ->join('productos as p', 'dv.id_producto', '=', 'p.id')
-            ->leftJoin('categorias as cat', 'p.id_categoria', '=', 'cat.id')
-            ->where('v.id_cliente', $id_cliente)
-            ->where('v.estado', '!=', 'anulada')
-            ->select(
-                DB::raw('COALESCE(p.id_categoria, 0) as id_categoria'),
-                DB::raw('COALESCE(cat.nombre, "Sin Categoría") as nombre_categoria'),
-                DB::raw('COUNT(DISTINCT p.id) as cantidad_productos'),
-                DB::raw('COUNT(DISTINCT v.id) as total_compras'),
-                DB::raw('SUM(dv.total) as total_gastado')
-            )
-            ->groupBy('p.id_categoria', 'cat.nombre')
-            ->orderBy('total_gastado', 'desc')
-            ->get();
-
-        // Limpiar categorías anteriores del cliente
-        DB::table('cliente_categorias_preferidas')
-            ->where('id_cliente', $id_cliente)
-            ->delete();
-
-        // Insertar nuevas categorías con ranking
-        $ranking = 1;
-        $resultado = [];
-
-        foreach ($categorias as $categoria) {
-            $porcentajeGasto = ($categoria->total_gastado / $totalCliente) * 100;
-
-            DB::table('cliente_categorias_preferidas')->insert([
-                'id_cliente' => $id_cliente,
-                'id_categoria' => $categoria->id_categoria == 0 ? null : $categoria->id_categoria,
-                'nombre_categoria' => $categoria->nombre_categoria,
-                'cantidad_productos' => $categoria->cantidad_productos,
-                'total_compras' => $categoria->total_compras,
-                'total_gastado' => $categoria->total_gastado,
-                'porcentaje_gasto' => round($porcentajeGasto, 2),
-                'ranking' => $ranking,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
-            // Agregar al resultado (solo top 5)
-            if ($ranking <= 5) {
-                $resultado[] = [
-                    'rank' => $ranking,
-                    'name' => $categoria->nombre_categoria,
-                    'percentage' => round($porcentajeGasto, 2),
-                    'total' => $categoria->total_gastado,
-                    'products' => $categoria->cantidad_productos,
-                    'purchases' => $categoria->total_compras,
-                    'emoji' => '🏷️'
-                ];
-            }
-
-            $ranking++;
-        }
-
-        return collect($resultado);
+        return $ventasPorMes;
     }
 }

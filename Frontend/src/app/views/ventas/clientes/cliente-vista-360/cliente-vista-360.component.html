@@ -187,12 +187,12 @@
                 </div>
 
                 <!-- Products Section -->
-                <div class="products-section" style="margin-top: 32px;">
+                <div class="products-section" style="margin-top: 32px;" *ngIf="topProducts.length > 0">
                     <div class="section-title">
                         <span>🏆</span> Top Productos Más Comprados
                     </div>
                     
-                    <div class="products-grid" *ngIf="topProducts.length > 0; else noProducts">
+                    <div class="products-grid">
                         <div class="product-item" *ngFor="let product of topProducts">
                             <div class="product-rank">{{ product.rank }}</div>
                             <div class="product-emoji">{{ product.emoji }}</div>
@@ -206,14 +206,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <ng-template #noProducts>
-                        <div class="no-data-message">
-                            <p>No hay datos de productos disponibles para este cliente.</p>
-                        </div>
-                    </ng-template>
 
-                    <div class="categories-section">
+                    <div class="categories-section" *ngIf="categories.length > 0">
                         <div class="section-title">
                             <span>📊</span> Distribución por Categorías
                         </div>
