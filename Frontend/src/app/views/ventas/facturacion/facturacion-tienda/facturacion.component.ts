@@ -423,13 +423,13 @@ export class FacturacionComponent implements OnInit {
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
       this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
-        if (producto && producto.length > 0) {
+        if (producto) {
           let detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
-          detalle.descripcion = producto[0].nombre;
-          detalle.id_producto = producto[0].id;
-          detalle.precio = parseFloat(producto[0].precio);
-          detalle.costo = parseFloat(producto[0].costo);
+          detalle.descripcion = producto.nombre;
+          detalle.id_producto = producto.id;
+          detalle.precio = parseFloat(producto.precio);
+          detalle.costo = parseFloat(producto.costo);
           detalle.gravada = detalle.total;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
