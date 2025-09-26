@@ -136,7 +136,7 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_metricas_rfm')->truncate();
 
-            // INSERT MASIVO - Todos los clientes en una query
+            // INSERT MASIVO - Solo clientes de empresas con fidelización habilitada
             DB::statement("
                 INSERT INTO cliente_metricas_rfm (
                     id_cliente, fecha_ultima_compra, dias_ultima_compra,
@@ -172,7 +172,11 @@ class CalcularClientes360Command extends Command
                     NOW() as updated_at
                 FROM ventas v
                 INNER JOIN clientes c ON v.id_cliente = c.id
+                INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                 WHERE v.estado != 'anulada'
+                  AND f.slug = 'fidelizacion-clientes'
+                  AND ef.activo = true
                 GROUP BY v.id_cliente
             ");
 
@@ -205,7 +209,7 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_productos_top')->truncate();
 
-            // Insertar top 10 productos por cliente
+            // Insertar top 10 productos por cliente (solo empresas con fidelización)
             DB::statement("
                 INSERT INTO cliente_productos_top (
                     id_cliente, id_producto, total_cantidad, total_monto, total_compras,
@@ -238,7 +242,11 @@ class CalcularClientes360Command extends Command
                     INNER JOIN ventas v ON dv.id_venta = v.id
                     INNER JOIN clientes c ON v.id_cliente = c.id
                     INNER JOIN productos p ON dv.id_producto = p.id
+                    INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                    INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                     WHERE v.estado != 'anulada'
+                      AND f.slug = 'fidelizacion-clientes'
+                      AND ef.activo = true
                     GROUP BY v.id_cliente, dv.id_producto
                 ) ranked
                 WHERE ranking <= 10
@@ -275,7 +283,11 @@ class CalcularClientes360Command extends Command
                     NOW()
                 FROM ventas v
                 INNER JOIN clientes c ON v.id_cliente = c.id
+                INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                 WHERE v.estado != 'anulada'
+                  AND f.slug = 'fidelizacion-clientes'
+                  AND ef.activo = true
                   AND v.fecha >= DATE_SUB(NOW(), INTERVAL 24 MONTH)
                   AND v.fecha >= '1900-01-01'
                   AND v.fecha <= NOW()
@@ -322,6 +334,8 @@ class CalcularClientes360Command extends Command
                     NOW()
                 FROM puntos_cliente pc
                 INNER JOIN clientes c ON pc.id_cliente = c.id
+                INNER JOIN empresa_funcionalidades ef ON pc.id_empresa = ef.id_empresa
+                INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                 LEFT JOIN (
                     SELECT 
                         id_cliente,
@@ -344,6 +358,8 @@ class CalcularClientes360Command extends Command
                     WHERE tipo = 'canje'
                     GROUP BY id_cliente
                 ) uc ON pc.id_cliente = uc.id_cliente
+                WHERE f.slug = 'fidelizacion-clientes'
+                  AND ef.activo = true
             ");
         });
 
@@ -356,7 +372,7 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_actividad_reciente')->truncate();
 
-            // Insertar últimas 10 ventas por cliente
+            // Insertar últimas 10 ventas por cliente (solo empresas con fidelización)
             DB::statement("
                 INSERT INTO cliente_actividad_reciente (
                     id_cliente, tipo_actividad, id_referencia, titulo, descripcion,
@@ -380,14 +396,18 @@ class CalcularClientes360Command extends Command
                         ROW_NUMBER() OVER (PARTITION BY v.id_cliente ORDER BY v.fecha DESC) as rn
                     FROM ventas v
                     INNER JOIN clientes c ON v.id_cliente = c.id
+                    INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                    INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                     WHERE v.estado != 'anulada'
+                      AND f.slug = 'fidelizacion-clientes'
+                      AND ef.activo = true
                       AND v.fecha >= '1900-01-01'
                       AND v.fecha <= NOW()
                 ) ranked
                 WHERE rn <= 10
             ");
 
-            // Insertar últimas 10 transacciones de puntos por cliente
+            // Insertar últimas 10 transacciones de puntos por cliente (solo empresas con fidelización)
             DB::statement("
                 INSERT INTO cliente_actividad_reciente (
                     id_cliente, tipo_actividad, id_referencia, titulo, descripcion,
@@ -411,6 +431,10 @@ class CalcularClientes360Command extends Command
                         ROW_NUMBER() OVER (PARTITION BY tp.id_cliente ORDER BY tp.created_at DESC) as rn
                     FROM transacciones_puntos tp
                     INNER JOIN clientes c ON tp.id_cliente = c.id
+                    INNER JOIN empresa_funcionalidades ef ON tp.id_empresa = ef.id_empresa
+                    INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
+                    WHERE f.slug = 'fidelizacion-clientes'
+                      AND ef.activo = true
                 ) ranked
                 WHERE rn <= 10
             ");
@@ -425,7 +449,7 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_categorias_preferidas')->truncate();
 
-            // INSERT MASIVO - Calcular categorías por cliente con ranking
+            // INSERT MASIVO - Calcular categorías por cliente con ranking (solo empresas con fidelización)
             DB::statement("
                 INSERT INTO cliente_categorias_preferidas (
                     id_cliente, id_categoria, nombre_categoria, cantidad_productos,
@@ -456,7 +480,11 @@ class CalcularClientes360Command extends Command
                     INNER JOIN productos p ON dv.id_producto = p.id
                     LEFT JOIN categorias cat ON p.id_categoria = cat.id
                     INNER JOIN clientes c ON v.id_cliente = c.id
+                    INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                    INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                     WHERE v.estado != 'anulada'
+                      AND f.slug = 'fidelizacion-clientes'
+                      AND ef.activo = true
                     GROUP BY v.id_cliente, p.id_categoria, cat.nombre
                 ) cliente_stats
                 INNER JOIN (
@@ -466,7 +494,11 @@ class CalcularClientes360Command extends Command
                     FROM ventas v
                     INNER JOIN detalles_venta dv ON v.id = dv.id_venta
                     INNER JOIN clientes c ON v.id_cliente = c.id
+                    INNER JOIN empresa_funcionalidades ef ON v.id_empresa = ef.id_empresa
+                    INNER JOIN funcionalidades f ON ef.id_funcionalidad = f.id
                     WHERE v.estado != 'anulada'
+                      AND f.slug = 'fidelizacion-clientes'
+                      AND ef.activo = true
                     GROUP BY v.id_cliente
                 ) cliente_totals ON cliente_stats.id_cliente = cliente_totals.id_cliente
                 WHERE cliente_stats.total_gastado > 0
@@ -493,15 +525,25 @@ class CalcularClientes360Command extends Command
 
     private function procesarTodosLosClientes($tipo, $force)
     {
+    
         $clientes = DB::table('clientes')
             ->join('ventas', 'clientes.id', '=', 'ventas.id_cliente')
+            ->join('empresa_funcionalidades', 'ventas.id_empresa', '=', 'empresa_funcionalidades.id_empresa')
+            ->join('funcionalidades', 'empresa_funcionalidades.id_funcionalidad', '=', 'funcionalidades.id')
             ->where('ventas.estado', '!=', 'anulada')
+            ->where('funcionalidades.slug', 'fidelizacion-clientes')
+            ->where('empresa_funcionalidades.activo', true)
             ->select('clientes.id')
             ->distinct()
             ->pluck('id');
 
         $total = $clientes->count();
-        $this->info("Total de clientes a procesar: {$total}");
+        $this->info("Total de clientes a procesar (solo empresas con fidelización): {$total}");
+
+        if ($total === 0) {
+            $this->warn('⚠️  No se encontraron clientes de empresas con fidelización habilitada');
+            return;
+        }
 
         $bar = $this->output->createProgressBar($total);
         $bar->start();
