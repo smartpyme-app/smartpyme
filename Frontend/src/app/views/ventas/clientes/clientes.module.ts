@@ -37,14 +37,15 @@ import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.
     TagInputModule,
     NgChartsModule,
     NgSelectModule,
-    NgxMaskDirective, NgxMaskPipe,
+    NgxMaskDirective, 
+    NgxMaskPipe,
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot()
   ],
   declarations: [
     ClientesComponent,
-  	ClienteComponent,
+    ClienteComponent,
     ClienteDetallesComponent,
     ClienteDatosComponent,
     ClientesDashComponent,
@@ -56,7 +57,7 @@ import { ClienteVista360Component } from './cliente-vista-360/cliente-vista-360.
   ],
   exports: [
     ClientesComponent,
-  	ClienteComponent,
+    ClienteComponent,
     ClienteDetallesComponent,
     ClienteDatosComponent,
     ClientesDashComponent,

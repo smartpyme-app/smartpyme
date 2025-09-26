@@ -882,11 +882,11 @@ body {
 }
 
 .edit-note-btn {
-    background: #f1f5f9;
+    background: transparent;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     padding: 6px 8px;
-    color: #64748b;
+    color: #005CBB;
     font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s ease;
