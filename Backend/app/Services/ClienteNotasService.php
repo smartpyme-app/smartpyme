@@ -49,7 +49,7 @@ class ClienteNotasService
 
         $notas = $query->get();
 
-        return $notas->map(function ($nota) {
+        $resultado = $notas->map(function ($nota) {
             return [
                 'id' => $nota->id,
                 'tipo' => $nota->tipo,
@@ -80,6 +80,8 @@ class ClienteNotasService
                 'created_at' => $nota->created_at->format('Y-m-d H:i:s')
             ];
         })->toArray();
+        
+        return $resultado;
     }
 
     /**

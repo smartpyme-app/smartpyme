@@ -41,7 +41,7 @@ class Kernel extends HttpKernel
 
         'api' => [
             // 'throttle:240,1',
-            \App\Http\Middleware\OptimizePerformance::class,
+            // \App\Http\Middleware\OptimizePerformance::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -76,7 +76,8 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     private modalService: BsModalService,
     private route: ActivatedRoute,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private cdr: ChangeDetectorRef
   ) { 
     this.initializeNoteForm();
   }
@@ -154,22 +155,38 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   }
 
   loadNotasYVisitas(clienteId: string): void {
+    let notasLoaded = false;
+    let visitasLoaded = false;
+    let timeoutId: any = null;
+    
+    const checkAndCombine = () => {
+      if (notasLoaded && visitasLoaded) {
+        if (timeoutId) clearTimeout(timeoutId);
+        this.combineInteractions();
+      }
+    };
+    
+    // Timeout de seguridad para evitar que se quede colgado
+    timeoutId = setTimeout(() => {
+      this.combineInteractions();
+    }, 5000);
     
     // Cargar notas
     this.apiService.getAll(`cliente-notas/notas/${clienteId}`).subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.notas = response.data;
-          this.combineInteractions();
         } else {
           this.notas = [];
-          this.combineInteractions();
         }
+        notasLoaded = true;
+        checkAndCombine();
       },
       error: (error) => {
         console.error('Error cargando notas:', error);
         this.notas = [];
-        this.combineInteractions();
+        notasLoaded = true;
+        checkAndCombine();
       }
     });
 
@@ -178,16 +195,17 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       next: (response) => {
         if (response.success && response.data) {
           this.visits = response.data;
-          this.combineInteractions();
         } else {
           this.visits = [];
-          this.combineInteractions();
         }
+        visitasLoaded = true;
+        checkAndCombine();
       },
       error: (error) => {
         console.error('Error cargando visitas:', error);
         this.visits = [];
-        this.combineInteractions();
+        visitasLoaded = true;
+        checkAndCombine();
       }
     });
 
@@ -287,11 +305,23 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     }
     
     // Ordenar por fecha (más reciente primero)
-    this.allInteractions = allItems.sort((a: any, b: any) => {
+    const sortedItems = allItems.sort((a: any, b: any) => {
       const dateA = new Date(a.fecha + ' ' + a.hora);
       const dateB = new Date(b.fecha + ' ' + b.hora);
       return dateB.getTime() - dateA.getTime();
     });
+    
+    // Forzar nueva asignación para detección de cambios
+    this.allInteractions = [...sortedItems];
+    
+    // Forzar detección de cambios de Angular
+    this.cdr.detectChanges();
+    
+    // Forzar detección de cambios adicional
+    setTimeout(() => {
+      this.allInteractions = [...this.allInteractions];
+      this.cdr.detectChanges();
+    }, 50);
   }
 
   private processClientData(data: any): void {
@@ -383,6 +413,19 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.loadCliente();
   }
 
+  // Método para forzar recarga completa
+  forceRefresh(): void {
+    const clienteId = this.route.snapshot.params['id'];
+    
+    if (clienteId) {
+      this.resetComponentState();
+      
+      setTimeout(() => {
+        this.loadCliente();
+      }, 200);
+    }
+  }
+
   // Método para cargar solo métricas básicas (más rápido)
   loadQuickMetrics(): void {
     const clienteId = this.route.snapshot.params['id'];
@@ -444,11 +487,9 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       class: 'modal-lg',
       backdrop: 'static'
     });
-    console.log('Modal abierto con ModalService');
   }
 
   closeAddNoteModal(): void {
-    console.log('Cerrando modal de agregar nota...');
     this.modalRef?.hide();
     this.noteForm.reset();
     this.isEditingNote = false;
@@ -458,7 +499,6 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
 
   editNote(interaction: any, template: TemplateRef<any>): void {
-    console.log('Editando nota:', interaction);
     this.isEditingNote = true;
     this.editingNoteId = interaction.id;
     this.editingNoteType = interaction.type;
@@ -516,8 +556,9 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
           if (response.success) {
             this.alertService.success('success','Nota actualizada exitosamente');
             this.closeAddNoteModal();
-            // Recargar notas y visitas
-            this.loadNotasYVisitas(clienteId);
+            
+            // Estrategia más agresiva: recarga completa del componente
+            this.forceRefresh();
           } else {
             this.alertService.error('Error al actualizar la nota');
           }
@@ -546,8 +587,8 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
           if (response.success) {
             this.alertService.success('success','Nota guardada exitosamente');
             this.closeAddNoteModal();
-            // Recargar notas y visitas
-            this.loadNotasYVisitas(clienteId);
+            // Estrategia más agresiva: recarga completa del componente
+            this.forceRefresh();
           } else {
             this.alertService.error('Error al guardar la nota');
           }
@@ -565,6 +606,65 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       const control = this.noteForm.get(key);
       control?.markAsTouched();
     });
+  }
+
+  private forceReloadData(clienteId: string): void {
+    console.log('Iniciando recarga forzada de datos...');
+    
+    // Reset completo del estado
+    this.resetComponentState();
+    
+    // Forzar detección de cambios
+    setTimeout(() => {
+      console.log('Ejecutando recarga después de reset completo...');
+      this.loadNotasYVisitas(clienteId);
+    }, 150);
+  }
+
+  private resetComponentState(): void {
+    // Limpiar todos los arrays
+    this.notas = [];
+    this.visits = [];
+    this.allInteractions = [];
+    
+    // Reset de estadísticas
+    this.visitStats = {
+      total: 0,
+      thisMonth: 0,
+      lastVisit: 'Nunca'
+    };
+    this.notasStats = {
+      total: 0,
+      thisMonth: 0,
+      pendientes: 0,
+      altaPrioridad: 0
+    };
+    
+    // Forzar detección de cambios en todas las propiedades
+    this.notas = [...this.notas];
+    this.visits = [...this.visits];
+    this.allInteractions = [...this.allInteractions];
+  }
+
+  private updateLocalInteraction(interactionId: number, updateData: any, type: string): void {
+    // Buscar y actualizar en allInteractions
+    const index = this.allInteractions.findIndex(item => item.id === interactionId);
+    if (index !== -1) {
+      // Actualizar los campos modificados
+      this.allInteractions[index] = {
+        ...this.allInteractions[index],
+        titulo: updateData.titulo,
+        contenido: updateData.contenido,
+        responsable: updateData.responsable,
+        prioridad: updateData.prioridad,
+        fecha: updateData.fecha_interaccion,
+        hora: updateData.hora_interaccion,
+        fecha_seguimiento: updateData.fecha_seguimiento
+      };
+      
+      // Forzar detección de cambios
+      this.allInteractions = [...this.allInteractions];
+    }
   }
 
   contactWhatsApp(): void {
