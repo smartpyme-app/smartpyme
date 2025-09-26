@@ -251,6 +251,7 @@ class CotizacionesController extends Controller
                               ->orWhere('ncr', $empresaPadre->ncr);
                         });
         })
+        ->where('estado', 'Pendiente')
         ->with(['proveedor' => function($query){
             $query->withoutGlobalScope('empresa');
         }])
