@@ -111,8 +111,11 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       titulo: ['', [Validators.required, Validators.minLength(5)]],
       responsable: ['', Validators.required],
       prioridad: ['medium', Validators.required],
+      estado: ['activo', Validators.required],
+      requiere_seguimiento: [false],
       notas: ['', [Validators.required, Validators.minLength(10)]],
-      seguimiento: ['']
+      seguimiento: [''],
+      resolucion: ['']
     });
   }
 
@@ -261,48 +264,8 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       });
     });
     
-    // Si no hay datos reales, agregar datos de prueba
-    if (allItems.length === 0) {
-      allItems.push({
-        id: 1,
-        type: 'visita',
-        titulo: 'Visita de seguimiento comercial',
-        descripcion: 'Reunión para discutir nuevas oportunidades de negocio y revisar el estado actual de la cuenta.',
-        responsable: 'Jorge Martínez',
-        prioridad: 'high',
-        prioridad_formateada: 'Alta',
-        color_prioridad: '#ef4444',
-        fecha: '2025-09-25',
-        hora: '14:30',
-        tipo_visita: 'presencial',
-        tipo_formateado: 'Visita Presencial',
-        icono: '👤',
-        duracion_formateada: '45m',
-        fecha_seguimiento: '2025-09-30',
-        resuelto: false
-      });
-      
-      allItems.push({
-        id: 2,
-        type: 'nota',
-        titulo: 'Consulta sobre productos',
-        contenido: 'El cliente preguntó sobre la disponibilidad de productos específicos y precios para volumen.',
-        responsable: 'Jennifer Díaz',
-        prioridad: 'medium',
-        prioridad_formateada: 'Media',
-        color_prioridad: '#f59e0b',
-        fecha: '2025-09-24',
-        hora: '10:15',
-        tipo: 'whatsapp',
-        tipo_formateado: 'WhatsApp',
-        icono: '💬',
-        categorias: [{
-          categoria_formateada: 'Consulta Comercial'
-        }],
-        fecha_seguimiento: null,
-        resuelto: true
-      });
-    }
+    // No agregar datos de prueba - permitir que se muestre el mensaje de "no hay datos"
+    // Los datos de prueba solo se usan en desarrollo si es necesario
     
     // Ordenar por fecha (más reciente primero)
     const sortedItems = allItems.sort((a: any, b: any) => {
@@ -542,9 +505,12 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         contenido: formValue.notas,
         responsable: formValue.responsable,
         prioridad: formValue.prioridad,
+        estado: formValue.estado,
+        requiere_seguimiento: formValue.requiere_seguimiento,
         fecha_interaccion: formValue.fecha,
         hora_interaccion: formValue.hora,
-        fecha_seguimiento: formValue.seguimiento || null
+        fecha_seguimiento: formValue.seguimiento || null,
+        resolucion: formValue.resolucion || null
       };
 
       const endpoint = this.editingNoteType === 'visita' 
@@ -577,9 +543,12 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         contenido: formValue.notas,
         responsable: formValue.responsable,
         prioridad: formValue.prioridad,
+        estado: formValue.estado,
+        requiere_seguimiento: formValue.requiere_seguimiento,
         fecha_interaccion: formValue.fecha,
         hora_interaccion: formValue.hora,
-        fecha_seguimiento: formValue.seguimiento || null
+        fecha_seguimiento: formValue.seguimiento || null,
+        resolucion: formValue.resolucion || null
       };
 
       this.apiService.store('cliente-notas/notas', notaData).subscribe({

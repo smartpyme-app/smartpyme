@@ -13,23 +13,39 @@ return new class extends Migration
     {
         Schema::create('cliente_notas', function (Blueprint $table) {
             $table->id();
+            
             $table->unsignedInteger('id_cliente')->constrained('clientes');
+            
+            
             $table->string('tipo'); // 'preferencias', 'quejas', 'comentarios', 'visita', 'llamada', 'whatsapp', 'email'
             $table->string('titulo');
             $table->text('contenido');
-            $table->string('responsable'); // Usuario que creó la nota
-            $table->string('prioridad')->default('medium'); // 'low', 'medium', 'high'
-            $table->json('metadata')->nullable(); // Datos adicionales como productos mencionados, etc.
+            $table->string('responsable'); 
+            
+           
+            $table->string('prioridad')->default('medium'); // 'low', 'medium', 'high', 'urgent', etc.
+            
+           
+            $table->string('estado')->default('activo'); 
+            // 'activo', 'pendiente', 'en_proceso', 'resuelto', 'archivado', etc.
+            
+            $table->boolean('requiere_seguimiento')->default(false);
+            $table->date('fecha_seguimiento')->nullable();
+            $table->text('resolucion')->nullable();
+            
+           
             $table->date('fecha_interaccion');
             $table->time('hora_interaccion');
-            $table->date('fecha_seguimiento')->nullable();
-            $table->boolean('resuelto')->default(false);
-            $table->text('resolucion')->nullable();
+            
+            $table->json('metadata')->nullable(); 
+            
             $table->timestamps();
 
             $table->index(['id_cliente', 'tipo']);
             $table->index(['id_cliente', 'fecha_interaccion']);
             $table->index(['responsable', 'fecha_interaccion']);
+            $table->index(['estado', 'requiere_seguimiento']); 
+            $table->index(['tipo', 'estado']); 
         });
     }
 

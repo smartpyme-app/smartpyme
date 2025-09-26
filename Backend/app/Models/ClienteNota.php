@@ -19,12 +19,13 @@ class ClienteNota extends Model
         'contenido',
         'responsable',
         'prioridad',
-        'metadata',
+        'estado',
+        'requiere_seguimiento',
+        'fecha_seguimiento',
+        'resolucion',
         'fecha_interaccion',
         'hora_interaccion',
-        'fecha_seguimiento',
-        'resuelto',
-        'resolucion'
+        'metadata'
     ];
 
     protected $casts = [
@@ -32,7 +33,7 @@ class ClienteNota extends Model
         'fecha_interaccion' => 'date',
         'hora_interaccion' => 'datetime:H:i',
         'fecha_seguimiento' => 'date',
-        'resuelto' => 'boolean'
+        'requiere_seguimiento' => 'boolean'
     ];
 
     // Relaciones
@@ -64,14 +65,45 @@ class ClienteNota extends Model
 
     public function scopePendientesSeguimiento($query)
     {
-        return $query->whereNotNull('fecha_seguimiento')
+        return $query->where('requiere_seguimiento', true)
+                    ->whereNotNull('fecha_seguimiento')
                     ->where('fecha_seguimiento', '>=', now()->toDateString())
-                    ->where('resuelto', false);
+                    ->whereIn('estado', ['activo', 'pendiente', 'en_proceso']);
+    }
+
+    public function scopePorEstado($query, $estado)
+    {
+        return $query->where('estado', $estado);
+    }
+
+    public function scopeActivas($query)
+    {
+        return $query->where('estado', 'activo');
+    }
+
+    public function scopePendientes($query)
+    {
+        return $query->where('estado', 'pendiente');
+    }
+
+    public function scopeEnProceso($query)
+    {
+        return $query->where('estado', 'en_proceso');
     }
 
     public function scopeResueltas($query)
     {
-        return $query->where('resuelto', true);
+        return $query->where('estado', 'resuelto');
+    }
+
+    public function scopeArchivadas($query)
+    {
+        return $query->where('estado', 'archivado');
+    }
+
+    public function scopeRequierenSeguimiento($query)
+    {
+        return $query->where('requiere_seguimiento', true);
     }
 
     // Métodos de utilidad
@@ -95,10 +127,24 @@ class ClienteNota extends Model
         $prioridades = [
             'low' => 'Baja',
             'medium' => 'Media',
-            'high' => 'Alta'
+            'high' => 'Alta',
+            'urgent' => 'Urgente'
         ];
 
         return $prioridades[$this->prioridad] ?? ucfirst($this->prioridad);
+    }
+
+    public function getEstadoFormateadoAttribute(): string
+    {
+        $estados = [
+            'activo' => 'Activo',
+            'pendiente' => 'Pendiente',
+            'en_proceso' => 'En Proceso',
+            'resuelto' => 'Resuelto',
+            'archivado' => 'Archivado'
+        ];
+
+        return $estados[$this->estado] ?? ucfirst($this->estado);
     }
 
     public function getIconoTipoAttribute(): string
@@ -121,9 +167,51 @@ class ClienteNota extends Model
         $colores = [
             'low' => '#10b981', // Verde
             'medium' => '#f59e0b', // Amarillo
-            'high' => '#ef4444' // Rojo
+            'high' => '#ef4444', // Rojo
+            'urgent' => '#dc2626' // Rojo oscuro
         ];
 
         return $colores[$this->prioridad] ?? '#6b7280';
+    }
+
+    public function getColorEstadoAttribute(): string
+    {
+        $colores = [
+            'activo' => '#10b981', // Verde
+            'pendiente' => '#f59e0b', // Amarillo
+            'en_proceso' => '#3b82f6', // Azul
+            'resuelto' => '#6b7280', // Gris
+            'archivado' => '#9ca3af' // Gris claro
+        ];
+
+        return $colores[$this->estado] ?? '#6b7280';
+    }
+
+    // Métodos de negocio
+    public function marcarComoResuelto(string $resolucion = null): void
+    {
+        $this->update([
+            'estado' => 'resuelto',
+            'resolucion' => $resolucion,
+            'requiere_seguimiento' => false
+        ]);
+    }
+
+    public function archivar(): void
+    {
+        $this->update([
+            'estado' => 'archivado',
+            'requiere_seguimiento' => false
+        ]);
+    }
+
+    public function activar(): void
+    {
+        $this->update(['estado' => 'activo']);
+    }
+
+    public function marcarEnProceso(): void
+    {
+        $this->update(['estado' => 'en_proceso']);
     }
 }

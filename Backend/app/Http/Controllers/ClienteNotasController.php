@@ -23,7 +23,7 @@ class ClienteNotasController extends Controller
     {
         try {
             $filtros = $request->only([
-                'tipo', 'prioridad', 'responsable', 'fecha_desde', 'fecha_hasta', 'resuelto'
+                'tipo', 'prioridad', 'responsable', 'fecha_desde', 'fecha_hasta', 'estado', 'requiere_seguimiento'
             ]);
 
             $notas = $this->clienteNotasService->getNotasCliente($clienteId, $filtros);
@@ -78,10 +78,13 @@ class ClienteNotasController extends Controller
                 'titulo' => 'required|string|max:255',
                 'contenido' => 'required|string',
                 'responsable' => 'nullable|string|max:255',
-                'prioridad' => 'nullable|in:low,medium,high',
+                'prioridad' => 'nullable|in:low,medium,high,urgent',
+                'estado' => 'nullable|in:activo,pendiente,en_proceso,resuelto,archivado',
+                'requiere_seguimiento' => 'nullable|boolean',
                 'fecha_interaccion' => 'required|date',
                 'hora_interaccion' => 'required|date_format:H:i',
                 'fecha_seguimiento' => 'nullable|date|after_or_equal:fecha_interaccion',
+                'resolucion' => 'nullable|string',
                 'metadata' => 'nullable|array'
             ]);
 
@@ -167,11 +170,12 @@ class ClienteNotasController extends Controller
                 'tipo' => 'nullable|in:preferencias,quejas,comentarios,visita,llamada,whatsapp,email',
                 'titulo' => 'nullable|string|max:255',
                 'contenido' => 'nullable|string',
-                'prioridad' => 'nullable|in:low,medium,high',
+                'prioridad' => 'nullable|in:low,medium,high,urgent',
+                'estado' => 'nullable|in:activo,pendiente,en_proceso,resuelto,archivado',
+                'requiere_seguimiento' => 'nullable|boolean',
                 'fecha_interaccion' => 'nullable|date',
                 'hora_interaccion' => 'nullable|date_format:H:i',
                 'fecha_seguimiento' => 'nullable|date',
-                'resuelto' => 'nullable|boolean',
                 'resolucion' => 'nullable|string',
                 'metadata' => 'nullable|array'
             ]);
@@ -336,6 +340,93 @@ class ClienteNotasController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error en la búsqueda: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Marcar nota como resuelta
+     */
+    public function marcarComoResuelta(Request $request, int $notaId): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'resolucion' => 'nullable|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos de validación incorrectos',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $nota = $this->clienteNotasService->marcarComoResuelta($notaId, $request->resolucion);
+
+            return response()->json([
+                'success' => true,
+                'data' => $nota,
+                'message' => 'Nota marcada como resuelta exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al marcar como resuelta: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Archivar nota
+     */
+    public function archivarNota(int $notaId): JsonResponse
+    {
+        try {
+            $nota = $this->clienteNotasService->archivarNota($notaId);
+
+            return response()->json([
+                'success' => true,
+                'data' => $nota,
+                'message' => 'Nota archivada exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al archivar la nota: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cambiar estado de nota
+     */
+    public function cambiarEstado(Request $request, int $notaId): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'estado' => 'required|in:activo,pendiente,en_proceso,resuelto,archivado'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Estado inválido',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $nota = $this->clienteNotasService->cambiarEstado($notaId, $request->estado);
+
+            return response()->json([
+                'success' => true,
+                'data' => $nota,
+                'message' => 'Estado actualizado exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cambiar estado: ' . $e->getMessage()
             ], 500);
         }
     }

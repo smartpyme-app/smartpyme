@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use App\Models\ClienteNota;
 use App\Models\ClienteVisita;
 use App\Models\ClienteNotaCategoria;
+use App\Constants\ClienteNotasConstants;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -43,8 +44,12 @@ class ClienteNotasService
             $query->where('fecha_interaccion', '<=', $filtros['fecha_hasta']);
         }
 
-        if (isset($filtros['resuelto'])) {
-            $query->where('resuelto', $filtros['resuelto']);
+        if (isset($filtros['estado'])) {
+            $query->where('estado', $filtros['estado']);
+        }
+
+        if (isset($filtros['requiere_seguimiento'])) {
+            $query->where('requiere_seguimiento', $filtros['requiere_seguimiento']);
         }
 
         $notas = $query->get();
@@ -63,8 +68,11 @@ class ClienteNotasService
                 'color_prioridad' => $nota->color_prioridad,
                 'fecha_interaccion' => $nota->fecha_interaccion->format('Y-m-d'),
                 'hora_interaccion' => $nota->hora_interaccion->format('H:i'),
+                'estado' => $nota->estado,
+                'estado_formateado' => $nota->estado_formateado,
+                'color_estado' => $nota->color_estado,
+                'requiere_seguimiento' => $nota->requiere_seguimiento,
                 'fecha_seguimiento' => $nota->fecha_seguimiento ? $nota->fecha_seguimiento->format('Y-m-d') : null,
-                'resuelto' => $nota->resuelto,
                 'resolucion' => $nota->resolucion,
                 'metadata' => $nota->metadata,
                 'categorias' => $nota->categorias->map(function ($categoria) {
@@ -82,6 +90,111 @@ class ClienteNotasService
         })->toArray();
         
         return $resultado;
+    }
+
+    /**
+     * Validar datos de una nota usando las constantes
+     */
+    public function validarNota(array $datos): array
+    {
+        $errores = [];
+
+        // Validar título
+        if (empty($datos['titulo'])) {
+            $errores[] = 'El título es requerido';
+        } elseif (strlen($datos['titulo']) < ClienteNotasConstants::TITULO_MIN_LENGTH) {
+            $errores[] = 'El título debe tener al menos ' . ClienteNotasConstants::TITULO_MIN_LENGTH . ' caracteres';
+        } elseif (strlen($datos['titulo']) > ClienteNotasConstants::LIMITE_CARACTERES_TITULO) {
+            $errores[] = 'El título no puede exceder ' . ClienteNotasConstants::LIMITE_CARACTERES_TITULO . ' caracteres';
+        }
+
+        // Validar contenido
+        if (empty($datos['contenido'])) {
+            $errores[] = 'El contenido es requerido';
+        } elseif (strlen($datos['contenido']) < ClienteNotasConstants::CONTENIDO_MIN_LENGTH) {
+            $errores[] = 'El contenido debe tener al menos ' . ClienteNotasConstants::CONTENIDO_MIN_LENGTH . ' caracteres';
+        } elseif (strlen($datos['contenido']) > ClienteNotasConstants::LIMITE_CARACTERES_CONTENIDO) {
+            $errores[] = 'El contenido no puede exceder ' . ClienteNotasConstants::LIMITE_CARACTERES_CONTENIDO . ' caracteres';
+        }
+
+        // Validar tipo de interacción
+        $tiposValidos = array_values([
+            ClienteNotasConstants::TIPO_VISITA_PRESENCIAL,
+            ClienteNotasConstants::TIPO_LLAMADA_TELEFONICA,
+            ClienteNotasConstants::TIPO_WHATSAPP,
+            ClienteNotasConstants::TIPO_EMAIL,
+            ClienteNotasConstants::TIPO_NOTA_INTERNA,
+            ClienteNotasConstants::TIPO_PREFERENCIAS,
+            ClienteNotasConstants::TIPO_QUEJAS
+        ]);
+
+        if (!in_array($datos['tipo'], $tiposValidos)) {
+            $errores[] = 'Tipo de interacción no válido';
+        }
+
+        // Validar prioridad
+        $prioridadesValidas = [
+            ClienteNotasConstants::PRIORIDAD_BAJA,
+            ClienteNotasConstants::PRIORIDAD_MEDIA,
+            ClienteNotasConstants::PRIORIDAD_ALTA,
+            ClienteNotasConstants::PRIORIDAD_URGENTE
+        ];
+
+        if (!in_array($datos['prioridad'], $prioridadesValidas)) {
+            $errores[] = 'Prioridad no válida';
+        }
+
+        // Validar estado
+        $estadosValidos = [
+            ClienteNotasConstants::ESTADO_NOTA_ACTIVO,
+            ClienteNotasConstants::ESTADO_NOTA_PENDIENTE,
+            ClienteNotasConstants::ESTADO_NOTA_EN_PROCESO,
+            ClienteNotasConstants::ESTADO_NOTA_RESUELTO,
+            ClienteNotasConstants::ESTADO_NOTA_ARCHIVADO
+        ];
+
+        if (!in_array($datos['estado'], $estadosValidos)) {
+            $errores[] = 'Estado no válido';
+        }
+
+        // Validar fecha de seguimiento
+        if (isset($datos['fecha_seguimiento']) && !empty($datos['fecha_seguimiento'])) {
+            $fechaSeguimiento = Carbon::parse($datos['fecha_seguimiento']);
+            $fechaMaxima = Carbon::now()->addDays(ClienteNotasConstants::FECHA_FUTURA_MAX_DAYS);
+            
+            if ($fechaSeguimiento->isPast()) {
+                $errores[] = 'La fecha de seguimiento no puede ser en el pasado';
+            } elseif ($fechaSeguimiento->gt($fechaMaxima)) {
+                $errores[] = 'La fecha de seguimiento no puede ser más de ' . ClienteNotasConstants::FECHA_FUTURA_MAX_DAYS . ' días en el futuro';
+            }
+        }
+
+        return $errores;
+    }
+
+    /**
+     * Obtener configuración por defecto para nuevas notas
+     */
+    public function getConfiguracionDefault(): array
+    {
+        return [
+            'tiempo_seguimiento_default' => ClienteNotasConstants::TIEMPO_SEGUIMIENTO_DEFAULT,
+            'tiempo_recordatorio' => ClienteNotasConstants::TIEMPO_RECORDATORIO,
+            'limite_caracteres_titulo' => ClienteNotasConstants::LIMITE_CARACTERES_TITULO,
+            'limite_caracteres_contenido' => ClienteNotasConstants::LIMITE_CARACTERES_CONTENIDO,
+            'notas_por_pagina' => ClienteNotasConstants::NOTAS_POR_PAGINA,
+            'filtro_fecha_desde_default' => ClienteNotasConstants::FILTRO_FECHA_DESDE_DEFAULT,
+            'filtro_estado_default' => ClienteNotasConstants::FILTRO_ESTADO_DEFAULT,
+            'filtro_prioridad_default' => ClienteNotasConstants::FILTRO_PRIORIDAD_DEFAULT,
+            'tipos_interaccion' => ClienteNotasConstants::TEXTOS_TIPO,
+            'prioridades' => ClienteNotasConstants::TEXTOS_PRIORIDAD,
+            'estados' => ClienteNotasConstants::TEXTOS_ESTADO,
+            'responsables' => ClienteNotasConstants::RESPONSABLES,
+            'categorias' => ClienteNotasConstants::CATEGORIAS,
+            'iconos' => ClienteNotasConstants::ICONOS,
+            'colores_prioridad' => ClienteNotasConstants::COLORES_PRIORIDAD,
+            'colores_estado' => ClienteNotasConstants::COLORES_ESTADO
+        ];
     }
 
     /**
@@ -159,12 +272,13 @@ class ClienteNotasService
                 'contenido' => $datos['contenido'],
                 'responsable' => $datos['responsable'] ?? Auth::user()->name ?? 'Sistema',
                 'prioridad' => $datos['prioridad'] ?? 'medium',
-                'metadata' => $datos['metadata'] ?? null,
+                'estado' => $datos['estado'] ?? 'activo',
+                'requiere_seguimiento' => $datos['requiere_seguimiento'] ?? false,
                 'fecha_interaccion' => $datos['fecha_interaccion'],
                 'hora_interaccion' => $datos['hora_interaccion'],
                 'fecha_seguimiento' => $datos['fecha_seguimiento'] ?? null,
-                'resuelto' => false,
-                'resolucion' => null
+                'resolucion' => $datos['resolucion'] ?? null,
+                'metadata' => $datos['metadata'] ?? null
             ]);
 
             // Categorización automática
@@ -354,7 +468,7 @@ class ClienteNotasService
         return [
             'total_notas' => $notas->count(),
             'notas_este_mes' => $notas->whereMonth('fecha_interaccion', now()->month)->count(),
-            'notas_pendientes' => $notas->where('resuelto', false)->count(),
+            'notas_pendientes' => $notas->whereIn('estado', ['activo', 'pendiente', 'en_proceso'])->count(),
             'notas_alta_prioridad' => $notas->where('prioridad', 'high')->count(),
             'total_visitas' => $visitas->count(),
             'visitas_este_mes' => $visitas->whereMonth('fecha_visita', now()->month)->count(),
@@ -389,5 +503,35 @@ class ClienteNotasService
                 'categorias' => $nota->categorias->pluck('categoria')->toArray()
             ];
         })->toArray();
+    }
+
+    /**
+     * Marcar nota como resuelta
+     */
+    public function marcarComoResuelta(int $notaId, string $resolucion = null): ClienteNota
+    {
+        $nota = ClienteNota::findOrFail($notaId);
+        $nota->marcarComoResuelto($resolucion);
+        return $nota;
+    }
+
+    /**
+     * Archivar nota
+     */
+    public function archivarNota(int $notaId): ClienteNota
+    {
+        $nota = ClienteNota::findOrFail($notaId);
+        $nota->archivar();
+        return $nota;
+    }
+
+    /**
+     * Cambiar estado de nota
+     */
+    public function cambiarEstado(int $notaId, string $estado): ClienteNota
+    {
+        $nota = ClienteNota::findOrFail($notaId);
+        $nota->update(['estado' => $estado]);
+        return $nota;
     }
 }

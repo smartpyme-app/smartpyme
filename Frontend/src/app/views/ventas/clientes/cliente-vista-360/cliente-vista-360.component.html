@@ -22,7 +22,10 @@
             <div class="customer-info">
                 <h1>{{ cliente.nombre }}</h1>
                 <div class="customer-status">
-                    <span>🟢 Cliente Activo</span>
+                    <span class="status-badge" 
+                          [ngClass]="cliente.enable ? 'badge-active' : 'badge-inactive'">
+                        {{ cliente.enable ? 'Cliente Activo' : 'Cliente Inactivo' }}
+                    </span>
                     <span class="status-badge" *ngFor="let tag of cliente.etiquetas">{{ tag }}</span>
                 </div>
             </div>
@@ -288,26 +291,42 @@
                             <span>👥</span> Historial de Visitas y Notas
                         </div>
                         <div class="header-actions">
-                            <button class="add-note-btn" (click)="openAddNoteModal(addNoteModal)">
+                            <button class="add-note-btn" 
+                                    (click)="openAddNoteModal(addNoteModal)"
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="left" 
+                                    title="Agregar nueva nota o visita. Registrar una nueva interacción con este cliente.">
                                 <span>➕</span> Agregar Nota
                             </button>
                         </div>
                     </div>
 
                     <div class="visits-summary">
-                        <div class="visit-stat">
+                        <div class="visit-stat" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top" 
+                             [title]="'Total de interacciones: ' + (visitStats.total + notasStats.total) + '. Suma de todas las visitas y notas registradas para este cliente.'">
                             <div class="stat-number">{{ visitStats.total + notasStats.total }}</div>
                             <div class="stat-label">Total Interacciones</div>
                         </div>
-                        <div class="visit-stat">
+                        <div class="visit-stat" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top" 
+                             [title]="'Interacciones este mes: ' + (visitStats.thisMonth + notasStats.thisMonth) + '. Actividad registrada en el mes actual.'">
                             <div class="stat-number">{{ visitStats.thisMonth + notasStats.thisMonth }}</div>
                             <div class="stat-label">Este Mes</div>
                         </div>
-                        <div class="visit-stat">
+                        <div class="visit-stat" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top" 
+                             [title]="'Notas pendientes: ' + notasStats.pendientes + '. Interacciones que requieren seguimiento o resolución.'">
                             <div class="stat-number">{{ notasStats.pendientes }}</div>
                             <div class="stat-label">Pendientes</div>
                         </div>
-                        <div class="visit-stat">
+                        <div class="visit-stat" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top" 
+                             [title]="'Última actividad: ' + visitStats.lastVisit + '. Fecha de la última interacción registrada con este cliente.'">
                             <div class="stat-number">{{ visitStats.lastVisit }}</div>
                             <div class="stat-label">Última Actividad</div>
                         </div>
@@ -315,63 +334,75 @@
                     
                     <div class="visits-timeline" *ngIf="allInteractions.length > 0; else noVisits">
                         <div class="visit-item" *ngFor="let interaction of allInteractions">
-                            <div class="visit-icon" [ngClass]="interaction.type === 'visita' ? interaction.tipo_visita : interaction.tipo">{{ interaction.icono }}</div>
+                            <div class="visit-icon" 
+                                 [ngClass]="interaction.type === 'visita' ? interaction.tipo_visita : interaction.tipo" title="Icono de la interacción">
+                                {{ interaction.icono }}
+                            </div>
                             <div class="visit-content">
                                 <div class="visit-header">
-                                    <h4>{{ (interaction.type === 'visita' ? interaction.tipo_formateado : interaction.tipo_formateado) }} - {{ interaction.titulo }}</h4>
-                                    <span class="visit-date">{{ formatDate(interaction.fecha) }} {{ interaction.hora }}</span>
+                                    <h4 data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        [title]="'Título de la interacción: ' + interaction.titulo">
+                                        {{ (interaction.type === 'visita' ? interaction.tipo_formateado : interaction.tipo_formateado) }} - {{ interaction.titulo }}
+                                    </h4>
+                                    <span class="visit-date" 
+                                          data-bs-toggle="tooltip" 
+                                          data-bs-placement="top" 
+                                          [title]="'Fecha y hora de la interacción'">
+                                        {{ formatDate(interaction.fecha) }} {{ interaction.hora }}
+                                    </span>
                                 </div>
                                 <div class="visit-details">
                                     <div class="visit-meta">
                                         <span class="visit-type cursor-pointer" 
                                               data-bs-toggle="tooltip" 
                                               data-bs-placement="top" 
-                                              [title]="'Tipo de interacción: ' + (interaction.type === 'visita' ? 'Visita presencial o virtual' : 'Nota interna del sistema')">
+                                              [title]="'Tipo de interacción:'">
                                             <span>{{ interaction.icono }}</span> {{ interaction.type === 'visita' ? interaction.tipo_formateado : interaction.tipo_formateado }}
                                         </span>
                                         <span class="visit-type cursor-pointer" 
                                               *ngIf="interaction.type === 'visita' && interaction.duracion_formateada"
                                               data-bs-toggle="tooltip" 
                                               data-bs-placement="top" 
-                                              title="Duración de la visita registrada">
+                                              [title]="'Duración de la visita'">
                                             <span>⏱️</span> {{ interaction.duracion_formateada }}
                                         </span>
                                         <span class="visit-type cursor-pointer" 
                                               data-bs-toggle="tooltip" 
                                               data-bs-placement="top" 
-                                              title="Persona responsable de la interacción con el cliente">
+                                              [title]="'Responsable'">
                                             <span>👨‍💼</span> {{ interaction.responsable }}
                                         </span>
                                         <span class="visit-type cursor-pointer" 
-                                              *ngIf="interaction.type === 'nota' && interaction.categorias?.length"
-                                              data-bs-toggle="tooltip" 
-                                              data-bs-placement="top" 
-                                              title="Categoría de la nota para clasificación interna">
+                                              *ngIf="interaction.type === 'nota' && interaction.categorias?.length">
                                             <span>🏷️</span> {{ interaction.categorias[0].categoria_formateada }}
                                         </span>
                                     </div>
-                                    <div class="visit-note">{{ interaction.type === 'visita' ? interaction.descripcion : interaction.contenido }}</div>
+                                    <div class="visit-note" 
+                                         [title]="'Contenido de la interacción' ">
+                                        {{ interaction.type === 'visita' ? interaction.descripcion : interaction.contenido }}
+                                    </div>
                                     <div class="visit-actions">
                                         <div class="visit-meta-info">
                                             <span [ngClass]="getPriorityClass(interaction.prioridad)" 
                                                   [style.color]="interaction.color_prioridad"
                                                   data-bs-toggle="tooltip" 
                                                   data-bs-placement="top" 
-                                                  title="Nivel de prioridad asignado a esta interacción">
+                                                  title="Prioridad">
                                                 {{ interaction.prioridad_formateada }}
                                             </span>
                                             <span class="follow-up cursor-pointer" 
                                                   *ngIf="interaction.fecha_seguimiento"
                                                   data-bs-toggle="tooltip" 
                                                   data-bs-placement="top" 
-                                                  title="Fecha programada para seguimiento de esta interacción">
+                                                  title="Seguimiento programado para:">
                                                 📅 Seguimiento: {{ formatDate(interaction.fecha_seguimiento) }}
                                             </span>
                                             <span class="resolved cursor-pointer" 
                                                   *ngIf="interaction.resuelto"
                                                   data-bs-toggle="tooltip" 
                                                   data-bs-placement="top" 
-                                                  title="Esta interacción ha sido marcada como resuelta">
+                                                  title="Estado: Resuelto. Esta interacción ha sido completada y marcada como resuelta.">
                                                 ✅ Resuelto
                                             </span>
                                         </div>
@@ -380,7 +411,7 @@
                                                     (click)="editNote(interaction, addNoteModal)"
                                                     data-bs-toggle="tooltip" 
                                                     data-bs-placement="top" 
-                                                    title="Editar esta interacción">
+                                                    [title]="'Editar'">
                                                 <i class="fa fa-edit"></i>
                                             </button>
                                         </div>
@@ -393,34 +424,13 @@
                     <ng-template #noVisits>
                         <div class="no-data-message">
                             <div class="no-data-icon">📝</div>
-                            <h3>No hay interacciones registradas</h3>
-                            <p>Este cliente no tiene visitas o notas registradas aún.</p>
-                            <button class="btn btn-primary" (click)="openAddNoteModal(addNoteModal)">
-                                <span>➕</span> Agregar Primera Nota
-                            </button>
+                            <h3>No hay notas registradas</h3>
+                            <p>Este cliente no tiene visitas o notas registradas aún. Puedes agregar la primera nota para comenzar a hacer seguimiento de las interacciones.</p>
                         </div>
                     </ng-template>
                 </div>
             </div>
 
-            <!-- Action Buttons -->
-            <!-- <div class="action-buttons">
-                <button class="action-btn primary" (click)="contactWhatsApp()">
-                    <span>💬</span> Contactar WhatsApp
-                </button>
-                <button class="action-btn primary" (click)="sendEmail()">
-                    <span>📧</span> Enviar Email
-                </button>
-                <button class="action-btn secondary" (click)="editCliente()">
-                    <span>📝</span> Editar Cliente
-                </button>
-                <button class="action-btn secondary" (click)="managePoints()">
-                    <span>🎁</span> Gestionar Puntos
-                </button>
-                <button class="action-btn secondary" (click)="viewInvoices()">
-                    <span>📋</span> Ver Facturas
-                </button>
-            </div> -->
         </div>
 
 <!-- Add Note Modal Template -->
@@ -501,7 +511,29 @@
                         <option value="low">📗 Baja</option>
                         <option value="medium">📙 Media</option>
                         <option value="high">📕 Alta</option>
+                        <option value="urgent">🚨 Urgente</option>
                     </select>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Estado</label>
+                    <select class="form-select" formControlName="estado">
+                        <option value="activo">🟢 Activo</option>
+                        <option value="pendiente">🟡 Pendiente</option>
+                        <option value="en_proceso">🔵 En Proceso</option>
+                        <option value="resuelto">✅ Resuelto</option>
+                        <option value="archivado">📁 Archivado</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" formControlName="requiere_seguimiento" id="requiereSeguimiento">
+                        <label class="form-check-label" for="requiereSeguimiento">
+                            Requiere seguimiento
+                        </label>
+                    </div>
                 </div>
             </div>
             
@@ -518,9 +550,14 @@
             </div>
             
             <div class="row mb-3">
-                <div class="col-12">
+                <div class="col-md-6">
                     <label class="form-label">Fecha de Seguimiento (Opcional)</label>
                     <input type="date" class="form-control" formControlName="seguimiento">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Resolución (Opcional)</label>
+                    <textarea class="form-control" formControlName="resolucion" rows="2" 
+                              placeholder="Describe cómo se resolvió el asunto..."></textarea>
                 </div>
             </div>
         </form>
