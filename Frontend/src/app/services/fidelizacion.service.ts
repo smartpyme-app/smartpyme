@@ -76,6 +76,64 @@ export interface Beneficio {
   disponible: boolean;
 }
 
+// Interfaces para el nuevo sistema de canje FIFO
+export interface PuntosDisponiblesInfo {
+  puntos_disponibles: number;
+  puntos_totales_ganados: number;
+  puntos_totales_canjeados: number;
+  ganancias_detalle: GananciaDetalle[];
+  configuracion?: ConfiguracionCliente;
+  error?: string;
+}
+
+export interface ConfiguracionCliente {
+  valor_punto: number;
+  minimo_canje: number;
+  maximo_canje: number;
+  tipo_cliente: string;
+  nivel: number;
+  puntos_por_dolar?: number;
+}
+
+export interface GananciaDetalle {
+  id: number;
+  puntos_originales: number;
+  puntos_disponibles: number;
+  fecha_ganancia: string;
+  fecha_expiracion: string;
+  dias_para_expirar: number;
+  venta_id: number;
+}
+
+
+export interface ResultadoCanje {
+  success: boolean;
+  transaccion_id?: number;
+  puntos_canjeados?: number;
+  puntos_antes?: number;
+  puntos_despues?: number;
+  detalles_consumo?: any[];
+  mensaje?: string;
+  error?: string;
+}
+
+export interface HistorialCanje {
+  id: number;
+  puntos_canjeados: number;
+  descripcion: string;
+  fecha_canje: string;
+  puntos_antes: number;
+  puntos_despues: number;
+  detalles_consumo: ConsumoDetalle[];
+}
+
+export interface ConsumoDetalle {
+  ganancia_id: number;
+  puntos_consumidos: number;
+  fecha_ganancia_original: string;
+  fecha_expiracion_original: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -353,5 +411,47 @@ export class FidelizacionService {
     }
     
     return this.http.get<ApiResponse<any>>(url);
+  }
+
+  // ===== MÉTODOS PARA CANJE FIFO =====
+
+  /**
+   * Obtener información detallada de puntos disponibles para canje
+   */
+  getPuntosDisponiblesInfo(clienteId: number, empresaId: number): Observable<ApiResponse<PuntosDisponiblesInfo>> {
+    return this.http.post<ApiResponse<PuntosDisponiblesInfo>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/canje/puntos-disponibles`,
+      { cliente_id: clienteId, empresa_id: empresaId }
+    );
+  }
+
+
+  /**
+   * Procesar canje de puntos con lógica FIFO
+   */
+  procesarCanjeFinancial(clienteId: number, empresaId: number, puntosACanjear: number, descripcion?: string): Observable<ApiResponse<ResultadoCanje>> {
+    return this.http.post<ApiResponse<ResultadoCanje>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/canje/procesar`,
+      { 
+        cliente_id: clienteId, 
+        empresa_id: empresaId, 
+        puntos_a_canjear: puntosACanjear,
+        descripcion: descripcion 
+      }
+    );
+  }
+
+  /**
+   * Obtener historial de canjes de un cliente
+   */
+  getHistorialCanjes(clienteId: number, empresaId: number, limite?: number): Observable<ApiResponse<HistorialCanje[]>> {
+    return this.http.post<ApiResponse<HistorialCanje[]>>(
+      `${this.apiService.baseUrl}/api/fidelizacion/canje/historial`,
+      { 
+        cliente_id: clienteId, 
+        empresa_id: empresaId, 
+        limite: limite || 20 
+      }
+    );
   }
 }

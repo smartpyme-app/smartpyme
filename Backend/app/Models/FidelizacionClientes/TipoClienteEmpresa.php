@@ -89,6 +89,21 @@ class TipoClienteEmpresa extends Model
         return $query->where('id_empresa', $empresaId);
     }
 
+    public function scopePorEmpresaConLicencia($query, $empresaId)
+    {
+        $empresa = \App\Models\Admin\Empresa::find($empresaId);
+        
+        if ($empresa && ($empresa->esEmpresaPadre() || $empresa->esEmpresaHija())) {
+            // Si la empresa tiene licencia, obtener tipos de la empresa padre
+            $empresaPadre = $empresa->getEmpresaPadre();
+            if ($empresaPadre) {
+                return $query->where('id_empresa', $empresaPadre->id);
+            }
+        }
+        
+        return $query->where('id_empresa', $empresaId);
+    }
+
     public function scopePersonalizados($query)
     {
         return $query->whereNull('id_tipo_base');

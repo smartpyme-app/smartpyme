@@ -34,25 +34,8 @@ class ConsumoPuntosService
             return false;
         }
 
-        try {
-            // Verificar si el sistema está bajo alta carga
-            if ($this->shouldProcessAsync()) {
-                $this->procesarPuntosAsync($venta);
-                return true;
-            } else {
-                return $this->procesarAcumulacionPuntosSync($venta);
-            }
-        } catch (\Exception $e) {
-            // Log del error pero no interrumpir la venta
-            Log::error('Error al procesar acumulación de puntos para venta ID: ' . $venta->id, [
-                'error' => $e->getMessage(),
-                'venta_id' => $venta->id,
-                'cliente_id' => $venta->id_cliente,
-                'empresa_id' => $venta->id_empresa,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return false;
-        }
+        // Procesar la acumulación de puntos
+        return $this->procesarAcumulacionPuntosSync($venta);
     }
 
     /**
@@ -271,21 +254,6 @@ class ConsumoPuntosService
     }
 
     /**
-     * Determinar si se debe procesar de forma asíncrona
-     *
-     * @return bool
-     */
-    private function shouldProcessAsync(): bool
-    {
-        // Verificar carga del sistema
-        $loadAverage = sys_getloadavg()[0] ?? 0;
-        $memoryUsage = memory_get_usage(true) / 1024 / 1024; // MB
-        
-        // Procesar async si la carga es alta o el uso de memoria es alto
-        return $loadAverage > 2.0 || $memoryUsage > 512;
-    }
-
-    /**
      * Procesar puntos de forma asíncrona
      *
      * @param Venta $venta
@@ -297,6 +265,310 @@ class ConsumoPuntosService
         // Por ahora, procesamos de forma síncrona pero con logging
         Log::info('Procesando puntos de forma asíncrona para venta', ['venta_id' => $venta->id]);
         $this->procesarAcumulacionPuntosSync($venta);
+    }
+
+    /**
+     * Canjear puntos por descuento siguiendo lógica FIFO
+     *
+     * @param int $clienteId
+     * @param int $empresaId
+     * @param int $puntosACanjear
+     * @param string $descripcion
+     * @return array
+     */
+    public function canjearPuntos(int $clienteId, int $empresaId, int $puntosACanjear, string $descripcion = null): array
+    {
+        try {
+            // 1. Verificar que la empresa tiene fidelización habilitada
+            $empresa = \App\Models\Admin\Empresa::find($empresaId);
+            if (!$empresa || !$empresa->tieneFidelizacionHabilitada()) {
+                return ['success' => false, 'error' => 'La empresa no tiene habilitado el módulo de fidelización'];
+            }
+
+            // 2. Obtener el cliente y su tipo
+            $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
+            if (!$cliente) {
+                return ['success' => false, 'error' => 'Cliente no encontrado'];
+            }
+
+            // 3. Obtener configuración del tipo de cliente
+            $tipoCliente = $cliente->tipoCliente;
+            if (!$tipoCliente) {
+                // Obtener tipo por defecto de la empresa
+                $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
+                    ->where('is_default', true)
+                    ->first();
+            }
+
+            if (!$tipoCliente) {
+                return ['success' => false, 'error' => 'No se pudo determinar la configuración del cliente'];
+            }
+
+            // 4. Validaciones básicas con configuración del tipo de cliente
+            if ($puntosACanjear <= 0) {
+                return ['success' => false, 'error' => 'La cantidad de puntos debe ser mayor a 0'];
+            }
+
+            if ($puntosACanjear < $tipoCliente->minimo_canje) {
+                return [
+                    'success' => false, 
+                    'error' => "El mínimo de canje para este tipo de cliente es {$tipoCliente->minimo_canje} puntos",
+                    'minimo_canje' => $tipoCliente->minimo_canje
+                ];
+            }
+
+            if ($puntosACanjear > $tipoCliente->maximo_canje) {
+                return [
+                    'success' => false, 
+                    'error' => "El máximo de canje para este tipo de cliente es {$tipoCliente->maximo_canje} puntos",
+                    'maximo_canje' => $tipoCliente->maximo_canje
+                ];
+            }
+
+            // 5. Verificar saldo disponible del cliente
+            $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
+                ->where('id_empresa', $empresaId)
+                ->first();
+
+            if (!$puntosCliente || $puntosCliente->puntos_disponibles < $puntosACanjear) {
+                return [
+                    'success' => false, 
+                    'error' => 'Puntos insuficientes',
+                    'puntos_disponibles' => $puntosCliente ? $puntosCliente->puntos_disponibles : 0,
+                    'puntos_solicitados' => $puntosACanjear
+                ];
+            }
+
+            // 6. Procesar el canje en una transacción
+            return DB::transaction(function () use ($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente) {
+                return $this->procesarCanjeConFifo($clienteId, $empresaId, $puntosACanjear, $descripcion, $puntosCliente, $tipoCliente);
+            });
+
+        } catch (\Exception $e) {
+            Log::error('Error al canjear puntos', [
+                'cliente_id' => $clienteId,
+                'empresa_id' => $empresaId,
+                'puntos_solicitados' => $puntosACanjear,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return ['success' => false, 'error' => 'Error interno al procesar el canje'];
+        }
+    }
+
+    /**
+     * Procesar el canje aplicando lógica FIFO
+     *
+     * @param int $clienteId
+     * @param int $empresaId
+     * @param int $puntosACanjear
+     * @param string $descripcion
+     * @param PuntosCliente $puntosCliente
+     * @param TipoClienteEmpresa $tipoCliente
+     * @return array
+     */
+    private function procesarCanjeConFifo(int $clienteId, int $empresaId, int $puntosACanjear, ?string $descripcion, PuntosCliente $puntosCliente, TipoClienteEmpresa $tipoCliente): array
+    {
+        // 1. Obtener ganancias disponibles ordenadas por FIFO (más antiguas primero, próximas a expirar primero)
+        $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
+            ->where('id_empresa', $empresaId)
+            ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
+            ->where('fecha_expiracion', '>=', now()->toDateString()) // Solo no expiradas
+            ->whereRaw('puntos - puntos_consumidos > 0') // Solo con puntos disponibles
+            ->orderBy('fecha_expiracion', 'asc') // Primero las que expiran pronto
+            ->orderBy('created_at', 'asc') // Luego por orden de creación (FIFO)
+            ->get();
+
+        if ($gananciasDisponibles->isEmpty()) {
+            return ['success' => false, 'error' => 'No hay puntos disponibles para canjear'];
+        }
+
+        // 2. Crear la transacción de canje
+        $puntosAntes = $puntosCliente->puntos_disponibles;
+        $puntosDespues = $puntosAntes - $puntosACanjear;
+
+        $idempotencyKey = TransaccionPuntos::generarIdempotencyKey(
+            $clienteId,
+            TransaccionPuntos::TIPO_CANJE,
+            'canje_' . time()
+        );
+
+        // Calcular el valor del descuento usando la configuración del tipo de cliente
+        $valorDescuento = $tipoCliente->calcularDescuento($puntosACanjear);
+
+        $transaccionCanje = TransaccionPuntos::create([
+            'id_cliente' => $clienteId,
+            'id_empresa' => $empresaId,
+            'id_venta' => null, // No está asociado a una venta específica
+            'tipo' => TransaccionPuntos::TIPO_CANJE,
+            'puntos' => -$puntosACanjear, // Negativo para indicar que se restan
+            'puntos_antes' => $puntosAntes,
+            'puntos_despues' => $puntosDespues,
+            'monto_asociado' => $valorDescuento, // Valor del descuento calculado
+            'puntos_consumidos' => 0, // No aplica para canjes
+            'descripcion' => $descripcion ?: "Canje de {$puntosACanjear} puntos por \${$valorDescuento}",
+            'fecha_expiracion' => null, // No aplica para canjes
+            'idempotency_key' => $idempotencyKey
+        ]);
+
+        // 3. Aplicar FIFO: consumir puntos de las ganancias más antiguas
+        $puntosRestantes = $puntosACanjear;
+        $detallesConsumo = [];
+
+        foreach ($gananciasDisponibles as $ganancia) {
+            if ($puntosRestantes <= 0) break;
+
+            $puntosDisponiblesEnGanancia = $ganancia->getPuntosDisponibles();
+            $puntosAConsumir = min($puntosRestantes, $puntosDisponiblesEnGanancia);
+
+            if ($puntosAConsumir > 0) {
+                // Actualizar la ganancia
+                $ganancia->increment('puntos_consumidos', $puntosAConsumir);
+
+                // Crear registro en consumo_puntos para trazabilidad
+                $consumo = \App\Models\FidelizacionClientes\ConsumoPuntos::create([
+                    'id_empresa' => $empresaId,
+                    'id_cliente' => $clienteId,
+                    'id_canje_tx' => $transaccionCanje->id,
+                    'id_ganancia_tx' => $ganancia->id,
+                    'puntos_consumidos' => $puntosAConsumir,
+                    'descripcion' => "Consumo FIFO - Ganancia del " . $ganancia->created_at->format('Y-m-d')
+                ]);
+
+                $detallesConsumo[] = [
+                    'ganancia_id' => $ganancia->id,
+                    'fecha_ganancia' => $ganancia->created_at,
+                    'fecha_expiracion' => $ganancia->fecha_expiracion,
+                    'puntos_consumidos' => $puntosAConsumir,
+                    'puntos_restantes_en_ganancia' => $ganancia->getPuntosDisponibles()
+                ];
+
+                $puntosRestantes -= $puntosAConsumir;
+            }
+        }
+
+        // 4. Actualizar el saldo consolidado del cliente
+        $puntosCliente->decrement('puntos_disponibles', $puntosACanjear);
+        $puntosCliente->increment('puntos_totales_canjeados', $puntosACanjear);
+        $puntosCliente->update(['fecha_ultima_actividad' => now()]);
+
+        Log::info('Canje de puntos procesado exitosamente', [
+            'cliente_id' => $clienteId,
+            'empresa_id' => $empresaId,
+            'transaccion_canje_id' => $transaccionCanje->id,
+            'puntos_canjeados' => $puntosACanjear,
+            'puntos_antes' => $puntosAntes,
+            'puntos_despues' => $puntosDespues,
+            'ganancias_afectadas' => count($detallesConsumo)
+        ]);
+
+        return [
+            'success' => true,
+            'transaccion_id' => $transaccionCanje->id,
+            'puntos_canjeados' => $puntosACanjear,
+            'valor_descuento' => $valorDescuento,
+            'puntos_antes' => $puntosAntes,
+            'puntos_despues' => $puntosDespues,
+            'detalles_consumo' => $detallesConsumo,
+            'tipo_cliente' => $tipoCliente->nombre_efectivo,
+            'configuracion' => [
+                'valor_punto' => $tipoCliente->valor_punto,
+                'minimo_canje' => $tipoCliente->minimo_canje,
+                'maximo_canje' => $tipoCliente->maximo_canje
+            ],
+            'mensaje' => "Se canjearon {$puntosACanjear} puntos por \${$valorDescuento} de descuento"
+        ];
+    }
+
+    /**
+     * Obtener información de puntos disponibles para canje
+     *
+     * @param int $clienteId
+     * @param int $empresaId
+     * @return array
+     */
+    public function obtenerInformacionPuntosDisponibles(int $clienteId, int $empresaId): array
+    {
+        // Verificar que la empresa tiene fidelización habilitada
+        $empresa = \App\Models\Admin\Empresa::find($empresaId);
+        if (!$empresa || !$empresa->tieneFidelizacionHabilitada()) {
+            return [
+                'puntos_disponibles' => 0,
+                'puntos_totales_ganados' => 0,
+                'puntos_totales_canjeados' => 0,
+                'ganancias_detalle' => [],
+                'configuracion' => null,
+                'error' => 'Empresa no tiene fidelización habilitada'
+            ];
+        }
+
+        // Obtener el cliente y su tipo
+        $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
+        $tipoCliente = $cliente?->tipoCliente;
+        
+        if (!$tipoCliente) {
+            // Obtener tipo por defecto de la empresa
+            $tipoCliente = TipoClienteEmpresa::where('id_empresa', $empresaId)
+                ->where('is_default', true)
+                ->first();
+        }
+
+        $puntosCliente = PuntosCliente::where('id_cliente', $clienteId)
+            ->where('id_empresa', $empresaId)
+            ->first();
+
+        if (!$puntosCliente) {
+            return [
+                'puntos_disponibles' => 0,
+                'puntos_totales_ganados' => 0,
+                'puntos_totales_canjeados' => 0,
+                'ganancias_detalle' => [],
+                'configuracion' => $tipoCliente ? [
+                    'valor_punto' => $tipoCliente->valor_punto,
+                    'minimo_canje' => $tipoCliente->minimo_canje,
+                    'maximo_canje' => $tipoCliente->maximo_canje,
+                    'tipo_cliente' => $tipoCliente->nombre_efectivo,
+                    'nivel' => $tipoCliente->nivel
+                ] : null
+            ];
+        }
+
+        // Obtener detalle de ganancias disponibles
+        $gananciasDisponibles = TransaccionPuntos::where('id_cliente', $clienteId)
+            ->where('id_empresa', $empresaId)
+            ->where('tipo', TransaccionPuntos::TIPO_GANANCIA)
+            ->where('fecha_expiracion', '>=', now()->toDateString())
+            ->whereRaw('puntos - puntos_consumidos > 0')
+            ->orderBy('fecha_expiracion', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($ganancia) {
+                return [
+                    'id' => $ganancia->id,
+                    'puntos_originales' => $ganancia->puntos,
+                    'puntos_disponibles' => $ganancia->getPuntosDisponibles(),
+                    'fecha_ganancia' => $ganancia->created_at,
+                    'fecha_expiracion' => $ganancia->fecha_expiracion,
+                    'dias_para_expirar' => now()->diffInDays($ganancia->fecha_expiracion, false),
+                    'venta_id' => $ganancia->id_venta
+                ];
+            });
+
+        return [
+            'puntos_disponibles' => $puntosCliente->puntos_disponibles,
+            'puntos_totales_ganados' => $puntosCliente->puntos_totales_ganados,
+            'puntos_totales_canjeados' => $puntosCliente->puntos_totales_canjeados,
+            'ganancias_detalle' => $gananciasDisponibles,
+            'configuracion' => $tipoCliente ? [
+                'valor_punto' => $tipoCliente->valor_punto,
+                'minimo_canje' => $tipoCliente->minimo_canje,
+                'maximo_canje' => $tipoCliente->maximo_canje,
+                'tipo_cliente' => $tipoCliente->nombre_efectivo,
+                'nivel' => $tipoCliente->nivel,
+                'puntos_por_dolar' => $tipoCliente->puntos_por_dolar
+            ] : null
+        ];
     }
 
     /**

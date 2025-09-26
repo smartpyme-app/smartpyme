@@ -24,6 +24,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     public paquetesIsCollapsed:boolean = true;
     public planillaIsCollapsed:boolean = true;
     public lealtadClientesIsCollapsed:boolean = true;
+    public licenciasIsCollapsed:boolean = true;
     public usuario: any = {};
     public isVisible: boolean = false;
     public loading: boolean = false;
@@ -82,6 +83,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
             localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
         }else{
             this.lealtadClientesIsCollapsed = JSON.parse(localStorage.getItem('lealtadClientesIsCollapsed')!);
+        }
+        if (!localStorage.getItem('licenciasIsCollapsed')) {
+            localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
+        }else{
+            this.licenciasIsCollapsed = JSON.parse(localStorage.getItem('licenciasIsCollapsed')!);
         }
         this.usuario = this.apiService.auth_user();
 
@@ -212,6 +218,15 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
         this.lealtadClientesIsCollapsed = !this.lealtadClientesIsCollapsed;
         localStorage.setItem('lealtadClientesIsCollapsed', this.lealtadClientesIsCollapsed.toString());
+        this.toggleSidebarMenu();
+    }
+
+    toggleLicencias() {
+        if(this.licenciasIsCollapsed){
+            this.closeAll();    
+        }
+        this.licenciasIsCollapsed = !this.licenciasIsCollapsed;
+        localStorage.setItem('licenciasIsCollapsed', this.licenciasIsCollapsed.toString());
         this.toggleSidebarMenu();
     }
 

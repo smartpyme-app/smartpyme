@@ -110,11 +110,19 @@ class VentaObserver
         $tipoCliente = $cliente->tipoCliente;
         if (!$tipoCliente) {
             // Obtener tipo por defecto de la empresa (con cache)
+            // Si la empresa tiene licencia, usar la configuración de la empresa padre
+            $empresa = \App\Models\Admin\Empresa::find($empresaId);
+            $empresaEfectivaId = $empresaId;
+            
+            if ($empresa && $empresa->esEmpresaHija()) {
+                $empresaEfectivaId = $empresa->getEmpresaPadre()->id;
+            }
+            
             $tipoCliente = cache()->remember(
-                "empresa_tipo_default_{$empresaId}",
+                "empresa_tipo_default_{$empresaEfectivaId}",
                 now()->addMinutes(60),
-                function () use ($empresaId) {
-                    return TipoClienteEmpresa::where('id_empresa', $empresaId)
+                function () use ($empresaEfectivaId) {
+                    return TipoClienteEmpresa::where('id_empresa', $empresaEfectivaId)
                         ->where('is_default', true)
                         ->with('tipoBase')
                         ->first();
@@ -176,14 +184,22 @@ class VentaObserver
     private function crearTransaccionPuntos($venta, $cliente, $tipoCliente, $puntosCalculados)
     {
         // Obtener o crear registro de puntos del cliente (optimizado)
+        // Si la empresa tiene licencia, los puntos se acumulan en la empresa padre
+        $empresa = \App\Models\Admin\Empresa::find($venta->id_empresa);
+        $empresaPuntosId = $venta->id_empresa;
+        
+        if ($empresa && $empresa->esEmpresaHija()) {
+            $empresaPuntosId = $empresa->getEmpresaPadre()->id;
+        }
+        
         $puntosCliente = PuntosCliente::where('id_cliente', $cliente->id)
-            ->where('id_empresa', $venta->id_empresa)
+            ->where('id_empresa', $empresaPuntosId)
             ->first();
 
         if (!$puntosCliente) {
             $puntosCliente = PuntosCliente::create([
                 'id_cliente' => $cliente->id,
-                'id_empresa' => $venta->id_empresa,
+                'id_empresa' => $empresaPuntosId,
                 'puntos_disponibles' => 0,
                 'puntos_totales_ganados' => 0,
                 'puntos_totales_canjeados' => 0,
@@ -214,7 +230,7 @@ class VentaObserver
         // Crear transacción de puntos
         $transaccion = TransaccionPuntos::create([
             'id_cliente' => $cliente->id,
-            'id_empresa' => $venta->id_empresa,
+            'id_empresa' => $empresaPuntosId, // Usar la empresa padre si hay licencia
             'id_venta' => $venta->id,
             'tipo' => TransaccionPuntos::TIPO_GANANCIA,
             'puntos' => $puntosCalculados,

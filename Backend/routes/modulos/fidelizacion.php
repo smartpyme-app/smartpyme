@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\FidelizacionClientes\TipoClienteEmpresaController;
 use App\Http\Controllers\Api\FidelizacionClientes\ClienteFidelizacionController;
+use App\Http\Controllers\Api\FidelizacionCliente\CanjePuntosController;
 use Illuminate\Support\Facades\Route;
 
 // Rutas para Lealtad de Clientes
@@ -11,6 +12,7 @@ Route::prefix('fidelizacion')->group(function () {
     Route::prefix('tipos-cliente')->group(function () {
         Route::get('/', [TipoClienteEmpresaController::class, 'index']);
         Route::get('/tipos-base', [TipoClienteEmpresaController::class, 'getTiposBase']);
+        Route::get('/info-licencia', [TipoClienteEmpresaController::class, 'getInfoLicencia']);
         Route::post('/', [TipoClienteEmpresaController::class, 'store']);
         Route::put('/{id}', [TipoClienteEmpresaController::class, 'update']);
         Route::delete('/{id}', [TipoClienteEmpresaController::class, 'destroy']);
@@ -27,6 +29,13 @@ Route::prefix('fidelizacion')->group(function () {
         Route::get('/{id}/beneficios-disponibles', [ClienteFidelizacionController::class, 'getBeneficiosDisponibles']);
         Route::post('/{id}/canjear-puntos', [ClienteFidelizacionController::class, 'canjearPuntos']);
         Route::get('/exportar', [ClienteFidelizacionController::class, 'exportar']);
+    });
+
+    // Canje de Puntos (Sistema FIFO)
+    Route::prefix('canje')->group(function () {
+        Route::post('/puntos-disponibles', [CanjePuntosController::class, 'obtenerPuntosDisponibles']);
+        Route::post('/procesar', [CanjePuntosController::class, 'canjearPuntos']);
+        Route::post('/historial', [CanjePuntosController::class, 'obtenerHistorialCanjes']);
     });
     
 });
