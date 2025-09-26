@@ -305,28 +305,28 @@
                         <div class="visit-stat" 
                              data-bs-toggle="tooltip" 
                              data-bs-placement="top" 
-                             [title]="'Total de interacciones: ' + (visitStats.total + notasStats.total) + '. Suma de todas las visitas y notas registradas para este cliente.'">
+                             [title]="'Total de interacciones'">
                             <div class="stat-number">{{ visitStats.total + notasStats.total }}</div>
                             <div class="stat-label">Total Interacciones</div>
                         </div>
                         <div class="visit-stat" 
                              data-bs-toggle="tooltip" 
                              data-bs-placement="top" 
-                             [title]="'Interacciones este mes: ' + (visitStats.thisMonth + notasStats.thisMonth) + '. Actividad registrada en el mes actual.'">
+                             [title]="'Interacciones este mes'">
                             <div class="stat-number">{{ visitStats.thisMonth + notasStats.thisMonth }}</div>
                             <div class="stat-label">Este Mes</div>
                         </div>
                         <div class="visit-stat" 
                              data-bs-toggle="tooltip" 
                              data-bs-placement="top" 
-                             [title]="'Notas pendientes: ' + notasStats.pendientes + '. Interacciones que requieren seguimiento o resolución.'">
+                             [title]="'Notas pendientes'">
                             <div class="stat-number">{{ notasStats.pendientes }}</div>
                             <div class="stat-label">Pendientes</div>
                         </div>
                         <div class="visit-stat" 
                              data-bs-toggle="tooltip" 
                              data-bs-placement="top" 
-                             [title]="'Última actividad: ' + visitStats.lastVisit + '. Fecha de la última interacción registrada con este cliente.'">
+                             [title]="'Última actividad'">
                             <div class="stat-number">{{ visitStats.lastVisit }}</div>
                             <div class="stat-label">Última Actividad</div>
                         </div>
