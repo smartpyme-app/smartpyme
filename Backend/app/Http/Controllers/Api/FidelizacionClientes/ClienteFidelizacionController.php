@@ -3,207 +3,246 @@
 namespace App\Http\Controllers\Api\FidelizacionClientes;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\FidelizacionClientes\ClienteCollection;
 use App\Models\Ventas\Clientes\Cliente;
 use App\Models\FidelizacionClientes\TipoClienteEmpresa;
 use App\Models\FidelizacionClientes\PuntosCliente;
 use App\Models\FidelizacionClientes\TransaccionPuntos;
+use App\Services\FidelizacionCliente\LicenciaFidelizacionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Builder;
 
 class ClienteFidelizacionController extends Controller
 {
+    protected $licenciaService;
+
+    public function __construct(LicenciaFidelizacionService $licenciaService)
+    {
+        $this->licenciaService = $licenciaService;
+    }
     /**
      * Obtener todos los clientes con información de lealtad
      */
-   public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
+            
+            // Validación de entrada
+            $request->validate([
+                'page' => 'integer|min:1',
+                'paginate' => 'integer|min:1|max:100',
+                'search' => 'string|max:255',
+                'order' => 'in:nombre,puntos,puntos_disponibles,puntos_acumulados,ultima_compra',
+                'direction' => 'in:asc,desc',
+                'tipo_cliente' => 'string|max:50',
+                'nivel' => 'integer|min:1',
+                'puntos_min' => 'integer|min:0',
+                'puntos_max' => 'integer|min:0',
+                'estado' => 'boolean'
+            ]);
 
-            ini_set('pcre.jit', '0');
-
-            $empresaId = $request->user()->id_empresa;
-
-            // Obtener parámetros de paginación y filtros
+            $user = $request->user();
+            $empresa = $user->empresa;
+            $empresaId = $user->id_empresa;
+            
+            // Verificar que el usuario tenga una empresa asociada
+            if (!$empresa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario sin empresa asociada'
+                ], 400);
+            }
+            
+            // Parámetros con valores por defecto
             $perPage = (int) $request->input('paginate', 25);
             $page = (int) $request->input('page', 1);
-            $search = $request->input('search');
-            $tipoCliente = $request->input('tipo_cliente');
-            $nivel = $request->input('nivel');
-            $puntosMin = $request->input('puntos_min');
-            $puntosMax = $request->input('puntos_max');
-            $estado = $request->input('estado');
             $order = $request->input('order', 'nombre');
             $direction = $request->input('direction', 'asc');
 
-            $query = Cliente::with([
-                'tipoCliente' => function($q) use ($empresaId) {
-                    $q->withoutGlobalScopes()
-                    ->where('tipos_cliente_empresa.id_empresa', $empresaId)
-                    ->with('tipoBase');
-                },
-                'puntosCliente' => function($q) use ($empresaId) {
-                    $q->withoutGlobalScopes()
-                    ->where('puntos_cliente.id_empresa', $empresaId);
-                },
-                'ventas' => function($q) {
-                    $q->select('id', 'id_cliente', 'total', 'created_at')
-                    ->orderBy('created_at', 'desc')
-                    ->limit(1);
-                }
-            ])
-            ->where('clientes.id_empresa', $empresaId);
-
-            // Aplicar filtros
-            if ($search) {
-                $query->where(function($q) use ($search) {
-                    $q->where('clientes.nombre', 'LIKE', "%{$search}%")
-                    ->orWhere('clientes.nombre_empresa', 'LIKE', "%{$search}%")
-                    ->orWhere('clientes.correo', 'LIKE', "%{$search}%")
-                    ->orWhere('clientes.telefono', 'LIKE', "%{$search}%")
-                    ->orWhere('clientes.codigo_cliente', 'LIKE', "%{$search}%");
-                });
-            }
-
-            if ($tipoCliente) {
-                $query->where('clientes.tipo', $tipoCliente);
-            }
-
-            if ($estado !== null && $estado !== '') {
-                $query->where('clientes.enable', (bool) $estado);
-            }
-
-            if ($nivel) {
-                $query->where(function($subQuery) use ($nivel, $empresaId) {
-                    $subQuery->whereHas('tipoCliente', function($q) use ($nivel, $empresaId) {
-                        $q->where('tipos_cliente_empresa.id_empresa', $empresaId)
-                        ->where('nivel', $nivel);
-                    })->orWhere(function($q) use ($nivel) {
-                        $q->whereNull('clientes.id_tipo_cliente')
-                        ->where('clientes.nivel', $nivel);
-                    });
-                });
-            }
-
-            if ($puntosMin || $puntosMax) {
-                $query->whereHas('puntosCliente', function($q) use ($puntosMin, $puntosMax, $empresaId) {
-                    $q->withoutGlobalScopes()
-                    ->where('puntos_cliente.id_empresa', $empresaId);
-                    if ($puntosMin) {
-                        $q->where('puntos_disponibles', '>=', $puntosMin);
-                    }
-                    if ($puntosMax) {
-                        $q->where('puntos_disponibles', '<=', $puntosMax);
-                    }
-                });
-            }
-
+            // Query base con eager loading optimizado
+            $query = $this->buildBaseQuery($empresaId, $empresa);
+            
+            // Aplicar todos los filtros
+            $query = $this->aplicarFiltros($query, $request, $empresaId, $empresa);
+            
             // Aplicar ordenamiento
-            switch ($order) {
-                case 'nombre':
-                    $query->orderBy('clientes.nombre', $direction);
-                    break;
-                case 'puntos':
-                case 'puntos_disponibles':
-                    $query->leftJoin('puntos_cliente', function($join) use ($empresaId) {
-                        $join->on('clientes.id', '=', 'puntos_cliente.id_cliente')
-                            ->where('puntos_cliente.id_empresa', '=', $empresaId);
-                    })
-                    ->select('clientes.*')
-                    ->orderBy('puntos_cliente.puntos_disponibles', $direction);
-                    break;
-                case 'puntos_acumulados':
-                    $query->leftJoin('puntos_cliente', function($join) use ($empresaId) {
-                        $join->on('clientes.id', '=', 'puntos_cliente.id_cliente')
-                            ->where('puntos_cliente.id_empresa', '=', $empresaId);
-                    })
-                    ->select('clientes.*')
-                    ->orderBy('puntos_cliente.puntos_totales_ganados', $direction);
-                    break;
-                case 'ultima_compra':
-                    $query->leftJoin('ventas', function($join) use ($empresaId) {
-                        $join->on('clientes.id', '=', 'ventas.id_cliente')
-                            ->where('ventas.id_empresa', '=', $empresaId)
-                            ->whereRaw('ventas.created_at = (SELECT MAX(created_at) FROM ventas WHERE id_cliente = clientes.id AND id_empresa = ' . $empresaId . ')');
-                    })
-                    ->select('clientes.*')
-                    ->orderBy('ventas.created_at', $direction);
-                    break;
-                default:
-                    $query->orderBy('clientes.created_at', 'desc');
-            }
+            $query = $this->aplicarOrdenamiento($query, $order, $direction, $empresaId);
 
+            // Paginar resultados
             $clientes = $query->paginate($perPage, ['*'], 'page', $page);
 
-            // Transformar los datos
-            $clientesData = [];
-            foreach ($clientes->items() as $cliente) {
-                $puntosCliente = $cliente->puntosCliente;
-                $ultimaVenta = $cliente->ventas->first();
-                $tipoCliente = $cliente->tipoCliente;
-
-                $clientesData[] = [
-                    'id' => $cliente->id,
-                    'nombre' => $cliente->tipo === 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre_completo,
-                    'correo' => $cliente->correo,
-                    'telefono' => $cliente->telefono,
-                    'dui' => $cliente->dui,
-                    'ncr' => $cliente->ncr,
-                    'tipo' => $cliente->tipo,
-                    'enable' => $cliente->enable,
-                    'tipo_cliente_fidelizacion' => $tipoCliente ? [
-                        'id' => $tipoCliente->id,
-                        'nivel' => $tipoCliente->nivel,
-                        'nombre_efectivo' => $tipoCliente->nombre_efectivo,
-                        'descripcion_efectiva' => $tipoCliente->descripcion_efectiva,
-                        'puntos_por_dolar' => $tipoCliente->puntos_por_dolar,
-                        'minimo_canje' => $tipoCliente->minimo_canje,
-                        'maximo_canje' => $tipoCliente->maximo_canje,
-                        'expiracion_meses' => $tipoCliente->expiracion_meses,
-                    ] : null,
-                    'puntos_acumulados' => $puntosCliente->puntos_totales_ganados ?? 0,
-                    'puntos_disponibles' => $puntosCliente->puntos_disponibles ?? 0,
-                    'puntos_vencidos' => $this->calcularPuntosVencidos($cliente->id),
-                    'ultima_compra' => $ultimaVenta ? $ultimaVenta->created_at->format('Y-m-d') : null,
-                    'total_compras' => $cliente->ventas()->count(),
-                    'total_gastado' => $cliente->ventas()->sum('total'),
-                    'nivel_actual' => $tipoCliente->nivel ?? 1,
-                    'fecha_registro' => $cliente->created_at->format('Y-m-d'),
-                    'fecha_ultima_actividad' => $puntosCliente->fecha_ultima_actividad ?? null,
-                ];
-            }
-
-            // Crear respuesta paginada
-            $response = [
-                'current_page' => $clientes->currentPage(),
-                'data' => $clientesData,
-                'first_page_url' => $clientes->url(1),
-                'from' => $clientes->firstItem(),
-                'last_page' => $clientes->lastPage(),
-                'last_page_url' => $clientes->url($clientes->lastPage()),
-                'links' => [],
-                'next_page_url' => $clientes->nextPageUrl(),
-                'path' => $clientes->path(),
-                'per_page' => $clientes->perPage(),
-                'to' => $clientes->lastItem(),
-                'total' => $clientes->total(),
-            ];
-
+            // Retornar usando Resource Collection
             return response()->json([
                 'success' => true,
-                'data' => $response,
+                'data' => new ClienteCollection($clientes),
                 'message' => 'Clientes obtenidos exitosamente'
             ]);
 
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de entrada inválidos',
+                'errors' => $e->errors()
+            ], 422);
+            
         } catch (\Exception $e) {
             Log::error('Error al obtener clientes con lealtad: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al obtener los clientes',
-                'error' => $e->getMessage()
+                'message' => 'Error al obtener los clientes'
             ], 500);
+        }
+    }
+
+    /**
+     * Construye la query base con eager loading optimizado
+     */
+    private function buildBaseQuery(int $empresaId, $empresa = null): Builder
+    {
+        // Determinar la empresa efectiva para tipos de cliente
+        $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+        $empresaEfectivaId = $empresaEfectiva->id;
+        
+        // Obtener IDs de empresas de la licencia
+        $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+        
+        return Cliente::with([
+            'tipoCliente' => function($q) use ($empresaEfectivaId) {
+                $q->withoutGlobalScopes()
+                  ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
+                  ->with('tipoBase');
+            },
+            'puntosCliente' => function($q) use ($empresaEfectivaId) {
+                $q->withoutGlobalScopes()
+                  ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
+            },
+            'ventas' => function($q) {
+                $q->select('id', 'id_cliente', 'total', 'created_at')
+                  ->orderBy('created_at', 'desc')
+                  ->limit(1);
+            }
+        ])->whereIn('clientes.id_empresa', $empresasLicenciaIds);
+    }
+
+    /**
+     * Aplica todos los filtros a la query
+     */
+    private function aplicarFiltros(Builder $query, Request $request, int $empresaId, $empresa = null): Builder
+    {
+        return $query
+            ->when($request->search, fn($q) => $this->aplicarFiltrosBusqueda($q, $request->search))
+            ->when($request->tipo_cliente, fn($q) => $q->where('clientes.tipo', $request->tipo_cliente))
+            ->when($request->has('estado'), fn($q) => $q->where('clientes.enable', (bool) $request->estado))
+            ->when($request->nivel, fn($q) => $this->aplicarFiltroNivel($q, $request->nivel, $empresaId))
+            ->when($request->puntos_min || $request->puntos_max, 
+                fn($q) => $this->aplicarFiltroPuntos($q, $request->puntos_min, $request->puntos_max, $empresaId)
+            );
+    }
+
+    /**
+     * Aplica filtros de búsqueda inteligente
+     */
+    private function aplicarFiltrosBusqueda(Builder $query, string $search): Builder
+    {
+        $cleanSearch = trim(preg_replace('/\s+/', ' ', $search));
+        
+        return $query->where(function($q) use ($search, $cleanSearch) {
+            $q->where('clientes.nombre', 'LIKE', "%{$search}%")
+              ->orWhere('clientes.nombre_empresa', 'LIKE', "%{$search}%")
+              ->orWhere('clientes.correo', 'LIKE', "%{$search}%")
+              ->orWhere('clientes.telefono', 'LIKE', "%{$search}%")
+              ->orWhere('clientes.codigo_cliente', 'LIKE', "%{$search}%")
+              ->orWhere('clientes.apellido', 'LIKE', "%{$search}%")
+              // Búsqueda por nombre completo
+              ->orWhereRaw("CONCAT(TRIM(clientes.nombre), ' ', TRIM(clientes.apellido)) LIKE ?", ["%{$cleanSearch}%"])
+              ->orWhereRaw("CONCAT(TRIM(clientes.apellido), ' ', TRIM(clientes.nombre)) LIKE ?", ["%{$cleanSearch}%"]);
+              
+            // Búsqueda por palabras individuales
+            if (strpos($cleanSearch, ' ') !== false) {
+                $palabras = explode(' ', $cleanSearch);
+                if (count($palabras) >= 2) {
+                    $q->orWhere(function($subQ) use ($palabras) {
+                        $subQ->where('clientes.nombre', 'LIKE', "%{$palabras[0]}%")
+                             ->where('clientes.apellido', 'LIKE', "%{$palabras[1]}%");
+                    })->orWhere(function($subQ) use ($palabras) {
+                        $subQ->where('clientes.apellido', 'LIKE', "%{$palabras[0]}%")
+                             ->where('clientes.nombre', 'LIKE', "%{$palabras[1]}%");
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Aplica filtro por nivel de cliente
+     */
+    private function aplicarFiltroNivel(Builder $query, int $nivel, int $empresaId): Builder
+    {
+        return $query->where(function($subQuery) use ($nivel, $empresaId) {
+            $subQuery->whereHas('tipoCliente', function($q) use ($nivel, $empresaId) {
+                $q->where('tipos_cliente_empresa.id_empresa', $empresaId)
+                  ->where('nivel', $nivel);
+            })->orWhere(function($q) use ($nivel) {
+                $q->whereNull('clientes.id_tipo_cliente')
+                  ->where('clientes.nivel', $nivel);
+            });
+        });
+    }
+
+    /**
+     * Aplica filtro por rango de puntos
+     */
+    private function aplicarFiltroPuntos(Builder $query, ?int $puntosMin, ?int $puntosMax, int $empresaId): Builder
+    {
+        return $query->whereHas('puntosCliente', function($q) use ($puntosMin, $puntosMax, $empresaId) {
+            $q->withoutGlobalScopes()
+              ->where('puntos_cliente.id_empresa', $empresaId)
+              ->when($puntosMin, fn($subQ) => $subQ->where('puntos_disponibles', '>=', $puntosMin))
+              ->when($puntosMax, fn($subQ) => $subQ->where('puntos_disponibles', '<=', $puntosMax));
+        });
+    }
+
+    /**
+     * Aplica ordenamiento a la query
+     */
+    private function aplicarOrdenamiento(Builder $query, string $order, string $direction, int $empresaId): Builder
+    {
+        switch ($order) {
+            case 'nombre':
+                return $query->orderBy('clientes.nombre', $direction);
+                
+            case 'puntos':
+            case 'puntos_disponibles':
+                return $query->leftJoin('puntos_cliente', function($join) use ($empresaId) {
+                    $join->on('clientes.id', '=', 'puntos_cliente.id_cliente')
+                         ->where('puntos_cliente.id_empresa', '=', $empresaId);
+                })
+                ->select('clientes.*')
+                ->orderBy('puntos_cliente.puntos_disponibles', $direction);
+                
+            case 'puntos_acumulados':
+                return $query->leftJoin('puntos_cliente', function($join) use ($empresaId) {
+                    $join->on('clientes.id', '=', 'puntos_cliente.id_cliente')
+                         ->where('puntos_cliente.id_empresa', '=', $empresaId);
+                })
+                ->select('clientes.*')
+                ->orderBy('puntos_cliente.puntos_totales_ganados', $direction);
+                
+            case 'ultima_compra':
+                return $query->leftJoin('ventas', function($join) use ($empresaId) {
+                    $join->on('clientes.id', '=', 'ventas.id_cliente')
+                         ->where('ventas.id_empresa', '=', $empresaId)
+                         ->whereRaw('ventas.created_at = (SELECT MAX(created_at) FROM ventas WHERE id_cliente = clientes.id AND id_empresa = ' . $empresaId . ')');
+                })
+                ->select('clientes.*')
+                ->orderBy('ventas.created_at', $direction);
+                
+            default:
+                return $query->orderBy('clientes.created_at', 'desc');
         }
     }
 
@@ -213,11 +252,20 @@ class ClienteFidelizacionController extends Controller
     public function getByTipo(Request $request, $tipoId): JsonResponse
     {
         try {
-            $empresaId = $request->user()->id_empresa;
+            $user = $request->user();
+            $empresaId = $user->id_empresa;
+            $empresa = $user->empresa;
 
-            // Verificar que el tipo de cliente pertenece a la empresa
+            // Obtener empresa efectiva para tipos de cliente
+            $empresaEfectiva = $this->licenciaService->getEmpresaEfectiva($empresa);
+            $empresaEfectivaId = $empresaEfectiva->id;
+            
+            // Obtener IDs de empresas de la licencia
+            $empresasLicenciaIds = $this->licenciaService->getEmpresasLicenciaIds($empresa);
+
+            // Verificar que el tipo de cliente pertenece a la empresa efectiva
             $tipoCliente = TipoClienteEmpresa::where('id', $tipoId)
-                ->where('id_empresa', $empresaId)
+                ->where('id_empresa', $empresaEfectivaId)
                 ->first();
 
             if (!$tipoCliente) {
@@ -233,14 +281,14 @@ class ClienteFidelizacionController extends Controller
 
             // Mostrar todos los clientes sin filtrar por tipo específico
             $clientes = Cliente::with([
-                'tipoCliente' => function($q) use ($empresaId) {
+                'tipoCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
-                      ->where('tipos_cliente_empresa.id_empresa', $empresaId)
+                      ->where('tipos_cliente_empresa.id_empresa', $empresaEfectivaId)
                       ->with('tipoBase');
                 },
-                'puntosCliente' => function($q) use ($empresaId) {
+                'puntosCliente' => function($q) use ($empresaEfectivaId) {
                     $q->withoutGlobalScopes()
-                      ->where('puntos_cliente.id_empresa', $empresaId);
+                      ->where('puntos_cliente.id_empresa', $empresaEfectivaId);
                 },
                 'ventas' => function($q) {
                     $q->select('id', 'id_cliente', 'total', 'created_at')
@@ -248,7 +296,7 @@ class ClienteFidelizacionController extends Controller
                       ->limit(1);
                 }
             ])
-            ->where('clientes.id_empresa', $empresaId)
+            ->whereIn('clientes.id_empresa', $empresasLicenciaIds)
             ->orderBy('nombre')
             ->paginate($perPage, ['*'], 'page', $page);
 

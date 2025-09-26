@@ -39,8 +39,8 @@ class ShopifyTransformer
             'estado' => $estado,
             'forma_pago' => $this->mapearFormaPago($shopifyData),
             'observaciones' => $shopifyData['note'] ?? '',
-            'fecha' => $shopifyData['created_at'],
-            'fecha_pago' => $shopifyData['processed_at'] ?? $shopifyData['created_at'],
+            'fecha' => date('Y-m-d', strtotime($shopifyData['created_at'])),
+            'fecha_pago' => date('Y-m-d', strtotime($shopifyData['processed_at'] ?? $shopifyData['created_at'])),
             'total_costo' => 0,
             'total' => $shopifyData['total_price'],
             'sub_total' => $shopifyData['subtotal_price'],
@@ -144,24 +144,41 @@ class ShopifyTransformer
     {
         Log::info("Producto desde Shopify", ['product_id' => $shopifyData['id']]);
         Log::info("Producto desde Shopify", ['product_id' => $shopifyData]);
+        
+        // Verificar que existan variants
+        if (empty($shopifyData['variants']) || !is_array($shopifyData['variants'])) {
+            Log::warning("Producto sin variants válidos", ['product_id' => $shopifyData['id']]);
+            return [];
+        }
+        
         $productos = [];
         foreach ($shopifyData['variants'] as $variant) {
+            // Verificar que el variant tenga los datos mínimos necesarios
+            if (empty($variant['id'])) {
+                Log::warning("Variant sin ID válido", ['variant' => $variant]);
+                continue;
+            }
+            
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
-                'nombre' => $shopifyData['title'],
+                'nombre' => $shopifyData['title'] ?? 'Producto sin nombre',
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
-                'id_usuario' => $id_usuario,
-                'id_sucursal' => $id_sucursal,
-                'precio' => $variant['price'] ?? 0,
+                'precio' => floatval($variant['price'] ?? 0),
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
-                'shopify_inventory_item_id' => $variant['inventory_item_id'],
+                'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
                 'enable' => 1,
                 'tipo' => 'Producto',
-                'costo' => $variant['price'] ?? 0,
-                'stock' => $variant['inventory_quantity'] ?? 0,
+                'costo' => floatval($variant['price'] ?? 0),
+                // Campos de control para prevenir ciclos
+                'syncing_from_shopify' => true,
+                'last_shopify_sync' => now(),
+                // Datos adicionales para el procesamiento (no van al modelo directamente)
+                '_stock' => intval($variant['inventory_quantity'] ?? 0),
+                '_id_usuario' => $id_usuario,
+                '_id_sucursal' => $id_sucursal,
             ];
         }
         return $productos;
@@ -187,9 +204,19 @@ class ShopifyTransformer
 
     public function transformarCategoriaDesdeShopify($shopifyData, $id_empresa)
     {
+        // Verificar si la categoría existe en los datos de Shopify
+        if (empty($shopifyData['category']) || !isset($shopifyData['category']['name'])) {
+            return [
+                'nombre' => 'General',
+                'descripcion' => 'Categoría general para productos sin categoría específica',
+                'id_empresa' => $id_empresa,
+                'enable' => 1,
+            ];
+        }
+
         return [
             'nombre' => $shopifyData['category']['name'],
-            'descripcion' => $shopifyData['category']['full_name'],
+            'descripcion' => $shopifyData['category']['full_name'] ?? $shopifyData['category']['name'],
             'id_empresa' => $id_empresa,
             'enable' => 1,
         ];

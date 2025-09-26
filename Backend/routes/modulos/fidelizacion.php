@@ -12,6 +12,7 @@ Route::prefix('fidelizacion')->group(function () {
     Route::prefix('tipos-cliente')->group(function () {
         Route::get('/', [TipoClienteEmpresaController::class, 'index']);
         Route::get('/tipos-base', [TipoClienteEmpresaController::class, 'getTiposBase']);
+        Route::get('/info-licencia', [TipoClienteEmpresaController::class, 'getInfoLicencia']);
         Route::post('/', [TipoClienteEmpresaController::class, 'store']);
         Route::put('/{id}', [TipoClienteEmpresaController::class, 'update']);
         Route::delete('/{id}', [TipoClienteEmpresaController::class, 'destroy']);

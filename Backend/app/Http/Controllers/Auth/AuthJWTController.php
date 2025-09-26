@@ -74,6 +74,13 @@ class AuthJWTController extends Controller
         $acceso->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
             ->whereNotIn('estado', [
                 config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
@@ -757,6 +764,13 @@ class AuthJWTController extends Controller
         $user->save();
 
         $user->empresa = $user->empresa()->with('licencia')->first();
+        
+        // Agregar información sobre el tipo de empresa (padre/hija)
+        if ($user->empresa) {
+            $user->empresa->es_empresa_padre = $user->empresa->esEmpresaPadre();
+            $user->empresa->es_empresa_hija = $user->empresa->esEmpresaHija();
+        }
+        
         $suscripcion = $user->empresa->suscripcion()
             ->whereNotIn('estado', [
                 config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
