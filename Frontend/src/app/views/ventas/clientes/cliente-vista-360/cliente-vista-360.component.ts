@@ -736,8 +736,21 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
   formatDate(dateString: string): string {
     if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
+    try { 
+      let date: Date;
+      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        date = new Date(dateString + 'T00:00:00');
+      } else if (dateString.includes('T') && dateString.includes('Z')) {
+        date = new Date(dateString);
+      } else {
+    
+        date = new Date(dateString);
+      }
+      
+      if (isNaN(date.getTime())) {
+        return dateString; 
+      }
+      
       return date.toLocaleDateString('es-ES', {
         year: 'numeric',
         month: 'short',
