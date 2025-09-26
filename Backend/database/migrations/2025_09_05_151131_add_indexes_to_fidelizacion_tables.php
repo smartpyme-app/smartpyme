@@ -33,7 +33,7 @@ class AddIndexesToFidelizacionTables extends Migration
         // Índices para clientes
         Schema::table('clientes', function (Blueprint $table) {
             $table->index(['id_empresa', 'enable']);
-            $table->index('email');
+            $table->index('correo');
             $table->index('telefono');
         });
 
@@ -108,7 +108,7 @@ class AddIndexesToFidelizacionTables extends Migration
             Schema::table('clientes', function (Blueprint $table) {
                 $table->dropIndex(['id_empresa', 'enable']);
                 $table->dropIndex(['id_empresa', 'nivel']);
-                $table->dropIndex(['email']);
+                $table->dropIndex(['correo']);
                 $table->dropIndex(['telefono']);
             });
     
