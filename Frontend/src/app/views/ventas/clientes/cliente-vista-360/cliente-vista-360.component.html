@@ -443,6 +443,19 @@
     <div class="modal-body">
         <p class="text-muted mb-3">{{ isEditingNote ? 'Edita los detalles de la interacción' : 'Registra una interacción con el cliente' }}</p>
         
+        <!-- Mostrar errores del modal -->
+        <div *ngIf="showModalErrors" class="alert alert-danger" role="alert">
+            <div *ngIf="modalErrors.general" class="mb-2">
+                {{ modalErrors.general }}
+            </div>
+            <ul *ngIf="!modalErrors.general" class="mb-0">
+                <li *ngFor="let field of getErrorFields()">
+                    <strong>{{ getFieldLabel(field) }}:</strong>
+                    <span *ngFor="let error of modalErrors[field]">{{ error }}</span>
+                </li>
+            </ul>
+        </div>
+        
         <form [formGroup]="noteForm" (ngSubmit)="saveNote()">
             <div class="row mb-3">
                 <div class="col-12">
@@ -497,9 +510,9 @@
                     <label class="form-label">Responsable</label>
                     <select class="form-select" formControlName="responsable">
                         <option value="">Seleccionar...</option>
-                        <option value="jorge">Jorge Martínez (Ventas)</option>
-                        <option value="jennifer">Jennifer Díaz (Customer Success)</option>
-                        <option value="carla">Carla Rodríguez (Soporte)</option>
+                        <option *ngFor="let usuario of usuarios" [value]="usuario.name">
+                            {{ usuario.name }} {{ usuario.apellido ? usuario.apellido : '' }} ({{ usuario.tipo || 'Usuario' }})
+                        </option>
                     </select>
                     <div *ngIf="noteForm.get('responsable')?.invalid && noteForm.get('responsable')?.touched" class="form-text text-danger">
                         Responsable es requerido
@@ -508,10 +521,10 @@
                 <div class="col-md-6">
                     <label class="form-label">Prioridad</label>
                     <select class="form-select" formControlName="prioridad">
-                        <option value="low">📗 Baja</option>
-                        <option value="medium">📙 Media</option>
-                        <option value="high">📕 Alta</option>
-                        <option value="urgent">🚨 Urgente</option>
+                        <option value="low" >Baja</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="high">Alta</option>
+                        <option value="urgent">Urgente</option>
                     </select>
                 </div>
             </div>
@@ -520,11 +533,11 @@
                 <div class="col-md-6">
                     <label class="form-label">Estado</label>
                     <select class="form-select" formControlName="estado">
-                        <option value="activo">🟢 Activo</option>
-                        <option value="pendiente">🟡 Pendiente</option>
-                        <option value="en_proceso">🔵 En Proceso</option>
-                        <option value="resuelto">✅ Resuelto</option>
-                        <option value="archivado">📁 Archivado</option>
+                        <option value="activo" selected>Activo</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="resuelto">Resuelto</option>
+                        <option value="archivado">Archivado</option>
                     </select>
                 </div>
                 <div class="col-md-6">

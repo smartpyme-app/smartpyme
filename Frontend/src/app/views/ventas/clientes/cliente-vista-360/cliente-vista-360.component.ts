@@ -50,6 +50,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   public visits: any[] = [];
   public notas: any[] = [];
   public allInteractions: any[] = []; // Lista combinada de visitas y notas
+  public usuarios: any[] = []; // Lista de usuarios de la empresa
   public visitStats = {
     total: 1,
     thisMonth: 1,
@@ -66,6 +67,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   public isEditingNote: boolean = false;
   public editingNoteId: number | null = null;
   public editingNoteType: string = '';
+
+  // Variables para manejo de errores en el modal
+  public modalErrors: any = {};
+  public showModalErrors: boolean = false;
 
   modalRef?: BsModalRef;
 
@@ -86,6 +91,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.combineInteractions();
     
     this.loadCliente();
+    this.loadUsuarios();
   }
 
   ngAfterViewInit(): void {
@@ -153,6 +159,22 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         }
         
         this.loading = false;
+      }
+    });
+  }
+
+  loadUsuarios(): void {
+    this.apiService.getAll('usuarios/list').subscribe({
+      next: (response) => {
+        if (response && Array.isArray(response)) {
+          this.usuarios = response;
+        } else {
+          this.usuarios = [];
+        }
+      },
+      error: (error) => {
+        console.error('Error cargando usuarios:', error);
+        this.usuarios = [];
       }
     });
   }
@@ -436,6 +458,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.editingNoteId = null;
     this.editingNoteType = '';
     
+    // Limpiar errores del modal
+    this.modalErrors = {};
+    this.showModalErrors = false;
+    
     this.noteForm.reset({
       tipo: '',
       fecha: new Date().toISOString().split('T')[0],
@@ -458,6 +484,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.isEditingNote = false;
     this.editingNoteId = null;
     this.editingNoteType = '';
+    
+    // Limpiar errores del modal
+    this.modalErrors = {};
+    this.showModalErrors = false;
   }
 
 
@@ -465,6 +495,10 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     this.isEditingNote = true;
     this.editingNoteId = interaction.id;
     this.editingNoteType = interaction.type;
+    
+    // Limpiar errores del modal
+    this.modalErrors = {};
+    this.showModalErrors = false;
     
     // Mapear los datos de la interacción al formulario
     const formData = {
@@ -488,8 +522,14 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
   }
 
   saveNote(): void {
+    // Limpiar errores previos
+    this.modalErrors = {};
+    this.showModalErrors = false;
+    
     if (this.noteForm.invalid) {
       this.markFormGroupTouched();
+      this.modalErrors = { general: 'Por favor completa todos los campos obligatorios correctamente' };
+      this.showModalErrors = true;
       this.alertService.error('Por favor completa todos los campos obligatorios correctamente');
       return;
     }
@@ -526,12 +566,14 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
             // Estrategia más agresiva: recarga completa del componente
             this.forceRefresh();
           } else {
+            this.modalErrors = { general: 'Error al actualizar la nota' };
+            this.showModalErrors = true;
             this.alertService.error('Error al actualizar la nota');
           }
         },
         error: (error) => {
           console.error('Error actualizando nota:', error);
-          this.alertService.error('Error al actualizar la nota');
+          this.handleModalError(error);
         }
       });
     } else {
@@ -559,12 +601,14 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
             // Estrategia más agresiva: recarga completa del componente
             this.forceRefresh();
           } else {
+            this.modalErrors = { general: 'Error al guardar la nota' };
+            this.showModalErrors = true;
             this.alertService.error('Error al guardar la nota');
           }
         },
         error: (error) => {
           console.error('Error guardando nota:', error);
-          this.alertService.error('Error al guardar la nota');
+          this.handleModalError(error);
         }
       });
     }
@@ -576,6 +620,36 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       control?.markAsTouched();
     });
   }
+
+  private handleModalError(error: any): void {
+    console.error('Error en modal:', error);
+    
+    if (error.status === 422 && error.error && error.error.errors) {
+      // Manejar errores de validación del backend
+      this.modalErrors = error.error.errors;
+      this.showModalErrors = true;
+      
+      // También mostrar en el sistema global con mensaje específico
+      const errorMessages = Object.values(error.error.errors).flat();
+      this.alertService.error({
+        status: 422,
+        error: {
+          error: errorMessages.join(', ')
+        }
+      });
+    } else if (error.status === 400 && error.error && error.error.message) {
+      // Manejar otros errores del backend
+      this.modalErrors = { general: error.error.message };
+      this.showModalErrors = true;
+      this.alertService.error(error.error.message);
+    } else {
+      // Error genérico
+      this.modalErrors = { general: 'Ha ocurrido un error inesperado. Por favor, intenta nuevamente.' };
+      this.showModalErrors = true;
+      this.alertService.error('Ha ocurrido un error inesperado. Por favor, intenta nuevamente.');
+    }
+  }
+
 
   private forceReloadData(clienteId: string): void {
     console.log('Iniciando recarga forzada de datos...');
@@ -767,5 +841,26 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
 
   get clienteEmail(): string {
     return this.cliente?.correo || this.cliente?.contactos?.[0]?.correo || '';
+  }
+
+  // Métodos para manejar errores del modal
+  getErrorFields(): string[] {
+    return Object.keys(this.modalErrors).filter(field => field !== 'general');
+  }
+
+  getFieldLabel(field: string): string {
+    const labels: { [key: string]: string } = {
+      'fecha_seguimiento': 'Fecha de Seguimiento',
+      'fecha': 'Fecha',
+      'hora': 'Hora',
+      'titulo': 'Título',
+      'tipo': 'Tipo de Interacción',
+      'responsable': 'Responsable',
+      'prioridad': 'Prioridad',
+      'estado': 'Estado',
+      'notas': 'Notas',
+      'contenido': 'Contenido'
+    };
+    return labels[field] || field;
   }
 }

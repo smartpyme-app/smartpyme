@@ -86,6 +86,29 @@ class ClienteNotasController extends Controller
                 'fecha_seguimiento' => 'nullable|date|after_or_equal:fecha_interaccion',
                 'resolucion' => 'nullable|string',
                 'metadata' => 'nullable|array'
+            ], [
+                'cliente_id.required' => 'El cliente es obligatorio',
+                'cliente_id.exists' => 'El cliente seleccionado no existe',
+                'tipo.required' => 'El tipo de interacción es obligatorio',
+                'tipo.in' => 'El tipo de interacción seleccionado no es válido',
+                'titulo.required' => 'El título es obligatorio',
+                'titulo.string' => 'El título debe ser texto',
+                'titulo.max' => 'El título no puede exceder 255 caracteres',
+                'contenido.required' => 'El contenido es obligatorio',
+                'contenido.string' => 'El contenido debe ser texto',
+                'responsable.string' => 'El responsable debe ser texto',
+                'responsable.max' => 'El responsable no puede exceder 255 caracteres',
+                'prioridad.in' => 'La prioridad seleccionada no es válida',
+                'estado.in' => 'El estado seleccionado no es válido',
+                'requiere_seguimiento.boolean' => 'El campo requiere seguimiento debe ser verdadero o falso',
+                'fecha_interaccion.required' => 'La fecha de interacción es obligatoria',
+                'fecha_interaccion.date' => 'La fecha de interacción debe ser una fecha válida',
+                'hora_interaccion.required' => 'La hora de interacción es obligatoria',
+                'hora_interaccion.date_format' => 'La hora de interacción debe tener el formato HH:MM',
+                'fecha_seguimiento.date' => 'La fecha de seguimiento debe ser una fecha válida',
+                'fecha_seguimiento.after_or_equal' => 'La fecha de seguimiento debe ser igual o posterior a la fecha de interacción',
+                'resolucion.string' => 'La resolución debe ser texto',
+                'metadata.array' => 'Los metadatos deben ser un arreglo'
             ]);
 
             if ($validator->fails()) {
@@ -175,9 +198,23 @@ class ClienteNotasController extends Controller
                 'requiere_seguimiento' => 'nullable|boolean',
                 'fecha_interaccion' => 'nullable|date',
                 'hora_interaccion' => 'nullable|date_format:H:i',
-                'fecha_seguimiento' => 'nullable|date',
+                'fecha_seguimiento' => 'nullable|date|after_or_equal:fecha_interaccion',
                 'resolucion' => 'nullable|string',
                 'metadata' => 'nullable|array'
+            ], [
+                'tipo.in' => 'El tipo de interacción seleccionado no es válido',
+                'titulo.string' => 'El título debe ser texto',
+                'titulo.max' => 'El título no puede exceder 255 caracteres',
+                'contenido.string' => 'El contenido debe ser texto',
+                'prioridad.in' => 'La prioridad seleccionada no es válida',
+                'estado.in' => 'El estado seleccionado no es válido',
+                'requiere_seguimiento.boolean' => 'El campo requiere seguimiento debe ser verdadero o falso',
+                'fecha_interaccion.date' => 'La fecha de interacción debe ser una fecha válida',
+                'hora_interaccion.date_format' => 'La hora de interacción debe tener el formato HH:MM',
+                'fecha_seguimiento.date' => 'La fecha de seguimiento debe ser una fecha válida',
+                'fecha_seguimiento.after_or_equal' => 'La fecha de seguimiento debe ser igual o posterior a la fecha de interacción',
+                'resolucion.string' => 'La resolución debe ser texto',
+                'metadata.array' => 'Los metadatos deben ser un arreglo'
             ]);
 
             if ($validator->fails()) {
