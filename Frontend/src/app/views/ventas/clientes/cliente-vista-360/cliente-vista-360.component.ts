@@ -1,23 +1,25 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, AfterViewInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FidelizacionService } from '@services/fidelizacion.service';
+
+declare var bootstrap: any;
 
 @Component({
   selector: 'app-cliente-vista-360',
   templateUrl: './cliente-vista-360.component.html',
   styleUrls: ['./cliente-vista-360.component.css']
 })
-export class ClienteVista360Component implements OnInit {
+export class ClienteVista360Component implements OnInit, AfterViewInit {
 
   public cliente: any = {};
   public loading: boolean = false;
   public activeTab: string = 'analytics';
   public activeHistoryTab: string = 'transactions';
-  public showAddNoteModal: boolean = false;
-  public newNote: any = {};
+  public noteForm!: FormGroup;
   
   // Inicializar con datos por defecto
   public metrics = {
@@ -45,30 +47,25 @@ export class ClienteVista360Component implements OnInit {
   public transactions: any[] = [];
   public categories: any[] = [];
 
-  public visits = [
-    // ... mantener datos estáticos como ejemplo
-    {
-      icon: '👤',
-      type: 'visit',
-      title: 'Visita presencial - Reunión comercial',
-      date: '18 Jun 2025, 2:30 PM',
-      meta: [
-        { icon: '🏢', text: 'Oficina del cliente' },
-        { icon: '⏱️', text: '45 min' },
-        { icon: '👨‍💼', text: 'Jorge Martínez (Ventas)' }
-      ],
-      note: 'Objetivo: Presentación de nuevos productos y renovación de contrato.\nResultado: Cliente interesado en ampliar inventario. Solicitó cotización para productos premium. Se acordó seguimiento en 1 semana.',
-      priority: 'high',
-      followUp: '📅 Seguimiento: 25 Jun 2025'
-    }
-    // ... otros visits
-  ];
-
+  public visits: any[] = [];
+  public notas: any[] = [];
+  public allInteractions: any[] = []; // Lista combinada de visitas y notas
   public visitStats = {
-    total: 12,
-    thisMonth: 3,
-    lastVisit: '5 días'
+    total: 1,
+    thisMonth: 1,
+    lastVisit: 'Hoy'
   };
+  public notasStats = {
+    total: 1,
+    thisMonth: 1,
+    pendientes: 0,
+    altaPrioridad: 1
+  };
+
+  // Variables para edición de notas
+  public isEditingNote: boolean = false;
+  public editingNoteId: number | null = null;
+  public editingNoteType: string = '';
 
   modalRef?: BsModalRef;
 
@@ -78,11 +75,44 @@ export class ClienteVista360Component implements OnInit {
     private fidelizacionService: FidelizacionService,
     private modalService: BsModalService,
     private route: ActivatedRoute,
-    private router: Router
-  ) { }
+    private router: Router,
+    private formBuilder: FormBuilder
+  ) { 
+    this.initializeNoteForm();
+  }
 
   ngOnInit(): void {
+    this.combineInteractions();
+    
     this.loadCliente();
+  }
+
+  ngAfterViewInit(): void {
+    // Inicializar tooltips de Bootstrap
+    this.initializeTooltips();
+  }
+
+  initializeTooltips(): void {
+    // Esperar un poco para que el DOM esté completamente renderizado
+    setTimeout(() => {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+      });
+    }, 100);
+  }
+
+  initializeNoteForm(): void {
+    this.noteForm = this.formBuilder.group({
+      tipo: ['', Validators.required],
+      fecha: [new Date().toISOString().split('T')[0], Validators.required],
+      hora: ['14:30', Validators.required],
+      titulo: ['', [Validators.required, Validators.minLength(5)]],
+      responsable: ['', Validators.required],
+      prioridad: ['medium', Validators.required],
+      notas: ['', [Validators.required, Validators.minLength(10)]],
+      seguimiento: ['']
+    });
   }
 
   loadCliente(): void {
@@ -99,6 +129,7 @@ export class ClienteVista360Component implements OnInit {
       next: (response) => {
         if (response.success && response.data) {
           this.processClientData(response.data);
+          this.loadNotasYVisitas(clienteId);
         } else {
           this.alertService.error('Error al cargar datos del cliente');
         }
@@ -119,6 +150,147 @@ export class ClienteVista360Component implements OnInit {
         
         this.loading = false;
       }
+    });
+  }
+
+  loadNotasYVisitas(clienteId: string): void {
+    
+    // Cargar notas
+    this.apiService.getAll(`cliente-notas/notas/${clienteId}`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.notas = response.data;
+          this.combineInteractions();
+        } else {
+          this.notas = [];
+          this.combineInteractions();
+        }
+      },
+      error: (error) => {
+        console.error('Error cargando notas:', error);
+        this.notas = [];
+        this.combineInteractions();
+      }
+    });
+
+    // Cargar visitas
+    this.apiService.getAll(`cliente-notas/visitas/${clienteId}`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.visits = response.data;
+          this.combineInteractions();
+        } else {
+          this.visits = [];
+          this.combineInteractions();
+        }
+      },
+      error: (error) => {
+        console.error('Error cargando visitas:', error);
+        this.visits = [];
+        this.combineInteractions();
+      }
+    });
+
+    // Cargar estadísticas
+    this.apiService.getAll(`cliente-notas/estadisticas/${clienteId}`).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.visitStats = {
+            total: response.data.total_visitas || 0,
+            thisMonth: response.data.visitas_este_mes || 0,
+            lastVisit: response.data.ultima_visita ? this.formatDate(response.data.ultima_visita) : 'Nunca'
+          };
+          this.notasStats = {
+            total: response.data.total_notas || 0,
+            thisMonth: response.data.notas_este_mes || 0,
+            pendientes: response.data.notas_pendientes || 0,
+            altaPrioridad: response.data.notas_alta_prioridad || 0
+          };
+        } else {
+          this.visitStats = { total: 0, thisMonth: 0, lastVisit: 'Nunca' };
+          this.notasStats = { total: 0, thisMonth: 0, pendientes: 0, altaPrioridad: 0 };
+        }
+      },
+      error: (error) => {
+        console.error('Error cargando estadísticas:', error);
+        this.visitStats = { total: 0, thisMonth: 0, lastVisit: 'Nunca' };
+        this.notasStats = { total: 0, thisMonth: 0, pendientes: 0, altaPrioridad: 0 };
+      }
+    });
+  }
+
+  combineInteractions(): void {
+    // Combinar visitas y notas en una sola lista
+    const allItems: any[] = [];
+    
+    // Agregar visitas
+    this.visits.forEach(visit => {
+      allItems.push({
+        ...visit,
+        type: 'visita',
+        fecha: visit.fecha_visita,
+        hora: visit.hora_visita
+      });
+    });
+    
+    // Agregar notas
+    this.notas.forEach(nota => {
+      allItems.push({
+        ...nota,
+        type: 'nota',
+        fecha: nota.fecha_interaccion,
+        hora: nota.hora_interaccion
+      });
+    });
+    
+    // Si no hay datos reales, agregar datos de prueba
+    if (allItems.length === 0) {
+      allItems.push({
+        id: 1,
+        type: 'visita',
+        titulo: 'Visita de seguimiento comercial',
+        descripcion: 'Reunión para discutir nuevas oportunidades de negocio y revisar el estado actual de la cuenta.',
+        responsable: 'Jorge Martínez',
+        prioridad: 'high',
+        prioridad_formateada: 'Alta',
+        color_prioridad: '#ef4444',
+        fecha: '2025-09-25',
+        hora: '14:30',
+        tipo_visita: 'presencial',
+        tipo_formateado: 'Visita Presencial',
+        icono: '👤',
+        duracion_formateada: '45m',
+        fecha_seguimiento: '2025-09-30',
+        resuelto: false
+      });
+      
+      allItems.push({
+        id: 2,
+        type: 'nota',
+        titulo: 'Consulta sobre productos',
+        contenido: 'El cliente preguntó sobre la disponibilidad de productos específicos y precios para volumen.',
+        responsable: 'Jennifer Díaz',
+        prioridad: 'medium',
+        prioridad_formateada: 'Media',
+        color_prioridad: '#f59e0b',
+        fecha: '2025-09-24',
+        hora: '10:15',
+        tipo: 'whatsapp',
+        tipo_formateado: 'WhatsApp',
+        icono: '💬',
+        categorias: [{
+          categoria_formateada: 'Consulta Comercial'
+        }],
+        fecha_seguimiento: null,
+        resuelto: true
+      });
+    }
+    
+    // Ordenar por fecha (más reciente primero)
+    this.allInteractions = allItems.sort((a: any, b: any) => {
+      const dateA = new Date(a.fecha + ' ' + a.hora);
+      const dateB = new Date(b.fecha + ' ' + b.hora);
+      return dateB.getTime() - dateA.getTime();
     });
   }
 
@@ -236,40 +408,163 @@ export class ClienteVista360Component implements OnInit {
 
   showTab(tabName: string): void {
     this.activeTab = tabName;
+    // Reinicializar tooltips después del cambio de pestaña
+    setTimeout(() => this.initializeTooltips(), 100);
   }
 
   showHistoryTab(tabName: string): void {
     this.activeHistoryTab = tabName;
+    
+    // Si es el tab de visitas, asegurar que tenemos datos
+    if (tabName === 'visits') {
+      this.combineInteractions();
+    }
+    
+    // Reinicializar tooltips después del cambio de pestaña
+    setTimeout(() => this.initializeTooltips(), 100);
   }
 
-  openAddNoteModal(): void {
-    this.showAddNoteModal = true;
-    this.newNote = {
+  openAddNoteModal(template: TemplateRef<any>): void {
+    console.log('Abriendo modal de agregar nota...');
+    this.isEditingNote = false;
+    this.editingNoteId = null;
+    this.editingNoteType = '';
+    
+    this.noteForm.reset({
       tipo: '',
       fecha: new Date().toISOString().split('T')[0],
-      hora: '14:30',
+      hora: new Date().toTimeString().slice(0, 5),
       titulo: '',
       responsable: '',
       prioridad: 'medium',
       notas: '',
       seguimiento: ''
-    };
+    });
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static'
+    });
+    console.log('Modal abierto con ModalService');
   }
 
   closeAddNoteModal(): void {
-    this.showAddNoteModal = false;
-    this.newNote = {};
+    console.log('Cerrando modal de agregar nota...');
+    this.modalRef?.hide();
+    this.noteForm.reset();
+    this.isEditingNote = false;
+    this.editingNoteId = null;
+    this.editingNoteType = '';
+  }
+
+
+  editNote(interaction: any, template: TemplateRef<any>): void {
+    console.log('Editando nota:', interaction);
+    this.isEditingNote = true;
+    this.editingNoteId = interaction.id;
+    this.editingNoteType = interaction.type;
+    
+    // Mapear los datos de la interacción al formulario
+    const formData = {
+      tipo: interaction.type === 'visita' ? 'visita' : interaction.tipo,
+      fecha: interaction.fecha,
+      hora: interaction.hora,
+      titulo: interaction.titulo,
+      responsable: interaction.responsable,
+      prioridad: interaction.prioridad,
+      notas: interaction.type === 'visita' ? interaction.descripcion : interaction.contenido,
+      seguimiento: interaction.fecha_seguimiento || ''
+    };
+    
+    this.noteForm.patchValue(formData);
+    
+    // Abrir el modal
+    this.modalRef = this.modalService.show(template, {
+      class: 'modal-lg',
+      backdrop: 'static'
+    });
   }
 
   saveNote(): void {
-    if (!this.newNote.titulo || !this.newNote.notas) {
-      this.alertService.error('Por favor completa todos los campos obligatorios');
+    if (this.noteForm.invalid) {
+      this.markFormGroupTouched();
+      this.alertService.error('Por favor completa todos los campos obligatorios correctamente');
       return;
     }
 
-    // Implementar guardado real cuando tengas el endpoint
-    this.alertService.success('Nota guardada exitosamente', 'success');
-    this.closeAddNoteModal();
+    const clienteId = this.route.snapshot.params['id'];
+    const formValue = this.noteForm.value;
+    
+    if (this.isEditingNote && this.editingNoteId) {
+      // Actualizar nota existente
+      const updateData = {
+        tipo: formValue.tipo,
+        titulo: formValue.titulo,
+        contenido: formValue.notas,
+        responsable: formValue.responsable,
+        prioridad: formValue.prioridad,
+        fecha_interaccion: formValue.fecha,
+        hora_interaccion: formValue.hora,
+        fecha_seguimiento: formValue.seguimiento || null
+      };
+
+      const endpoint = this.editingNoteType === 'visita' 
+        ? 'cliente-notas/visitas' 
+        : 'cliente-notas/notas';
+
+      this.apiService.update(endpoint, this.editingNoteId, updateData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.alertService.success('success','Nota actualizada exitosamente');
+            this.closeAddNoteModal();
+            // Recargar notas y visitas
+            this.loadNotasYVisitas(clienteId);
+          } else {
+            this.alertService.error('Error al actualizar la nota');
+          }
+        },
+        error: (error) => {
+          console.error('Error actualizando nota:', error);
+          this.alertService.error('Error al actualizar la nota');
+        }
+      });
+    } else {
+      // Crear nueva nota
+      const notaData = {
+        cliente_id: parseInt(clienteId),
+        tipo: formValue.tipo,
+        titulo: formValue.titulo,
+        contenido: formValue.notas,
+        responsable: formValue.responsable,
+        prioridad: formValue.prioridad,
+        fecha_interaccion: formValue.fecha,
+        hora_interaccion: formValue.hora,
+        fecha_seguimiento: formValue.seguimiento || null
+      };
+
+      this.apiService.store('cliente-notas/notas', notaData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.alertService.success('success','Nota guardada exitosamente');
+            this.closeAddNoteModal();
+            // Recargar notas y visitas
+            this.loadNotasYVisitas(clienteId);
+          } else {
+            this.alertService.error('Error al guardar la nota');
+          }
+        },
+        error: (error) => {
+          console.error('Error guardando nota:', error);
+          this.alertService.error('Error al guardar la nota');
+        }
+      });
+    }
+  }
+
+  private markFormGroupTouched(): void {
+    Object.keys(this.noteForm.controls).forEach(key => {
+      const control = this.noteForm.get(key);
+      control?.markAsTouched();
+    });
   }
 
   contactWhatsApp(): void {
@@ -278,7 +573,7 @@ export class ClienteVista360Component implements OnInit {
       const phoneNumber = telefono.replace(/\D/g, '');
       window.open(`https://wa.me/${phoneNumber}`, '_blank');
     } else {
-      this.alertService.warning('No se encontró número de teléfono', 'warning');
+      this.alertService.warning('warning','No se encontró número de teléfono');
     }
   }
 
@@ -287,7 +582,7 @@ export class ClienteVista360Component implements OnInit {
     if (correo) {
       window.open(`mailto:${correo}`, '_blank');
     } else {
-      this.alertService.warning('No se encontró dirección de correo', 'warning');
+      this.alertService.warning('warning','No se encontró dirección de correo');
     }
   }
 
@@ -296,7 +591,7 @@ export class ClienteVista360Component implements OnInit {
       const encodedAddress = encodeURIComponent(this.cliente.direccion);
       window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank');
     } else {
-      this.alertService.warning('No se encontró dirección', 'warning');
+      this.alertService.warning('warning','No se encontró dirección');
     }
   }
 
@@ -307,7 +602,7 @@ export class ClienteVista360Component implements OnInit {
   }
 
   generateReport(): void {
-    this.alertService.info('Generando reporte del cliente...', 'info');
+    this.alertService.info('info','Generando reporte del cliente...');
     // Implementar generación de reporte
   }
 

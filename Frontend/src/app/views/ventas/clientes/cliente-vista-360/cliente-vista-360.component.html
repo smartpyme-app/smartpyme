@@ -202,7 +202,7 @@
                             </div>
                             <div class="product-total">${{ formatNumber(product.total) }}</div>
                             <div class="product-actions">
-                                <button class="product-btn">Ver detalles</button>
+                                <!-- <button class="product-btn">Ver detalles</button> -->
                             </div>
                         </div>
                     </div>
@@ -271,49 +271,117 @@
                 </div>
 
                 <!-- Visits & Notes History -->
-                <div *ngIf="activeHistoryTab === 'visits'" class="history-tab-content">
+                <div *ngIf="activeHistoryTab === 'visits'" class="history-tab-content" style="
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    position: relative !important;
+                    z-index: 1000 !important;
+                    padding: 20px !important;
+                    background: #fff !important;
+                    margin: 20px 0 !important;
+                    border-radius: 8px !important;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+                ">
                     <div class="visits-header">
                         <div class="section-title">
                             <span>👥</span> Historial de Visitas y Notas
                         </div>
-                        <button class="add-note-btn" (click)="openAddNoteModal()">
+                        <button class="add-note-btn" (click)="openAddNoteModal(addNoteModal)">
                             <span>➕</span> Agregar Nota
                         </button>
                     </div>
 
                     <div class="visits-summary">
                         <div class="visit-stat">
-                            <div class="stat-number">{{ visitStats.total }}</div>
-                            <div class="stat-label">Total Visitas</div>
+                            <div class="stat-number">{{ visitStats.total + notasStats.total }}</div>
+                            <div class="stat-label">Total Interacciones</div>
                         </div>
                         <div class="visit-stat">
-                            <div class="stat-number">{{ visitStats.thisMonth }}</div>
+                            <div class="stat-number">{{ visitStats.thisMonth + notasStats.thisMonth }}</div>
                             <div class="stat-label">Este Mes</div>
                         </div>
                         <div class="visit-stat">
+                            <div class="stat-number">{{ notasStats.pendientes }}</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                        <div class="visit-stat">
                             <div class="stat-number">{{ visitStats.lastVisit }}</div>
-                            <div class="stat-label">Última Visita</div>
+                            <div class="stat-label">Última Actividad</div>
                         </div>
                     </div>
                     
-                    <div class="visits-timeline" *ngIf="visits.length > 0; else noVisits">
-                        <div class="visit-item" *ngFor="let visit of visits">
-                            <div class="visit-icon" [ngClass]="visit.type">{{ visit.icon }}</div>
+                    <div class="visits-timeline" *ngIf="allInteractions.length > 0; else noVisits">
+                        <div class="visit-item" *ngFor="let interaction of allInteractions">
+                            <div class="visit-icon" [ngClass]="interaction.type === 'visita' ? interaction.tipo_visita : interaction.tipo">{{ interaction.icono }}</div>
                             <div class="visit-content">
                                 <div class="visit-header">
-                                    <h4>{{ visit.title }}</h4>
-                                    <span class="visit-date">{{ visit.date }}</span>
+                                    <h4>{{ (interaction.type === 'visita' ? interaction.tipo_formateado : interaction.tipo_formateado) }} - {{ interaction.titulo }}</h4>
+                                    <span class="visit-date">{{ formatDate(interaction.fecha) }} {{ interaction.hora }}</span>
                                 </div>
                                 <div class="visit-details">
                                     <div class="visit-meta">
-                                        <span class="visit-type" *ngFor="let meta of visit.meta">
-                                            <span>{{ meta.icon }}</span> {{ meta.text }}
+                                        <span class="visit-type cursor-pointer" 
+                                              data-bs-toggle="tooltip" 
+                                              data-bs-placement="top" 
+                                              [title]="'Tipo de interacción: ' + (interaction.type === 'visita' ? 'Visita presencial o virtual' : 'Nota interna del sistema')">
+                                            <span>{{ interaction.icono }}</span> {{ interaction.type === 'visita' ? interaction.tipo_formateado : interaction.tipo_formateado }}
+                                        </span>
+                                        <span class="visit-type cursor-pointer" 
+                                              *ngIf="interaction.type === 'visita' && interaction.duracion_formateada"
+                                              data-bs-toggle="tooltip" 
+                                              data-bs-placement="top" 
+                                              title="Duración de la visita registrada">
+                                            <span>⏱️</span> {{ interaction.duracion_formateada }}
+                                        </span>
+                                        <span class="visit-type cursor-pointer" 
+                                              data-bs-toggle="tooltip" 
+                                              data-bs-placement="top" 
+                                              title="Persona responsable de la interacción con el cliente">
+                                            <span>👨‍💼</span> {{ interaction.responsable }}
+                                        </span>
+                                        <span class="visit-type cursor-pointer" 
+                                              *ngIf="interaction.type === 'nota' && interaction.categorias?.length"
+                                              data-bs-toggle="tooltip" 
+                                              data-bs-placement="top" 
+                                              title="Categoría de la nota para clasificación interna">
+                                            <span>🏷️</span> {{ interaction.categorias[0].categoria_formateada }}
                                         </span>
                                     </div>
-                                    <div class="visit-note">{{ visit.note }}</div>
+                                    <div class="visit-note">{{ interaction.type === 'visita' ? interaction.descripcion : interaction.contenido }}</div>
                                     <div class="visit-actions">
-                                        <span [ngClass]="getPriorityClass(visit.priority)">{{ getPriorityText(visit.priority) }}</span>
-                                        <span class="follow-up" *ngIf="visit.followUp">{{ visit.followUp }}</span>
+                                        <div class="visit-meta-info">
+                                            <span [ngClass]="getPriorityClass(interaction.prioridad)" 
+                                                  [style.color]="interaction.color_prioridad"
+                                                  data-bs-toggle="tooltip" 
+                                                  data-bs-placement="top" 
+                                                  title="Nivel de prioridad asignado a esta interacción">
+                                                {{ interaction.prioridad_formateada }}
+                                            </span>
+                                            <span class="follow-up cursor-pointer" 
+                                                  *ngIf="interaction.fecha_seguimiento"
+                                                  data-bs-toggle="tooltip" 
+                                                  data-bs-placement="top" 
+                                                  title="Fecha programada para seguimiento de esta interacción">
+                                                📅 Seguimiento: {{ formatDate(interaction.fecha_seguimiento) }}
+                                            </span>
+                                            <span class="resolved cursor-pointer" 
+                                                  *ngIf="interaction.resuelto"
+                                                  data-bs-toggle="tooltip" 
+                                                  data-bs-placement="top" 
+                                                  title="Esta interacción ha sido marcada como resuelta">
+                                                ✅ Resuelto
+                                            </span>
+                                        </div>
+                                        <div class="visit-action-buttons">
+                                            <button class="edit-note-btn" 
+                                                    (click)="editNote(interaction, addNoteModal)"
+                                                    data-bs-toggle="tooltip" 
+                                                    data-bs-placement="top" 
+                                                    title="Editar esta interacción">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -322,11 +390,14 @@
                     
                     <ng-template #noVisits>
                         <div class="no-data-message">
-                            <p>No hay visitas o notas registradas para este cliente.</p>
+                            <div class="no-data-icon">📝</div>
+                            <h3>No hay interacciones registradas</h3>
+                            <p>Este cliente no tiene visitas o notas registradas aún.</p>
+                            <button class="btn btn-primary" (click)="openAddNoteModal(addNoteModal)">
+                                <span>➕</span> Agregar Primera Nota
+                            </button>
                         </div>
                     </ng-template>
-                </div>
-                    </div>
                 </div>
             </div>
 
@@ -350,80 +421,113 @@
             </div> -->
         </div>
 
-<!-- Add Note Modal -->
-<div class="add-note-modal" *ngIf="showAddNoteModal">
-    <div class="add-note-modal-content">
-        <button class="close-btn" (click)="closeAddNoteModal()">&times;</button>
-        <div class="modal-header">
-            <h3>📝 Agregar Nueva Nota/Visita</h3>
-            <p style="color: #64748b; font-size: 1rem;">Registra una interacción con el cliente</p>
-        </div>
+<!-- Add Note Modal Template -->
+<ng-template #addNoteModal>
+    <div class="modal-header">
+        <h4 class="modal-title">{{ isEditingNote ? '✏️ Editar Nota/Visita' : '📝 Agregar Nueva Nota/Visita' }}</h4>
+        <button type="button" class="btn-close" (click)="closeAddNoteModal()" aria-label="Close"></button>
+    </div>
+    
+    <div class="modal-body">
+        <p class="text-muted mb-3">{{ isEditingNote ? 'Edita los detalles de la interacción' : 'Registra una interacción con el cliente' }}</p>
         
-        <form class="modal-form" (ngSubmit)="saveNote()">
-            <div class="form-group">
-                <label class="form-label">Tipo de Interacción</label>
-                <select class="form-select" [(ngModel)]="newNote.tipo" name="tipo" required>
-                    <option value="">Seleccionar tipo...</option>
-                    <option value="visit">👤 Visita Presencial</option>
-                    <option value="call">📞 Llamada Telefónica</option>
-                    <option value="whatsapp">💬 WhatsApp</option>
-                    <option value="email">📧 Email</option>
-                    <option value="note">📝 Nota Interna</option>
-                </select>
+        <form [formGroup]="noteForm" (ngSubmit)="saveNote()">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Tipo de Interacción</label>
+                    <select class="form-select" formControlName="tipo">
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="visita">👤 Visita Presencial</option>
+                        <option value="llamada">📞 Llamada Telefónica</option>
+                        <option value="whatsapp">💬 WhatsApp</option>
+                        <option value="email">📧 Email</option>
+                        <option value="comentarios">📝 Nota Interna</option>
+                        <option value="preferencias">⭐ Preferencias</option>
+                        <option value="quejas">⚠️ Quejas</option>
+                    </select>
+                    <div *ngIf="noteForm.get('tipo')?.invalid && noteForm.get('tipo')?.touched" class="form-text text-danger">
+                        Tipo de interacción es requerido
+                    </div>
+                </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="form-group">
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label class="form-label">Fecha</label>
-                    <input type="date" class="form-control" [(ngModel)]="newNote.fecha" name="fecha" required>
+                    <input type="date" class="form-control" formControlName="fecha">
+                    <div *ngIf="noteForm.get('fecha')?.invalid && noteForm.get('fecha')?.touched" class="form-text text-danger">
+                        Fecha es requerida
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="col-md-6">
                     <label class="form-label">Hora</label>
-                    <input type="time" class="form-control" [(ngModel)]="newNote.hora" name="hora" required>
+                    <input type="time" class="form-control" formControlName="hora">
+                    <div *ngIf="noteForm.get('hora')?.invalid && noteForm.get('hora')?.touched" class="form-text text-danger">
+                        Hora es requerida
+                    </div>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Título/Asunto</label>
-                <input type="text" class="form-control" [(ngModel)]="newNote.titulo" name="titulo" 
-                       placeholder="Ej: Reunión de seguimiento comercial" required>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Título/Asunto</label>
+                    <input type="text" class="form-control" formControlName="titulo" 
+                           placeholder="Ej: Reunión de seguimiento comercial">
+                    <div *ngIf="noteForm.get('titulo')?.invalid && noteForm.get('titulo')?.touched" class="form-text text-danger">
+                        <span *ngIf="noteForm.get('titulo')?.errors?.['required']">Título es requerido</span>
+                        <span *ngIf="noteForm.get('titulo')?.errors?.['minlength']">Título debe tener al menos 5 caracteres</span>
+                    </div>
+                </div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                <div class="form-group">
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label class="form-label">Responsable</label>
-                    <select class="form-select" [(ngModel)]="newNote.responsable" name="responsable" required>
+                    <select class="form-select" formControlName="responsable">
                         <option value="">Seleccionar...</option>
                         <option value="jorge">Jorge Martínez (Ventas)</option>
                         <option value="jennifer">Jennifer Díaz (Customer Success)</option>
                         <option value="carla">Carla Rodríguez (Soporte)</option>
                     </select>
+                    <div *ngIf="noteForm.get('responsable')?.invalid && noteForm.get('responsable')?.touched" class="form-text text-danger">
+                        Responsable es requerido
+                    </div>
                 </div>
-                <div class="form-group">
+                <div class="col-md-6">
                     <label class="form-label">Prioridad</label>
-                    <select class="form-select" [(ngModel)]="newNote.prioridad" name="prioridad" required>
+                    <select class="form-select" formControlName="prioridad">
                         <option value="low">📗 Baja</option>
-                        <option value="medium" selected>📙 Media</option>
+                        <option value="medium">📙 Media</option>
                         <option value="high">📕 Alta</option>
                     </select>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Notas/Comentarios</label>
-                <textarea class="form-textarea" [(ngModel)]="newNote.notas" name="notas" 
-                          placeholder="Describe los detalles de la interacción, objetivos, resultados, próximos pasos, etc." required></textarea>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Notas/Comentarios</label>
+                    <textarea class="form-control" formControlName="notas" rows="4"
+                              placeholder="Describe los detalles de la interacción, objetivos, resultados, próximos pasos, etc."></textarea>
+                    <div *ngIf="noteForm.get('notas')?.invalid && noteForm.get('notas')?.touched" class="form-text text-danger">
+                        <span *ngIf="noteForm.get('notas')?.errors?.['required']">Notas son requeridas</span>
+                        <span *ngIf="noteForm.get('notas')?.errors?.['minlength']">Notas deben tener al menos 10 caracteres</span>
+                    </div>
+                </div>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Fecha de Seguimiento (Opcional)</label>
-                <input type="date" class="form-control" [(ngModel)]="newNote.seguimiento" name="seguimiento">
-            </div>
-            
-            <div class="form-actions">
-                <button type="button" class="form-btn secondary" (click)="closeAddNoteModal()">Cancelar</button>
-                <button type="submit" class="form-btn primary">Guardar Nota</button>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <label class="form-label">Fecha de Seguimiento (Opcional)</label>
+                    <input type="date" class="form-control" formControlName="seguimiento">
+                </div>
             </div>
         </form>
     </div>
-</div>
+    
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeAddNoteModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="saveNote()" [disabled]="noteForm.invalid">
+            {{ isEditingNote ? 'Actualizar Nota' : 'Guardar Nota' }}
+        </button>
+    </div>
+</ng-template>
