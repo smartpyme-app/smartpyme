@@ -132,9 +132,7 @@ class CalcularClientes360Command extends Command
 
     private function calcularRFMMasivo()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_metricas_rfm')->truncate();
 
@@ -180,13 +178,9 @@ class CalcularClientes360Command extends Command
 
             // Actualizar segmentos en segundo paso
             $this->actualizarSegmentosRFM();
+        });
 
-            DB::commit();
-            $this->info('   ✓ RFM completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en RFM: ' . $e->getMessage());
-        }
+        $this->info('   ✓ RFM completado');
     }
 
     private function actualizarSegmentosRFM()
@@ -207,9 +201,7 @@ class CalcularClientes360Command extends Command
 
     private function calcularProductosTopMasivo()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_productos_top')->truncate();
 
@@ -251,20 +243,14 @@ class CalcularClientes360Command extends Command
                 ) ranked
                 WHERE ranking <= 10
             ");
+        });
 
-            DB::commit();
-            $this->info('   ✓ Top Productos completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en Top Productos: ' . $e->getMessage());
-        }
+        $this->info('   ✓ Top Productos completado');
     }
 
     private function calcularVentasMensualesMasivo()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_ventas_mensuales')->truncate();
 
@@ -296,20 +282,14 @@ class CalcularClientes360Command extends Command
                 GROUP BY v.id_cliente, YEAR(v.fecha), MONTH(v.fecha)
                 ORDER BY v.id_cliente, año, mes
             ");
+        });
 
-            DB::commit();
-            $this->info('   ✓ Ventas Mensuales completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en Ventas Mensuales: ' . $e->getMessage());
-        }
+        $this->info('   ✓ Ventas Mensuales completado');
     }
 
     private function calcularFidelizacionMasivo()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_fidelizacion_snapshot')->truncate();
 
@@ -365,20 +345,14 @@ class CalcularClientes360Command extends Command
                     GROUP BY id_cliente
                 ) uc ON pc.id_cliente = uc.id_cliente
             ");
+        });
 
-            DB::commit();
-            $this->info('   ✓ Fidelización completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en Fidelización: ' . $e->getMessage());
-        }
+        $this->info('   ✓ Fidelización completado');
     }
 
     private function calcularActividadMasivo()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_actividad_reciente')->truncate();
 
@@ -440,20 +414,14 @@ class CalcularClientes360Command extends Command
                 ) ranked
                 WHERE rn <= 10
             ");
+        });
 
-            DB::commit();
-            $this->info('   ✓ Actividad Reciente completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en Actividad: ' . $e->getMessage());
-        }
+        $this->info('   ✓ Actividad Reciente completado');
     }
 
     private function calcularCategoriasPreferidas()
     {
-        DB::beginTransaction();
-        try {
-
+        DB::transaction(function () {
             // Limpiar tabla
             DB::table('cliente_categorias_preferidas')->truncate();
 
@@ -504,13 +472,9 @@ class CalcularClientes360Command extends Command
                 WHERE cliente_stats.total_gastado > 0
                 ORDER BY cliente_stats.id_cliente, cliente_stats.total_gastado DESC
             ");
+        });
 
-            DB::commit();
-            $this->info('   ✓ Categorías Preferidas completado');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error('Error en Categorías Preferidas: ' . $e->getMessage());
-        }
+        $this->info('   ✓ Categorías Preferidas completado');
     }
 
     // ============================================
