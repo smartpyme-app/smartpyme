@@ -470,6 +470,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       responsable: '',
       prioridad: 'medium',
       notas: '',
+      requiere_seguimiento: false,
       seguimiento: ''
     });
     this.modalRef = this.modalService.show(template, {
@@ -509,6 +510,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       responsable: interaction.responsable,
       prioridad: interaction.prioridad,
       notas: interaction.type === 'visita' ? interaction.descripcion : interaction.contenido,
+      requiere_seguimiento: interaction.requiere_seguimiento || false,
       seguimiento: interaction.fecha_seguimiento || ''
     };
     
@@ -546,7 +548,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         responsable: formValue.responsable,
         prioridad: formValue.prioridad,
         estado: formValue.estado,
-        requiere_seguimiento: formValue.requiere_seguimiento,
+        requiere_seguimiento: formValue.requiere_seguimiento || false,
         fecha_interaccion: formValue.fecha,
         hora_interaccion: formValue.hora,
         fecha_seguimiento: formValue.seguimiento || null,
@@ -586,7 +588,7 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
         responsable: formValue.responsable,
         prioridad: formValue.prioridad,
         estado: formValue.estado,
-        requiere_seguimiento: formValue.requiere_seguimiento,
+        requiere_seguimiento: formValue.requiere_seguimiento || false,
         fecha_interaccion: formValue.fecha,
         hora_interaccion: formValue.hora,
         fecha_seguimiento: formValue.seguimiento || null,

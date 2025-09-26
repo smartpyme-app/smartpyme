@@ -505,7 +505,7 @@ class ConsumoPuntosService
 
         // Obtener el cliente y su tipo
         $cliente = \App\Models\Ventas\Clientes\Cliente::with('tipoCliente')->find($clienteId);
-        $tipoCliente = $cliente?->tipoCliente;
+        $tipoCliente = $cliente ? $cliente->tipoCliente : null;
         
         if (!$tipoCliente) {
             // Obtener tipo por defecto de la empresa
