@@ -466,20 +466,55 @@ export class FacturacionCompraComponent implements OnInit {
       }
 
       getProveedor(proveedor: any) {
-        // Buscar primero por NIT
         //console.log('Buscando proveedor del DTE:', proveedor);
-        let proveedorEncontrado = this.searchNit(proveedor.nit);
-        if (!proveedorEncontrado) {
-          // Si no lo encuentra por NIT, buscar por nombre
+        let proveedorEncontrado = null;
+        
+        // 1. Buscar primero por NIT (prioridad más alta)
+        if (proveedor.nit) {
+          proveedorEncontrado = this.searchNit(proveedor.nit);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NIT:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 2. Buscar por NRC si no se encontró por NIT
+        if (proveedor.nrc && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchNrc(proveedor.nrc);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NRC:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 3. Buscar por DUI si no se encontró por NIT ni NRC
+        if (proveedor.dui && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchDui(proveedor.dui);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por DUI:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 4. Como último recurso, buscar por nombre
+        if (!proveedorEncontrado && proveedor.nombre) {
           proveedorEncontrado = this.searchNombre(proveedor.nombre);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por nombre:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
         }
         
-        // Si no encuentra por NIT ni por nombre, NO se selecciona nada
+        // Si no encuentra por ningún método, NO se selecciona nada
         if (!proveedorEncontrado) {
-          console.log('No se encontró proveedor específico, no se selecciona ninguno');
+          console.log('No se encontró proveedor con los datos:', {
+            nit: proveedor.nit,
+            nrc: proveedor.nrc,
+            dui: proveedor.dui,
+            nombre: proveedor.nombre
+          });
         }
         
-        //console.log('Proveedor final seleccionado:', proveedorEncontrado);
         return proveedorEncontrado;
       }
 
@@ -508,6 +543,32 @@ export class FacturacionCompraComponent implements OnInit {
         });
         
         // console.log('Proveedor encontrado por nombre:', proveedor);
+        return proveedor;
+      }
+
+      searchNrc(nrc: string) {
+        // console.log('Buscando proveedor por NRC:', nrc);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando NRC:', proveedor.ncr, 'con:', nrc);
+          return proveedor.ncr === nrc || proveedor.ncr == nrc;
+        });
+        
+        // console.log('Proveedor encontrado por NRC:', proveedor);
+        return proveedor;
+      }
+
+      searchDui(dui: string) {
+        // console.log('Buscando proveedor por DUI:', dui);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando DUI:', proveedor.dui, 'con:', dui);
+          return proveedor.dui === dui || proveedor.dui == dui;
+        });
+        
+        // console.log('Proveedor encontrado por DUI:', proveedor);
         return proveedor;
       }
 
