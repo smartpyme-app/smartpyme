@@ -355,6 +355,14 @@
         Los siguientes productos del DTE no fueron reconocidos automáticamente. 
         Por favor, seleccione el producto correspondiente para cada item.
       </div>
+      
+      <!-- Botón para crear nuevos productos/servicios -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0">Productos del DTE</h6>
+        <button type="button" class="btn btn-success btn-sm" (click)="openModalCrearProducto(mcrearProducto)">
+          <i class="fa fa-plus"></i> Crear Nuevo Producto/Servicio
+        </button>
+      </div>
   
       <div class="table-responsive">
         <table class="table table-striped">
@@ -552,6 +560,183 @@
         <span *ngIf="getProductosPendientes() === 0">Confirmar Todos los Productos</span>
         <span *ngIf="getProductosPendientes() > 0">
           Faltan {{ getProductosPendientes() }} productos
+        </span>
+      </button>
+    </div>
+  </ng-template>
+
+  <!-- Modal para crear nuevos productos/servicios -->
+  <ng-template #mcrearProducto>
+    <div class="modal-header">
+      <h4 class="modal-title">Crear Nuevo Producto/Servicio</h4>
+      <button type="button" class="btn-close" (click)="modalCrearProducto.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+      <form #productoForm="ngForm" (ngSubmit)="crearProducto()">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="nombre">Nombre del Producto/Servicio *</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="nombre"
+                name="nombre"
+                [(ngModel)]="nuevoProducto.nombre"
+                required
+                placeholder="Ej: Laptop Dell Inspiron">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="tipo">Tipo *</label>
+              <select 
+                class="form-select" 
+                id="tipo"
+                name="tipo"
+                [(ngModel)]="nuevoProducto.tipo"
+                required>
+                <option value="">Seleccione tipo</option>
+                <option value="Producto">Producto</option>
+                <option value="Servicio">Servicio</option>
+                <option value="Compuesto">Compuesto</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="codigo">Código</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="codigo"
+                name="codigo"
+                [(ngModel)]="nuevoProducto.codigo"
+                placeholder="Código interno">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="cod_proveed_prod">Código Proveedor</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="cod_proveed_prod"
+                name="cod_proveed_prod"
+                [(ngModel)]="nuevoProducto.cod_proveed_prod"
+                placeholder="Código del proveedor">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="costo">Costo *</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                id="costo"
+                name="costo"
+                [(ngModel)]="nuevoProducto.costo"
+                step="0.01"
+                required
+                placeholder="0.00">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="precio">Precio de Venta</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                id="precio"
+                name="precio"
+                [(ngModel)]="nuevoProducto.precio"
+                step="0.01"
+                placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="id_categoria">Categoría *</label>
+              <select 
+                class="form-select" 
+                id="id_categoria"
+                name="id_categoria"
+                [(ngModel)]="nuevoProducto.id_categoria"
+                required>
+                <option value="">Seleccione categoría</option>
+                <option [value]="categoria.id" *ngFor="let categoria of categorias">
+                  {{ categoria.nombre }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="marca">Marca</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                id="marca"
+                name="marca"
+                [(ngModel)]="nuevoProducto.marca"
+                placeholder="Marca del producto">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group mb-3">
+              <label for="stock" *ngIf="nuevoProducto.tipo !== 'Servicio'">Stock Inicial</label>
+              <input 
+                type="number" 
+                class="form-control" 
+                id="stock"
+                name="stock"
+                [(ngModel)]="nuevoProducto.stock"
+                *ngIf="nuevoProducto.tipo !== 'Servicio'"
+                placeholder="0">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <!-- Campo vacío para mantener el layout -->
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label for="descripcion">Descripción</label>
+          <textarea 
+            class="form-control" 
+            id="descripcion"
+            name="descripcion"
+            [(ngModel)]="nuevoProducto.descripcion"
+            rows="3"
+            placeholder="Descripción detallada del producto/servicio"></textarea>
+        </div>
+
+        <div class="alert alert-info">
+          <i class="fa fa-info-circle"></i>
+          <strong>Nota:</strong> El producto/servicio se creará y estará disponible para asignar en la consolidación, pero NO se agregará automáticamente al DTE.
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalCrearProducto.hide()">Cancelar</button>
+      <button type="button" class="btn btn-success" (click)="crearProducto()" [disabled]="creandoProducto">
+        <span *ngIf="!creandoProducto">
+          <i class="fa fa-plus"></i> Crear Producto
+        </span>
+        <span *ngIf="creandoProducto">
+          <i class="fa fa-spinner fa-spin"></i> Creando...
         </span>
       </button>
     </div>
