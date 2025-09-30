@@ -215,6 +215,29 @@ class VentasService
                 ]);
             }
 
+            // Propina
+            if ($venta->propina > 0) {
+                if (!$configuracion->id_cuenta_propina_ventas) {
+                    throw new Exception('No se ha configurado la cuenta de propina ventas', 400);
+                }
+                
+                $cuenta = Cuenta::find($configuracion->id_cuenta_propina_ventas);
+                if (!$cuenta) {
+                    throw new Exception('No se encontró la cuenta contable de propina ventas', 400);
+                }
+
+                Detalle::create([
+                    'id_cuenta' => $cuenta->id,
+                    'codigo' => $cuenta->codigo,
+                    'nombre_cuenta' => $cuenta->nombre,
+                    'concepto' => 'Ingresos por ventas',
+                    'debe' => NULL,
+                    'haber' => $venta->propina,
+                    'saldo' => 0,
+                    'id_partida' => $partida_ingresos->id
+                ]);
+            }
+
             // === SEGUNDA PARTIDA: COSTO DE VENTAS ===
             $partida_costos = Partida::create([
                 'fecha' => $venta->fecha,
