@@ -9,7 +9,7 @@
             margin: 0cm; font-family: "Segoe UI",Roboto,"Helvetica Neue","Noto Sans","Liberation Sans",Arial,sans-serif;
         }
         body {
-            font-family: serif; margin: 50px;
+            font-family: serif; margin: 40px;
             font-size: 10px;
         }
         h1,h2,h3,h4,h5,h6{color: #003 !important; }
@@ -107,7 +107,6 @@
                     '13'
             ];
         @endphp
-        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -131,7 +130,6 @@
                         
                         <p><b>Teléfono: </b>{{ $DTE['emisor']['telefono'] }}</p>
                         <p><b>Correo: </b>{{ $DTE['emisor']['correo'] }}</p>
-                        <br>
                     </td>
                     <td style="width: 50%; vertical-align: top;">
                         <p><b>Nombre o razón social: </b>{{ $DTE['receptor']['nombre'] }}</p>
@@ -147,10 +145,7 @@
                     </td>
                 </tr>
             </tbody>
-        </table> 
-
-        <br>
-
+        </table>
         <table class="table bordered">
             <thead>
                 <tr class="bg-light">
