@@ -212,6 +212,20 @@
                                 currency:'USD':'symbol':'1.2'}}</b> </td>
                         <td style="width: 50px;"></td>
                     </tr>
+                    <tr *ngIf="tieneAccesoPropina">
+                        <td class="text-right"> <b>Propina</b> </td>
+                        <td style="width: 150px;" class="text-end">
+                            <input type="text" style=" width: 80px; margin-left: auto;" 
+                                   class="form-control text-end" 
+                                   [(ngModel)]="venta.propina" 
+                                   (ngModelChange)="sumTotal()"
+                                   name="propina" 
+                                   placeholder="0.00" 
+                                   pattern="^\d*\.?\d{0,2}$"
+                                   inputmode="decimal">
+                        </td>
+                        <td style="width: 50px;"></td>
+                    </tr>
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total |

@@ -78,84 +78,97 @@ export class ImportarExcelComponent implements OnInit {
         this.resetState();
 
         this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
-            (response: ImportResponse) => {
-                this.loading = false;
-                this.handleSuccessResponse(response);
+          (data: any) => {
+            this.loading = false;
+
+          if (this.nombre.toLowerCase() === 'ventas') {
+
+                    if (data && typeof data === 'object' && data.message) {
+                        this.alertService.success('Importación de ventas', data.message);
+
+
+                        if (data.productos_faltantes && data.productos_faltantes.length > 0) {
+                            setTimeout(() => {
+                                this.alertService.info(
+                                    'Productos no encontrados',
+                                    'Estos productos deben ser creados en el sistema: ' +
+                                    data.productos_faltantes.join(", ")
+                                );
+                            }, 4000);
+                        }
+                    } else if (typeof data === 'number') {
+
+                        this.alertService.success('Importación exitosa', data + ' ventas procesadas correctamente');
+                    } else {
+
+                        this.alertService.success('Importación exitosa', 'Las ventas fueron procesadas correctamente');
+                    }
+                } else {
+                    // Manejo específico para importación de clientes
+                    if (this.nombre.toLowerCase().includes('clientes')) {
+                        if (data && typeof data === 'object' && data.message) {
+                            // Cerrar el modal primero para mostrar la alerta fuera
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
+
+                            // Mostrar mensaje con detalles de procesados y fallidos
+                            let mensaje = data.message;
+                            if (data.procesados !== undefined && data.fallidos !== undefined) {
+                                mensaje += `\n\n📊 Resumen: ${data.procesados} procesados, ${data.fallidos} fallidos`;
+                            }
+
+                            // Mostrar alerta después de cerrar el modal
+                            setTimeout(() => {
+                                this.alertService.success('Importación de clientes', mensaje);
+                            }, 300);
+
+                        } else if (typeof data === 'number') {
+                            this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+                        } else {
+                            this.alertService.success('Importación exitosa', 'Los clientes fueron procesados correctamente');
+                        }
+                    } else {
+                        // Para otros tipos de importación
+                        this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+                    }
+                }
+
+                // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
+                if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
+                    setTimeout(() => {
+                        this.modalRef.hide();
+                        this.loadAll.emit();
+                        this.alertService.modal = false;
+                    }, 1000);
+                } else {
+                    // Para clientes con mensaje detallado, solo recargar datos
+                    setTimeout(() => {
+                        this.loadAll.emit();
+                    }, 500);
+                }
             },
-            (error: any) => {
+            error => {
                 this.loading = false;
-                this.handleErrorResponse(error);
+
+
+                if (this.nombre.toLowerCase() === 'ventas' && error.error && error.error.error) {
+                    this.alertService.error(error.error.error);
+                } else {
+                    this.alertService.error(error);
+                }
+
+
+                this.alertService.modal = true;
             }
         );
     }
 
-    private handleSuccessResponse(response: ImportResponse) {
-        this.importResult = response;
-        this.showResults = true;
-
-        if (response.success) {
-            const filasText = response.filas_procesadas === 1 ? 'fila procesada' : 'filas procesadas';
-            this.alertService.success(
-                'Importación exitosa',
-                `${response.message}. ${response.filas_procesadas} ${filasText}`
-            );
-
-            // Auto-cerrar modal después de mostrar éxito
-            setTimeout(() => {
-                this.closeModalAndReload();
-            }, 2000);
-        }
-    }
-
-    private handleErrorResponse(errorResponse: any) {
-        console.error('Error en importación:', errorResponse);
-
-        // Intentar parsear la respuesta de error
-        const error = errorResponse.error || errorResponse;
-        this.importResult = error;
-        this.showResults = true;
-
-        if (error.errores && Array.isArray(error.errores)) {
-            // Errores de validación de Laravel Excel
-            this.validationErrors = error.errores;
-            this.alertService.error(
-                `Errores de validación: Se encontraron ${error.errores.length} errores en el archivo. Revise los detalles.`
-            );
-        } else if (error.error && typeof error.error === 'string') {
-            // Errores de negocio (duplicados, cuenta padre no encontrada, etc.)
-            this.businessErrors = [error.error];
-            if (error.errores_adicionales && error.errores_adicionales.length > 0) {
-                this.businessErrors = [...this.businessErrors, ...error.errores_adicionales];
-            }
-            this.alertService.error(`Error en importación: ${error.error}`);
-        } else {
-            // Error genérico
-            this.alertService.error(`Error en importación: ${error.message || 'Error desconocido'}`);
-        }
-    }
-
-    private resetState() {
-        this.importResult = null;
-        this.showResults = false;
-        this.validationErrors = [];
-        this.businessErrors = [];
-    }
-
-    private closeModalAndReload() {
-        this.modalRef.hide();
-        this.loadAll.emit();
-        this.alertService.modal = false;
-        this.resetState();
-    }
-
-    public tryAgain() {
-        this.resetState();
-    }
-
-    public downloadTemplate() {
-        const url = `${this.apiService.baseUrl}/docs/${this.nombre.toLowerCase()}-format.xlsx`;
-        window.open(url, '_blank');
-    }
+  private resetState() {
+    this.importResult = null;
+    this.showResults = false;
+    this.validationErrors = [];
+    this.businessErrors = [];
+  }
 
     public closeModal() {
         this.modalRef.hide();
