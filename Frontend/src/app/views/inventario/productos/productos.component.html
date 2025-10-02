@@ -108,7 +108,7 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
-                        <!--  <td>
+                        <!-- <td>
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
@@ -281,6 +281,7 @@
                     </div>
                 </div>
 
+
             </div>
 
             <div class="d-grid mt-3">
@@ -360,6 +361,49 @@
                 <label>Descargar detalle de inventario:</label>
                 <app-descargar-inventario></app-descargar-inventario>
             </div>
+            <div class="d-grid">
+                <label>Descargar Kardex:</label>
+                <button [disabled]="loading || !productos?.data?.length" 
+                        tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
         </div>
+    </div>
+</ng-template>
+
+<!-- Modal para descargar Kardex con filtros de fecha -->
+<ng-template #mdescargarKardex>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left">Descargar Kardex</h4>
+        <button type="button" class="btn-close pull-right" aria-label="Close" (click)="modalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <span class="badge bg-info">{{ productos?.data?.length || 0 }} producto(s) en el listado</span>
+        </div>
+        
+        <form autocomplete="off" (ngSubmit)="descargarKardexConFiltros()">
+            <div class="row">
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_inicio">Fecha inicio:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control" name="fecha_inicio">
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_fin">Fecha fin:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_fin" class="form-control" name="fecha_fin">
+                </div>
+            </div>
+            
+            <div class="d-grid mt-3">
+                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar Kardex</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+        </form>
     </div>
 </ng-template>

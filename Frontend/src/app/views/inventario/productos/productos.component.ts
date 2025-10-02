@@ -19,9 +19,12 @@ export class ProductosComponent implements OnInit {
     public categorias:any = [];
     public proveedores:any = [];
     public marcas:any = [];
-
     public ajuste:any = {};
     public inventario:any = {};
+    public filtrosKardex:any = {
+        fecha_inicio: '',
+        fecha_fin: ''
+    };
 
     modalRef!: BsModalRef;
 
@@ -32,21 +35,21 @@ export class ProductosComponent implements OnInit {
     ngOnInit() {
 
         this.route.queryParams.subscribe(params => {
-            this.filtros = {
-                buscador: params['buscador'] || '',
-                id_bodega: +params['id_bodega'] || '',
-                id_categoria: +params['id_categoria'] || '',
-                id_proveedor: +params['id_proveedor'] || '',
-                id_sucursal: +params['id_sucursal'] || '',
-                estado: params['estado'] || '',
-                marca: params['marca'] || '',
-                sin_stock: params['sin_stock'] || '',
-                compuestos: params['compuestos'] || '',
-                orden: params['orden'] || 'id',
-                direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
-            };
+        this.filtros = {
+            buscador: params['buscador'] || '',
+            id_bodega: +params['id_bodega'] || '',
+            id_categoria: +params['id_categoria'] || '',
+            id_proveedor: +params['id_proveedor'] || '',
+            id_sucursal: +params['id_sucursal'] || '',
+            estado: params['estado'] || '',
+            marca: params['marca'] || '',
+            sin_stock: params['sin_stock'] || '',
+            compuestos: params['compuestos'] || '',
+            orden: params['orden'] || 'id',
+            direccion: params['direccion'] || 'desc',
+            paginate: params['paginate'] || 10,
+            page: params['page'] || 1,
+        };
 
             this.filtrarProductos();
         });
@@ -217,6 +220,104 @@ export class ProductosComponent implements OnInit {
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
 
+    }
+
+    public descargarKardex(){
+        this.loading = true;
+        
+        // Debug: verificar estructura de datos
+        console.log('Estructura completa de productos:', this.productos);
+        console.log('Productos.data:', this.productos.data);
+        console.log('Tipo de productos.data:', typeof this.productos.data);
+        console.log('Es array:', Array.isArray(this.productos.data));
+        
+        // Usar directamente los productos de la página actual
+        const productoIds = this.productos.data.map((p: any) => p.id);
+        console.log('Productos en página actual:', this.productos.data.length);
+        console.log('IDs de productos a enviar:', productoIds);
+        console.log('Tipo de productoIds:', typeof productoIds);
+        console.log('Es array productoIds:', Array.isArray(productoIds));
+        
+        const filtrosConProductos = {
+            producto_ids: productoIds.join(','), // Enviar como string separado por comas
+            inicio: undefined, // Sin filtro de fecha
+            fin: undefined // Sin filtro de fecha
+        };
+        
+        console.log('Filtros con productos:', filtrosConProductos);
+        console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
+        
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kardex-filtrado.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.loading = false;
+        }, (error) => { 
+            this.alertService.error(error); 
+            this.loading = false; 
+        });
+    }
+
+    public openDescargarKardex(template: TemplateRef<any>) {
+        // Cerrar el modal actual (modal de descarga)
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        
+        // Resetear filtros de kardex
+        this.filtrosKardex = {
+            fecha_inicio: '',
+            fecha_fin: ''
+        };
+        
+        // Abrir el modal de kardex
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public descargarKardexConFiltros() {
+        // Validar que las fechas estén completas
+        if (!this.filtrosKardex.fecha_inicio || !this.filtrosKardex.fecha_fin) {
+            this.alertService.error('Debe seleccionar fecha de inicio y fecha fin');
+            return;
+        }
+        
+        this.loading = true;
+        
+        // Usar directamente los productos de la página actual
+        const productoIds = this.productos.data.map((p: any) => p.id);
+        console.log('Productos en página actual:', this.productos.data.length);
+        console.log('IDs de productos a enviar:', productoIds);
+        
+        const filtrosConProductos = {
+            producto_ids: productoIds.join(','), // Enviar como string separado por comas
+            inicio: this.filtrosKardex.fecha_inicio,
+            fin: this.filtrosKardex.fecha_fin
+        };
+        
+        console.log('Filtros con productos:', filtrosConProductos);
+        
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
+            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kardex-filtrado.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.loading = false;
+            this.modalRef.hide();
+        }, (error) => { 
+            this.alertService.error(error); 
+            this.loading = false; 
+        });
     }
 
 

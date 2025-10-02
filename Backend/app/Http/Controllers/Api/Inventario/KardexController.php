@@ -121,5 +121,12 @@ class KardexController extends Controller
         return Excel::download($kardex, 'kardex.xlsx');
     }
 
+    public function exportFiltrado(Request $request){
+        $kardex = new \App\Exports\Inventario\KardexFiltradoExport();
+        $kardex->filter($request);
+
+        return Excel::download($kardex, 'kardex-filtrado.xlsx');
+    }
+
 
 }

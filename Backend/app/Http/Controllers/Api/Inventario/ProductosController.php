@@ -914,8 +914,6 @@ class ProductosController extends Controller
                 ];
             });
 
-            Log::info('Marcas obtenidas:', $marcas->toArray());
-
             return response()->json($marcas);
         } catch (\Exception $e) {
             return response()->json([
