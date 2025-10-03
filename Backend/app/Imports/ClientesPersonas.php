@@ -19,6 +19,8 @@ use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
 class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, SkipsEmptyRows
 {
     private $numRows = 0;
+    private $errores = [];
+    private $clientesProcesados = 0;
 
     public function model(array $row)
     {
@@ -28,6 +30,13 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
         }
 
         $duiNormalizado = $this->normalizarDui($row['dui']);
+        
+        // Validar formato de DUI si no está vacío
+        if (!empty($duiNormalizado) && !$this->esDuiValido($duiNormalizado)) {
+            $this->errores[] = "DUI con formato inválido: '{$row['dui']}' (Fila: " . ($this->numRows + 1) . ") - Formato esperado: 12345678-9";
+            Log::warning("DUI con formato inválido: {$row['dui']}");
+            return null; // Saltar este registro
+        }
     
         // Verificar DUI único ANTES de crear el cliente
         if (!empty($duiNormalizado)) {
@@ -39,7 +48,9 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
                 })->exists();
             
             if ($existeDui) {
-                throw new \Exception("Ya existe un cliente con el DUI: {$duiNormalizado}");
+                $this->errores[] = "Ya existe un cliente con el DUI: {$duiNormalizado} (Fila: " . ($this->numRows + 1) . ")";
+                Log::warning("DUI duplicado encontrado: {$duiNormalizado}");
+                return null; // Saltar este registro
             }
         }
 
@@ -68,9 +79,16 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
 
         $cliente->id_usuario = Auth::user()->id;
         $cliente->id_empresa = Auth::user()->id_empresa;
-        $cliente->save();
-
-        return $cliente;
+        
+        try {
+            $cliente->save();
+            $this->clientesProcesados++;
+            return $cliente;
+        } catch (\Exception $e) {
+            $this->errores[] = "Error al guardar cliente {$row['nombre']} {$row['apellido']}: " . $e->getMessage();
+            Log::error("Error al guardar cliente: " . $e->getMessage(), $row);
+            return null;
+        }
     }
 
     private function buscarCodigos(array $row)
@@ -117,10 +135,30 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
         return $this->numRows;
     }
 
+    public function getErrores(): array
+    {
+        return $this->errores;
+    }
+
+    public function getClientesProcesados(): int
+    {
+        return $this->clientesProcesados;
+    }
+
     private function normalizarDui($dui)
     {
+        // Si está vacío o es nulo, retornar vacío
+        if (empty($dui) || $dui === null) {
+            return '';
+        }
+        
         // Quitar espacios y guiones
         $dui = str_replace([' ', '-'], '', $dui);
+        
+        // Validar que solo contenga dígitos
+        if (!is_numeric($dui)) {
+            return $dui; // Retornar tal como está para que se detecte como inválido
+        }
         
         // Agregar guión si tiene 9 dígitos
         if (strlen($dui) == 9 && is_numeric($dui)) {
@@ -128,5 +166,11 @@ class ClientesPersonas implements ToModel, WithHeadingRow, WithValidation, Skips
         }
         
         return $dui;
+    }
+
+    private function esDuiValido($dui)
+    {
+        // Verificar que tenga el formato correcto: 8 dígitos + guión + 1 dígito
+        return preg_match('/^\d{8}-\d{1}$/', $dui);
     }
 }

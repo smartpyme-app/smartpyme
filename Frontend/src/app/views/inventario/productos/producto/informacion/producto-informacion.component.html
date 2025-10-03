@@ -31,10 +31,14 @@
         <div class="form-group col-md-6 col-lg-3">
             <label for="subcategoria_id" class="w-100">Categoria</label>
             <div class="input-group">
-                <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0">
-                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                        {{categoria.nombre}}
-                    </ng-option>
+                <ng-select 
+                    name="id_categoria" 
+                    [(ngModel)]="producto.id_categoria" 
+                    class="form-select p-0" 
+                    [items]="categorias"
+                    bindLabel="nombre" 
+                    bindValue="id"
+                    placeholder="Seleccione una categoría">
                 </ng-select>
                 <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
             </div>

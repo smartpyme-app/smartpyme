@@ -197,9 +197,9 @@ class MHFacturaExportacion extends Model
                 "cuerpoDocumento" => $this->detalles(),
                 "resumen" => [
                   "totalGravada" => floatval(number_format($totalGravada, 2, '.', '')),
-                  "descuento" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "descuento" => floatval(number_format(0, 2, '.', '')),
                   "porcentajeDescuento" => 0,
-                  "totalDescu" => floatval(number_format($this->venta->descuento, 2, '.', '')),
+                  "totalDescu" => floatval(number_format(0, 2, '.', '')),
                   "seguro" => floatval(number_format($this->venta->seguro, 2, '.', '')),
                   "flete" => floatval(number_format($this->venta->flete, 2, '.', '')),
                   "montoTotalOperacion" => floatval(number_format($totalGravada, 2, '.', '')),

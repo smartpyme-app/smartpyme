@@ -96,16 +96,48 @@ export class ImportarExcelComponent implements OnInit {
                         this.alertService.success('Importación exitosa', 'Las ventas fueron procesadas correctamente');
                     }
                 } else {
-                   
-                    this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+                    // Manejo específico para importación de clientes
+                    if (this.nombre.toLowerCase().includes('clientes')) {
+                        if (data && typeof data === 'object' && data.message) {
+                            // Cerrar el modal primero para mostrar la alerta fuera
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
+                            
+                            // Mostrar mensaje con detalles de procesados y fallidos
+                            let mensaje = data.message;
+                            if (data.procesados !== undefined && data.fallidos !== undefined) {
+                                mensaje += `\n\n📊 Resumen: ${data.procesados} procesados, ${data.fallidos} fallidos`;
+                            }
+                            
+                            // Mostrar alerta después de cerrar el modal
+                            setTimeout(() => {
+                                this.alertService.success('Importación de clientes', mensaje);
+                            }, 300);
+                            
+                        } else if (typeof data === 'number') {
+                            this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+                        } else {
+                            this.alertService.success('Importación exitosa', 'Los clientes fueron procesados correctamente');
+                        }
+                    } else {
+                        // Para otros tipos de importación
+                        this.alertService.success('Importación exitosa', data + ' ' + this.nombre.replace('-', ' ') + ' agregados');
+                    }
                 }
                 
-                
-                setTimeout(() => {
-                    this.modalRef.hide();
-                    this.loadAll.emit();
-                    this.alertService.modal = false;
-                }, 1000); 
+                // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
+                if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
+                    setTimeout(() => {
+                        this.modalRef.hide();
+                        this.loadAll.emit();
+                        this.alertService.modal = false;
+                    }, 1000);
+                } else {
+                    // Para clientes con mensaje detallado, solo recargar datos
+                    setTimeout(() => {
+                        this.loadAll.emit();
+                    }, 500);
+                } 
             }, 
             error => {
                 this.loading = false;
