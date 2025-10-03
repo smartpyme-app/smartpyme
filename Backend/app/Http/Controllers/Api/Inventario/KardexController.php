@@ -8,8 +8,11 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Models\KardexMasivoQueue;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Inventario\KardexExport;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 class KardexController extends Controller
 {
@@ -126,6 +129,66 @@ class KardexController extends Controller
         $kardex->filter($request);
 
         return Excel::download($kardex, 'kardex-filtrado.xlsx');
+    }
+
+    public function solicitarMasivo(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'id_empresa' => 'required|integer'
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'Debe ser un correo electrónico válido.',
+            'id_empresa.required' => 'El ID de empresa es obligatorio.'
+        ]);
+
+        try {
+            // Crear registro en la cola para procesamiento en segundo plano
+            $queueItem = KardexMasivoQueue::create([
+                'email' => $request->email,
+                'id_empresa' => $request->id_empresa,
+                'status' => 'pending'
+            ]);
+            
+            return response()->json([
+                'message' => 'Solicitud de kardex masivo registrada. Recibirá un correo electrónico cuando esté listo.',
+                'success' => true,
+                'queue_id' => $queueItem->id
+            ], 200);
+            
+        } catch (\Exception $e) {
+            Log::error('Error al solicitar kardex masivo: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al procesar la solicitud. Intente nuevamente.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function estadoCola(Request $request)
+    {
+        $request->validate([
+            'id_empresa' => 'required|integer'
+        ]);
+        
+        try {
+            $estados = KardexMasivoQueue::where('id_empresa', $request->id_empresa)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get(['id', 'email', 'status', 'created_at', 'started_at', 'completed_at', 'error_message']);
+            
+            return response()->json([
+                'success' => true,
+                'estados' => $estados
+            ], 200);
+            
+        } catch (\Exception $e) {
+            Log::error('Error al obtener estado de cola: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al obtener estado de cola.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
 

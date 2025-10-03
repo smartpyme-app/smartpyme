@@ -25,6 +25,7 @@ export class ProductosComponent implements OnInit {
         fecha_inicio: '',
         fecha_fin: ''
     };
+    public emailKardex: string = '';
 
     modalRef!: BsModalRef;
 
@@ -312,6 +313,43 @@ export class ProductosComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+            this.loading = false;
+            this.modalRef.hide();
+        }, (error) => { 
+            this.alertService.error(error); 
+            this.loading = false; 
+        });
+    }
+
+    public openDescargarKardexMasivo(template: TemplateRef<any>) {
+        // Cerrar el modal actual (modal de descarga)
+        if (this.modalRef) {
+            this.modalRef.hide();
+        }
+        
+        // Resetear email
+        this.emailKardex = '';
+        
+        // Abrir el modal de kardex masivo
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public solicitarKardexMasivo() {
+        // Validar email
+        if (!this.emailKardex || !this.emailKardex.includes('@')) {
+            this.alertService.error('Debe ingresar un correo electrónico válido');
+            return;
+        }
+        
+        this.loading = true;
+        
+        const datosSolicitud = {
+            email: this.emailKardex,
+            id_empresa: this.apiService.auth_user().id_empresa
+        };
+        
+        this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud).subscribe((response: any) => {
+            this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
             this.modalRef.hide();
         }, (error) => { 
