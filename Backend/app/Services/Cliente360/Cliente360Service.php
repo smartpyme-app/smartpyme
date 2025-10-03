@@ -65,7 +65,13 @@ class Cliente360Service
             'monetary' => $metricas->gasto_ultimos_12_meses,
             'totalVentas' => $metricas->total_gastado,
             'cantidadVentas' => $metricas->total_compras,
-            'segmento' => $metricas->segmento_rfm
+            'segmento' => $metricas->segmento_rfm,
+            'clasificacion_abc' => $metricas->clasificacion_abc,
+            'tendencia_consumo' => $metricas->tendencia_consumo,
+            'porcentaje_tendencia' => $metricas->porcentaje_tendencia,
+            'recency_score' => $metricas->recency_score,
+            'frequency_score' => $metricas->frequency_score,
+            'monetary_score' => $metricas->monetary_score
         ];
     }
 

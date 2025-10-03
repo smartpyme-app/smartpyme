@@ -244,13 +244,13 @@ class ConfiguracionFidelizacionSeeder extends Seeder
                     'tope_canje_porcentaje_ticket' => 0.30, // 30%
                     'acceso_exclusivo' => true,
                     'soporte_prioritario' => true,
-                    'beneficios_exclusivos' => [
-                        'descuento_maximo_adicional' => 15, // 15% descuento extra
-                        'puntos_bienvenida_anual' => 500,  // 500 puntos gratis cada año
-                        'acceso_eventos_vip' => true,
-                        'entrega_express_gratis' => true,
-                        'asistente_personal' => true
-                    ],
+                    // 'beneficios_exclusivos' => [
+                    //     'descuento_maximo_adicional' => 15, // 15% descuento extra
+                    //     'puntos_bienvenida_anual' => 500,  // 500 puntos gratis cada año
+                    //     'acceso_eventos_vip' => true,
+                    //     'entrega_express_gratis' => true,
+                    //     'asistente_personal' => true
+                    // ],
                     'upgrade_automatico' => [
                         'habilitado' => false, // Ultra VIP es el máximo nivel
                         'reglas' => []

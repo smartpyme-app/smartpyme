@@ -136,14 +136,13 @@ class CalcularClientes360Command extends Command
             // Limpiar tabla
             DB::table('cliente_metricas_rfm')->truncate();
 
-            // INSERT MASIVO - Solo clientes de empresas con fidelización habilitada
+            // PASO 1: Insertar métricas básicas sin scores
             DB::statement("
                 INSERT INTO cliente_metricas_rfm (
                     id_cliente, fecha_ultima_compra, dias_ultima_compra,
                     total_compras, compras_ultimos_12_meses, compras_ultimos_6_meses, compras_ultimos_3_meses,
                     total_gastado, gasto_ultimos_12_meses, gasto_ultimos_6_meses, gasto_ultimos_3_meses,
-                    ticket_promedio, recency_score, frequency_score, monetary_score, health_score,
-                    segmento_rfm, fecha_calculo, created_at, updated_at
+                    ticket_promedio, fecha_calculo, created_at, updated_at
                 )
                 SELECT 
                     v.id_cliente,
@@ -158,15 +157,6 @@ class CalcularClientes360Command extends Command
                     SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 6 MONTH) THEN v.total ELSE 0 END) as gasto_6,
                     SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN v.total ELSE 0 END) as gasto_3,
                     AVG(v.total) as ticket_promedio,
-                    GREATEST(0, 100 - (DATEDIFF(NOW(), MAX(v.fecha)) * 2)) as recency_score,
-                    LEAST(100, SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 12 MONTH) THEN 1 ELSE 0 END) * 10) as frequency_score,
-                    LEAST(100, (SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 12 MONTH) THEN v.total ELSE 0 END) / 1000) * 10) as monetary_score,
-                    ROUND(
-                        (GREATEST(0, 100 - (DATEDIFF(NOW(), MAX(v.fecha)) * 2)) * 0.5) + 
-                        (LEAST(100, SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 12 MONTH) THEN 1 ELSE 0 END) * 10) * 0.3) + 
-                        (LEAST(100, (SUM(CASE WHEN v.fecha >= DATE_SUB(NOW(), INTERVAL 12 MONTH) THEN v.total ELSE 0 END) / 1000) * 10) * 0.2)
-                    ) as health_score,
-                    'Pending' as segmento_rfm,
                     NOW() as fecha_calculo,
                     NOW() as created_at,
                     NOW() as updated_at
@@ -180,11 +170,198 @@ class CalcularClientes360Command extends Command
                 GROUP BY v.id_cliente
             ");
 
-            // Actualizar segmentos en segundo paso
-            $this->actualizarSegmentosRFM();
+            // PASO 2: Calcular scores RFM usando NTILE(5) según documento
+            $this->calcularScoresRFMCorrectos();
+            
+            // PASO 3: Calcular clasificación ABC
+            $this->calcularClasificacionABC();
+            
+            // PASO 4: Calcular tendencias de consumo
+            $this->calcularTendenciasConsumo();
+            
+            // PASO 5: Actualizar segmentos RFM estándar
+            $this->actualizarSegmentosRFMEstandar();
         });
 
-        $this->info('   ✓ RFM completado');
+        $this->info('   ✓ RFM completado con metodología correcta');
+    }
+
+    /**
+     * PASO 2: Calcular scores RFM usando NTILE(5) según documento
+     * Metodología correcta: recency_score = NTILE(5) OVER (ORDER BY days_since_last_purchase ASC)
+     */
+    private function calcularScoresRFMCorrectos()
+    {
+        // Calcular Recency Score (1-5) - Menor días = Mayor score
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET recency_score = (
+                SELECT ntile_value FROM (
+                    SELECT id, NTILE(5) OVER (ORDER BY dias_ultima_compra ASC) as ntile_value
+                    FROM cliente_metricas_rfm
+                ) as ranked
+                WHERE ranked.id = cliente_metricas_rfm.id
+            )
+        ");
+
+        // Calcular Frequency Score (1-5) - Mayor compras = Mayor score
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET frequency_score = (
+                SELECT ntile_value FROM (
+                    SELECT id, NTILE(5) OVER (ORDER BY compras_ultimos_12_meses DESC) as ntile_value
+                    FROM cliente_metricas_rfm
+                ) as ranked
+                WHERE ranked.id = cliente_metricas_rfm.id
+            )
+        ");
+
+        // Calcular Monetary Score (1-5) - Mayor gasto = Mayor score
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET monetary_score = (
+                SELECT ntile_value FROM (
+                    SELECT id, NTILE(5) OVER (ORDER BY gasto_ultimos_12_meses DESC) as ntile_value
+                    FROM cliente_metricas_rfm
+                ) as ranked
+                WHERE ranked.id = cliente_metricas_rfm.id
+            )
+        ");
+
+        // Calcular Health Score (escala 0-100 basada en scores RFM 1-5)
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET health_score = ROUND(((recency_score + frequency_score + monetary_score) / 15.0) * 100, 0)
+        ");
+    }
+
+    /**
+     * PASO 3: Clasificación ABC basada en Health Score según documento
+     * 🏆 Clase A (Top 20%): Health Score 80-100 puntos
+     * 🥈 Clase B (Siguiente 30%): Health Score 53-79 puntos  
+     * 🥉 Clase C (Último 50%): Health Score 0-52 puntos
+     */
+    private function calcularClasificacionABC()
+    {
+        // Primero calcular percentiles para determinar los rangos
+        $totalClientes = DB::table('cliente_metricas_rfm')->count();
+        $top20Percentil = ceil($totalClientes * 0.2);
+        $top50Percentil = ceil($totalClientes * 0.5);
+
+        // Obtener los valores de corte
+        $corteA = DB::table('cliente_metricas_rfm')
+            ->orderBy('health_score', 'desc')
+            ->offset($top20Percentil - 1)
+            ->limit(1)
+            ->value('health_score');
+
+        $corteB = DB::table('cliente_metricas_rfm')
+            ->orderBy('health_score', 'desc')
+            ->offset($top50Percentil - 1)
+            ->limit(1)
+            ->value('health_score');
+
+        // Aplicar clasificación ABC en campo dedicado
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET clasificacion_abc = CASE
+                WHEN health_score >= ? THEN 'Clase A - Top 20%'
+                WHEN health_score >= ? THEN 'Clase B - Siguiente 30%'
+                ELSE 'Clase C - Último 50%'
+            END
+        ", [$corteA, $corteB]);
+    }
+
+    /**
+     * PASO 4: Calcular tendencias de consumo según documento
+     * 🔺 En Crecimiento (+10% o más)
+     * ➡️ Neutros (-10% a +10%)
+     * 🔻 En Decrecimiento (-10% o menos)
+     */
+    private function calcularTendenciasConsumo()
+    {
+        // Primero calcular el gasto del año anterior para cada cliente
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET gasto_anio_anterior = (
+                SELECT COALESCE(SUM(v2.total), 0)
+                FROM ventas v2
+                INNER JOIN empresa_funcionalidades ef2 ON v2.id_empresa = ef2.id_empresa
+                INNER JOIN funcionalidades f2 ON ef2.id_funcionalidad = f2.id
+                WHERE v2.id_cliente = cliente_metricas_rfm.id_cliente
+                AND v2.estado != 'anulada'
+                AND f2.slug = 'fidelizacion-clientes'
+                AND ef2.activo = true
+                AND v2.fecha >= DATE_SUB(NOW(), INTERVAL 24 MONTH)
+                AND v2.fecha < DATE_SUB(NOW(), INTERVAL 12 MONTH)
+            )
+        ");
+
+        // Calcular tendencias y porcentajes
+        DB::statement("
+            UPDATE cliente_metricas_rfm 
+            SET 
+                porcentaje_tendencia = CASE
+                    WHEN gasto_anio_anterior > 0 THEN 
+                        ((gasto_ultimos_12_meses - gasto_anio_anterior) / gasto_anio_anterior) * 100
+                    ELSE 0
+                END,
+                tendencia_consumo = CASE
+                    WHEN gasto_anio_anterior > 0 AND 
+                         ((gasto_ultimos_12_meses - gasto_anio_anterior) / gasto_anio_anterior) * 100 >= 10 
+                    THEN 'En Crecimiento'
+                    WHEN gasto_anio_anterior > 0 AND 
+                         ((gasto_ultimos_12_meses - gasto_anio_anterior) / gasto_anio_anterior) * 100 <= -10 
+                    THEN 'En Decrecimiento'
+                    ELSE 'Neutro'
+                END
+        ");
+    }
+
+    /**
+     * PASO 5: Segmentación RFM estándar según metodología RFM
+     */
+    private function actualizarSegmentosRFMEstandar()
+    {
+        DB::statement("
+            UPDATE cliente_metricas_rfm
+            SET segmento_rfm = CASE
+                -- Champions: R=5, F=5, M=5
+                WHEN recency_score = 5 AND frequency_score = 5 AND monetary_score = 5 THEN 'Champions'
+                
+                -- Loyal Customers: R=4-5, F=4-5, M=3-5
+                WHEN recency_score >= 4 AND frequency_score >= 4 AND monetary_score >= 3 THEN 'Loyal Customers'
+                
+                -- Potential Loyalists: R=3-5, F=1-3, M=1-3
+                WHEN recency_score >= 3 AND frequency_score <= 3 AND monetary_score <= 3 THEN 'Potential Loyalists'
+                
+                -- New Customers: R=4-5, F=1-2, M=1-2
+                WHEN recency_score >= 4 AND frequency_score <= 2 AND monetary_score <= 2 THEN 'New Customers'
+                
+                -- Promising: R=3-4, F=1-2, M=1-2
+                WHEN recency_score >= 3 AND recency_score <= 4 AND frequency_score <= 2 AND monetary_score <= 2 THEN 'Promising'
+                
+                -- Need Attention: R=3, F=3-4, M=3-4
+                WHEN recency_score = 3 AND frequency_score >= 3 AND monetary_score >= 3 THEN 'Need Attention'
+                
+                -- About to Sleep: R=2-3, F=2-3, M=2-3
+                WHEN recency_score >= 2 AND recency_score <= 3 AND frequency_score >= 2 AND frequency_score <= 3 AND monetary_score >= 2 AND monetary_score <= 3 THEN 'About to Sleep'
+                
+                -- At Risk: R=1-2, F=4-5, M=4-5
+                WHEN recency_score <= 2 AND frequency_score >= 4 AND monetary_score >= 4 THEN 'At Risk'
+                
+                -- Cannot Lose Them: R=1-2, F=4-5, M=4-5
+                WHEN recency_score <= 2 AND frequency_score >= 4 AND monetary_score >= 4 THEN 'Cannot Lose Them'
+                
+                -- Hibernating: R=1-2, F=1-2, M=1-2
+                WHEN recency_score <= 2 AND frequency_score <= 2 AND monetary_score <= 2 THEN 'Hibernating'
+                
+                -- Lost Customers: R=1, F=1-2, M=1-2
+                WHEN recency_score = 1 AND frequency_score <= 2 AND monetary_score <= 2 THEN 'Lost Customers'
+                
+                ELSE 'Others'
+            END
+        ");
     }
 
     private function actualizarSegmentosRFM()

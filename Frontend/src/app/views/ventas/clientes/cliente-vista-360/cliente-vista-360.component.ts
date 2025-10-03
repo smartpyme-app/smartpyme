@@ -28,7 +28,13 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
     healthScore: 0,
     recency: 0,
     frequency: 0,
-    monetary: 0
+    monetary: 0,
+    clasificacion_abc: '',
+    tendencia_consumo: '',
+    porcentaje_tendencia: 0,
+    recency_score: 0,
+    frequency_score: 0,
+    monetary_score: 0
   };
 
   public loyaltyPoints = {
@@ -322,7 +328,13 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
           healthScore: data.metrics.healthScore || 0,
           recency: data.metrics.recency || 0,
           frequency: data.metrics.frequency || 0,
-          monetary: parseFloat(data.metrics.monetary) || 0
+          monetary: parseFloat(data.metrics.monetary) || 0,
+          clasificacion_abc: data.metrics.clasificacion_abc || '',
+          tendencia_consumo: data.metrics.tendencia_consumo || '',
+          porcentaje_tendencia: parseFloat(data.metrics.porcentaje_tendencia) || 0,
+          recency_score: data.metrics.recency_score || 0,
+          frequency_score: data.metrics.frequency_score || 0,
+          monetary_score: data.metrics.monetary_score || 0
         };
       }
 
@@ -423,8 +435,14 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
             averagePurchase: response.data.ticket_promedio || 0,
             healthScore: response.data.health_score || 0,
             recency: response.data.dias_ultima_compra || 0,
-            frequency: 0, // No viene en el endpoint básico
-            monetary: 0   // No viene en el endpoint básico
+            frequency: 0, 
+            monetary: 0, 
+            clasificacion_abc: response.data.clasificacion_abc || '',
+            tendencia_consumo: response.data.tendencia_consumo || '',
+            porcentaje_tendencia: parseFloat(response.data.porcentaje_tendencia) || 0,
+            recency_score: response.data.recency_score || 0,
+            frequency_score: response.data.frequency_score || 0,
+            monetary_score: response.data.monetary_score || 0
           };
         }
       },
@@ -769,6 +787,20 @@ export class ClienteVista360Component implements OnInit, AfterViewInit {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(value);
+  }
+
+  getAbcColor(clasificacion: string): string {
+    if (clasificacion.includes('Clase A')) return '#10b981';
+    if (clasificacion.includes('Clase B')) return '#3b82f6';
+    if (clasificacion.includes('Clase C')) return '#f59e0b';
+    return '#6b7280';
+  }
+
+  getTendenciaColor(tendencia: string): string {
+    if (tendencia === 'En Crecimiento') return '#10b981';
+    if (tendencia === 'Neutro') return '#6b7280';
+    if (tendencia === 'En Decrecimiento') return '#ef4444';
+    return '#6b7280';
   }
 
   formatCurrency(value: number): string {

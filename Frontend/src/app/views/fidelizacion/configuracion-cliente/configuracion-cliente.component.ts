@@ -105,7 +105,15 @@ export class ConfiguracionClienteComponent implements OnInit {
     this.fidelizacionService.getTiposCliente(params).subscribe({
       next: (response: PaginatedResponse<TipoClienteEmpresa>) => {
         if (response.success && response.data) {
-          this.tiposCliente = response.data.data;
+          // Formatear los datos para limitar decimales
+          this.tiposCliente = response.data.data.map(tipo => ({
+            ...tipo,
+            puntos_por_dolar: this.formatDecimal(parseFloat(tipo.puntos_por_dolar.toString())),
+            configuracion_avanzada: {
+              ...tipo.configuracion_avanzada,
+              valor_punto: this.formatDecimal(parseFloat(tipo.configuracion_avanzada?.valor_punto?.toString() || '0'))
+            }
+          }));
           this.pagination = {
             current_page: response.data.current_page,
             last_page: response.data.last_page,
@@ -182,7 +190,7 @@ export class ConfiguracionClienteComponent implements OnInit {
       id_tipo_base: tipo.tipo_base?.id,
       nivel: tipo.nivel,
       nombre_personalizado: tipo.is_personalizado ? tipo.nombre_efectivo : undefined,
-      puntos_por_dolar: tipo.puntos_por_dolar,
+      puntos_por_dolar: this.formatDecimal(parseFloat(tipo.puntos_por_dolar.toString())),
       minimo_canje: tipo.minimo_canje,
       maximo_canje: tipo.maximo_canje,
       expiracion_meses: tipo.expiracion_meses,
@@ -851,5 +859,22 @@ export class ConfiguracionClienteComponent implements OnInit {
     }
     
     return pages;
+  }
+
+  /**
+   * Formatear puntos por dólar para limitar a 2 decimales
+   */
+  formatPuntosPorDolar(event: any): void {
+    const value = parseFloat(event.target.value);
+    if (!isNaN(value)) {
+      this.formData.puntos_por_dolar = Math.round(value * 100) / 100;
+    }
+  }
+
+  /**
+   * Formatear número a 2 decimales
+   */
+  formatDecimal(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 }

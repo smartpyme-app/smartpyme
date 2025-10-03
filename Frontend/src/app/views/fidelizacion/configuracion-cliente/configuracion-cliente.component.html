@@ -114,7 +114,7 @@
               </span>
             </td>
             <td>
-              <span class="fw-bold">{{ tipo.puntos_por_dolar | number:'1.2-4' }}</span>
+              <span class="fw-bold">{{ tipo.puntos_por_dolar | number:'1.2-2' }}</span>
             </td>
             <td>
               <small>
@@ -242,7 +242,7 @@
               <div class="mb-3">
                 <label class="form-label">Puntos por Dólar</label>
                 <input type="number" class="form-control" [(ngModel)]="formData.puntos_por_dolar" name="puntos_por_dolar"
-                  step="0.0001" min="0" required>
+                  step="0.01" min="0" (input)="formatPuntosPorDolar($event)" required>
                 <small class="form-text text-muted">
                   Cantidad de puntos que gana por cada dólar gastado
                 </small>

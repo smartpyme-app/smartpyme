@@ -63,10 +63,11 @@
                 <div class="health-score">
                     <div class="score-info">
                         <h3>Health Score</h3>
-                        <div class="score-details">R:{{ metrics.recency }} • F:{{ metrics.frequency }} • M:{{ metrics.monetary }}</div>
+                        <div class="score-details">R:{{ metrics.recency_score }} • F:{{ metrics.frequency_score }} • M:{{ metrics.monetary_score }}</div>
                     </div>
                     <div class="score-number">{{ metrics.healthScore }}</div>
                 </div>
+                
             </div>
 
             <!-- Contact Information -->
@@ -186,6 +187,19 @@
                     <div class="stat-card">
                         <div class="stat-value" style="color: #8b5cf6;">{{ metrics.healthScore }}</div>
                         <div class="stat-label">Health Score</div>
+                    </div>
+                    <div class="stat-card" *ngIf="metrics.clasificacion_abc">
+                        <div class="stat-value" [style.color]="getAbcColor(metrics.clasificacion_abc)">{{ metrics.clasificacion_abc.split(' ')[1] || 'N/A' }}</div>
+                        <div class="stat-label">Clasificación ABC</div>
+                    </div>
+                    <div class="stat-card" *ngIf="metrics.tendencia_consumo">
+                        <div class="stat-value" [style.color]="getTendenciaColor(metrics.tendencia_consumo)">
+                            {{ metrics.tendencia_consumo }}
+                            <span *ngIf="metrics.porcentaje_tendencia !== 0" style="font-size: 0.7rem; opacity: 0.8;">
+                                ({{ metrics.porcentaje_tendencia > 0 ? '+' : '' }}{{ formatNumber(metrics.porcentaje_tendencia) }}%)
+                            </span>
+                        </div>
+                        <div class="stat-label">Tendencia de Consumo</div>
                     </div>
                 </div>
 
