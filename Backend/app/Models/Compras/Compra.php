@@ -54,7 +54,7 @@ class Compra extends Model {
         'tipo_costo_gasto',
     );
 
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto'];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', 'nombre_proyecto', 'empresa_nombre'];
 
     protected static function boot()
     {
@@ -106,6 +106,11 @@ class Compra extends Model {
     public function getNombreProyectoAttribute()
     {
         return $this->proyecto ? $this->proyecto->nombre : null;
+    }
+
+    public function getEmpresaNombreAttribute()
+    {
+        return $this->empresa->nombre ?? '';
     }
 
     public function bodega(){
