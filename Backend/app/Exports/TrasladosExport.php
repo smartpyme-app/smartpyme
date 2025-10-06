@@ -24,6 +24,9 @@ class TrasladosExport implements FromCollection, WithHeadings, WithMapping
     public function headings():array{
        return[
             'Producto',
+            'Codigo',
+            'Costo',
+            'Precio',
             'Categoria',
             'De',
             'Para',
@@ -38,6 +41,9 @@ class TrasladosExport implements FromCollection, WithHeadings, WithMapping
     public function map($row): array{
            $fields = [
               $row->producto()->pluck('nombre')->first(),
+              $row->producto()->pluck('codigo')->first(),
+              $row->producto()->pluck('costo')->first(),
+              $row->producto()->pluck('precio')->first(),
               $row->producto()->first()->categoria()->pluck('nombre')->first(),
               $row->origen()->pluck('nombre')->first(),
               $row->destino()->pluck('nombre')->first(),

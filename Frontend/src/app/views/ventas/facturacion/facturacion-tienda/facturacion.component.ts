@@ -39,6 +39,7 @@ export class FacturacionComponent implements OnInit {
   public duplicarventa = false;
   public facturarCotizacion = false;
   public api: boolean = false;
+  public tieneAccesoPropina: boolean = false;
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -56,7 +57,8 @@ export class FacturacionComponent implements OnInit {
     private modalService: BsModalService,
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private funcionalidadesService: FuncionalidadesService
   ) {
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
@@ -66,6 +68,7 @@ export class FacturacionComponent implements OnInit {
   ngOnInit() {
     this.cargarDatosIniciales();
     this.loadData();
+    this.verificarAccesoPropina();
   }
 
   public loadData() {
@@ -243,9 +246,17 @@ export class FacturacionComponent implements OnInit {
     this.venta.iva_percibido = 0;
     this.venta.iva_retenido = 0;
     this.venta.cotizacion = 0;
+    if(this.canales.length > 0){
+      this.venta.id_canal = this.canales[0].id;
+    }
     this.venta.iva = 0;
     this.venta.total_costo = 0;
     this.venta.total = 0;
+    if(this.impuestos.length > 0){
+      this.venta.impuestos = this.impuestos;
+    }else{
+      this.venta.impuestos = [];
+    }
     this.detalle = {};
     this.venta.cobrar_impuestos =
       this.apiService.auth_user().empresa.cobra_iva == 'Si' ? true : false;
@@ -557,6 +568,12 @@ export class FacturacionComponent implements OnInit {
           }
         );
     }
+
+    if(this.venta.cotizacion){
+      this.venta.observaciones = this.venta.id_empresa == 2 ? '➢ Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \n➢ Pagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \n➢ Disponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \n➢ Propiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \n➢ Limitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \n➢ Duración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \n➢ Situaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \n➢ Renovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \n➢ Política de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \n➢ Brindar capacitaciones y soporte técnico a usuarios de negocios. \n➢ Garantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \n➢ Ofrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\n➢ Brindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
+    }
+
+
     this.cargarDocumentos();
   }
 
@@ -574,6 +591,16 @@ export class FacturacionComponent implements OnInit {
   }
 
   public sumTotal() {
+    // Asegurar que detalles existe y es un array
+    if (!this.venta.detalles || !Array.isArray(this.venta.detalles)) {
+      this.venta.detalles = [];
+    }
+
+    // Asegurar que impuestos existe y es un array
+    if (!this.venta.impuestos || !Array.isArray(this.venta.impuestos)) {
+      this.venta.impuestos = [];
+    }
+
     this.venta.sub_total = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total')
     ).toFixed(4);
@@ -618,6 +645,11 @@ export class FacturacionComponent implements OnInit {
     this.venta.total_costo = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'total_costo')
     ).toFixed(4);
+    // Inicializar propina si no existe
+    if (!this.venta.propina) {
+      this.venta.propina = 0;
+    }
+    
     this.venta.total = (
       parseFloat(this.venta.sub_total) +
       parseFloat(this.venta.iva) +
@@ -626,7 +658,8 @@ export class FacturacionComponent implements OnInit {
       parseFloat(this.venta.no_sujeta) +
       parseFloat(this.venta.iva_percibido) -
       parseFloat(this.venta.iva_retenido) -
-      parseFloat(this.venta.renta_retenida)
+      parseFloat(this.venta.renta_retenida) +
+      parseFloat(this.venta.propina || 0)
     ).toFixed(4);
 
 
@@ -638,18 +671,17 @@ export class FacturacionComponent implements OnInit {
     }
 
     // Asignar tipo renta
-    if (this.venta.detalles.length > 0) {
+    if (this.venta.detalles && this.venta.detalles.length > 0) {
         if (this.venta.detalles[0].tipo == 'Servicio'){
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_servicios;
         }else{
             this.venta.tipo_renta = this.apiService.auth_user().empresa.tipo_renta_productos;
         }
     }
-
   }
 
   // Cliente
-  public setCliente(cliente:any){
+    public setCliente(cliente:any){
         if(cliente.id){
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
             this.venta.id_cliente = cliente.id;
@@ -662,98 +694,97 @@ export class FacturacionComponent implements OnInit {
         console.log(cliente);
     }
 
-  // Proyecto
-  public setProyecto(proyecto: any) {
-    if (!this.venta.id_proyecto) {
-      this.proyectos.push(proyecto);
-    }
-    this.venta.id_proyecto = proyecto.id;
-  }
-
-  public setCredito() {
-    if (this.venta.credito) {
-      this.venta.estado = 'Pendiente';
-      this.venta.condicion = 'Crédito'
-      this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
-    } else {
-      this.venta.estado = 'Pagada';
-      this.venta.condicion = 'Contado'
-      this.venta.fecha_pago = moment().format('YYYY-MM-DD');
-    }
-  }
-
-  public setConsigna() {
-    if (this.venta.consigna) {
-      this.venta.estado = 'Consigna';
-    } else {
-      this.setCredito();
-    }
-  }
-
-  public updateVenta(venta: any) {
-    this.venta = venta;
-    this.sumTotal();
-  }
-
-  public cambioMetodoDePago() {
-    if (this.venta.forma_pago != 'Multiple') {
-      this.venta.metodos_de_pago = [];
-      this.venta.efectivo = this.venta.total;
-      this.formaPagos.forEach((item: any) => {
-        item.total = null;
-      });
-    }
-    console.log(this.venta);
-  }
-
-  public setDocumento(id_documento: any) {
-    let documento = this.documentos.find((x: any) => x.id == id_documento);
-    this.venta.nombre_documento = documento.nombre;
-    this.venta.id_documento = documento.id;
-    this.venta.correlativo = documento.correlativo;
-
-    if (this.venta.nombre_documento == 'Factura de exportación') {
-      this.apiService.getAll('recintos').subscribe(
-        (recintos) => {
-          this.recintos = recintos;
-        },
-        (error) => {
-          this.alertService.error(error);
+    // Proyecto
+    public setProyecto(proyecto: any) {
+        if (!this.venta.id_proyecto) {
+            this.proyectos.push(proyecto);
         }
-      );
-      this.apiService.getAll('regimenes').subscribe(
-        (regimenes) => {
-          this.regimenes = regimenes;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-      this.apiService.getAll('incoterms').subscribe(
-        (incoterms) => {
-          this.incoterms = incoterms;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+        this.venta.id_proyecto = proyecto.id;
     }
-  }
 
-  setIncoterm() {
-    this.venta.incoterm = this.incoterms.find(
-      (item: any) => item.cod == this.venta.cod_incoterm
-    ).nombre;
-  }
+    public setCredito() {
+        if (this.venta.credito) {
+            this.venta.estado = 'Pendiente';
+            this.venta.condicion = 'Crédito'
+            this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+        } else {
+            this.venta.estado = 'Pagada';
+            this.venta.condicion = 'Contado'
+            this.venta.fecha_pago = moment().format('YYYY-MM-DD');
+        }
+    }
 
-  // Facturar
+    public setConsigna() {
+        if (this.venta.consigna) {
+            this.venta.estado = 'Consigna';
+        } else {
+            this.setCredito();
+        }
+    }
 
-  public openModalFacturar(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-md',
-      backdrop: 'static',
-    });
-  }
+    public updateVenta(venta: any) {
+        this.venta = venta;
+        this.sumTotal();
+    }
+
+    public cambioMetodoDePago() {
+        if (this.venta.forma_pago != 'Multiple') {
+            this.venta.metodos_de_pago = [];
+            this.venta.efectivo = this.venta.total;
+            this.formaPagos.forEach((item: any) => {
+                item.total = null;
+            });
+        }
+        console.log(this.venta);
+    }
+
+    public setDocumento(id_documento: any) {
+        let documento = this.documentos.find((x: any) => x.id == id_documento);
+        this.venta.nombre_documento = documento.nombre;
+        this.venta.id_documento = documento.id;
+        this.venta.correlativo = documento.correlativo;
+
+        if (this.venta.nombre_documento == 'Factura de exportación') {
+            this.apiService.getAll('recintos').subscribe(
+                (recintos) => {
+                    this.recintos = recintos;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+            this.apiService.getAll('regimenes').subscribe(
+                (regimenes) => {
+                    this.regimenes = regimenes;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+            this.apiService.getAll('incoterms').subscribe(
+                (incoterms) => {
+                    this.incoterms = incoterms;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+        }
+    }
+
+    setIncoterm() {
+        this.venta.incoterm = this.incoterms.find(
+            (item: any) => item.cod == this.venta.cod_incoterm
+        ).nombre;
+    }
+
+    // Facturar
+    public openModalFacturar(template: TemplateRef<any>) {
+        this.modalRef = this.modalService.show(template, {
+            class: 'modal-md',
+            backdrop: 'static',
+        });
+    }
 
   public onFacturar() {
     if (

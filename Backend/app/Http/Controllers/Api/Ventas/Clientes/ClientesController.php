@@ -75,6 +75,38 @@ class ClientesController extends Controller
         return Response()->json($clientes, 200);
     }
 
+    public function searchClientes(Request $request)
+    {
+        $term = $request->get('q', ''); // Término de búsqueda
+        $limit = $request->get('limit', 50); // Límite de resultados (default 50)
+        
+        if (strlen($term) < 2) {
+            return response()->json([], 200);
+        }
+        
+        $clientes = Cliente::where('enable', true)
+            ->where(function ($query) use ($term) {
+                $query->where('nombre', 'LIKE', "%{$term}%")
+                ->orWhere('nombre_empresa', 'LIKE', "%{$term}%")
+                ->orWhere('correo', 'LIKE', "%{$term}%")
+                ->orWhere('telefono', 'LIKE', "%{$term}%")
+                ->orWhereRaw("CONCAT(nombre, ' ', apellido) LIKE ?", ["%{$term}%"]);
+            })
+            ->orderByRaw("
+                CASE 
+                    WHEN nombre LIKE '{$term}%' THEN 1
+                    WHEN nombre_empresa LIKE '{$term}%' THEN 2
+                    WHEN CONCAT(nombre, ' ', apellido) LIKE '{$term}%' THEN 3
+                    ELSE 4
+                END
+            ")
+            ->orderBy('nombre', 'asc')
+            ->limit($limit)
+            ->get();
+        
+        return response()->json($clientes, 200);
+    }
+
     public function search($txt)
     {
         $txtClean = str_replace('-', '', $txt);
@@ -367,15 +399,56 @@ class ClientesController extends Controller
 
     public function importPersonas(Request $request)
     {
-
         $request->validate([
-            'file'          => 'required',
+            'file' => 'required',
         ]);
 
-        $import = new ClientesPersonas();
-        Excel::import($import, $request->file);
+        try {
+            $import = new ClientesPersonas();
+            Excel::import($import, $request->file);
 
-        return Response()->json($import->getRowCount(), 200);
+            $errores = $import->getErrores();
+            $clientesProcesados = $import->getClientesProcesados();
+
+            if ($clientesProcesados > 0 && count($errores) > 0) {
+                $mensajeExito = "✅ Se procesaron correctamente {$clientesProcesados} clientes.";
+                $mensajeFalla = "❌ No se pudieron procesar " . count($errores) . " clientes debido a errores.";
+                
+                // Separar errores por tipo para mejor análisis
+                $erroresDuiDuplicado = array_filter($errores, function($error) {
+                    return strpos($error, 'Ya existe un cliente con el DUI') !== false;
+                });
+                $erroresFormato = array_filter($errores, function($error) {
+                    return strpos($error, 'DUI con formato inválido') !== false;
+                });
+
+                return response()->json([
+                    'message' => $mensajeExito . " " . $mensajeFalla,
+                    'procesados' => $clientesProcesados,
+                    'fallidos' => count($errores),
+                    'resumen_errores' => [
+                        'dui_duplicados' => count($erroresDuiDuplicado),
+                        'formato_invalido' => count($erroresFormato)
+                    ],
+                    'errores' => $errores
+                ], 200);
+            } else if ($clientesProcesados > 0) {
+                return response()->json([
+                    'message' => "¡Importación completada con éxito! Se procesaron {$clientesProcesados} clientes correctamente.",
+                    'procesados' => $clientesProcesados,
+                    'fallidos' => 0
+                ], 200);
+            } else {
+                return response()->json([
+                    'error' => 'No se pudo procesar ningún cliente. ' . implode("\n", $errores)
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error en importación de clientes personas: " . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al importar clientes: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function importEmpresas(Request $request)

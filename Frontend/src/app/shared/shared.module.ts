@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 
 import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
 import { AlertService } from '@services/alert.service';
 import { MultimediaComponent } from './multimedia/multimedia.component';
 import { PipesModule } from '@pipes/pipes.module';
@@ -49,7 +50,7 @@ import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal
 
 import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
 
-
+import { SelectSearchComponent } from './parts/select-search/select-search.component';
 
 @NgModule({
   imports: [
@@ -62,7 +63,8 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     TooltipModule.forRoot(),
-    FocusModule.forRoot()
+    FocusModule.forRoot(),
+    TypeaheadModule.forRoot()
   ],
   declarations: [
     BusquedaClienteComponent,
@@ -96,7 +98,8 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     VerHistorialButtonComponent,
     SafeHtmlPipe,
     ThreedsModalComponent,
-    AlertsHaciendaComponent
+    AlertsHaciendaComponent,
+    SelectSearchComponent
   ],
   exports: [
     BusquedaClienteComponent,
@@ -130,7 +133,8 @@ import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda
     ThreedsModalComponent,
     VerHistorialButtonComponent,
     SafeHtmlPipe,
-    AlertsHaciendaComponent
+    AlertsHaciendaComponent,
+    SelectSearchComponent
   ],
   providers: [AlertService],
 })

@@ -19,8 +19,10 @@ use Illuminate\Support\Facades\Route;
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
     Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
+    Route::get('/productos/search',        [ProductosController::class, 'searchProductos']);
     Route::get('/productos/buscar/{txt}',       [ProductosController::class, 'search']);
     Route::get('/productos/buscar-by-query',    [ProductosController::class, 'searchByQuery']);
+    Route::get('/productos/buscar-by-query-bodega', [ProductosController::class, 'searchByQueryWithBodega']);
     Route::get('/productos-all/buscar/{text}',  [ProductosController::class, 'searchAll']);
     Route::post('/producto',                    [ProductosController::class, 'store']);
     Route::delete('/producto/{id}',  		    [ProductosController::class, 'delete']);
@@ -34,6 +36,12 @@ use Illuminate\Support\Facades\Route;
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
+
+    // Rutas para búsqueda dinámica en facturación de compras
+    Route::post('/productos/buscar-modal',      [ProductosController::class, 'buscarModal']);
+    Route::post('/productos/buscar-por-codigo-proveedor', [ProductosController::class, 'buscarPorCodigoProveedor']);
+    Route::post('/productos/buscar-por-nombre', [ProductosController::class, 'buscarPorNombre']);
+    Route::post('/productos/buscar-sugerencias', [ProductosController::class, 'buscarSugerencias']);
 
 // Composisiones
     Route::post('/producto/composicion',        [ComposicionesController::class, 'store']);

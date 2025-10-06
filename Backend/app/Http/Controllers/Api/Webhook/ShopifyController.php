@@ -105,6 +105,14 @@ class ShopifyController extends Controller
             $usuario->id_sucursal
         );
 
+        // Verificar si se obtuvieron productos válidos
+        if (empty($productosData)) {
+            Log::warning("No se pudieron transformar productos válidos desde Shopify", [
+                'shopify_product_id' => $request->id
+            ]);
+            return response()->json(['status' => 'success', 'message' => 'No valid products to process'], 200);
+        }
+
         $categoriaData = $this->transformer->transformarCategoriaDesdeShopify(
             $request->all(),
             $empresa->id
@@ -113,7 +121,7 @@ class ShopifyController extends Controller
 
         foreach ($productosData as $productoData) {
             $producto = $this->buscarProductoExistente($request->id, $productoData, $empresa->id);
-            Log::info("Producto existente", ['producto_id' => $producto->id]);
+            //Log::info("Producto existente", ['producto_id' => $producto->id]);
 
             Log::info("Data producto", ['producto_id' => $productoData]);
             $categoria = $this->obtenerCategoria($request->all(), $categoriaData, $empresa->id);
@@ -133,6 +141,20 @@ class ShopifyController extends Controller
                     Log::info("Producto sin cambios desde Shopify", ['producto_id' => $producto->id]);
                 }
             } else {
+                // Verificación adicional de duplicados antes de crear
+                $duplicadoPorSKU = !empty($productoData['codigo']) ? 
+                    Producto::where('codigo', $productoData['codigo'])
+                        ->where('id_empresa', $empresa->id)
+                        ->exists() : false;
+
+                if ($duplicadoPorSKU) {
+                    Log::warning("Intento de crear producto duplicado por SKU", [
+                        'shopify_product_id' => $request->id,
+                        'sku' => $productoData['codigo']
+                    ]);
+                    continue; // Saltar este producto
+                }
+
                 $nuevoProducto = $this->crearNuevoProducto($productoData, $usuario, $request);
 
                 if ($nuevoProducto) {
@@ -147,16 +169,40 @@ class ShopifyController extends Controller
 
     private function buscarProductoExistente($shopifyId, $productoData, $empresaId)
     {
-        return Producto::where('shopify_product_id', $shopifyId)
+        // Búsqueda principal por IDs de Shopify
+        $producto = Producto::where('shopify_product_id', $shopifyId)
             ->where('shopify_variant_id', $productoData['shopify_variant_id'])
             ->where('id_empresa', $empresaId)
             ->first();
+
+        // Si no se encuentra, buscar por SKU como respaldo (para productos creados antes de la integración)
+        if (!$producto && !empty($productoData['codigo'])) {
+            $producto = Producto::where('codigo', $productoData['codigo'])
+                ->where('id_empresa', $empresaId)
+                ->whereNull('shopify_product_id') // Solo productos sin ID de Shopify
+                ->first();
+                
+            // Si encontramos uno por SKU, actualizamos sus IDs de Shopify
+            if ($producto) {
+                $producto->update([
+                    'shopify_product_id' => $shopifyId,
+                    'shopify_variant_id' => $productoData['shopify_variant_id'],
+                    'shopify_inventory_item_id' => $productoData['shopify_inventory_item_id'] ?? null,
+                ]);
+            }
+        }
+
+        return $producto;
     }
 
     private function obtenerCategoria($requestData, $categoriaData, $empresaId)
     {
-        $nombreCategoria = empty($requestData['category']) ? 'General' : $categoriaData['nombre'];
-        return $this->buscarCategoria($nombreCategoria, $empresaId);
+        // Si no hay categoría en Shopify o los datos de categoría están vacíos
+        if (empty($requestData['category']) || empty($categoriaData['nombre'])) {
+            return $this->buscarCategoria('General', $empresaId);
+        }
+        
+        return $this->buscarCategoria($categoriaData['nombre'], $empresaId);
     }
 
     private function actualizarProductoExistente($producto, $productoData, $usuario)
@@ -165,12 +211,22 @@ class ShopifyController extends Controller
             ->where('id_bodega', $usuario->id_bodega)
             ->value('stock') ?? 0;
 
-        $stockNuevo = $productoData['stock'] ?? 0;
+        // Extraer datos especiales que no van al modelo
+        $stockNuevo = $productoData['_stock'] ?? 0;
+        $idUsuario = $productoData['_id_usuario'] ?? $usuario->id;
+        $idSucursal = $productoData['_id_sucursal'] ?? $usuario->id_sucursal;
+        
+        // Limpiar datos especiales del array
+        unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal']);
+
+        // Marcar que este producto está siendo actualizado desde Shopify
+        $productoData['syncing_from_shopify'] = true;
+        $productoData['last_shopify_sync'] = now();
 
         $producto->update($productoData);
 
         if ($stockActual != $stockNuevo) {
-            $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $usuario->id);
+            $this->actualizarInventario($producto->id, $stockNuevo, $usuario->id_bodega, $idUsuario);
 
             $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)
                 ->where('id_bodega', $usuario->id_bodega)
@@ -187,9 +243,21 @@ class ShopifyController extends Controller
 
     private function crearNuevoProducto($productoData, $usuario, $request)
     {
+        // Extraer datos especiales que no van al modelo
+        $stock = $productoData['_stock'] ?? 0;
+        $idUsuario = $productoData['_id_usuario'] ?? $usuario->id;
+        $idSucursal = $productoData['_id_sucursal'] ?? $usuario->id_sucursal;
+        
+        // Limpiar datos especiales del array
+        unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal']);
+        
+        // Marcar que este producto viene de Shopify para evitar ciclos
+        $productoData['syncing_from_shopify'] = true;
+        $productoData['last_shopify_sync'] = now();
+        
         $producto = Producto::create($productoData);
         
-        $this->actualizarInventario($producto->id, $productoData['stock'], $usuario->id_bodega, $usuario->id);
+        $this->actualizarInventario($producto->id, $stock, $usuario->id_bodega, $idUsuario);
         $this->procesarImagenes($request, $producto->id);
 
         $inventario = \App\Models\Inventario\Inventario::where('id_producto', $producto->id)

@@ -98,7 +98,7 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1">
+            <li class="mb-1" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
                 <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
                     <img src="/assets/icons/3-layers.png" class="icon me-2">Super Admin
                 </button>

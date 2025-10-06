@@ -1156,6 +1156,8 @@ class VentasController extends Controller
                 $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
             } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
                 $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $empresa->id);
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion->sucursales);
             }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
                 $export = new InventarioExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
             }
@@ -1279,7 +1281,7 @@ class VentasController extends Controller
                 $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 $filename = "estado-financiero-consolidado-sucursales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
-                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
                 $filename = "detalle-ventas-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
                 $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);

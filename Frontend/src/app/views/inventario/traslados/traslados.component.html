@@ -46,8 +46,8 @@
             </div>
         </div>
     </div>
-    <div class="d-flex mb-3">
-        <div class="col-md-6 d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
             <button class="btn " routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados">Traslados</button>
@@ -55,13 +55,13 @@
             <button class="btn " routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
             <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
         </div>
-        <div class="col-md-6 d-flex justify-content-end gap-2">
-            <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+        <div class="ms-auto d-flex gap-2">
+            <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado" class="form-select bg-default select-width">
                 <option value="">Estado</option>
                 <option value="Confirmado">Confirmado</option>
                 <option value="Cancelado">Cancelado</option>
             </select>
-            <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default w-auto">
+            <select name="id_bodega_de" (change)="filtrarTraslados()" [(ngModel)]="filtros.id_bodega_de" class="form-select bg-default select-width">
                 <option value="">Sucursal</option>
                 <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
             </select>

@@ -312,6 +312,15 @@ class ReporteConfiguracionController extends Controller
                     return response()->json(['message' => 'Reporte enviado correctamente'], 200);
 
 
+                case 'detalle-ventas-vendedor':
+                    $controller = new VentasController();
+
+                    $destinatarios = $request->email_prueba
+                        ? [$request->email_prueba]
+                        : $configuracion->destinatarios;
+
+                    $resultado = $controller->enviarReporteProgramadoTest($configuracion, $destinatarios, $fecha_inicio, $fecha_fin);
+                    return response()->json(['message' => 'Reporte enviado correctamente'], 200);
                 case 'inventario-por-sucursal':
                     $controller = new VentasController();
                         

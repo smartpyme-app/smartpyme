@@ -47,9 +47,10 @@
         #suma       {top: 16cm; left: 11cm; width: 2cm; text-align: right;}
         #iva        {top: 16.5cm; left: 11cm; width: 2cm; text-align: right;}
         #subtotal    {top: 17cm; left: 11cm; width: 2cm; text-align: right;}
-        #iva_retenido     {top: 17.5cm; left: 11cm; width: 2cm; text-align: right;}
-        #no_sujeta     {top: 18cm; left: 11cm; width: 2cm; text-align: right;}
-        #exenta     {top: 18.5cm; left: 11cm; width: 2cm; text-align: right;}
+        #renta_retenida     {top: 17.5cm; left: 11cm; width: 2cm; text-align: right;}
+        #iva_retenido     {top: 18cm; left: 11cm; width: 2cm; text-align: right;}
+        #no_sujeta     {top: 18.5cm; left: 11cm; width: 2cm; text-align: right;}
+        #exenta     {top: 19cm; left: 11cm; width: 2cm; text-align: right;}
         #total      {top: 19cm; left: 11cm; width: 2cm; text-align: right;}
 
         .no-print{position: absolute;}  
@@ -108,6 +109,9 @@
         <p id="subtotal"> $ {{ number_format($venta->total + $venta->iva_retenido, 2) }}</p>
         @if($venta->iva_retenido > 0)
             <p id="iva_retenido"> $ {{ number_format($venta->iva_retenido, 2) }}</p>
+        @endif
+        @if($venta->renta_retenida > 0)
+            <p id="renta_retenida"> $ {{ number_format($venta->renta_retenida, 2) }}</p>
         @endif
         @if($venta->no_sujeta > 0)
             <p id="no_sujeta"> $ {{ number_format($venta->no_sujeta, 2) }}</p>
