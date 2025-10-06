@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
@@ -546,6 +547,10 @@ export class FacturacionComponent implements OnInit {
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
 
+                    if (!this.venta.propina) {
+                      this.venta.propina = 0;
+                    }
+
                     if (!detalle.gravada) {
                       detalle.gravada = detalle.total;
                     }
@@ -1014,5 +1019,18 @@ export class FacturacionComponent implements OnInit {
   public isColumnEnabled(columnName: string): boolean {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
+
+
+  public verificarAccesoPropina() {
+    this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+        (acceso) => {
+            this.tieneAccesoPropina = acceso;
+        },
+        (error) => {
+            console.error('Error al verificar acceso a propina:', error);
+            this.tieneAccesoPropina = false;
+        }
+    );
+}
 
 }
