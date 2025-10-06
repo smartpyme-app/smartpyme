@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Route;
     Route::post('/compra/facturacion',      [ComprasController::class, 'facturacion']);
     Route::post('/compra/facturacion/consigna',  [ComprasController::class, 'facturacionConsigna']);
 
+    Route::post('/compra/generar-compra-desde-orden',  [ComprasController::class, 'generarCompraDesdeOrdenCompra']);
+
     Route::get('/compras/sin-devolucion',       [ComprasController::class, 'sinDevolucion']);
 
     Route::post('/compras/historial',       [ComprasController::class, 'historial']);

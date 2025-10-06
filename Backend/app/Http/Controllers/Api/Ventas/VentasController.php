@@ -1447,4 +1447,5 @@ class VentasController extends Controller
 
         return Response()->json($numsIds, 200);
      }
+
 }
