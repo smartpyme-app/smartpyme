@@ -621,6 +621,11 @@ export class VentasComponent implements OnInit {
                                 this.venta.sello_mh = dte.selloRecibido;
                                 this.venta.estado = 'Anulada';
                                 this.onSubmit();
+                                if(this.venta.id_cliente){
+                                  setTimeout(()=>{
+                                  this.enviarDTE(this.venta);
+                                  },3000);
+                              }
                             }
 
                             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
