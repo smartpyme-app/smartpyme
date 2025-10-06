@@ -70,6 +70,7 @@ export class FacturacionComponent implements OnInit {
     this.cargarDatosIniciales();
     this.loadData();
     this.verificarAccesoPropina();
+    this.cargarDocumentos();
   }
 
   public loadData() {
