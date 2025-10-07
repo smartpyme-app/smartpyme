@@ -181,7 +181,7 @@ export class ContribuyentesComponent implements OnInit {
               }, 100);
               
               this.downloading = false;
-              this.alertService.success('success', 'Archivo descargado correctamente');
+              this.alertService.success('Exito', 'Archivo descargado correctamente');
           },
           (error: any) => {
               if (error.error instanceof Blob) {

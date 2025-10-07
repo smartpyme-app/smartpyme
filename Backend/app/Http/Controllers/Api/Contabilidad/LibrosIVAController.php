@@ -591,7 +591,6 @@ class LibrosIVAController extends Controller
     public function GlobalDttesExport(Request $request)
     {
         try {
-            Log::info('=== INICIO CONTROLADOR GlobalDttesExport ===');
             
             while (ob_get_level() > 0) {
                 ob_end_clean();
@@ -617,8 +616,6 @@ class LibrosIVAController extends Controller
             }
             
             $fileSize = filesize($filePath);
-            Log::info('Tamaño del archivo: ' . $fileSize . ' bytes');
-            Log::info('Iniciando descarga del archivo: ' . $result['filename']);
             
             // Leer contenido
             $fileContent = file_get_contents($filePath);
@@ -626,7 +623,6 @@ class LibrosIVAController extends Controller
             // Eliminar archivo
             @unlink($filePath);
             
-            Log::info('Archivo leído y eliminado. Enviando respuesta...');
             
             // Retornar respuesta con headers claros
             return response($fileContent, 200)
