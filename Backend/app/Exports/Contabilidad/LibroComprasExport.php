@@ -72,7 +72,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get();
@@ -84,7 +84,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
 
@@ -93,7 +93,7 @@ class LibroComprasExport implements FromCollection, WithMapping, WithHeadings, W
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get();
             
