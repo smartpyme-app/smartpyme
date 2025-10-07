@@ -603,16 +603,12 @@ class LibrosIVAController extends Controller
             
             if (!$result['success']) {
                 Log::error('Error al generar ZIP: ' . $result['message']);
-                
-                // Devolver texto plano en lugar de JSON
                 return response($result['message'], 400)
                     ->header('Content-Type', 'text/plain');
             }
             
             $filePath = storage_path('app/' . $result['path']);
-            Log::info('Ruta del archivo a descargar: ' . $filePath);
             
-            // Verificar que el archivo existe y es válido
             if (!file_exists($filePath)) {
                 Log::error('Archivo ZIP no encontrado: ' . $filePath);
                 return response('Archivo no encontrado', 404)
@@ -621,40 +617,29 @@ class LibrosIVAController extends Controller
             
             $fileSize = filesize($filePath);
             Log::info('Tamaño del archivo: ' . $fileSize . ' bytes');
+            Log::info('Iniciando descarga del archivo: ' . $result['filename']);
             
-            // Verificar que es un archivo ZIP válido
-            $zip = new \ZipArchive();
-            $zipTestResult = $zip->open($filePath);
-            Log::info('Test de apertura ZIP: ' . ($zipTestResult === true ? 'VÁLIDO' : 'INVÁLIDO - Código: ' . $zipTestResult));
+            // Leer todo el contenido del archivo
+            $fileContent = file_get_contents($filePath);
             
-            if ($zipTestResult !== true) {
-                Log::error('Archivo ZIP corrupto: ' . $filePath . ' - Código: ' . $zipTestResult);
-                return response('Archivo ZIP corrupto', 500)
-                    ->header('Content-Type', 'text/plain');
-            }
+            // Eliminar el archivo manualmente
+            @unlink($filePath);
             
-            Log::info('Número de archivos en ZIP: ' . $zip->numFiles);
-            $zip->close();
+            Log::info('Archivo leído y eliminado. Enviando respuesta...');
             
-            Log::info('Iniciando descarga del archivo...');
-            
-            return response()->download(
-                $filePath,
-                $result['filename'],
-                [
-                    'Content-Type' => 'application/zip',
-                    'Content-Disposition' => 'attachment; filename="' . $result['filename'] . '"',
-                    'Content-Length' => $fileSize,
-                    'Cache-Control' => 'no-cache, no-store, must-revalidate',
-                    'Pragma' => 'no-cache',
-                    'Expires' => '0'
-                ]
-            )->deleteFileAfterSend(true);
+            // Retornar la respuesta con el contenido
+            return response($fileContent, 200)
+                ->header('Content-Type', 'application/zip')
+                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
+                ->header('Content-Length', strlen($fileContent))
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                ->header('Pragma', 'no-cache')
+                ->header('Expires', '0');
+                
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
             
-            // Devolver texto plano en lugar de JSON
             return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
                 ->header('Content-Type', 'text/plain');
         }
