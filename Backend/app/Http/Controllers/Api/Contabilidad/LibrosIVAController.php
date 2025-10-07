@@ -284,7 +284,7 @@ class LibrosIVAController extends Controller
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get()
@@ -342,7 +342,7 @@ class LibrosIVAController extends Controller
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($gasto) {
@@ -395,7 +395,7 @@ class LibrosIVAController extends Controller
                 return $query->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($devolucion) {
