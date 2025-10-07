@@ -125,7 +125,9 @@ class VentasController extends Controller
                         ->orWhere('forma_pago', 'like', $buscador);
                 });
             })
-            ->withSum('abonos', 'total')
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);
