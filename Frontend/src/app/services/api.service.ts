@@ -43,6 +43,10 @@ export class ApiService {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
     }
 
+    exportWithUrl(url: string, filtros: any): Observable<any> {
+        return this.http.get(this.apiUrl + url, { params: filtros });
+    }
+
     exportAcumulado(url: string, filtros: any): Observable<Blob> {
         return this.http.post(this.apiUrl + url, filtros, {
             responseType: 'blob',
