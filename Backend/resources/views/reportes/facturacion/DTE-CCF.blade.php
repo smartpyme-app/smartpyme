@@ -17,7 +17,7 @@
         .table{width: 100%; border-collapse: collapse; }
         .table th, .table td{
             border-collapse: collapse;
-            padding: 5px;
+            padding: 3px;
             text-align: left;
         }
 
@@ -25,22 +25,100 @@
             border: 1px solid #aaa;
         }
 
-        /* Propiedades para permitir división de tabla entre páginas */
+        /* Propiedades específicas para DomPDF - división de tabla entre páginas */
         .table.bordered {
             page-break-inside: auto;
-        }
-        
-        .table.bordered tr {
-            page-break-inside: avoid;
+            page-break-before: auto;
             page-break-after: auto;
         }
         
+        /* Permitir división de filas en DomPDF */
+        .table.bordered tbody tr {
+            page-break-inside: auto;
+            page-break-before: auto;
+            page-break-after: auto;
+        }
+        
+        /* Mantener encabezado en cada página */
         .table.bordered thead {
             display: table-header-group;
         }
         
+        .table.bordered thead tr {
+            page-break-inside: avoid;
+            page-break-after: avoid;
+        }
+        
+        /* Mantener pie de página al final */
         .table.bordered tfoot {
             display: table-footer-group;
+        }
+        
+        .table.bordered tfoot tr {
+            page-break-inside: avoid;
+            page-break-before: avoid;
+        }
+        
+        /* Evitar división de celdas individuales */
+        .table.bordered td, .table.bordered th {
+            page-break-inside: avoid;
+            vertical-align: top;
+        }
+        
+        /* Solución específica para DomPDF - forzar división de tabla */
+        .table-products {
+            page-break-inside: auto !important;
+        }
+        
+        .table-products tbody {
+            page-break-inside: auto !important;
+        }
+        
+        .table-products tbody tr {
+            page-break-inside: auto !important;
+            page-break-before: auto !important;
+            page-break-after: auto !important;
+        }
+        
+        /* Forzar que DomPDF divida la tabla */
+        .force-page-break {
+            page-break-before: always;
+        }
+        
+        /* Solución alternativa para DomPDF - usar overflow */
+        .table-products {
+            table-layout: fixed;
+            width: 100%;
+        }
+        
+        /* Asegurar que DomPDF respete las reglas de página */
+        @media print {
+            .table-products {
+                page-break-inside: auto !important;
+            }
+            .table-products tbody tr {
+                page-break-inside: auto !important;
+            }
+        }
+        
+        /* Solución final para DomPDF - remover todas las restricciones de page-break */
+        .table-products,
+        .table-products tbody,
+        .table-products tbody tr {
+            page-break-inside: auto !important;
+            page-break-before: auto !important;
+            page-break-after: auto !important;
+        }
+        
+        /* Solo mantener restricciones en encabezado y pie */
+        .table-products thead tr {
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+        }
+        
+        .table-products tfoot tr {
+            page-break-inside: avoid !important;
+            page-break-before: avoid !important;
         }
         .text-right{
             text-align: right !important;
@@ -54,8 +132,24 @@
     
 </head>
 <body>
-
-        <table class="table">
+    
+    @php
+    $tipoModelo = [
+        'Modelo Facturación previo',
+        'Modelo Facturación diferido'
+        ];
+        $tipoOperacion = [
+            'Transmisión normal',
+            'Transmisión por contingencia'
+            ];
+    @endphp
+    @php
+        $tipoDocumento = [
+                '36',
+                '13'
+        ];
+    @endphp
+            <table class="table">
             <tbody>
                 <tr>
                     <td  style="width: 25%;">
@@ -74,17 +168,6 @@
                 </tr>
             </tbody>
         </table>
-        @php
-            $tipoModelo = [
-                'Modelo Facturación previo',
-                'Modelo Facturación diferido'
-            ];
-            $tipoOperacion = [
-                'Transmisión normal',
-                'Transmisión por contingencia'
-            ];
-        @endphp
-        <br>
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -101,12 +184,6 @@
                 </tr>
             </tbody>
         </table>
-        @php
-            $tipoDocumento = [
-                    '36',
-                    '13'
-            ];
-        @endphp
         <table class="table bordered">
             <tbody>
                 <tr>
@@ -146,7 +223,7 @@
                 </tr>
             </tbody>
         </table>
-        <table class="table bordered">
+        <table class="table bordered table-products">
             <thead>
                 <tr class="bg-light">
                     <th width="3%" class="border-bottom">N°</th>
