@@ -592,9 +592,6 @@ class LibrosIVAController extends Controller
     {
         try {
             Log::info('=== INICIO CONTROLADOR GlobalDttesExport ===');
-            Log::info('Headers de la request:', $request->headers->all());
-            Log::info('User Agent: ' . $request->header('User-Agent'));
-            Log::info('IP del cliente: ' . $request->ip());
             
             $dttes = new GlobalDttesExport();
             $dttes->filter($request);
@@ -603,45 +600,63 @@ class LibrosIVAController extends Controller
             
             if (!$result['success']) {
                 Log::error('Error al generar ZIP: ' . $result['message']);
-                return response($result['message'], 400)
-                    ->header('Content-Type', 'text/plain');
+                return response()->json(['error' => $result['message']], 400);
             }
             
-            $filePath = storage_path('app/' . $result['path']);
+            // Crear directorio para descargas temporales si no existe
+            $downloadDir = 'dtes_downloads';
+            $publicDownloadPath = storage_path('app/public/' . $downloadDir);
             
-            if (!file_exists($filePath)) {
-                Log::error('Archivo ZIP no encontrado: ' . $filePath);
-                return response('Archivo no encontrado', 404)
-                    ->header('Content-Type', 'text/plain');
+            if (!file_exists($publicDownloadPath)) {
+                mkdir($publicDownloadPath, 0755, true);
             }
             
-            $fileSize = filesize($filePath);
-            Log::info('Tamaño del archivo: ' . $fileSize . ' bytes');
-            Log::info('Iniciando descarga del archivo: ' . $result['filename']);
+            // Generar nombre único para evitar conflictos
+            $uniqueFilename = uniqid() . '_' . $result['filename'];
+            $relativePath = $downloadDir . '/' . $uniqueFilename;
+            $destinationPath = storage_path('app/public/' . $relativePath);
             
-            // Leer todo el contenido del archivo
-            $fileContent = file_get_contents($filePath);
+            // Mover el archivo desde temp a public
+            $sourcePath = storage_path('app/' . $result['path']);
             
-            // Eliminar el archivo manualmente
-            @unlink($filePath);
+            if (!file_exists($sourcePath)) {
+                Log::error('Archivo fuente no existe: ' . $sourcePath);
+                return response()->json(['error' => 'Archivo no encontrado'], 404);
+            }
             
-            Log::info('Archivo leído y eliminado. Enviando respuesta...');
+            // Mover archivo
+            rename($sourcePath, $destinationPath);
             
-            // Retornar la respuesta con el contenido
-            return response($fileContent, 200)
-                ->header('Content-Type', 'application/zip')
-                ->header('Content-Disposition', 'attachment; filename="' . $result['filename'] . '"')
-                ->header('Content-Length', strlen($fileContent))
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
-                
+            // Generar URL pública
+            $publicUrl = url('storage/' . $relativePath);
+            
+            Log::info('Archivo disponible en: ' . $publicUrl);
+            Log::info('Tamaño del archivo: ' . filesize($destinationPath) . ' bytes');
+            
+            // Programar eliminación automática después de 10 minutos
+            dispatch(function() use ($destinationPath, $uniqueFilename) {
+                sleep(600); // 10 minutos
+                if (file_exists($destinationPath)) {
+                    @unlink($destinationPath);
+                    Log::info('Archivo temporal eliminado: ' . $uniqueFilename);
+                }
+            })->afterResponse();
+            
+            return response()->json([
+                'success' => true,
+                'url' => $publicUrl,
+                'filename' => $result['filename'],
+                'count' => $result['count'],
+                'message' => 'Archivo generado correctamente. Se eliminará automáticamente en 10 minutos.'
+            ]);
+            
         } catch (\Exception $e) {
             Log::error('Excepción al exportar DTEs: ' . $e->getMessage());
             Log::error('Stack trace: ' . $e->getTraceAsString());
             
-            return response('Error al procesar la solicitud: ' . $e->getMessage(), 500)
-                ->header('Content-Type', 'text/plain');
+            return response()->json([
+                'error' => 'Error al procesar la solicitud: ' . $e->getMessage()
+            ], 500);
         }
     }
     
