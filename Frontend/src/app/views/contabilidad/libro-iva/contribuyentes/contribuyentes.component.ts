@@ -148,41 +148,49 @@ export class ContribuyentesComponent implements OnInit {
       let typeDTE: string = '03';
       this.filtros.typeDTE = typeDTE;
       
-      // Usar exportWithUrl en lugar de export
-      this.apiService.exportWithUrl('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
-          (response: any) => {
-              // Verificar si hay error
-              if (response.error) {
-                  this.alertService.error(response.error);
+      this.apiService.export('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
+          (data: Blob) => {
+              if (data.type === 'text/plain') {
+                  data.text().then((errorMessage: string) => {
+                      this.alertService.error(errorMessage);
+                      this.downloading = false;
+                  });
+                  return;
+              }
+              
+              if (data.size === 0) {
+                  this.alertService.error('El archivo descargado está vacío');
                   this.downloading = false;
                   return;
               }
               
-              // Verificar respuesta exitosa
-              if (response.success && response.url) {
-                  // Descargar usando la URL pública
-                  const link = document.createElement('a');
-                  link.href = response.url;
-                  link.download = response.filename;
-                  link.target = '_blank';
-                  document.body.appendChild(link);
-                  link.click();
-                  
-                  // Limpiar después de un breve delay
-                  setTimeout(() => {
-                      document.body.removeChild(link);
-                  }, 100);
-                  
-                  this.alertService.success(`${response.count} DTEs descargados correctamente`, 'success');
-              } else {
-                  this.alertService.error('Error al generar el archivo');
-              }
+              const fechaInicio = this.filtros.inicio.replace(/-/g, '');
+              const fechaFin = this.filtros.fin.replace(/-/g, '');
+              const filename = `DTEs_${fechaInicio}_${fechaFin}.zip`;
+              
+              const url = window.URL.createObjectURL(data);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = filename;
+              document.body.appendChild(a);
+              a.click();
+              
+              setTimeout(() => {
+                  document.body.removeChild(a);
+                  window.URL.revokeObjectURL(url);
+              }, 100);
               
               this.downloading = false;
+              this.alertService.success('success', 'Archivo descargado correctamente');
           },
           (error: any) => {
-              console.error('Error al descargar DTEs:', error);
-              this.alertService.error(error.error?.error || error.message || 'Error desconocido');
+              if (error.error instanceof Blob) {
+                  error.error.text().then((errorMessage: string) => {
+                      this.alertService.error(errorMessage || 'Error al descargar');
+                  });
+              } else {
+                  this.alertService.error(error.message || 'Error desconocido');
+              }
               this.downloading = false;
           }
       );
