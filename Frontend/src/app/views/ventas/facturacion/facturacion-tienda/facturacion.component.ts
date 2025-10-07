@@ -70,7 +70,6 @@ export class FacturacionComponent implements OnInit {
     this.cargarDatosIniciales();
     this.loadData();
     this.verificarAccesoPropina();
-    this.cargarDocumentos();
   }
 
   public loadData() {
@@ -431,6 +430,7 @@ export class FacturacionComponent implements OnInit {
     );
     console.log(this.venta);
     }
+    this.cargarDocumentos();
   }
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
