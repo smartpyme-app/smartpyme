@@ -144,44 +144,49 @@ export class ContribuyentesComponent implements OnInit {
 
 
     public descargarDTECreditoFiscal(): void {
-        this.downloading = true;
-        let typeDTE : string = '03';
-        this.filtros.typeDTE = typeDTE;
-        this.apiService.export('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
-          (data: Blob) => {
-            // Si es texto plano, es un mensaje de error
-            if (data.type === 'text/plain') {
-              data.text().then((errorMessage: string) => {
-                this.alertService.error(errorMessage);
-              });
-              this.downloading = false;
-              return;
-            }
+      this.downloading = true;
+      let typeDTE: string = '03';
+      this.filtros.typeDTE = typeDTE;
       
-            // Si no es texto plano, es un archivo ZIP
-            const url = window.URL.createObjectURL(data);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'DTEs_Export_' + new Date().toISOString().slice(0, 10) + '.zip';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloading = false;
+      // Usar exportWithUrl en lugar de export
+      this.apiService.exportWithUrl('libro-iva/contribuyentes/descargar-dttes', this.filtros).subscribe(
+          (response: any) => {
+              // Verificar si hay error
+              if (response.error) {
+                  this.alertService.error(response.error);
+                  this.downloading = false;
+                  return;
+              }
+              
+              // Verificar respuesta exitosa
+              if (response.success && response.url) {
+                  // Descargar usando la URL pública
+                  const link = document.createElement('a');
+                  link.href = response.url;
+                  link.download = response.filename;
+                  link.target = '_blank';
+                  document.body.appendChild(link);
+                  link.click();
+                  
+                  // Limpiar después de un breve delay
+                  setTimeout(() => {
+                      document.body.removeChild(link);
+                  }, 100);
+                  
+                  this.alertService.success(`${response.count} DTEs descargados correctamente`, 'success');
+              } else {
+                  this.alertService.error('Error al generar el archivo');
+              }
+              
+              this.downloading = false;
           },
           (error: any) => {
-            // Para errores HTTP que no devuelven un Blob
-            if (error.error instanceof Blob && error.error.type === 'text/plain') {
-              error.error.text().then((errorMessage: string) => {
-                this.alertService.error(errorMessage);
-              });
-            } else {
-              this.alertService.error(error.message || 'Error desconocido');
-            }
-            this.downloading = false;
+              console.error('Error al descargar DTEs:', error);
+              this.alertService.error(error.error?.error || error.message || 'Error desconocido');
+              this.downloading = false;
           }
-        );
-      }
+      );
+  }
 
       public descargarLibroPDF(): void {
         this.filtros.formato = 'pdf';
