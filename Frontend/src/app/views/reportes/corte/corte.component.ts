@@ -56,5 +56,10 @@ export class CorteComponent implements OnInit {
             this.indicadores = indicadores;
         }, error => {this.alertService.error(error); });
     }
+
+    public onUsuarioClear(){
+        this.filtros.id_usuario = '';
+        this.filtrar();
+    }
     
 }
