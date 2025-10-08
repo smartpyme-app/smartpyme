@@ -22,14 +22,6 @@ class GlobalDttesExport
     {
         $request = $this->request;
 
-        Log::info('=== INICIO EXPORTACIÓN DTEs ===');
-        Log::info('Request data:', $request->all());
-        Log::info('PHP Version: ' . PHP_VERSION);
-        Log::info('ZipArchive disponible: ' . (class_exists('ZipArchive') ? 'SÍ' : 'NO'));
-        Log::info('Directorio temporal: ' . sys_get_temp_dir());
-        Log::info('Memoria disponible: ' . ini_get('memory_limit'));
-        Log::info('Tiempo máximo de ejecución: ' . ini_get('max_execution_time'));
-
         // Obtener las fechas del filtro para el nombre del archivo
         $fechaInicio = $request->inicio ?? date('Y-m-d');
         $fechaFin = $request->fin ?? date('Y-m-d');
@@ -69,7 +61,6 @@ class GlobalDttesExport
         }
 
         $tempDir = storage_path('app/temp/dtes_' . time());
-        Log::info('Directorio temporal creado: ' . $tempDir);
         
         if (!file_exists($tempDir)) {
             $mkdirResult = mkdir($tempDir, 0777, true);
@@ -87,13 +78,8 @@ class GlobalDttesExport
         $zipFileName = $nombreArchivo . '.zip';
         $zipPath = storage_path('app/public/' . $zipFileName);
         
-        Log::info('Ruta del ZIP: ' . $zipPath);
-        Log::info('Directorio de destino existe: ' . (is_dir(dirname($zipPath)) ? 'SÍ' : 'NO'));
-        Log::info('Permisos del directorio: ' . substr(sprintf('%o', fileperms(dirname($zipPath))), -4));
-
         $zip = new ZipArchive();
         $zipResult = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        Log::info('Resultado de ZipArchive::open: ' . $zipResult);
         
         if ($zipResult !== true) {
             $errorMessages = [

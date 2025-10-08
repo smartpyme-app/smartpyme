@@ -430,6 +430,7 @@ export class FacturacionComponent implements OnInit {
     );
     console.log(this.venta);
     }
+    this.cargarDocumentos();
   }
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
