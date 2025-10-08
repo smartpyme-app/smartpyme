@@ -50,7 +50,23 @@ class DevolucionVentasController extends Controller
                             $query->where('id_cliente', $request->id_cliente);
                         })
                         ->when($request->tipo_documento, function($query) use ($request){
-                            return $query->where('tipo_documento', $request->tipo_documento);
+                            return $query->whereHas('documento', function ($q) use ($request) {
+                                $q->where('nombre', $request->tipo_documento);
+                            });
+                        })
+                        ->when($request->id_documento, function ($query) use ($request) {
+                            // Buscar el documento por ID (respetando el scope de empresa)
+                            $documento = Documento::find($request->id_documento);
+                            
+                            if ($documento) {
+                                // Filtrar por todos los documentos que tengan el mismo nombre (case insensitive)
+                                return $query->whereHas('documento', function ($q) use ($documento) {
+                                    $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                                });
+                            } else {
+                                // Si no se encuentra el documento, filtrar por ID directo
+                                return $query->where('id_documento', $request->id_documento);
+                            }
                         })
                         ->when($request->buscador, function($query) use ($request){
                         return $query->whereHas('cliente', function($q) use ($request){

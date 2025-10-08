@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Documento;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,23 @@ class DocumentosController extends Controller
 
         $documentos = Documento::where('activo', true)->get();
 
+        return Response()->json($documentos, 200);
+    }
+
+    public function listNombre()
+    {
+        $documentos = DB::table('documentos as d1')
+            ->where('d1.activo', true)
+            ->where('d1.id_empresa', Auth::user()->id_empresa) // Filtrar por empresa
+            ->whereIn('d1.id', function($query) {
+                $query->select(DB::raw('MIN(id)'))
+                    ->from('documentos as d2')
+                    ->where('d2.activo', true)
+                    ->where('d2.id_empresa', Auth::user()->id_empresa) // Filtrar por empresa en subconsulta
+                    ->groupBy('d2.nombre');
+            })
+            ->orderBy('d1.nombre')
+            ->get();
         return Response()->json($documentos, 200);
     }
 

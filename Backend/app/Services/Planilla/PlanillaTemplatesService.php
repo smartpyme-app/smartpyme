@@ -290,7 +290,8 @@ class PlanillaTemplatesService
                     "aplica_renta" => false,
                     "obligatorio" => true,
                     "orden" => 8
-                ]
+                ],
+
             ],
             "configuraciones_generales" => [
                 "moneda" => "HNL",

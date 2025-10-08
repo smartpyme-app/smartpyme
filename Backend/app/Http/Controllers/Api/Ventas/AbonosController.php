@@ -47,6 +47,22 @@ class AbonosController extends Controller
                         ->when($request->metodo_pago, function($query) use ($request){
                             return $query->where('metodo_pago', $request->metodo_pago);
                         })
+                        ->when($request->id_documento, function ($query) use ($request) {
+                            // Buscar el documento por ID (respetando el scope de empresa)
+                            $documento = \App\Models\Admin\Documento::find($request->id_documento);
+                            
+                            if ($documento) {
+                                // Filtrar por todos los abonos de ventas que tengan documentos con el mismo nombre (case insensitive)
+                                return $query->whereHas('venta.documento', function ($q) use ($documento) {
+                                    $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                                });
+                            } else {
+                                // Si no se encuentra el documento, filtrar por ID directo del documento de la venta
+                                return $query->whereHas('venta', function ($q) use ($request) {
+                                    $q->where('id_documento', $request->id_documento);
+                                });
+                            }
+                        })
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
