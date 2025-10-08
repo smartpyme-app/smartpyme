@@ -48,6 +48,12 @@ export class FacturacionCompraComponent implements OnInit {
     public searchLoading: boolean = false;
     public searchProductos$ = new Subject<string>();
 
+    // Propiedades para crear productos nuevos
+    public modalCrearProducto!: BsModalRef;
+    public nuevoProducto: any = {};
+    public creandoProducto: boolean = false;
+    public categorias: any[] = [];
+
     
     modalRef!: BsModalRef;
     modalCredito!: BsModalRef;
@@ -96,6 +102,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.searchResults = results || [];
             this.searchLoading = false;
         });
+
     }
 
     ngOnInit() {
@@ -466,20 +473,55 @@ export class FacturacionCompraComponent implements OnInit {
       }
 
       getProveedor(proveedor: any) {
-        // Buscar primero por NIT
         //console.log('Buscando proveedor del DTE:', proveedor);
-        let proveedorEncontrado = this.searchNit(proveedor.nit);
-        if (!proveedorEncontrado) {
-          // Si no lo encuentra por NIT, buscar por nombre
+        let proveedorEncontrado = null;
+        
+        // 1. Buscar primero por NIT (prioridad más alta)
+        if (proveedor.nit) {
+          proveedorEncontrado = this.searchNit(proveedor.nit);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NIT:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 2. Buscar por NRC si no se encontró por NIT
+        if (proveedor.nrc && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchNrc(proveedor.nrc);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por NRC:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 3. Buscar por DUI si no se encontró por NIT ni NRC
+        if (proveedor.dui && !proveedorEncontrado) {
+          proveedorEncontrado = this.searchDui(proveedor.dui);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por DUI:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
+        }
+        
+        // 4. Como último recurso, buscar por nombre
+        if (!proveedorEncontrado && proveedor.nombre) {
           proveedorEncontrado = this.searchNombre(proveedor.nombre);
+          if (proveedorEncontrado) {
+            console.log('Proveedor encontrado por nombre:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
+            return proveedorEncontrado;
+          }
         }
         
-        // Si no encuentra por NIT ni por nombre, NO se selecciona nada
+        // Si no encuentra por ningún método, NO se selecciona nada
         if (!proveedorEncontrado) {
-          console.log('No se encontró proveedor específico, no se selecciona ninguno');
+          console.log('No se encontró proveedor con los datos:', {
+            nit: proveedor.nit,
+            nrc: proveedor.nrc,
+            dui: proveedor.dui,
+            nombre: proveedor.nombre
+          });
         }
         
-        //console.log('Proveedor final seleccionado:', proveedorEncontrado);
         return proveedorEncontrado;
       }
 
@@ -508,6 +550,32 @@ export class FacturacionCompraComponent implements OnInit {
         });
         
         // console.log('Proveedor encontrado por nombre:', proveedor);
+        return proveedor;
+      }
+
+      searchNrc(nrc: string) {
+        // console.log('Buscando proveedor por NRC:', nrc);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando NRC:', proveedor.ncr, 'con:', nrc);
+          return proveedor.ncr === nrc || proveedor.ncr == nrc;
+        });
+        
+        // console.log('Proveedor encontrado por NRC:', proveedor);
+        return proveedor;
+      }
+
+      searchDui(dui: string) {
+        // console.log('Buscando proveedor por DUI:', dui);
+        // console.log('Lista de proveedores:', this.proveedores);
+        
+        let proveedor = this.proveedores.find((proveedor: any) => {
+          // console.log('Comparando DUI:', proveedor.dui, 'con:', dui);
+          return proveedor.dui === dui || proveedor.dui == dui;
+        });
+        
+        // console.log('Proveedor encontrado por DUI:', proveedor);
         return proveedor;
       }
 
@@ -838,6 +906,117 @@ export class FacturacionCompraComponent implements OnInit {
     // Método para activar la búsqueda desde el template
     onSearchProducts(term: string) {
         this.searchProductos$.next(term);
+    }
+
+    // Métodos para crear productos nuevos
+    openModalCrearProducto(template: TemplateRef<any>) {
+        this.nuevoProducto = {
+            nombre: '',
+            tipo: '',
+            codigo: '',
+            cod_proveed_prod: '',
+            costo: 0,
+            precio: 0,
+            marca: '',
+            stock: 0,
+            descripcion: '',
+            id_categoria: '',
+            id_empresa: this.apiService.auth_user().id_empresa,
+            id_usuario: this.apiService.auth_user().id
+        };
+        this.creandoProducto = false;
+        
+        // Cargar categorías si no están cargadas
+        if (this.categorias.length === 0) {
+            this.cargarCategorias();
+        }
+        
+        this.modalCrearProducto = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+    cargarCategorias() {
+        this.apiService.getAll('categorias/list').subscribe(
+            categorias => {
+                this.categorias = categorias;
+            },
+            error => {
+                console.error('Error cargando categorías:', error);
+                this.alertService.error('Error cargando categorías');
+            }
+        );
+    }
+
+    crearProducto() {
+        // Debug: mostrar valores actuales
+        console.log('Valores del formulario:', {
+            nombre: this.nuevoProducto.nombre,
+            tipo: this.nuevoProducto.tipo,
+            costo: this.nuevoProducto.costo,
+            id_categoria: this.nuevoProducto.id_categoria
+        });
+
+        // Validación más específica
+        const errores = [];
+        
+        if (!this.nuevoProducto.nombre || this.nuevoProducto.nombre.trim() === '') {
+            errores.push('Nombre');
+        }
+        
+        if (!this.nuevoProducto.tipo || this.nuevoProducto.tipo === '') {
+            errores.push('Tipo');
+        }
+        
+        if (!this.nuevoProducto.costo || this.nuevoProducto.costo <= 0) {
+            errores.push('Costo');
+        }
+        
+        if (!this.nuevoProducto.id_categoria || this.nuevoProducto.id_categoria === '') {
+            errores.push('Categoría');
+        }
+
+        if (errores.length > 0) {
+            this.alertService.error(`Por favor, complete los campos obligatorios: ${errores.join(', ')}`);
+            return;
+        }
+
+        this.creandoProducto = true;
+
+        // Preparar datos para el backend
+        const datosProducto = {
+            nombre: this.nuevoProducto.nombre,
+            tipo: this.nuevoProducto.tipo,
+            codigo: this.nuevoProducto.codigo || null,
+            cod_proveed_prod: this.nuevoProducto.cod_proveed_prod || null,
+            costo: parseFloat(this.nuevoProducto.costo),
+            precio: parseFloat(this.nuevoProducto.precio) || parseFloat(this.nuevoProducto.costo),
+            marca: this.nuevoProducto.marca || null,
+            stock: this.nuevoProducto.stock || 0,
+            descripcion: this.nuevoProducto.descripcion || null,
+            id_empresa: this.apiService.auth_user().id_empresa,
+            id_usuario: this.apiService.auth_user().id,
+            id_categoria: parseInt(this.nuevoProducto.id_categoria),
+            medida: 'Unidad' // Medida por defecto
+        };
+
+        // Crear el producto en el backend usando la ruta correcta
+        this.apiService.store('producto', datosProducto).subscribe(
+            (productoCreado: any) => {
+                // NO agregar automáticamente al DTE
+                // El producto solo estará disponible para asignar en la consolidación
+                
+                // Cerrar el modal
+                this.modalCrearProducto.hide();
+                
+                // Mostrar mensaje de éxito
+                this.alertService.success('Producto creado', 'El producto ha sido creado exitosamente. Estará disponible para asignar en la consolidación.');
+                
+                this.creandoProducto = false;
+            },
+            (error) => {
+                this.alertService.error('Error al crear el producto: ' + error);
+                this.creandoProducto = false;
+            }
+        );
     }
     
     
