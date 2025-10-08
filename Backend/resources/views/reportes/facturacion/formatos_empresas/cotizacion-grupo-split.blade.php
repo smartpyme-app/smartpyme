@@ -51,7 +51,7 @@
         <table>
             <tbody>
                 <tr>
-                    <td class="text-left" style="vertical-align: top;">
+                    <td width="40%" class="text-left" style="vertical-align: top;">
                         <img height="100" src="{{ asset('img/logo-grupo-split.jpg') }}" alt="Logo">
                         <br>
                         <p>
