@@ -25,14 +25,20 @@
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
                     <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
-                    <td>Todos</td>
+                    <td>Todos los usuarios</td>
                 </tr>
 
                 <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                     <td>
-                        Todos
+                        <span [attr.data-bs-toggle]="precio.usuarios && precio.usuarios.length > 0 ? 'tooltip' : null"
+                              [attr.data-bs-placement]="'top'"
+                              [attr.data-bs-title]="getTooltipUsuarios(precio)"
+                              [attr.data-bs-html]="'true'"
+                              style="cursor: help;">
+                            {{ getUsuariosAutorizados(precio) }}
+                        </span>
                     </td>
                     <td width="100" class="text-center">
                         <!-- <div class="d-flex gap-2"> -->
