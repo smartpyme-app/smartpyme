@@ -48,6 +48,10 @@ class VentasController extends Controller
 
     public function index(Request $request)
     {
+        // Log para debuggear los filtros
+        Log::info('=== INICIO FILTRO VENTAS ===');
+        Log::info('Filtros recibidos:', $request->all());
+        Log::info('Filtro id_documento específico:', ['id_documento' => $request->id_documento]);
 
         $ventas = Venta::when($request->inicio, function ($query) use ($request) {
             return $query->where('fecha', '>=', $request->inicio);
@@ -92,7 +96,13 @@ class VentasController extends Controller
                 return $query->where('id_proyecto', $request->id_proyecto);
             })
             ->when($request->id_documento, function ($query) use ($request) {
-                return $query->where('id_documento', $request->id_documento);
+                $documento = Documento::find($request->id_documento);
+                if ($documento) {
+                    return $query->whereHas('documento', function ($q) use ($documento) {
+                        $q->where('nombre', $documento->nombre);
+                    });
+                }
+                return $query;
             })
             ->when($request->estado, function ($query) use ($request) {
                 return $query->where('estado', $request->estado);
@@ -101,7 +111,29 @@ class VentasController extends Controller
                 return $query->where('metodo_pago', $request->metodo_pago);
             })
             ->when($request->tipo_documento, function ($query) use ($request) {
-                return $query->where('tipo_documento', $request->tipo_documento);
+                Log::info('Filtrando por tipo_documento:', ['tipo_documento' => $request->tipo_documento]);
+                return $query->whereHas('documento', function ($q) use ($request) {
+                    $q->where('nombre', $request->tipo_documento);
+                });
+            })
+            ->when($request->id_documento, function ($query) use ($request) {
+                Log::info('Filtrando por id_documento:', ['id_documento' => $request->id_documento]);
+                
+                // Buscar el documento por ID (respetando el scope de empresa)
+                $documento = Documento::find($request->id_documento);
+                Log::info('Resultado de Documento::find:', ['documento' => $documento ? $documento->toArray() : 'NULL']);
+                
+                if ($documento) {
+                    Log::info('Documento encontrado:', ['nombre' => $documento->nombre]);
+                    
+                    // Filtrar por todos los documentos que tengan el mismo nombre (case insensitive)
+                    return $query->whereHas('documento', function ($q) use ($documento) {
+                        $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                    });
+                } else {
+                    Log::info('Documento NO encontrado en la empresa del usuario, filtrando por ID directo');
+                    return $query->where('id_documento', $request->id_documento);
+                }
             })
             ->when($request->dte && $request->dte == 1, function ($query) {
                 return $query->whereNull('sello_mh');
@@ -135,6 +167,11 @@ class VentasController extends Controller
         foreach ($ventas as $venta) {
             $venta->saldo = $venta->saldo;
         }
+
+        // Log del resultado final
+        Log::info('=== RESULTADO FILTRO VENTAS ===');
+        Log::info('Total de ventas encontradas:', ['count' => $ventas->count()]);
+        Log::info('Primeras 3 ventas:', $ventas->take(3)->toArray());
 
         return Response()->json($ventas, 200);
     }
