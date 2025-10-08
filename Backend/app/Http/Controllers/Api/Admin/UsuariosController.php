@@ -111,7 +111,9 @@ class UsuariosController extends Controller
         // Verificar si se está cambiando el rol
         if ($request->id && $request->rol_id) {
             $usuario = Usuario::findOrFail($request->id);
-            if ($usuario->roles->first()->id != $request->rol_id) {
+            // Verificar que el usuario tenga roles asignados antes de acceder a ellos
+            $currentRole = $usuario->roles->first();
+            if ($currentRole && $currentRole->id != $request->rol_id) {
                 if ($response = $this->checkAuth('change_role', ['id_usuario' => $request->id])) {
                     return $response;
                 }

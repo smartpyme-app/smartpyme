@@ -62,8 +62,21 @@ class User extends Authenticatable implements JWTSubject
 
     public function bienvenida(){
         $usuario = User::where('id', $this->id)->with('empresa')->first();
-        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario ], function ($m) use ($usuario) {
-            $m->from(env('MAIL_FROM_ADDRESS'), 'SmartPyme')
+        
+        // Verificar que el email del usuario sea válido antes de enviar
+        if (!$this->email || !filter_var($this->email, FILTER_VALIDATE_EMAIL)) {
+            \Log::warning("No se puede enviar email de bienvenida: email inválido para usuario {$this->id}");
+            return;
+        }
+        
+        // Obtener dirección de correo válida para el remitente
+        $fromAddress = env('MAIL_FROM_ADDRESS');
+        if (!$fromAddress || !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+            $fromAddress = 'noreply@smartpyme.site'; // Fallback por defecto
+        }
+        
+        Mail::send('mails.bienvenida-usuario', ['usuario' => $usuario ], function ($m) use ($usuario, $fromAddress) {
+            $m->from($fromAddress, 'SmartPyme')
             ->to($this->email)
             ->subject('¡Bienvenido a SmartPyme!');
         });
@@ -100,7 +113,8 @@ class User extends Authenticatable implements JWTSubject
     }
 
     public function getRolIdAttribute(){
-        return $this->roles->first()->id;
+        $firstRole = $this->roles->first();
+        return $firstRole ? $firstRole->id : null;
     }
 
     public function authorizationTypes()
