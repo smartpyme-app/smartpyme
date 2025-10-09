@@ -192,6 +192,10 @@ class Inventario extends Model {
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
     }
 
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
+    }
+
     public function kardexs(){
         return $this->hasMany('App\Models\Inventario\Kardex', 'id_inventario');
     }

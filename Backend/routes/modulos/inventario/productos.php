@@ -33,6 +33,9 @@ use Illuminate\Support\Facades\Route;
 
     Route::get('/productos/kardex',  	        [KardexController::class, 'index']);
     Route::get('/productos/kardex/exportar',    [KardexController::class, 'export']);
+    Route::get('/productos/kardex/exportar-filtrado', [KardexController::class, 'exportFiltrado']);
+    Route::post('/productos/kardex/solicitar-masivo', [KardexController::class, 'solicitarMasivo']);
+Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCola']);
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);
