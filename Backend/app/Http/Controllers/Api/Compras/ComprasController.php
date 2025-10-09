@@ -660,6 +660,12 @@ class ComprasController extends Controller
                         $detalle_compra->id_compra = $compra->id;
                         $detalle_compra->save();
 
+                        // Actualizar costo producto al de la ultima compra    
+                            $producto_venta->costo_anterior   = $producto_venta->costo;
+                            $producto_venta->costo            = $detalle_venta->precio;
+                            $producto_venta->costo_promedio   = $detalle_venta->precio;
+                            $producto_venta->save();
+
                         // Actualizar inventario
                         $inventario = Inventario::withoutGlobalScope('empresa')->where('id_producto', $producto_venta->id)
                             ->where('id_bodega', $compra->id_bodega)
