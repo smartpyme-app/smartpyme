@@ -94,10 +94,12 @@ class ShopifyTransformer
 
     public function transformarProducto($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
+        $nombreProducto = $this->construirNombreConVariante($shopifyData['title'], $shopifyData);
+        
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
-            'nombre' => $shopifyData['title'],
+            'nombre' => $nombreProducto,
             'descripcion' => $shopifyData['product']['body_html'] ?? '',
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
@@ -159,10 +161,12 @@ class ShopifyTransformer
                 continue;
             }
             
+            $nombreProducto = $this->construirNombreConVariante($shopifyData['title'] ?? 'Producto sin nombre', $variant);
+            
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
-                'nombre' => $shopifyData['title'] ?? 'Producto sin nombre',
+                'nombre' => $nombreProducto,
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
                 'precio' => floatval($variant['price'] ?? 0),
@@ -220,5 +224,54 @@ class ShopifyTransformer
             'id_empresa' => $id_empresa,
             'enable' => 1,
         ];
+    }
+
+    /**
+     * Construye el nombre del producto incluyendo las opciones de la variante
+     * 
+     * @param string $tituloProducto Título base del producto
+     * @param array $variant Datos de la variante de Shopify
+     * @return string Nombre completo del producto con variante
+     */
+    private function construirNombreConVariante($tituloProducto, $variant)
+    {
+        $opciones = [];
+        
+        // Agregar option1 si existe y no está vacío
+        if (!empty($variant['option1'])) {
+            $opciones[] = $variant['option1'];
+        }
+        
+        // Agregar option2 si existe y no está vacío
+        if (!empty($variant['option2'])) {
+            $opciones[] = $variant['option2'];
+        }
+        
+        // Agregar option3 si existe y no está vacío
+        if (!empty($variant['option3'])) {
+            $opciones[] = $variant['option3'];
+        }
+        
+        // Si hay opciones, agregarlas al título
+        if (!empty($opciones)) {
+            $opcionesTexto = implode(' - ', $opciones);
+            $nombreCompleto = $tituloProducto . ' (' . $opcionesTexto . ')';
+            
+            Log::info("Nombre de producto con variante construido", [
+                'titulo_original' => $tituloProducto,
+                'opciones' => $opciones,
+                'nombre_final' => $nombreCompleto
+            ]);
+            
+            return $nombreCompleto;
+        }
+        
+        // Si no hay opciones, devolver solo el título
+        Log::info("Producto sin opciones de variante", [
+            'titulo' => $tituloProducto,
+            'variant_id' => $variant['id'] ?? 'N/A'
+        ]);
+        
+        return $tituloProducto;
     }
 }

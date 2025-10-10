@@ -36,7 +36,7 @@ class ShopifyController extends Controller
         $this->cache = $cache;
     }
 
-    public function procesarWebhook($tokenEmpresa, Request $request)
+    public function handle($tokenEmpresa, Request $request)
     {
         Log::info("Webhook Shopify recibido para token: {$tokenEmpresa}");
         Log::info("Datos del webhook: ", $request->all());
@@ -71,6 +71,9 @@ class ShopifyController extends Controller
 
         try {
             switch ($webhookTopic) {
+                case 'test':
+                    return $this->procesarPruebaWebhook($request, $empresa);
+
                 case 'orders/create':
                     return $this->procesarVenta($tokenEmpresa, $request);
 
@@ -568,5 +571,48 @@ class ShopifyController extends Controller
             Log::error('Stack trace: ' . $e->getTraceAsString());
             return false;
         }
+    }
+
+    /**
+     * Procesa el webhook de prueba enviado por Shopify
+     * 
+     * @param Request $request
+     * @param Empresa $empresa
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function procesarPruebaWebhook(Request $request, $empresa)
+    {
+        Log::info("Webhook de prueba recibido de Shopify", [
+            'empresa_id' => $empresa->id,
+            'empresa_nombre' => $empresa->nombre,
+            'timestamp' => now(),
+            'headers' => $request->headers->all(),
+            'payload' => $request->all()
+        ]);
+
+        // Verificar que el webhook de prueba contenga los datos esperados
+        $testData = $request->all();
+        
+        // Shopify envía un payload de prueba con información básica
+        $response = [
+            'status' => 'success',
+            'message' => 'Webhook de prueba procesado correctamente',
+            'empresa' => [
+                'id' => $empresa->id,
+                'nombre' => $empresa->nombre,
+                'shopify_status' => $empresa->shopify_status
+            ],
+            'webhook_info' => [
+                'topic' => $request->header('X-Shopify-Topic'),
+                'shop_domain' => $request->header('X-Shopify-Shop-Domain'),
+                'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
+                'timestamp' => now()->toISOString()
+            ],
+            'test_data_received' => !empty($testData)
+        ];
+
+        Log::info("Respuesta del webhook de prueba", $response);
+
+        return response()->json($response, 200);
     }
 }
