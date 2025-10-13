@@ -131,17 +131,35 @@ class ShopifyTransformer
 
     private function mapearFormaPago($shopifyData)
     {
-        $gateway = $shopifyData['gateway'] ?? 'unknown';
+        // Shopify envía payment_gateway_names como array
+        $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
+        $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
+
+        Log::info('Mapeando forma de pago', [
+            'payment_gateway_names' => $paymentGateways,
+            'gateway_selected' => $gateway
+        ]);
 
         $mapeo = [
             'shopify_payments' => 'Tarjeta de crédito/débito',
             'paypal' => 'PayPal',
             'manual' => 'Manual',
-            'cash_on_delivery' => 'Contra entrega',
-            'bank_transfer' => 'Transferencia bancaria'
+            'Cash on Delivery (COD)' => 'Contra entrega',
+            'bank_transfer' => 'Transferencia bancaria',
+            'Bank Transfer' => 'Transferencia bancaria',
+            'Bank Deposit' => 'Transferencia bancaria',
+            'stripe' => 'Tarjeta de crédito/débito',
+            'square' => 'Tarjeta de crédito/débito'
         ];
 
-        return $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+        $formaPago = $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+        
+        Log::info('Forma de pago mapeada', [
+            'gateway' => $gateway,
+            'forma_pago' => $formaPago
+        ]);
+
+        return $formaPago;
     }
 
     public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
