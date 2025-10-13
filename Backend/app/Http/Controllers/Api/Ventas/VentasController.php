@@ -169,9 +169,9 @@ class VentasController extends Controller
         }
 
         // Log del resultado final
-        Log::info('=== RESULTADO FILTRO VENTAS ===');
-        Log::info('Total de ventas encontradas:', ['count' => $ventas->count()]);
-        Log::info('Primeras 3 ventas:', $ventas->take(3)->toArray());
+        // Log::info('=== RESULTADO FILTRO VENTAS ===');
+        // Log::info('Total de ventas encontradas:', ['count' => $ventas->count()]);
+        // Log::info('Primeras 3 ventas:', $ventas->take(3)->toArray());
 
         return Response()->json($ventas, 200);
     }

@@ -77,6 +77,9 @@ class ShopifyController extends Controller
                 case 'orders/create':
                     return $this->procesarVenta($tokenEmpresa, $request);
 
+                case 'orders/cancelled':
+                    return $this->procesarVentaCancelada($tokenEmpresa, $request);
+
                 case 'products/create':
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
@@ -293,6 +296,11 @@ class ShopifyController extends Controller
 
     public function procesarVenta($tokenEmpresa, Request $request)
     {
+        Log::info("=== INICIANDO PROCESAMIENTO DE VENTA ===", [
+            'token_empresa' => $tokenEmpresa,
+            'shopify_order_id' => $request->id ?? 'N/A'
+        ]);
+
         $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
             ->where('shopify_status', 'connected')
             ->first();
@@ -305,22 +313,33 @@ class ShopifyController extends Controller
             ], 401);
         }
 
+        Log::info("Empresa encontrada", ['empresa_id' => $empresa->id, 'empresa_nombre' => $empresa->nombre]);
+
         $usuario = User::where('id_empresa', $empresa->id)
             ->where('shopify_status', 'connected')
             ->first();
 
         if (!$usuario) {
+            Log::error("Usuario no encontrado", ['empresa_id' => $empresa->id]);
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Usuario no encontrado'
             ], 401);
         }
 
+        Log::info("Usuario encontrado", ['usuario_id' => $usuario->id, 'usuario_nombre' => $usuario->name]);
+
+        Log::info("Buscando documento", [
+            'facturacion_electronica' => $empresa->facturacion_electronica,
+            'id_sucursal' => $usuario->id_sucursal
+        ]);
+
         if ($empresa->facturacion_electronica) {
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
                 ->where('nombre', 'Factura')
                 ->where('activo', true)
                 ->first();
+            
         } else {
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
                 ->where('nombre', 'Ticket')
@@ -328,8 +347,28 @@ class ShopifyController extends Controller
                 ->first();
         }
 
+        if (!$documento) {
+            Log::error("Ningún documento encontrado", [
+                'id_sucursal' => $usuario->id_sucursal,
+                'facturacion_electronica' => $empresa->facturacion_electronica
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Ningún documento activo encontrado para la sucursal'
+            ], 500);
+        }
+
+        Log::info("Documento encontrado", ['documento_id' => $documento->id, 'documento_nombre' => $documento->nombre]);
+
         try {
             DB::beginTransaction();
+
+            Log::info("Iniciando procesamiento de venta", [
+                'shopify_order_id' => $request->id,
+                'usuario_id' => $usuario->id,
+                'empresa_id' => $usuario->id_empresa,
+                'documento_id' => $documento->id
+            ]);
 
             $request->merge([
                 'id_empresa' => $usuario->id_empresa,
@@ -340,12 +379,17 @@ class ShopifyController extends Controller
                 'id_canal' => $empresa->shopify_canal_id
             ]);
 
+            Log::info("Datos del request después del merge", $request->all());
+
             $clienteData = $this->transformer->transformarCliente($request->all());
-            Log::info($clienteData);
+            Log::info("Datos del cliente transformados", $clienteData);
+            
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
+            
+            Log::info("Cliente creado/encontrado", ['cliente_id' => $cliente->id, 'correo' => $cliente->correo]);
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
@@ -353,23 +397,45 @@ class ShopifyController extends Controller
                 $documento->id,
                 $documento->correlativo
             );
-            Log::info($ventaData);
+            Log::info("Datos de la venta transformados", $ventaData);
             $venta = Venta::create($ventaData);
+            
+            Log::info("Venta creada", ['venta_id' => $venta->id]);
 
             Log::info($request->line_items);
             foreach ($request->line_items as $item) {
-                Log::info($item['variant_id']);
-                $producto = Producto::where('shopify_variant_id', $item['variant_id'])
-                    ->where('id_empresa', $usuario->id_empresa)
-                    ->first();
+                // Validar que el item tenga los datos mínimos necesarios
+                if (empty($item) || !is_array($item)) {
+                    Log::warning("Line item inválido o vacío", ['item' => $item]);
+                    continue;
+                }
 
+                Log::info("Procesando line item", ['variant_id' => $item['variant_id'] ?? 'N/A', 'sku' => $item['sku'] ?? 'N/A']);
+                
+                $producto = null;
+                
+                // Buscar producto por variant_id si existe
+                if (!empty($item['variant_id'])) {
+                    $producto = Producto::where('shopify_variant_id', $item['variant_id'])
+                        ->where('id_empresa', $usuario->id_empresa)
+                        ->first();
+                }
+
+                // Si no se encuentra por variant_id, buscar por SKU
                 if (!$producto && !empty($item['sku'])) {
                     $producto = Producto::where('codigo', $item['sku'])
                         ->where('id_empresa', $usuario->id_empresa)
                         ->first();
                 }
 
+                // Si no se encuentra el producto, crearlo
                 if (!$producto) {
+                    Log::info("Producto no encontrado, creando nuevo producto", [
+                        'variant_id' => $item['variant_id'] ?? 'N/A',
+                        'sku' => $item['sku'] ?? 'N/A',
+                        'title' => $item['title'] ?? 'N/A'
+                    ]);
+                    
                     $productoData = $this->transformer->transformarProducto(
                         $item,
                         $usuario->id_empresa,
@@ -377,12 +443,15 @@ class ShopifyController extends Controller
                         $usuario->id_sucursal
                     );
                     $producto = Producto::create($productoData);
+                    
+                    Log::info("Producto creado", ['producto_id' => $producto->id]);
                 }
 
                 $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
+                // Actualizar inventario
                 Inventario::where('id_producto', $producto->id)
                     ->where('id_bodega', $venta->id_bodega)
                     ->decrement('stock', $item['quantity']);
@@ -571,6 +640,205 @@ class ShopifyController extends Controller
             Log::error('Stack trace: ' . $e->getTraceAsString());
             return false;
         }
+    }
+
+    /**
+     * Procesa el webhook de pedido cancelado de Shopify
+     */
+    public function procesarVentaCancelada($tokenEmpresa, Request $request)
+    {
+        Log::info("Webhook de pedido cancelado recibido de Shopify", [
+            'shopify_order_id' => $request->id,
+            'token_empresa' => $tokenEmpresa
+        ]);
+
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$empresa) {
+            Log::error("Token de empresa Shopify no válido: {$tokenEmpresa}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido o no conectado'
+            ], 401);
+        }
+
+        try {
+            // Buscar la venta por el ID del pedido de Shopify
+            $shopifyOrderId = $request->id;
+            $referencia = 'SHOPIFY-' . $shopifyOrderId;
+            
+            $venta = Venta::where('referencia_shopify', $referencia)
+                ->where('id_empresa', $empresa->id)
+                ->first();
+
+            if (!$venta) {
+                Log::warning("Venta no encontrada para el pedido cancelado de Shopify", [
+                    'shopify_order_id' => $shopifyOrderId,
+                    'referencia_buscada' => $referencia,
+                    'empresa_id' => $empresa->id
+                ]);
+                return response()->json([
+                    'status' => 'warning',
+                    'mensaje' => 'Venta no encontrada para el pedido cancelado'
+                ], 404);
+            }
+
+            // Verificar si la venta ya está anulada
+            if ($venta->estado === 'Anulada') {
+                Log::info("Venta ya está anulada", [
+                    'venta_id' => $venta->id,
+                    'shopify_order_id' => $shopifyOrderId
+                ]);
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Venta ya estaba anulada'
+                ], 200);
+            }
+
+            DB::beginTransaction();
+
+            // Marcar la venta como anulada
+            $venta->update([
+                'estado' => 'Anulada',
+                'observaciones' => ($venta->observaciones ? $venta->observaciones . ' | ' : '') . 
+                    'Pedido cancelado en Shopify el ' . now()->format('d/m/Y H:i:s')
+            ]);
+
+            // Verificar si se debe revertir el inventario según la configuración de Shopify
+            $debeRevertirInventario = $this->debeRevertirInventario($request);
+            
+            Log::info("Decisión de revertir inventario", [
+                'debe_revertir' => $debeRevertirInventario,
+                'shopify_order_id' => $shopifyOrderId
+            ]);
+
+            // Solo restaurar el stock si Shopify indica que se debe revertir el inventario
+            if ($debeRevertirInventario) {
+                foreach ($venta->detalles as $detalle) {
+                    $producto = $detalle->producto;
+                    if ($producto) {
+                        $inventario = Inventario::where('id_producto', $producto->id)
+                            ->where('id_bodega', $venta->id_bodega)
+                            ->first();
+
+                        if ($inventario) {
+                            // Incrementar el stock
+                            $inventario->increment('stock', $detalle->cantidad);
+                            
+                            // Validar y convertir valores numéricos
+                            $cantidad = is_numeric($detalle->cantidad) ? (float)$detalle->cantidad : 0;
+                            $precio = is_numeric($detalle->precio) ? (float)$detalle->precio : 0;
+                            $costoProducto = is_numeric($producto->costo) ? (float)$producto->costo : 0;
+                            
+                            // Registrar en el kardex solo si tenemos valores válidos
+                            if ($cantidad > 0) {
+                                $inventario->kardex($venta, $cantidad, $precio, $costoProducto);
+                            }
+                            
+                            Log::info("Stock restaurado para producto", [
+                                'producto_id' => $producto->id,
+                                'cantidad_restaurada' => $cantidad,
+                                'precio' => $precio,
+                                'costo_usado' => $costoProducto,
+                                'stock_actual' => $inventario->stock
+                            ]);
+                        }
+                    }
+                }
+            } else {
+                Log::info("No se restaura el stock - opción 'Revertir inventario' no marcada en Shopify", [
+                    'shopify_order_id' => $shopifyOrderId
+                ]);
+            }
+
+            DB::commit();
+
+            Log::info("Venta anulada exitosamente desde Shopify", [
+                'venta_id' => $venta->id,
+                'shopify_order_id' => $shopifyOrderId,
+                'estado_anterior' => $venta->getOriginal('estado')
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Venta anulada correctamente',
+                'venta_id' => $venta->id,
+                'estado' => $venta->estado
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error procesando cancelación de venta desde Shopify: ' . $e->getMessage(), [
+                'shopify_order_id' => $shopifyOrderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar la cancelación de la venta',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Determina si se debe revertir el inventario basado en el webhook de Shopify
+     */
+    private function debeRevertirInventario(Request $request)
+    {
+        
+        // 1. Verificar si hay refunds con restock
+        if (isset($request->refunds) && is_array($request->refunds)) {
+            foreach ($request->refunds as $refund) {
+                if (isset($refund['restock']) && $refund['restock'] === true) {
+                    Log::info("Inventario debe revertirse - refund con restock encontrado", [
+                        'refund_id' => $refund['id'] ?? 'N/A'
+                    ]);
+                    return true;
+                }
+            }
+        }
+        
+        // 2. Verificar el cancel_reason y financial_status
+        $cancelReason = $request->input('cancel_reason');
+        $financialStatus = $request->input('financial_status');
+        
+        // Si el pedido está voided y no hay refunds, generalmente significa que se revierte el inventario
+        if ($financialStatus === 'voided' && empty($request->refunds)) {
+            Log::info("Inventario debe revertirse - pedido voided sin refunds", [
+                'cancel_reason' => $cancelReason,
+                'financial_status' => $financialStatus
+            ]);
+            return true;
+        }
+        
+        // 3. Verificar si hay line_items con información de restock
+        if (isset($request->line_items) && is_array($request->line_items)) {
+            foreach ($request->line_items as $lineItem) {
+                // Si el line item tiene fulfillable_quantity > 0, significa que no se ha enviado
+                // y por tanto se debe revertir el inventario
+                if (isset($lineItem['fulfillable_quantity']) && $lineItem['fulfillable_quantity'] > 0) {
+                    Log::info("Inventario debe revertirse - line item con fulfillable_quantity > 0", [
+                        'line_item_id' => $lineItem['id'] ?? 'N/A',
+                        'fulfillable_quantity' => $lineItem['fulfillable_quantity']
+                    ]);
+                    return true;
+                }
+            }
+        }
+        
+        // 4. Por defecto, si no hay información específica, asumir que NO se debe revertir
+        // Esto es más seguro para evitar restaurar stock cuando no se debe
+        Log::info("No se revierte inventario - no se encontró indicación clara de restock", [
+            'cancel_reason' => $cancelReason,
+            'financial_status' => $financialStatus,
+            'has_refunds' => !empty($request->refunds)
+        ]);
+        
+        return false;
     }
 
     /**

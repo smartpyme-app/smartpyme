@@ -58,6 +58,8 @@ class ShopifyTransformer
             'id_usuario' => $shopifyData['id_usuario'],
             'id_sucursal' => $shopifyData['id_sucursal'],
             'id_canal' => $shopifyData['id_canal'],
+            'num_orden' => $shopifyData['order_number'] ?? $shopifyData['name'] ?? null,
+            'referencia_shopify' => 'SHOPIFY-' . $shopifyData['id'],
         ];
     }
 
