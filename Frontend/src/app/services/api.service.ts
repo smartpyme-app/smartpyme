@@ -268,6 +268,18 @@ export class ApiService {
         return false;
     }
 
+    isVentasLimitado() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas Limitado') return true;
+        return false;
+    }
+
+    isVentas() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
+        return false;
+    }
+
     private loadConstants() {
         this.http.get<any>(this.apiUrl + 'constants').subscribe(
           (constants) => {

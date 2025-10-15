@@ -221,7 +221,7 @@ export class CalendarioComponent implements OnInit {
   }
 
   isVentas() {
-    return this.usuarioActual.tipo === 'Ventas';
+    return this.usuarioActual.tipo === 'Ventas' || this.usuarioActual.tipo === 'Ventas Limitado';
   }
 
   isVentasOrCitas() {

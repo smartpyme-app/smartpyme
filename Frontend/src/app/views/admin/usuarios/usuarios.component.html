@@ -43,9 +43,9 @@
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
             </select>
-            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
+            <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto" style="max-width: 150px;">
                 <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id" title="{{sucursal.nombre}}">
                     {{sucursal.nombre}}
                 </option>
             </select>
@@ -154,6 +154,7 @@
             </div>
             <div class="form-group col-md-6">
                 <label for="telefono">Teléfono:</label>
+                <div class="input-group">
                 <ngx-intl-tel-input
                     [cssClass]="'form-control'"
                     [preferredCountries]="preferredCountries"
@@ -171,6 +172,7 @@
                     name="telefono"
                     (countryChange)="changePhoneNumber($event)">
                 </ngx-intl-tel-input>
+                </div>
             </div>
             <div class="form-group col-12">
                 <div id="passwordHelpBlock" class="form-text">
@@ -185,6 +187,7 @@
                     <option value="Contador">Contador</option>
                     <option value="Citas">Citas</option>
                     <option value="Ventas">Ventas</option>
+                    <option value="Ventas Limitado">Ventas Limitado</option>
                     <option value="Supervisor Limitado" *ngIf="empresas_supervisor_limitado.includes(authUser?.id_empresa)">Supervisor Limitado</option>
                 </select>
             </div>
