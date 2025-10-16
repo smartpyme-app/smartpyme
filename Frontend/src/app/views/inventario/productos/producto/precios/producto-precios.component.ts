@@ -54,6 +54,9 @@ export class ProductoPreciosComponent implements OnInit, AfterViewInit {
 
     openModal(template: TemplateRef<any>, precio:any) {
         this.precio = precio;
+        if(!this.precio.id){
+            this.precio.clasificacion = null;
+        }
         this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
