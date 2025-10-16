@@ -41,6 +41,7 @@ export class FacturacionComponent implements OnInit {
   public facturarCotizacion = false;
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
+  public mensajeValidacionFecha: string = '';
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -682,7 +683,7 @@ export class FacturacionComponent implements OnInit {
     }
   }
 
-  // Cliente
+    // Cliente
     public setCliente(cliente:any){
         if(cliente.id){
             cliente.nombre = cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo;
@@ -692,6 +693,9 @@ export class FacturacionComponent implements OnInit {
                 this.venta.retencion = 1;
                 this.sumTotal();
             }
+            
+            // Limpiar mensaje de validación al cambiar cliente
+            this.mensajeValidacionFecha = '';
         }
         console.log(cliente);
     }
@@ -707,12 +711,110 @@ export class FacturacionComponent implements OnInit {
     public setCredito() {
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
-            this.venta.condicion = 'Crédito'
+            this.venta.condicion = 'Crédito';
             this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
         } else {
             this.venta.estado = 'Pagada';
-            this.venta.condicion = 'Contado'
+            this.venta.condicion = 'Contado';
             this.venta.fecha_pago = moment().format('YYYY-MM-DD');
+            // Limpiar mensaje de validación al cambiar a contado
+            this.mensajeValidacionFecha = '';
+        }
+    }
+
+    /**
+     * Valida si la fecha de pago está dentro del rango permitido según la clasificación del cliente
+     * A: máximo 90 días, B: máximo 60 días, C: máximo 30 días
+     */
+    validarFechaPagoPorClasificacion(fechaPago: string): boolean {
+        if (!this.venta.cliente?.clasificacion || !fechaPago) {
+            return true; // Si no hay cliente o fecha, no validar
+        }
+
+        const hoy = moment();
+        const fechaSeleccionada = moment(fechaPago);
+        const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
+        
+        let diasMaximos = 30; // Por defecto 30 días (clasificación C)
+        
+        switch (this.venta.cliente.clasificacion.toUpperCase()) {
+            case 'A':
+                diasMaximos = 90;
+                break;
+            case 'B':
+                diasMaximos = 60;
+                break;
+            case 'C':
+                diasMaximos = 30;
+                break;
+            default:
+                diasMaximos = 30;
+                break;
+        }
+        
+        return diasDiferencia <= diasMaximos;
+    }
+
+    /**
+     * Obtiene el mensaje de validación para la fecha de pago según la clasificación
+     */
+    obtenerMensajeValidacionFecha(): string {
+        if (!this.venta.cliente?.clasificacion) {
+            return '';
+        }
+
+        let diasMaximos = 30;
+        let clasificacion = 'C';
+        
+        switch (this.venta.cliente.clasificacion.toUpperCase()) {
+            case 'A':
+                diasMaximos = 90;
+                clasificacion = 'A';
+                break;
+            case 'B':
+                diasMaximos = 60;
+                clasificacion = 'B';
+                break;
+            case 'C':
+                diasMaximos = 30;
+                clasificacion = 'C';
+                break;
+        }
+        
+        return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
+    }
+
+    /**
+     * Valida la fecha de pago cuando cambia y muestra mensaje si está fuera del rango
+     */
+    public validarFechaPago() {
+        this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
+        
+        if (this.venta.credito && this.venta.fecha_pago) {
+            if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
+                this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
+                
+                // Revertir a la fecha anterior o establecer una fecha válida
+                const hoy = moment();
+                let diasMaximos = 30;
+                
+                if (this.venta.cliente?.clasificacion) {
+                    switch (this.venta.cliente.clasificacion.toUpperCase()) {
+                        case 'A':
+                            diasMaximos = 90;
+                            break;
+                        case 'B':
+                            diasMaximos = 60;
+                            break;
+                        case 'C':
+                            diasMaximos = 30;
+                            break;
+                    }
+                }
+                
+                // Establecer la fecha máxima permitida
+                this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
+            }
         }
     }
 
