@@ -49,5 +49,8 @@ Route::get('/inventariostock', function(){
 Route::get('/',       			[HomeController::class, 'index'])->name('home');
 Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 
+// Documentación API Externa (rutas públicas)
+Route::get('/api/external/documentation', [App\Http\Controllers\Api\External\DocumentationController::class, 'index'])->name('external-api.documentation');
+Route::get('/api/external/documentation/json', [App\Http\Controllers\Api\External\DocumentationController::class, 'json'])->name('external-api.json');
 
 Auth::routes();

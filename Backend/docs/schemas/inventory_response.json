@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Inventory Response Schema",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "description": "Indica si la request fue exitosa"
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Product"
+      }
+    },
+    "pagination": {
+      "$ref": "#/definitions/Pagination"
+    },
+    "meta": {
+      "$ref": "#/definitions/Meta"
+    }
+  },
+  "required": ["success"],
+  "definitions": {
+    "Product": {
+      "type": "object",
+      "properties": {
+        "nombre": {
+          "type": "string",
+          "description": "Nombre del producto"
+        },
+        "descripcion": {
+          "type": ["string", "null"],
+          "description": "Descripción del producto"
+        },
+        "codigo": {
+          "type": ["string", "null"],
+          "description": "Código del producto"
+        },
+        "barcode": {
+          "type": ["string", "null"],
+          "description": "Código de barras"
+        },
+        "medida": {
+          "type": ["string", "null"],
+          "description": "Unidad de medida"
+        },
+        "precio": {
+          "type": ["number", "null"],
+          "description": "Precio de venta"
+        },
+        "costo": {
+          "type": ["number", "null"],
+          "description": "Costo del producto"
+        },
+        "costo_anterior": {
+          "type": ["number", "null"],
+          "description": "Costo anterior"
+        },
+        "costo_promedio": {
+          "type": ["number", "null"],
+          "description": "Costo promedio"
+        },
+        "id_categoria": {
+          "type": ["integer", "null"],
+          "description": "ID de la categoría"
+        },
+        "marca": {
+          "type": ["string", "null"],
+          "description": "Marca del producto"
+        },
+        "etiquetas": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Etiquetas del producto"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": ["Producto", "Servicio"],
+          "description": "Tipo de producto"
+        },
+        "enable": {
+          "type": "string",
+          "enum": ["0", "1"],
+          "description": "Estado del producto (activo/inactivo)"
+        },
+        "id_empresa": {
+          "type": "integer",
+          "description": "ID de la empresa"
+        },
+        "woocommerce_id": {
+          "type": ["integer", "null"],
+          "description": "ID en WooCommerce"
+        },
+        "shopify_product_id": {
+          "type": ["integer", "null"],
+          "description": "ID del producto en Shopify"
+        },
+        "shopify_variant_id": {
+          "type": ["integer", "null"],
+          "description": "ID de la variante en Shopify"
+        },
+        "shopify_inventory_item_id": {
+          "type": ["integer", "null"],
+          "description": "ID del item de inventario en Shopify"
+        },
+        "syncing_from_shopify": {
+          "type": ["boolean", "null"],
+          "description": "Indica si se está sincronizando desde Shopify"
+        },
+        "last_shopify_sync": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Última sincronización con Shopify"
+        },
+        "nombre_categoria": {
+          "type": ["string", "null"],
+          "description": "Nombre de la categoría"
+        },
+        "img": {
+          "type": ["string", "null"],
+          "description": "URL de la imagen del producto"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización"
+        },
+        "deleted_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Fecha de eliminación (soft delete)"
+        },
+        "inventarios": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/InventoryStock"
+          },
+          "description": "Stock por bodega"
+        }
+      },
+      "required": ["nombre", "tipo", "enable", "id_empresa"]
+    },
+    "InventoryStock": {
+      "type": "object",
+      "properties": {
+        "id_producto": {
+          "type": "integer",
+          "description": "ID del producto"
+        },
+        "stock": {
+          "type": "number",
+          "description": "Cantidad en stock"
+        },
+        "stock_minimo": {
+          "type": "number",
+          "description": "Stock mínimo requerido"
+        },
+        "stock_maximo": {
+          "type": "number",
+          "description": "Stock máximo permitido"
+        },
+        "nota": {
+          "type": ["string", "null"],
+          "description": "Notas sobre el inventario"
+        },
+        "id_bodega": {
+          "type": "integer",
+          "description": "ID de la bodega"
+        },
+        "nombre_bodega": {
+          "type": ["string", "null"],
+          "description": "Nombre de la bodega"
+        },
+        "nombre_sucursal": {
+          "type": ["string", "null"],
+          "description": "Nombre de la sucursal"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de última actualización"
+        },
+        "deleted_at": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "description": "Fecha de eliminación (soft delete)"
+        }
+      },
+      "required": ["id_producto", "stock", "stock_minimo", "stock_maximo", "id_bodega"]
+    },
+    "InventorySummary": {
+      "type": "object",
+      "properties": {
+        "productos": {
+          "type": "object",
+          "properties": {
+            "total": {
+              "type": "integer",
+              "description": "Total de productos"
+            },
+            "activos": {
+              "type": "integer",
+              "description": "Productos activos"
+            },
+            "inactivos": {
+              "type": "integer",
+              "description": "Productos inactivos"
+            }
+          },
+          "required": ["total", "activos", "inactivos"]
+        },
+        "inventario": {
+          "type": "object",
+          "properties": {
+            "stock_total": {
+              "type": "number",
+              "description": "Stock total en todas las bodegas"
+            },
+            "valor_total": {
+              "type": "number",
+              "description": "Valor total del inventario"
+            },
+            "productos_con_stock": {
+              "type": "integer",
+              "description": "Productos con stock disponible"
+            },
+            "productos_sin_stock": {
+              "type": "integer",
+              "description": "Productos sin stock"
+            },
+            "productos_stock_bajo": {
+              "type": "integer",
+              "description": "Productos con stock bajo el mínimo"
+            }
+          },
+          "required": ["stock_total", "valor_total", "productos_con_stock", "productos_sin_stock", "productos_stock_bajo"]
+        },
+        "productos_por_categoria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "categoria": {
+                "type": "string",
+                "description": "Nombre de la categoría"
+              },
+              "cantidad": {
+                "type": "integer",
+                "description": "Cantidad de productos en la categoría"
+              }
+            },
+            "required": ["categoria", "cantidad"]
+          }
+        }
+      },
+      "required": ["productos", "inventario", "productos_por_categoria"]
+    },
+    "Pagination": {
+      "type": "object",
+      "properties": {
+        "current_page": {
+          "type": "integer",
+          "description": "Página actual"
+        },
+        "per_page": {
+          "type": "integer",
+          "description": "Registros por página"
+        },
+        "total": {
+          "type": "integer",
+          "description": "Total de registros"
+        },
+        "total_pages": {
+          "type": "integer",
+          "description": "Total de páginas"
+        },
+        "has_next": {
+          "type": "boolean",
+          "description": "Indica si hay página siguiente"
+        },
+        "has_prev": {
+          "type": "boolean",
+          "description": "Indica si hay página anterior"
+        },
+        "from": {
+          "type": ["integer", "null"],
+          "description": "Primer registro de la página"
+        },
+        "to": {
+          "type": ["integer", "null"],
+          "description": "Último registro de la página"
+        }
+      },
+      "required": ["current_page", "per_page", "total", "total_pages", "has_next", "has_prev"]
+    },
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "empresa": {
+          "type": "string",
+          "description": "Nombre de la empresa"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de la respuesta"
+        },
+        "filters_applied": {
+          "type": "object",
+          "description": "Filtros aplicados en la consulta"
+        }
+      },
+      "required": ["empresa", "timestamp"]
+    }
+  }
+}
+
+
