@@ -43,7 +43,7 @@ Authorization: Bearer {tu_api_key}
 
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/sales?per_page=10"
+  "https://api.smartpyme.site/api/external/v1/sales?per_page=10"
 ```
 
 ## 🛠️ Herramientas Útiles

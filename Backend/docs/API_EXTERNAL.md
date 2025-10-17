@@ -14,7 +14,7 @@ La API Externa de SmartPYME permite a proveedores externos acceder de forma segu
 
 ### URL Base
 ```
-https://app.smartpyme.site/api/external/v1/
+https://api.smartpyme.site/api/external/v1/
 ```
 
 ---
@@ -34,7 +34,7 @@ Authorization: Bearer {tu_api_key}
 ### Ejemplo
 ```bash
 curl -H "Authorization: Bearer G8RCjH11DabBNjnX7wO5" \
-     https://app.smartpyme.site/api/external/v1/sales
+     https://api.smartpyme.site/api/external/v1/sales
 ```
 
 ⚠️ **Importante**: 
@@ -126,7 +126,7 @@ GET /api/external/v1/sales
 **Ejemplo de Request:**
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/sales?fecha_inicio=2025-01-01&estado=Completada&per_page=50"
+  "https://api.smartpyme.site/api/external/v1/sales?fecha_inicio=2025-01-01&estado=Completada&per_page=50"
 ```
 
 **Ejemplo de Respuesta:**
@@ -188,7 +188,7 @@ GET /api/external/v1/sales/{id}
 **Ejemplo:**
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/sales/123"
+  "https://api.smartpyme.site/api/external/v1/sales/123"
 ```
 
 ### 📈 Resumen de Ventas
@@ -255,7 +255,7 @@ GET /api/external/v1/inventory
 **Ejemplo de Request:**
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/inventory?con_stock=true&categoria=Electrónicos"
+  "https://api.smartpyme.site/api/external/v1/inventory?con_stock=true&categoria=Electrónicos"
 ```
 
 **Ejemplo de Respuesta:**
@@ -380,13 +380,13 @@ GET /api/external/v1/inventory/summary
 **Obtener ventas del último mes:**
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/sales?fecha_inicio=2025-01-01&fecha_fin=2025-01-31"
+  "https://api.smartpyme.site/api/external/v1/sales?fecha_inicio=2025-01-01&fecha_fin=2025-01-31"
 ```
 
 **Productos con stock bajo:**
 ```bash
 curl -H "Authorization: Bearer tu_api_key" \
-  "https://app.smartpyme.site/api/external/v1/inventory?stock_minimo=true"
+  "https://api.smartpyme.site/api/external/v1/inventory?stock_minimo=true"
 ```
 
 ---
