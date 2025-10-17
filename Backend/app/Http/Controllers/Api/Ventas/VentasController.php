@@ -428,7 +428,13 @@ class VentasController extends Controller
 
     public function facturacion(Request $request)
     {
-
+        // Validar que usuarios "Ventas Limitado" no puedan crear ventas al crédito
+        $user = auth()->user();
+        if ($user->tipo === 'Ventas Limitado' && $request->credito == 1) {
+            return response()->json([
+                'error' => 'Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.'
+            ], 403);
+        }
 
         $request->validate([
             'fecha'             => 'required',
@@ -615,6 +621,14 @@ class VentasController extends Controller
 
     public function facturacionConsigna(Request $request)
     {
+        // Validar que usuarios "Ventas Limitado" no puedan crear ventas al crédito
+        $user = auth()->user();
+        if ($user->tipo === 'Ventas Limitado') {
+            return response()->json([
+                'error' => 'Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.'
+            ], 403);
+        }
+
         $request->validate([
             'id'                => 'required',
             'fecha'             => 'required',
