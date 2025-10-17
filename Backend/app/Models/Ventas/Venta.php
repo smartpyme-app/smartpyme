@@ -74,6 +74,7 @@ class Venta extends Model {
         'no_sujeta',
         'tipo_operacion',
         'tipo_renta',
+        'referencia_shopify',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
