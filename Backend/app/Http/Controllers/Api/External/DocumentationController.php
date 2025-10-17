@@ -26,10 +26,6 @@ class DocumentationController extends Controller
                 "title" => "SmartPYME External API",
                 "description" => "API Externa para proveedores terceros - Acceso a datos de ventas e inventario",
                 "version" => "1.0.0",
-                "contact" => [
-                    "name" => "SmartPYME Support",
-                    "email" => "soporte@smartpyme.com"
-                ]
             ],
             "servers" => [
                 [
