@@ -44,6 +44,11 @@ class RouteServiceProvider extends ServiceProvider
             Route::prefix('api')
                 ->middleware('api')
                 ->group(base_path('routes/api.php'));
+
+            // Rutas del API externo (sin middleware JWT)
+            Route::prefix('api')
+                ->middleware(['api'])
+                ->group(base_path('routes/api_external.php'));
         });
     }
 

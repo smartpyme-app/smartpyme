@@ -1,0 +1,835 @@
+openapi: 3.0.0
+info:
+  title: SmartPYME External API
+  description: |
+    API Externa de SmartPYME para proveedores terceros.
+    
+    Esta API permite acceso de solo lectura a datos de ventas e inventario usando autenticación por API Key.
+    
+    ## Autenticación
+    Todas las requests requieren un API Key válido en el header Authorization:
+    ```
+    Authorization: Bearer {tu_api_key}
+    ```
+    
+    ## Rate Limiting
+    - Sin filtros de fecha: 100 requests/hora
+    - Con filtros de fecha: 200 requests/hora
+    
+    ## Paginación
+    Todos los endpoints de lista soportan paginación:
+    - `page`: Número de página (default: 1)
+    - `per_page`: Registros por página (1-200, default: 100)
+    
+  version: 1.0.0
+  contact:
+    name: SmartPYME Support
+    email: soporte@smartpyme.com
+  license:
+    name: Propietario
+    url: https://smartpyme.com/terms
+
+servers:
+  - url: https://tu-dominio.com/api/external/v1
+    description: Servidor de Producción
+  - url: http://localhost/api/external/v1
+    description: Servidor de Desarrollo
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /sales:
+    get:
+      tags:
+        - Ventas
+      summary: Listar ventas
+      description: |
+        Obtiene una lista paginada de ventas con filtros opcionales.
+        
+        Soporta filtros por fecha, estado y ordenamiento personalizado.
+      parameters:
+        - name: fecha_inicio
+          in: query
+          description: Fecha de inicio (formato Y-m-d)
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: fecha_fin
+          in: query
+          description: Fecha de fin (formato Y-m-d)
+          schema:
+            type: string
+            format: date
+            example: "2025-01-31"
+        - name: estado
+          in: query
+          description: Estado de la venta
+          schema:
+            type: string
+            enum: [Completada, Pendiente, Anulada, Cotizacion]
+            example: "Completada"
+        - name: page
+          in: query
+          description: Número de página
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Registros por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: order_by
+          in: query
+          description: Campo de ordenamiento
+          schema:
+            type: string
+            enum: [fecha, total, correlativo, created_at]
+            default: fecha
+        - name: order_direction
+          in: query
+          description: Dirección del ordenamiento
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Lista de ventas obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sales/{id}:
+    get:
+      tags:
+        - Ventas
+      summary: Obtener venta específica
+      description: Obtiene los detalles completos de una venta específica por su ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la venta
+          schema:
+            type: integer
+            example: 123
+      responses:
+        '200':
+          description: Venta obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /sales/summary:
+    get:
+      tags:
+        - Ventas
+      summary: Resumen de ventas
+      description: |
+        Obtiene un resumen estadístico de las ventas con filtros opcionales.
+        
+        Incluye totales, promedios y distribución por estado.
+      parameters:
+        - name: fecha_inicio
+          in: query
+          description: Fecha de inicio para el resumen
+          schema:
+            type: string
+            format: date
+        - name: fecha_fin
+          in: query
+          description: Fecha de fin para el resumen
+          schema:
+            type: string
+            format: date
+        - name: estado
+          in: query
+          description: Filtrar resumen por estado
+          schema:
+            type: string
+            enum: [Completada, Pendiente, Anulada, Cotizacion]
+      responses:
+        '200':
+          description: Resumen de ventas obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesSummaryResponse'
+
+  /inventory:
+    get:
+      tags:
+        - Inventario
+      summary: Listar productos con inventario
+      description: |
+        Obtiene una lista paginada de productos con su información de inventario.
+        
+        Incluye stock por bodega y filtros avanzados.
+      parameters:
+        - name: codigo
+          in: query
+          description: Buscar por código de producto
+          schema:
+            type: string
+            example: "PROD-001"
+        - name: nombre
+          in: query
+          description: Buscar por nombre de producto
+          schema:
+            type: string
+            example: "Samsung"
+        - name: categoria
+          in: query
+          description: Filtrar por categoría
+          schema:
+            type: string
+            example: "Electrónicos"
+        - name: marca
+          in: query
+          description: Filtrar por marca
+          schema:
+            type: string
+            example: "Samsung"
+        - name: tipo
+          in: query
+          description: Tipo de producto
+          schema:
+            type: string
+            enum: [Producto, Servicio]
+        - name: enable
+          in: query
+          description: Estado del producto
+          schema:
+            type: string
+            enum: ["0", "1"]
+        - name: con_stock
+          in: query
+          description: Solo productos con stock disponible
+          schema:
+            type: boolean
+        - name: stock_minimo
+          in: query
+          description: Solo productos con stock bajo el mínimo
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          description: Número de página
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          description: Registros por página
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+        - name: order_by
+          in: query
+          description: Campo de ordenamiento
+          schema:
+            type: string
+            enum: [nombre, codigo, precio, costo, created_at]
+            default: nombre
+        - name: order_direction
+          in: query
+          description: Dirección del ordenamiento
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Lista de productos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryListResponse'
+
+  /inventory/{id}:
+    get:
+      tags:
+        - Inventario
+      summary: Obtener producto específico
+      description: Obtiene los detalles completos de un producto específico con su inventario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del producto
+          schema:
+            type: integer
+            example: 456
+      responses:
+        '200':
+          description: Producto obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+
+  /inventory/summary:
+    get:
+      tags:
+        - Inventario
+      summary: Resumen de inventario
+      description: |
+        Obtiene un resumen estadístico del inventario con filtros opcionales.
+        
+        Incluye totales de productos, stock y distribución por categorías.
+      parameters:
+        - name: categoria
+          in: query
+          description: Filtrar resumen por categoría
+          schema:
+            type: string
+        - name: tipo
+          in: query
+          description: Filtrar por tipo de producto
+          schema:
+            type: string
+            enum: [Producto, Servicio]
+        - name: enable
+          in: query
+          description: Filtrar por estado del producto
+          schema:
+            type: string
+            enum: ["0", "1"]
+      responses:
+        '200':
+          description: Resumen de inventario obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventorySummaryResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      description: |
+        API Key de la empresa en formato Bearer token.
+        
+        Ejemplo: `Authorization: Bearer G8RCjH11DabBNjnX7wO5`
+
+  schemas:
+    # Esquemas de Respuesta Base
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indica si la operación fue exitosa
+        meta:
+          $ref: '#/components/schemas/Meta'
+      required:
+        - success
+
+    Meta:
+      type: object
+      properties:
+        empresa:
+          type: string
+          description: Nombre de la empresa
+          example: "Mi Empresa S.A."
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp de la respuesta
+        filters_applied:
+          type: object
+          description: Filtros aplicados en la consulta
+      required:
+        - empresa
+        - timestamp
+
+    Pagination:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 100
+        total:
+          type: integer
+          example: 1250
+        total_pages:
+          type: integer
+          example: 13
+        has_next:
+          type: boolean
+          example: true
+        has_prev:
+          type: boolean
+          example: false
+        from:
+          type: integer
+          nullable: true
+          example: 1
+        to:
+          type: integer
+          nullable: true
+          example: 100
+      required:
+        - current_page
+        - per_page
+        - total
+        - total_pages
+        - has_next
+        - has_prev
+
+    # Esquemas de Ventas
+    Sale:
+      type: object
+      properties:
+        fecha:
+          type: string
+          format: date
+          example: "2025-01-15"
+        correlativo:
+          type: string
+          nullable: true
+          example: "FAC-001"
+        estado:
+          type: string
+          enum: [Completada, Pendiente, Anulada, Cotizacion]
+          example: "Completada"
+        forma_pago:
+          type: string
+          nullable: true
+          example: "Efectivo"
+        total:
+          type: number
+          format: float
+          example: 150.75
+        iva:
+          type: number
+          format: float
+          nullable: true
+          example: 13.50
+        sub_total:
+          type: number
+          format: float
+          nullable: true
+          example: 137.25
+        descuento:
+          type: number
+          format: float
+          nullable: true
+          example: 0.00
+        nombre_cliente:
+          type: string
+          nullable: true
+          example: "Juan Pérez"
+        nombre_usuario:
+          type: string
+          nullable: true
+          example: "Admin User"
+        nombre_vendedor:
+          type: string
+          nullable: true
+          example: "Vendedor 1"
+        saldo:
+          type: number
+          format: float
+          nullable: true
+          example: 0.00
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleDetail'
+      required:
+        - fecha
+        - estado
+        - total
+
+    SaleDetail:
+      type: object
+      properties:
+        descripcion:
+          type: string
+          nullable: true
+          example: "Producto A"
+        cantidad:
+          type: number
+          format: float
+          example: 2.00
+        precio:
+          type: number
+          format: float
+          example: 75.00
+        total:
+          type: number
+          format: float
+          example: 150.00
+        nombre_producto:
+          type: string
+          nullable: true
+          example: "Producto A"
+        codigo:
+          type: string
+          nullable: true
+          example: "PROD-001"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - cantidad
+        - precio
+        - total
+
+    # Esquemas de Inventario
+    Product:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: "Smartphone Samsung Galaxy"
+        descripcion:
+          type: string
+          nullable: true
+          example: "Teléfono inteligente de última generación"
+        codigo:
+          type: string
+          nullable: true
+          example: "PHONE-001"
+        barcode:
+          type: string
+          nullable: true
+          example: "1234567890123"
+        precio:
+          type: number
+          format: float
+          nullable: true
+          example: 599.99
+        costo:
+          type: number
+          format: float
+          nullable: true
+          example: 450.00
+        marca:
+          type: string
+          nullable: true
+          example: "Samsung"
+        tipo:
+          type: string
+          enum: [Producto, Servicio]
+          example: "Producto"
+        enable:
+          type: string
+          enum: ["0", "1"]
+          example: "1"
+        nombre_categoria:
+          type: string
+          nullable: true
+          example: "Electrónicos"
+        img:
+          type: string
+          nullable: true
+          example: "productos/smartphone.jpg"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        inventarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryStock'
+      required:
+        - nombre
+        - tipo
+        - enable
+
+    InventoryStock:
+      type: object
+      properties:
+        stock:
+          type: number
+          format: float
+          example: 25.00
+        stock_minimo:
+          type: number
+          format: float
+          example: 5.00
+        stock_maximo:
+          type: number
+          format: float
+          example: 100.00
+        nombre_bodega:
+          type: string
+          nullable: true
+          example: "Bodega Principal"
+        nombre_sucursal:
+          type: string
+          nullable: true
+          example: "Sucursal Centro"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - stock
+        - stock_minimo
+        - stock_maximo
+
+    # Esquemas de Respuesta
+    SalesListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Sale'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    SaleResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Sale'
+
+    SalesSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                cantidad_ventas:
+                  type: integer
+                  example: 125
+                total_ventas:
+                  type: number
+                  format: float
+                  example: 18750.50
+                total_iva:
+                  type: number
+                  format: float
+                  example: 1687.55
+                total_descuentos:
+                  type: number
+                  format: float
+                  example: 250.00
+                promedio_venta:
+                  type: number
+                  format: float
+                  example: 150.00
+                ventas_por_estado:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      estado:
+                        type: string
+                        example: "Completada"
+                      cantidad:
+                        type: integer
+                        example: 120
+                      total:
+                        type: number
+                        format: float
+                        example: 18000.00
+
+    InventoryListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    ProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Product'
+
+    InventorySummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                productos:
+                  type: object
+                  properties:
+                    total:
+                      type: integer
+                      example: 500
+                    activos:
+                      type: integer
+                      example: 480
+                    inactivos:
+                      type: integer
+                      example: 20
+                inventario:
+                  type: object
+                  properties:
+                    stock_total:
+                      type: number
+                      format: float
+                      example: 15750.50
+                    valor_total:
+                      type: number
+                      format: float
+                      example: 125000.75
+                    productos_con_stock:
+                      type: integer
+                      example: 450
+                    productos_sin_stock:
+                      type: integer
+                      example: 30
+                    productos_stock_bajo:
+                      type: integer
+                      example: 15
+                productos_por_categoria:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      categoria:
+                        type: string
+                        example: "Electrónicos"
+                      cantidad:
+                        type: integer
+                        example: 150
+
+    # Esquemas de Error
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Mensaje de error
+        code:
+          type: integer
+          description: Código de error HTTP
+      required:
+        - success
+        - error
+        - code
+
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            details:
+              type: object
+              description: Detalles de errores de validación
+              example:
+                fecha_inicio: ["El campo fecha inicio debe ser una fecha válida."]
+                per_page: ["El campo per page no puede ser mayor que 200."]
+
+  responses:
+    BadRequest:
+      description: Parámetros inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationErrorResponse'
+
+    Unauthorized:
+      description: API Key inválido o faltante
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "API key inválido o empresa inactiva"
+            code: 401
+
+    NotFound:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Venta no encontrada"
+            code: 404
+
+    RateLimitExceeded:
+      description: Rate limit excedido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Rate limit excedido. Máximo 100 requests por hora (200 con filtros de fecha)"
+            code: 429
+
+    InternalServerError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error: "Error interno del servidor"
+            code: 500
+
+
