@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-ventas',
@@ -312,12 +313,9 @@ export class VentasComponent implements OnInit {
     }
 
     if (!this.documentos.length) {
-      this.apiService.getAll('documentos/list').subscribe(
+      this.apiService.getAll('documentos/list-nombre').subscribe(
         (documentos) => {
           this.documentos = documentos;
-          this.documentos = this.documentos.filter(
-            (x: any) => x.id_sucursal == this.usuario.id_sucursal
-          );
         },
         (error) => {
           this.alertService.error(error);
@@ -621,6 +619,11 @@ export class VentasComponent implements OnInit {
                                 this.venta.sello_mh = dte.selloRecibido;
                                 this.venta.estado = 'Anulada';
                                 this.onSubmit();
+                                if(this.venta.id_cliente){
+                                  setTimeout(()=>{
+                                  this.enviarDTE(this.venta);
+                                  },3000);
+                              }
                             }
 
                             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
@@ -744,6 +747,25 @@ export class VentasComponent implements OnInit {
         this.saving = false;
       }
     );
+  }
+
+  public generarTrasladoEmpresa(venta:any){
+    Swal.fire({
+      title: '¿Confirmar traslado?',
+      text: '¿Está seguro de generar el traslado a empresa para esta venta?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, generar traslado',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.apiService.store('compra/generar-compra-desde-orden', venta).subscribe(venta => {
+          this.alertService.success('Traslado generado.', 'El traslado fue generado exitosamente.');
+        }, error => {this.alertService.error(error); });
+      }
+    });
   }
 
 

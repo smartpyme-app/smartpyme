@@ -1,15 +1,17 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, AfterViewInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
+declare var bootstrap: any;
+
 @Component({
   selector: 'app-producto-precios',
   templateUrl: './producto-precios.component.html'
 })
-export class ProductoPreciosComponent implements OnInit {
+export class ProductoPreciosComponent implements OnInit, AfterViewInit {
 
     @Input() producto: any = {};
     public precio: any = {};
@@ -25,6 +27,30 @@ export class ProductoPreciosComponent implements OnInit {
     ){ }
 
     ngOnInit() {}
+
+    ngAfterViewInit() {
+        // Inicializar tooltips de Bootstrap
+        setTimeout(() => {
+            this.initializeTooltips();
+        }, 100);
+    }
+
+    private initializeTooltips() {
+        // Destruir tooltips existentes
+        const existingTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        existingTooltips.forEach(element => {
+            const tooltip = bootstrap.Tooltip.getInstance(element);
+            if (tooltip) {
+                tooltip.dispose();
+            }
+        });
+
+        // Inicializar nuevos tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
 
     openModal(template: TemplateRef<any>, precio:any) {
         this.precio = precio;
@@ -80,6 +106,11 @@ export class ProductoPreciosComponent implements OnInit {
             this.precio = {};
             this.loading = false;
             this.modalRef.hide();
+            
+            // Reinicializar tooltips después de agregar nuevo precio
+            setTimeout(() => {
+                this.initializeTooltips();
+            }, 100);
         },error => {this.alertService.error(error); this.loading = false;});
 
     }
@@ -94,6 +125,30 @@ export class ProductoPreciosComponent implements OnInit {
                 }
             },error => {this.alertService.error(error); this.loading = false;});
         }
+    }
+
+    getUsuariosAutorizados(precio: any): string {
+        if (!precio.usuarios || precio.usuarios.length === 0) {
+            return 'Ninguno';
+        }
+        
+        if (precio.usuarios.length === 1) {
+            return precio.usuarios[0].nombre || 'Usuario';
+        }
+        
+        if (precio.usuarios.length > 5) {
+            return `${precio.usuarios.length} usuarios`;
+        }
+        
+        return precio.usuarios.map((u: any) => u.nombre).join(', ');
+    }
+
+    getTooltipUsuarios(precio: any): string {
+        if (!precio.usuarios || precio.usuarios.length === 0) {
+            return 'Ningún usuario autorizado';
+        }
+        
+        return precio.usuarios.map((u: any) => u.nombre).join(', ');
     }
 
 

@@ -4,6 +4,9 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { Subject, Observable } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 import * as moment from 'moment';
 
@@ -27,6 +30,16 @@ export class FacturacionCompraConsignaComponent implements OnInit {
     public loading = false;
     public imprimir:boolean = false;
     
+    // Propiedades para agregar productos/servicios
+    public productos: any[] = [];
+    public servicios: any[] = [];
+    public productosModal!: BsModalRef;
+    public searchTerm: string = '';
+    public searchResults: any[] = [];
+    public searchLoading: boolean = false;
+    public searchProductos$ = new Subject<string>();
+    public detalle: any = {};
+    
     modalRef!: BsModalRef;
     
 	constructor( 
@@ -35,6 +48,33 @@ export class FacturacionCompraConsignaComponent implements OnInit {
         private route: ActivatedRoute, private router: Router,
 	) {
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+        
+        // Configurar búsqueda dinámica de productos
+        this.searchProductos$.pipe(
+            debounceTime(300),
+            distinctUntilChanged(),
+            switchMap(term => {
+                if (!term || term.length < 2) {
+                    return of([]);
+                }
+                this.searchLoading = true;
+                this.searchTerm = term;
+                
+                return this.apiService.store('productos/buscar-modal', {
+                    termino: term,
+                    id_empresa: this.apiService.auth_user().id_empresa,
+                    limite: 15
+                }).pipe(
+                    catchError(error => {
+                        console.error('Error en búsqueda:', error);
+                        return of([]);
+                    })
+                );
+            })
+        ).subscribe(results => {
+            this.searchResults = results || [];
+            this.searchLoading = false;
+        });
     }
 
 	ngOnInit() {
@@ -109,6 +149,56 @@ export class FacturacionCompraConsignaComponent implements OnInit {
 
         this.compra.descuento = (parseFloat(this.sumPipe.transform(this.compra.detalles, 'descuento'))).toFixed(2);
         this.compra.total = (parseFloat(this.compra.sub_total) + parseFloat(this.compra.iva) + parseFloat(this.compra.percepcion) - parseFloat(this.compra.iva_retenido)).toFixed(2);
+    }
+
+    // Métodos para agregar productos/servicios
+    public openModalProductos(template: TemplateRef<any>) {
+        this.detalle = {};
+        this.searchResults = [];
+        this.searchTerm = '';
+        this.productosModal = this.modalService.show(template, { class: 'modal-lg' });
+    }
+
+    public onSearchProducts(term: string) {
+        this.searchProductos$.next(term);
+    }
+
+    public selectProducto(producto: any) {
+        this.detalle = {
+            id_producto: producto.id,
+            nombre_producto: producto.nombre,
+            descripcion: producto.descripcion,
+            cantidad: 1,
+            costo: producto.costo || 0,
+            descuento: 0,
+            descuento_porcentaje: 0,
+            total: producto.costo || 0,
+            img: producto.img || 'default-product.png',
+            tipo: producto.tipo
+        };
+        this.productosModal.hide();
+        this.addDetalle();
+    }
+
+    public addDetalle() {
+        if (!this.compra.detalles) {
+            this.compra.detalles = [];
+        }
+        
+        // Calcular total del detalle
+        this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
+        
+        this.compra.detalles.push({...this.detalle});
+        this.detalle = {};
+        this.sumTotal();
+    }
+
+    public delete(detalle: any) {
+        const index = this.compra.detalles.indexOf(detalle);
+        if (index > -1) {
+            this.compra.detalles.splice(index, 1);
+            this.sumTotal();
+        }
     }
 
 

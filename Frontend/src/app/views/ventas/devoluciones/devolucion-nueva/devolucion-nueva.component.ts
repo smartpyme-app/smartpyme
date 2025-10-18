@@ -61,7 +61,17 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.devolucion.id_sucursal = this.venta.id_sucursal;
                 this.devolucion.id_empresa = this.venta.id_empresa;
                 this.devolucion.enable = true;
-                this.sumTotal();
+                this.devolucion.sub_total = this.venta.sub_total;
+                this.devolucion.iva = this.venta.iva;
+                this.devolucion.iva_retenido = this.venta.iva_retenido;
+                this.devolucion.iva_percibido = this.venta.iva_percibido;
+                this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
+                this.devolucion.exenta = this.venta.exenta;
+                this.devolucion.no_sujeta = this.venta.no_sujeta;
+                this.devolucion.descuento = this.venta.descuento;
+                this.devolucion.total_costo = this.venta.total_costo;
+                this.devolucion.total = this.venta.total;
+                // this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
                 // console.log(this.devolucion);

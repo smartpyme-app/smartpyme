@@ -5,8 +5,8 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
-import Swal from 'sweetalert2';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
 import { co } from '@fullcalendar/core/internal-common';
@@ -251,6 +251,12 @@ export class FacturacionComponent implements OnInit {
     this.venta.tipo = 'Interna';
     this.venta.estado = 'Pagada';
     this.venta.condicion = 'Contado';
+
+    // Asegurar que usuarios "Ventas Limitado" siempre tengan ventas al contado
+    if (this.apiService.auth_user().tipo === 'Ventas Limitado') {
+      this.venta.credito = false;
+      this.venta.consigna = false;
+    }
     this.venta.tipo_operacion = 'Gravada';
     this.venta.tipo_renta = null;
     this.venta.detalle_banco = '';
@@ -302,6 +308,7 @@ export class FacturacionComponent implements OnInit {
       this.venta.cotizacion = 1;
       this.venta.estado = 'Pendiente';
       this.venta.tipo = 'cotizacion'; // Identificador para cotización
+      this.venta.observaciones = this.venta.id_empresa == 2 ? 'Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \nPagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \nDisponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \nPropiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \nLimitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \nDuración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \nSituaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \nRenovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \nPolítica de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \nBrindar capacitaciones y soporte técnico a usuarios de negocios. \nGarantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \nOfrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\nBrindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
     }
 
     if (this.route.snapshot.paramMap.get('id')) {
@@ -479,6 +486,108 @@ export class FacturacionComponent implements OnInit {
       return;
     }
 
+    // Facturar orden de compra
+    if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
+      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
+        this.venta.num_orden = ordenCompra.id;
+
+        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
+          if(empresa.length > 0){
+            this.setCliente(empresa[0]);
+            console.log(empresa);
+
+            // Solo procesar productos si el cliente existe
+            this.procesarProductosOrdenCompra(ordenCompra.detalles);
+          }else{
+            Swal.fire({
+              title: 'Cliente no encontrado',
+              html: `
+                <div class="text-left">
+                  <p><strong>No se encontró el cliente para poder facturar.</strong></p>
+                  <p>Debe crear el cliente con los siguientes datos:</p>
+                  <ul class="list-unstyled mt-3">
+                    <li><strong>Nombre:</strong> ${ordenCompra.empresa.nombre || 'No disponible'}</li>
+                    <li><strong>DUI o NIT:</strong> ${ordenCompra.empresa.dui || ordenCompra.empresa.nit || 'No disponible'}</li>
+                  </ul>
+                </div>
+              `,
+              icon: 'warning',
+              confirmButtonText: 'Entendido',
+              confirmButtonColor: '#3085d6'
+            }).then(() => {
+              window.history.back();
+            });
+            // No procesar productos si el cliente no existe
+            return;
+          }
+        });
+      }, (error) => { this.alertService.error(error); this.loading = false; }
+    );
+    console.log(this.venta);
+    }
+    this.cargarDocumentos();
+  }
+    // Método para procesar productos de orden de compra
+  public procesarProductosOrdenCompra(detalles: any[]) {
+    detalles.forEach((detalleCompra: any) => {
+      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+        if (producto) {
+          let detalle: any = {};
+          detalle.cantidad = detalleCompra.cantidad;
+          detalle.descripcion = producto.nombre;
+          detalle.id_producto = producto.id;
+          detalle.precio = parseFloat(producto.precio);
+          detalle.costo = parseFloat(producto.costo);
+          detalle.gravada = detalle.total;
+          detalle.id_vendedor = this.venta.id_vendedor;
+          detalle.exenta = 0;
+          detalle.no_sujeta = 0;
+          detalle.cuenta_a_terceros = 0;
+          detalle.total = detalle.precio * detalle.cantidad;
+          this.venta.detalles.push(detalle);
+          this.sumTotal();
+        } else {
+           Swal.fire({
+             title: 'Producto no encontrado',
+             html: `
+               <div class="text-left">
+                 <p><strong>No se encontró el producto para poder facturar.</strong></p>
+                 <p>Debe verificar o crear el producto con el siguiente código:</p>
+                 <ul class="list-unstyled mt-3">
+                   <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                   <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+                 </ul>
+               </div>
+             `,
+             icon: 'warning',
+             confirmButtonText: 'Entendido',
+             confirmButtonColor: '#3085d6'
+           }).then(() => {
+             window.history.back();
+           });
+        }
+      }, (error) => {
+        Swal.fire({
+          title: 'Error al buscar producto',
+          html: `
+            <div class="text-left">
+              <p><strong>Error al buscar el producto.</strong></p>
+              <p>No se pudo encontrar el producto con el siguiente código:</p>
+              <ul class="list-unstyled mt-3">
+                <li><strong>Código del producto:</strong> ${detalleCompra.codigo || 'Sin código'}</li>
+                <li><strong>Cantidad solicitada:</strong> ${detalleCompra.cantidad || 'No disponible'}</li>
+              </ul>
+            </div>
+          `,
+          icon: 'error',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#3085d6'
+        }).then(() => {
+          window.history.back();
+        });
+      });
+    });
+
     // Cita a venta
     if (this.route.snapshot.queryParamMap.get('id_cita')!) {
       this.loading = true;
@@ -533,6 +642,10 @@ export class FacturacionComponent implements OnInit {
                       parseFloat(detalle.precio) -
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
+
+                    if (!this.venta.propina) {
+                      this.venta.propina = 0;
+                    }
 
                     if (!detalle.gravada) {
                       detalle.gravada = detalle.total;
@@ -702,6 +815,13 @@ export class FacturacionComponent implements OnInit {
     }
 
     public setCredito() {
+        // Prevenir que usuarios "Ventas Limitado" activen ventas al crédito
+        if (this.apiService.auth_user().tipo === 'Ventas Limitado' && this.venta.credito) {
+            this.venta.credito = false;
+            this.alertService.error('Los usuarios de tipo "Ventas Limitado" no pueden crear ventas al crédito.');
+            return;
+        }
+
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito'
@@ -1060,15 +1180,17 @@ export class FacturacionComponent implements OnInit {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
+
   public verificarAccesoPropina() {
     this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
-      (acceso) => {
-        this.tieneAccesoPropina = acceso;
-      },
-      (error) => {
-        console.error('Error al verificar acceso a propina:', error);
-        this.tieneAccesoPropina = false;
-      }
+        (acceso) => {
+            this.tieneAccesoPropina = acceso;
+        },
+        (error) => {
+            console.error('Error al verificar acceso a propina:', error);
+            this.tieneAccesoPropina = false;
+        }
     );
-  }
+}
+
 }

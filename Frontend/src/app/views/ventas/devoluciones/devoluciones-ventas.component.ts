@@ -53,6 +53,7 @@ export class DevolucionesVentasComponent implements OnInit {
         this.filtros.estado = '';
         this.filtros.id_cliente = '';
         this.filtros.id_usuario = '';
+        this.filtros.id_documento = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
@@ -144,6 +145,17 @@ export class DevolucionesVentasComponent implements OnInit {
         this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => { this.alertService.error(error); });
+
+        if (!this.documentos.length) {
+            this.apiService.getAll('documentos/list-nombre').subscribe(
+                (documentos) => {
+                    this.documentos = documentos;
+                },
+                (error) => {
+                    this.alertService.error(error);
+                }
+            );
+        }
 
         this.modalRef = this.modalService.show(template);
     }
@@ -288,7 +300,7 @@ export class DevolucionesVentasComponent implements OnInit {
         };
     
         if (this.documentos.length === 0) {
-            this.apiService.getAll('documentos/list').subscribe(documentos => { 
+            this.apiService.getAll('documentos/list-nombre').subscribe(documentos => {
                 this.documentos = documentos;
             }, error => { this.alertService.error(error); });
         }

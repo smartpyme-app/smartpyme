@@ -78,7 +78,7 @@ class ComprasController extends Controller
                 }
             })
             ->where('cotizacion', 0)
-    
+
             ->when($request->buscador, function ($query) use ($request) {
                 $term = $request->buscador;
                 $query->where(function ($q) use ($term) {
@@ -108,14 +108,14 @@ class ComprasController extends Controller
             })
             ->orderBy('id', 'desc')
             ->paginate($request->paginate ?: 15);
-    
+
         foreach ($compras as $compra) {
             $compra->saldo = $compra->saldo;
         }
-    
+
         return response()->json($compras, 200);
     }
-    
+
 
     public function read($id)
     {
@@ -728,6 +728,113 @@ class ComprasController extends Controller
             DB::rollback();
             Log::error("Error procesando compra autorizada: " . $e->getMessage());
             throw $e;
+        }
+    }
+
+    public function generarCompraDesdeOrdenCompra(Request $request){
+        $request->validate([
+            'id' => 'required', // ID de la venta
+            'num_orden' => 'required',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Buscar la venta
+            $venta = \App\Models\Ventas\Venta::where('id', $request->id)
+                ->with('detalles', function($query) use ($request){
+                    $query->withoutGlobalScope('empresa');
+                }, 'cliente')
+                ->firstOrFail();
+
+            $orden_compra = Compra::withoutGlobalScope('empresa')->where('id', $request->num_orden)
+                ->where('cotizacion', 1)
+                ->with('detalles', 'proveedor')
+                ->firstOrFail();
+
+            // Buscar si ya existe una compra con el mismo tipo de documento, proveedor y correlativo
+            $compraExistente = Compra::withoutGlobalScope('empresa')->where('tipo_documento', $venta->nombre_documento)
+                ->where('id_proveedor', $orden_compra->id_proveedor)
+                ->where('referencia', $venta->correlativo)
+                ->where('id_empresa', $orden_compra->id_empresa)
+                ->where('cotizacion', 0)
+                ->first();
+
+            if ($compraExistente) {
+                return Response()->json([
+                    'error' => 'Ya existe una compra con este tipo de documento, proveedor y correlativo.',
+                ], 403);
+            }
+
+            // Crear la nueva compra basada en la venta
+            $compra = new Compra();
+
+            // Configurar campos básicos de la compra
+            $compra->fecha = $venta->fecha;
+            $compra->estado = $venta->estado;
+            $compra->tipo_documento = $venta->nombre_documento;
+            $compra->referencia = $venta->correlativo;
+            $compra->forma_pago = $venta->forma_pago;
+            $compra->fecha_pago = $venta->fecha_pago;
+            $compra->id_usuario = $orden_compra->id_usuario;
+            $compra->id_empresa = $orden_compra->id_empresa;
+            $compra->id_bodega = $orden_compra->id_bodega;
+            $compra->id_sucursal = $orden_compra->id_sucursal;
+            $compra->cotizacion = 0; // Marcar como compra real, no cotización
+            $compra->id_proveedor = $orden_compra->id_proveedor; // Usar el cliente como proveedor
+
+            $compra->sub_total = $venta->sub_total;
+            $compra->iva = $venta->iva;
+            $compra->total = $venta->total;
+
+            $compra->save();
+
+            // Crear detalles de la compra a partir de los detalles de la venta
+            foreach ($venta->detalles as $detalle_venta) {
+                // Obtener el código del producto de la venta
+                $producto_venta = \App\Models\Inventario\Producto::withoutGlobalScope('empresa')->where('id_empresa', $orden_compra->id_empresa)->where('codigo', $detalle_venta->codigo)->firstOrFail();
+                if ($producto_venta) {
+                    $detalle_compra = new Detalle();
+                    $detalle_compra->id_producto = $producto_venta->id; // ID del producto en la empresa hija
+                    $detalle_compra->cantidad = $detalle_venta->cantidad;
+                    $detalle_compra->costo = $detalle_venta->precio; // Precio de la venta como costo
+                    $detalle_compra->total = $detalle_venta->total;
+                    $detalle_compra->descuento = $detalle_venta->descuento ?? 0;
+                    $detalle_compra->id_compra = $compra->id;
+                    $detalle_compra->save();
+
+                    // Actualizar costo producto al de la ultima compra
+                    $producto_venta->costo_anterior   = $producto_venta->costo;
+                    $producto_venta->costo            = $detalle_venta->precio;
+                    $producto_venta->costo_promedio   = $detalle_venta->precio;
+                    $producto_venta->save();
+
+                    // Actualizar inventario
+                    $inventario = Inventario::withoutGlobalScope('empresa')->where('id_producto', $producto_venta->id)
+                        ->where('id_bodega', $compra->id_bodega)
+                        ->first();
+
+                    if ($inventario) {
+                        $inventario->stock += $detalle_venta->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle_venta->cantidad);
+                    }
+
+                }
+            }
+
+            $orden_compra->estado = 'Aceptada';
+            $orden_compra->save();
+
+            DB::commit();
+            return Response()->json($compra, 200);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
+        } catch (\Throwable $e) {
+            DB::rollback();
+            return Response()->json(['error' => $e->getMessage()], 400);
         }
     }
 

@@ -7,14 +7,14 @@
         <div class="d-flex gap-2">
             <button tooltip="Descargar" (click)="descargar()" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
-            <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" class="form-select  p-0" name="filtros.id_usuario">
+            <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
                 <ng-option value="">Usuario</ng-option>
                 <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
                     {{ usuario.name }}
                 </ng-option>
             </ng-select>
             <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                <option value="" *ngIf="usuario.tipo != 'Ventas'">Todas las sucursal</option>
+                <option value="" *ngIf="usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado'">Todas las sucursal</option>
                 <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
                     {{sucursal.nombre}}
                 </option>

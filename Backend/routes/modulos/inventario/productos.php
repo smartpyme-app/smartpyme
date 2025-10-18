@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
     Route::get('/productos',         		    [ProductosController::class, 'index']);
     Route::get('/producto/{id}',     		    [ProductosController::class, 'read']);
+    Route::get('/producto/buscar-by-code/{codigo}', [ProductosController::class, 'searchByCode']);
     Route::get('/productos/list',               [ProductosController::class, 'list']);
     Route::get('/productos/list/search',        [ProductosController::class, 'searchForList']);
     Route::get('/productos/{id}/inventarios', [ProductosController::class, 'inventarios']);
@@ -35,6 +36,9 @@ use App\Http\Controllers\Api\Webhook\WooCommerceController;
 
     Route::get('/productos/kardex',  	        [KardexController::class, 'index']);
     Route::get('/productos/kardex/exportar',    [KardexController::class, 'export']);
+    Route::get('/productos/kardex/exportar-filtrado', [KardexController::class, 'exportFiltrado']);
+    Route::post('/productos/kardex/solicitar-masivo', [KardexController::class, 'solicitarMasivo']);
+Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCola']);
 
     Route::post('/productos/analisis',          [ProductosController::class, 'analisis']);
     Route::get('/producto/precios/historicos/{id}', [ProductosController::class, 'precios']);

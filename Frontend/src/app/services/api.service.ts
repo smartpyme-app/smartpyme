@@ -125,6 +125,10 @@ export class ApiService {
         return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
     }
 
+    exportWithUrl(url: string, filtros: any): Observable<any> {
+        return this.http.get(this.apiUrl + url, { params: filtros });
+    }
+
     exportAcumulado(url: string, filtros: any): Observable<Blob> {
         return this.http.post(this.apiUrl + url, filtros, {
             responseType: 'blob',
@@ -161,7 +165,7 @@ export class ApiService {
 
           // Cargar permisos después del login
           this.loadUserPermissions(data.user.id);
-          
+
           // Cargar constantes usando ConstantsService
           this.loadConstants();
         }
@@ -544,7 +548,7 @@ export class ApiService {
     }
     return false;
   }
-  
+
   //no es super admin
   isNotSuperAdmin() {
     let user = localStorage.getItem('SP_user_permissions');
@@ -613,22 +617,34 @@ export class ApiService {
     }
   }
 
-  isSupervisorLimitado() {
-    const userPermissions = localStorage.getItem('SP_user_permissions');
-    if (userPermissions) {
-      try {
-        const { role } = JSON.parse(userPermissions);
-        return role === 'usuario_supervisor_limitado' || role === 'supervisor_limitado';
-      } catch (error) {
-        console.error('Error checking supervisor limitado role:', error);
+    isSupervisorLimitado() {
+      const userPermissions = localStorage.getItem('SP_user_permissions');
+      if (userPermissions) {
+        try {
+          const { role } = JSON.parse(userPermissions);
+          return role === 'usuario_supervisor_limitado' || role === 'supervisor_limitado';
+        } catch (error) {
+          console.error('Error checking supervisor limitado role:', error);
+        }
       }
+
+      // Fallback al campo tipo para compatibilidad
+      let usuario = this.auth_user();
+      if (usuario && usuario.tipo == 'Supervisor Limitado') return true;
+      return false;
     }
-    
-    // Fallback al campo tipo para compatibilidad
-    let usuario = this.auth_user();
-    if (usuario && usuario.tipo == 'Supervisor Limitado') return true;
-    return false;
-  }
+
+    isVentasLimitado() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas Limitado') return true;
+        return false;
+    }
+
+    isVentas() {
+        let usuario = this.auth_user();
+        if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
+        return false;
+    }
 
   private loadConstants() {
     this.constantsService.loadConstants().subscribe(

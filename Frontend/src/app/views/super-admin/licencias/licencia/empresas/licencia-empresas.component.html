@@ -2,7 +2,7 @@
     <h6 class="my-3 font-weight-bold" (click)="loadAll()">
         Empresas
 
-        <a *ngIf="licencia.num_licencias > licencia.num_empresas" class="btn btn-default float-end" (click)="openModal(mbodega, {})" tooltip="Agregar empresa">
+        <a *ngIf="licencia.num_licencias > licencia.num_empresas" class="btn btn-default float-end" (click)="openModal(mempresa, {})" tooltip="Agregar empresa">
             <i class="fa fa-plus"></i> Agregar empresa
         </a>
     </h6>
@@ -31,10 +31,10 @@
                 </tr>        
                 <tr *ngFor=" let empresa of licencia.empresas">
                     <td>{{ empresa?.nombre_empresa }}</td>
-                    <td>{{ empresa?.empresa.correo }}</td>
-                    <td>{{ empresa?.empresa.telefono }}</td>
-                    <td>{{ empresa?.empresa.dui }}</td>
-                    <td>{{ empresa?.empresa.ncr }}</td>
+                    <td>{{ empresa?.empresa?.correo }}</td>
+                    <td>{{ empresa?.empresa?.telefono }}</td>
+                    <td>{{ empresa?.empresa?.dui }}</td>
+                    <td>{{ empresa?.empresa?.ncr }}</td>
                     <td class="text-center">
                         <a (click)="delete(empresa)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
                     </td>
@@ -45,7 +45,7 @@
     </div>
 </div>
 
-<ng-template #mbodega>
+<ng-template #mempresa>
   <div class="modal-header">
     <h3 class="modal-title text-center">Agregar empresa</h3>
     <button type="button" class="btn-close" (click)="modalRef.hide(); alertService.modal = false;" aria-label="Close"></button>
@@ -64,14 +64,13 @@
                             {{ empresa.nombre }}
                         </ng-option>
                     </ng-select>
-                    <app-crear-empresa [id_empresa]="empresa.id_empresa" (update)="setEmpresa($event)"></app-crear-empresa>
                 </div>
             </div>
         </div>
         <div class="d-grid mt-3">
-            <button type="submit" class="btn btn-primary">
-                <span *ngIf="!loading">Agregar</span>
-                <span *ngIf="loading">Agregando...</span>
+            <button type="submit" [disabled]="saving" class="btn btn-primary">
+                <span *ngIf="!saving">Agregar</span>
+                <span *ngIf="saving">Agregando...</span>
             </button>
         </div>
     </form>

@@ -38,11 +38,16 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Productos</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            <button class="btn tcla-F3" tooltip="Actualizar (F5)" (click)="loadAll()"  routerLinkActive="btn-primary" routerLinkActive="btn-primary"  routerLink="/salidas">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+            <button class="btn tcla-F3" tooltip="Actualizar (F5)" (click)="loadAll()" routerLinkActive="btn-primary" routerLink="/salidas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select p-0 border-0 bg-default">

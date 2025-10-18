@@ -34,7 +34,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
                 $q->where('id_sucursal', $request->id_sucursal);
             })
             ->where('iva' , '>', 0)
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
             ->get()
@@ -50,7 +50,7 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
             ->when($request->id_sucursal, function ($q) use ($request) {
                 $q->where('id_sucursal', $request->id_sucursal);
             })
-            ->where('tipo_documento', 'Crédito fiscal')
+            ->whereIn('tipo_documento', ['Crédito fiscal', 'Factura', 'Factura de exportación', 'Importación', 'Nota de crédito', 'Nota de débito'])
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->get()
             ->map(function ($gasto) {
@@ -73,6 +73,9 @@ class AnexoComprasExport implements FromCollection, WithMapping, WithCustomCsvSe
 
             $tipo = '03'; //CCF
 
+            if ($compra->tipo_documento == 'Factura') {
+                $tipo = '01';
+            }
             if ($compra->tipo_documento == 'Nota de crédito') {
                 $tipo = '05';
             }

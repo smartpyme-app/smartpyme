@@ -139,7 +139,7 @@ class Inventario extends Model {
             // return null;
         }
 
-        $producto = $this->producto()->first();
+        $producto = $this->producto()->withoutGlobalScope('empresa')->first();
 
         if (!$precio) {
             $precio = $producto->precio;
@@ -189,6 +189,10 @@ class Inventario extends Model {
 
     public function bodega(){
         return $this->belongsTo('App\Models\Inventario\Bodega', 'id_bodega');
+    }
+
+    public function sucursal(){
+        return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
     public function kardexs(){

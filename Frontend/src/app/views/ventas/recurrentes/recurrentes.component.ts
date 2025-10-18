@@ -170,7 +170,7 @@ export class RecurrentesComponent implements OnInit {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
         
-        this.apiService.getAll('documentos').subscribe(documentos => { 
+        this.apiService.getAll('documentos/list-nombre').subscribe(documentos => { 
             this.documentos = documentos;
         }, error => {this.alertService.error(error); });
 

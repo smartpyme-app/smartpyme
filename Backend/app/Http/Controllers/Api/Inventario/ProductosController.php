@@ -322,6 +322,22 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
+    public function searchByCode($codigo)
+    {
+        $producto = Producto::where('codigo', $codigo)
+            ->with(
+                'inventarios',
+                'composiciones.compuesto',
+                'composiciones.opciones',
+                'precios.usuarios',
+                'imagenes',
+                'proveedores.proveedor'
+            )
+            ->firstOrFail();
+
+        return Response()->json($producto, 200);
+    }
+
     public function searchAll($txt)
     {
 
@@ -1048,8 +1064,6 @@ class ProductosController extends Controller
                     'nombre' => $marca
                 ];
             });
-
-            Log::info('Marcas obtenidas:', $marcas->toArray());
 
             return response()->json($marcas);
         } catch (\Exception $e) {

@@ -236,7 +236,10 @@ class CotizacionesController extends Controller
             }elseif(Auth::user()->id_empresa == 498){ //13
                 $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-grupo-split', compact('venta'));
                 $pdf->setPaper('US Letter', 'portrait');
-            } else{
+            }elseif(Auth::user()->id_empresa == 2){ //2 Super Admin
+                $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.cotizacion-smartpyme', compact('venta'));
+                $pdf->setPaper('US Letter', 'portrait');
+            }else{
                 $pdf = PDF::loadView('reportes.facturacion.cotizacion', compact('venta'));
                 $pdf->setPaper('US Letter', 'portrait');
             }

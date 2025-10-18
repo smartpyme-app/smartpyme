@@ -12,28 +12,28 @@ export class DashComponent implements OnInit {
     public usuario:any;
     public saludo:any;
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private router: Router
     ) { }
 
     ngOnInit() {
-        this.usuario = this.apiService.auth_user();        
+        this.usuario = this.apiService.auth_user();
         this.saludo = this.apiService.saludar();
 
         // if(this.usuario.tipo == 'Ventas'){
-        //     this.router.navigate(['/vendedor/ventas']);    
+        //     this.router.navigate(['/vendedor/ventas']);
         // }
         // if(this.usuario.tipo == 'Citas'){
-        //     this.router.navigate(['/citas']);    
+        //     this.router.navigate(['/citas']);
         // }
 
         if(this.apiService.validateRole('usuario_ventas', true)){
-            this.router.navigate(['/vendedor/ventas']);    
+            this.router.navigate(['/vendedor/ventas']);
         }
-        
+
         if(this.apiService.validateRole('usuario_citas', true)){
-            this.router.navigate(['/citas']);    
+            this.router.navigate(['/citas']);
         }
 
     }

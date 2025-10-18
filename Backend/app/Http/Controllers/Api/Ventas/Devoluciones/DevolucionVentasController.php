@@ -27,70 +27,59 @@ use Auth;
 
 class DevolucionVentasController extends Controller
 {
-    
+
     public function index(Request $request) {
-    
+
         $ventas = Devolucion::when($request->inicio, function($query) use ($request){
-                return $query->where('fecha', '>=', $request->inicio);
-            })
-            ->when($request->fin, function($query) use ($request){
-                return $query->where('fecha', '<=', $request->fin);
-            })
-            ->when($request->estado !== null, function($q) use ($request){
-                $q->where('enable', !!$request->estado);
-            })
-            ->when($request->id_usuario, function($query) use ($request){
-                return $query->where('id_usuario', $request->id_usuario);
-            })
-            ->when($request->forma_de_pago, function($query) use ($request){
-                return $query->where('forma_de_pago', $request->forma_de_pago);
-            })
-            ->when($request->id_cliente, function($query) use ($request){
-                $query->where('id_cliente', $request->id_cliente);
-            })
-            ->when($request->tipo_documento, function($query) use ($request){
-                return $query->where('tipo_documento', $request->tipo_documento);
-            })
-            ->when($request->buscador, function($query) use ($request){
-                return $query->where(function($q) use ($request) {
-                    $searchTerm = $request->buscador;
-                    
-                    $q->whereHas('cliente', function($clienteQuery) use ($searchTerm){
-                        $clienteQuery->where('nombre_empresa', 'like', "%" . $searchTerm . "%")
-                            ->orWhere('ncr', 'like', "%" . $searchTerm . "%")
-                            ->orWhere('nit', 'like', "%" . $searchTerm . "%")
-                            // Búsqueda por nombre individual
-                            ->orWhere('nombre', 'like', "%" . $searchTerm . "%")
-                            // Búsqueda por apellido individual  
-                            ->orWhere('apellido', 'like', "%" . $searchTerm . "%")
-                            // Búsqueda por nombre completo concatenado (nombre + apellido)
-                            ->orWhereRaw("CONCAT(nombre, ' ', COALESCE(apellido, '')) LIKE ?", ["%" . $searchTerm . "%"])
-                            // Búsqueda por apellido + nombre (en caso de que busquen en orden inverso)
-                            ->orWhereRaw("CONCAT(COALESCE(apellido, ''), ' ', nombre) LIKE ?", ["%" . $searchTerm . "%"]);
-                    })
-                    // Búsqueda por correlativo
-                    ->orWhere('correlativo', 'like', '%'.$searchTerm.'%')
-                    // Búsqueda por observaciones
-                    ->orWhere('observaciones', 'like', '%'.$searchTerm.'%')
-                    // Búsqueda por nombre del documento (usando JOIN)
-                    ->orWhereHas('documento', function($documentoQuery) use ($searchTerm) {
-                        $documentoQuery->where('nombre', 'like', '%'.$searchTerm.'%');
-                    })
-                    // Búsqueda por documento completo usando subquery para obtener el nombre del documento
-                    ->orWhereExists(function($subquery) use ($searchTerm) {
-                        $subquery->select(DB::raw(1))
-                            ->from('documentos')
-                            ->whereColumn('documentos.id', 'devoluciones_venta.id_documento')
-                            ->whereRaw("CONCAT(COALESCE(documentos.nombre, 'Devolución'), CASE WHEN devoluciones_venta.correlativo IS NOT NULL THEN CONCAT(' #', devoluciones_venta.correlativo) ELSE '' END) LIKE ?", ["%" . $searchTerm . "%"]);
-                    })
-                    // Búsqueda solo por "#correlativo" (en caso de que busquen con el #)
-                    ->orWhereRaw("CONCAT('#', correlativo) LIKE ?", ["%" . $searchTerm . "%"]);
-                });
-            })
-        ->orderBy($request->orden, $request->direccion)
-        ->orderBy('id', 'desc')
-        ->paginate($request->paginate);
-    
+                            return $query->where('fecha', '>=', $request->inicio);
+                        })
+                        ->when($request->fin, function($query) use ($request){
+                            return $query->where('fecha', '<=', $request->fin);
+                        })
+                        ->when($request->estado !== null, function($q) use ($request){
+                            $q->where('enable', !!$request->estado);
+                        })
+                        ->when($request->id_usuario, function($query) use ($request){
+                            return $query->where('id_usuario', $request->id_usuario);
+                        })
+                        ->when($request->forma_de_pago, function($query) use ($request){
+                            return $query->where('forma_de_pago', $request->forma_de_pago);
+                        })
+                        ->when($request->id_cliente, function($query) use ($request){
+                            $query->where('id_cliente', $request->id_cliente);
+                        })
+                        ->when($request->tipo_documento, function($query) use ($request){
+                            return $query->whereHas('documento', function ($q) use ($request) {
+                                $q->where('nombre', $request->tipo_documento);
+                            });
+                        })
+                        ->when($request->id_documento, function ($query) use ($request) {
+                            // Buscar el documento por ID (respetando el scope de empresa)
+                            $documento = Documento::find($request->id_documento);
+
+                            if ($documento) {
+                                // Filtrar por todos los documentos que tengan el mismo nombre (case insensitive)
+                                return $query->whereHas('documento', function ($q) use ($documento) {
+                                    $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                                });
+                            } else {
+                                // Si no se encuentra el documento, filtrar por ID directo
+                                return $query->where('id_documento', $request->id_documento);
+                            }
+                        })
+                        ->when($request->buscador, function($query) use ($request){
+                        return $query->whereHas('cliente', function($q) use ($request){
+                                    $q->where('nombre', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nombre_empresa', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('ncr', 'like' ,"%" . $request->buscador . "%")
+                                    ->orwhere('nit', 'like' ,"%" . $request->buscador . "%");
+                                 })->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%');
+                        })
+                    ->orderBy($request->orden, $request->direccion)
+                    ->orderBy('id', 'desc')
+                    ->paginate($request->paginate);
+
         return Response()->json($ventas, 200);
     }
 
@@ -124,9 +113,9 @@ class DevolucionVentasController extends Controller
 
                 $producto = Producto::where('id', $detalle->id_producto)
                                         ->with('composiciones')->firstOrFail();
-                                        
+
                 $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $venta->id_bodega)->first();
-                
+
                 // Anular y regresar stock
                 if(($venta->enable != '0') && ($request['enable'] == '0')){
 
@@ -174,9 +163,9 @@ class DevolucionVentasController extends Controller
 
                 }
             }
-        
+
         $venta->fill($request->all());
-        $venta->save();        
+        $venta->save();
 
         return Response()->json($venta, 200);
 
@@ -203,18 +192,18 @@ class DevolucionVentasController extends Controller
 
         try {
             $devolucion = Devolucion::findOrFail($request->id);
-            
+
             // Solo actualizar los campos permitidos
             $devolucion->fecha = $request->fecha;
             $devolucion->id_documento = $request->id_documento;
             $devolucion->correlativo = $request->correlativo;
             $devolucion->id_usuario = $request->id_usuario;
             $devolucion->observaciones = $request->observaciones;
-            
+
             $devolucion->save();
 
             DB::commit();
-            
+
             return response()->json([
                 'message' => 'Devolución actualizada correctamente',
                 'data' => $devolucion
@@ -276,7 +265,7 @@ class DevolucionVentasController extends Controller
             $totalDevolucionesExistentes = Devolucion::where('id_venta', $request->id_venta)
                 ->where('enable', true)
                 ->sum('total');
-            
+
             // Si es una actualización, excluir la devolución actual del cálculo
             if ($request->id) {
                 $devolucionActual = Devolucion::find($request->id);
@@ -284,35 +273,35 @@ class DevolucionVentasController extends Controller
                     $totalDevolucionesExistentes -= $devolucionActual->total;
                 }
             }
-            
+
             $totalNuevaDevolucion = $request->total;
             $totalVenta = $venta->total;
-            
+
             if (($totalDevolucionesExistentes + $totalNuevaDevolucion) > $totalVenta) {
                 return Response()->json([
-                    'error' => 'No se puede registrar la devolución. El monto total de devoluciones (' . 
-                              number_format($totalDevolucionesExistentes + $totalNuevaDevolucion, 2) . 
+                    'error' => 'No se puede registrar la devolución. El monto total de devoluciones (' .
+                              number_format($totalDevolucionesExistentes + $totalNuevaDevolucion, 2) .
                               ') supera el total de la venta (' . number_format($totalVenta, 2) . ').'
                 ], 400);
             }
 
         DB::beginTransaction();
-         
+
         try {
-        
+
         // Guardamos la devolucion
             if($request->id)
                 $devolucion = Devolucion::findOrFail($request->id);
             else
                 $devolucion = new Devolucion;
-            
+
             $devolucion->fill($request->all());
             $devolucion->save();
 
             // $venta = Venta::findOrFail($request['id_venta']);
             // $venta->estado = 'Anulada';
             // $venta->save();
-            
+
         // Guardamos los detalles
 
             foreach ($request->detalles as $det) {
@@ -366,14 +355,14 @@ class DevolucionVentasController extends Controller
                     $paquete->id_venta_detalle = NULL;
                     $paquete->save();
                 }
-                
+
             }
-            
+
         // Incrementar el correlarivo
         if ($devolucion->id_documento) {
             Documento::where('id', $devolucion->id_documento)->increment('correlativo');
         }
-        
+
         DB::commit();
         return Response()->json($devolucion, 200);
 
@@ -384,7 +373,7 @@ class DevolucionVentasController extends Controller
             DB::rollback();
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-        
+
 
     }
 
@@ -405,7 +394,7 @@ class DevolucionVentasController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Express-Shopping', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-            $pdf->setPaper('US Letter', 'portrait'); 
+            $pdf->setPaper('US Letter', 'portrait');
         }
         else if(Auth::user()->id_empresa == 250 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
 
@@ -421,7 +410,7 @@ class DevolucionVentasController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Full-Solutions', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-            $pdf->setPaper('Legal', 'portrait'); 
+            $pdf->setPaper('Legal', 'portrait');
         }
         else if(Auth::user()->id_empresa == 128 && $venta->nombre_documento == "Nota de crédito"){//250  OK V2
 
@@ -437,7 +426,7 @@ class DevolucionVentasController extends Controller
             $centavos = $formatter->toWords($n[1]);
 
             $pdf = PDF::loadView('reportes.facturacion.formatos_empresas.NC-Kiero', compact('venta', 'empresa', 'cliente', 'dolares', 'centavos'));
-            $pdf->setPaper('Legal', 'portrait'); 
+            $pdf->setPaper('Legal', 'portrait');
         }else{
             $pdf = PDF::loadView('reportes.facturacion.nota-credito', compact('venta'));
             $pdf->setPaper('US Letter', 'portrait');

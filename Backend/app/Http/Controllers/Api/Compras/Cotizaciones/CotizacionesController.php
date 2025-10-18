@@ -126,15 +126,15 @@ class CotizacionesController extends Controller
             'id_proveedor.required' => 'El proveedor es requerido',
             'id_bodega.required' => 'La bodega es requerida',
         ]);
-    
+
         // VERIFICAR AUTORIZACIÓN por niveles de monto
         if (!$request->id && !$request->id_authorization) {
             $total = $this->calcularTotalOrden($request);
             $authType = $this->determinarTipoAutorizacion($total);
-            
+
             if ($authType) {
                 Log::info("Orden de compra requiere autorización - Total: $" . $total . " - Tipo: " . $authType);
-                
+
                 return response()->json([
                     'ok' => false,
                     'requires_authorization' => true,
@@ -143,7 +143,7 @@ class CotizacionesController extends Controller
                 ], 403);
             }
         }
-    
+
         Log::info("Procesando orden de compra normal o autorizada");
 
 
@@ -307,22 +307,22 @@ class CotizacionesController extends Controller
     public function procesarOrdenAutorizada($ordenId)
     {
         Log::info("Procesando orden de compra autorizada: " . $ordenId);
-        
+
         DB::beginTransaction();
-        
+
         try {
             $orden = OrdenCompra::findOrFail($ordenId);
-            
+
             // Cambiar estado a aprobada
             $orden->estado = 'Aprobada';
             $orden->save();
-            
+
             DB::commit();
-            
+
             Log::info("Orden de compra autorizada procesada exitosamente: " . $ordenId);
-            
+
             return $orden;
-            
+
         } catch (\Exception $e) {
             DB::rollback();
             Log::error("Error procesando orden de compra autorizada: " . $e->getMessage());
@@ -333,20 +333,20 @@ class CotizacionesController extends Controller
     protected function handlePendingAuthorization($data, $authorization)
     {
         Log::info("Creando orden de compra pendiente de autorización");
-        
+
         DB::beginTransaction();
-        
+
         try {
             // Crear orden en estado pendiente
             $ordenData = $data;
             $ordenData['estado'] = 'Pendiente Autorización';
             $ordenData['id_authorization'] = $authorization->id;
             $ordenData['id_sucursal'] = Auth::user()->id_sucursal;
-            
+
             $orden = new OrdenCompra;
             $orden->fill($ordenData);
             $orden->save();
-            
+
             // Crear detalles de la orden pendiente
             foreach ($data['detalles'] as $det) {
                 $detalle = new OrdenCompraDetalle;
@@ -354,7 +354,7 @@ class CotizacionesController extends Controller
                 $detalle->fill($det);
                 $detalle->save();
             }
-            
+
             // Actualizar la autorización con el ID de la orden creada
             $authorization->update([
                 'authorizeable_id' => $orden->id
@@ -370,11 +370,11 @@ class CotizacionesController extends Controller
                 'authorization_code' => $authorization->code,
                 'message' => 'Orden de compra creada pendiente de autorización'
             ]);
-            
+
         } catch (\Exception $e) {
             DB::rollback();
             Log::error("Error creando orden pendiente: " . $e->getMessage());
-            
+
             return response()->json([
                 'ok' => false,
                 'requires_authorization' => true,
@@ -388,12 +388,12 @@ class CotizacionesController extends Controller
     private function calcularTotalOrden($request)
     {
         $total = $request->total ?? $request->sub_total ?? 0;
-        
+
         // Si no hay total, calcularlo de los detalles
         if ($total == 0 && isset($request->detalles)) {
             $total = collect($request->detalles)->sum('total');
         }
-        
+
         return $total;
     }
 
@@ -406,7 +406,80 @@ class CotizacionesController extends Controller
         } elseif ($total > 0) {
             return 'orden_compra_nivel_1'; // $0 - $300
         }
-        
+
         return null; // No requiere autorización
+    }
+
+    public function solicitudes(Request $request){
+        $user = Auth::user();
+        $licencia = $user->empresa()->first()->licencia()->first();
+        if(!$licencia){
+            return Response()->json(['error' => ['No tienes una licencia'], 'code' => 403], 403);
+        }
+        $empresaPadre = $licencia->empresa()->first(); // Empresa padre de la licencia
+        $empresasLicencia = $licencia->empresas()->pluck('id_empresa')->toArray();
+
+        $cotizaciones = Cotizacion::withoutGlobalScope('empresa')
+            ->whereIn('id_empresa', $empresasLicencia)
+            ->whereHas('proveedor', function($query) use ($empresaPadre) {
+                return $query->withoutGlobalScope('empresa')
+                    ->where(function($q) use ($empresaPadre) {
+                        $q->where('nit', $empresaPadre->nit)
+                            ->orWhere('ncr', $empresaPadre->ncr);
+                    });
+            })
+            ->where('estado', 'Pendiente')
+            ->with(['proveedor' => function($query){
+                $query->withoutGlobalScope('empresa');
+            }])
+            ->when($request->buscador, function($query) use ($request){
+                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                    ->orwhere('estado', 'like', '%'.$request->buscador.'%')
+                    ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
+                    ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
+            })
+            ->when($request->inicio, function($query) use ($request){
+                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+            })
+            ->when($request->id_sucursal, function($query) use ($request){
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->id_usuario, function($query) use ($request){
+                return $query->where('id_usuario', $request->id_usuario);
+            })
+            ->when($request->id_proveedor, function($query) use ($request){
+                return $query->where('id_proveedor', $request->id_proveedor);
+            })
+            ->when($request->forma_pago, function($query) use ($request){
+                return $query->where('forma_pago', $request->forma_pago);
+            })
+            ->when($request->id_canal, function($query) use ($request){
+                return $query->where('id_canal', $request->id_canal);
+            })
+            ->when($request->id_documento, function($query) use ($request){
+                return $query->where('id_documento', $request->id_documento);
+            })
+            ->when($request->estado, function($query) use ($request){
+                return $query->where('estado', $request->estado);
+            })
+            ->when($request->metodo_pago, function($query) use ($request){
+                return $query->where('metodo_pago', $request->metodo_pago);
+            })
+            ->when($request->tipo_documento, function($query) use ($request){
+                return $query->where('tipo_documento', $request->tipo_documento);
+            })
+            ->where('cotizacion', 1)
+            ->orderBy($request->orden, $request->direccion)
+            ->orderBy('id', 'desc')
+            ->paginate($request->paginate);
+
+        return Response()->json($cotizaciones, 200);
+    }
+
+    public function solicitud($id) {
+
+        $cotizacion = Cotizacion::withoutGlobalScope('empresa')->where('id', $id)->with('proveedor', 'detalles')->firstOrFail();
+        return Response()->json($cotizacion, 200);
+
     }
 }

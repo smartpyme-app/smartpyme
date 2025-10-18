@@ -11,7 +11,7 @@ export class CitasGuard implements CanActivate {
     canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean> | Promise<boolean> | boolean {
-        
+
         // Verificar que el usuario esté autenticado
         if (!this.apiService.autenticated()) {
             this.router.navigate(['/login']);
@@ -46,13 +46,13 @@ export class CitasGuard implements CanActivate {
                     'admin',                // ROL_ADMIN
                     'usuario_contador'      // ROL_CONTADOR_SUPERIOR
                 ];
-                
+
                 if (rolesCitas.includes(role)) {
                     return true;
                 }
             }
         }
-        
+
         this.router.navigate(['/']);
         return false;
   }

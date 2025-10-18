@@ -49,11 +49,16 @@
         <div class="d-flex gap-2 flex-wrap">
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria"
@@ -110,7 +115,7 @@
                         </td>
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
-                        <!--  <td>
+                        <!-- <td>
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
@@ -355,6 +360,106 @@
                 <label>Descargar detalle de inventario:</label>
                 <app-descargar-inventario></app-descargar-inventario>
             </div>
+            <div class="d-grid">
+                <label>Descargar Kardex:</label>
+                <button [disabled]="loading || !productos?.data?.length"
+                        tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+            <div class="d-grid my-4">
+                <label>Descargar Kardex Masivamente:</label>
+                <button [disabled]="loading"
+                        tooltip="Descargar kardex completo por correo electrónico" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar Kardex Masivamente</span>
+                    <span *ngIf="loading">Procesando...</span>
+                </button>
+            </div>
         </div>
+    </div>
+</ng-template>
+
+<!-- Modal para descargar Kardex con filtros de fecha -->
+<ng-template #mdescargarKardex>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left">Descargar Kardex</h4>
+        <button type="button" class="btn-close pull-right" aria-label="Close" (click)="modalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <div class="mb-3">
+            <span class="badge bg-info">{{ productos?.data?.length || 0 }} producto(s) en el listado</span>
+        </div>
+
+        <form autocomplete="off" (ngSubmit)="descargarKardexConFiltros()">
+            <div class="row">
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_inicio">Fecha inicio:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_inicio" class="form-control" name="fecha_inicio">
+                </div>
+                <div class="form-group col-sm-6">
+                    <label for="filtrosKardex.fecha_fin">Fecha fin:</label>
+                    <input type="date" [(ngModel)]="filtrosKardex.fecha_fin" class="form-control" name="fecha_fin">
+                </div>
+            </div>
+
+            <div class="d-grid mt-3">
+                <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin" class="btn btn-primary">
+                    <span *ngIf="!loading">Descargar Kardex</span>
+                    <span *ngIf="loading">Descargando...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</ng-template>
+
+<!-- Modal para descargar Kardex Masivamente por correo -->
+<ng-template #mdescargarKardexMasivo>
+    <div class="modal-header">
+        <h4 class="modal-title pull-left">Descargar Kardex Masivamente</h4>
+        <button type="button" class="btn-close pull-right" aria-label="Close" (click)="modalRef.hide()">
+            <span aria-hidden="true" class="visually-hidden">&times;</span>
+        </button>
+    </div>
+    <div class="modal-body">
+        <app-notificaciones-container></app-notificaciones-container>
+
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle me-2"></i>
+                    <strong>Información:</strong> Se generará el kardex completo de todos los productos de la empresa.
+                    El proceso se ejecuta en segundo plano y recibirá un correo electrónico cuando esté listo.
+                </div>
+
+        <form autocomplete="off" (ngSubmit)="solicitarKardexMasivo()">
+            <div class="row">
+                <div class="form-group col-md-12">
+                    <label for="emailKardex">Correo electrónico:</label>
+                    <input type="email"
+                           [(ngModel)]="emailKardex"
+                           class="form-control"
+                           name="emailKardex"
+                           placeholder="ejemplo@correo.com"
+                           required>
+                    <small class="form-text text-muted">
+                        Se enviará el archivo del kardex completo a este correo electrónico.
+                    </small>
+                </div>
+            </div>
+
+            <div class="d-grid mt-3">
+                <button type="submit"
+                        [disabled]="loading || !emailKardex"
+                        class="btn btn-primary">
+                    <span *ngIf="!loading">
+                        <i class="fa fa-envelope me-2"></i>Solicitar Kardex Completo
+                    </span>
+                    <span *ngIf="loading">
+                        <i class="fa fa-spinner fa-spin me-2"></i>Procesando solicitud...
+                    </span>
+                </button>
+            </div>
+        </form>
     </div>
 </ng-template>

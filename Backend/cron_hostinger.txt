@@ -1,0 +1,18 @@
+# Configuración de Cron Job para Hostinger (for david 👽)
+# Agregar esta línea en el panel de control de Hostinger > Cron Jobs
+
+# Ejecutar cada 5 minutos para procesar la cola de kardex masivo
+*/5 * * * * cd /public_html/Backend && php artisan kardex:procesar-cola
+
+# Alternativa: Ejecutar cada 2 minutos (más frecuente)
+# */2 * * * * cd /public_html/Backend && php artisan kardex:procesar-cola
+
+# Alternativa: Ejecutar cada minuto (muy frecuente, solo si es necesario)
+# * * * * * cd /public_html/Backend && php artisan kardex:procesar-cola
+
+# NOTA: Ajustar la ruta "/public_html/Backend" según la estructura de archivos en Hostinger
+
+# COMANDOS DISPONIBLES:
+# php artisan kardex:procesar-cola                    # Procesa TODOS los elementos pendientes
+# php artisan kardex:procesar-cola --limit=1          # Procesa solo 1 elemento
+# php artisan kardex:procesar-cola --limit=5          # Procesa máximo 5 elementos

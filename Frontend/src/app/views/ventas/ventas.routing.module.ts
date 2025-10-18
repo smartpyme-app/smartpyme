@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { VentasComponent } from '@views/ventas/ventas.component';
 import { VentaComponent } from '@views/ventas/venta/venta.component';
@@ -35,6 +36,7 @@ import { CotizacionFormComponent } from './facturacion/facturacion-tienda/cotiza
 import { PermissionGuard } from '../../guards/permission.guard';
 import { RoleGuard } from '../../guards/role.guard';
 import { CotizacionComponent } from './cotizaciones/cotizacion/cotizacion.component';
+import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -142,6 +144,8 @@ const routes: Routes = [
         data: { type: 'cotizacion' },
         title: 'Cotización',
       },
+
+      { path: 'solicitudes-compra', component: SolicitudesCompraComponent, title: 'Solicitudes de compra' },
       //
       {
         path: 'canales',
@@ -187,6 +191,14 @@ const routes: Routes = [
         component: DocumentosComponent,
         title: 'Documentos',
       },
+
+      {
+        path: 'documento/historial/:nombre',
+        canActivate: [AdminGuard],
+        component: DocumentoHistorialComponent,
+        title: 'Historial de documentos'
+      },
+
 
       {
         path: 'devoluciones/ventas',

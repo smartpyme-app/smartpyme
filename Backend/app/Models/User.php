@@ -158,7 +158,7 @@ class User extends Authenticatable implements JWTSubject
             return array_map(fn() => true, $permissions);
         }
 
-        if ($this->tipo === 'vendedor') {
+        if ($this->tipo === 'vendedor' || $this->tipo === 'Ventas' || $this->tipo === 'Ventas Limitado') {
             $permissions['view_sales'] = true;
             $permissions['view_inventory'] = true;
             $permissions['view_customers'] = true;

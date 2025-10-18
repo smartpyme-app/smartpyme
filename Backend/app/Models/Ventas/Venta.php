@@ -72,6 +72,7 @@ class Venta extends Model {
         'no_sujeta',
         'tipo_operacion',
         'tipo_renta',
+        'referencia_shopify',
     );
 
     protected $appends = ['nombre_cliente', 'nombre_usuario', 'nombre_vendedor',  'nombre_sucursal', 'nombre_canal', 'nombre_documento', 'nombre_proyecto'];
@@ -151,7 +152,9 @@ class Venta extends Model {
     }
 
     public function getSaldoAttribute(){
-        return round($this->total - $this->abonos()->where('estado', 'Confirmado')->sum('total'),2);
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        $devoluciones = $this->devoluciones()->where('enable', 1)->sum('total');
+        return round($this->total - $abonos - $devoluciones,2);
     }
 
     // Relaciones

@@ -43,11 +43,16 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
-            <button class="btn " routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados">Traslados</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
-            <button class="btn " routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
+            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
+                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
         </div>
         <div class="ms-auto d-flex gap-2">
             <select name="estado" (change)="filtrarTraslados()" [(ngModel)]="filtros.estado" class="form-select bg-default select-width">

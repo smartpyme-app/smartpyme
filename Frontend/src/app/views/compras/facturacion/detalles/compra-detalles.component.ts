@@ -30,7 +30,7 @@ export class CompraDetallesComponent implements OnInit {
   public loading: boolean = false;
 
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
+    public apiService: ApiService, private alertService: AlertService,
     private modalService: BsModalService
   ) { }
 

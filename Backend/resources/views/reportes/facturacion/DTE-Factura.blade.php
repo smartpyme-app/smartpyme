@@ -18,7 +18,7 @@
         .table{width: 100%; border-collapse: collapse; }
         .table th, .table td{
             border-collapse: collapse;
-            padding: 5px;
+            padding: 3px;
             text-align: left;
         }
 

@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
@@ -19,6 +19,7 @@ import { RecurrentesComponent } from '@views/ventas/recurrentes/recurrentes.comp
 import { AbonosVentasComponent } from '@views/ventas/abonos/abonos-ventas.component';
 
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
+import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
 import { CanalesComponent } from '@views/ventas/canales/canales.component';
 import { FormasDePagoComponent } from '@views/ventas/formas-de-pago/formas-de-pago.component';
@@ -34,10 +35,12 @@ import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/
 
 import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
 import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component';
+import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
 @NgModule({
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
     SharedModule,
     PipesModule,
@@ -55,6 +58,7 @@ import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/cr
     RecurrentesComponent,
     AbonosVentasComponent,
     CotizacionesComponent,
+    SolicitudesCompraComponent,
     CanalesComponent,
     FormasDePagoComponent,
     BancosComponent,
@@ -66,7 +70,8 @@ import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/cr
     DevolucionVentaNuevaComponent,
     DevolucionVentaDetallesComponent,
     OrdenesProduccionComponent,
-    CrearOrdenProduccionComponent
+    CrearOrdenProduccionComponent,
+    DocumentoHistorialComponent
   ],
   exports: [
     VentasComponent,
@@ -74,6 +79,7 @@ import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/cr
     RecurrentesComponent,
     AbonosVentasComponent,
     CotizacionesComponent,
+    SolicitudesCompraComponent,
     CanalesComponent,
     FormasDePagoComponent,
     BancosComponent,
