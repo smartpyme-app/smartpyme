@@ -21,7 +21,7 @@ export class DashComponent implements OnInit {
         this.usuario = this.apiService.auth_user();        
         this.saludo = this.apiService.saludar();
 
-        if(this.usuario.tipo == 'Ventas'){
+        if(this.usuario.tipo == 'Ventas' || this.usuario.tipo == 'Ventas Limitado'){
             this.router.navigate(['/vendedor/ventas']);    
         }
         if(this.usuario.tipo == 'Citas'){

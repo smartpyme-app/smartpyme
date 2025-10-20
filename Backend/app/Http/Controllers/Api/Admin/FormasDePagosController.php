@@ -23,6 +23,7 @@ class FormasDePagosController extends Controller
         $formas->push(['nombre' => 'Transferencia', 'activo' => $formasDePago->where('nombre', 'Transferencia')->first() ? true : false ]);
         $formas->push(['nombre' => 'Tarjeta de crédito/débito', 'activo' => $formasDePago->where('nombre', 'Tarjeta de crédito/débito')->first() ? true : false ]);
         $formas->push(['nombre' => 'Cheque', 'activo' => $formasDePago->where('nombre', 'Cheque')->first() ? true : false ]);
+        $formas->push(['nombre' => 'Contra entrega', 'activo' => $formasDePago->where('nombre', 'Contra entrega')->first() ? true : false ]);
         $formas->push(['nombre' => 'Wompi', 'activo' => $formasDePago->where('nombre', 'Wompi')->first() ? true : false ]);
         $formas->push(['nombre' => 'Paypal', 'activo' => $formasDePago->where('nombre', 'Paypal')->first() ? true : false ]);
         $formas->push(['nombre' => 'Bitcoin', 'activo' => $formasDePago->where('nombre', 'Bitcoin')->first() ? true : false ]);

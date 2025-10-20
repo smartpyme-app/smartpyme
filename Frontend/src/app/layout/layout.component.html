@@ -12,7 +12,7 @@
   <app-sidebar-ventas
     *ngIf="
       usuario.id_empresa != 2 &&
-      usuario.tipo == 'Ventas'
+      usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado'
     "
   ></app-sidebar-ventas>
   <app-sidebar-servicios

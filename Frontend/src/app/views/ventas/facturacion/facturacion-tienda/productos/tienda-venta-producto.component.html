@@ -75,10 +75,10 @@
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                                 <td class="text-right">
-                                    <div *ngIf="apiService.auth_user().tipo == 'Ventas' ">
+                                    <div *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado' ">
                                         {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
                                     </div>
-                                    <div *ngIf="apiService.auth_user().tipo != 'Ventas' ">
+                                    <div *ngIf="apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado' ">
                                         <div *ngIf="filtros.id_sucursal">
                                             {{ producto.inventarios | sum:'stock' }}
                                         </div>
