@@ -81,7 +81,7 @@
                             <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
                         </div>
                         <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
-                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios">
+                            <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
                                 {{ precio.precio | currency}}
                             </option>
                         </select>

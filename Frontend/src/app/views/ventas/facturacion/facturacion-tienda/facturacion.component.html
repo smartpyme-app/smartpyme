@@ -244,7 +244,10 @@
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1 && apiService.auth_user().tipo != 'Ventas Limitado'">
             <label for="fecha_pago">Fecha de pago:</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago" id="fecha_pago">
+            <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" (change)="validarFechaPago()" name="fecha_pago" id="fecha_pago">
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeValidacionFecha">
+                {{ mensajeValidacionFecha }}
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
             <div class="form-switch bg-light-info rounded">

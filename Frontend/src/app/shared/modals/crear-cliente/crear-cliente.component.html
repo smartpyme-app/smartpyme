@@ -15,7 +15,7 @@
         <app-notificaciones-container></app-notificaciones-container>
         <form (ngSubmit)="onSubmit()">
             <div class="row mb-3">
-                <div class="col-12 col-md-6">
+                <div class="form-group col-12 col-md-6 col-lg-4">
                     <label for="tipo" class="form-label">Tipo de Cliente</label>
                     <select class="form-select" name="tipo" [(ngModel)]="cliente.tipo" (change)="onTipoChange()">
                         <option selected value="Persona">Persona</option>
@@ -28,6 +28,15 @@
                     <small class="form-text text-muted" *ngIf="esNuevo">
                         Si cambias el tipo de cliente, los campos se limpiarán automáticamente.
                     </small>
+                </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="clasificacion" class="form-label">Clasificación</label>
+                    <select class="form-select" name="clasificacion" [(ngModel)]="cliente.clasificacion">
+                        <option [ngValue]="null">Seleccione una clasificación</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
                 </div>
             </div>
             <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
