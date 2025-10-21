@@ -112,8 +112,8 @@
                             </div>
                             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
                                 <h4 style="margin: 0 0 10px 0; color: #856404;">⚡ Rate Limiting:</h4>
-                                <p style="margin: 0;">• Sin filtros de fecha: <strong>100 requests/hora</strong><br>
-                                • Con filtros de fecha: <strong>200 requests/hora</strong></p>
+                                <p style="margin: 0;">• Sin filtros de fecha: <strong>1000 requests/hora</strong><br>
+                                • Con filtros de fecha: <strong>2000 requests/hora</strong></p>
                             </div>
                         `;
                         infoSection.appendChild(additionalInfo);
