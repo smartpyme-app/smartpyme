@@ -1010,31 +1010,47 @@ export class EmpresaComponent implements OnInit {
                     console.log('Productos importados:', response.productos_importados);
                 }
             },
-            error => {
-                Swal.close();
-                
-                // Manejar diferentes tipos de errores
-                let errorMessage = 'Error al importar productos desde Shopify: ';
-                
-                if (error.status === 0) {
-                    errorMessage += 'Error de conexión o timeout. ';
-                    errorMessage += 'El procesamiento puede haberse completado en el servidor. ';
-                    errorMessage += 'Verifica los logs del sistema o intenta nuevamente en unos minutos.';
-                } else if (error.error?.mensaje) {
-                    errorMessage += error.error.mensaje;
-                } else if (error.message) {
-                    errorMessage += error.message;
-                } else {
-                    errorMessage += 'Error desconocido. Verifica los logs del sistema.';
+                error => {
+                    Swal.close();
+                    
+                    // Manejar diferentes tipos de errores
+                    let errorMessage = 'Error al importar productos desde Shopify: ';
+                    
+                    if (error.status === 0) {
+                        errorMessage += 'Error de conexión o timeout. ';
+                        errorMessage += 'El procesamiento puede haberse completado en el servidor. ';
+                        errorMessage += 'Verifica los logs del sistema o intenta nuevamente en unos minutos.';
+                    } else if (error.error?.codigo_error === 'IMPORTACION_YA_REALIZADA') {
+                        // Error específico: Ya se realizó una importación
+                        Swal.fire({
+                            title: 'Importación Ya Realizada',
+                            html: `
+                                <p><strong>Ya se realizó una importación exitosa de productos desde Shopify.</strong></p>
+                                <p>Para evitar duplicados, no se puede volver a importar.</p>
+                                <br>
+                                <p>Si necesitas re-importar los productos, contacta al administrador del sistema.</p>
+                            `,
+                            icon: 'warning',
+                            confirmButtonText: 'Entendido',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        });
+                        return;
+                    } else if (error.error?.mensaje) {
+                        errorMessage += error.error.mensaje;
+                    } else if (error.message) {
+                        errorMessage += error.message;
+                    } else {
+                        errorMessage += 'Error desconocido. Verifica los logs del sistema.';
+                    }
+                    
+                    this.alertService.error(errorMessage);
+                    
+                    // Log del error para debugging
+                    console.error('Error en importación Shopify:', error);
+                    console.log('Status del error:', error.status);
+                    console.log('Error completo:', error);
                 }
-                
-                this.alertService.error(errorMessage);
-                
-                // Log del error para debugging
-                console.error('Error en importación Shopify:', error);
-                console.log('Status del error:', error.status);
-                console.log('Error completo:', error);
-            }
         );
     }
 

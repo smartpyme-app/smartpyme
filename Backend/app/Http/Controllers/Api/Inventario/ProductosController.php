@@ -1083,6 +1083,16 @@ class ProductosController extends Controller
                 ], 400);
             }
 
+            // Verificar si ya se realizó una importación exitosa
+            $empresa = \App\Models\Admin\Empresa::find($request->id_empresa);
+            if ($empresa && $empresa->importacion_productos_shopify) {
+                return response()->json([
+                    'success' => false,
+                    'mensaje' => 'Ya se realizó una importación exitosa de productos desde Shopify. No se puede volver a importar para evitar duplicados.',
+                    'codigo_error' => 'IMPORTACION_YA_REALIZADA'
+                ], 400);
+            }
+
             // Extraer el nombre de la tienda de la URL
             $storeUrl = $request->shopify_store_url;
             $storeName = $this->extraerNombreTienda($storeUrl);
@@ -1433,8 +1443,8 @@ class ProductosController extends Controller
                     if ($producto) {
                         $this->crearInventarioProducto($producto->id, $productoData, $idEmpresa, $idUsuario);
                         
-                        // NUEVO: Manejar imágenes específicas de la variante
-                        $this->procesarImagenesVariante($producto, $productoShopify, $productoData);
+                        // NUEVO: Crear job para procesar imágenes después
+                        $this->crearJobImagenes($producto, $productoShopify, $productoData, $idEmpresa, $idUsuario);
                         
                         $productosImportados++;
                         
@@ -1634,6 +1644,67 @@ class ProductosController extends Controller
     }
 
     /**
+     * Crear job para procesar imágenes después de la importación
+     */
+    private function crearJobImagenes($producto, $productoShopify, $productoData, $idEmpresa, $idUsuario)
+    {
+        try {
+            // Verificar si el producto tiene imágenes
+            if (empty($productoShopify['images']) || !is_array($productoShopify['images'])) {
+                Log::info("Producto sin imágenes - no se crea job", [
+                    'producto_id' => $producto->id,
+                    'nombre' => $producto->nombre
+                ]);
+                return;
+            }
+
+            $shopifyVariantId = $productoData['shopify_variant_id'] ?? null;
+            
+            // Filtrar imágenes que pertenecen a esta variante específica
+            $imagenesVariante = $this->filtrarImagenesPorVariante($productoShopify['images'], $shopifyVariantId);
+
+            if (empty($imagenesVariante)) {
+                Log::info("Variante sin imágenes específicas - no se crea job", [
+                    'producto_id' => $producto->id,
+                    'shopify_variant_id' => $shopifyVariantId
+                ]);
+                return;
+            }
+
+            // Crear trabajo pendiente para procesar imágenes
+            $trabajo = new \App\Models\TrabajosPendientes();
+            $trabajo->tipo = 'procesar_imagenes_shopify';
+            $trabajo->parametros = json_encode([
+                'producto_id' => $producto->id,
+                'producto_nombre' => $producto->nombre,
+                'shopify_variant_id' => $shopifyVariantId,
+                'shopify_product_id' => $productoShopify['id'],
+                'imagenes' => $imagenesVariante,
+                'total_imagenes' => count($imagenesVariante)
+            ]);
+            $trabajo->estado = 'pendiente';
+            $trabajo->fecha_creacion = now();
+            $trabajo->id_usuario = $idUsuario;
+            $trabajo->id_empresa = $idEmpresa;
+            $trabajo->save();
+
+            Log::info("Job de imágenes creado exitosamente", [
+                'trabajo_id' => $trabajo->id,
+                'producto_id' => $producto->id,
+                'producto_nombre' => $producto->nombre,
+                'total_imagenes' => count($imagenesVariante),
+                'estado' => 'pendiente'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error creando job de imágenes: " . $e->getMessage(), [
+                'producto_id' => $producto->id,
+                'error_trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
      * Procesar productos en segundo plano después de enviar respuesta al cliente
      */
     private function procesarProductosEnSegundoPlano($productosShopify, $idEmpresa, $idUsuario, $idSucursal)
@@ -1655,11 +1726,25 @@ class ProductosController extends Controller
                 true // Siempre incluir drafts
             );
 
+            // Marcar la importación como completada en la empresa
+            $empresa = \App\Models\Admin\Empresa::find($idEmpresa);
+            if ($empresa) {
+                $empresa->importacion_productos_shopify = true;
+                $empresa->save();
+                
+                Log::info('=== IMPORTACIÓN MARCADA COMO COMPLETADA ===', [
+                    'id_empresa' => $idEmpresa,
+                    'importacion_productos_shopify' => true,
+                    'fecha_marcado' => now()->format('Y-m-d H:i:s')
+                ]);
+            }
+
             Log::info('=== PROCESAMIENTO EN SEGUNDO PLANO COMPLETADO ===', [
                 'total_productos_shopify' => count($productosShopify),
                 'productos_importados' => $resultado['count'],
                 'fecha_fin' => now()->format('Y-m-d H:i:s'),
-                'tiempo_procesamiento' => 'Completado exitosamente'
+                'tiempo_procesamiento' => 'Completado exitosamente',
+                'importacion_marcada_como_completada' => true
             ]);
 
         } catch (\Exception $e) {
