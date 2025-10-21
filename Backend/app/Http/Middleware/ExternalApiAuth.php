@@ -77,26 +77,34 @@ class ExternalApiAuth
     }
 
     /**
-     * Verificar rate limiting
+     * Verificar rate limiting con ventana fija por hora
      */
     private function isRateLimited($apiKey, Request $request): bool
     {
-        $key = "rate_limit_external_api_{$apiKey}";
-        $maxAttempts = 100; // 100 requests por hora
-        $decayMinutes = 60;
-
+        // Crear ventana fija basada en la hora actual
+        $currentHour = now()->format('Y-m-d-H'); // Ej: "2024-10-21-14"
+        $key = "rate_limit_external_api_{$apiKey}_{$currentHour}";
+        
+        $maxAttempts = 1000; // 1000 requests por hora
+        
         // Si tiene filtros de fecha, permitir más requests
         if ($request->has(['fecha_inicio', 'fecha_fin'])) {
-            $maxAttempts = 200;
+            $maxAttempts = 2000; // 2000 requests por hora con filtros
         }
 
+        // Obtener intentos actuales en esta ventana horaria
         $attempts = Cache::get($key, 0);
         
         if ($attempts >= $maxAttempts) {
             return true;
         }
 
-        Cache::put($key, $attempts + 1, $decayMinutes * 60);
+        // Incrementar contador y establecer expiración al final de la hora actual
+        $endOfHour = now()->endOfHour()->addSecond(); // Final de la hora + 1 segundo
+        $secondsUntilEndOfHour = now()->diffInSeconds($endOfHour);
+        
+        Cache::put($key, $attempts + 1, $secondsUntilEndOfHour);
+        
         return false;
     }
 
@@ -119,8 +127,14 @@ class ExternalApiAuth
     {
         return response()->json([
             'success' => false,
-            'error' => 'Rate limit excedido. Máximo 100 requests por hora (200 con filtros de fecha)',
-            'code' => 429
+            'error' => 'Rate limit excedido. Máximo 1000 requests por hora (2000 con filtros de fecha)',
+            'code' => 429,
+            'details' => [
+                'standard_limit' => 1000,
+                'with_date_filters_limit' => 2000,
+                'window' => '60 minutos',
+                'reset_info' => 'El límite se resetea cada hora'
+            ]
         ], 429);
     }
 }
