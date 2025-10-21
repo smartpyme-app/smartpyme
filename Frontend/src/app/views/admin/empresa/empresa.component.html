@@ -902,6 +902,26 @@
                             </small>
                         </div>
 
+                        <!-- Importaciones -->
+                        <div class="col-12" *ngIf="empresa.status_conexion_shopify === 'connected'">
+                            <h5 class="mb-3">Importaciones</h5>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button tooltip="Importar productos desde Shopify" 
+                                        (click)="confirmarImportacionShopify()" 
+                                        class="btn btn-primary">
+                                    <i class="fa fa-download me-2"></i>
+                                    Importar productos
+                                </button>
+                                
+                                <!-- <button tooltip="Importar clientes desde Shopify" 
+                                        (click)="confirmarImportacionClientesShopify()" 
+                                        class="btn btn-default">
+                                    <i class="fa fa-users me-2"></i>
+                                    Importar clientes
+                                </button> -->
+                            </div>
+                        </div>
+
        
                         <div class="col-12">
                             <div *ngIf="empresa.shopify_store_url && empresa.shopify_consumer_secret" 
@@ -914,14 +934,6 @@
                             </div>
 
                             <div class="text-end mt-3">
-                                <!-- <button tooltip="importar productos a Shopify" 
-                                        (click)="exportarShopify()" 
-                                        class="btn btn-light me-2" 
-                                        *ngIf="empresa.status_conexion_shopify === 'connected'">
-                                    <img src="/assets/icons/upload-cloud.png" class="icon me-2">
-                                    Importar productos
-                                </button> -->
-                                
                                 <button tooltip="Descargar productos para importar en Shopify (F7)" 
                                         (click)="descargarShopify()" 
                                         class="btn btn-light me-2" 

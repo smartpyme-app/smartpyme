@@ -102,6 +102,8 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
     //productos/exportar-shopify
     Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
+    //productos/importar-shopify
+    Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     //productos/traslado-masivo/importar
