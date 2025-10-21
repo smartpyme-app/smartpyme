@@ -100,7 +100,8 @@ class DevolucionVentasController extends Controller
         $request->validate([
             'fecha'             => 'required',
             'enable'            => 'required',
-            'observaciones'            => 'required',
+            'observaciones'     => 'required',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
             // 'id_cliente'        => 'required',
             'id_usuario'        => 'required',
         ]);
@@ -110,6 +111,8 @@ class DevolucionVentasController extends Controller
         else
             $venta = new Devolucion;
 
+        // Solo ajustar stocks si el tipo de nota de crédito afecta inventario
+        if ($request->tipo !== 'descuento_ajuste') {
             // Ajustar stocks
             foreach ($venta->detalles as $detalle) {
 
@@ -165,6 +168,7 @@ class DevolucionVentasController extends Controller
 
                 }
             }
+        }
         
         $venta->fill($request->all());
         $venta->save();        
@@ -242,7 +246,7 @@ class DevolucionVentasController extends Controller
 
         $request->validate([
             'fecha'             => 'required',
-            'tipo'              => 'required|max:255',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
             // 'id_documento'      => 'required|max:255',
             // 'id_cliente'        => 'required',
             'detalles'          => 'required',
@@ -324,27 +328,29 @@ class DevolucionVentasController extends Controller
                     }
                 }
 
-                $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                    ->where('id_bodega', $request->id_bodega)->first();
+                // Solo afectar inventario si el tipo de nota de crédito lo requiere
+                if ($request->tipo !== 'descuento_ajuste') {
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])
+                                        ->where('id_bodega', $request->id_bodega)->first();
 
-                if ($inventario) {
-                    $inventario->stock += $det['cantidad'];
-                    $inventario->save();
-                    $inventario->kardex($devolucion, $det['cantidad']);
-                }
+                    if ($inventario) {
+                        $inventario->stock += $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($devolucion, $det['cantidad']);
+                    }
 
+                    // Inventario compuestos
+                    if (isset($det['composiciones'])) {
+                        foreach ($det['composiciones'] as $comp) {
 
-                // Inventario compuestos
-                if (isset($det['composiciones'])) {
-                    foreach ($det['composiciones'] as $comp) {
+                            $inventario = Inventario::where('id_producto', $comp['id_producto'])
+                                        ->where('id_bodega', $devolucion->id_bodega)->first();
 
-                        $inventario = Inventario::where('id_producto', $comp['id_producto'])
-                                    ->where('id_bodega', $devolucion->id_bodega)->first();
-
-                        if ($inventario) {
-                            $inventario->stock += $det['cantidad'] * $comp['cantidad'];
-                            $inventario->save();
-                            $inventario->kardex($devolucion, ($det['cantidad'] * $comp['cantidad']));
+                            if ($inventario) {
+                                $inventario->stock += $det['cantidad'] * $comp['cantidad'];
+                                $inventario->save();
+                                $inventario->kardex($devolucion, ($det['cantidad'] * $comp['cantidad']));
+                            }
                         }
                     }
                 }

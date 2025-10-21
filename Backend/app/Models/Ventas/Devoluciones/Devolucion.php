@@ -11,6 +11,7 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_venta';
     protected $fillable = array(
         'tipo_dte',
+        'tipo',
         'numero_control',
         'codigo_generacion',
         'sello_mh',
