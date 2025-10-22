@@ -228,7 +228,7 @@
                 <tr class="bg-light">
                     <th width="3%" class="border-bottom">N°</th>
                     <th width="5%" class="border-bottom">Cantidad</th>
-                    <th width="5%" class="border-bottom">Código</th>
+                    <th width="11%" class="border-bottom">Código</th>
                     <th class="border-bottom">Descripción</th>
                     <th width="10%" class="border-bottom text-right">Precio Unitario</th>
                     <th width="10%" class="border-bottom text-right">Descuento por ítem</th>

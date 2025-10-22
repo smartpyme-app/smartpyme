@@ -44,6 +44,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             'Descuento',
             'IVA',
             'Utilidad',
+            'Total sin IVA',
             'Total',
             'Empresa',
             'Observaciones',
@@ -54,6 +55,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
+
         $request = $this->request; //where('id_empresa', Auth::user()->id_empresa)
 
         $ventas = Venta::when($request->buscador, function ($query) use ($request) {
@@ -68,10 +70,10 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
             })
-            ->when($request->id_proyecto, function($q) use ($request){
+            ->when($request->id_proyecto, function ($q) use ($request) {
                 $q->where('id_proyecto', $request->id_proyecto);
             })
-            ->when($request->num_identificacion, function($q) use ($request){
+            ->when($request->num_identificacion, function ($q) use ($request) {
                 $q->where('num_identificacion', $request->num_identificacion);
             })
             ->when($request->fin, function ($query) use ($request) {
@@ -144,6 +146,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             $row->estado == 'Anulada' ? '0.0' : round($row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->iva, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->total - $row->total_costo - $row->iva, 2),
+            $row->estado == 'Anulada' ? '0.0' : round($row->sub_total - $row->descuento, 2),
             $row->estado == 'Anulada' ? '0.0' : round($row->total, 2),
             $row->sucursal()->first()->empresa()->pluck('nombre')->first(),
             $row->observaciones,

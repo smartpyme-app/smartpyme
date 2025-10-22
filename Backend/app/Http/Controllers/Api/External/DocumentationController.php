@@ -20,12 +20,25 @@ class DocumentationController extends Controller
      */
     public function json()
     {
+        // Evitar cache del navegador para que se actualice inmediatamente
+        return response()->json($this->getOpenApiSpec())
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Thu, 01 Jan 1970 00:00:00 GMT')
+            ->header('Last-Modified', gmdate('D, d M Y H:i:s') . ' GMT');
+    }
+    
+    /**
+     * Obtener la especificación OpenAPI
+     */
+    private function getOpenApiSpec()
+    {
         $spec = [
             "openapi" => "3.0.0",
             "info" => [
                 "title" => "SmartPYME External API",
-                "description" => "API Externa para proveedores terceros - Acceso a datos de ventas e inventario",
-                "version" => "1.0.0",
+                "description" => "API Externa para proveedores terceros - Acceso a datos de ventas e inventario. Límites: 1000/2000 requests por hora.",
+                "version" => "1.2.0-" . time(),
             ],
             "servers" => [
                 [
@@ -47,6 +60,10 @@ class DocumentationController extends Controller
             ],
             "tags" => [
                 [
+                    "name" => "Sistema",
+                    "description" => "Endpoints del sistema para monitoreo y estado"
+                ],
+                [
                     "name" => "Ventas",
                     "description" => "Endpoints para consultar información de ventas"
                 ],
@@ -56,6 +73,122 @@ class DocumentationController extends Controller
                 ]
             ],
             "paths" => [
+                "/system/rate-limit" => [
+                    "get" => [
+                        "tags" => ["Sistema"],
+                        "summary" => "Verificar estado del rate limit",
+                        "description" => "Obtiene información sobre el uso actual del rate limit",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Estado del rate limit obtenido exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => [
+                                                    "type" => "boolean",
+                                                    "example" => true
+                                                ],
+                                                "data" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "requests_used" => [
+                                                            "type" => "integer",
+                                                            "example" => 25,
+                                                            "description" => "Número de requests utilizados en la ventana actual"
+                                                        ],
+                                                        "max_requests" => [
+                                                            "type" => "integer",
+                                                            "example" => 1000,
+                                                            "description" => "Límite máximo de requests para la ventana actual"
+                                                        ],
+                                                        "remaining_requests" => [
+                                                            "type" => "integer",
+                                                            "example" => 975,
+                                                            "description" => "Requests restantes en la ventana actual"
+                                                        ],
+                                                        "reset_time" => [
+                                                            "type" => "string",
+                                                            "format" => "date-time",
+                                                            "example" => "2024-01-01T15:00:00Z",
+                                                            "description" => "Tiempo cuando se resetea el límite"
+                                                        ],
+                                                        "window_minutes" => [
+                                                            "type" => "integer",
+                                                            "example" => 60,
+                                                            "description" => "Duración de la ventana en minutos"
+                                                        ],
+                                                        "limits" => [
+                                                            "type" => "object",
+                                                            "properties" => [
+                                                                "standard" => [
+                                                                    "type" => "integer",
+                                                                    "example" => 1000,
+                                                                    "description" => "Límite para consultas estándar"
+                                                                ],
+                                                                "with_date_filters" => [
+                                                                    "type" => "integer",
+                                                                    "example" => 2000,
+                                                                    "description" => "Límite cuando se usan filtros de fecha"
+                                                                ]
+                                                            ]
+                                                        ],
+                                                        "current_limit_type" => [
+                                                            "type" => "string",
+                                                            "enum" => ["standard", "with_date_filters"],
+                                                            "example" => "standard",
+                                                            "description" => "Tipo de límite actualmente aplicado"
+                                                        ],
+                                                        "empresa_id" => [
+                                                            "type" => "integer",
+                                                            "example" => 324
+                                                        ],
+                                                        "empresa_nombre" => [
+                                                            "type" => "string",
+                                                            "example" => "Mi Empresa"
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "401" => [
+                                "description" => "No autorizado - API key inválido",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string", "example" => "API key inválido"],
+                                                "code" => ["type" => "integer", "example" => 401]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ],
+                            "500" => [
+                                "description" => "Error interno del servidor",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => false],
+                                                "error" => ["type" => "string", "example" => "Error interno del servidor"],
+                                                "code" => ["type" => "integer", "example" => 500]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
                 "/sales" => [
                     "get" => [
                         "tags" => ["Ventas"],
@@ -409,9 +542,6 @@ class DocumentationController extends Controller
             ]
         ];
 
-        return response()->json($spec, 200, [
-            'Content-Type' => 'application/json',
-            'Access-Control-Allow-Origin' => '*',
-        ]);
+        return $spec;
     }
 }

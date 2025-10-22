@@ -818,7 +818,7 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
           example:
             success: false
-            error: "Rate limit excedido. Máximo 100 requests por hora (200 con filtros de fecha)"
+            error: "Rate limit excedido. Máximo 1000 requests por hora (2000 con filtros de fecha)"
             code: 429
 
     InternalServerError:

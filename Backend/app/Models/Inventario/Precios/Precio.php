@@ -11,6 +11,7 @@ class Precio extends Model
     protected $table = 'producto_precios';
     protected $fillable = [
         'precio',
+        'clasificacion',
         'id_producto',
     ];
 
