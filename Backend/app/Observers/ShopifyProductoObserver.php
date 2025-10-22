@@ -40,8 +40,20 @@ class ShopifyProductoObserver
             return;
         }
         
-        $camposRelevantes = ['precio', 'costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
+        // EXCLUIR 'precio' de la sincronización - Shopify es la fuente de verdad para precios
+        $camposRelevantes = ['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
         $hayCambios = false;
+
+        // Verificar si solo cambió el precio (no sincronizar)
+        if ($producto->isDirty('precio') && !$producto->isDirty(['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'])) {
+            Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'precio_anterior' => $producto->getOriginal('precio'),
+                'precio_nuevo' => $producto->precio
+            ]);
+            return;
+        }
 
         foreach ($camposRelevantes as $campo) {
             if ($producto->isDirty($campo)) {

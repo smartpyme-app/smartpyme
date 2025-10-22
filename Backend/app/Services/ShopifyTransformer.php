@@ -250,7 +250,7 @@ class ShopifyTransformer
         return $formaPago;
     }
 
-    public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal, $incluirDrafts = true)
+    public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal, $incluirDrafts = true, $esImportacionMasiva = false)
     {
         // Verificar el status del producto
         $status = $shopifyData['status'] ?? 'unknown';
@@ -301,7 +301,7 @@ class ShopifyTransformer
                 'variant_id' => $variant['id'],
                 'nombre_base' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
-                'precio' => $variant['price'] ?? 0,
+                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
                 'costo_original' => $variant['cost'] ?? 'no_existe',
                 'costo_asignado' => $costo,
                 'status_shopify' => $status,
@@ -315,15 +315,15 @@ class ShopifyTransformer
                 'nombre_variante' => $nombreVariante,
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
-                'precio' => floatval($variant['price'] ?? 0),
+                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
                 'enable' => $productoActivo,
                 'tipo' => 'Producto',
                 'costo' => $costo,
-                // Campos de control para prevenir ciclos
-                'syncing_from_shopify' => true,
+                // Campos de control para prevenir ciclos - solo para importaciones masivas
+                'syncing_from_shopify' => $esImportacionMasiva,
                 'last_shopify_sync' => now(),
                 // Datos adicionales para el procesamiento (no van al modelo directamente)
                 '_stock' => intval($variant['inventory_quantity'] ?? 0),
@@ -423,5 +423,50 @@ class ShopifyTransformer
         $tituloLimpio = trim($tituloLimpio);
         
         return $tituloLimpio;
+    }
+
+    /**
+     * Calcula el precio sin IVA desde el precio con IVA de Shopify
+     * 
+     * @param float|string $precioConIVA Precio con IVA desde Shopify
+     * @return float Precio sin IVA para SmartPyme
+     */
+    private function calcularPrecioSinIVA($precioConIVA)
+    {
+        $precioConIVA = floatval($precioConIVA);
+        
+        if ($precioConIVA <= 0) {
+            return 0.0;
+        }
+        
+        // Calcular precio sin IVA usando factor más preciso
+        // Factor: 1 / 1.13 = 0.8849557522123894
+        $factorSinIVA = 1 / 1.13;
+        $precioSinIVA = $precioConIVA * $factorSinIVA;
+        
+        // Redondear a 4 decimales para mayor precisión
+        $precioSinIVA = round($precioSinIVA, 4);
+        
+        // Validar precisión: verificar que el cálculo inverso coincida
+        $precioInverso = round($precioSinIVA * 1.13, 2);
+        $diferencia = abs($precioConIVA - $precioInverso);
+        
+        Log::info("Precio calculado sin IVA", [
+            'precio_con_iva' => $precioConIVA,
+            'precio_sin_iva' => $precioSinIVA,
+            'precio_inverso' => $precioInverso,
+            'diferencia' => $diferencia,
+            'iva_calculado' => $precioConIVA - $precioSinIVA
+        ]);
+        
+        // Si la diferencia es muy pequeña (menos de 1 centavo), usar el precio original
+        if ($diferencia < 0.01) {
+            Log::info("Diferencia mínima detectada, usando precio original", [
+                'precio_original' => $precioConIVA,
+                'diferencia' => $diferencia
+            ]);
+        }
+        
+        return $precioSinIVA;
     }
 }

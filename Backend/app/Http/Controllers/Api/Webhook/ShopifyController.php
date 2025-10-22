@@ -114,7 +114,9 @@ class ShopifyController extends Controller
             $request->all(),
             $empresa->id,
             $usuario->id,
-            $usuario->id_sucursal
+            $usuario->id_sucursal,
+            true, // incluirDrafts
+            false // NO es importación masiva (es webhook)
         );
 
         // Verificar si se obtuvieron productos válidos
@@ -231,8 +233,7 @@ class ShopifyController extends Controller
         // Limpiar datos especiales del array
         unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal']);
 
-        // Marcar que este producto está siendo actualizado desde Shopify
-        $productoData['syncing_from_shopify'] = true;
+        // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
 
         $producto->update($productoData);
@@ -263,8 +264,7 @@ class ShopifyController extends Controller
         // Limpiar datos especiales del array
         unset($productoData['_stock'], $productoData['_id_usuario'], $productoData['_id_sucursal']);
         
-        // Marcar que este producto viene de Shopify para evitar ciclos
-        $productoData['syncing_from_shopify'] = true;
+        // NO marcar syncing_from_shopify para webhooks - solo para importaciones masivas
         $productoData['last_shopify_sync'] = now();
         
         $producto = Producto::create($productoData);

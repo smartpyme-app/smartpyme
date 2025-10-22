@@ -1403,7 +1403,8 @@ class ProductosController extends Controller
                 $idEmpresa, 
                 $idUsuario, 
                 $idSucursal,
-                $incluirDrafts
+                $incluirDrafts,
+                true // Es importación masiva
             );
 
             Log::info("Productos transformados para producto #{$productoShopify['id']}", [
