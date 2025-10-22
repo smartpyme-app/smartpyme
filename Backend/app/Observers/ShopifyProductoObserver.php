@@ -7,6 +7,7 @@ use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Services\ShopifyStockService;
 use App\Services\ShopifySyncCache;
+use Illuminate\Support\Facades\Log;
 
 class ShopifyProductoObserver
 {
@@ -27,8 +28,11 @@ class ShopifyProductoObserver
 
         // PREVENIR CICLO: No sincronizar productos que están siendo actualizados desde Shopify
         if ($producto->syncing_from_shopify) {
-            // Resetear el flag después de la sincronización desde Shopify
-            $producto->update(['syncing_from_shopify' => false]);
+            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización inversa", [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'syncing_from_shopify' => $producto->syncing_from_shopify
+            ]);
             return;
         }
 
@@ -36,8 +40,20 @@ class ShopifyProductoObserver
             return;
         }
         
-        $camposRelevantes = ['precio', 'costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
+        // EXCLUIR 'precio' de la sincronización - Shopify es la fuente de verdad para precios
+        $camposRelevantes = ['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'];
         $hayCambios = false;
+
+        // Verificar si solo cambió el precio (no sincronizar)
+        if ($producto->isDirty('precio') && !$producto->isDirty(['costo', 'codigo', 'nombre', 'descripcion', 'id_categoria'])) {
+            Log::info("Cambio de precio detectado - no sincronizando (Shopify es fuente de verdad)", [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'precio_anterior' => $producto->getOriginal('precio'),
+                'precio_nuevo' => $producto->precio
+            ]);
+            return;
+        }
 
         foreach ($camposRelevantes as $campo) {
             if ($producto->isDirty($campo)) {

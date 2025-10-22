@@ -907,6 +907,153 @@ export class EmpresaComponent implements OnInit {
         );
     }
 
+    public confirmarImportacionShopify() {
+        Swal.fire({
+            title: '¿Estás seguro de continuar?',
+            html: `
+                <p>Importarás tu inventario completo de Shopify en tu cuenta de SmartPyme, escribe <strong>"confirmar"</strong> en el campo de abajo para confirmar:</p>
+                <input type="text" id="confirmacionInput" class="swal2-input" placeholder="confirmar">
+                <br><br>
+                <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                    <strong>Nota:</strong> Los productos activos se importarán como activos, y los productos en borrador se importarán como inactivos.
+                </p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, importar productos',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+                const confirmacionInput = document.getElementById('confirmacionInput') as HTMLInputElement;
+                const valor = confirmacionInput.value.toLowerCase().trim();
+
+                if (valor !== 'confirmar') {
+                    Swal.showValidationMessage('Debes escribir exactamente "confirmar" para continuar');
+                    return false;
+                }
+                return true;
+            },
+            allowOutsideClick: false,
+            allowEscapeKey: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.importarProductosDesdeShopify();
+            }
+        });
+    }
+
+    public importarProductosDesdeShopify() {
+        Swal.fire({
+            title: 'Importando productos...',
+            text: 'Estamos importando los productos desde Shopify',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Preparar los datos de la empresa para enviar al backend
+        const datosEmpresa = {
+            shopify_store_url: this.empresa.shopify_store_url,
+            shopify_consumer_secret: this.empresa.shopify_consumer_secret,
+            id_empresa: this.empresa.id,
+            id_usuario: this.apiService.auth_user().id,
+            id_sucursal: this.apiService.auth_user().id_sucursal,
+            incluir_drafts: true // Siempre incluir productos draft como inactivos
+        };
+
+        // Usar timeout más corto ya que la respuesta es inmediata
+        this.apiService.storeWithTimeout('producto/importar-shopify', datosEmpresa, 30000).subscribe(
+            response => {
+                Swal.close();
+
+                if (response.procesando) {
+                    // Respuesta de procesamiento en segundo plano
+                    Swal.fire({
+                        title: 'Procesamiento Iniciado',
+                        html: `
+                            <p><strong>¡Procesamiento iniciado exitosamente!</strong></p>
+                            <p>Total productos a procesar: <strong>${response.total_productos_shopify || 0}</strong></p>
+                            <br>
+                            <p>Los productos se están procesando en segundo plano.</p>
+                            <p>Esto puede tomar varios minutos dependiendo de la cantidad de productos.</p>
+                            <br>
+                            <p><strong>Puedes cerrar esta ventana y continuar trabajando.</strong></p>
+                            <p>Los productos aparecerán en tu inventario una vez completado el procesamiento.</p>
+                        `,
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    });
+
+                    console.log('=== PROCESAMIENTO INICIADO ===');
+                    console.log('Total productos en Shopify:', response.total_productos_shopify);
+                    console.log('Estado:', response.estado);
+                } else {
+                    // Respuesta de importación completada (modo síncrono)
+                    let mensaje = `Importación completada exitosamente:\n\n`;
+                    mensaje += `• Total productos en Shopify: ${response.total_productos_shopify || 0}\n`;
+                    mensaje += `• Productos importados: ${response.productos_importados || 0}\n\n`;
+                    mensaje += `Los productos han sido agregados a tu inventario.`;
+
+                    Swal.fire({
+                        title: 'Importación Completada',
+                        text: mensaje,
+                        icon: 'success',
+                        confirmButtonText: 'Aceptar'
+                    });
+
+                    console.log('=== IMPORTACIÓN DESDE SHOPIFY COMPLETADA ===');
+                    console.log('Total productos en Shopify:', response.total_productos_shopify);
+                    console.log('Productos importados:', response.productos_importados);
+                }
+            },
+                error => {
+                    Swal.close();
+                    
+                    // Manejar diferentes tipos de errores
+                    let errorMessage = 'Error al importar productos desde Shopify: ';
+                    
+                    if (error.status === 0) {
+                        errorMessage += 'Error de conexión o timeout. ';
+                        errorMessage += 'El procesamiento puede haberse completado en el servidor. ';
+                        errorMessage += 'Verifica los logs del sistema o intenta nuevamente en unos minutos.';
+                    } else if (error.error?.codigo_error === 'IMPORTACION_YA_REALIZADA') {
+                        // Error específico: Ya se realizó una importación
+                        Swal.fire({
+                            title: 'Importación Ya Realizada',
+                            html: `
+                                <p><strong>Ya se realizó una importación exitosa de productos desde Shopify.</strong></p>
+                                <p>Para evitar duplicados, no se puede volver a importar.</p>
+                                <br>
+                                <p>Si necesitas re-importar los productos, contacta al administrador del sistema.</p>
+                            `,
+                            icon: 'warning',
+                            confirmButtonText: 'Entendido',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false
+                        });
+                        return;
+                    } else if (error.error?.mensaje) {
+                        errorMessage += error.error.mensaje;
+                    } else if (error.message) {
+                        errorMessage += error.message;
+                    } else {
+                        errorMessage += 'Error desconocido. Verifica los logs del sistema.';
+                    }
+                    
+                    this.alertService.error(errorMessage);
+                    
+                    // Log del error para debugging
+                    console.error('Error en importación Shopify:', error);
+                    console.log('Status del error:', error.status);
+                    console.log('Error completo:', error);
+                }
+        );
+    }
+
 
     private initializeCustomConfig() {
         // Estructura por defecto

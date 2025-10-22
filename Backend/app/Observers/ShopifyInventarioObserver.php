@@ -27,6 +27,17 @@ class ShopifyInventarioObserver
             return;
         }
 
+        // IMPORTANTE: Verificar si el producto está siendo sincronizado desde Shopify
+        $producto = $inventario->producto;
+        if ($producto && $producto->syncing_from_shopify) {
+            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización de inventario", [
+                'inventario_id' => $inventario->id,
+                'producto_id' => $inventario->id_producto,
+                'syncing_from_shopify' => $producto->syncing_from_shopify
+            ]);
+            return;
+        }
+
         Log::info("Cambio de stock detectado para Shopify", [
             'inventario_id' => $inventario->id,
             'producto_id' => $inventario->id_producto,

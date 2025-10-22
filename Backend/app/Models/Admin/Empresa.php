@@ -130,6 +130,7 @@ class Empresa extends Model
         'shopify_sync_status',
         'shopify_last_sync',
         'shopify_error',
+        'importacion_productos_shopify',
 
     ];
 
@@ -137,6 +138,7 @@ class Empresa extends Model
         'enviar_dte' => 'boolean',
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',
+        'importacion_productos_shopify' => 'boolean',
     ];
 
     protected $appends = [

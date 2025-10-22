@@ -435,8 +435,14 @@ class ShopifyStockService
             }
         }
 
+        // Usar solo el nombre base del producto para evitar problemas de sincronización
+        $nombreBase = $producto->nombre;
+        
+        // Si el producto tiene variantes, no incluir la variante en el título de Shopify
+        // Las variantes se manejan a nivel de variant, no del producto principal
+        
         return [
-            'title' => $producto->nombre,
+            'title' => $nombreBase,
             'body_html' => $producto->descripcion ?? '',
             'vendor' => 'Mi Tienda',
             'product_type' => '',

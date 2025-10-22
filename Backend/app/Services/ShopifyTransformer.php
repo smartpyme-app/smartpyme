@@ -175,12 +175,14 @@ class ShopifyTransformer
 
     public function transformarProducto($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
-        $nombreProducto = $this->construirNombreConVariante($shopifyData['title'], $shopifyData);
+        $nombreBase = $this->obtenerNombreBase($shopifyData['title']);
+        $nombreVariante = $this->construirNombreVariante($shopifyData);
 
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
-            'nombre' => $nombreProducto,
+            'nombre' => $nombreBase,
+            'nombre_variante' => $nombreVariante,
             'descripcion' => $shopifyData['product']['body_html'] ?? '',
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
@@ -248,10 +250,31 @@ class ShopifyTransformer
         return $formaPago;
     }
 
-    public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
+    public function transformarProductoDesdeShopify($shopifyData, $id_empresa, $id_usuario, $id_sucursal, $incluirDrafts = true, $esImportacionMasiva = false)
     {
-        // Log::info("Producto desde Shopify", ['product_id' => $shopifyData['id']]);
-        // Log::info("Producto desde Shopify", ['product_id' => $shopifyData]);
+        // Verificar el status del producto
+        $status = $shopifyData['status'] ?? 'unknown';
+        
+        // Determinar si el producto debe ser activo o inactivo
+        $productoActivo = ($status === 'active') ? 1 : 0;
+        
+        if ($status !== 'active' && $status !== 'draft') {
+            Log::info("Producto omitido por status", [
+                'product_id' => $shopifyData['id'],
+                'status' => $status,
+                'titulo' => $shopifyData['title'] ?? 'Sin título'
+            ]);
+            return [];
+        }
+        
+        if ($status === 'draft') {
+            Log::info("Producto draft incluido como inactivo", [
+                'product_id' => $shopifyData['id'],
+                'status' => $status,
+                'titulo' => $shopifyData['title'] ?? 'Sin título',
+                'sera_activo' => false
+            ]);
+        }
 
         // Verificar que existan variants
         if (empty($shopifyData['variants']) || !is_array($shopifyData['variants'])) {
@@ -267,23 +290,40 @@ class ShopifyTransformer
                 continue;
             }
 
-            $nombreProducto = $this->construirNombreConVariante($shopifyData['title'] ?? 'Producto sin nombre', $variant);
+            $nombreBase = $this->obtenerNombreBase($shopifyData['title'] ?? 'Producto sin nombre');
+            $nombreVariante = $this->construirNombreVariante($variant);
+            
+            // Obtener costo del variant, si no existe usar 0
+            $costo = floatval($variant['cost'] ?? 0);
+            
+            Log::info("Procesando variant para producto", [
+                'product_id' => $shopifyData['id'],
+                'variant_id' => $variant['id'],
+                'nombre_base' => $nombreBase,
+                'nombre_variante' => $nombreVariante,
+                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
+                'costo_original' => $variant['cost'] ?? 'no_existe',
+                'costo_asignado' => $costo,
+                'status_shopify' => $status,
+                'sera_activo' => $productoActivo == 1
+            ]);
 
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
-                'nombre' => $nombreProducto,
+                'nombre' => $nombreBase,
+                'nombre_variante' => $nombreVariante,
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
-                'precio' => floatval($variant['price'] ?? 0),
+                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
-                'enable' => 1,
+                'enable' => $productoActivo,
                 'tipo' => 'Producto',
-                'costo' => floatval($variant['price'] ?? 0),
-                // Campos de control para prevenir ciclos
-                'syncing_from_shopify' => true,
+                'costo' => $costo,
+                // Campos de control para prevenir ciclos - solo para importaciones masivas
+                'syncing_from_shopify' => $esImportacionMasiva,
                 'last_shopify_sync' => now(),
                 // Datos adicionales para el procesamiento (no van al modelo directamente)
                 '_stock' => intval($variant['inventory_quantity'] ?? 0),
@@ -314,48 +354,58 @@ class ShopifyTransformer
         ];
     }
 
-    private function construirNombreConVariante($tituloProducto, $variant)
+    /**
+     * Obtiene el nombre base del producto sin variantes
+     */
+    private function obtenerNombreBase($tituloProducto)
+    {
+        return $this->limpiarTituloDefault($tituloProducto);
+    }
+
+    /**
+     * Construye el nombre de la variante basado en las opciones del variant
+     */
+    private function construirNombreVariante($variant)
     {
         $opciones = [];
 
-        // Agregar option1 si existe y no está vacío
-        if (!empty($variant['option1'])) {
+        // Agregar option1 si existe, no está vacío y no es "Default Title"
+        if (!empty($variant['option1']) && $variant['option1'] !== 'Default Title') {
             $opciones[] = $variant['option1'];
         }
 
-        // Agregar option2 si existe y no está vacío
-        if (!empty($variant['option2'])) {
+        // Agregar option2 si existe, no está vacío y no es "Default Title"
+        if (!empty($variant['option2']) && $variant['option2'] !== 'Default Title') {
             $opciones[] = $variant['option2'];
         }
 
-        // Agregar option3 si existe y no está vacío
-        if (!empty($variant['option3'])) {
+        // Agregar option3 si existe, no está vacío y no es "Default Title"
+        if (!empty($variant['option3']) && $variant['option3'] !== 'Default Title') {
             $opciones[] = $variant['option3'];
         }
 
-        // Si hay opciones, agregarlas al título
+        // Si hay opciones reales, devolverlas como string
         if (!empty($opciones)) {
-            $opcionesTexto = implode(' - ', $opciones);
-            $nombreCompleto = $tituloProducto . ' (' . $opcionesTexto . ')';
+            $nombreVariante = implode(' - ', $opciones);
+            
+            Log::info("Nombre de variante construido", [
+                'opciones' => $opciones,
+                'nombre_variante' => $nombreVariante,
+                'variant_id' => $variant['id'] ?? 'N/A'
+            ]);
 
-            // Log::info("Nombre de producto con variante construido", [
-            //     'titulo_original' => $tituloProducto,
-            //     'opciones' => $opciones,
-            //     'nombre_final' => $nombreCompleto
-            // ]);
-
-            return $nombreCompleto;
+            return $nombreVariante;
         }
 
-        $tituloLimpio = $this->limpiarTituloDefault($tituloProducto);
-        
-        // Log::info("Producto sin opciones de variante", [
-        //     'titulo_original' => $tituloProducto,
-        //     'titulo_limpiado' => $tituloLimpio,
-        //     'variant_id' => $variant['id'] ?? 'N/A'
-        // ]);
+        // Si no hay opciones reales, devolver null
+        Log::info("Variante sin opciones específicas", [
+            'variant_id' => $variant['id'] ?? 'N/A',
+            'option1' => $variant['option1'] ?? 'N/A',
+            'option2' => $variant['option2'] ?? 'N/A',
+            'option3' => $variant['option3'] ?? 'N/A'
+        ]);
 
-        return $tituloLimpio;
+        return null;
     }
 
     /**
@@ -373,5 +423,50 @@ class ShopifyTransformer
         $tituloLimpio = trim($tituloLimpio);
         
         return $tituloLimpio;
+    }
+
+    /**
+     * Calcula el precio sin IVA desde el precio con IVA de Shopify
+     * 
+     * @param float|string $precioConIVA Precio con IVA desde Shopify
+     * @return float Precio sin IVA para SmartPyme
+     */
+    private function calcularPrecioSinIVA($precioConIVA)
+    {
+        $precioConIVA = floatval($precioConIVA);
+        
+        if ($precioConIVA <= 0) {
+            return 0.0;
+        }
+        
+        // Calcular precio sin IVA usando factor más preciso
+        // Factor: 1 / 1.13 = 0.8849557522123894
+        $factorSinIVA = 1 / 1.13;
+        $precioSinIVA = $precioConIVA * $factorSinIVA;
+        
+        // Redondear a 4 decimales para mayor precisión
+        $precioSinIVA = round($precioSinIVA, 4);
+        
+        // Validar precisión: verificar que el cálculo inverso coincida
+        $precioInverso = round($precioSinIVA * 1.13, 2);
+        $diferencia = abs($precioConIVA - $precioInverso);
+        
+        Log::info("Precio calculado sin IVA", [
+            'precio_con_iva' => $precioConIVA,
+            'precio_sin_iva' => $precioSinIVA,
+            'precio_inverso' => $precioInverso,
+            'diferencia' => $diferencia,
+            'iva_calculado' => $precioConIVA - $precioSinIVA
+        ]);
+        
+        // Si la diferencia es muy pequeña (menos de 1 centavo), usar el precio original
+        if ($diferencia < 0.01) {
+            Log::info("Diferencia mínima detectada, usando precio original", [
+                'precio_original' => $precioConIVA,
+                'diferencia' => $diferencia
+            ]);
+        }
+        
+        return $precioSinIVA;
     }
 }
