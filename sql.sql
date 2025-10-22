@@ -7,7 +7,7 @@ ADD COLUMN clasificacion VARCHAR(100) NULL AFTER nombre;
 
 
 ALTER TABLE devoluciones_venta
-ADD COLUMN tipo VARCHAR(100) NULL AFTER tipo_dte;
+ADD COLUMN tipo VARCHAR(100) default "devolucion" AFTER tipo_dte;
 
 ALTER TABLE devoluciones_compra
-ADD COLUMN tipo VARCHAR(100) NULL AFTER tipo_documento;
+ADD COLUMN tipo VARCHAR(100) default "devolucion" AFTER tipo_documento;

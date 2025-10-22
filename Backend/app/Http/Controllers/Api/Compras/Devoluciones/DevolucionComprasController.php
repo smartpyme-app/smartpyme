@@ -67,6 +67,7 @@ class DevolucionComprasController extends Controller
             'enable'            => 'required',
             'id_proveedor'      => 'required',
             'id_usuario'        => 'required',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
         ]);
 
         if($request->id)
@@ -74,33 +75,36 @@ class DevolucionComprasController extends Controller
         else
             $compra = new Devolucion;
 
-        // Ajustar stocks
-        foreach ($compra->detalles as $detalle) {
+        // Solo ajustar stocks si el tipo de devolución afecta inventario
+        if ($request->tipo !== 'descuento_ajuste') {
+            // Ajustar stocks
+            foreach ($compra->detalles as $detalle) {
 
-            $producto = Producto::where('id', $detalle->id_producto)
-                                    ->with('composiciones')->firstOrFail();
-                                    
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
-            
-            // Anular y regresar stock
-            if(($compra->enable != '0') && ($request['enable'] == '0')){
+                $producto = Producto::where('id', $detalle->id_producto)
+                                        ->with('composiciones')->firstOrFail();
+                                        
+                $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
+                
+                // Anular y regresar stock
+                if(($compra->enable != '0') && ($request['enable'] == '0')){
 
-                if ($inventario) {
-                    $inventario->stock += $detalle->cantidad;
-                    $inventario->save();
-                    $inventario->kardex($compra, $detalle->cantidad * -1);
+                    if ($inventario) {
+                        $inventario->stock += $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad * -1);
+                    }
+
                 }
+                // Cancelar anulación y descargar stock
+                if(($compra->enable == '0') && ($request['enable'] != '0')){
+                    // Aplicar stock
+                    if ($inventario) {
+                        $inventario->stock -= $detalle->cantidad;
+                        $inventario->save();
+                        $inventario->kardex($compra, $detalle->cantidad);
+                    }
 
-            }
-            // Cancelar anulación y descargar stock
-            if(($compra->enable == '0') && ($request['enable'] != '0')){
-                // Aplicar stock
-                if ($inventario) {
-                    $inventario->stock -= $detalle->cantidad;
-                    $inventario->save();
-                    $inventario->kardex($compra, $detalle->cantidad);
                 }
-
             }
         }
         
@@ -126,7 +130,7 @@ class DevolucionComprasController extends Controller
     public function facturacion(Request $request){
         $request->validate([
             'fecha'             => 'required',
-            'tipo'              => 'required',
+            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
             'id_proveedor'      => 'required',
             'detalles'          => 'required',
             'iva'               => 'required|numeric',
@@ -169,13 +173,16 @@ class DevolucionComprasController extends Controller
                 $detalle->fill($det);
                 $detalle->save();
                 
-                // Actualizar inventario
-                $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
+                // Solo actualizar inventario si el tipo de devolución afecta inventario
+                if ($request->tipo !== 'descuento_ajuste') {
+                    // Actualizar inventario
+                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $request->id_bodega)->first();
 
-                if ($inventario) {
-                    $inventario->stock -= $det['cantidad'];
-                    $inventario->save();
-                    $inventario->kardex($devolucion, $det['cantidad']);
+                    if ($inventario) {
+                        $inventario->stock -= $det['cantidad'];
+                        $inventario->save();
+                        $inventario->kardex($devolucion, $det['cantidad']);
+                    }
                 }
 
             }
