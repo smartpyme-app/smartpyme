@@ -993,15 +993,10 @@ export class EmpresaComponent implements OnInit {
                     console.log('Estado:', response.estado);
                 } else {
                     // Respuesta de importación completada (modo síncrono)
-                    let mensaje = `Importación completada exitosamente:\n\n`;
-                    mensaje += `• Total productos en Shopify: ${response.total_productos_shopify || 0}\n`;
-                    mensaje += `• Productos importados: ${response.productos_importados || 0}\n\n`;
-                    mensaje += `Los productos han sido agregados a tu inventario.`;
-
                     Swal.fire({
-                        title: 'Importación Completada',
-                        text: mensaje,
-                        icon: 'success',
+                        title: 'Procesando importación de productos',
+                        text: 'Los productos están siendo procesados en segundo plano.',
+                        icon: 'info',
                         confirmButtonText: 'Aceptar'
                     });
 

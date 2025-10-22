@@ -112,4 +112,9 @@ Route::get('/productos/kardex/estado-cola', [KardexController::class, 'estadoCol
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
     Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
+    
+    // Rutas para sistema de cola de Shopify (compatible con Hostinger)
+    Route::post('/productos/shopify/cola/iniciar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'iniciarImportacion']);
+    Route::post('/productos/shopify/cola/continuar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'continuarImportacion']);
+    Route::get('/productos/shopify/cola/estado', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'verificarEstado']);
 ?>

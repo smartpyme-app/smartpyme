@@ -1073,6 +1073,7 @@ class ProductosController extends Controller
     public function importarShopify(Request $request)
     {
         try {
+            
             $usuario = JWTAuth::parseToken()->authenticate();
             
             // Validar datos requeridos
@@ -1140,27 +1141,31 @@ class ProductosController extends Controller
                 'fecha_respuesta' => now()->format('Y-m-d H:i:s')
             ]);
 
-            // Iniciar procesamiento en segundo plano usando register_shutdown_function
-            register_shutdown_function(function() use ($productosShopify, $request) {
-                $this->procesarProductosEnSegundoPlano(
-                    $productosShopify, 
-                    $request->id_empresa, 
-                    $request->id_usuario, 
-                    $request->id_sucursal
-                );
-            });
+            // Crear trabajos pendientes para cada producto
+            $trabajosCreados = 0;
+            foreach ($productosShopify as $productoShopify) {
+                $this->crearTrabajoProducto($productoShopify, $request);
+                $trabajosCreados++;
+            }
 
-            // Respuesta inmediata para evitar timeout
+            // Respuesta inmediata
             return response()->json([
                 'success' => true,
-                'mensaje' => 'Procesamiento de productos iniciado exitosamente',
-                'procesando' => true,
+                'mensaje' => 'Trabajos de importación creados exitosamente',
                 'total_productos_shopify' => count($productosShopify),
-                'mensaje_procesamiento' => 'Los productos se están procesando en segundo plano. Esto puede tomar varios minutos dependiendo de la cantidad de productos.',
+                'trabajos_creados' => $trabajosCreados,
+                'siguiente_paso' => 'Ejecutar comando: php artisan shopify:procesar-trabajos --lote=10 --procesar-productos-shopify',
+                'instrucciones' => [
+                    '1. Los trabajos están guardados en la base de datos',
+                    '2. Puedes procesarlos cuando quieras con el comando',
+                    '3. Cada ejecución del comando procesa 10 productos',
+                    '4. Repite el comando hasta completar todos los productos'
+                ],
                 'resumen' => [
                     'productos_originales_shopify' => count($productosShopify),
-                    'fecha_inicio_procesamiento' => now()->format('Y-m-d H:i:s'),
-                    'estado' => 'procesando'
+                    'trabajos_creados' => $trabajosCreados,
+                    'fecha_creacion_trabajos' => now()->format('Y-m-d H:i:s'),
+                    'estado' => 'trabajos_creados'
                 ]
             ], 200, [], JSON_UNESCAPED_UNICODE);
 
@@ -1390,7 +1395,21 @@ class ProductosController extends Controller
             'id_sucursal' => $idSucursal
         ]);
 
-        foreach ($productosShopify as $index => $productoShopify) {
+        // Procesar en lotes de 10 productos para Hostinger Shared
+        $loteSize = 10;
+        $productosShopifyChunks = array_chunk($productosShopify, $loteSize);
+        $totalLotes = count($productosShopifyChunks);
+        
+        Log::info("Procesando en {$totalLotes} lotes de {$loteSize} productos cada uno");
+
+        foreach ($productosShopifyChunks as $loteIndex => $loteProductos) {
+            Log::info("Procesando lote " . ($loteIndex + 1) . " de {$totalLotes}", [
+                'productos_en_lote' => count($loteProductos),
+                'lote_actual' => $loteIndex + 1,
+                'total_lotes' => $totalLotes
+            ]);
+
+            foreach ($loteProductos as $index => $productoShopify) {
             Log::info("Procesando producto Shopify #{$index}", [
                 'producto_id' => $productoShopify['id'],
                 'titulo' => $productoShopify['title'],
@@ -1463,6 +1482,15 @@ class ProductosController extends Controller
                     ]);
                 }
             }
+            
+            // Pausa entre lotes para evitar timeout
+            if ($loteIndex < $totalLotes - 1) {
+                Log::info("Pausa entre lotes para evitar timeout", [
+                    'lote_completado' => $loteIndex + 1,
+                    'productos_importados_hasta_ahora' => $productosImportados
+                ]);
+                sleep(2); // Pausa de 2 segundos entre lotes
+            }
         }
 
         // Limpiar cache de categorías al finalizar la importación
@@ -1478,6 +1506,8 @@ class ProductosController extends Controller
             'count' => $productosImportados
         ];
     }
+}
+
 
     private function prepararProductoParaInsertar($productoData, $idEmpresa)
     {
@@ -2171,6 +2201,53 @@ class ProductosController extends Controller
             ]);
 
             $inventario->kardex($ajuste, $ajuste->ajuste);
+        }
+    }
+
+    private function crearTrabajoProducto($productoShopify, $request)
+    {
+        try {
+            $trabajo = new \App\Models\TrabajosPendientes();
+            $trabajo->tipo = 'shopify_import_producto';
+            $trabajo->estado = 'pendiente';
+            $trabajo->prioridad = 1;
+            $trabajo->parametros = json_encode([
+                'producto_shopify' => $productoShopify,
+                'id_empresa' => $request->id_empresa,
+                'id_usuario' => $request->id_usuario,
+                'id_sucursal' => $request->id_sucursal,
+                'shopify_store_url' => $request->shopify_store_url,
+                'shopify_consumer_secret' => $request->shopify_consumer_secret,
+                'shopify_consumer_key' => $request->shopify_consumer_key ?? null
+            ]);
+            $trabajo->datos = json_encode([
+                'producto_shopify' => $productoShopify,
+                'id_empresa' => $request->id_empresa,
+                'id_usuario' => $request->id_usuario,
+                'id_sucursal' => $request->id_sucursal,
+                'shopify_store_url' => $request->shopify_store_url,
+                'shopify_consumer_secret' => $request->shopify_consumer_secret,
+                'shopify_consumer_key' => $request->shopify_consumer_key ?? null
+            ]);
+            $trabajo->intentos = 0;
+            $trabajo->max_intentos = 3;
+            $trabajo->fecha_creacion = now();
+            $trabajo->fecha_procesamiento = null;
+            $trabajo->id_usuario = $request->id_usuario;
+            $trabajo->id_empresa = $request->id_empresa;
+            $trabajo->save();
+
+            Log::info("Trabajo creado para producto Shopify", [
+                'trabajo_id' => $trabajo->id,
+                'producto_id' => $productoShopify['id'],
+                'titulo' => $productoShopify['title']
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Error creando trabajo para producto", [
+                'producto_id' => $productoShopify['id'] ?? 'N/A',
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
