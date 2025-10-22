@@ -1465,6 +1465,10 @@ class ProductosController extends Controller
             }
         }
 
+        // Limpiar cache de categorías al finalizar la importación
+        $cacheKey = "categoria_general_empresa_{$idEmpresa}";
+        \Illuminate\Support\Facades\Cache::forget($cacheKey);
+        
         Log::info('Procesamiento completado', [
             'total_productos_importados' => $productosImportados,
             'total_datos_capturados' => count($productosData)
@@ -2098,20 +2102,28 @@ class ProductosController extends Controller
 
     private function obtenerOCrearCategoria($productoData, $idEmpresa)
     {
-        // Por ahora, usar categoría "General" para todos los productos de Shopify
-        // En el futuro se puede implementar lógica para crear categorías basadas en product_type
-        $categoria = \App\Models\Inventario\Categorias\Categoria::where('nombre', 'General')
-            ->where('id_empresa', $idEmpresa)
-            ->first();
+        // Cache key para evitar consultas repetitivas durante importación masiva
+        $cacheKey = "categoria_general_empresa_{$idEmpresa}";
+        
+        // Intentar obtener del cache primero
+        $categoria = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($idEmpresa) {
+            // Por ahora, usar categoría "General" para todos los productos de Shopify
+            // En el futuro se puede implementar lógica para crear categorías basadas en product_type
+            $categoria = \App\Models\Inventario\Categorias\Categoria::where('nombre', 'General')
+                ->where('id_empresa', $idEmpresa)
+                ->first();
 
-        if (!$categoria) {
-            $categoria = new \App\Models\Inventario\Categorias\Categoria();
-            $categoria->nombre = 'General';
-            $categoria->descripcion = 'Categoría general para productos importados';
-            $categoria->enable = true;
-            $categoria->id_empresa = $idEmpresa;
-            $categoria->save();
-        }
+            if (!$categoria) {
+                $categoria = new \App\Models\Inventario\Categorias\Categoria();
+                $categoria->nombre = 'General';
+                $categoria->descripcion = 'Categoría general para productos importados';
+                $categoria->enable = true;
+                $categoria->id_empresa = $idEmpresa;
+                $categoria->save();
+            }
+
+            return $categoria;
+        });
 
         return $categoria;
     }
