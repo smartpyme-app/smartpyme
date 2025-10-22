@@ -1526,6 +1526,7 @@ class ProductosController extends Controller
 
         // Llenar datos del producto
         $producto->nombre = $productoData['nombre'];
+        $producto->nombre_variante = $productoData['nombre_variante'] ?? null;
         $producto->descripcion = $productoData['descripcion'] ?? '';
         $producto->codigo = $productoData['codigo'] ?? '';
         $producto->barcode = $productoData['barcode'] ?? '';
@@ -1549,6 +1550,10 @@ class ProductosController extends Controller
         $producto->enable = true;
         $producto->tipo = 'Producto';
         
+        // IMPORTANTE: Marcar que este producto viene de Shopify ANTES de guardar para evitar sincronización de vuelta
+        $producto->syncing_from_shopify = true;
+        $producto->last_shopify_sync = now();
+        
         // Campos específicos de Shopify
         $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
         $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
@@ -1559,6 +1564,7 @@ class ProductosController extends Controller
         Log::info($esNuevo ? "Producto creado exitosamente" : "Producto actualizado exitosamente", [
             'producto_id' => $producto->id,
             'nombre' => $producto->nombre,
+            'nombre_variante' => $producto->nombre_variante,
             'precio' => $producto->precio,
             'costo' => $producto->costo
         ]);
@@ -1604,20 +1610,23 @@ class ProductosController extends Controller
             }
         }
 
-        // 3. Buscar por nombre exacto + empresa (último recurso)
-        $producto = Producto::where('id_empresa', $idEmpresa)
-            ->where('nombre', $productoData['nombre'])
-            ->where('tipo', 'Producto')
-            ->first();
-        
-        if ($producto) {
-            Log::info("Producto encontrado por nombre exacto", [
-                'producto_id' => $producto->id,
-                'nombre' => $producto->nombre,
-                'shopify_variant_id_actual' => $producto->shopify_variant_id,
-                'shopify_variant_id_nuevo' => $productoData['shopify_variant_id'] ?? 'N/A'
-            ]);
-            return $producto;
+        // 3. Buscar por nombre exacto + empresa (último recurso) - SOLO para productos sin variantes
+        if (empty($productoData['shopify_variant_id'])) {
+            $producto = Producto::where('id_empresa', $idEmpresa)
+                ->where('nombre', $productoData['nombre'])
+                ->where('tipo', 'Producto')
+                ->whereNull('shopify_variant_id') // Solo productos sin variantes
+                ->first();
+            
+            if ($producto) {
+                Log::info("Producto encontrado por nombre exacto (sin variantes)", [
+                    'producto_id' => $producto->id,
+                    'nombre' => $producto->nombre,
+                    'shopify_variant_id_actual' => $producto->shopify_variant_id,
+                    'shopify_variant_id_nuevo' => $productoData['shopify_variant_id'] ?? 'N/A'
+                ]);
+                return $producto;
+            }
         }
 
         // 4. Verificar duplicados potenciales por nombre similar

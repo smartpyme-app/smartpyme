@@ -14,6 +14,7 @@ class Producto extends Model
     protected $table = 'productos';
     protected $fillable = array(
         'nombre',
+        'nombre_variante',
         'descripcion',
         'codigo',
         'barcode',
@@ -36,7 +37,7 @@ class Producto extends Model
         'last_shopify_sync',
     );
 
-    protected $appends = ['nombre_categoria', 'img'];
+    protected $appends = ['nombre_categoria', 'img', 'nombre_completo'];
     protected $casts = [
         'enable' => 'string',
         'syncing_from_shopify' => 'boolean',
@@ -77,6 +78,17 @@ class Producto extends Model
     public function getNombreCategoriaAttribute()
     {
         return $this->categoria()->pluck('nombre')->first();
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (base + variante)
+     */
+    public function getNombreCompletoAttribute()
+    {
+        if (!empty($this->nombre_variante)) {
+            return $this->nombre . ' (' . $this->nombre_variante . ')';
+        }
+        return $this->nombre;
     }
 
     public function categoria()

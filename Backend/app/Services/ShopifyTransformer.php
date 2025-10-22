@@ -175,12 +175,14 @@ class ShopifyTransformer
 
     public function transformarProducto($shopifyData, $id_empresa, $id_usuario, $id_sucursal)
     {
-        $nombreProducto = $this->construirNombreConVariante($shopifyData['title'], $shopifyData);
+        $nombreBase = $this->obtenerNombreBase($shopifyData['title']);
+        $nombreVariante = $this->construirNombreVariante($shopifyData);
 
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
-            'nombre' => $nombreProducto,
+            'nombre' => $nombreBase,
+            'nombre_variante' => $nombreVariante,
             'descripcion' => $shopifyData['product']['body_html'] ?? '',
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
@@ -288,7 +290,8 @@ class ShopifyTransformer
                 continue;
             }
 
-            $nombreProducto = $this->construirNombreConVariante($shopifyData['title'] ?? 'Producto sin nombre', $variant);
+            $nombreBase = $this->obtenerNombreBase($shopifyData['title'] ?? 'Producto sin nombre');
+            $nombreVariante = $this->construirNombreVariante($variant);
             
             // Obtener costo del variant, si no existe usar 0
             $costo = floatval($variant['cost'] ?? 0);
@@ -296,7 +299,8 @@ class ShopifyTransformer
             Log::info("Procesando variant para producto", [
                 'product_id' => $shopifyData['id'],
                 'variant_id' => $variant['id'],
-                'nombre' => $nombreProducto,
+                'nombre_base' => $nombreBase,
+                'nombre_variante' => $nombreVariante,
                 'precio' => $variant['price'] ?? 0,
                 'costo_original' => $variant['cost'] ?? 'no_existe',
                 'costo_asignado' => $costo,
@@ -307,7 +311,8 @@ class ShopifyTransformer
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
-                'nombre' => $nombreProducto,
+                'nombre' => $nombreBase,
+                'nombre_variante' => $nombreVariante,
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
                 'precio' => floatval($variant['price'] ?? 0),
@@ -349,7 +354,18 @@ class ShopifyTransformer
         ];
     }
 
-    private function construirNombreConVariante($tituloProducto, $variant)
+    /**
+     * Obtiene el nombre base del producto sin variantes
+     */
+    private function obtenerNombreBase($tituloProducto)
+    {
+        return $this->limpiarTituloDefault($tituloProducto);
+    }
+
+    /**
+     * Construye el nombre de la variante basado en las opciones del variant
+     */
+    private function construirNombreVariante($variant)
     {
         $opciones = [];
 
@@ -368,33 +384,28 @@ class ShopifyTransformer
             $opciones[] = $variant['option3'];
         }
 
-        // Si hay opciones reales (no Default Title), agregarlas al título
+        // Si hay opciones reales, devolverlas como string
         if (!empty($opciones)) {
-            $opcionesTexto = implode(' - ', $opciones);
-            $nombreCompleto = $tituloProducto . ' (' . $opcionesTexto . ')';
-
-            Log::info("Nombre de producto con variante construido", [
-                'titulo_original' => $tituloProducto,
+            $nombreVariante = implode(' - ', $opciones);
+            
+            Log::info("Nombre de variante construido", [
                 'opciones' => $opciones,
-                'nombre_final' => $nombreCompleto
+                'nombre_variante' => $nombreVariante,
+                'variant_id' => $variant['id'] ?? 'N/A'
             ]);
 
-            return $nombreCompleto;
+            return $nombreVariante;
         }
 
-        // Si no hay opciones reales, usar solo el título del producto (sin Default Title)
-        $tituloLimpio = $this->limpiarTituloDefault($tituloProducto);
-        
-        Log::info("Producto sin variantes reales", [
-            'titulo_original' => $tituloProducto,
-            'titulo_limpiado' => $tituloLimpio,
+        // Si no hay opciones reales, devolver null
+        Log::info("Variante sin opciones específicas", [
             'variant_id' => $variant['id'] ?? 'N/A',
             'option1' => $variant['option1'] ?? 'N/A',
             'option2' => $variant['option2'] ?? 'N/A',
             'option3' => $variant['option3'] ?? 'N/A'
         ]);
 
-        return $tituloLimpio;
+        return null;
     }
 
     /**

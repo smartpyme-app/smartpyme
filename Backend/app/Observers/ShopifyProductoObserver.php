@@ -7,6 +7,7 @@ use App\Models\Inventario\Producto;
 use App\Models\User;
 use App\Services\ShopifyStockService;
 use App\Services\ShopifySyncCache;
+use Illuminate\Support\Facades\Log;
 
 class ShopifyProductoObserver
 {
@@ -27,8 +28,11 @@ class ShopifyProductoObserver
 
         // PREVENIR CICLO: No sincronizar productos que están siendo actualizados desde Shopify
         if ($producto->syncing_from_shopify) {
-            // Resetear el flag después de la sincronización desde Shopify
-            $producto->update(['syncing_from_shopify' => false]);
+            Log::info("Producto siendo sincronizado desde Shopify, omitiendo sincronización inversa", [
+                'producto_id' => $producto->id,
+                'nombre' => $producto->nombre,
+                'syncing_from_shopify' => $producto->syncing_from_shopify
+            ]);
             return;
         }
 

@@ -119,7 +119,12 @@
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle"
                                 width="50px">
-                            {{ producto.nombre }}
+                            <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
+                                {{ producto.nombre }} ({{ producto.nombre_variante }})
+                            </span>
+                            <ng-template #nombreNormal>
+                                {{ producto.nombre }}
+                            </ng-template>
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)"

@@ -80,5 +80,18 @@ export class BuscadorProductosComponent implements OnInit {
         this.productoSelect(producto);
     }
 
+    /**
+     * Verifica si Shopify está activo en la empresa
+     */
+    public isShopifyActive(): boolean {
+        const empresa = this.apiService.auth_user()?.empresa;
+        if (!empresa) return false;
+        
+        // Verificar si Shopify está configurado y conectado
+        return !!(empresa.shopify_store_url && 
+                 empresa.shopify_consumer_secret && 
+                 empresa.shopify_status === 'connected');
+    }
+
 }
 
