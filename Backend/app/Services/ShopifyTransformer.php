@@ -329,6 +329,8 @@ class ShopifyTransformer
                 '_stock' => intval($variant['inventory_quantity'] ?? 0),
                 '_id_usuario' => $id_usuario,
                 '_id_sucursal' => $id_sucursal,
+                'imagen_url' => $this->obtenerPrimeraImagen($shopifyData),
+                'shopify_image_id' => $this->obtenerPrimeraImagenId($shopifyData),
             ];
         }
         return $productos;
@@ -468,5 +470,41 @@ class ShopifyTransformer
         }
         
         return $precioSinIVA;
+    }
+
+    private function obtenerPrimeraImagen($shopifyData)
+    {
+        // Obtener la primera imagen del producto
+        if (!empty($shopifyData['images']) && is_array($shopifyData['images'])) {
+            $primeraImagen = $shopifyData['images'][0];
+            if (isset($primeraImagen['src'])) {
+                return $primeraImagen['src'];
+            }
+        }
+        
+        // Si no hay imágenes en el array, verificar si hay una imagen directa
+        if (isset($shopifyData['image']['src'])) {
+            return $shopifyData['image']['src'];
+        }
+        
+        return null;
+    }
+
+    private function obtenerPrimeraImagenId($shopifyData)
+    {
+        // Obtener el ID de la primera imagen del producto
+        if (!empty($shopifyData['images']) && is_array($shopifyData['images'])) {
+            $primeraImagen = $shopifyData['images'][0];
+            if (isset($primeraImagen['id'])) {
+                return $primeraImagen['id'];
+            }
+        }
+        
+        // Si no hay imágenes en el array, verificar si hay una imagen directa
+        if (isset($shopifyData['image']['id'])) {
+            return $shopifyData['image']['id'];
+        }
+        
+        return null;
     }
 }
