@@ -388,13 +388,21 @@
           "type": ["string", "null"],
           "description": "Nombre del producto"
         },
+        "codigo_producto": {
+          "type": ["string", "null"],
+          "description": "Código interno del producto"
+        },
+        "marca_producto": {
+          "type": ["string", "null"],
+          "description": "Marca del producto"
+        },
         "img": {
           "type": ["string", "null"],
           "description": "URL de la imagen del producto"
         },
         "codigo": {
           "type": ["string", "null"],
-          "description": "Código del producto"
+          "description": "Código del producto (legacy)"
         },
         "created_at": {
           "type": "string",

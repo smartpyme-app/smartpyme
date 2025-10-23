@@ -33,6 +33,8 @@ Ventas,nombre_documento,String,No,Tipo de documento fiscal,Factura,Campo relacio
 Ventas,created_at,Timestamp,Sí,Fecha de creación del registro,2024-10-21T10:30:00Z,ISO 8601 format
 Ventas,updated_at,Timestamp,Sí,Fecha de última actualización,2024-10-21T10:30:00Z,ISO 8601 format
 Detalles Venta,nombre_producto,String,Sí,Nombre del producto vendido,Laptop Dell Inspiron,Nombre comercial
+Detalles Venta,codigo_producto,String,No,Código interno del producto,LAP-DELL-001,SKU del producto vendido
+Detalles Venta,marca_producto,String,No,Marca del producto vendido,Dell,Fabricante o marca del producto
 Detalles Venta,cantidad,Decimal(10.3),Sí,Cantidad vendida,2.000,Permite decimales para productos fraccionables
 Detalles Venta,precio,Decimal(10.2),Sí,Precio unitario de venta,750.00,Precio al público
 Detalles Venta,costo,Decimal(10.2),No,Costo unitario del producto,600.00,Costo de adquisición

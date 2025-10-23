@@ -237,6 +237,20 @@
           "description": "Product name",
           "example": "Laptop Dell Inspiron"
         },
+        "codigo_producto": {
+          "type": "string",
+          "required": false,
+          "description": "Internal product code",
+          "example": "LAP-DELL-001",
+          "notes": "SKU of the sold product"
+        },
+        "marca_producto": {
+          "type": "string",
+          "required": false,
+          "description": "Product brand",
+          "example": "Dell",
+          "notes": "Manufacturer or brand of the product"
+        },
         "cantidad": {
           "type": "decimal(10,3)",
           "required": true,
