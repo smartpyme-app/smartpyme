@@ -1,6 +1,6 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Entradas de Inventario</h2>
-    <button *ngIf="apiService.canCreate()" routerLink="/entrada/crear" tooltip="Crear entrada (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir entrada</button>
+    <button *ngIf="apiService.canCreate() && !(apiService.auth_user().tipo == 'Supervisor Limitado' && apiService.auth_user().id_empresa == 324)" routerLink="/entrada/crear" tooltip="Crear entrada (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir entrada</button>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">

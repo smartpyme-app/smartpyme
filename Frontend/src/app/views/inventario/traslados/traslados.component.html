@@ -8,8 +8,8 @@
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
         <h2 class="page-heading mb-0">Inventario</h2>
         <div class="d-flex flex-column flex-sm-row gap-2">
-            <button *ngIf="apiService.canCreate()" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
-            <button *ngIf="apiService.canCreate()" routerLink="/traslado-masivo/crear" tooltip="Traslado masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Traslado masivo</button>
+            <button *ngIf="apiService.canCreate() && !(apiService.auth_user().tipo == 'Supervisor Limitado' && apiService.auth_user().id_empresa == 324)" (click)="openModal(mtraslado)" tooltip="Crear traslado (F7)" class="btn btn-default tcla-F7"><i class="fa fa-plus"></i> Añadir traslado</button>
+            <button *ngIf="apiService.canCreate() && !(apiService.auth_user().tipo == 'Supervisor Limitado' && apiService.auth_user().id_empresa == 324)" routerLink="/traslado-masivo/crear" tooltip="Traslado masivo" class="btn btn-primary tcla-F4"><i class="fa fa-list"></i> Traslado masivo</button>
         </div>
     </div>
 </section>
