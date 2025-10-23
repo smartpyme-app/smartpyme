@@ -11,6 +11,7 @@ class Devolucion extends Model {
     protected $table = 'devoluciones_compra';
     protected $fillable = array(
         'fecha',
+        'tipo',
         'tipo_documento',
         'referencia',
         'id_proveedor',
