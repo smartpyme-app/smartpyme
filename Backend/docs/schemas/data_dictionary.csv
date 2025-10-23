@@ -1,0 +1,64 @@
+Entidad,Campo,Tipo,Requerido,Descripción,Ejemplo,Notas
+Ventas,id,Integer,Sí,Identificador único de la venta,12345,Clave primaria autoincremental
+Ventas,fecha,Date,Sí,Fecha de la venta,2024-10-21,Formato YYYY-MM-DD
+Ventas,correlativo,String,Sí,Número correlativo de la venta,V-001234,Único por empresa
+Ventas,estado,String,Sí,Estado actual de la venta,Completada,"Valores: Completada, Pendiente, Anulada, Cotizacion"
+Ventas,forma_pago,String,No,Método de pago utilizado,Efectivo,"Ej: Efectivo, Tarjeta, Transferencia"
+Ventas,monto_pago,Decimal(10.2),No,Monto pagado por el cliente,150.75,Puede ser diferente al total (pagos parciales)
+Ventas,cambio,Decimal(10.2),No,Cambio devuelto al cliente,4.25,Solo aplica para pagos en efectivo
+Ventas,iva_percibido,Decimal(10.2),No,IVA percibido en la transacción,19.50,Impuesto aplicado
+Ventas,iva_retenido,Decimal(10.2),No,IVA retenido en la transacción,2.30,Retención fiscal
+Ventas,renta_retenida,Decimal(10.2),No,Retención de renta aplicada,5.00,Retención fiscal
+Ventas,iva,Decimal(10.2),No,Total de IVA de la venta,19.50,Impuesto sobre el valor agregado
+Ventas,total_costo,Decimal(10.2),No,Costo total de los productos vendidos,85.00,Suma de costos de todos los productos
+Ventas,descuento,Decimal(10.2),No,Descuento aplicado a la venta,10.00,Descuento general de la venta
+Ventas,sub_total,Decimal(10.2),No,Subtotal antes de impuestos,130.00,Total antes de IVA
+Ventas,no_sujeta,Decimal(10.2),No,Monto no sujeto a impuestos,0.00,Productos exentos de impuestos
+Ventas,exenta,Decimal(10.2),No,Monto exento de impuestos,0.00,Productos con exención fiscal
+Ventas,gravada,Decimal(10.2),No,Monto gravado con impuestos,130.00,Base imponible para IVA
+Ventas,cuenta_a_terceros,Decimal(10.2),No,Monto por cuenta de terceros,0.00,Servicios facturados por terceros
+Ventas,total,Decimal(10.2),Sí,Total final de la venta,149.50,Monto total a pagar
+Ventas,propina,Decimal(10.2),No,Propina incluida,0.00,Propina del servicio
+Ventas,observaciones,Text,No,Comentarios adicionales,Cliente frecuente,Notas internas de la venta
+Ventas,recurrente,Boolean,No,Indica si es venta recurrente,false,true/false
+Ventas,cotizacion,Boolean,No,Indica si es una cotización,false,true/false
+Ventas,descripcion_impresion,Text,No,Texto personalizado para impresión,Gracias por su compra,Mensaje en factura
+Ventas,saldo,Decimal(10.2),No,Saldo pendiente de pago,0.00,Para ventas a crédito
+Ventas,nombre_cliente,String,No,Nombre del cliente,Juan Pérez,Campo relacionado
+Ventas,nombre_usuario,String,No,Usuario que registró la venta,admin,Campo relacionado
+Ventas,nombre_vendedor,String,No,Vendedor asignado,María García,Campo relacionado
+Ventas,nombre_sucursal,String,No,Sucursal donde se realizó,Sucursal Centro,Campo relacionado
+Ventas,nombre_canal,String,No,Canal de venta,Mostrador,Campo relacionado
+Ventas,nombre_documento,String,No,Tipo de documento fiscal,Factura,Campo relacionado
+Ventas,created_at,Timestamp,Sí,Fecha de creación del registro,2024-10-21T10:30:00Z,ISO 8601 format
+Ventas,updated_at,Timestamp,Sí,Fecha de última actualización,2024-10-21T10:30:00Z,ISO 8601 format
+Detalles Venta,nombre_producto,String,Sí,Nombre del producto vendido,Laptop Dell Inspiron,Nombre comercial
+Detalles Venta,cantidad,Decimal(10.3),Sí,Cantidad vendida,2.000,Permite decimales para productos fraccionables
+Detalles Venta,precio,Decimal(10.2),Sí,Precio unitario de venta,750.00,Precio al público
+Detalles Venta,costo,Decimal(10.2),No,Costo unitario del producto,600.00,Costo de adquisición
+Detalles Venta,descuento,Decimal(10.2),No,Descuento aplicado al ítem,50.00,Descuento por producto
+Detalles Venta,total_costo,Decimal(10.2),No,Costo total del ítem,1200.00,costo × cantidad
+Detalles Venta,total,Decimal(10.2),Sí,Total del ítem,1450.00,(precio × cantidad) - descuento + IVA
+Detalles Venta,iva,Decimal(10.2),No,IVA del ítem,187.75,Impuesto aplicado al ítem
+Inventario,id,Integer,Sí,Identificador único del producto,5678,Clave primaria autoincremental
+Inventario,nombre,String,Sí,Nombre del producto,Laptop Dell Inspiron 15,Nombre comercial completo
+Inventario,descripcion,Text,No,Descripción detallada,Laptop con procesador Intel i5...,Descripción técnica
+Inventario,codigo,String,No,Código interno del producto,LAP-DELL-001,SKU interno de la empresa
+Inventario,barcode,String,No,Código de barras,7501234567890,Código EAN/UPC
+Inventario,nombre_categoria,String,No,Categoría del producto,Electrónicos,Clasificación por categoría
+Inventario,precio,Decimal(10.2),No,Precio de venta actual,899.99,Precio al público
+Inventario,costo,Decimal(10.2),No,Costo actual de adquisición,720.00,Último costo de compra
+Inventario,costo_anterior,Decimal(10.2),No,Costo anterior,715.00,Costo previo para comparación
+Inventario,costo_promedio,Decimal(10.2),No,Costo promedio ponderado,717.50,Promedio de costos históricos
+Inventario,marca,String,No,Marca del producto,Dell,Fabricante o marca
+Inventario,tipo,String,No,Tipo de producto,Producto,"Ej: Producto, Servicio, Combo"
+Inventario,enable,Boolean,Sí,Estado activo del producto,true,true = activo; false = inactivo
+Inventario,created_at,Timestamp,Sí,Fecha de creación,2024-01-15T08:00:00Z,ISO 8601 format
+Inventario,updated_at,Timestamp,Sí,Fecha de actualización,2024-10-21T14:30:00Z,ISO 8601 format
+Stock por Bodega,id_producto,Integer,Sí,ID del producto,5678,Referencia al producto
+Stock por Bodega,stock,Decimal(10.3),Sí,Cantidad disponible,25.000,Stock actual en la bodega
+Stock por Bodega,stock_minimo,Decimal(10.3),No,Stock mínimo requerido,5.000,Punto de reorden
+Stock por Bodega,stock_maximo,Decimal(10.3),No,Stock máximo permitido,100.000,Capacidad máxima
+Stock por Bodega,nota,Text,No,Observaciones del stock,Revisar vencimiento,Notas especiales
+Stock por Bodega,nombre_bodega,String,Sí,Nombre de la bodega,Bodega Principal,Ubicación física
+Stock por Bodega,nombre_sucursal,String,Sí,Sucursal de la bodega,Sucursal Centro,Sucursal que contiene la bodega
