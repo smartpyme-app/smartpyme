@@ -55,32 +55,25 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
 
     public function collection()
     {
+        $request = $this->request;
 
-        $request = $this->request; //where('id_empresa', Auth::user()->id_empresa)
-
-        $ventas = Venta::when($request->buscador, function ($query) use ($request) {
-            return $query->orwhere('correlativo', 'like', '%' . $request->buscador . '%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+        $ventas = Venta::when($request->inicio, function ($query) use ($request) {
+            return $query->where('fecha', '>=', $request->inicio);
         })
-            ->when($request->inicio, function ($query) use ($request) {
-                return $query->where('fecha', '>=', $request->inicio);
+            ->when($request->fin, function ($query) use ($request) {
+                return $query->where('fecha', '<=', $request->fin);
             })
             ->when($request->recurrente !== null, function ($q) use ($request) {
                 $q->where('recurrente', !!$request->recurrente);
             })
-            ->when($request->id_proyecto, function ($q) use ($request) {
-                $q->where('id_proyecto', $request->id_proyecto);
-            })
             ->when($request->num_identificacion, function ($q) use ($request) {
                 $q->where('num_identificacion', $request->num_identificacion);
             })
-            ->when($request->fin, function ($query) use ($request) {
-                return $query->where('fecha', '<=', $request->fin);
-            })
             ->when($request->id_sucursal, function ($query) use ($request) {
                 return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when($request->id_bodega, function ($query) use ($request) {
+                return $query->where('id_bodega', $request->id_bodega);
             })
             ->when($request->id_cliente, function ($query) use ($request) {
                 return $query->where('id_cliente', $request->id_cliente);
@@ -103,8 +96,18 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
             ->when($request->id_canal, function ($query) use ($request) {
                 return $query->where('id_canal', $request->id_canal);
             })
+            ->when($request->id_proyecto, function ($query) use ($request) {
+                return $query->where('id_proyecto', $request->id_proyecto);
+            })
             ->when($request->id_documento, function ($query) use ($request) {
-                return $query->where('id_documento', $request->id_documento);
+                $documento = \App\Models\Admin\Documento::find($request->id_documento);
+                if ($documento) {
+                    return $query->whereHas('documento', function ($q) use ($documento) {
+                        $q->whereRaw('LOWER(nombre) = LOWER(?)', [$documento->nombre]);
+                    });
+                } else {
+                    return $query->where('id_documento', $request->id_documento);
+                }
             })
             ->when($request->estado, function ($query) use ($request) {
                 return $query->where('estado', $request->estado);
@@ -113,9 +116,32 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                 return $query->where('metodo_pago', $request->metodo_pago);
             })
             ->when($request->tipo_documento, function ($query) use ($request) {
-                return $query->where('tipo_documento', $request->tipo_documento);
+                return $query->whereHas('documento', function ($q) use ($request) {
+                    $q->where('nombre', $request->tipo_documento);
+                });
+            })
+            ->when($request->dte && $request->dte == 1, function ($query) {
+                return $query->whereNull('sello_mh');
+            })
+            ->when($request->dte && $request->dte == 2, function ($query) {
+                return $query->whereNotNull('sello_mh');
             })
             ->where('cotizacion', 0)
+            ->when($request->buscador, function ($query) use ($request) {
+                $buscador = '%' . $request->buscador . '%';
+                return $query->where(function ($q) use ($buscador) {
+                    $q->whereHas('cliente', function ($qCliente) use ($buscador) {
+                        $qCliente->where('nombre', 'like', $buscador)
+                            ->orWhere('nombre_empresa', 'like', $buscador)
+                            ->orWhere('ncr', 'like', $buscador)
+                            ->orWhere('nit', 'like', $buscador);
+                    })
+                        ->orWhere('correlativo', 'like', $buscador)
+                        ->orWhere('estado', 'like', $buscador)
+                        ->orWhere('observaciones', 'like', $buscador)
+                        ->orWhere('forma_pago', 'like', $buscador);
+                });
+            })
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->get();
