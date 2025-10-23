@@ -149,6 +149,8 @@ curl -H "Authorization: Bearer tu_api_key" \
       "detalles": [
         {
           "nombre_producto": "Producto A",
+          "codigo_producto": "PROD-A-001",
+          "marca_producto": "Marca A",
           "cantidad": 2.00,
           "precio": 75.00,
           "total": 150.00,

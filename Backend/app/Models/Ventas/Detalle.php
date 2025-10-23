@@ -25,7 +25,7 @@ class Detalle extends Model {
         'iva',
     );
 
-    protected $appends = ['nombre_producto', 'img', 'codigo'];
+    protected $appends = ['nombre_producto', 'img', 'codigo', 'marca'];
 
     public function getNombreProductoAttribute(){
         if ($this->descripcion) {
@@ -41,6 +41,10 @@ class Detalle extends Model {
 
     public function getCodigoAttribute(){
         return $this->producto()->pluck('codigo')->first();
+    }
+
+    public function getMarcaAttribute(){
+        return $this->producto()->pluck('marca')->first();
     }
 
     public function getDescripcionAttribute($value){
