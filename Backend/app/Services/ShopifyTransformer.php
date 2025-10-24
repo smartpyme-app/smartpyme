@@ -571,8 +571,8 @@ class ShopifyTransformer
         $factorSinIVA = 1 / 1.13;
         $precioSinIVA = $precioConIVA * $factorSinIVA;
         
-        // Redondear a 4 decimales para mayor precisión
-        $precioSinIVA = round($precioSinIVA, 4);
+        // Redondear a 2 decimales para evitar problemas de precisión
+        $precioSinIVA = round($precioSinIVA, 2);
         
         // Validar precisión: verificar que el cálculo inverso coincida
         $precioInverso = round($precioSinIVA * 1.13, 2);
