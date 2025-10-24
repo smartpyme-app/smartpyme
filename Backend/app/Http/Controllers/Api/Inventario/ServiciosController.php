@@ -42,8 +42,8 @@ class ServiciosController extends Controller
                                                  ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                                 })
                                 ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+                                ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
+                                ->paginate($request->paginate ? $request->paginate : 10);
 
         return Response()->json($servicios, 200);
 
