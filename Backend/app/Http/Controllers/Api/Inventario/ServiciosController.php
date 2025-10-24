@@ -19,7 +19,7 @@ class ServiciosController extends Controller
 
     public function index(Request $request) {
 
-        $servicios = Servicio::with('inventarios')
+        $servicios = Servicio::where('tipo', 'Servicio')->with('inventarios')
                                 ->when($request->id_categoria, function($query) use ($request){
                                     return $query->where('id_categoria', $request->id_categoria);
                                 })
@@ -41,11 +41,9 @@ class ServiciosController extends Controller
                                                  ->orwhere('marca', 'like' ,"%" . $request->buscador . "%")
                                                  ->orwhere('descripcion', 'like' ,"%" . $request->buscador . "%");
                                 })
-                                ->where('tipo', 'Servicio')
-                                ->whereNotIn('id_categoria', [1,2])
                                 ->orderBy('enable', 'desc')
-                                ->orderBy($request->orden, $request->direccion)
-                                ->paginate($request->paginate);
+                                ->orderBy($request->orden ? $request->orden : 'nombre', $request->direccion ? $request->direccion : 'desc')
+                                ->paginate($request->paginate ? $request->paginate : 10);
 
         return Response()->json($servicios, 200);
 

@@ -40,7 +40,7 @@ class ProductosController extends Controller
     public function index(Request $request)
     {
 
-        $productos = Producto::with(['inventarios' => function ($q) use ($request) {
+        $productos = Producto::where('tipo', 'Producto')->with(['inventarios' => function ($q) use ($request) {
             if ($request->id_bodega) {
                 $q->where('id_bodega', $request->id_bodega);
             }
