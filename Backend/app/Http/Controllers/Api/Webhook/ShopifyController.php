@@ -16,6 +16,7 @@ use App\Models\Ventas\Venta;
 use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
+use App\Services\ShippingService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -28,12 +29,14 @@ class ShopifyController extends Controller
 {
     protected $transformer;
     protected $cache;
+    protected $shippingService;
 
 
-    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache)
+    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService)
     {
         $this->transformer = $transformer;
         $this->cache = $cache;
+        $this->shippingService = $shippingService;
     }
 
     public function handle($tokenEmpresa, Request $request)
@@ -250,7 +253,8 @@ class ShopifyController extends Controller
             }
         }
 
-        $this->procesarImagenes(request(), $producto->id);
+        // No procesar imágenes durante actualización de productos existentes
+        // $this->procesarImagenes(request(), $producto->id);
     }
 
 
@@ -302,10 +306,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
-        // Log::info("=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===", [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/create'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -316,18 +324,25 @@ class ShopifyController extends Controller
             ]);
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
-            // Log::info("Datos del cliente transformados", $clienteData);
+            
+            Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
             
-            // Log::info("Cliente creado/actualizado", [
-            // 'cliente_id' => $cliente->id, 
-            //     'correo' => $cliente->correo,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/create'
+            ]);
 
             DB::commit();
 
@@ -350,10 +365,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteActualizado(Request $request, $empresa, $usuario)
     {
-        // Log::info("=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===", [
-        //     'shopify_customer_id' => $request->id,
-        //     'customer_email' => $request->email ?? 'N/A'
-        // ]);
+        Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
+            'shopify_customer_id' => $request->id,
+            'customer_email' => $request->email ?? 'N/A',
+            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+            'empresa_id' => $empresa->id,
+            'usuario_id' => $usuario->id,
+            'webhook_type' => 'customers/update'
+        ]);
 
         try {
             DB::beginTransaction();
@@ -364,18 +383,25 @@ class ShopifyController extends Controller
             ]);
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
-            // Log::info("Datos del cliente transformados", $clienteData);
+            
+            Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
+                'cliente_data' => $clienteData,
+                'shopify_customer_id' => $request->id
+            ]);
             
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
             
-            // Log::info("Cliente actualizado", [
-            //     'cliente_id' => $cliente->id, 
-            //     'correo' => $cliente->correo,
-            //     'shopify_customer_id' => $request->id
-            // ]);
+            Log::info('=== CLIENTE ACTUALIZADO ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_customer_id' => $request->id,
+                'webhook_type' => 'customers/update'
+            ]);
 
             DB::commit();
 
@@ -484,14 +510,29 @@ class ShopifyController extends Controller
             // Log::info("Datos del request después del merge", $request->all());
 
             $clienteData = $this->transformer->transformarCliente($request->all());
-            // Log::info("Datos del cliente transformados", $clienteData);
+            
+            Log::info('=== PROCESANDO CLIENTE EN VENTA SHOPIFY ===', [
+                'shopify_order_id' => $request->id ?? 'N/A',
+                'shopify_customer_id' => $request->customer['id'] ?? 'N/A',
+                'customer_email' => $clienteData['correo'],
+                'customer_name' => $clienteData['nombre'] . ' ' . $clienteData['apellido'],
+                'empresa_id' => $usuario->id_empresa,
+                'usuario_id' => $usuario->id
+            ]);
             
             $cliente = Cliente::updateOrCreate(
                 ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
                 $clienteData
             );
             
-            // Log::info("Cliente creado/encontrado", ['cliente_id' => $cliente->id, 'correo' => $cliente->correo]);
+            Log::info('=== CLIENTE PROCESADO EN VENTA ===', [
+                'cliente_id' => $cliente->id,
+                'cliente_correo' => $cliente->correo,
+                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+                'cliente_creado' => $cliente->wasRecentlyCreated,
+                'shopify_order_id' => $request->id ?? 'N/A',
+                'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
+            ]);
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
@@ -565,6 +606,27 @@ class ShopifyController extends Controller
                 if ($inventario) {
                     $inventario->kardex($venta, $item['quantity'], $item['price']);
                 }
+            }
+
+            // Procesar tipos de envío si existen
+            if (!empty($request->shipping_lines)) {
+                Log::info("Procesando tipos de envío", [
+                    'venta_id' => $venta->id,
+                    'shipping_lines_count' => count($request->shipping_lines)
+                ]);
+
+                $detallesEnvio = $this->shippingService->procesarTiposEnvio(
+                    $request->shipping_lines,
+                    $venta->id,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+
+                Log::info("Detalles de envío procesados", [
+                    'venta_id' => $venta->id,
+                    'detalles_creados' => count($detallesEnvio)
+                ]);
             }
 
             $documento = Documento::findOrfail($venta->id_documento);
@@ -679,52 +741,78 @@ class ShopifyController extends Controller
         // Log::info('storeImage', $data);
 
         try {
+            // Buscar imagen existente por shopify_image_id
             if (isset($data['shopify_image_id']) && $data['shopify_image_id']) {
                 $imagen = Imagen::where('shopify_image_id', $data['shopify_image_id'])->first();
 
-                if (!$imagen) {
-                    $imagen = new Imagen();
-                    // Log::info('Creando nueva imagen');
+                if ($imagen) {
+                    // Si la imagen ya existe y tiene la misma URL, no hacer nada
+                    if ($imagen->src === $data['src']) {
+                        Log::info('Imagen ya existe con la misma URL, no se procesa', [
+                            'imagen_id' => $imagen->id,
+                            'shopify_image_id' => $data['shopify_image_id']
+                        ]);
+                        return $imagen;
+                    }
                 } else {
-                    // Log::info('Imagen existente encontrada', ['imagen_id' => $imagen->id]);
+                    $imagen = new Imagen();
                 }
             } else {
                 $imagen = new Imagen();
-                // Log::info('Creando nueva imagen sin shopify_image_id');
             }
 
             $imagen->fill($data);
-            // Log::info('Imagen después de fill', $imagen->toArray());
 
+            // Solo procesar la imagen si es nueva o si la URL ha cambiado
             if (isset($data['src']) && $data['src']) {
-                // Log::info('Procesando src', ['src' => $data['src']]);
+                // Verificar si ya existe una imagen con la misma URL para el mismo producto
+                $imagenExistente = Imagen::where('id_producto', $data['id_producto'])
+                    ->where('src', $data['src'])
+                    ->first();
 
-                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg') {
-                    Storage::delete($imagen->img);
-                    Log::info('Imagen anterior eliminada', ['path' => $imagen->img]);
+                if ($imagenExistente && $imagenExistente->id !== $imagen->id) {
+                    Log::info('Imagen ya existe para este producto con la misma URL', [
+                        'imagen_existente_id' => $imagenExistente->id,
+                        'producto_id' => $data['id_producto']
+                    ]);
+                    return $imagenExistente;
                 }
 
-                try {
-                    $imageContent = file_get_contents($data['src']);
-                    if ($imageContent === false) {
-                        throw new \Exception('No se pudo descargar la imagen desde: ' . $data['src']);
+                // Solo eliminar y recrear si la imagen ya existe y tiene una URL diferente
+                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->src !== $data['src']) {
+                    Storage::delete($imagen->img);
+                    Log::info('Imagen anterior eliminada por cambio de URL', ['path' => $imagen->img]);
+                }
+
+                // Solo procesar si no existe o si la URL cambió
+                if (!$imagen->id || $imagen->src !== $data['src']) {
+                    try {
+                        $imageContent = file_get_contents($data['src']);
+                        if ($imageContent === false) {
+                            throw new \Exception('No se pudo descargar la imagen desde: ' . $data['src']);
+                        }
+
+                        $resize = Image::make($imageContent)->resize(750, 750)->encode('jpg', 75);
+                        $hash = md5($resize->__toString());
+                        $path = "productos/{$hash}.jpg";
+
+                        $fullPath = public_path('img/productos');
+                        if (!file_exists($fullPath)) {
+                            mkdir($fullPath, 0755, true);
+                        }
+
+                        $resize->save(public_path('img/' . $path), 50);
+                        $imagen->img = "/" . $path;
+
+                        Log::info('Imagen procesada y guardada', ['path' => $path]);
+                    } catch (\Exception $e) {
+                        Log::error('Error procesando imagen: ' . $e->getMessage());
                     }
-
-                    $resize = Image::make($imageContent)->resize(750, 750)->encode('jpg', 75);
-                    $hash = md5($resize->__toString());
-                    $path = "productos/{$hash}.jpg";
-
-                    $fullPath = public_path('img/productos');
-                    if (!file_exists($fullPath)) {
-                        mkdir($fullPath, 0755, true);
-                    }
-
-                    $resize->save(public_path('img/' . $path), 50);
-                    $imagen->img = "/" . $path;
-
-                    // Log::info('Imagen procesada y guardada', ['path' => $path]);
-                } catch (\Exception $e) {
-                    Log::error('Error procesando imagen: ' . $e->getMessage());
+                } else {
+                    Log::info('Imagen ya procesada, no se vuelve a procesar', [
+                        'imagen_id' => $imagen->id,
+                        'src' => $data['src']
+                    ]);
                 }
             }
 
