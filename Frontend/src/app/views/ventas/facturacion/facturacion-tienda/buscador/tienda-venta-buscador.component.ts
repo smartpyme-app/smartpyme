@@ -154,7 +154,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
             }
 
         producto.inventarios        = producto.inventarios.filter((item:any) => item.id_bodega == this.venta.id_bodega);
-        if(producto.inventarios.length > 0){
+        if(producto.tipo != 'Servicio' && producto.inventarios.length > 0){
             this.detalle.stock          = parseFloat(this.sumPipe.transform(producto.inventarios, 'stock'));
         }else{
             this.detalle.stock = null;
