@@ -46,6 +46,7 @@ class ShopifyTransformer
             'nombre_empresa' => $primaryAddress['company'] ?? '',
             'telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
             'correo' => $customer['email'] ?? '',
+            'shopify_customer_id' => $customer['id'] ?? null,
             'direccion' => $direccionCompleta,
             'pais' => $primaryAddress['country'] ?? '',
             'cod_pais' => substr($primaryAddress['country_code'] ?? '', 0, 255),
@@ -108,6 +109,7 @@ class ShopifyTransformer
             'nombre_empresa' => $defaultAddress['company'] ?? '',
             'telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
             'correo' => $customer['email'] ?? '',
+            'shopify_customer_id' => $customer['id'] ?? null,
             'direccion' => $direccionCompleta,
             'pais' => $defaultAddress['country'] ?? '',
             'cod_pais' => substr($defaultAddress['country_code'] ?? '', 0, 255),
@@ -141,6 +143,18 @@ class ShopifyTransformer
             $shopifyData['shipping_lines'] ?? []
         );
         
+        // Calcular IVA total incluyendo el IVA de los envíos
+        $ivaProductos = floatval($shopifyData['total_tax'] ?? 0);
+        $ivaEnvio = $this->calcularIVAEnvio($shopifyData['shipping_lines'] ?? []);
+        $ivaTotal = $ivaProductos + $ivaEnvio;
+        
+        Log::info("IVA calculado para venta", [
+            'iva_productos' => $ivaProductos,
+            'iva_envio' => $ivaEnvio,
+            'iva_total' => $ivaTotal,
+            'shipping_lines_count' => count($shopifyData['shipping_lines'] ?? [])
+        ]);
+        
         return [
             'codigo_generacion' => null,
             'estado' => $estado,
@@ -149,11 +163,11 @@ class ShopifyTransformer
             'fecha' => date('Y-m-d', strtotime($shopifyData['created_at'])),
             'fecha_pago' => date('Y-m-d', strtotime($shopifyData['processed_at'] ?? $shopifyData['created_at'])),
             'total_costo' => 0,
-            'total' => $shopifyData['total_price'],
-            'sub_total' => $subtotalSinIVA, // Subtotal sin IVA calculado
+            'total' => $subtotalSinIVA + $ivaTotal, // Total = Gravada + IVA
+            'sub_total' => 0, // Subtotal debe ser 0 para ventas con impuestos incluidos
             'gravada' => $subtotalSinIVA, // Gravada sin IVA
             'cuenta_a_terceros' => 0,
-            'iva' => $shopifyData['total_tax'],
+            'iva' => $ivaTotal, // IVA total incluyendo envíos
             'iva_retenido' => 0,
             'iva_percibido' => 0,
             'descuento' => $shopifyData['total_discounts'],
@@ -486,11 +500,18 @@ class ShopifyTransformer
             $subtotalSinIVA += $precioSinIVA * $cantidad;
         }
         
-        // Calcular subtotal de envíos
+        // Calcular subtotal de envíos (sin IVA si no tienen tax_lines)
         foreach ($shippingLines as $shipping) {
             $precioConIVA = floatval($shipping['price'] ?? 0);
-            $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
-            $subtotalSinIVA += $precioSinIVA; // Los envíos siempre tienen cantidad 1
+            if ($precioConIVA > 0) {
+                // Si el envío no tiene tax_lines, usar el precio completo
+                if (empty($shipping['tax_lines']) || !is_array($shipping['tax_lines'])) {
+                    $subtotalSinIVA += $precioConIVA;
+                } else {
+                    $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
+                    $subtotalSinIVA += $precioSinIVA;
+                }
+            }
         }
         
         Log::info("Subtotal sin IVA calculado", [
@@ -500,6 +521,35 @@ class ShopifyTransformer
         ]);
         
         return round($subtotalSinIVA, 2);
+    }
+
+    /**
+     * Calcula el IVA total de los envíos
+     * 
+     * @param array $shippingLines Líneas de envío de Shopify
+     * @return float IVA total de envíos
+     */
+    private function calcularIVAEnvio($shippingLines)
+    {
+        $ivaEnvio = 0;
+        
+        foreach ($shippingLines as $shipping) {
+            $precioConIVA = floatval($shipping['price'] ?? 0);
+            if ($precioConIVA > 0) {
+                // Solo calcular IVA si el envío tiene tax_lines
+                if (!empty($shipping['tax_lines']) && is_array($shipping['tax_lines'])) {
+                    $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
+                    $ivaEnvio += $precioConIVA - $precioSinIVA;
+                }
+            }
+        }
+        
+        Log::info("IVA de envío calculado", [
+            'iva_envio' => $ivaEnvio,
+            'shipping_lines_count' => count($shippingLines)
+        ]);
+        
+        return round($ivaEnvio, 2);
     }
 
     /**

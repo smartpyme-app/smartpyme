@@ -83,6 +83,9 @@ class ShopifyController extends Controller
                 case 'orders/cancelled':
                     return $this->procesarVentaCancelada($tokenEmpresa, $request);
 
+                case 'orders/updated':
+                    return $this->procesarVentaActualizada($tokenEmpresa, $request);
+
                 case 'customers/create':
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
 
@@ -330,10 +333,7 @@ class ShopifyController extends Controller
                 'shopify_customer_id' => $request->id
             ]);
             
-            $cliente = Cliente::updateOrCreate(
-                ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
-                $clienteData
-            );
+            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
             Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
                 'cliente_id' => $cliente->id,
@@ -389,10 +389,7 @@ class ShopifyController extends Controller
                 'shopify_customer_id' => $request->id
             ]);
             
-            $cliente = Cliente::updateOrCreate(
-                ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
-                $clienteData
-            );
+            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
             Log::info('=== CLIENTE ACTUALIZADO ===', [
                 'cliente_id' => $cliente->id,
@@ -520,10 +517,7 @@ class ShopifyController extends Controller
                 'usuario_id' => $usuario->id
             ]);
             
-            $cliente = Cliente::updateOrCreate(
-                ['correo' => $clienteData['correo'], 'id_empresa' => $usuario->id_empresa],
-                $clienteData
-            );
+            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
             Log::info('=== CLIENTE PROCESADO EN VENTA ===', [
                 'cliente_id' => $cliente->id,
@@ -1029,6 +1023,539 @@ class ShopifyController extends Controller
         ]);
         
         return false;
+    }
+
+    /**
+     * Busca o actualiza un cliente optimizando por shopify_customer_id, correo y teléfono
+     * 
+     * @param array $clienteData
+     * @param int $empresaId
+     * @return Cliente
+     */
+    private function buscarOActualizarCliente($clienteData, $empresaId)
+    {
+        $shopifyCustomerId = $clienteData['shopify_customer_id'] ?? null;
+        $correo = $clienteData['correo'] ?? null;
+        $telefono = $clienteData['telefono'] ?? null;
+        
+        // Validaciones de seguridad para evitar asignaciones incorrectas
+        if (!$this->validarDatosCliente($clienteData)) {
+            Log::warning('Datos de cliente inválidos, creando cliente con datos mínimos', [
+                'shopify_customer_id' => $shopifyCustomerId,
+                'correo' => $correo,
+                'telefono' => $telefono
+            ]);
+            
+            // Crear cliente con datos mínimos válidos
+            return $this->crearClienteMinimo($clienteData, $empresaId);
+        }
+        
+        // 1. Si tenemos shopify_customer_id, buscar primero por ese campo
+        if ($shopifyCustomerId) {
+            $cliente = Cliente::where('shopify_customer_id', $shopifyCustomerId)
+                ->where('id_empresa', $empresaId)
+                ->first();
+                
+            if ($cliente) {
+                Log::info('Cliente encontrado por shopify_customer_id', [
+                    'cliente_id' => $cliente->id,
+                    'shopify_customer_id' => $shopifyCustomerId,
+                    'correo' => $cliente->correo,
+                    'telefono' => $cliente->telefono
+                ]);
+                
+                // Actualizar datos del cliente
+                $cliente->update($clienteData);
+                return $cliente;
+            }
+        }
+        
+        // 2. Si no se encontró por shopify_customer_id, buscar por correo
+        if ($correo) {
+            $cliente = Cliente::where('correo', $correo)
+                ->where('id_empresa', $empresaId)
+                ->first();
+                
+            if ($cliente) {
+                // Validar que no haya conflicto con shopify_customer_id existente
+                if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
+                    Log::warning('Conflicto de shopify_customer_id detectado', [
+                        'cliente_id' => $cliente->id,
+                        'correo' => $correo,
+                        'shopify_customer_id_existente' => $cliente->shopify_customer_id,
+                        'shopify_customer_id_nuevo' => $shopifyCustomerId
+                    ]);
+                    
+                    // Crear nuevo cliente para evitar conflicto
+                    return $this->crearClienteMinimo($clienteData, $empresaId);
+                }
+                
+                Log::info('Cliente encontrado por correo, actualizando shopify_customer_id', [
+                    'cliente_id' => $cliente->id,
+                    'correo' => $correo,
+                    'shopify_customer_id' => $shopifyCustomerId,
+                    'telefono_actual' => $cliente->telefono,
+                    'telefono_nuevo' => $telefono
+                ]);
+                
+                // Actualizar datos incluyendo el shopify_customer_id
+                $cliente->update($clienteData);
+                return $cliente;
+            }
+        }
+        
+        // 3. Si no se encontró por correo, buscar por teléfono (con validación adicional)
+        if ($telefono) {
+            $cliente = Cliente::where('telefono', $telefono)
+                ->where('id_empresa', $empresaId)
+                ->first();
+                
+            if ($cliente) {
+                // Validar que no haya conflicto con shopify_customer_id existente
+                if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
+                    Log::warning('Conflicto de shopify_customer_id detectado por teléfono', [
+                        'cliente_id' => $cliente->id,
+                        'telefono' => $telefono,
+                        'shopify_customer_id_existente' => $cliente->shopify_customer_id,
+                        'shopify_customer_id_nuevo' => $shopifyCustomerId
+                    ]);
+                    
+                    // Crear nuevo cliente para evitar conflicto
+                    return $this->crearClienteMinimo($clienteData, $empresaId);
+                }
+                
+                // Validar que el correo coincida si está disponible
+                if ($correo && $cliente->correo && $cliente->correo !== $correo) {
+                    Log::warning('Conflicto de correo detectado por teléfono', [
+                        'cliente_id' => $cliente->id,
+                        'telefono' => $telefono,
+                        'correo_cliente' => $cliente->correo,
+                        'correo_pedido' => $correo
+                    ]);
+                    
+                    // Crear nuevo cliente para evitar conflicto
+                    return $this->crearClienteMinimo($clienteData, $empresaId);
+                }
+                
+                Log::info('Cliente encontrado por teléfono, actualizando shopify_customer_id', [
+                    'cliente_id' => $cliente->id,
+                    'telefono' => $telefono,
+                    'shopify_customer_id' => $shopifyCustomerId,
+                    'correo_actual' => $cliente->correo,
+                    'correo_nuevo' => $correo
+                ]);
+                
+                // Actualizar datos incluyendo el shopify_customer_id
+                $cliente->update($clienteData);
+                return $cliente;
+            }
+        }
+        
+        // 4. Si no existe, crear nuevo cliente
+        Log::info('Creando nuevo cliente', [
+            'correo' => $correo,
+            'telefono' => $telefono,
+            'shopify_customer_id' => $shopifyCustomerId
+        ]);
+        
+        return Cliente::create($clienteData);
+    }
+
+    /**
+     * Valida los datos del cliente para evitar asignaciones incorrectas
+     * 
+     * @param array $clienteData
+     * @return bool
+     */
+    private function validarDatosCliente($clienteData)
+    {
+        $correo = $clienteData['correo'] ?? null;
+        $nombre = $clienteData['nombre'] ?? null;
+        $apellido = $clienteData['apellido'] ?? null;
+        
+        // Validar que tenga al menos un nombre
+        if (empty($nombre) && empty($apellido)) {
+            Log::warning('Cliente sin nombre válido', [
+                'nombre' => $nombre,
+                'apellido' => $apellido,
+                'correo' => $correo
+            ]);
+            return false;
+        }
+        
+        // Validar email si existe
+        if ($correo && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            Log::warning('Email inválido', [
+                'correo' => $correo,
+                'nombre' => $nombre
+            ]);
+            return false;
+        }
+        
+        // Validar que no sea un email genérico o de prueba
+        if ($correo && $this->esEmailGenerico($correo)) {
+            Log::warning('Email genérico detectado', [
+                'correo' => $correo,
+                'nombre' => $nombre
+            ]);
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Verifica si un email es genérico o de prueba
+     * 
+     * @param string $email
+     * @return bool
+     */
+    private function esEmailGenerico($email)
+    {
+        $emailsGenericos = [
+            'test@example.com',
+            'test@test.com',
+            'admin@shopify.com',
+            'noreply@shopify.com',
+            'support@shopify.com',
+            'info@shopify.com',
+            'contact@shopify.com'
+        ];
+        
+        $emailLower = strtolower($email);
+        
+        // Verificar emails genéricos exactos
+        if (in_array($emailLower, $emailsGenericos)) {
+            return true;
+        }
+        
+        // Verificar patrones genéricos
+        $patronesGenericos = [
+            '/^test\d*@/',
+            '/^admin\d*@/',
+            '/^user\d*@/',
+            '/^customer\d*@/',
+            '/^shopify\d*@/',
+            '/^demo\d*@/'
+        ];
+        
+        foreach ($patronesGenericos as $patron) {
+            if (preg_match($patron, $emailLower)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Crea un cliente con datos mínimos válidos
+     * 
+     * @param array $clienteData
+     * @param int $empresaId
+     * @return Cliente
+     */
+    private function crearClienteMinimo($clienteData, $empresaId)
+    {
+        $clienteMinimo = [
+            'nombre' => $clienteData['nombre'] ?? 'Cliente',
+            'apellido' => $clienteData['apellido'] ?? 'Shopify',
+            'correo' => $clienteData['correo'] ?? 'cliente@shopify.com',
+            'telefono' => $clienteData['telefono'] ?? '',
+            'direccion' => $clienteData['direccion'] ?? '',
+            'pais' => $clienteData['pais'] ?? '',
+            'municipio' => $clienteData['municipio'] ?? '',
+            'departamento' => $clienteData['departamento'] ?? '',
+            'tipo' => 'Persona',
+            'enable' => 1,
+            'id_empresa' => $empresaId,
+            'id_usuario' => $clienteData['id_usuario'] ?? null,
+            'shopify_customer_id' => $clienteData['shopify_customer_id'] ?? null,
+        ];
+        
+        Log::info('Creando cliente mínimo', [
+            'cliente_minimo' => $clienteMinimo
+        ]);
+        
+        return Cliente::create($clienteMinimo);
+    }
+
+    /**
+     * Mapea el estado financiero de Shopify al estado de SmartPyme
+     * 
+     * @param string $shopifyStatus
+     * @return string
+     */
+    private function mapearEstado($shopifyStatus)
+    {
+        $mapeo = [
+            'pending' => 'Pendiente',
+            'authorized' => 'Pendiente',
+            'partially_paid' => 'Pendiente',
+            'paid' => 'Pagada',
+            'partially_refunded' => 'Pagada',
+            'refunded' => 'Reembolsada',
+            'voided' => 'Anulada'
+        ];
+
+        return $mapeo[$shopifyStatus] ?? 'Pendiente';
+    }
+
+    /**
+     * Actualiza las cantidades de productos en una venta existente
+     * 
+     * @param Venta $venta
+     * @param Request $request
+     * @return void
+     */
+    private function actualizarCantidadesProductos($venta, $request)
+    {
+        Log::info("Iniciando actualización de cantidades de productos", [
+            'venta_id' => $venta->id,
+            'shopify_order_id' => $request->id,
+            'line_items_count' => count($request->line_items ?? [])
+        ]);
+
+        $lineItems = $request->line_items ?? [];
+        
+        foreach ($lineItems as $item) {
+            // Buscar el producto por variant_id o SKU
+            $producto = null;
+            
+            if (!empty($item['variant_id'])) {
+                $producto = Producto::where('shopify_variant_id', $item['variant_id'])
+                    ->where('id_empresa', $venta->id_empresa)
+                    ->first();
+            }
+            
+            if (!$producto && !empty($item['sku'])) {
+                $producto = Producto::where('codigo', $item['sku'])
+                    ->where('id_empresa', $venta->id_empresa)
+                    ->first();
+            }
+            
+            if (!$producto) {
+                Log::warning("Producto no encontrado para actualizar cantidad", [
+                    'variant_id' => $item['variant_id'] ?? 'N/A',
+                    'sku' => $item['sku'] ?? 'N/A',
+                    'title' => $item['title'] ?? 'N/A'
+                ]);
+                continue;
+            }
+            
+            // Buscar el detalle de venta existente
+            $detalle = $venta->detalles()
+                ->where('id_producto', $producto->id)
+                ->first();
+                
+            if (!$detalle) {
+                Log::warning("Detalle de venta no encontrado para producto", [
+                    'venta_id' => $venta->id,
+                    'producto_id' => $producto->id,
+                    'producto_nombre' => $producto->nombre
+                ]);
+                continue;
+            }
+            
+            $cantidadAnterior = $detalle->cantidad;
+            // Usar current_quantity si está disponible, sino quantity
+            $cantidadNueva = $item['current_quantity'] ?? $item['quantity'];
+            
+            Log::info("Comparando cantidades de producto", [
+                'venta_id' => $venta->id,
+                'producto_id' => $producto->id,
+                'cantidad_anterior' => $cantidadAnterior,
+                'cantidad_nueva' => $cantidadNueva,
+                'quantity_shopify' => $item['quantity'],
+                'current_quantity_shopify' => $item['current_quantity'] ?? 'N/A',
+                'fulfillable_quantity_shopify' => $item['fulfillable_quantity'] ?? 'N/A',
+                'diferencia' => $cantidadNueva - $cantidadAnterior
+            ]);
+            
+            // Solo actualizar si la cantidad ha cambiado
+            if ($cantidadAnterior != $cantidadNueva) {
+                Log::info("Actualizando cantidad de producto", [
+                    'venta_id' => $venta->id,
+                    'producto_id' => $producto->id,
+                    'cantidad_anterior' => $cantidadAnterior,
+                    'cantidad_nueva' => $cantidadNueva,
+                    'diferencia' => $cantidadNueva - $cantidadAnterior
+                ]);
+                
+                // Actualizar la cantidad en el detalle
+                $detalle->update([
+                    'cantidad' => $cantidadNueva,
+                    'total' => $cantidadNueva * $detalle->precio
+                ]);
+                
+                // Ajustar el inventario
+                $diferenciaStock = $cantidadNueva - $cantidadAnterior;
+                
+                if ($diferenciaStock != 0) {
+                    $inventario = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->first();
+                        
+                    if ($inventario) {
+                        if ($diferenciaStock > 0) {
+                            // Se agregaron productos, reducir stock
+                            $inventario->decrement('stock', $diferenciaStock);
+                        } else {
+                            // Se quitaron productos, incrementar stock
+                            $inventario->increment('stock', abs($diferenciaStock));
+                        }
+                        
+                        // Registrar en el kardex
+                        $inventario->kardex($venta, abs($diferenciaStock), $detalle->precio, $producto->costo);
+                        
+                        Log::info("Inventario ajustado por cambio de cantidad", [
+                            'producto_id' => $producto->id,
+                            'diferencia_stock' => $diferenciaStock,
+                            'stock_actual' => $inventario->stock
+                        ]);
+                    }
+                }
+            } else {
+                Log::info("Cantidad sin cambios para producto", [
+                    'venta_id' => $venta->id,
+                    'producto_id' => $producto->id,
+                    'cantidad' => $cantidadAnterior
+                ]);
+            }
+        }
+        
+        // Recalcular totales de la venta
+        $this->recalcularTotalesVenta($venta);
+    }
+
+    /**
+     * Recalcula los totales de una venta después de actualizar cantidades
+     * 
+     * @param Venta $venta
+     * @return void
+     */
+    private function recalcularTotalesVenta($venta)
+    {
+        $subtotal = 0;
+        $iva = 0;
+        $gravada = 0;
+        
+        foreach ($venta->detalles as $detalle) {
+            $subtotal += $detalle->subtotal;
+            $iva += $detalle->iva;
+            $gravada += $detalle->gravada;
+        }
+        
+        // Para ventas de Shopify, el total debe ser gravada + iva
+        // Redondear a 2 decimales para evitar problemas de precisión
+        $total = round($gravada + $iva, 2);
+        
+        $venta->update([
+            'sub_total' => round($subtotal, 2),
+            'iva' => round($iva, 2),
+            'gravada' => round($gravada, 2),
+            'total' => $total
+        ]);
+        
+        Log::info("Totales de venta recalculados", [
+            'venta_id' => $venta->id,
+            'subtotal' => round($subtotal, 2),
+            'iva' => round($iva, 2),
+            'gravada' => round($gravada, 2),
+            'total' => $total
+        ]);
+    }
+
+    /**
+     * Procesa el webhook de pedido actualizado de Shopify
+     * 
+     * @param string $tokenEmpresa
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    private function procesarVentaActualizada($tokenEmpresa, Request $request)
+    {
+        Log::info("Webhook de pedido actualizado recibido de Shopify", [
+            'shopify_order_id' => $request->id,
+            'token_empresa' => $tokenEmpresa,
+            'financial_status' => $request->financial_status ?? 'N/A',
+            'fulfillment_status' => $request->fulfillment_status ?? 'N/A'
+        ]);
+
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$empresa) {
+            Log::error("Token de empresa Shopify no válido: {$tokenEmpresa}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido o no conectado'
+            ], 401);
+        }
+
+        try {
+            // Buscar la venta existente
+            $shopifyOrderId = $request->id;
+            $referencia = 'SHOPIFY-' . $shopifyOrderId;
+            
+            $venta = Venta::where('referencia_shopify', $referencia)
+                ->where('id_empresa', $empresa->id)
+                ->first();
+
+            if (!$venta) {
+                Log::warning("Venta no encontrada para actualización", [
+                    'shopify_order_id' => $shopifyOrderId,
+                    'referencia_buscada' => $referencia,
+                    'empresa_id' => $empresa->id
+                ]);
+                return response()->json([
+                    'status' => 'warning',
+                    'mensaje' => 'Venta no encontrada para actualizar'
+                ], 404);
+            }
+
+            // Actualizar estado de la venta si es necesario
+            $nuevoEstado = $this->mapearEstado($request->financial_status ?? 'pending');
+            
+            if ($venta->estado !== $nuevoEstado) {
+                $venta->update([
+                    'estado' => $nuevoEstado,
+                    'observaciones' => ($venta->observaciones ? $venta->observaciones . ' | ' : '') . 
+                        'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s')
+                ]);
+                
+                Log::info("Estado de venta actualizado", [
+                    'venta_id' => $venta->id,
+                    'estado_anterior' => $venta->getOriginal('estado'),
+                    'estado_nuevo' => $nuevoEstado,
+                    'shopify_order_id' => $shopifyOrderId
+                ]);
+            }
+
+            // Actualizar cantidades de productos si han cambiado
+            $this->actualizarCantidadesProductos($venta, $request);
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Venta actualizada correctamente',
+                'venta_id' => $venta->id,
+                'estado' => $venta->estado
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error procesando actualización de venta desde Shopify: ' . $e->getMessage(), [
+                'shopify_order_id' => $shopifyOrderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar la actualización de la venta',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

@@ -153,11 +153,11 @@
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.sub_total + venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total + venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr *ngIf="venta.referencia_shopify">
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end text-info"><b>Impuestos incluidos:</b></td>
-                        <td class="text-end text-info"><b>{{ (venta?.total * 0.13 / 1.13) | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end text-info"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Descuento:</b></td>
