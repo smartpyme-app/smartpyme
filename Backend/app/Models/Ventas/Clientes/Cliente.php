@@ -34,6 +34,7 @@ class Cliente extends Model {
        'fecha_cumpleanos',
        'telefono',
        'correo',
+       'shopify_customer_id',
        'nota',
        'red_social',
        'enable',
