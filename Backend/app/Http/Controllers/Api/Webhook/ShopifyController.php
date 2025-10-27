@@ -761,7 +761,7 @@ class ShopifyController extends Controller
             if (isset($data['src']) && $data['src']) {
                 // Verificar si ya existe una imagen con la misma URL para el mismo producto
                 $imagenExistente = Imagen::where('id_producto', $data['id_producto'])
-                    ->where('src', $data['src'])
+                    ->where('img', $data['src'])
                     ->first();
 
                 if ($imagenExistente && $imagenExistente->id !== $imagen->id) {
@@ -773,13 +773,13 @@ class ShopifyController extends Controller
                 }
 
                 // Solo eliminar y recrear si la imagen ya existe y tiene una URL diferente
-                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->src !== $data['src']) {
+                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->img !== $data['src']) {
                     Storage::delete($imagen->img);
                     Log::info('Imagen anterior eliminada por cambio de URL', ['path' => $imagen->img]);
                 }
 
                 // Solo procesar si no existe o si la URL cambió
-                if (!$imagen->id || $imagen->src !== $data['src']) {
+                if (!$imagen->id || $imagen->img !== $data['src']) {
                     try {
                         $imageContent = file_get_contents($data['src']);
                         if ($imageContent === false) {
