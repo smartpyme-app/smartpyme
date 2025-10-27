@@ -44,7 +44,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
                 this.devolucion.impuestos = venta.impuestos;
                 this.devolucion.fecha = this.apiService.date();
                 this.devolucion.id_venta = id;
-                this.devolucion.tipo = 'Interna';
+                this.devolucion.tipo = 'devolucion';
                 this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
 
                 this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false; 
@@ -115,7 +115,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
         this.cargarDocumentos();
         this.devolucion = {};
         this.devolucion.fecha = this.apiService.date();
-        this.devolucion.tipo = 'Interna';
+        this.devolucion.tipo = 'devolucion';
         this.devolucion.cliente = {};
         this.devolucion.detalles = [];
         this.devolucion.canal = 'Tienda';

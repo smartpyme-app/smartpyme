@@ -27,7 +27,7 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn" routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
                     *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
                     *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
@@ -72,7 +72,12 @@
                     <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">
-                            {{ producto.nombre }}
+                            <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
+                                {{ producto.nombre }} ({{ producto.nombre_variante }})
+                            </span>
+                            <ng-template #nombreNormal>
+                                {{ producto.nombre }}
+                            </ng-template>
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>

@@ -63,6 +63,10 @@
                 <label class="fw-medium">Número de orden</label>
                 <p>{{ venta.num_orden }}</p>
             </div>
+            <div class="form-group col-lg-4" *ngIf="venta.referencia_shopify">
+                <label class="fw-medium">Origen</label>
+                <p><span class="badge bg-info">Shopify</span> {{ venta.referencia_shopify }}</p>
+            </div>
         </div>
     </div>
 
@@ -140,7 +144,7 @@
                                 <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
                             </div>
                             <div class="ms-3">
-                                {{ detalle.descripcion }} <br>
+                                {{ detalle.descripcion }}<span *ngIf="detalle?.producto?.nombre_variante" class="text-info"> ({{ detalle?.producto?.nombre_variante }})</span> <br>
                                 <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
                                 <ul style="font-size: 14px;">
                                     <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
@@ -158,7 +162,11 @@
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Sub Total:</b></td>
-                        <td class="text-end"><b>{{ venta?.sub_total + venta?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-end"><b>{{ venta?.referencia_shopify ? venta?.gravada : (venta?.sub_total + venta?.descuento) | currency:'USD':'symbol':'1.2' }}</b></td>
+                    </tr>
+                    <tr *ngIf="venta.referencia_shopify">
+                        <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end text-info"><b>Impuestos incluidos:</b></td>
+                        <td class="text-end text-info"><b>{{ venta?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
                     <tr>
                         <td [attr.colspan]="usuario.empresa.vendedor_detalle_venta ? 5 : 4 " class="text-end"><b>Descuento:</b></td>
@@ -209,6 +217,8 @@
         </div>
     </div>
 </div>
+
+
 <div class="card border-0" *ngIf="venta.dte">
     <div class="card-body">
         <div class="row">

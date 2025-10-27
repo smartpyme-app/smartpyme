@@ -18,6 +18,8 @@ class SaleDetailResource extends JsonResource
             // Campos del detalle (todos excepto id)
             //'id_producto' => $this->id_producto,
             'nombre_producto' => $this->nombre_producto,
+            'codigo_producto' => $this->codigo,
+            'marca_producto' => $this->marca,
             'cantidad' => $this->cantidad,
             'precio' => $this->precio,
             'costo' => $this->costo,

@@ -180,7 +180,7 @@
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Sumas</td>
-                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
@@ -191,17 +191,17 @@
                             IVA
                         @endif
                     </td>
-                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right">Subtotal</td>
-                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
+                    <td class="text-right">{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->sub_total + $venta->iva, 2) }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"></td>
                     <td class="text-right"><b>Total</b></td>
-                    <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }} {{ number_format($venta->total, 2) }}</b></td>
+                    <td class="text-right"><b>{{ $venta->empresa->currency->currency_symbol }}{{ number_format($venta->total, 2) }}</b></td>
                 </tr>
             </tfoot>
         </table>

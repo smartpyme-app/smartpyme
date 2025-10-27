@@ -21,7 +21,15 @@
                 <label for="referencia">Correlativo</label>
                 <input type="number" class="form-control" [(ngModel)]="devolucion.referencia" name="referencia" id="referencia">
             </div>
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-4 col-lg-2">
+                <label for="tipo">Tipo</label>
+                <select name="tipo" [(ngModel)]="devolucion.tipo" class="form-select" required>
+                    <option value="devolucion">Devolución</option>
+                    <option value="descuento_ajuste">Descuento o Ajuste</option>
+                    <option value="anulacion_factura">Anulación de Factura</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
                 <div class="form-group">
                     <label for="">Observaciones:</label>
                     <input type="text" class="form-control" [(ngModel)]="devolucion.observaciones" name="observaciones" placeholder="Escribe aquí" required>

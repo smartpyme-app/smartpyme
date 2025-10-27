@@ -110,6 +110,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::get('/productos/exportar/woocommerce',          [ProductosController::class, 'exportarWooCommerceTemplate']);
     //productos/exportar-shopify
     Route::get('/productos/exportar/shopify',          [ProductosController::class, 'exportarShopifyTemplate']);
+    //productos/importar-shopify
+    Route::post('/producto/importar-shopify',          [ProductosController::class, 'importarShopify']);
     //productos/exportar-traslado
     Route::get('/productos/exportar-traslado',          [ProductosController::class, 'exportarPlantillaTraslado']);
     //productos/traslado-masivo/importar
@@ -118,6 +120,11 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::post('/productos/traslado-masivo',          [ProductosController::class, 'trasladoMasivo']);
 
     Route::get('productos/marca-productos', [ProductosController::class, 'getMarcas']);
+
+    // Rutas para sistema de cola de Shopify (compatible con Hostinger)
+    Route::post('/productos/shopify/cola/iniciar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'iniciarImportacion']);
+    Route::post('/productos/shopify/cola/continuar', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'continuarImportacion']);
+    Route::get('/productos/shopify/cola/estado', [\App\Http\Controllers\Api\Inventario\ShopifyQueueController::class, 'verificarEstado']);
 
     //refactor productos compuestos
     Route::group(['prefix' => 'combos'], function () {

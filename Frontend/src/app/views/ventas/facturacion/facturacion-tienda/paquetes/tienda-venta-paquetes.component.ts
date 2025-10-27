@@ -43,7 +43,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.loadAll();
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
         
-        this.apiService.getAll('productos', {buscador: 'Servicio de importación de paquetería'}).subscribe(productos => { 
+        this.apiService.getAll('servicios', {buscador: 'Servicio de importación de paquetería'}).subscribe(productos => { 
             if(productos.data[0]){
                 this.servicio = productos.data[0];
             }else{

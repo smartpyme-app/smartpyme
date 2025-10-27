@@ -43,7 +43,7 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
+            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
                     *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
             <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/traslados"
                     *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>

@@ -62,7 +62,7 @@ X-RateLimit-Reset: 1640995200
 ```json
 {
   "success": false,
-  "error": "Rate limit excedido. Máximo 100 requests por hora (200 con filtros de fecha)",
+  "error": "Rate limit excedido. Máximo 1000 requests por hora (2000 con filtros de fecha)",
   "code": 429
 }
 ```
@@ -149,6 +149,8 @@ curl -H "Authorization: Bearer tu_api_key" \
       "detalles": [
         {
           "nombre_producto": "Producto A",
+          "codigo_producto": "PROD-A-001",
+          "marca_producto": "Marca A",
           "cantidad": 2.00,
           "precio": 75.00,
           "total": 150.00,

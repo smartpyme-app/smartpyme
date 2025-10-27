@@ -1,0 +1,502 @@
+{
+  "metadata": {
+    "title": "SmartPYME External API - Data Dictionary",
+    "version": "1.2.0",
+    "last_updated": "2024-10-21",
+    "description": "Complete data dictionary for Sales and Inventory APIs"
+  },
+  "entities": {
+    "sales": {
+      "description": "Sales transaction data",
+      "fields": {
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Unique sale identifier",
+          "example": 12345,
+          "notes": "Primary key, auto-increment"
+        },
+        "fecha": {
+          "type": "date",
+          "required": true,
+          "description": "Sale date",
+          "format": "YYYY-MM-DD",
+          "example": "2024-10-21"
+        },
+        "correlativo": {
+          "type": "string",
+          "required": true,
+          "description": "Sale correlative number",
+          "example": "V-001234",
+          "notes": "Unique per company"
+        },
+        "estado": {
+          "type": "string",
+          "required": true,
+          "description": "Sale status",
+          "example": "Completada",
+          "enum": ["Completada", "Pendiente", "Anulada", "Cotizacion"]
+        },
+        "forma_pago": {
+          "type": "string",
+          "required": false,
+          "description": "Payment method",
+          "example": "Efectivo",
+          "enum": ["Efectivo", "Tarjeta", "Transferencia", "Cheque", "Crédito"]
+        },
+        "monto_pago": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Amount paid by customer",
+          "example": 150.75,
+          "notes": "Can differ from total (partial payments)"
+        },
+        "cambio": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Change returned to customer",
+          "example": 4.25,
+          "notes": "Only applies to cash payments"
+        },
+        "iva_percibido": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "VAT perceived in transaction",
+          "example": 19.50
+        },
+        "iva_retenido": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "VAT retained in transaction",
+          "example": 2.30
+        },
+        "renta_retenida": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Income tax retained",
+          "example": 5.00
+        },
+        "iva": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Total VAT of the sale",
+          "example": 19.50
+        },
+        "total_costo": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Total cost of sold products",
+          "example": 85.00,
+          "notes": "Sum of costs of all products"
+        },
+        "descuento": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Discount applied to sale",
+          "example": 10.00
+        },
+        "sub_total": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Subtotal before taxes",
+          "example": 130.00
+        },
+        "no_sujeta": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Amount not subject to taxes",
+          "example": 0.00
+        },
+        "exenta": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Tax-exempt amount",
+          "example": 0.00
+        },
+        "gravada": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Taxable amount",
+          "example": 130.00,
+          "notes": "Tax base for VAT"
+        },
+        "cuenta_a_terceros": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Third-party account amount",
+          "example": 0.00
+        },
+        "total": {
+          "type": "decimal(10,2)",
+          "required": true,
+          "description": "Final total of the sale",
+          "example": 149.50
+        },
+        "propina": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Tip included",
+          "example": 0.00
+        },
+        "observaciones": {
+          "type": "text",
+          "required": false,
+          "description": "Additional comments",
+          "example": "Cliente frecuente"
+        },
+        "recurrente": {
+          "type": "boolean",
+          "required": false,
+          "description": "Indicates if it's a recurring sale",
+          "example": false
+        },
+        "cotizacion": {
+          "type": "boolean",
+          "required": false,
+          "description": "Indicates if it's a quote",
+          "example": false
+        },
+        "descripcion_impresion": {
+          "type": "text",
+          "required": false,
+          "description": "Custom text for printing",
+          "example": "Gracias por su compra"
+        },
+        "saldo": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Outstanding balance",
+          "example": 0.00,
+          "notes": "For credit sales"
+        },
+        "nombre_cliente": {
+          "type": "string",
+          "required": false,
+          "description": "Customer name",
+          "example": "Juan Pérez"
+        },
+        "nombre_usuario": {
+          "type": "string",
+          "required": false,
+          "description": "User who registered the sale",
+          "example": "admin"
+        },
+        "nombre_vendedor": {
+          "type": "string",
+          "required": false,
+          "description": "Assigned salesperson",
+          "example": "María García"
+        },
+        "nombre_sucursal": {
+          "type": "string",
+          "required": false,
+          "description": "Branch where sale was made",
+          "example": "Sucursal Centro"
+        },
+        "nombre_canal": {
+          "type": "string",
+          "required": false,
+          "description": "Sales channel",
+          "example": "Mostrador"
+        },
+        "nombre_documento": {
+          "type": "string",
+          "required": false,
+          "description": "Document type",
+          "example": "Factura"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Record creation date",
+          "format": "ISO 8601",
+          "example": "2024-10-21T10:30:00Z"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Last update date",
+          "format": "ISO 8601",
+          "example": "2024-10-21T10:30:00Z"
+        }
+      },
+      "relationships": {
+        "detalles": {
+          "type": "array",
+          "description": "Sale details",
+          "entity": "sale_details"
+        }
+      }
+    },
+    "sale_details": {
+      "description": "Individual items in a sale",
+      "fields": {
+        "nombre_producto": {
+          "type": "string",
+          "required": true,
+          "description": "Product name",
+          "example": "Laptop Dell Inspiron"
+        },
+        "codigo_producto": {
+          "type": "string",
+          "required": false,
+          "description": "Internal product code",
+          "example": "LAP-DELL-001",
+          "notes": "SKU of the sold product"
+        },
+        "marca_producto": {
+          "type": "string",
+          "required": false,
+          "description": "Product brand",
+          "example": "Dell",
+          "notes": "Manufacturer or brand of the product"
+        },
+        "cantidad": {
+          "type": "decimal(10,3)",
+          "required": true,
+          "description": "Quantity sold",
+          "example": 2.000,
+          "notes": "Allows decimals for fractional products"
+        },
+        "precio": {
+          "type": "decimal(10,2)",
+          "required": true,
+          "description": "Unit sale price",
+          "example": 750.00
+        },
+        "costo": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Unit cost of product",
+          "example": 600.00
+        },
+        "descuento": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Discount applied to item",
+          "example": 50.00
+        },
+        "total_costo": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Total cost of item",
+          "example": 1200.00,
+          "notes": "cost × quantity"
+        },
+        "total": {
+          "type": "decimal(10,2)",
+          "required": true,
+          "description": "Total of item",
+          "example": 1450.00,
+          "notes": "(price × quantity) - discount + VAT"
+        },
+        "iva": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "VAT of item",
+          "example": 187.75
+        }
+      }
+    },
+    "inventory": {
+      "description": "Product inventory data",
+      "fields": {
+        "id": {
+          "type": "integer",
+          "required": true,
+          "description": "Unique product identifier",
+          "example": 5678,
+          "notes": "Primary key, auto-increment"
+        },
+        "nombre": {
+          "type": "string",
+          "required": true,
+          "description": "Product name",
+          "example": "Laptop Dell Inspiron 15"
+        },
+        "descripcion": {
+          "type": "text",
+          "required": false,
+          "description": "Detailed description",
+          "example": "Laptop con procesador Intel i5..."
+        },
+        "codigo": {
+          "type": "string",
+          "required": false,
+          "description": "Internal product code",
+          "example": "LAP-DELL-001",
+          "notes": "Company internal SKU"
+        },
+        "barcode": {
+          "type": "string",
+          "required": false,
+          "description": "Barcode",
+          "example": "7501234567890",
+          "notes": "EAN/UPC code"
+        },
+        "nombre_categoria": {
+          "type": "string",
+          "required": false,
+          "description": "Product category",
+          "example": "Electrónicos"
+        },
+        "precio": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Current sale price",
+          "example": 899.99
+        },
+        "costo": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Current acquisition cost",
+          "example": 720.00
+        },
+        "costo_anterior": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Previous cost",
+          "example": 715.00
+        },
+        "costo_promedio": {
+          "type": "decimal(10,2)",
+          "required": false,
+          "description": "Weighted average cost",
+          "example": 717.50
+        },
+        "marca": {
+          "type": "string",
+          "required": false,
+          "description": "Product brand",
+          "example": "Dell"
+        },
+        "tipo": {
+          "type": "string",
+          "required": false,
+          "description": "Product type",
+          "example": "Producto",
+          "enum": ["Producto", "Servicio", "Combo"]
+        },
+        "enable": {
+          "type": "boolean",
+          "required": true,
+          "description": "Product active status",
+          "example": true,
+          "notes": "true = active, false = inactive"
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Creation date",
+          "format": "ISO 8601",
+          "example": "2024-01-15T08:00:00Z"
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": true,
+          "description": "Update date",
+          "format": "ISO 8601",
+          "example": "2024-10-21T14:30:00Z"
+        }
+      },
+      "relationships": {
+        "inventarios": {
+          "type": "array",
+          "description": "Stock per warehouse",
+          "entity": "inventory_stock"
+        }
+      }
+    },
+    "inventory_stock": {
+      "description": "Stock information per warehouse",
+      "fields": {
+        "id_producto": {
+          "type": "integer",
+          "required": true,
+          "description": "Product ID",
+          "example": 5678
+        },
+        "stock": {
+          "type": "decimal(10,3)",
+          "required": true,
+          "description": "Available quantity",
+          "example": 25.000
+        },
+        "stock_minimo": {
+          "type": "decimal(10,3)",
+          "required": false,
+          "description": "Minimum required stock",
+          "example": 5.000,
+          "notes": "Reorder point"
+        },
+        "stock_maximo": {
+          "type": "decimal(10,3)",
+          "required": false,
+          "description": "Maximum allowed stock",
+          "example": 100.000,
+          "notes": "Maximum capacity"
+        },
+        "nota": {
+          "type": "text",
+          "required": false,
+          "description": "Stock observations",
+          "example": "Revisar vencimiento"
+        },
+        "nombre_bodega": {
+          "type": "string",
+          "required": true,
+          "description": "Warehouse name",
+          "example": "Bodega Principal"
+        },
+        "nombre_sucursal": {
+          "type": "string",
+          "required": true,
+          "description": "Branch of warehouse",
+          "example": "Sucursal Centro"
+        }
+      }
+    }
+  },
+  "data_types": {
+    "integer": {
+      "description": "Whole number",
+      "range": "-2,147,483,648 to 2,147,483,647",
+      "example": 12345
+    },
+    "decimal(10,2)": {
+      "description": "Decimal number with 2 decimal places",
+      "range": "Up to 8 integer digits, 2 decimal places",
+      "example": 1234.56
+    },
+    "decimal(10,3)": {
+      "description": "Decimal number with 3 decimal places",
+      "range": "Up to 7 integer digits, 3 decimal places",
+      "example": 1234.567
+    },
+    "string": {
+      "description": "Variable text",
+      "range": "Up to 255 characters",
+      "example": "Example text"
+    },
+    "text": {
+      "description": "Long text",
+      "range": "Up to 65,535 characters",
+      "example": "Long description..."
+    },
+    "boolean": {
+      "description": "True/False",
+      "range": "true or false",
+      "example": true
+    },
+    "date": {
+      "description": "Date only",
+      "format": "YYYY-MM-DD",
+      "example": "2024-10-21"
+    },
+    "timestamp": {
+      "description": "Complete date and time",
+      "format": "ISO 8601",
+      "example": "2024-10-21T10:30:00Z"
+    }
+  }
+}

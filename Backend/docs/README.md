@@ -1,4 +1,4 @@
-# Documentación API Externa SmartPYME
+# 📚 Documentación API Externa SmartPYME
 
 Esta carpeta contiene toda la documentación para la API Externa de SmartPYME, que permite a proveedores externos acceder a datos de ventas e inventario.
 
@@ -7,19 +7,39 @@ Esta carpeta contiene toda la documentación para la API Externa de SmartPYME, q
 ```
 docs/
 ├── API_EXTERNAL.md           # Documentación principal completa
-├── README.md                 # Este archivo
+├── DATA_DICTIONARY.md        # 📊 NUEVO: Diccionario completo de datos
+├── RATE_LIMITS.md           # Información sobre límites de requests
+├── README.md                # Este archivo
 ├── examples/
-│   ├── curl_examples.md      # Ejemplos usando cURL
+│   ├── curl_examples.md     # Ejemplos usando cURL
 └── schemas/
-    ├── sale_response.json    # Schema JSON para respuestas de ventas
-    └── inventory_response.json # Schema JSON para respuestas de inventario
+    ├── sale_response.json   # Schema JSON para respuestas de ventas
+    ├── inventory_response.json # Schema JSON para respuestas de inventario
+    ├── data_dictionary.json # 🔧 Diccionario en formato JSON
+    └── data_dictionary.csv  # 📊 Diccionario en formato CSV
 ```
+
+## 🎯 Diccionario de Datos - Múltiples Formatos
+
+### 📝 Markdown (`DATA_DICTIONARY.md`)
+- ✅ **Mejor para**: Lectura humana, documentación web
+- ✅ **Incluye**: Tablas organizadas, ejemplos, notas detalladas
+
+### 🔧 JSON (`schemas/data_dictionary.json`)
+- ✅ **Mejor para**: Integración programática, validación automática
+- ✅ **Incluye**: Estructura completa con metadatos
+
+### 📊 CSV (`schemas/data_dictionary.csv`)
+- ✅ **Mejor para**: Excel, Google Sheets, análisis de datos
+- ✅ **Compatible con**: Hojas de cálculo, herramientas de BI
 
 ## 🚀 Inicio Rápido
 
-1. **Lee la documentación principal**: [API_EXTERNAL.md](API_EXTERNAL.md)
-2. **Obtén tu API Key**: Se puede encontrar en app.smartpyme.site, en la sección Configuraciones->Mi cuenta, en el tab de Integraciones
-3. **Prueba con cURL**: Revisa [curl_examples.md](examples/curl_examples.md)
+1. **Para desarrolladores**: Lee [API_EXTERNAL.md](API_EXTERNAL.md) y [DATA_DICTIONARY.md](DATA_DICTIONARY.md)
+2. **Para análisis**: Abre `data_dictionary.csv` en Excel
+3. **Para integración**: Usa `data_dictionary.json` en tu código
+4. **Obtén tu API Key**: Se puede encontrar en app.smartpyme.site, en la sección Configuraciones->Mi cuenta, en el tab de Integraciones
+5. **Prueba con cURL**: Revisa [curl_examples.md](examples/curl_examples.md)
 
 ## 📊 Endpoints Disponibles
 

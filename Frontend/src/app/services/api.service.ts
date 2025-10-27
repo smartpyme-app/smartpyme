@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry } from 'rxjs/operators';
+import { map, catchError, retry, timeout } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { AlertService } from '@services/alert.service';
 import { ConstantsService } from '@services/constants.service';
@@ -77,6 +77,15 @@ export class ApiService {
       .post<any>(this.apiUrl + url, model)
       .pipe(retry(0), catchError(this.handleError));
   }
+
+  storeWithTimeout(url:string, model:any, timeoutMs: number = 300000) {
+    return this.http.post<any>(this.apiUrl + url, model).pipe(
+      timeout(timeoutMs),
+      retry(0),
+      catchError(this.handleError)
+    );
+  }
+
   update(url: string, id: number, model: any) {
     return this.http
       .put<any>(`${this.apiUrl}${url}/${id}`, model)
