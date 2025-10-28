@@ -590,13 +590,16 @@ class ShopifyController extends Controller
             //     'documento_id' => $documento->id
             // ]);
 
+            // Mapear canal de venta según el tipo de canal de Shopify
+            $canalId = $this->mapearCanalVenta($request, $usuario->id_empresa);
+
             $request->merge([
                 'id_empresa' => $usuario->id_empresa,
                 'id_usuario' => $usuario->id,
                 'id_bodega' => $usuario->id_bodega,
                 'id_sucursal' => $usuario->id_sucursal,
                 'id_documento' => $documento->id,
-                'id_canal' => $empresa->shopify_canal_id
+                'id_canal' => $canalId
             ]);
 
             // Log::info("Datos del request después del merge", $request->all());
@@ -1885,6 +1888,9 @@ class ShopifyController extends Controller
 
             DB::beginTransaction();
 
+            // Mapear canal de venta según el tipo de canal de Shopify
+            $canalId = $this->mapearCanalVenta($request, $usuario->id_empresa);
+
             // Preparar datos del request para el transformer
             $request->merge([
                 'id_empresa' => $usuario->id_empresa,
@@ -1892,7 +1898,7 @@ class ShopifyController extends Controller
                 'id_bodega' => $usuario->id_bodega,
                 'id_sucursal' => $usuario->id_sucursal,
                 'id_documento' => $documento->id,
-                'id_canal' => $empresa->shopify_canal_id
+                'id_canal' => $canalId
             ]);
 
             // Verificar si hay datos de cliente válidos
@@ -2161,5 +2167,87 @@ class ShopifyController extends Controller
         // Log::info("Respuesta del webhook de prueba", $response);
 
         return response()->json($response, 200);
+    }
+
+    /**
+     * Mapea el canal de venta de Shopify al canal correspondiente en el sistema
+     * 
+     * @param Request $request
+     * @param int $empresaId
+     * @return int
+     */
+    private function mapearCanalVenta(Request $request, $empresaId)
+    {
+        // Obtener el canal de Shopify desde el request
+        $shopifyChannel = $request->input('source_name', '');
+        
+        Log::info('Mapeando canal de venta desde Shopify', [
+            'shopify_channel' => $shopifyChannel,
+            'empresa_id' => $empresaId,
+            'shopify_order_id' => $request->id ?? 'N/A'
+        ]);
+
+        // Buscar o crear los canales según el mapeo
+        $canalId = null;
+
+        switch ($shopifyChannel) {
+            case 'Online Store':
+                // Mapear a "Página Web"
+                $canalId = $this->buscarOCrearCanal('Página Web', $empresaId);
+                break;
+                
+            case 'Point of sale':
+                // Mapear a "Tienda Física"
+                $canalId = $this->buscarOCrearCanal('Tienda Física', $empresaId);
+                break;
+                
+            case '':
+            case null:
+            default:
+                // Cuando está vacío o es otro tipo, mapear a "Redes Sociales"
+                $canalId = $this->buscarOCrearCanal('Redes Sociales', $empresaId);
+                break;
+        }
+
+        Log::info('Canal de venta mapeado', [
+            'shopify_channel' => $shopifyChannel,
+            'canal_id' => $canalId,
+            'empresa_id' => $empresaId
+        ]);
+
+        return $canalId;
+    }
+
+    /**
+     * Busca o crea un canal de venta
+     * 
+     * @param string $nombreCanal
+     * @param int $empresaId
+     * @return int
+     */
+    private function buscarOCrearCanal($nombreCanal, $empresaId)
+    {
+        $canal = \App\Models\Admin\Canal::where('nombre', $nombreCanal)
+            ->where('id_empresa', $empresaId)
+            ->first();
+
+        if (!$canal) {
+            $canal = \App\Models\Admin\Canal::create([
+                'nombre' => $nombreCanal,
+                'descripcion' => "Canal creado automáticamente desde Shopify - {$nombreCanal}",
+                'enable' => true,
+                'cobra_propina' => false,
+                'envios' => false,
+                'id_empresa' => $empresaId
+            ]);
+
+            Log::info('Canal de venta creado automáticamente', [
+                'canal_id' => $canal->id,
+                'nombre' => $nombreCanal,
+                'empresa_id' => $empresaId
+            ]);
+        }
+
+        return $canal->id;
     }
 }
