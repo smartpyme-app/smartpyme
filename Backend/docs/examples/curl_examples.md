@@ -45,6 +45,68 @@ curl -H "Authorization: Bearer $API_KEY" \
   "$BASE_URL/sales/summary?fecha_inicio=2025-01-01&fecha_fin=2025-01-31"
 ```
 
+## Ejemplos de Devoluciones
+
+### Obtener todas las devoluciones (paginadas)
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns"
+```
+
+### Devoluciones del último mes
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns?fecha_inicio=2024-09-01&fecha_fin=2024-09-30"
+```
+
+### Devoluciones de una venta específica
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns?id_venta=12345"
+```
+
+### Obtener devolución específica
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns/789"
+```
+
+**Ejemplo de respuesta:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 789,
+    "fecha": "2024-10-21",
+    "correlativo": "DEV-001234",
+    "total": 149.50,
+    "observaciones": "Producto defectuoso",
+    "detalles": [
+      {
+        "nombre_producto": "Laptop Dell Inspiron",
+        "codigo_producto": "LAP-DELL-001",
+        "marca_producto": "Dell",
+        "cantidad": 1.000,
+        "precio": 750.00,
+        "total": 700.00
+      }
+    ]
+  }
+}
+```
+
+### Resumen de devoluciones
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns/summary"
+```
+
+### Resumen de devoluciones por período
+```bash
+curl -H "Authorization: Bearer $API_KEY" \
+  "$BASE_URL/returns/summary?fecha_inicio=2024-01-01&fecha_fin=2024-12-31"
+```
+
 ## Ejemplos de Inventario
 
 ### Obtener todos los productos
