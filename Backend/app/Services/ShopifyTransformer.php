@@ -238,6 +238,11 @@ class ShopifyTransformer
         $nombreBase = $this->obtenerNombreBase($shopifyData['title']);
         $nombreVariante = $this->construirNombreVariante($shopifyData);
 
+        // Obtener categoría "Uncategorized" por defecto para productos personalizados
+        $categoriaUncategorized = \App\Models\Inventario\Categorias\Categoria::where('id_empresa', $id_empresa)
+            ->where('nombre', 'Uncategorized')
+            ->first();
+
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
@@ -247,6 +252,7 @@ class ShopifyTransformer
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
             'id_sucursal' => $id_sucursal,
+            'id_categoria' => $categoriaUncategorized ? $categoriaUncategorized->id : null,
             'costo' => $shopifyData['price'],
             'precio' => $shopifyData['price'],
             'shopify_id' => $shopifyData['id'],

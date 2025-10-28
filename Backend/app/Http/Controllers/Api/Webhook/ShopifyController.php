@@ -536,6 +536,51 @@ class ShopifyController extends Controller
         // Log::info("Documento encontrado", ['documento_id' => $documento->id, 'documento_nombre' => $documento->nombre]);
 
         try {
+            // Verificar si la orden ya fue procesada previamente
+            $referenciaShopify = 'SHOPIFY-' . $request->id;
+            $ventaExistente = Venta::where('referencia_shopify', $referenciaShopify)
+                ->where('id_empresa', $usuario->id_empresa)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info("Venta duplicada detectada - orden ya procesada previamente", [
+                    'shopify_order_id' => $request->id,
+                    'venta_id_existente' => $ventaExistente->id,
+                    'referencia_shopify' => $referenciaShopify,
+                    'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
+                    'fecha_creacion_venta' => $ventaExistente->created_at
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Orden ya procesada previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+
+            // Verificar duplicados por webhook_id usando cache
+            $webhookId = $request->header('X-Shopify-Webhook-Id');
+            if ($webhookId) {
+                $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                if (Cache::has($cacheKey)) {
+                    Log::warning("Webhook duplicado detectado por webhook_id", [
+                        'shopify_order_id' => $request->id,
+                        'webhook_id' => $webhookId,
+                        'referencia_shopify' => $referenciaShopify
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Webhook ya procesado previamente',
+                        'duplicado' => true
+                    ], 200);
+                }
+
+                // Marcar webhook como procesado por 1 hora
+                Cache::put($cacheKey, true, 3600);
+            }
+
             DB::beginTransaction();
 
             // Log::info("Iniciando procesamiento de venta", [
@@ -1793,6 +1838,51 @@ class ShopifyController extends Controller
         }
 
         try {
+            // Verificar si el draft order ya fue procesado previamente
+            $referenciaShopify = 'DRAFT-' . $request->id;
+            $ventaExistente = Venta::where('referencia_shopify', $referenciaShopify)
+                ->where('id_empresa', $usuario->id_empresa)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info("Draft Order duplicado detectado - orden ya procesada previamente", [
+                    'shopify_draft_order_id' => $request->id,
+                    'venta_id_existente' => $ventaExistente->id,
+                    'referencia_shopify' => $referenciaShopify,
+                    'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
+                    'fecha_creacion_venta' => $ventaExistente->created_at
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Draft Order ya procesado previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+
+            // Verificar duplicados por webhook_id usando cache
+            $webhookId = $request->header('X-Shopify-Webhook-Id');
+            if ($webhookId) {
+                $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                if (Cache::has($cacheKey)) {
+                    Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                        'shopify_draft_order_id' => $request->id,
+                        'webhook_id' => $webhookId,
+                        'referencia_shopify' => $referenciaShopify
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Webhook ya procesado previamente',
+                        'duplicado' => true
+                    ], 200);
+                }
+
+                // Marcar webhook como procesado por 1 hora
+                Cache::put($cacheKey, true, 3600);
+            }
+
             DB::beginTransaction();
 
             // Preparar datos del request para el transformer
