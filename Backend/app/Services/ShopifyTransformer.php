@@ -135,24 +135,32 @@ class ShopifyTransformer
 
     public function transformarVenta($shopifyData, $clienteId, $documentoId, $correlativo)
     {
-        $estado = $this->mapearEstado($shopifyData['financial_status'] ?? 'pending');
+        $estado = $this->mapearEstado($shopifyData['financial_status'] ?? $shopifyData['status'] ?? 'pending');
 
+        // Manejar shipping_lines (plural) y shipping_line (singular) para draft orders
+        $shippingLines = $shopifyData['shipping_lines'] ?? [];
+        if (empty($shippingLines) && !empty($shopifyData['shipping_line'])) {
+            $shippingLines = [$shopifyData['shipping_line']];
+        }
+        
         // Calcular subtotal sin IVA basado en los line_items y shipping_lines
         $subtotalSinIVA = $this->calcularSubtotalSinIVA(
             $shopifyData['line_items'] ?? [],
-            $shopifyData['shipping_lines'] ?? []
+            $shippingLines
         );
         
         // Calcular IVA total incluyendo el IVA de los envíos
         $ivaProductos = floatval($shopifyData['total_tax'] ?? 0);
-        $ivaEnvio = $this->calcularIVAEnvio($shopifyData['shipping_lines'] ?? []);
+        $ivaEnvio = $this->calcularIVAEnvio($shippingLines);
         $ivaTotal = $ivaProductos + $ivaEnvio;
         
         Log::info("IVA calculado para venta", [
             'iva_productos' => $ivaProductos,
             'iva_envio' => $ivaEnvio,
             'iva_total' => $ivaTotal,
-            'shipping_lines_count' => count($shopifyData['shipping_lines'] ?? [])
+            'shipping_lines_count' => count($shippingLines),
+            'shipping_line_singular' => !empty($shopifyData['shipping_line']),
+            'shipping_lines_plural' => !empty($shopifyData['shipping_lines'])
         ]);
         
         return [
@@ -170,7 +178,7 @@ class ShopifyTransformer
             'iva' => $ivaTotal, // IVA total incluyendo envíos
             'iva_retenido' => 0,
             'iva_percibido' => 0,
-            'descuento' => $shopifyData['total_discounts'],
+            'descuento' => $shopifyData['total_discounts'] ?? 0,
             'id_cliente' => $clienteId,
             'correlativo' => $correlativo,
             'id_documento' => $documentoId,
@@ -254,7 +262,7 @@ class ShopifyTransformer
             'partially_paid' => 'Pendiente',
             'paid' => 'Pagada',
             'partially_refunded' => 'Pagada',
-            'refunded' => 'Reembolsada',
+            'refunded' => 'Anulada', // Cambiado de 'Reembolsada' a 'Anulada'
             'voided' => 'Anulada'
         ];
 
@@ -273,10 +281,12 @@ class ShopifyTransformer
         // Shopify envía payment_gateway_names como array
         $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
         $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
+        $financialStatus = $shopifyData['financial_status'] ?? $shopifyData['status'] ?? 'pending';
 
         // Log::info('Mapeando forma de pago', [
         //     'payment_gateway_names' => $paymentGateways,
-        //     'gateway_selected' => $gateway
+        //     'gateway_selected' => $gateway,
+        //     'financial_status' => $financialStatus
         // ]);
 
         $mapeo = [
@@ -295,6 +305,18 @@ class ShopifyTransformer
         ];
 
         $formaPago = $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+
+        // Si es "Manual" y el pedido está pagado, cambiar a "Wompi"
+        if ($gateway === 'manual' && in_array($financialStatus, ['paid', 'partially_paid'])) {
+            $formaPago = 'Wompi';
+            
+            // Log::info('Forma de pago cambiada de Manual a Wompi', [
+            //     'gateway' => $gateway,
+            //     'financial_status' => $financialStatus,
+            //     'forma_pago_original' => $mapeo[$gateway],
+            //     'forma_pago_final' => $formaPago
+            // ]);
+        }
 
         // Log::info('Forma de pago mapeada', [
         //     'gateway' => $gateway,
