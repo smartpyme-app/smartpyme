@@ -64,11 +64,17 @@ class ShippingService
     private function procesarTipoEnvio(array $shippingLine, int $ventaId, int $empresaId, int $usuarioId, int $sucursalId): ?Detalle
     {
         $title = $shippingLine['title'] ?? '';
-        $price = floatval($shippingLine['price'] ?? 0);
+        
+        // Usar el precio con descuento si está disponible, sino el precio original
+        $price = floatval($shippingLine['discounted_price'] ?? $shippingLine['price'] ?? 0);
+        $originalPrice = floatval($shippingLine['price'] ?? 0);
+        $discount = $originalPrice - $price;
 
         Log::info("Procesando tipo de envío", [
             'title' => $title,
-            'price' => $price,
+            'original_price' => $originalPrice,
+            'discounted_price' => $price,
+            'discount' => $discount,
             'venta_id' => $ventaId
         ]);
 
@@ -83,11 +89,13 @@ class ShippingService
 
         $shippingConfig = self::SHIPPING_TYPES[$title];
         
-        // Verificar que el precio coincida (con tolerancia de centavos)
-        if (abs($price - $shippingConfig['price']) > 0.01) {
-            Log::warning("Precio de envío no coincide con configuración", [
+        // Verificar que el precio original coincida (con tolerancia de centavos)
+        // El precio con descuento puede ser diferente, pero el original debe coincidir
+        if (abs($originalPrice - $shippingConfig['price']) > 0.01) {
+            Log::warning("Precio original de envío no coincide con configuración", [
                 'title' => $title,
-                'price_received' => $price,
+                'original_price_received' => $originalPrice,
+                'discounted_price' => $price,
                 'price_expected' => $shippingConfig['price']
             ]);
             return null;
@@ -103,10 +111,17 @@ class ShippingService
             return null;
         }
 
-        // Usar el precio que viene de Shopify (con IVA) y calcular el precio sin IVA
-        $precioConIVA = $price; // Precio con IVA que viene de Shopify
-        $precioSinIVA = $precioConIVA / 1.13; // Calcular precio sin IVA
-        $iva = $precioConIVA - $precioSinIVA;
+        // Calcular precios originales y con descuento
+        $precioOriginalConIVA = $originalPrice; // Precio original con IVA
+        $precioOriginalSinIVA = $precioOriginalConIVA / 1.13; // Precio original sin IVA
+        $ivaOriginal = $precioOriginalConIVA - $precioOriginalSinIVA;
+        
+        $precioConDescuentoConIVA = $price; // Precio con descuento con IVA
+        $precioConDescuentoSinIVA = $precioConDescuentoConIVA / 1.13; // Precio con descuento sin IVA
+        $ivaConDescuento = $precioConDescuentoConIVA - $precioConDescuentoSinIVA;
+        
+        // Calcular descuento sin IVA
+        $descuentoSinIVA = $precioOriginalSinIVA - $precioConDescuentoSinIVA;
 
         // Crear el detalle de venta para el envío
         $detalleEnvio = Detalle::create([
@@ -114,24 +129,28 @@ class ShippingService
             'id_producto' => $productoEnvio->id,
             'descripcion' => $shippingConfig['name'],
             'cantidad' => 1,
-            'precio' => $precioSinIVA, // Precio sin IVA para el detalle
+            'precio' => $precioOriginalSinIVA, // Precio original sin IVA
             'costo' => 0, // Los envíos no tienen costo
-            'descuento' => 0,
-            'total' => $precioSinIVA, // Total sin IVA (precio * cantidad)
+            'descuento' => $descuentoSinIVA, // Descuento sin IVA
+            'total' => $precioConDescuentoSinIVA, // Total con descuento sin IVA
             'no_sujeta' => 0,
             'exenta' => 0,
-            'gravada' => $precioSinIVA, // Monto gravado sin IVA
-            'iva' => $iva,
+            'gravada' => $precioConDescuentoSinIVA, // Monto gravado con descuento sin IVA
+            'iva' => $ivaConDescuento, // IVA con descuento
             'id_vendedor' => $usuarioId
         ]);
 
         Log::info("Detalle de envío creado", [
             'detalle_id' => $detalleEnvio->id,
             'producto_id' => $productoEnvio->id,
-            'precio_sin_iva' => $precioSinIVA,
-            'precio_con_iva' => $precioConIVA,
-            'iva' => $iva,
-            'precio_shopify' => $price
+            'precio_original_sin_iva' => $precioOriginalSinIVA,
+            'precio_original_con_iva' => $precioOriginalConIVA,
+            'precio_con_descuento_sin_iva' => $precioConDescuentoSinIVA,
+            'precio_con_descuento_con_iva' => $precioConDescuentoConIVA,
+            'descuento_sin_iva' => $descuentoSinIVA,
+            'descuento_con_iva' => $discount,
+            'iva_original' => $ivaOriginal,
+            'iva_con_descuento' => $ivaConDescuento
         ]);
 
         return $detalleEnvio;
