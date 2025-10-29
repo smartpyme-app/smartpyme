@@ -134,8 +134,12 @@ class ShopifyController extends Controller
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'draft_orders/create':
-                    Log::info("Procesando draft order creado");
-                    return $this->procesarDraftOrderCreado($tokenEmpresa, $request);
+                    // return $this->procesarDraftOrderCreado($tokenEmpresa, $request);
+                    Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
+                    return response()->json([
+                        'status' => 'ignored',
+                        'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
+                    ], 200);
 
                 default:
                     Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
