@@ -117,6 +117,14 @@ class ShopifyController extends Controller
                     Log::info("Procesando venta actualizada");
                     return $this->procesarVentaActualizada($tokenEmpresa, $request);
 
+                case 'orders/edited':
+                    Log::info("Procesando venta editada - redirigiendo a orders/updated");
+                    // orders/edited no tiene información completa, usar orders/updated
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'orders/edited recibido - usar orders/updated para información completa'
+                    ], 200);
+
                 case 'customers/create':
                     Log::info("Procesando cliente creado");
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
@@ -1688,6 +1696,8 @@ class ShopifyController extends Controller
     {
         Log::info("Webhook de pedido actualizado recibido de Shopify", [
             'shopify_order_id' => $request->id,
+            'order_id' => $request->order_id ?? 'N/A',
+            'order_edit_order_id' => $request->order_edit['order_id'] ?? 'N/A',
             'token_empresa' => $tokenEmpresa,
             'financial_status' => $request->financial_status ?? 'N/A',
             'fulfillment_status' => $request->fulfillment_status ?? 'N/A'
@@ -1707,16 +1717,36 @@ class ShopifyController extends Controller
 
         try {
             // Buscar la venta existente
-            $shopifyOrderId = $request->id;
+            $shopifyOrderId = $request->id ?? $request->order_id;
+            
+            // Para webhook orders/edited, el order_id está en order_edit.order_id
+            if (!$shopifyOrderId && isset($request->order_edit['order_id'])) {
+                $shopifyOrderId = $request->order_edit['order_id'];
+            }
+            
+            $orderNumber = $request->order_number;
             $referencia = 'SHOPIFY-' . $shopifyOrderId;
             
             $venta = Venta::where('referencia_shopify', $referencia)
                 ->where('id_empresa', $empresa->id)
                 ->first();
 
+            // Si no se encuentra por ID, buscar por order_number
+            if (!$venta && $orderNumber) {
+                Log::info("Buscando venta por order_number", [
+                    'order_number' => $orderNumber,
+                    'empresa_id' => $empresa->id
+                ]);
+                
+                $venta = Venta::where('referencia_shopify', 'SHOPIFY-' . $orderNumber)
+                    ->where('id_empresa', $empresa->id)
+                    ->first();
+            }
+
             if (!$venta) {
                 Log::warning("Venta no encontrada para actualización", [
                     'shopify_order_id' => $shopifyOrderId,
+                    'order_number' => $orderNumber,
                     'referencia_buscada' => $referencia,
                     'empresa_id' => $empresa->id
                 ]);
