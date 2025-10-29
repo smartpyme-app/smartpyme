@@ -1633,18 +1633,32 @@ class ShopifyController extends Controller
      */
     private function recalcularTotalesVenta($venta)
     {
+        // Para ventas de Shopify, usar los valores originales para evitar diferencias de redondeo
+        if ($venta->referencia_shopify) {
+            Log::info("Venta de Shopify detectada, manteniendo totales originales", [
+                'venta_id' => $venta->id,
+                'referencia_shopify' => $venta->referencia_shopify,
+                'sub_total_original' => $venta->sub_total,
+                'iva_original' => $venta->iva,
+                'gravada_original' => $venta->gravada,
+                'total_original' => $venta->total
+            ]);
+            
+            // No recalcular para ventas de Shopify, mantener los valores originales
+            return;
+        }
+        
+        // Solo recalcular para ventas que no son de Shopify
         $subtotal = 0;
         $iva = 0;
         $gravada = 0;
         
         foreach ($venta->detalles as $detalle) {
-            $subtotal += $detalle->subtotal;
+            $subtotal += $detalle->cantidad * $detalle->precio;
             $iva += $detalle->iva;
             $gravada += $detalle->gravada;
         }
         
-        // Para ventas de Shopify, el total debe ser gravada + iva
-        // Redondear a 2 decimales para evitar problemas de precisión
         $total = round($gravada + $iva, 2);
         
         $venta->update([
@@ -1710,6 +1724,22 @@ class ShopifyController extends Controller
                     'status' => 'warning',
                     'mensaje' => 'Venta no encontrada para actualizar'
                 ], 404);
+            }
+
+            // AGREGAR: Verificar si la venta se creó hace menos de 10 segundos
+            if ($venta->created_at->diffInSeconds(now()) < 10) {
+                Log::info("Venta recién creada, ignorando actualización inmediata", [
+                    'venta_id' => $venta->id,
+                    'created_at' => $venta->created_at,
+                    'shopify_order_id' => $request->id,
+                    'tiempo_transcurrido' => $venta->created_at->diffInSeconds(now()) . ' segundos'
+                ]);
+                
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Actualización ignorada - venta recién creada',
+                    'venta_id' => $venta->id
+                ], 200);
             }
 
             // Actualizar estado de la venta si es necesario
