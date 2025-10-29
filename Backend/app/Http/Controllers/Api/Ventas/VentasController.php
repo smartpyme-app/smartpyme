@@ -48,11 +48,6 @@ class VentasController extends Controller
 
     public function index(Request $request)
     {
-        // Log para debuggear los filtros
-        Log::info('=== INICIO FILTRO VENTAS ===');
-        Log::info('Filtros recibidos:', $request->all());
-        Log::info('Filtro id_documento específico:', ['id_documento' => $request->id_documento]);
-
         $ventas = Venta::when($request->inicio, function ($query) use ($request) {
             return $query->where('fecha', '>=', $request->inicio);
         })
