@@ -42,6 +42,7 @@ export class FacturacionComponent implements OnInit {
   public api: boolean = false;
   public tieneAccesoPropina: boolean = false;
   public mensajeValidacionFecha: string = '';
+  public mensajeErrorBanco: string = '';
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -852,6 +853,12 @@ export class FacturacionComponent implements OnInit {
                 item.total = null;
             });
         }
+        
+        // Limpiar banco y mensaje de error al cambiar método de pago
+        if (!this.requiereBanco()) {
+            this.venta.detalle_banco = '';
+            this.mensajeErrorBanco = '';
+        }
         console.log(this.venta);
     }
 
@@ -904,6 +911,15 @@ export class FacturacionComponent implements OnInit {
     }
 
   public onFacturar() {
+    // Validar que si el método de pago requiere banco, este esté seleccionado
+    this.mensajeErrorBanco = '';
+    
+    if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
+      this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
+      this.alertService.error('Debe seleccionar un banco para este método de pago.');
+      return;
+    }
+
     if (
       confirm(
         '¿Confirma procesar la ' +
@@ -917,6 +933,15 @@ export class FacturacionComponent implements OnInit {
       }
       this.onSubmit();
     }
+  }
+
+  /**
+   * Verifica si el método de pago requiere selección de banco
+   */
+  public requiereBanco(): boolean {
+    return this.venta.forma_pago && 
+           this.venta.forma_pago !== 'Efectivo' && 
+           this.venta.forma_pago !== 'Wompi';
   }
 
   // Guardar venta
