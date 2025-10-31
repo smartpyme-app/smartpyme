@@ -283,11 +283,14 @@
             </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
-            <label for="detalle_banco">Bancos</label>
-            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
+            <label for="detalle_banco">Bancos <span class="text-danger">*</span></label>
+            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" (change)="mensajeErrorBanco = ''" class="form-select" [class.is-invalid]="mensajeErrorBanco" required>
                 <option value="">Seleccione aquí</option>
                 <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
             </select>
+            <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">
+                {{ mensajeErrorBanco }}
+            </div>
         </div>
         <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
             <label for="id_canal">Canal</label>
