@@ -52,14 +52,14 @@ class ProductosController extends Controller
                 return $query->where('id_categoria', $request->id_categoria);
             })
             ->when($request->buscador, function ($query) use ($request) {
-//                return $query->where(function ($subQuery) use ($request) {
-//                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
-//                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
-//                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
-//                });
+                //                return $query->where(function ($subQuery) use ($request) {
+                //                    $subQuery->where('nombre', 'like', '%' . $request->buscador . '%')
+                //                            ->orWhere('codigo', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('barcode', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('etiquetas', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('marca', 'like', "%" . $request->buscador . "%")
+                //                            ->orWhere('descripcion', 'like', "%" . $request->buscador . "%");
+                //                });
                 return $query->where('nombre', 'like', '%' . $request->buscador . '%')
                     ->orwhere('codigo', 'like', "%" . $request->buscador . "%")
                     ->orwhere('barcode', 'like', "%" . $request->buscador . "%")
@@ -67,8 +67,8 @@ class ProductosController extends Controller
                     ->orwhere('marca', 'like', "%" . $request->buscador . "%")
                     ->orwhere('descripcion', 'like', "%" . $request->buscador . "%");
             })
-            ->when($request->sin_stock, function($query) use ($request){
-                return $query->whereHas('inventarios', function($q) {
+            ->when($request->sin_stock, function ($query) use ($request) {
+                return $query->whereHas('inventarios', function ($q) {
                     $q->whereRaw('COALESCE(stock, 0) < COALESCE(stock_minimo, 0)');
                 });
             })
@@ -195,11 +195,11 @@ class ProductosController extends Controller
         if ($id_bodega) {
             // Si se especifica bodega, filtrar productos que tengan inventario en esa bodega
             $productos = Producto::where('enable', true)
-                ->with(['inventarios' => function($q) use ($id_bodega) {
+                ->with(['inventarios' => function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
                 }])
                 ->with('composiciones.opciones', 'composiciones.compuesto.inventarios', 'precios')
-                ->whereHas('inventarios', function($q) use ($id_bodega) {
+                ->whereHas('inventarios', function ($q) use ($id_bodega) {
                     $q->where('id_bodega', $id_bodega);
                 })
                 ->where(function ($q) use ($query) {
@@ -542,10 +542,16 @@ class ProductosController extends Controller
 
     public function export(Request $request)
     {
-        $productos = new ProductosExport();
-        $productos->filter($request);
+        try {
+            $productos = new ProductosExport();
+            $productos->filter($request);
 
-        return Excel::download($productos, 'productos.xlsx');
+            return Excel::download($productos, 'productos.xlsx');
+        } catch (\Exception $e) {
+            Log::error('Error al exportar productos: ' . $e->getMessage());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            return Response()->json(['error' => 'No se pudo exportar los productos.'], 500);
+        }
     }
 
     public function exportarPlantilla(Request $request)
@@ -575,7 +581,7 @@ class ProductosController extends Controller
 
         // Generar log con estadísticas completas
         $importador->logEstadisticasFinales();
-        
+
         // Obtener estadísticas completas
         $estadisticas = $importador->getEstadisticas();
         $actualizados = $importador->getActualizados();
@@ -1083,9 +1089,9 @@ class ProductosController extends Controller
     public function importarShopify(Request $request)
     {
         try {
-            
+
             $usuario = JWTAuth::parseToken()->authenticate();
-            
+
             // Validar datos requeridos
             if (empty($request->shopify_store_url) || empty($request->shopify_consumer_secret)) {
                 return response()->json([
@@ -1107,7 +1113,7 @@ class ProductosController extends Controller
             // Extraer el nombre de la tienda de la URL
             $storeUrl = $request->shopify_store_url;
             $storeName = $this->extraerNombreTienda($storeUrl);
-            
+
             if (!$storeName) {
                 return response()->json([
                     'success' => false,
@@ -1117,7 +1123,7 @@ class ProductosController extends Controller
 
             // Construir URL base de la API de Shopify
             $baseUrl = "https://{$storeName}.myshopify.com/admin/api/2024-10/products.json";
-            
+
             Log::info('=== INICIANDO IMPORTACIÓN DESDE SHOPIFY ===', [
                 'store_url' => $storeUrl,
                 'store_name' => $storeName,
@@ -1128,7 +1134,7 @@ class ProductosController extends Controller
 
             // Obtener TODOS los productos usando paginación
             $productosShopify = $this->obtenerTodosLosProductosDeShopify($baseUrl, $request->shopify_consumer_secret);
-            
+
             if (!$productosShopify) {
                 Log::error('No se pudieron obtener productos de Shopify', [
                     'base_url' => $baseUrl,
@@ -1139,7 +1145,7 @@ class ProductosController extends Controller
                     'mensaje' => 'No se pudieron obtener los productos de Shopify. Verifica las credenciales.'
                 ], 400);
             }
-            
+
             Log::info('Productos obtenidos de Shopify', [
                 'total_productos' => count($productosShopify),
                 'productos_ids' => array_column($productosShopify, 'id')
@@ -1178,7 +1184,6 @@ class ProductosController extends Controller
                     'estado' => 'trabajos_creados'
                 ]
             ], 200, [], JSON_UNESCAPED_UNICODE);
-
         } catch (\Exception $e) {
             Log::error('Error al importar productos desde Shopify: ' . $e->getMessage());
             return response()->json([
@@ -1202,61 +1207,60 @@ class ProductosController extends Controller
         $todosLosProductos = [];
         $pageInfo = null;
         $pagina = 1;
-        
+
         Log::info('Iniciando obtención de todos los productos con paginación');
-        
+
         do {
             // Construir URL con parámetros de paginación
             $url = $baseUrl . '?limit=250'; // Máximo permitido por Shopify
             if ($pageInfo) {
                 $url .= '&page_info=' . $pageInfo;
             }
-            
+
             Log::info("Obteniendo página {$pagina} de productos", [
                 'url' => $url,
                 'page_info' => $pageInfo
             ]);
-            
+
             $resultado = $this->obtenerProductosDeShopifyConPaginacion($url, $accessToken);
-            
+
             if (!$resultado || !isset($resultado['productos'])) {
                 Log::error("Error al obtener página {$pagina}");
                 break;
             }
-            
+
             $productosPagina = $resultado['productos'];
             $todosLosProductos = array_merge($todosLosProductos, $productosPagina);
-            
+
             Log::info("Página {$pagina} obtenida", [
                 'productos_en_pagina' => count($productosPagina),
                 'total_acumulado' => count($todosLosProductos),
                 'next_page_info' => $resultado['next_page_info'] ?? 'null'
             ]);
-            
+
             // Obtener el page_info para la siguiente página
             $pageInfo = $resultado['next_page_info'] ?? null;
-            
+
             // Si no hay next_page_info, es la última página
             if (!$pageInfo) {
                 Log::info('Última página alcanzada (no hay next_page_info)');
                 break;
             }
-            
+
             $pagina++;
-            
+
             // Prevenir bucles infinitos (máximo 100 páginas = 25,000 productos)
             if ($pagina > 100) {
                 Log::warning('Límite de páginas alcanzado (100 páginas)');
                 break;
             }
-            
         } while (true);
-        
+
         Log::info('Obtención de productos completada', [
             'total_paginas' => $pagina - 1,
             'total_productos' => count($todosLosProductos)
         ]);
-        
+
         return $todosLosProductos;
     }
 
@@ -1318,7 +1322,6 @@ class ProductosController extends Controller
                 'productos' => $products,
                 'next_page_info' => $nextPageInfo
             ];
-
         } catch (\Exception $e) {
             Log::error('Error al obtener productos de Shopify con paginación: ' . $e->getMessage());
             return null;
@@ -1383,7 +1386,6 @@ class ProductosController extends Controller
             ]);
 
             return $products;
-
         } catch (\Exception $e) {
             Log::error('Error al hacer petición a Shopify: ' . $e->getMessage(), [
                 'exception_trace' => $e->getTraceAsString()
@@ -1409,7 +1411,7 @@ class ProductosController extends Controller
         $loteSize = 10;
         $productosShopifyChunks = array_chunk($productosShopify, $loteSize);
         $totalLotes = count($productosShopifyChunks);
-        
+
         Log::info("Procesando en {$totalLotes} lotes de {$loteSize} productos cada uno");
 
         foreach ($productosShopifyChunks as $loteIndex => $loteProductos) {
@@ -1420,110 +1422,110 @@ class ProductosController extends Controller
             ]);
 
             foreach ($loteProductos as $index => $productoShopify) {
-            Log::info("Procesando producto Shopify #{$index}", [
-                'producto_id' => $productoShopify['id'],
-                'titulo' => $productoShopify['title'],
-                'variants_count' => count($productoShopify['variants'] ?? [])
-            ]);
+                Log::info("Procesando producto Shopify #{$index}", [
+                    'producto_id' => $productoShopify['id'],
+                    'titulo' => $productoShopify['title'],
+                    'variants_count' => count($productoShopify['variants'] ?? [])
+                ]);
 
-            // Transformar productos usando ShopifyTransformer
-            $productosTransformados = $shopifyTransformer->transformarProductoDesdeShopify(
-                $productoShopify, 
-                $idEmpresa, 
-                $idUsuario, 
-                $idSucursal,
-                $incluirDrafts,
-                true // Es importación masiva
-            );
+                // Transformar productos usando ShopifyTransformer
+                $productosTransformados = $shopifyTransformer->transformarProductoDesdeShopify(
+                    $productoShopify,
+                    $idEmpresa,
+                    $idUsuario,
+                    $idSucursal,
+                    $incluirDrafts,
+                    true // Es importación masiva
+                );
 
-            Log::info("Productos transformados para producto #{$productoShopify['id']}", [
-                'variantes_transformadas' => count($productosTransformados),
-                'nombres_variantes' => array_column($productosTransformados, 'nombre')
-            ]);
+                Log::info("Productos transformados para producto #{$productoShopify['id']}", [
+                    'variantes_transformadas' => count($productosTransformados),
+                    'nombres_variantes' => array_column($productosTransformados, 'nombre')
+                ]);
 
-            foreach ($productosTransformados as $variantIndex => $productoData) {
-                try {
-                    Log::info("Procesando variante #{$variantIndex}", [
-                        'nombre' => $productoData['nombre'],
-                        'precio' => $productoData['precio'],
-                        'stock' => $productoData['_stock'],
-                        'shopify_variant_id' => $productoData['shopify_variant_id']
-                    ]);
+                foreach ($productosTransformados as $variantIndex => $productoData) {
+                    try {
+                        Log::info("Procesando variante #{$variantIndex}", [
+                            'nombre' => $productoData['nombre'],
+                            'precio' => $productoData['precio'],
+                            'stock' => $productoData['_stock'],
+                            'shopify_variant_id' => $productoData['shopify_variant_id']
+                        ]);
 
-                    // MODO TEST: Solo capturar datos sin insertar
-                    $productoFinal = $this->prepararProductoParaInsertar($productoData, $idEmpresa);
-                    
-                    $productosData[] = [
-                        'producto_original_shopify' => $productoShopify,
-                        'producto_transformado' => $productoData,
-                        'producto_final' => $productoFinal
-                    ];
-                    
-                    $productosImportados++;
-                    
-                    Log::info("Producto preparado para inserción", [
-                        'nombre_final' => $productoFinal['nombre'],
-                        'categoria' => $productoFinal['categoria_nombre'],
-                        'precio_final' => $productoFinal['precio'],
-                        'stock_final' => $productoFinal['stock_inicial']
-                    ]);
-                    
-                    // MODO PRODUCCIÓN: Descomenta estas líneas para insertar en la base de datos
-                    $producto = $this->crearOActualizarProducto($productoData, $idEmpresa);
-                    if ($producto) {
-                        $this->crearInventarioProducto($producto->id, $productoData, $idEmpresa, $idUsuario);
-                        
-                        // NUEVO: Crear job para procesar imágenes después
-                        $this->crearJobImagenes($producto, $productoShopify, $productoData, $idEmpresa, $idUsuario);
-                        
+                        // MODO TEST: Solo capturar datos sin insertar
+                        $productoFinal = $this->prepararProductoParaInsertar($productoData, $idEmpresa);
+
+                        $productosData[] = [
+                            'producto_original_shopify' => $productoShopify,
+                            'producto_transformado' => $productoData,
+                            'producto_final' => $productoFinal
+                        ];
+
                         $productosImportados++;
-                        
-                        Log::info("Producto insertado exitosamente", [
-                            'producto_id' => $producto->id,
-                            'nombre' => $producto->nombre,
-                            'precio' => $producto->precio,
-                            'stock' => $productoData['_stock'] ?? 0
+
+                        Log::info("Producto preparado para inserción", [
+                            'nombre_final' => $productoFinal['nombre'],
+                            'categoria' => $productoFinal['categoria_nombre'],
+                            'precio_final' => $productoFinal['precio'],
+                            'stock_final' => $productoFinal['stock_inicial']
+                        ]);
+
+                        // MODO PRODUCCIÓN: Descomenta estas líneas para insertar en la base de datos
+                        $producto = $this->crearOActualizarProducto($productoData, $idEmpresa);
+                        if ($producto) {
+                            $this->crearInventarioProducto($producto->id, $productoData, $idEmpresa, $idUsuario);
+
+                            // NUEVO: Crear job para procesar imágenes después
+                            $this->crearJobImagenes($producto, $productoShopify, $productoData, $idEmpresa, $idUsuario);
+
+                            $productosImportados++;
+
+                            Log::info("Producto insertado exitosamente", [
+                                'producto_id' => $producto->id,
+                                'nombre' => $producto->nombre,
+                                'precio' => $producto->precio,
+                                'stock' => $productoData['_stock'] ?? 0
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Error al procesar producto de Shopify: " . $e->getMessage(), [
+                            'producto_data' => $productoData,
+                            'error_trace' => $e->getTraceAsString()
                         ]);
                     }
-                } catch (\Exception $e) {
-                    Log::error("Error al procesar producto de Shopify: " . $e->getMessage(), [
-                        'producto_data' => $productoData,
-                        'error_trace' => $e->getTraceAsString()
+                }
+
+                // Pausa entre lotes para evitar timeout
+                if ($loteIndex < $totalLotes - 1) {
+                    Log::info("Pausa entre lotes para evitar timeout", [
+                        'lote_completado' => $loteIndex + 1,
+                        'productos_importados_hasta_ahora' => $productosImportados
                     ]);
+                    sleep(2); // Pausa de 2 segundos entre lotes
                 }
             }
-            
-            // Pausa entre lotes para evitar timeout
-            if ($loteIndex < $totalLotes - 1) {
-                Log::info("Pausa entre lotes para evitar timeout", [
-                    'lote_completado' => $loteIndex + 1,
-                    'productos_importados_hasta_ahora' => $productosImportados
-                ]);
-                sleep(2); // Pausa de 2 segundos entre lotes
-            }
+
+            // Limpiar cache de categorías al finalizar la importación
+            $cacheKey = "categoria_general_empresa_{$idEmpresa}";
+            \Illuminate\Support\Facades\Cache::forget($cacheKey);
+
+            Log::info('Procesamiento completado', [
+                'total_productos_importados' => $productosImportados,
+                'total_datos_capturados' => count($productosData)
+            ]);
+
+            return [
+                'count' => $productosImportados
+            ];
         }
-
-        // Limpiar cache de categorías al finalizar la importación
-        $cacheKey = "categoria_general_empresa_{$idEmpresa}";
-        \Illuminate\Support\Facades\Cache::forget($cacheKey);
-        
-        Log::info('Procesamiento completado', [
-            'total_productos_importados' => $productosImportados,
-            'total_datos_capturados' => count($productosData)
-        ]);
-
-        return [
-            'count' => $productosImportados
-        ];
     }
-}
 
 
     private function prepararProductoParaInsertar($productoData, $idEmpresa)
     {
         // Simular lo que se insertaría sin hacerlo realmente
         $categoria = $this->obtenerOCrearCategoria($productoData, $idEmpresa);
-        
+
         return [
             'nombre' => $productoData['nombre'],
             'descripcion' => $productoData['descripcion'] ?? '',
@@ -1548,7 +1550,7 @@ class ProductosController extends Controller
     {
         // MEJORADA: Búsqueda más robusta para prevenir duplicados
         $producto = $this->buscarProductoExistente($productoData, $idEmpresa);
-        
+
         $esNuevo = !$producto;
         if ($esNuevo) {
             $producto = new Producto();
@@ -1575,12 +1577,12 @@ class ProductosController extends Controller
         $producto->descripcion = $productoData['descripcion'] ?? '';
         $producto->codigo = $productoData['codigo'] ?? '';
         $producto->barcode = $productoData['barcode'] ?? '';
-        
+
         // IMPORTANTE: Los precios de Shopify ya incluyen IVA
         $precioShopify = $productoData['precio'] ?? 0;
         $precioSinIVA = $this->calcularPrecioSinIVA($precioShopify, $idEmpresa);
         $producto->precio = $precioSinIVA;
-        
+
         Log::info("Precio procesado para producto", [
             'producto_id' => $producto->id ?? 'nuevo',
             'nombre' => $producto->nombre,
@@ -1594,11 +1596,11 @@ class ProductosController extends Controller
         $producto->id_empresa = $idEmpresa;
         $producto->enable = true;
         $producto->tipo = 'Producto';
-        
+
         // IMPORTANTE: Marcar que este producto viene de Shopify ANTES de guardar para evitar sincronización de vuelta
         $producto->syncing_from_shopify = true;
         $producto->last_shopify_sync = now();
-        
+
         // Campos específicos de Shopify
         $producto->shopify_product_id = $productoData['shopify_product_id'] ?? null;
         $producto->shopify_variant_id = $productoData['shopify_variant_id'] ?? null;
@@ -1627,7 +1629,7 @@ class ProductosController extends Controller
             $producto = Producto::where('id_empresa', $idEmpresa)
                 ->where('shopify_variant_id', $productoData['shopify_variant_id'])
                 ->first();
-            
+
             if ($producto) {
                 Log::info("Producto encontrado por shopify_variant_id", [
                     'producto_id' => $producto->id,
@@ -1644,7 +1646,7 @@ class ProductosController extends Controller
                 ->where('shopify_product_id', $productoData['shopify_product_id'])
                 ->whereNull('shopify_variant_id') // Solo productos sin variantes
                 ->first();
-            
+
             if ($producto) {
                 Log::info("Producto encontrado por shopify_product_id", [
                     'producto_id' => $producto->id,
@@ -1662,7 +1664,7 @@ class ProductosController extends Controller
                 ->where('tipo', 'Producto')
                 ->whereNull('shopify_variant_id') // Solo productos sin variantes
                 ->first();
-            
+
             if ($producto) {
                 Log::info("Producto encontrado por nombre exacto (sin variantes)", [
                     'producto_id' => $producto->id,
@@ -1713,7 +1715,7 @@ class ProductosController extends Controller
             }
 
             $shopifyVariantId = $productoData['shopify_variant_id'] ?? null;
-            
+
             // Filtrar imágenes que pertenecen a esta variante específica
             $imagenesVariante = $this->filtrarImagenesPorVariante($productoShopify['images'], $shopifyVariantId);
 
@@ -1749,7 +1751,6 @@ class ProductosController extends Controller
                 'total_imagenes' => count($imagenesVariante),
                 'estado' => 'pendiente'
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error creando job de imágenes: " . $e->getMessage(), [
                 'producto_id' => $producto->id,
@@ -1773,9 +1774,9 @@ class ProductosController extends Controller
 
             // Procesar productos usando ShopifyTransformer
             $resultado = $this->procesarProductosShopify(
-                $productosShopify, 
-                $idEmpresa, 
-                $idUsuario, 
+                $productosShopify,
+                $idEmpresa,
+                $idUsuario,
                 $idSucursal,
                 true // Siempre incluir drafts
             );
@@ -1785,7 +1786,7 @@ class ProductosController extends Controller
             if ($empresa) {
                 $empresa->importacion_productos_shopify = true;
                 $empresa->save();
-                
+
                 Log::info('=== IMPORTACIÓN MARCADA COMO COMPLETADA ===', [
                     'id_empresa' => $idEmpresa,
                     'importacion_productos_shopify' => true,
@@ -1800,7 +1801,6 @@ class ProductosController extends Controller
                 'tiempo_procesamiento' => 'Completado exitosamente',
                 'importacion_marcada_como_completada' => true
             ]);
-
         } catch (\Exception $e) {
             Log::error('=== ERROR EN PROCESAMIENTO EN SEGUNDO PLANO ===', [
                 'error' => $e->getMessage(),
@@ -1829,7 +1829,7 @@ class ProductosController extends Controller
             }
 
             $shopifyVariantId = $productoData['shopify_variant_id'] ?? null;
-            
+
             // Filtrar imágenes que pertenecen a esta variante específica
             $imagenesVariante = $this->filtrarImagenesPorVariante($productoShopify['images'], $shopifyVariantId);
 
@@ -1858,7 +1858,7 @@ class ProductosController extends Controller
             if (!empty($imagenesVariante)) {
                 $primeraImagen = $imagenesVariante[0];
                 $this->descargarYGuardarImagen($producto, $primeraImagen, 0);
-                
+
                 Log::info("Optimización aplicada - solo primera imagen procesada", [
                     'producto_id' => $producto->id,
                     'total_imagenes_disponibles' => count($imagenesVariante),
@@ -1872,7 +1872,6 @@ class ProductosController extends Controller
                 'total_imagenes_disponibles' => count($imagenesVariante),
                 'optimizacion_aplicada' => true
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error procesando imágenes de la variante: " . $e->getMessage(), [
                 'producto_id' => $producto->id,
@@ -1892,12 +1891,12 @@ class ProductosController extends Controller
 
         foreach ($imagenes as $imagen) {
             $variantIds = $imagen['variant_ids'] ?? [];
-            
+
             // Si la imagen no tiene variant_ids específicos, es imagen general del producto
             // Si tiene variant_ids, verificar si incluye nuestra variante
             if (empty($variantIds) || in_array($shopifyVariantId, $variantIds)) {
                 $imagenesVariante[] = $imagen;
-                
+
                 Log::info("Imagen asignada a variante", [
                     'shopify_variant_id' => $shopifyVariantId,
                     'imagen_id' => $imagen['id'] ?? 'N/A',
@@ -1917,14 +1916,14 @@ class ProductosController extends Controller
     {
         try {
             $imagenesExistentes = \App\Models\Inventario\Imagen::where('id_producto', $productoId)->get();
-            
+
             foreach ($imagenesExistentes as $imagen) {
                 // Eliminar archivo físico si existe
                 $rutaImagen = public_path('img' . $imagen->img);
                 if (file_exists($rutaImagen)) {
                     unlink($rutaImagen);
                 }
-                
+
                 // Eliminar registro de la base de datos
                 $imagen->delete();
             }
@@ -1935,7 +1934,6 @@ class ProductosController extends Controller
                     'imagenes_eliminadas' => $imagenesExistentes->count()
                 ]);
             }
-
         } catch (\Exception $e) {
             Log::error("Error eliminando imágenes existentes: " . $e->getMessage(), [
                 'producto_id' => $productoId,
@@ -1969,7 +1967,7 @@ class ProductosController extends Controller
             // Generar nombre único para la imagen
             $extension = pathinfo(parse_url($urlImagen, PHP_URL_PATH), PATHINFO_EXTENSION);
             $extension = $extension ?: 'jpg'; // Default a jpg si no se puede determinar
-            
+
             $nombreArchivo = 'producto_' . $producto->id . '_' . $index . '_' . time() . '.' . $extension;
             $rutaCompleta = $directorioProductos . '/' . $nombreArchivo;
 
@@ -2008,7 +2006,6 @@ class ProductosController extends Controller
                 'shopify_image_id' => $imagenShopify['id'] ?? null,
                 'tamaño_archivo' => filesize($rutaCompleta)
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error descargando y guardando imagen: " . $e->getMessage(), [
                 'producto_id' => $producto->id,
@@ -2032,7 +2029,7 @@ class ProductosController extends Controller
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
             curl_setopt($ch, CURLOPT_USERAGENT, 'SmartPyme/1.0');
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            
+
             $contenido = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
@@ -2062,7 +2059,6 @@ class ProductosController extends Controller
             }
 
             return $contenido;
-
         } catch (\Exception $e) {
             Log::error("Excepción descargando imagen: " . $e->getMessage(), [
                 'url' => $url,
@@ -2089,7 +2085,7 @@ class ProductosController extends Controller
 
             // Obtener configuración de IVA de la empresa
             $empresa = \App\Models\Admin\Empresa::find($idEmpresa);
-            
+
             if (!$empresa) {
                 Log::warning("Empresa no encontrada", [
                     'id_empresa' => $idEmpresa,
@@ -2114,7 +2110,7 @@ class ProductosController extends Controller
             $ivaDecimal = $empresa->iva / 100;
             $precioSinIVA = $precioConIVA / (1 + $ivaDecimal);
             $ivaDescontado = $precioConIVA - $precioSinIVA;
-            
+
             Log::info("Precio calculado sin IVA exitosamente", [
                 'id_empresa' => $idEmpresa,
                 'empresa_nombre' => $empresa->nombre ?? 'N/A',
@@ -2127,14 +2123,13 @@ class ProductosController extends Controller
             ]);
 
             return round($precioSinIVA, 2);
-
         } catch (\Exception $e) {
             Log::error("Error calculando precio sin IVA: " . $e->getMessage(), [
                 'precio_con_iva' => $precioConIVA,
                 'id_empresa' => $idEmpresa,
                 'error_trace' => $e->getTraceAsString()
             ]);
-            
+
             // En caso de error, devolver el precio original
             return $precioConIVA;
         }
@@ -2144,9 +2139,9 @@ class ProductosController extends Controller
     {
         // Cache key para evitar consultas repetitivas durante importación masiva
         $cacheKey = "categoria_general_empresa_{$idEmpresa}";
-        
+
         // Intentar obtener del cache primero
-        $categoria = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function() use ($idEmpresa) {
+        $categoria = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($idEmpresa) {
             // Por ahora, usar categoría "General" para todos los productos de Shopify
             // En el futuro se puede implementar lógica para crear categorías basadas en product_type
             $categoria = \App\Models\Inventario\Categorias\Categoria::where('nombre', 'General')
@@ -2252,7 +2247,6 @@ class ProductosController extends Controller
                 'producto_id' => $productoShopify['id'],
                 'titulo' => $productoShopify['title']
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error creando trabajo para producto", [
                 'producto_id' => $productoShopify['id'] ?? 'N/A',
