@@ -113,7 +113,7 @@
                                 </ng-template>
                             </div> -->
                         </td>
-                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" >
+                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario && !apiService.isVentasLimitado()" >
                             <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>
