@@ -67,8 +67,9 @@
                 </ng-option>
             </ng-select>
             <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                class="form-select bg-default select-width">
-                <option value="">Bodega</option>
+                class="form-select bg-default select-width"
+                [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+                <option value="" [disabled]="isShopifyActive()">Bodega</option>
                 <option *ngFor="let bodega of bodegas" [value]="bodega.id">
                     {{bodega.nombre}}
                 </option>
@@ -259,8 +260,9 @@
                 <div class="form-group col-sm-6">
                     <label for="filtros.id_proveedor">Bodega:</label>
                     <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                        class="form-select">
-                        <option value="">Todas</option>
+                        class="form-select"
+                        [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+                        <option value="" [disabled]="isShopifyActive()">Todas</option>
                         <option *ngFor="let bodega of bodegas" [value]="bodega.id">
                             {{bodega.nombre}}
                         </option>

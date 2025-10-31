@@ -39,6 +39,9 @@ class ProductosController extends Controller
 
     public function index(Request $request)
     {
+        // Obtener la empresa del usuario autenticado
+        $user = Auth::user();
+        $empresa = Empresa::find($user->id_empresa);
 
         $productos = Producto::whereIn('tipo', ['Producto', 'Compuesto'])->with(['inventarios' => function ($q) use ($request) {
             if ($request->id_bodega) {
@@ -86,6 +89,13 @@ class ProductosController extends Controller
 
             ->when($request->marca, function ($query) use ($request) {
                 return $query->where('marca', 'like', '%' . $request->marca . '%');
+            })
+            // Si la empresa tiene Shopify configurado y se ha seleccionado una bodega/sucursal,
+            // filtrar solo productos que tengan inventario en esa bodega
+            ->when($empresa && $empresa->shopify_store_url && $request->id_bodega, function ($query) use ($request) {
+                return $query->whereHas('inventarios', function ($q) use ($request) {
+                    $q->where('id_bodega', $request->id_bodega);
+                });
             })
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             // ->whereNotIn('id_categoria', [1,2])
