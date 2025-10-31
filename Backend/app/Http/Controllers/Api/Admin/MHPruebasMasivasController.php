@@ -173,13 +173,13 @@ class MHPruebasMasivasController extends Controller
             ]);
 
             // Ejecutar el comando artisan en segundo plano
-            $command = "php " . base_path('artisan') . " trabajos:procesar --limite=1 --id=" . $trabajo->id . " > /dev/null 2>&1 &";
+            // $command = "php " . base_path('artisan') . " trabajos:procesar --limite=1 --id=" . $trabajo->id . " > /dev/null 2>&1 &";
 
-            if (PHP_OS_FAMILY === 'Windows') {
-                pclose(popen("start /B " . $command, "r"));
-            } else {
-                exec($command);
-            }
+            // if (PHP_OS_FAMILY === 'Windows') {
+            //     pclose(popen("start /B " . $command, "r"));
+            // } else {
+            //     exec($command);
+            // }
 
 
             // MENSAJE PERSONALIZADO PARA CCF CON NOTAS AUTOMÁTICAS
@@ -195,8 +195,7 @@ class MHPruebasMasivasController extends Controller
                 'success' => true,
                 'queued' => true,
                 'trabajo_id' => $trabajo->id,
-                'message' => "Se ha programado la generación de {$request->cantidad} {$tiposDescriptivos[$tipoDTE]}. " .
-                    "El proceso se ejecutará en segundo plano y recibirá una notificación por correo cuando finalice."
+                'message' => $mensaje
             ]);
         } catch (\Exception $e) {
 
@@ -205,58 +204,6 @@ class MHPruebasMasivasController extends Controller
                 'success' => false,
                 'message' => 'Error al iniciar el proceso: ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    private function procesarEnSegundoPlano($trabajo)
-    {
-        // Enviar respuesta al navegador antes de continuar
-        if (function_exists('fastcgi_finish_request')) {
-            // Cerrar la conexión pero mantener el script ejecutándose
-            fastcgi_finish_request();
-        } else {
-            // Alternativa si fastcgi no está disponible
-            ob_end_clean();
-            header("Connection: close");
-            ignore_user_abort(true);
-            ob_start();
-            echo json_encode(['status' => 'processing']);
-            $size = ob_get_length();
-            header("Content-Length: $size");
-            ob_end_flush();
-            flush();
-        }
-
-        try {
-            // Marcar como en proceso
-            $trabajo->estado = 'procesando';
-            $trabajo->fecha_inicio = now();
-            $trabajo->save();
-
-            // Obtener parámetros
-            $params = json_decode($trabajo->parametros, true);
-
-            // Ejecutar el proceso
-            $resultado = $this->pruebasMasivasService->ejecutarPruebasMasivas(
-                $params['tipo_dte'],
-                $params['cantidad'],
-                $params['id_documento_base'],
-                $params['id_usuario']
-            );
-
-            // Actualizar el trabajo
-            $trabajo->estado = 'completado';
-            $trabajo->resultado = json_encode($resultado);
-            $trabajo->fecha_fin = now();
-            $trabajo->save();
-        } catch (\Exception $e) {
-            Log::error('Error en procesamiento en segundo plano: ' . $e->getMessage());
-
-            // Marcar como fallido
-            $trabajo->estado = 'fallido';
-            $trabajo->resultado = json_encode(['error' => $e->getMessage()]);
-            $trabajo->fecha_fin = now();
-            $trabajo->save();
         }
     }
 
