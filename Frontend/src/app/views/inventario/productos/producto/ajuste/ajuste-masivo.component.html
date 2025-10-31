@@ -100,7 +100,7 @@
                         <td>
                             <div class="d-flex align-items-center gap-2">
                                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
-                                <span>{{ producto.nombre }}</span>
+                                <span>{{ getNombreCompleto(producto) }}</span>
                             </div>
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
