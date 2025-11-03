@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -12,8 +15,11 @@ interface Permission {
   selected: boolean;
 }
 @Component({
-  selector: 'app-usuario',
-  templateUrl: './usuario.component.html',
+    selector: 'app-usuario',
+    templateUrl: './usuario.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class UsuarioComponent implements OnInit {
   public usuario: any = {

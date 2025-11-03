@@ -5,6 +5,10 @@ import { ApiService } from '@services/api.service';
 import { formatDate } from '@angular/common';
 import Swal from 'sweetalert2';
 import { AppConstants } from '../../../../app/constants/app.constants';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 interface Plan {
   id: number;
@@ -23,8 +27,11 @@ interface OrdenPago {
 }
 
 @Component({
-  selector: 'app-admin-suscripciones',
-  templateUrl: './admin-suscripciones.component.html',
+    selector: 'app-admin-suscripciones',
+    templateUrl: './admin-suscripciones.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    
 })
 export class AdminSuscripcionesComponent implements OnInit {
   public suscripciones: any = [];

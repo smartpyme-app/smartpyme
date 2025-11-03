@@ -8,19 +8,26 @@ import {
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
-import { co } from '@fullcalendar/core/internal-common';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { TagInputModule } from 'ngx-chips';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { finalize } from 'rxjs/operators';
 
 
 @Component({
-  selector: 'app-producto-informacion',
-  templateUrl: './producto-informacion.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-producto-informacion',
+    templateUrl: './producto-informacion.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule, NgSelectModule, CrearCategoriaComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    
 })
 export class ProductoInformacionComponent implements OnInit {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;

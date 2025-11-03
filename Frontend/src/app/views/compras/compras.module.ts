@@ -5,7 +5,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
-import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -26,7 +25,7 @@ import { DevolucionesComprasComponent } from './devoluciones/devoluciones-compra
 import { DevolucionCompraComponent } from './devoluciones/devolucion/devolucion-compra.component';
 
 import { DevolucionCompraNuevaComponent } from './devoluciones/devolucion-nueva/devolucion-compra-nueva.component';
-import { DevolucionCompraDetallesComponent } from './devoluciones/devolucion-nueva/detalles/devolucion-compra-detalles.component';
+// DevolucionCompraDetallesComponent es importado por DevolucionCompraNuevaComponent, no necesita estar aquí
 import { CotizacionesComprasComponent } from './cotizaciones/cotizaciones-compras.component';
 
 import { GastosComponent } from './gastos/gastos.component';
@@ -58,9 +57,7 @@ import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/depa
     ComprasRoutingModule,
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
-    FocusModule.forRoot()
-  ],
-  declarations: [
+    // Componentes standalone
     ComprasComponent,
     CompraComponent,
     ComprasRecurrentesComponent,
@@ -72,7 +69,7 @@ import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/depa
     DevolucionesComprasComponent,
     DevolucionCompraComponent,
     DevolucionCompraNuevaComponent,
-    DevolucionCompraDetallesComponent,
+    // DevolucionCompraDetallesComponent es importado por DevolucionCompraNuevaComponent
     CotizacionesComprasComponent,
     GastosComponent,
     GastosRecurrentesComponent,
@@ -98,7 +95,7 @@ import { DepartamentoEmpresaComponent } from './gastos/departamento-empresa/depa
     DevolucionesComprasComponent,
     DevolucionCompraComponent,
     DevolucionCompraNuevaComponent,
-    DevolucionCompraDetallesComponent,
+    // DevolucionCompraDetallesComponent es importado por DevolucionCompraNuevaComponent
     CotizacionesComprasComponent,
     GastosComponent,
     GastosRecurrentesComponent,

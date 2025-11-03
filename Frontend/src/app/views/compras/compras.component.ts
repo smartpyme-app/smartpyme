@@ -1,6 +1,10 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
@@ -8,8 +12,11 @@ import { MHService } from '@services/MH.service';
 declare var $:any;
 
 @Component({
-  selector: 'app-compras',
-  templateUrl: './compras.component.html'
+    selector: 'app-compras',
+    templateUrl: './compras.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 
 export class ComprasComponent implements OnInit {

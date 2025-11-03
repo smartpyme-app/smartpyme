@@ -2,6 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthorizationService, AuthorizationType } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-authorization-types',

@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -7,8 +10,11 @@ import { ApiService } from '@services/api.service';
 declare var $:any;
 
 @Component({
-  selector: 'app-producto-ventas',
-  templateUrl: './producto-ventas.component.html'
+    selector: 'app-producto-ventas',
+    templateUrl: './producto-ventas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 
 export class ProductoVentasComponent implements OnInit {

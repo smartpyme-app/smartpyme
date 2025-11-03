@@ -1,12 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 
 @Component({
-  selector: 'app-documentos',
-  templateUrl: './documentos.component.html'
+    selector: 'app-documentos',
+    templateUrl: './documentos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent],
+    
 })
 
 export class DocumentosComponent implements OnInit {

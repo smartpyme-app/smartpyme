@@ -1,11 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { AuthorizationService } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-authorization-view',
-  templateUrl: './authorization-view.component.html'
+    selector: 'app-authorization-view',
+    templateUrl: './authorization-view.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class AuthorizationViewComponent implements OnInit {
   authorization: any = null;

@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
@@ -6,8 +9,11 @@ import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
-  selector: 'app-caja-ordenes',
-  templateUrl: './caja-ordenes.component.html'
+    selector: 'app-caja-ordenes',
+    templateUrl: './caja-ordenes.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class CajaOrdenesComponent implements OnInit {
 

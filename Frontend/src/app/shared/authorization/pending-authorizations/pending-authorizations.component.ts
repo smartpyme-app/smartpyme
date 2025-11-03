@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthorizationService, Authorization } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-pending-authorizations',

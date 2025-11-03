@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -8,9 +11,12 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-facturacion-consigna',
-  templateUrl: './facturacion-consigna.component.html',
-  providers: [ SumPipe ]
+    selector: 'app-facturacion-consigna',
+    templateUrl: './facturacion-consigna.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    providers: [SumPipe],
+    
 })
 
 export class FacturacionConsignaComponent implements OnInit {

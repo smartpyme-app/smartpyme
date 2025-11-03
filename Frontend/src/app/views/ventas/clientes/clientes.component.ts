@@ -1,11 +1,19 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
-  selector: 'app-clientes',
-  templateUrl: './clientes.component.html',
+    selector: 'app-clientes',
+    templateUrl: './clientes.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent],
+    
 })
 export class ClientesComponent implements OnInit {
 

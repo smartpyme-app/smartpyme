@@ -6,7 +6,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { FocusModule } from 'angular2-focus';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { TabsModule } from 'ngx-bootstrap/tabs';
@@ -51,12 +50,10 @@ import { ModuleFormComponent } from '@views/admin/modules/create/module-form.com
     NgSelectModule,
     SuperAdminRoutingModule,
     NgxMaskDirective, NgxMaskPipe,
-    FocusModule.forRoot(),
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
-  ],
-  declarations: [
+    // Componentes standalone
     EmpresasComponent,
     CrearEmpresaComponent,
     LicenciasComponent,

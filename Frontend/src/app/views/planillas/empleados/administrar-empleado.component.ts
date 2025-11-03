@@ -1,5 +1,8 @@
 // nuevo-empleado.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -9,15 +12,18 @@ import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
 
 @Component({
-  selector: 'app-administrar-empleado',
-  styles: [
-    `
+    selector: 'app-administrar-empleado',
+    styles: [
+        `
       .cursor-pointer {
         cursor: pointer;
       }
     `,
-  ],
-  templateUrl: './administrar-empleado.component.html',
+    ],
+    templateUrl: './administrar-empleado.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class AdministrarEmpleadoComponent implements OnInit {
   private eventListener: any;

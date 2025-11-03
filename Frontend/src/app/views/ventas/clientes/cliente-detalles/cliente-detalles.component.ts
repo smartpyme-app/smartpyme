@@ -1,5 +1,9 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TagInputModule } from 'ngx-chips';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -8,7 +12,10 @@ import { ApiService } from '@services/api.service';
 
 @Component({
     selector: 'app-cliente-detalles',
-    templateUrl: './cliente-detalles.component.html'
+    templateUrl: './cliente-detalles.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
+    
 })
 export class ClienteDetallesComponent implements OnInit {
 

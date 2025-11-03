@@ -1,12 +1,18 @@
 // modules.component.ts
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 @Component({
-  selector: 'app-modules',
-  templateUrl: './modules.component.html'
+    selector: 'app-modules',
+    templateUrl: './modules.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class ModulesComponent implements OnInit {
   public modules: any = {};

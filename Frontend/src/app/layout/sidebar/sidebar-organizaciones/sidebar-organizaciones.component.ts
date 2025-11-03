@@ -1,9 +1,16 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-sidebar-organizaciones',
-  templateUrl: './sidebar-organizaciones.component.html'
+    selector: 'app-sidebar-organizaciones',
+    templateUrl: './sidebar-organizaciones.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, TooltipModule],
+    
 })
 
 export class SidebarOrganizacionesComponent implements OnInit {

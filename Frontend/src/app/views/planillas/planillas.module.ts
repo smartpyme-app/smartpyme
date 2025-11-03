@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
-import { FocusModule } from 'angular2-focus';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -23,9 +22,6 @@ import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-p
 import { TestConstantsComponent } from './test-constants.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
-
-import { PdfViewerModule } from 'ng2-pdf-viewer';
-
 @NgModule({
   imports: [
     CommonModule,
@@ -38,14 +34,11 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     NgxMaskDirective,
     NgxMaskPipe,
     PopoverModule.forRoot(),
-    FocusModule.forRoot(),
     ModalModule.forRoot(),
     TooltipModule.forRoot(),
     ProgressbarModule.forRoot(),
-    PdfViewerModule,
-    ReactiveFormsModule
-  ],
-  declarations: [
+    ReactiveFormsModule,
+    // Componentes standalone
     PlanillasComponent,
     EmpleadosComponent,
     AdministrarEmpleadoComponent,

@@ -1,13 +1,19 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-combo-index',
-  templateUrl: './combo-index.component.html',
-  styleUrls: ['./combo-index.component.css']
+    selector: 'app-combo-index',
+    templateUrl: './combo-index.component.html',
+    styleUrls: ['./combo-index.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class ComboIndexComponent implements OnInit {
   combos: any = [];

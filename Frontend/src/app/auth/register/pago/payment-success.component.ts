@@ -1,12 +1,18 @@
 // payment-success.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 
 @Component({
-  selector: 'app-payment-success',
-  templateUrl: './payment-success.component.html',
-  styleUrls: ['./payment-success.component.css']
+    selector: 'app-payment-success',
+    templateUrl: './payment-success.component.html',
+    styleUrls: ['./payment-success.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class PaymentSuccessComponent implements OnInit, OnDestroy {
   countdown: number = 10;

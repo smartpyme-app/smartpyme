@@ -1,5 +1,9 @@
-import { Component, OnInit, Inject } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import { Component, OnInit, Inject, DOCUMENT } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
@@ -8,8 +12,11 @@ import { Router } from '@angular/router';
 // declare var $:any;
 
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html'
+    selector: 'app-header',
+    templateUrl: './header.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    
 })
 export class HeaderComponent implements OnInit {
 

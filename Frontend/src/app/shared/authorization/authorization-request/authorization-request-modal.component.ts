@@ -1,16 +1,22 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AuthorizationService } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-authorization-request-modal',
-  templateUrl: './authorization-request-modal.component.html',
-  styles: [`
+    selector: 'app-authorization-request-modal',
+    templateUrl: './authorization-request-modal.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    styles: [`
     .modal {
       background: rgba(0,0,0,0.5);
       z-index: 1050;
     }
-  `]
+  `],
+    
 })
 export class AuthorizationRequestModalComponent implements OnInit {
   @Input() show: boolean = false;

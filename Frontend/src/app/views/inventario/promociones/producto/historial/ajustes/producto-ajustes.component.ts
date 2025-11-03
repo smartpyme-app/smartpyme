@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
+import { CommonModule } from '@angular/common';
 
 declare var $:any;
 

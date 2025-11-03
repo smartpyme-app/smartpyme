@@ -1,10 +1,13 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ConstantsService } from '@services/constants.service';
 import { PlanillaConstants } from './../../constants/planilla.constants';
 
 @Component({
-  selector: 'app-test-constants',
-  template: `
+    selector: 'app-test-constants',
+    template: `
     <div class="container mt-4">
       <h3>Test de Constantes - Planilla y Empleados</h3>
       
@@ -59,7 +62,9 @@ import { PlanillaConstants } from './../../constants/planilla.constants';
         {{ message }}
       </div>
     </div>
-  `
+  `,
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule]
 })
 export class TestConstantsComponent implements OnInit {
   constantsLoaded = false;

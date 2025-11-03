@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TagInputModule } from 'ngx-chips';
 import { PipesModule } from '@pipes/pipes.module';
@@ -38,11 +37,10 @@ import { CuentasCobrarComponent } from './cuentas-cobrar/cuentas-cobrar.componen
     NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
-    TooltipModule.forRoot()
-  ],
-  declarations: [
+    TooltipModule.forRoot(),
+    // Componentes standalone
     ClientesComponent,
-  	ClienteComponent,
+    ClienteComponent,
     ClienteDetallesComponent,
     ClienteDatosComponent,
     ClientesDashComponent,

@@ -3,7 +3,7 @@ import {
   OnInit,
   TemplateRef,
   Pipe,
-  PipeTransform,
+  PipeTransform
 } from '@angular/core';
 import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
 
@@ -11,9 +11,12 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Pipe({
-  name: 'replace',
+    name: 'replace',
+    standalone: true
 })
 export class ReplacePipe implements PipeTransform {
   transform(value: string, from: string, to: string): string {
@@ -22,8 +25,11 @@ export class ReplacePipe implements PipeTransform {
 }
 
 @Component({
-  selector: 'app-reportes-automaticos',
-  templateUrl: './reportes-automaticos.component.html',
+    selector: 'app-reportes-automaticos',
+    templateUrl: './reportes-automaticos.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule],
+    
 })
 export class ReportesAutomaticosComponent implements OnInit {
   public configuraciones: any = [];
@@ -34,7 +40,7 @@ export class ReportesAutomaticosComponent implements OnInit {
     buscador: '',
     paginate: 10,
     orden: 'created_at',
-    direccion: 'desc',
+    direccion: 'desc'
   };
   public loading: boolean = false;
   public saving: boolean = false;
@@ -61,19 +67,19 @@ export class ReportesAutomaticosComponent implements OnInit {
     { tipo: 'ventas-por-vendedor', nombre: 'Ventas por Vendedor' },
     {
       tipo: 'ventas-por-categoria-vendedor',
-      nombre: 'Ventas por Categoría y Vendedor',
+      nombre: 'Ventas por Categoría y Vendedor'
     },
     {
       tipo: 'estado-financiero-consolidado-sucursales',
-      nombre: 'Estado Financiero Consolidado por Sucursales',
+      nombre: 'Estado Financiero Consolidado por Sucursales'
     },
     {
       tipo: 'detalle-ventas-vendedor',
-      nombre: 'Detalle de Ventas por Vendedor',
+      nombre: 'Detalle de Ventas por Vendedor'
     },
     {
       tipo: 'inventario-por-sucursal',
-      nombre: 'Inventario por Sucursal',
+      nombre: 'Inventario por Sucursal'
     },
   ];
   public modalRefFechas!: BsModalRef;
@@ -187,7 +193,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
       return date.toLocaleTimeString([], {
         hour: '2-digit',
-        minute: '2-digit',
+        minute: '2-digit'
       });
     } catch (e) {
       return hora;
@@ -214,7 +220,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
-      backdrop: 'static',
+      backdrop: 'static'
     });
   }
 
@@ -268,7 +274,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     this.modalRef = this.modalService.show(template, {
       class: 'modal-lg',
-      backdrop: 'static',
+      backdrop: 'static'
     });
   }
 
@@ -282,7 +288,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Debe seleccionar al menos un horario de envío',
+        text: 'Debe seleccionar al menos un horario de envío'
       });
       return;
     }
@@ -292,7 +298,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Debe agregar al menos un destinatario',
+        text: 'Debe agregar al menos un destinatario'
       });
       return;
     }
@@ -308,7 +314,7 @@ export class ReportesAutomaticosComponent implements OnInit {
         Swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'Debe seleccionar al menos un día de la semana',
+          text: 'Debe seleccionar al menos un día de la semana'
         });
         return;
       }
@@ -347,7 +353,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           text: 'Ya existe una configuración activa para este tipo de reporte con las mismas sucursales seleccionadas.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar',
+          cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -456,7 +462,7 @@ export class ReportesAutomaticosComponent implements OnInit {
               : 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte.',
           showCancelButton: true,
           confirmButtonText: 'Continuar y desactivar la existente',
-          cancelButtonText: 'Cancelar',
+          cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
@@ -474,7 +480,7 @@ export class ReportesAutomaticosComponent implements OnInit {
   private ejecutarCambioEstado(configId: number, nuevoEstado: boolean) {
     this.apiService
       .update('reportes-configuracion/estado', configId, {
-        activo: nuevoEstado,
+        activo: nuevoEstado
       })
       .subscribe(
         (response) => {
@@ -497,7 +503,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     this.modalRefPrueba = this.modalService.show(template, {
       class: 'modal-lg',
-      backdrop: 'static',
+      backdrop: 'static'
     });
   }
 
@@ -515,7 +521,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       email_prueba: this.emailPrueba,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configuracionEliminar.sucursales || [],
+      sucursales: this.configuracionEliminar.sucursales || []
     };
 
     this.apiService
@@ -541,7 +547,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
     this.modalRefEliminar = this.modalService.show(template, {
       class: 'modal-lg',
-      backdrop: 'static',
+      backdrop: 'static'
     });
   }
 
@@ -592,7 +598,7 @@ export class ReportesAutomaticosComponent implements OnInit {
           Swal.fire({
             icon: 'info',
             title: 'Información',
-            text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte. Si continúa, la configuración existente será desactivada.',
+            text: 'Ya existe una configuración activa para este tipo de reporte. Solo puede haber una configuración activa por tipo de reporte. Si continúa, la configuración existente será desactivada.'
           });
         }, 100);
       }
@@ -639,7 +645,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       .map((categoria) => ({
         id: categoria.id,
         nombre: categoria.nombre,
-        porcentaje: categoria.porcentaje || 100,
+        porcentaje: categoria.porcentaje || 100
       }));
   }
 
@@ -678,7 +684,7 @@ export class ReportesAutomaticosComponent implements OnInit {
 
       this.modalRefFechas = this.modalService.show(template, {
         class: 'modal-lg',
-        backdrop: 'static',
+        backdrop: 'static'
       });
     }
   }
@@ -694,7 +700,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       id: this.configReporteActual?.id,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configReporteActual?.sucursales || [],
+      sucursales: this.configReporteActual?.sucursales || []
     };
 
     // Determinar la ruta y tipo de archivo según el tipo de reporte
@@ -823,7 +829,7 @@ export class ReportesAutomaticosComponent implements OnInit {
       id: this.configReporteActual?.id,
       fecha_inicio: this.fechaInicio,
       fecha_fin: this.fechaFin,
-      sucursales: this.configReporteActual?.sucursales || [],
+      sucursales: this.configReporteActual?.sucursales || []
     };
 
     // Determinar la ruta y tipo de archivo según el tipo de reporte

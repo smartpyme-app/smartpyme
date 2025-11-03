@@ -1,12 +1,19 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { VendedorDatosComponent } from './datos/vendedor-datos.component';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 
 
 @Component({
-  selector: 'app-vendedor-dash',
-  templateUrl: './vendedor-dash.component.html'
+    selector: 'app-vendedor-dash',
+    templateUrl: './vendedor-dash.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, VendedorDatosComponent],
+    
 })
 export class VendedorDashComponent implements OnInit {
 

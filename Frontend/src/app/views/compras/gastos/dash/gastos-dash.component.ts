@@ -1,14 +1,20 @@
 import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ChartData, ChartConfiguration, ChartType } from 'chart.js';
-import { BaseChartDirective } from 'ng2-charts';
+import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
-  selector: 'app-gastos-dash',
-  templateUrl: './gastos-dash.component.html'
+    selector: 'app-gastos-dash',
+    templateUrl: './gastos-dash.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgChartsModule],
+    
 })
 export class GastosDashComponent implements OnInit {
 

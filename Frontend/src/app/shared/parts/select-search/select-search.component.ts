@@ -1,19 +1,26 @@
 import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { Subject, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-select-search',
-  templateUrl: './select-search.component.html',
-  styleUrls: ['./select-search.component.css'],
-  providers: [
-    {
-      provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => SelectSearchComponent),
-      multi: true
-    }
-  ]
+    selector: 'app-select-search',
+    templateUrl: './select-search.component.html',
+    styleUrls: ['./select-search.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    providers: [
+        {
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => SelectSearchComponent),
+            multi: true
+        }
+    ],
+    
 })
 export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDestroy, OnChanges {
   @Input() name: string = '';

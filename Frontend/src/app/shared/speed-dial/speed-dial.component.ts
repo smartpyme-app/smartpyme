@@ -1,12 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ChatService } from '@services/chat/chat.service';
 import { Subscription } from 'rxjs';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-speed-dial',
-  templateUrl: './speed-dial.component.html',
-  styleUrls: ['./speed-dial.component.css']
+    selector: 'app-speed-dial',
+    templateUrl: './speed-dial.component.html',
+    styleUrls: ['./speed-dial.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class SpeedDialComponent implements OnInit, OnDestroy {
   // Variable para controlar la visibilidad del botón

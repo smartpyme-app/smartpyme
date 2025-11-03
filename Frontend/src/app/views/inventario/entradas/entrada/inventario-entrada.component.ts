@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-inventario-entrada',
-  templateUrl: './inventario-entrada.component.html'
+    selector: 'app-inventario-entrada',
+    templateUrl: './inventario-entrada.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent],
+    
 })
 export class InventarioEntradaComponent implements OnInit {
 

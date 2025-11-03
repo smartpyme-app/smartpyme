@@ -2,13 +2,19 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import { formatDate } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-admin-pagos',
-  templateUrl: './admin-pagos.component.html'
+    selector: 'app-admin-pagos',
+    templateUrl: './admin-pagos.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, PaginationComponent],
+    
 })
 export class AdminPagosComponent implements OnInit {
 

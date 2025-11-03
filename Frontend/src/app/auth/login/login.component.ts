@@ -1,4 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -8,8 +12,10 @@ import { MHService } from '@services/MH.service';
 declare let $:any;
 
 @Component({
-  selector: 'app-login',
-  templateUrl: './login.component.html'
+    selector: 'app-login',
+    templateUrl: './login.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterModule, NotificacionesContainerComponent]
 })
 export class LoginComponent implements OnInit {
 

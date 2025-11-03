@@ -1,13 +1,22 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-ventas',
-  templateUrl: './ventas.component.html',
+    selector: 'app-ventas',
+    templateUrl: './ventas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent],
+    
 })
 export class VentasComponent implements OnInit {
   public ventas: any = [];

@@ -1,11 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-dash',
-  templateUrl: './dash.component.html'
+    selector: 'app-dash',
+    templateUrl: './dash.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class DashComponent implements OnInit {
 

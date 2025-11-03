@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 declare var $:any;
 
 @Component({
-  selector: 'app-compras-recurrentes',
-  templateUrl: './compras-recurrentes.component.html'
+    selector: 'app-compras-recurrentes',
+    templateUrl: './compras-recurrentes.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 
 export class ComprasRecurrentesComponent implements OnInit {

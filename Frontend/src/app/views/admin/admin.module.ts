@@ -6,7 +6,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { FocusModule } from 'angular2-focus';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { TabsModule } from 'ngx-bootstrap/tabs';
@@ -29,7 +28,7 @@ import { UsuarioComponent } from './usuarios/usuario/usuario.component';
 
 import { NotificacionesComponent } from './notificaciones/notificaciones.component';
 import { ReportesComponent } from './reportes/reportes.component';
-import { DocsComponent } from './docs/docs.component';
+import { DocsComponent } from './docs/docs.component'; // Ahora es standalone
 // import { ThreedsModalComponent } from '../../auth/register/pago/modal/threeds-modal.component';
 import { WhatsAppComponent } from './whatsapp/whatsapp.component';
 import { WhatsAppEstadisticasComponent } from './whatsapp/estadisticas/whatsapp-estadisticas.component';
@@ -46,14 +45,27 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     NgSelectModule,
     AdminRoutingModule,
     NgxMaskDirective, NgxMaskPipe,
-    FocusModule.forRoot(),
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
-    NgxIntlTelInputModule
+    NgxIntlTelInputModule,
+    // Componentes standalone
+    DocsComponent,
+    EmpresaComponent,
+    EliminarDatosComponent,
+    SuscripcionComponent,
+    SucursalesComponent,
+    SucursalComponent,
+    UsuariosComponent,
+    UsuarioComponent,
+    ReportesComponent,
+    NotificacionesComponent,
+    WhatsAppComponent,
+    WhatsAppEstadisticasComponent
   ],
-  declarations: [
+  exports: [
+    // Todos los componentes standalone se exportan como imports standalone
     EmpresaComponent,
     EliminarDatosComponent,
     SuscripcionComponent,
@@ -66,20 +78,6 @@ import { NgxIntlTelInputModule } from 'ngx-intl-tel-input';
     DocsComponent,
     WhatsAppComponent,
     WhatsAppEstadisticasComponent
-  ],
-  exports: [
-    EliminarDatosComponent,
-    SuscripcionComponent,
-    SucursalesComponent,
-    SucursalComponent,
-    UsuariosComponent,
-    UsuarioComponent,
-    ReportesComponent,
-    NotificacionesComponent,
-    DocsComponent,
-    WhatsAppComponent,
-    WhatsAppEstadisticasComponent,
-    DocsComponent,
   ]
 })
 export class AdminModule { }

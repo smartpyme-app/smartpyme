@@ -1,4 +1,7 @@
 import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
@@ -6,8 +9,11 @@ import {PlanillaConstants} from '../../constants/planilla.constants';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-planillas',
-  templateUrl: './planillas.component.html',
+    selector: 'app-planillas',
+    templateUrl: './planillas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class PlanillasComponent implements OnInit {
   public planillas: any = [];

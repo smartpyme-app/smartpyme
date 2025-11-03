@@ -1,4 +1,7 @@
 import { Component, OnInit, Input, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -9,8 +12,11 @@ import { EncryptService } from '@services/encryption/encrypt.service';
 
 
 @Component({
-  selector: 'app-usuarios',
-  templateUrl: './usuarios.component.html',
+    selector: 'app-usuarios',
+    templateUrl: './usuarios.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class UsuariosComponent implements OnInit {
 

@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-devoluciones-compras',
-  templateUrl: './devoluciones-compras.component.html'
+    selector: 'app-devoluciones-compras',
+    templateUrl: './devoluciones-compras.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 
 export class DevolucionesComprasComponent implements OnInit {

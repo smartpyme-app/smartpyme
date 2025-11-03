@@ -1,12 +1,18 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-module-form',
-  templateUrl: './module-form.component.html',
+    selector: 'app-module-form',
+    templateUrl: './module-form.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class ModuleFormComponent implements OnInit {
   @ViewChild('moduleForm') moduleForm!: NgForm;

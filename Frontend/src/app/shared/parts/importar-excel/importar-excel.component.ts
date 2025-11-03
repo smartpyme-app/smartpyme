@@ -1,4 +1,6 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '@services/api.service';
@@ -23,7 +25,9 @@ interface ValidationError {
 
 @Component({
     selector: 'app-importar-excel',
-    templateUrl: './importar-excel.component.html'
+    templateUrl: './importar-excel.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule]
 })
 export class ImportarExcelComponent implements OnInit {
 

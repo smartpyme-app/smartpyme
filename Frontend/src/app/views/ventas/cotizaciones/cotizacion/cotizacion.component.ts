@@ -1,19 +1,42 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { VentaDetallesComponent } from '../../facturacion/facturacion-tienda/detalles/venta-detalles.component';
+import { MetodosDePagoComponent } from '../../facturacion/facturacion-tienda/metodos-de-pago/metodos-de-pago.component';
+import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
-import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
-  selector: 'app-cotizacion',
-  templateUrl: './cotizacion.component.html',
-  providers: [SumPipe],
+    selector: 'app-cotizacion',
+    templateUrl: './cotizacion.component.html',
+    standalone: true,
+    imports: [
+        CommonModule, 
+        RouterModule, 
+        FormsModule, 
+        NgSelectModule,
+        FilterPipe,
+        VentaDetallesComponent,
+        MetodosDePagoComponent,
+        BuscadorClientesComponent,
+        CrearClienteComponent,
+        CrearProyectoComponent
+    ],
+    providers: [SumPipe],
+    
 })
 export class CotizacionComponent implements OnInit {
   public venta: any = {};

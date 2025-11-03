@@ -1,15 +1,22 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
+import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-venta',
-  templateUrl: './venta.component.html'
+    selector: 'app-venta',
+    templateUrl: './venta.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoVentaComponent],
+    
 })
 export class VentaComponent implements OnInit {
 

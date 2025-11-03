@@ -7,7 +7,6 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -20,7 +19,7 @@ import { HistorialComprasComponent } from './compras/historial/historial-compras
 import { DetalleComprasComponent } from './compras/detalle/detalle-compras.component';
 import { CategoriasComprasComponent } from './compras/categorias/categorias-compras.component';
 
-import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.component';
+import { EmpleadosVentasComponent } from './empleados/ventas/empleados-ventas.component'; // Ahora es standalone
 
 import { CorteComponent } from './corte/corte.component';
 import { ReportesComponent } from './reportes.component';
@@ -39,22 +38,23 @@ import { ReplacePipe } from './reportes-automaticos.component';
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
-    FocusModule.forRoot()
-  ],
-  declarations: [
+    // Componentes standalone
+    EmpleadosVentasComponent,
     HistorialVentasComponent,
     DetalleVentasComponent,
     CategoriasVentasComponent,
     HistorialComprasComponent,
     DetalleComprasComponent,
     CategoriasComprasComponent,
-    EmpleadosVentasComponent,
     CorteComponent,
     ReportesComponent,
     ReportesAutomaticosComponent,
     ReplacePipe
   ],
+  declarations: [
+  ],
   exports: [
+    // Todos los componentes standalone se exportan como imports standalone
     HistorialVentasComponent,
     DetalleVentasComponent,
     CategoriasVentasComponent,

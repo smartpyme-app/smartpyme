@@ -1,6 +1,10 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
+import { CompraProductoComponent } from '../compra-producto/compra-producto.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -8,8 +12,11 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-compra-detalles',
-  templateUrl: './compra-detalles.component.html'
+    selector: 'app-compra-detalles',
+    templateUrl: './compra-detalles.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, CompraProductoComponent],
+    
 })
 export class CompraDetallesComponent implements OnInit {
 

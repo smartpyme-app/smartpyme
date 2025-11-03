@@ -1,6 +1,9 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { HTTP_INTERCEPTORS, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { AuthorizationInterceptor } from '@services/Authorization/authorization.interceptor';
 
 import { AppRoutingModule } from './app.routing.module';
@@ -14,7 +17,6 @@ import { CitasGuard } from '@guards/citas.guard';
 import { SuperAdminGuard } from '@guards/super-admin.guard';
 import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { UsuariosGuard } from '@guards/usuarios.guard';
-import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 
 import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
@@ -62,59 +64,60 @@ import { PaquetesModule } from '@views/paquetes/paquetes.module';
 // Proyectos
 import { ProyectosModule } from '@views/proyectos/proyectos.module';
 
- // Admin
-  import { AdminModule } from '@views/admin/admin.module';
-  import { ReportesModule } from '@views/reportes/reportes.module';
-  import { CitasModule } from '@views/citas/citas.module';
-  import { HasPermissionDirective } from './directives/has-permission.directive';
-  import { RoleGuard } from './guards/role.guard';
-  import { PermissionGuard } from './guards/permission.guard';
-  import { ServiceWorkerModule } from '@angular/service-worker';
+// Admin
+import { AdminModule } from '@views/admin/admin.module';
+import { ReportesModule } from '@views/reportes/reportes.module';
+import { CitasModule } from '@views/citas/citas.module';
+import { HasPermissionDirective } from './directives/has-permission.directive';
+import { RoleGuard } from './guards/role.guard';
+import { PermissionGuard } from './guards/permission.guard';
+import { ServiceWorkerModule } from '@angular/service-worker';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-    HasPermissionDirective
-  ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    TourNgxBootstrapModule,
-    AppRoutingModule,
-    ModalModule.forRoot(),
-    NotifierModule.withConfig({ position: { horizontal: { position: 'middle' } }, theme: 'material' }),
-    SharedModule,
-    QuicklinkModule,
-    LayoutModule,
-    AuthModule,
-    DashModule,
-    SuperAdminModule,
-    VentasModule,
-    FacturacionModule,
-    ClientesModule,
-    InventarioModule,
-    ComprasModule,
-    ProveedoresModule,
-    ContabilidadModule,
-    AdminModule,
-    ReportesModule,
-    CitasModule,
-    PaquetesModule,
-    ProyectosModule,
-    PlanillasModule,
-    ReactiveFormsModule ,
-    ServiceWorkerModule.register('ngsw-worker.js', {
-      enabled: !isDevMode(),
-      // Register the ServiceWorker as soon as the application is stable
-      // or after 30 seconds (whichever comes first).
-      registrationStrategy: 'registerWhenStable:30000'
-    }),
-  ],
+@NgModule({ 
+    declarations: [
+    ],
+    bootstrap: [AppComponent],
+    imports: [
+        AppComponent,
+        BrowserModule,
+        CommonModule,
+        FormsModule,
+        RouterModule,
+        AppRoutingModule,
+        ModalModule.forRoot(),
+        NotifierModule.withConfig({ position: { horizontal: { position: 'middle' } }, theme: 'material' }),
+        SharedModule,
+        QuicklinkModule,
+        LayoutModule,
+        AuthModule,
+        DashModule,
+        SuperAdminModule,
+        OrganizacionesAdminModule,
+        VentasModule,
+        FacturacionModule,
+        ClientesModule,
+        InventarioModule,
+        ComprasModule,
+        ProveedoresModule,
+        ContabilidadModule,
+        AdminModule,
+        ReportesModule,
+        CitasModule,
+        PaquetesModule,
+        ProyectosModule,
+        PlanillasModule,
+        ReactiveFormsModule,
+        HasPermissionDirective, // Directiva standalone
+        ServiceWorkerModule.register('ngsw-worker.js', {
+            enabled: !isDevMode(),
+            // Register the ServiceWorker as soon as the application is stable
+            // or after 30 seconds (whichever comes first).
+            registrationStrategy: 'registerWhenStable:30000'
+        })], 
+  exports: [],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
-                { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
-                AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, AlertService, ApiService,
-                ConstantsService, MHService, SumPipe, provideEnvironmentNgxMask()],
-  bootstrap: [AppComponent]
-})
+        { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
+        AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, AlertService, ApiService,
+        ConstantsService, MHService, SumPipe, CurrencyPipe, DatePipe, provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())] })
 
 export class AppModule { }

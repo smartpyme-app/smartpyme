@@ -4,7 +4,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PipesModule } from '@pipes/pipes.module';
 import { ModalModule } from 'ngx-bootstrap/modal';
-import { FocusModule } from 'angular2-focus';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
@@ -30,12 +29,13 @@ import { DocumentosComponent } from '@views/ventas/documentos/documentos.compone
 
 import { DevolucionesVentasComponent } from '@views/ventas/devoluciones/devoluciones-ventas.component';
 import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolucion-nueva/devolucion-nueva.component';
-import { DevolucionVentaDetallesComponent } from '@views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
+// DevolucionVentaDetallesComponent es importado por DevolucionVentaNuevaComponent, no necesita estar aquí
 import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 
 import { OrdenesProduccionComponent } from '@views/ventas/orden_produccion/ordenes-produccion.component';
 import { CrearOrdenProduccionComponent } from '@views/ventas/orden_produccion/crear_orden/crear-orden-produccion.component';
 import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
+
 @NgModule({
   imports: [
     CommonModule,
@@ -47,12 +47,10 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     VentasRoutingModule,
     NgSelectModule,
     PopoverModule.forRoot(),
-    FocusModule.forRoot(),
     ModalModule.forRoot(),
     TooltipModule.forRoot(),
     ProgressbarModule.forRoot(),
-  ],
-  declarations: [
+    // Componentes standalone
     VentasComponent,
     VentaComponent,
     RecurrentesComponent,
@@ -68,12 +66,13 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,
-    DevolucionVentaDetallesComponent,
+    // DevolucionVentaDetallesComponent es importado por DevolucionVentaNuevaComponent
     OrdenesProduccionComponent,
     CrearOrdenProduccionComponent,
     DocumentoHistorialComponent
   ],
   exports: [
+    // Componentes standalone exportados (ya están importados arriba)
     VentasComponent,
     VentaComponent,
     RecurrentesComponent,
@@ -89,7 +88,7 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     DevolucionesVentasComponent,
     DevolucionVentaComponent,
     DevolucionVentaNuevaComponent,
-    DevolucionVentaDetallesComponent,
+    // DevolucionVentaDetallesComponent es importado por DevolucionVentaNuevaComponent
     OrdenesProduccionComponent,
     CrearOrdenProduccionComponent
   ]

@@ -1,6 +1,10 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
@@ -9,8 +13,11 @@ import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/config
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-planilla-detalle',
-  templateUrl: './planilla-detalle.component.html',
+    selector: 'app-planilla-detalle',
+    templateUrl: './planilla-detalle.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    
 })
 export class PlanillaDetalleComponent implements OnInit {
   public planilla: any = {};

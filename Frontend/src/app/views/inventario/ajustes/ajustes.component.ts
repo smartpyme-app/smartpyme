@@ -1,6 +1,10 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Subject, Observable } from 'rxjs';
@@ -8,8 +12,11 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 import { of } from 'rxjs';
 
 @Component({
-  selector: 'app-ajustes',
-  templateUrl: './ajustes.component.html',
+    selector: 'app-ajustes',
+    templateUrl: './ajustes.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 export class AjustesComponent implements OnInit {
 

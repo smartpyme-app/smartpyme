@@ -1,14 +1,22 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-devoluciones-ventas',
-    templateUrl: './devoluciones-ventas.component.html'
+    templateUrl: './devoluciones-ventas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent],
+    
 })
 
 export class DevolucionesVentasComponent implements OnInit {

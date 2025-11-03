@@ -1,5 +1,9 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -11,8 +15,11 @@ import { AlertService } from '@services/alert.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-tienda-venta-citas',
-  templateUrl: './tienda-venta-citas.component.html'
+    selector: 'app-tienda-venta-citas',
+    templateUrl: './tienda-venta-citas.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
+    
 })
 export class TiendaVentaCitasComponent implements OnInit {
 

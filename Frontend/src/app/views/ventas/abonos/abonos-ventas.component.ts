@@ -1,12 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 
 @Component({
-  selector: 'app-abonos-ventas',
-  templateUrl: './abonos-ventas.component.html'
+    selector: 'app-abonos-ventas',
+    templateUrl: './abonos-ventas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent],
+    
 })
 
 export class AbonosVentasComponent implements OnInit {

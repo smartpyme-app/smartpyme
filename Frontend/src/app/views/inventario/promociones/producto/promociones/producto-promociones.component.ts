@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -8,8 +11,11 @@ import * as moment from 'moment';
 
 declare var $:any;
 @Component({
-  selector: 'app-producto-promociones',
-  templateUrl: './producto-promociones.component.html'
+    selector: 'app-producto-promociones',
+    templateUrl: './producto-promociones.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class ProductoPromocionesComponent implements OnInit {
 

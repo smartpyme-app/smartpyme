@@ -1,14 +1,19 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
-  selector: 'app-ver-boletas',
-  templateUrl: './ver-boletas.component.html',
-  styles: [
-    `
+    selector: 'app-ver-boletas',
+    templateUrl: './ver-boletas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    styles: [
+        `
       .pdf-container {
         border: 1px solid #ddd;
         border-radius: 4px;
@@ -20,7 +25,8 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
         margin: 0 auto;
       }
     `,
-  ],
+    ],
+    
 })
 export class VerBoletasComponent implements OnInit {
   public planillaId: number;

@@ -1,15 +1,24 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TabsetComponent } from 'ngx-bootstrap/tabs';
+import { TabsetComponent, TabsModule } from 'ngx-bootstrap/tabs';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { NgxMaskDirective } from 'ngx-mask';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-empresa',
-  templateUrl: './empresa.component.html'
+    selector: 'app-empresa',
+    templateUrl: './empresa.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective],
+    
 })
 export class EmpresaComponent implements OnInit {
 

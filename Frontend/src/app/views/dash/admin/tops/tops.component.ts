@@ -1,4 +1,7 @@
 import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ChartData, ChartEvent, ChartType } from 'chart.js';
 import { BaseChartDirective } from 'ng2-charts';
@@ -7,8 +10,11 @@ import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
-  selector: 'app-tops',
-  templateUrl: './tops.component.html'
+    selector: 'app-tops',
+    templateUrl: './tops.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class TopsComponent implements OnInit {
 	@ViewChild(BaseChartDirective)

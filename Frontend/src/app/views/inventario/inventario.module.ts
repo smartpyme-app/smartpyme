@@ -5,7 +5,6 @@ import { RouterModule } from '@angular/router';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TabsModule } from 'ngx-bootstrap/tabs';
-import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { PopoverModule } from 'ngx-bootstrap/popover';
@@ -13,7 +12,6 @@ import { NgChartsModule } from 'ng2-charts';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
-import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 import { ReactiveFormsModule } from '@angular/forms';
 
 import { InventarioRoutingModule } from './inventario.routing.module';
@@ -82,7 +80,6 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     TagInputModule,
     NgChartsModule,
     NgSelectModule,
-    TourNgxBootstrapModule,
     NgxMaskDirective, NgxMaskPipe,
     InventarioRoutingModule,
     ReactiveFormsModule,
@@ -90,9 +87,7 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     TooltipModule.forRoot(),
     ModalModule.forRoot(),
     PopoverModule.forRoot(),
-    FocusModule.forRoot(),
-  ],
-  declarations: [
+    // Componentes standalone
     ProductosComponent,
     ProductoComponent,
     KardexComponent,
@@ -128,9 +123,6 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     ComboIndexComponent,
     VerProductoComponent,
     CustomFieldsComponent,
-    SubCategoriasComponent,
-    BodegaComponent,
-    BodegasComponent,
     TrasladoMasivoComponent,
     AjusteMasivoComponent,
     // Nuevos componentes
@@ -174,10 +166,9 @@ import { SalidaDetalleComponent } from './salidas/salida-detalle/salida-detalle.
     ProductoComboComponent,
     ComboDetallesComponent,
     BuscadorProductoComponent,
+    ComboIndexComponent,
+    VerProductoComponent,
     CustomFieldsComponent,
-    SubCategoriasComponent,
-    BodegaComponent,
-    BodegasComponent,
     TrasladoMasivoComponent,
     AjusteMasivoComponent,
     // Nuevos componentes

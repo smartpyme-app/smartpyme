@@ -2,11 +2,9 @@ import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
 import { TabsModule } from 'ngx-bootstrap/tabs';
-import { FocusModule } from 'angular2-focus';
 import { BsDropdownModule } from 'ngx-bootstrap/dropdown';
 import { NgChartsModule } from 'ng2-charts';
 import { PipesModule } from '@pipes/pipes.module';
@@ -30,19 +28,18 @@ import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
     SharedModule,
     PaywallRoutingModule,
     NgSelectModule,
-    TourNgxBootstrapModule,
     PopoverModule.forRoot(),
     TooltipModule.forRoot(),
-    FocusModule.forRoot(),
     BsDropdownModule.forRoot(),
     TabsModule.forRoot(),
     CollapseModule.forRoot(),
     ProgressbarModule.forRoot(),
+    // Componentes standalone
+    PaywallComponent
   ],
   declarations: [
-    PaywallComponent,
-    PaywallLayoutComponent,
-    PaymentSuccessPaywallComponent
+    // PaywallComponent ahora es standalone
+    // PaywallLayoutComponent ahora es standalone
   ],
   exports: [
     PaywallComponent

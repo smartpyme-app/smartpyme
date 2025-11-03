@@ -1,11 +1,15 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-descargar-inventario',
-  templateUrl: './descargar-inventario.component.html'
+    selector: 'app-descargar-inventario',
+    templateUrl: './descargar-inventario.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule]
 })
 export class DescargarInventarioComponent implements OnInit {
 

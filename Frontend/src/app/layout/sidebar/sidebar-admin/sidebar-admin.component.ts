@@ -1,4 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -6,8 +11,11 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-sidebar-admin',
-  templateUrl: './sidebar-admin.component.html'
+    selector: 'app-sidebar-admin',
+    templateUrl: './sidebar-admin.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CollapseModule, TooltipModule],
+    
 })
 
 export class SidebarAdminComponent implements OnInit {

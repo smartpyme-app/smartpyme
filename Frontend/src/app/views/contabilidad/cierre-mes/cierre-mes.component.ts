@@ -1,13 +1,19 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-cierre-mes',
-  templateUrl: './cierre-mes.component.html',
-  styleUrls: ['./cierre-mes.component.scss']
+    selector: 'app-cierre-mes',
+    templateUrl: './cierre-mes.component.html',
+    styleUrls: ['./cierre-mes.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class CierreMesComponent implements OnInit {
 

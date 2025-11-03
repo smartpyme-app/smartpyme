@@ -1,12 +1,16 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 import * as moment from 'moment';
+
 @Component({
-  selector: 'app-timer',
-  templateUrl: './timer.component.html'
+    selector: 'app-timer',
+    templateUrl: './timer.component.html',
+    standalone: true,
+    imports: [CommonModule]
 })
-export class TimerComponent implements OnInit {
+export class TimerComponent implements OnInit, OnDestroy {
 
     @Input() time:any;
     public timeAgo:number = 0;
@@ -29,10 +33,7 @@ export class TimerComponent implements OnInit {
         console.log(this.timeAgo);
     }
 
-    ngOnDestroy(){
+    ngOnDestroy() {
         clearInterval(this.timeResfresh);
-
     }
-
-
 }

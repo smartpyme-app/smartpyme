@@ -1,4 +1,7 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -15,8 +18,11 @@ import {
 import { Estado } from '../../../models/estado.interface';
 
 @Component({
-  selector: 'app-suscripcion',
-  templateUrl: './suscripcion.component.html',
+    selector: 'app-suscripcion',
+    templateUrl: './suscripcion.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class SuscripcionComponent implements OnInit {
   

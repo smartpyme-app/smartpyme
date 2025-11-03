@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TabsModule } from 'ngx-bootstrap/tabs';
@@ -52,11 +51,9 @@ import { ComprasModule } from '@views/compras/compras.module';
     ComprasModule,
     ContabilidadRoutingModule,
     PopoverModule.forRoot(),
-    FocusModule.forRoot(),
     TooltipModule.forRoot(),
     TabsModule.forRoot(),
-  ],
-  declarations: [
+    // Componentes standalone
     PresupuestosComponent,
     PresupuestoComponent,
     PresupuestoDetallesComponent,
@@ -80,8 +77,7 @@ import { ComprasModule } from '@views/compras/compras.module';
     ConciliacionComponent,
     ParditasDatosComponent,
     ContabilidadConfiguracionComponent,
-    CierreMesComponent,
-
+    CierreMesComponent
   ],
   exports: [
     PresupuestosComponent,

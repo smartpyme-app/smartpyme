@@ -1,6 +1,12 @@
 import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
+import { SelectSearchComponent } from '@shared/parts/select-search/select-search.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -12,8 +18,11 @@ import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-crear-evento',
-  templateUrl: './crear-evento.component.html'
+    selector: 'app-crear-evento',
+    templateUrl: './crear-evento.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent],
+    
 })
 export class CrearEventoComponent implements OnInit, OnChanges {
 

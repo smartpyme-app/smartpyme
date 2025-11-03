@@ -1,5 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { AuthorizationService, Authorization } from '@services/Authorization/authorization.service';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-authorization-history',

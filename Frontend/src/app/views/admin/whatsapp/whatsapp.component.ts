@@ -1,14 +1,21 @@
 import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { interval, Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-whatsapp',
-  templateUrl: './whatsapp.component.html',
-  styleUrls: ['./whatsapp.component.scss']
+    selector: 'app-whatsapp',
+    templateUrl: './whatsapp.component.html',
+    styleUrls: ['./whatsapp.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    
 })
 export class WhatsAppComponent implements OnInit, OnDestroy {
 

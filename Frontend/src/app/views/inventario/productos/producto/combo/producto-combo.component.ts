@@ -1,16 +1,23 @@
 import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
+import { ComboDetallesComponent } from './detalles/combo-detalles.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-producto-combo',
-  templateUrl: './producto-combo.component.html',
-  providers: [SumPipe]
+    selector: 'app-producto-combo',
+    templateUrl: './producto-combo.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent],
+    providers: [SumPipe],
+    
 })
 export class ProductoComboComponent implements OnInit {
 

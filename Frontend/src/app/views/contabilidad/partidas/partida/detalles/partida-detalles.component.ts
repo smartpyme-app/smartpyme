@@ -1,5 +1,9 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -7,8 +11,11 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-partida-detalles',
-  templateUrl: './partida-detalles.component.html'
+    selector: 'app-partida-detalles',
+    templateUrl: './partida-detalles.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 export class PartidaDetallesComponent implements OnInit {
 

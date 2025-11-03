@@ -6,7 +6,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { FocusModule } from 'angular2-focus';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { TabsModule } from 'ngx-bootstrap/tabs';
@@ -30,12 +29,10 @@ import { EmpresasUsuariosComponent } from './empresas/usuarios/empresas-usuarios
     TagInputModule,
     NgSelectModule,
     OrganizacionesAdminRoutingModule,
-    FocusModule.forRoot(),
     PopoverModule.forRoot(),
     TabsModule.forRoot(),
     TooltipModule.forRoot(),
-  ],
-  declarations: [
+    // Componentes standalone
     OrganizacionEmpresasComponent,
     EmpresasUsuariosComponent
   ],

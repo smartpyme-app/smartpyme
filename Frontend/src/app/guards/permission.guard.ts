@@ -1,13 +1,13 @@
 // src/app/guards/permission.guard.ts
 import { Injectable } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
 import { ApiService } from '../services/api.service';
 import { AlertService } from '../services/alert.service';
 
 @Injectable({
     providedIn: 'root'
 })
-export class PermissionGuard implements CanActivate {
+export class PermissionGuard  {
     constructor(
         private apiService: ApiService,
         private router: Router,

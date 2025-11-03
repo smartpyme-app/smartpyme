@@ -1,4 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
@@ -6,8 +11,11 @@ import { ApiService } from '@services/api.service';
 
 
 @Component({
-  selector: 'app-register',
-  templateUrl: './register.component.html'
+    selector: 'app-register',
+    templateUrl: './register.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgxMaskDirective, NotificacionesContainerComponent],
+    providers: [provideNgxMask()]
 })
 export class RegisterComponent implements OnInit {
 

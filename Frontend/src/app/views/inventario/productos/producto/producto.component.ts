@@ -1,14 +1,25 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
+import { ProductoInformacionComponent } from './informacion/producto-informacion.component';
+import { ProductoComposicionComponent } from './composicion/producto-composicion.component';
+import { ProductoInventariosComponent } from './inventario/producto-inventarios.component';
+import { ProductoPreciosComponent } from './precios/producto-precios.component';
+import { ProductoProveedoresComponent } from './proveedores/producto-proveedores.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-producto',
-  templateUrl: './producto.component.html'
+    selector: 'app-producto',
+    templateUrl: './producto.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, ProductoInformacionComponent, ProductoComposicionComponent, ProductoInventariosComponent, ProductoPreciosComponent, ProductoProveedoresComponent],
+    
 })
 export class ProductoComponent implements OnInit {
 

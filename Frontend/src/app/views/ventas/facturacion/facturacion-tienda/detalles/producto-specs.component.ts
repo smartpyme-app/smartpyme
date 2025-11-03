@@ -1,8 +1,11 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-producto-specs',
-  template: `
+    selector: 'app-producto-specs',
+    template: `
     <ng-container [ngSwitch]="field.field_type">
       <select *ngSwitchCase="'select'"
               class="form-select form-select-sm"
@@ -27,7 +30,9 @@ import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
               (change)="specChanged()">
               
     </ng-container>
-  `
+  `,
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterModule]
 })
 export class ProductoSpecsComponent implements OnInit {
   @Input() producto: any;

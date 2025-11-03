@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmi
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import { FullCalendarModule } from '@fullcalendar/angular';
 import { FullCalendarComponent } from '@fullcalendar/angular';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
@@ -18,11 +19,17 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 import { registerLocaleData } from '@angular/common';
 import localeEs from '@angular/common/locales/es';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 registerLocaleData(localeEs);
 @Component({
-  selector: 'app-calendario',
-  templateUrl: './calendario.component.html',
-  providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }]
+    selector: 'app-calendario',
+    templateUrl: './calendario.component.html',
+    standalone: true,
+    imports: [CommonModule, FullCalendarModule, FormsModule, NgSelectModule],
+    providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }],
+    
 })
 export class CalendarioComponent implements OnInit {
 

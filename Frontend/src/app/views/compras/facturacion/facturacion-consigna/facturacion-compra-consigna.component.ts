@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -11,9 +14,12 @@ import { of } from 'rxjs';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-facturacion-compra-consigna',
-  templateUrl: './facturacion-compra-consigna.component.html',
-  providers: [ SumPipe ]
+    selector: 'app-facturacion-compra-consigna',
+    templateUrl: './facturacion-compra-consigna.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    providers: [SumPipe],
+    
 })
 
 export class FacturacionCompraConsignaComponent implements OnInit {

@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -6,8 +9,11 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-sidebar',
-  templateUrl: './sidebar.component.html'
+    selector: 'app-sidebar',
+    templateUrl: './sidebar.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule],
+    
 })
 
 export class SidebarComponent implements OnInit {
