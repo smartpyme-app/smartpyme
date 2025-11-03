@@ -5,12 +5,23 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { AdminDashComponent } from './admin/admin-dash.component';
+import { CajaDashComponent } from './caja/caja-dash.component';
+import { VendedorDashComponent } from './vendedor/vendedor-dash.component';
+import { OrganizacionesDashComponent } from './organizaciones/organizaciones-dash.component';
 
 @Component({
     selector: 'app-dash',
     templateUrl: './dash.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [
+        CommonModule, 
+        RouterModule,
+        AdminDashComponent,
+        CajaDashComponent,
+        VendedorDashComponent,
+        OrganizacionesDashComponent
+    ],
     
 })
 export class DashComponent implements OnInit {

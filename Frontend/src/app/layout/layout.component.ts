@@ -8,6 +8,8 @@ import { SpeedDialComponent } from '../shared/speed-dial/speed-dial.component';
 import { ChatDrawerComponent } from '../shared/chat/chat-drawer.component';
 import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
+import { SidebarComponent } from './sidebar/sidebar.component';
+import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
 
@@ -16,7 +18,16 @@ import { AppConstants } from '../constants/app.constants';
     templateUrl: './layout.component.html',
     styleUrls: ['./layout.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, SpeedDialComponent, ChatDrawerComponent, HeaderComponent, FooterComponent],
+    imports: [
+        CommonModule, 
+        RouterModule, 
+        SpeedDialComponent, 
+        ChatDrawerComponent, 
+        HeaderComponent, 
+        FooterComponent,
+        SidebarComponent,
+        SidebarAdminComponent
+    ],
     
 })
 export class LayoutComponent {

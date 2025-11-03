@@ -4,6 +4,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -12,7 +14,14 @@ import { debounceTime, switchMap, filter  } from 'rxjs/operators';
     selector: 'app-sidebar',
     templateUrl: './sidebar.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule],
+    imports: [
+        CommonModule, 
+        FormsModule, 
+        RouterModule, 
+        ReactiveFormsModule,
+        CollapseModule,
+        TooltipModule
+    ],
     
 })
 
