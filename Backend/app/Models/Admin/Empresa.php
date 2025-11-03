@@ -128,6 +128,7 @@ class Empresa extends Model
         'shopify_sync_total_batches',
         'shopify_sync_processed_batches',
         'shopify_sync_status',
+        'shopify_sync_bidirectional',
         'shopify_last_sync',
         'shopify_error',
         'importacion_productos_shopify',
@@ -139,6 +140,7 @@ class Empresa extends Model
         'facturacion_electronica' => 'boolean',
         'custom_empresa' => 'json',
         'importacion_productos_shopify' => 'boolean',
+        'shopify_sync_bidirectional' => 'boolean',
     ];
 
     protected $appends = [
