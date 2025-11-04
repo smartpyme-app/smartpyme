@@ -12,6 +12,8 @@ class Detalle extends Model {
         'descripcion',
         'cantidad',
         'precio',
+        'precio_sin_iva',
+        'precio_con_iva',
         'costo',
         'descuento',
         'no_sujeta',

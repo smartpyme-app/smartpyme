@@ -31,11 +31,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Exports\PlantillaInventarioMasivoExport;
 use App\Exports\ShopifyExport;
+use App\Services\ShopifyTransformer;
+use App\Services\ImpuestosService;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ProductosController extends Controller
 {
+    protected $shopifyTransformer;
 
+    public function __construct(ShopifyTransformer $shopifyTransformer)
+    {
+        $this->shopifyTransformer = $shopifyTransformer;
+    }
 
     public function index(Request $request)
     {
@@ -1396,7 +1403,6 @@ class ProductosController extends Controller
 
     private function procesarProductosShopify($productosShopify, $idEmpresa, $idUsuario, $idSucursal, $incluirDrafts = false)
     {
-        $shopifyTransformer = new \App\Services\ShopifyTransformer();
         $productosImportados = 0;
         $productosData = [];
 
@@ -1429,7 +1435,7 @@ class ProductosController extends Controller
                 ]);
 
                 // Transformar productos usando ShopifyTransformer
-                $productosTransformados = $shopifyTransformer->transformarProductoDesdeShopify(
+                $productosTransformados = $this->shopifyTransformer->transformarProductoDesdeShopify(
                     $productoShopify,
                     $idEmpresa,
                     $idUsuario,
