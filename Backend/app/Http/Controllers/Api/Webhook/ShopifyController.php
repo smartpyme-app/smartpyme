@@ -30,13 +30,15 @@ class ShopifyController extends Controller
     protected $transformer;
     protected $cache;
     protected $shippingService;
+    protected $impuestosService;
 
 
-    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService)
+    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService, \App\Services\ImpuestosService $impuestosService)
     {
         $this->transformer = $transformer;
         $this->cache = $cache;
         $this->shippingService = $shippingService;
+        $this->impuestosService = $impuestosService;
     }
 
     public function handle($tokenEmpresa, Request $request)
@@ -714,7 +716,7 @@ class ShopifyController extends Controller
                     // Log::info("Producto creado", ['producto_id' => $producto->id]);
                 }
 
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
@@ -750,6 +752,21 @@ class ShopifyController extends Controller
                 Log::info("Detalles de envío procesados", [
                     'venta_id' => $venta->id,
                     'detalles_creados' => count($detallesEnvio)
+                ]);
+            }
+
+            // Guardar impuesto de la venta en venta_impuestos
+            if ($venta->iva > 0) {
+                $this->impuestosService->guardarImpuestoVenta(
+                    $venta->id,
+                    $venta->iva,
+                    $usuario->id_empresa
+                );
+
+                Log::info("Impuesto de venta guardado", [
+                    'venta_id' => $venta->id,
+                    'monto_impuesto' => $venta->iva,
+                    'empresa_id' => $usuario->id_empresa
                 ]);
             }
 
@@ -2075,7 +2092,7 @@ class ShopifyController extends Controller
                     }
 
                     // Crear detalle de venta
-                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
+                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
                     $detalleData['id_producto'] = $producto->id;
                     $venta->detalles()->create($detalleData);
 
@@ -2114,6 +2131,21 @@ class ShopifyController extends Controller
                 Log::info("Detalles de envío procesados en draft order", [
                     'venta_id' => $venta->id,
                     'detalles_creados' => count($detallesEnvio)
+                ]);
+            }
+
+            // Guardar impuesto de la venta en venta_impuestos
+            if ($venta->iva > 0) {
+                $this->impuestosService->guardarImpuestoVenta(
+                    $venta->id,
+                    $venta->iva,
+                    $usuario->id_empresa
+                );
+
+                Log::info("Impuesto de draft order guardado", [
+                    'venta_id' => $venta->id,
+                    'monto_impuesto' => $venta->iva,
+                    'empresa_id' => $usuario->id_empresa
                 ]);
             }
 
