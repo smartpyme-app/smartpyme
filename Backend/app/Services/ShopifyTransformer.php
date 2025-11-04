@@ -307,50 +307,54 @@ class ShopifyTransformer
 
     private function mapearFormaPago($shopifyData)
     {
-        // Shopify envía payment_gateway_names como array
         $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
         $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
         $financialStatus = $shopifyData['financial_status'] ?? $shopifyData['status'] ?? 'pending';
 
-        // Log::info('Mapeando forma de pago', [
-        //     'payment_gateway_names' => $paymentGateways,
-        //     'gateway_selected' => $gateway,
-        //     'financial_status' => $financialStatus
-        // ]);
+        // Normalizar solo para búsqueda (no modifica el original)
+        $gatewayLower = strtolower(trim($gateway));
 
+        // Mapeo en minúsculas (más simple y seguro)
         $mapeo = [
             'shopify_payments' => 'Tarjeta de crédito/débito',
             'paypal' => 'PayPal',
+            'paypal_express' => 'PayPal',
+            'paypal_express_checkout' => 'PayPal',
+            'kueski_pay' => 'KueskiPay',
+            'kueskipay' => 'KueskiPay',
+            'kueski pay' => 'KueskiPay',
             'manual' => 'Manual',
-            'Cash on Delivery (COD)' => 'Contra entrega',
-            'Pago contra entrega' => 'Contra entrega',
+            'cash on delivery (cod)' => 'Contra entrega',
+            'pago contra entrega' => 'Contra entrega',
             'bank_transfer' => 'Transferencia bancaria',
-            'Bank Transfer' => 'Transferencia bancaria',
-            'Bank Deposit' => 'Transferencia bancaria',
-            'Depósito Bancario' => 'Transferencia bancaria',
+            'bank deposit' => 'Transferencia bancaria',
+            'depósito bancario' => 'Transferencia bancaria',
             'stripe' => 'Tarjeta de crédito/débito',
             'square' => 'Tarjeta de crédito/débito',
-            'Wompi El Salvador' => 'Wompi',
+            'wompi el salvador' => 'Wompi',
         ];
 
-        $formaPago = $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+        // Buscar usando la versión normalizada
+        $formaPago = $mapeo[$gatewayLower] ?? null;
 
-        // Si es "Manual" y el pedido está pagado, cambiar a "Wompi"
-        if ($gateway === 'manual' && in_array($financialStatus, ['paid', 'partially_paid'])) {
-            $formaPago = 'Wompi';
-            
-            // Log::info('Forma de pago cambiada de Manual a Wompi', [
-            //     'gateway' => $gateway,
-            //     'financial_status' => $financialStatus,
-            //     'forma_pago_original' => $mapeo[$gateway],
-            //     'forma_pago_final' => $formaPago
-            // ]);
+        // Fallbacks inteligentes (solo si no encontró coincidencia)
+        if (!$formaPago) {
+            if (str_contains($gatewayLower, 'paypal')) {
+                $formaPago = 'PayPal';
+            } elseif (str_contains($gatewayLower, 'kueski')) {
+                $formaPago = 'KueskiPay';
+            } elseif (str_contains($gatewayLower, 'wompi')) {
+                $formaPago = 'Wompi';
+            }
         }
 
-        // Log::info('Forma de pago mapeada', [
-        //     'gateway' => $gateway,
-        //     'forma_pago' => $formaPago
-        // ]);
+        // Default final
+        $formaPago = $formaPago ?? 'Tarjeta de crédito/débito';
+
+        // Caso especial: Manual + Pagado = Wompi
+        if ($gatewayLower === 'manual' && in_array($financialStatus, ['paid', 'partially_paid'])) {
+            $formaPago = 'Wompi';
+        }
 
         return $formaPago;
     }
