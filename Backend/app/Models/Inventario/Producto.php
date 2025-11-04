@@ -16,6 +16,7 @@ class Producto extends Model
         'nombre',
         'nombre_variante',
         'descripcion',
+        'descripcion_completa',
         'codigo',
         'barcode',
         'medida',

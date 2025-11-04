@@ -286,12 +286,17 @@ class ShopifyTransformer
             ->where('nombre', 'Uncategorized')
             ->first();
 
+        // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
+        $descripcionCompleta = $shopifyData['product']['body_html'] ?? '';
+        $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
+
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
             'nombre' => $nombreBase,
             'nombre_variante' => $nombreVariante,
-            'descripcion' => $shopifyData['product']['body_html'] ?? '',
+            'descripcion' => $descripcionCorta,
+            'descripcion_completa' => $descripcionCompleta,
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
             'id_sucursal' => $id_sucursal,
@@ -440,12 +445,17 @@ class ShopifyTransformer
             $precioConIva = floatval($variant['price'] ?? 0);
             $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
 
+            // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
+            $descripcionCompleta = strip_tags($shopifyData['body_html'] ?? '');
+            $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
+
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
                 'nombre' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
-                'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+                'descripcion' => $descripcionCorta,
+                'descripcion_completa' => $descripcionCompleta,
                 'id_empresa' => $id_empresa,
                 'precio' => $precioSinIva,
                 'precio_sin_iva' => $precioSinIva,
