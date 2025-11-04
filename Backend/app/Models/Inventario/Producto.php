@@ -20,6 +20,8 @@ class Producto extends Model
         'barcode',
         'medida',
         'precio',
+        'precio_sin_iva',
+        'precio_con_iva',
         'costo',
         'costo_anterior',
         'costo_promedio',

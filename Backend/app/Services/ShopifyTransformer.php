@@ -249,6 +249,8 @@ class ShopifyTransformer
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
             'precio' => $precioSinImpuesto, // Precio sin impuesto para SmartPyme
+            'precio_sin_iva' => $precioSinImpuesto, // Precio sin IVA por unidad
+            'precio_con_iva' => $precioConImpuesto, // Precio con IVA por unidad (precio original de Shopify)
             'total' => $totalSinImpuesto, // Total sin impuesto
             'total_costo' => 0,
             'descuento' => 0, // Shopify maneja descuentos a nivel de orden
@@ -435,6 +437,9 @@ class ShopifyTransformer
                 'sera_activo' => $productoActivo == 1
             ]);
 
+            $precioConIva = floatval($variant['price'] ?? 0);
+            $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
+
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
@@ -442,7 +447,9 @@ class ShopifyTransformer
                 'nombre_variante' => $nombreVariante,
                 'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
                 'id_empresa' => $id_empresa,
-                'precio' => $this->impuestosService->calcularPrecioSinImpuesto($variant['price'] ?? 0, $id_empresa),
+                'precio' => $precioSinIva,
+                'precio_sin_iva' => $precioSinIva,
+                'precio_con_iva' => $precioConIva,
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,

@@ -85,8 +85,8 @@
                             </select>
                         </td>
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>
-                        <td class="text-right">{{ servicio.precio  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-right">{{ (servicio.precio * 1) + (servicio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ (servicio.precio_sin_iva || servicio.precio)  | currency:'USD':'symbol':'1.2' }}</td>
+                        <td class="text-right">{{ servicio.precio_con_iva || ((servicio.precio_sin_iva || servicio.precio) * 1) + ((servicio.precio_sin_iva || servicio.precio) * (apiService.auth_user().empresa.iva / 100))  | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center" *ngIf="apiService.canEdit() && !apiService.isSupervisorLimitado()">
                             <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>

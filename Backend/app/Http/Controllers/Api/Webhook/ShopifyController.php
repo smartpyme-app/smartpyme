@@ -756,19 +756,20 @@ class ShopifyController extends Controller
             }
 
             // Guardar impuesto de la venta en venta_impuestos
-            if ($venta->iva > 0) {
-                $this->impuestosService->guardarImpuestoVenta(
-                    $venta->id,
-                    $venta->iva,
-                    $usuario->id_empresa
-                );
+            // Comentado: El IVA ya se guarda directamente en la venta
+            // if ($venta->iva > 0) {
+            //     $this->impuestosService->guardarImpuestoVenta(
+            //         $venta->id,
+            //         $venta->iva,
+            //         $usuario->id_empresa
+            //     );
 
-                Log::info("Impuesto de venta guardado", [
-                    'venta_id' => $venta->id,
-                    'monto_impuesto' => $venta->iva,
-                    'empresa_id' => $usuario->id_empresa
-                ]);
-            }
+            //     Log::info("Impuesto de venta guardado", [
+            //         'venta_id' => $venta->id,
+            //         'monto_impuesto' => $venta->iva,
+            //         'empresa_id' => $usuario->id_empresa
+            //     ]);
+            // }
 
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
@@ -2135,19 +2136,20 @@ class ShopifyController extends Controller
             }
 
             // Guardar impuesto de la venta en venta_impuestos
-            if ($venta->iva > 0) {
-                $this->impuestosService->guardarImpuestoVenta(
-                    $venta->id,
-                    $venta->iva,
-                    $usuario->id_empresa
-                );
+            // Comentado: El IVA ya se guarda directamente en la venta
+            // if ($venta->iva > 0) {
+            //     $this->impuestosService->guardarImpuestoVenta(
+            //         $venta->id,
+            //         $venta->iva,
+            //         $usuario->id_empresa
+            //     );
 
-                Log::info("Impuesto de draft order guardado", [
-                    'venta_id' => $venta->id,
-                    'monto_impuesto' => $venta->iva,
-                    'empresa_id' => $usuario->id_empresa
-                ]);
-            }
+            //     Log::info("Impuesto de draft order guardado", [
+            //         'venta_id' => $venta->id,
+            //         'monto_impuesto' => $venta->iva,
+            //         'empresa_id' => $usuario->id_empresa
+            //     ]);
+            // }
 
             // Incrementar correlativo del documento
             $documento = Documento::findOrfail($venta->id_documento);
