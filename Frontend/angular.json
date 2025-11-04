@@ -92,12 +92,15 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "Frontend:build"
+          },
           "configurations": {
             "production": {
-              "buildTarget": "Frontend:build:production"
+              "browserTarget": "Frontend:build:production"
             },
             "development": {
-              "buildTarget": "Frontend:build:development"
+              "browserTarget": "Frontend:build:development"
             }
           },
           "defaultConfiguration": "development"

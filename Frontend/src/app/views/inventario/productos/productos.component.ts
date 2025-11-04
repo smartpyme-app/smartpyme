@@ -4,17 +4,20 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SumPipe } from '@pipes/sum.pipe';
 
 @Component({
     selector: 'app-productos',
     templateUrl: './productos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent],
-    
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, SumPipe, PopoverModule, TooltipModule],
+
 })
 export class ProductosComponent implements OnInit {
 
