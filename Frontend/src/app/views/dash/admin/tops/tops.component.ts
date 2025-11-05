@@ -8,12 +8,13 @@ import { BaseChartDirective } from 'ng2-charts';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { SumPipe } from '../../../../pipes/sum.pipe';
 
 @Component({
     selector: 'app-tops',
     templateUrl: './tops.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, SumPipe],
     
 })
 export class TopsComponent implements OnInit {
