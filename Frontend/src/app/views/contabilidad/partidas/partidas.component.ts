@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
     templateUrl: './partidas.component.html',
     styleUrls: ['./partidas.component.scss'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
     
 })
 export class PartidasComponent implements OnInit {

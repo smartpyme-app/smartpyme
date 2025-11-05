@@ -107,6 +107,12 @@ export class ProductoComboComponent implements OnInit {
     }
   }
 
+  public calPrecioBase() {
+    if (this.usuario.empresa.iva > 0 && this.producto.precio_final) {
+      this.producto.impuesto = this.usuario.empresa.iva / 100;
+      this.producto.precio = (parseFloat(this.producto.precio_final) / (1 + this.producto.impuesto)).toFixed(2);
+    }
+  }
 
   public onSubmit() {
     this.guardar = true;  

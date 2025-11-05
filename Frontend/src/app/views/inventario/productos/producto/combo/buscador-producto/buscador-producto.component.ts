@@ -8,6 +8,7 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter } from 'rxjs/operators';
 
 import { SumPipe } from '@pipes/sum.pipe';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -15,7 +16,7 @@ import { AlertService } from '@services/alert.service';
     selector: 'app-buscar-producto',
     templateUrl: './buscador-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe],
     
 })
 export class BuscadorProductoComponent implements OnInit {

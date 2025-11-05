@@ -8,6 +8,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario/descargar-inventario.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
@@ -16,7 +19,7 @@ import { SumPipe } from '@pipes/sum.pipe';
     selector: 'app-productos',
     templateUrl: './productos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, SumPipe, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule],
 
 })
 export class ProductosComponent implements OnInit {
@@ -211,8 +214,6 @@ export class ProductosComponent implements OnInit {
        this.ajuste = {};
        this.producto = producto;
        this.inventario = this.producto.inventarios.find((item:any) => item.id_bodega == this.filtros.id_bodega);
-    //    console.log(this.filtros);
-    //    console.log(this.producto);
        this.ajuste.stock_actual = this.inventario.stock;
        this.alertService.modal = true;
        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
@@ -230,7 +231,6 @@ export class ProductosComponent implements OnInit {
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
         this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
-            // this.producto.inventarios[this.producto.inventarios.findIndex((item:any) => item.id_bodega == this.filtros.id_bodega)].stock = ajuste.stock_real;
             this.filtrarProductos();
             this.modalRef.hide();
             this.alertService.modal = false;
@@ -242,27 +242,13 @@ export class ProductosComponent implements OnInit {
     public descargarKardex(){
         this.loading = true;
         
-        // Debug: verificar estructura de datos
-        console.log('Estructura completa de productos:', this.productos);
-        console.log('Productos.data:', this.productos.data);
-        console.log('Tipo de productos.data:', typeof this.productos.data);
-        console.log('Es array:', Array.isArray(this.productos.data));
-        
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
-        console.log('Productos en página actual:', this.productos.data.length);
-        console.log('IDs de productos a enviar:', productoIds);
-        console.log('Tipo de productoIds:', typeof productoIds);
-        console.log('Es array productoIds:', Array.isArray(productoIds));
-        
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
             inicio: undefined, // Sin filtro de fecha
             fin: undefined // Sin filtro de fecha
         };
-        
-        console.log('Filtros con productos:', filtrosConProductos);
-        console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
         
         this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -308,16 +294,12 @@ export class ProductosComponent implements OnInit {
         
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
-        console.log('Productos en página actual:', this.productos.data.length);
-        console.log('IDs de productos a enviar:', productoIds);
         
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
             inicio: this.filtrosKardex.fecha_inicio,
             fin: this.filtrosKardex.fecha_fin
         };
-        
-        console.log('Filtros con productos:', filtrosConProductos);
         
         this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });

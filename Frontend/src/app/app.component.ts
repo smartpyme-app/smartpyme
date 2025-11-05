@@ -182,7 +182,7 @@ export class AppComponent implements OnInit {
     private loadConstantsIfNeeded() {
         const constants = localStorage.getItem('SP_constants');
         if (!constants) {
-            console.log('Cargando constantes...');
+            // console.log('Cargando constantes...');
             this.constantsService.loadConstants().subscribe(
                 (constants) => {
                     console.log('Constantes cargadas en app component:', constants);
@@ -192,7 +192,7 @@ export class AppComponent implements OnInit {
                 }
             );
         } else {
-            console.log('Constantes ya disponibles en localStorage');
+            // console.log('Constantes ya disponibles en localStorage');
         }
     }
 

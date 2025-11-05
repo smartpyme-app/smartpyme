@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -11,12 +13,12 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     selector: 'app-ordenes-produccion',
     templateUrl: './ordenes-produccion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
 export class OrdenesProduccionComponent implements OnInit {
   public ordenes: any = [];
-  public orden: any = {};
+  public orden: any = {}
   public loading: boolean = false;
   public downloading: boolean = false;
 

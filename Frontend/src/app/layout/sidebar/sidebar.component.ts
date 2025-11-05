@@ -118,7 +118,6 @@ export class SidebarComponent implements OnInit {
             switchMap((query: any) => this.apiService.read('buscador/', query))
           )
           .subscribe((results: any[]) => {
-            console.log(results);
             this.items = Array.isArray(results) ? results : [];
             this.loading = false;
           });

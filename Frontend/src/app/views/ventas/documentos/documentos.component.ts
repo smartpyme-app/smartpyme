@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
@@ -13,7 +15,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     selector: 'app-documentos',
     templateUrl: './documentos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
     
 })
 
@@ -95,7 +97,9 @@ export class DocumentosComponent implements OnInit {
             this.loading = false;
             this.loadAll();
             this.alertService.modal = false;
-            this.modalRef.hide();
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

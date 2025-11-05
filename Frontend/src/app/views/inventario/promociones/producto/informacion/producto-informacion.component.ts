@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TagInputModule } from 'ngx-chips';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -13,7 +14,7 @@ import { ApiService } from '../../../../../services/api.service';
     selector: 'app-producto-informacion',
     templateUrl: './producto-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
     
 })
 export class ProductoInformacionComponent implements OnInit {

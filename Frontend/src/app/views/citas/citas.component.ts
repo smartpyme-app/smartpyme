@@ -10,12 +10,14 @@ import { CalendarioComponent } from './calendario/calendario.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
+import { SumPipe } from '@pipes/sum.pipe';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
     selector: 'app-citas',
     templateUrl: './citas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, CalendarioComponent],
+    imports: [CommonModule, RouterModule, CalendarioComponent,SumPipe,NgSelectModule],
     
 })
 

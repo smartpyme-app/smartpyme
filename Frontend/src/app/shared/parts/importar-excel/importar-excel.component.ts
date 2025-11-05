@@ -179,4 +179,31 @@ export class ImportarExcelComponent implements OnInit {
         this.alertService.modal = false;
         this.resetState();
     }
+
+    public downloadTemplate() {
+        const url = `${this.nombre.toLowerCase()}/plantilla`;
+        this.apiService.download(url).subscribe(
+            (response: Blob) => {
+                const blob = new Blob([response], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                const urlDownload = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = urlDownload;
+                link.download = `plantilla_${this.nombre.toLowerCase()}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(urlDownload);
+            },
+            (error) => {
+                this.alertService.error('Error al descargar la plantilla');
+            }
+        );
+    }
+
+    public tryAgain() {
+        this.resetState();
+        this.showResults = false;
+    }
 }

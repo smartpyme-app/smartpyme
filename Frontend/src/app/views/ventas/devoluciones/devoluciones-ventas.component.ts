@@ -3,11 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 import Swal from 'sweetalert2';
 
@@ -15,7 +18,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devoluciones-ventas',
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule],
     
 })
 

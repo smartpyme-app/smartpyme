@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 declare var $:any;
 
@@ -13,7 +14,7 @@ declare var $:any;
     selector: 'app-gastos-recurrentes',
     templateUrl: './gastos-recurrentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe],
     
 })
 

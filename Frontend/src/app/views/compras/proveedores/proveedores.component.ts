@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -10,7 +13,7 @@ import { AlertService } from '@services/alert.service';
     selector: 'app-proveedores',
     templateUrl: './proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule],
     
 })
 export class ProveedoresComponent implements OnInit {

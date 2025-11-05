@@ -648,6 +648,17 @@ class ProductosController extends Controller
         );
     }
 
+    public function descargarPlantilla()
+    {
+        $filePath = public_path('docs/productos-format.xlsx');
+
+        if (file_exists($filePath)) {
+            return response()->download($filePath, 'productos-format.xlsx');
+        } else {
+            return response()->json(['error' => 'Archivo no encontrado'], 404);
+        }
+    }
+
     public function importarAjustes(Request $request)
     {
         $request->validate([

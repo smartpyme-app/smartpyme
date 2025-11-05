@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { TagInputModule } from 'ngx-chips';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -13,7 +14,7 @@ import { ApiService } from '@services/api.service';
     selector: 'app-proveedor-detalles',
     templateUrl: './proveedor-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
     
 })
 export class ProveedorDetallesComponent implements OnInit {

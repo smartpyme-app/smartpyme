@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { TagInputModule } from 'ngx-chips';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
     
 })
 export class ClienteInformacionComponent implements OnInit {
