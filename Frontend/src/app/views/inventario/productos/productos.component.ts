@@ -369,5 +369,4 @@ export class ProductosComponent implements OnInit {
                  empresa.shopify_status === 'connected');
     }
 
-
 }
