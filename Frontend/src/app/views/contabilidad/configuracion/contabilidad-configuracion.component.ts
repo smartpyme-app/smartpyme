@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { GastosCategoriasComponent } from '../../compras/gastos/categorias/gastos-categorias.component';
 import { AlertService } from '@services/alert.service';
@@ -13,7 +14,7 @@ import { ApiService } from '@services/api.service';
     selector: 'app-contabilidad-configuracion',
     templateUrl: './contabilidad-configuracion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent, TooltipModule],
     
 })
 export class ContabilidadConfiguracionComponent implements OnInit {
@@ -22,6 +23,7 @@ export class ContabilidadConfiguracionComponent implements OnInit {
     public cuentas: any = {};
     public catalogo: any = [];
     public loading = false;
+    public loadingCatalogo = false;
     public saving = false;
     modalRef!: BsModalRef;
 
@@ -34,9 +36,17 @@ export class ContabilidadConfiguracionComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.loadingCatalogo = true;
+        this.loading = true;
+        
+        // Cargar catálogo y configuración en paralelo
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
             this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+            this.loadingCatalogo = false;
+        }, error => {
+            this.alertService.error(error);
+            this.loadingCatalogo = false;
+        });
 
         this.loadAll();
     }
@@ -51,6 +61,11 @@ export class ContabilidadConfiguracionComponent implements OnInit {
             }
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    // Función trackBy para mejorar el rendimiento de ngFor
+    trackByCuentaId(index: number, cuenta: any): any {
+        return cuenta ? cuenta.id : index;
     }
 
         public onSubmit() {
