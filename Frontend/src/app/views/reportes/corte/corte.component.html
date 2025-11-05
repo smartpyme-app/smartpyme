@@ -48,7 +48,7 @@
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
-    <div class="card p-3" *ngIf="usuario.tipo == 'Administrador'">
+    <div class="card p-3" *ngIf="usuario.tipo != 'Ventas'">
         <h3 class="text-center text-secondary">
             {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
         </h3>
