@@ -169,6 +169,7 @@ export class MHService {
                     this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
                             venta.tipo_dte = dte.tipoDte;
                             venta.numero_control = dte.numeroControl;
@@ -213,6 +214,7 @@ export class MHService {
                     this.enviarDTE(venta, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
                             venta.tipo_dte = dte.tipo_dte;
                             venta.numero_control = dte.numero_control;
@@ -256,6 +258,7 @@ export class MHService {
                     this.enviarDTE(gasto, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             gasto.dte.sello = dte.selloRecibido;
+                            gasto.dte.selloRecibido = dte.selloRecibido;
                             gasto.sello_mh = dte.selloRecibido;
                             gasto.tipo_dte = dte.tipo_dte;
                             gasto.numero_control = dte.numero_control;
@@ -299,6 +302,7 @@ export class MHService {
                     this.enviarDTE(compra, dteFirmado.body).subscribe(dte => {
                         if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                             compra.dte.sello = dte.selloRecibido;
+                            compra.dte.selloRecibido = dte.selloRecibido;
                             compra.sello_mh = dte.selloRecibido;
                             compra.tipo_dte = dte.tipo_dte;
                             compra.numero_control = dte.numero_control;
@@ -343,6 +347,7 @@ export class MHService {
 
                         if ((dte.estado == 'RECIBIDO') && dte.selloRecibido) {
                             venta.dte.sello = dte.selloRecibido;
+                            venta.dte.selloRecibido = dte.selloRecibido;
                             venta.sello_mh = dte.selloRecibido;
                             this.apiService.store('venta', venta).subscribe(data => {
                                 resolve(data);

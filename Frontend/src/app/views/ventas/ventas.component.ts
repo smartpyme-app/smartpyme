@@ -662,6 +662,7 @@ export class VentasComponent implements OnInit {
             this.apiService.store('consultarDTE', data).subscribe(dte => {
                 if (dte && dte.selloVal) {
                     this.venta.dte.sello = dte.selloVal;
+                    this.venta.dte.selloRecibido = dte.selloVal;
                     this.venta.sello_mh = dte.selloVal;
                     this.apiService.store('venta', this.venta).subscribe(data => {
                         this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
