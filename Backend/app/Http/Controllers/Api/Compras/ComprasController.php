@@ -78,6 +78,9 @@ class ComprasController extends Controller
                                     ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
                                     ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
                         })
+                        ->withSum(['abonos' => function ($query) {
+                            $query->where('estado', 'Confirmado');
+                        }], 'total')
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
