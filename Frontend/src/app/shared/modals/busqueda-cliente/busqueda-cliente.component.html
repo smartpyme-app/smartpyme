@@ -54,8 +54,14 @@
     </div>
     <div class="row text-center">
         <div class="col-12">
-            <button type="submit" class="btn btn-primary btn-block" [disabled]="!cliente.name || !cliente.email" > <span *ngIf="!loading">Guardar</span>
-            <span *ngIf="loading">Guardando...</span> </button>
+            <button type="submit" class="btn btn-primary btn-block" [disabled]="!cliente.name || !cliente.email">
+                @if (!loading) {
+                    <span>Guardar</span>
+                }
+                @if (loading) {
+                    <span>Guardando...</span>
+                }
+            </button>
         </div>
     </div>
     </form>

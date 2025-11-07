@@ -1,8 +1,10 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ partida.id ? 'Editar ' : 'Crear ' }} Partida</h3>
     <div class="d-flex gap-2">
-        <button *ngIf="!partida.id" (click)="openModal(mGenerarPartidas)" tooltip="Generar partidas del día" class="btn btn-default"> Generar partida <img
-          src="/assets/icons/plus-circle.png" style="height: 16px; width: 16px;"></button>
+        @if (!partida.id) {
+          <button (click)="openModal(mGenerarPartidas)" tooltip="Generar partidas del día" class="btn btn-default"> Generar partida <img
+            src="/assets/icons/plus-circle.png" style="height: 16px; width: 16px;"></button>
+        }
         <button class="btn btn-light text-danger" routerLink="/contabilidad/partidas"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
 </div>
@@ -47,13 +49,21 @@
 
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
-            <button *ngIf="partida.estado !== 'Cerrada'" type="submit" [disabled]="saving || (partida.diferencia != 0)" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar partida  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
-            </button>
-            <button *ngIf="partida.estado === 'Cerrada'" type="button" class="btn btn-primary float-end" routerLink="/contabilidad/partidas">
-                Volver
-            </button>
+            @if (partida.estado !== 'Cerrada') {
+              <button type="submit" [disabled]="saving || (partida.diferencia != 0)" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+                  @if (!saving) {
+                    <span>Guardar partida  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                  }
+                  @if (saving) {
+                    <span>Guardando...</span>
+                  }
+              </button>
+            }
+            @if (partida.estado === 'Cerrada') {
+              <button type="button" class="btn btn-primary float-end" routerLink="/contabilidad/partidas">
+                  Volver
+              </button>
+            }
         </div>
     </div>
 
@@ -89,8 +99,12 @@
 
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary">
-                <span *ngIf="!saving">Generar</span>
-                <span *ngIf="saving">Generando...</span>
+                @if (!saving) {
+                  <span>Generar</span>
+                }
+                @if (saving) {
+                  <span>Generando...</span>
+                }
             </button>
         </div>
     </form>

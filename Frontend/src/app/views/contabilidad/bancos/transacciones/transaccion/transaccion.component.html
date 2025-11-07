@@ -14,9 +14,11 @@
                 <label for="">Cuenta:</label>
                 <ng-select [(ngModel)]="transaccion.id_cuenta" class="form-select p-0" name="id_cuenta">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                    @for (cuenta of cuentas; track cuenta.id || $index) {
+                      <ng-option [value]="cuenta.id">
                         {{ cuenta.nombre_banco }} : {{ cuenta.numero }}
-                    </ng-option>
+                      </ng-option>
+                    }
                 </ng-select>
             </div>
             <div class="form-group col-md-4 col-lg-3">
@@ -44,15 +46,19 @@
                 <label for="">Total:</label>
                 <input type="number" class="form-control" name="total" [(ngModel)]="transaccion.total"/>
             </div>
-            <div class="form-group col-md-6 col-lg-4" *ngIf="transaccion.id">
+            @if (transaccion.id) {
+              <div class="form-group col-md-6 col-lg-4">
                 <label for="">Comprobante:</label>
                 <div class="input-group">
                     <input type="file" name="img" [(ngModel)]="transaccion.url_referencia" class="form-control" (change)="setFile($event)" accept="image/jpeg, image/jpg, application/pdf" title="Agregar documento (jpg o pdf)">
-                    <button type="button" *ngIf="transaccion.url_referencia" class="btn btn-default" (click)="verDocumento(transaccion)" title="Ver documento">
-                         <i class="fa fa-file"></i>
-                    </button>
+                    @if (transaccion.url_referencia) {
+                      <button type="button" class="btn btn-default" (click)="verDocumento(transaccion)" title="Ver documento">
+                           <i class="fa fa-file"></i>
+                      </button>
+                    }
                 </div>
-            </div>
+              </div>
+            }
 
         </div>
      </div>
@@ -61,8 +67,12 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar transaccion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                  <span>Guardar transaccion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                }
+                @if (saving) {
+                  <span>Guardando...</span>
+                }
             </button>
         </div>
     </div>

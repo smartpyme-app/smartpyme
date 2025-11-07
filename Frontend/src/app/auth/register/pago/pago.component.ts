@@ -10,12 +10,13 @@ import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
+import { ThreedsModalComponent } from './modal/threeds-modal.component';
 
 @Component({
     selector: 'app-pago',
     templateUrl: './pago.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent, ThreedsModalComponent],
     
 })
 export class PagoComponent implements OnInit {

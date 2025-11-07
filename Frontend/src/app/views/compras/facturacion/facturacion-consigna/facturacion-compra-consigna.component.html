@@ -12,23 +12,29 @@
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
             <select name="id_usuario" [(ngModel)]="compra.id_usuario" class="form-select">
-                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
+                @for (usuario of usuarios; track usuario.id) {
+                  <option [value]="usuario.id">
                     {{ usuario.name }}
-                </option>
+                  </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_sucursal">Sucursal</label>
             <select name="id_sucursal" [(ngModel)]="compra.id_sucursal" class="form-select">
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
+                @for (sucursal of sucursales; track sucursal.id) {
+                  <option [value]="sucursal.id">
                     {{ sucursal.nombre }}
-                </option>
+                  </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="tipo_documento">Documento</label>
             <select name="tipo_documento" [(ngModel)]="compra.tipo_documento" class="form-select">
-                <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                @for (documento of documentos; track documento.nombre || $index) {
+                  <option [value]="documento.nombre">{{ documento.nombre }}</option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-2">
@@ -72,14 +78,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngIf="compra?.detalles?.length < 1">
+                    @if (compra?.detalles?.length < 1) {
+                      <tr>
                         <td colspan="7" class="text-center">
                             <p class="text-muted my-3">
                                 Agregue productos y servicios
                             </p>
                         </td>
-                    </tr>
-                    <tr *ngFor="let detalle of compra?.detalles; let i = index">
+                      </tr>
+                    }
+                    @for (detalle of compra?.detalles; track detalle.id || $index) {
+                      <tr>
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
                             {{ detalle.nombre_producto }}
@@ -97,7 +106,8 @@
                                 </button>
                             </div>
                         </td>
-                    </tr>
+                      </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -139,27 +149,41 @@
         <div class="form-group col-md-6 col-lg-3">
             <label for="forma_pago">Forma de pago</label>
             <select name="forma_pago" [(ngModel)]="compra.forma_pago" class="form-select">
-                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                @for (forma of formaPagos; track forma.nombre || $index) {
+                  <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                }
             </select>
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="compra.forma_pago != 'Efectivo'">
+        @if (compra.forma_pago != 'Efectivo') {
+          <div class="form-group col-md-6 col-lg-3">
             <label for="detalle_banco">Bancos</label>
             <select name="detalle_banco" [(ngModel)]="compra.detalle_banco" class="form-select">
                 <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                @for (banco of bancos; track banco.nombre || $index) {
+                  <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                }
             </select>
-        </div>
+          </div>
+        }
     </div>
     <div class="row mt-5">
         <div class="col-md-12">
             <button type="submit" (click)="onFacturar()" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar compra (F8)">
-                <span *ngIf="!loading">
+                @if (!loading) {
+                  <span>
                     Procesar 
-                    <span *ngIf="compra.estado == 'Pre-compra'">cotización</span> 
-                    <span *ngIf="compra.estado != 'Pre-compra'">compra</span> 
+                    @if (compra.estado == 'Pre-compra') {
+                      <span>cotización</span>
+                    }
+                    @if (compra.estado != 'Pre-compra') {
+                      <span>compra</span>
+                    }
                     <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-                </span>
-                <span *ngIf="loading">Procesando...</span>
+                  </span>
+                }
+                @if (loading) {
+                  <span>Procesando...</span>
+                }
             </button>
         </div>
     </div>
@@ -183,18 +207,21 @@
                     [(ngModel)]="searchTerm"
                     (input)="onSearchProducts($event.target.value)"
                     autocomplete="off">
-                <div *ngIf="searchLoading" class="text-muted mt-2">
+                @if (searchLoading) {
+                  <div class="text-muted mt-2">
                     <i class="fa fa-spinner fa-spin"></i> Buscando...
-                </div>
+                  </div>
+                }
             </div>
         </div>
         
-        <div class="row" *ngIf="searchResults.length > 0">
+        @if (searchResults.length > 0) {
+          <div class="row">
             <div class="col-md-12">
                 <h6>Resultados de búsqueda:</h6>
                 <div class="list-group">
-                    <div 
-                        *ngFor="let producto of searchResults" 
+                    @for (producto of searchResults; track producto.id || $index) {
+                      <div 
                         class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                         (click)="selectProducto(producto)"
                         style="cursor: pointer;">
@@ -218,20 +245,26 @@
                         <button class="btn btn-sm btn-outline-primary">
                             <i class="fa fa-plus"></i> Agregar
                         </button>
-                    </div>
+                      </div>
+                    }
                 </div>
             </div>
-        </div>
+          </div>
+        }
         
-        <div *ngIf="searchTerm.length >= 2 && searchResults.length === 0 && !searchLoading" class="text-center text-muted py-4">
+        @if (searchTerm.length >= 2 && searchResults.length === 0 && !searchLoading) {
+          <div class="text-center text-muted py-4">
             <i class="fa fa-search fa-2x mb-2"></i>
             <p>No se encontraron productos o servicios con ese término de búsqueda.</p>
-        </div>
+          </div>
+        }
         
-        <div *ngIf="searchTerm.length < 2" class="text-center text-muted py-4">
+        @if (searchTerm.length < 2) {
+          <div class="text-center text-muted py-4">
             <i class="fa fa-search fa-2x mb-2"></i>
             <p>Escriba al menos 2 caracteres para buscar productos o servicios.</p>
-        </div>
+          </div>
+        }
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="productosModal.hide()">Cancelar</button>

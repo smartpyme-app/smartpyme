@@ -17,7 +17,8 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="modules?.total">
+            @if (modules?.total) {
+              <span class="text-muted d-flex align-items-center gap-2">
                 Mostrando 
                 <select name="paginate" 
                         class="form-select w-auto" 
@@ -29,7 +30,8 @@
                     <option value="100">100</option>
                 </select>
                 de {{ modules?.total }} registros
-            </span>
+              </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -52,13 +54,16 @@
     </div>
 
     <div class="card-body">
-        <div *ngIf="loading" class="text-center p-5">
+        @if (loading) {
+          <div class="text-center p-5">
             <div class="spinner-border" role="status">
-                <span class="visually-hidden">Cargando...</span>
+              <span class="visually-hidden">Cargando...</span>
             </div>
-        </div>
+          </div>
+        }
         
-        <div *ngIf="!loading" class="table-responsive">
+        @if (!loading) {
+          <div class="table-responsive">
             <table class="table table-borderless table-hover mb-0">
                 <thead>
                     <tr>
@@ -76,7 +81,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let module of modules?.data">
+                    @for (module of modules?.data; track module.id || $index) {
+                      <tr>
                         <td>{{module.display_name}}</td>
                         <td>
                             <span class="badge" [ngClass]="module.status ? 'bg-success' : 'bg-danger'">
@@ -91,18 +97,24 @@
                                 <i class="fas fa-edit"></i>
                             </button>
                         </td>
-                    </tr>
-                    <tr *ngIf="modules?.data.length == 0">
+                      </tr>
+                    }
+                    @if (modules?.data.length == 0) {
+                      <tr>
                         <td colspan="5" class="text-center">No se encontraron resultados</td>
-                    </tr>
+                      </tr>
+                    }
                 </tbody>
             </table>
-        </div>
-        <div class="mt-4" *ngIf="modules?.last_page > 1">
+          </div>
+        }
+        @if (modules && modules.last_page && modules.last_page > 1) {
+          <div class="mt-4">
             <app-pagination [items]="modules"
                            (setPagination)="setPagination($event)">
             </app-pagination>
-        </div>
+          </div>
+        }
     </div>
 </section>
 

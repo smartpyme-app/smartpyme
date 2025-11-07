@@ -9,12 +9,13 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-departamento-empresa',
     templateUrl: './departamento-empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
     
 })
 

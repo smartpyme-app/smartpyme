@@ -14,11 +14,15 @@
                         <img src="/assets/icons/search.png" class="icon me-2">
                         <form class="d-flex buscador" name="form" autocomplete="off">
                             <input type="search" name="search" [formControl]="searchControl" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
-                            <ul *ngIf="searchControl.value?.length > 0" style="margin-left: -40px;" class="list-group opciones">
-                              <a routerLink="{{item.url}}" (click)="items = []" class="list-group-item d-flex justify-content-between" *ngFor=" let item of items">
-                                {{ item.nombre }} <small class="badge bg-primary">{{ item.tipo }}</small>
-                              </a>
-                            </ul>
+                            @if (searchControl.value?.length > 0) {
+                                <ul style="margin-left: -40px;" class="list-group opciones">
+                                    @for (item of items; track item.id || item.url) {
+                                        <a routerLink="{{item.url}}" (click)="items = []" class="list-group-item d-flex justify-content-between">
+                                            {{ item.nombre }} <small class="badge bg-primary">{{ item.tipo }}</small>
+                                        </a>
+                                    }
+                                </ul>
+                            }
                         </form>
                     </div>
                 </li>
@@ -27,11 +31,13 @@
     </div>
     <div style="min-height: 45vh;">
         <ul class="list-unstyled ps-0">
-          <li *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Contador'" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-            <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
-              <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
-            </a>
-          </li>
+          @if (usuario.tipo == 'Administrador' || usuario.tipo == 'Contador') {
+              <li tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                  <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                      <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
+                  </a>
+              </li>
+          }
           <li class="mb-1">
             <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
               <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
@@ -41,7 +47,9 @@
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                <li *ngIf="usuario.empresa.modulo_paquetes" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
+                @if (usuario.empresa.modulo_paquetes) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
+                }
               </ul>
             </div>
           </li>
@@ -60,7 +68,9 @@
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
-                <li *ngIf="usuario.empresa.modulo_proyectos" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
+                @if (usuario.empresa.modulo_proyectos) {
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
+                }
               </ul>
 
                 </div>
@@ -97,50 +107,52 @@
                   </ul>
                 </div>
             </li>
-            <li class="mb-1" *ngIf="usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'">
-                <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/3-layers.png" class="icon me-2">Super Admin
-                </button>
-                <div [collapse]="adminIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <!-- <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
-                        </a>
-                    </li> -->
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/suscripciones']" tooltip="Suscripciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/device-desktop-dollar.png" class="icon me-2">Suscripciones
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/licencias']" tooltip="Organizaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/star.png" class="icon me-2">Organizaciones
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/planes']" tooltip="Planes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/list.png" class="icon me-2">Planes
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/pagos']" tooltip="Pagos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/credit-card.png" class="icon me-2">Ordenes de Pagos
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/user.png" class="icon me-2">Usuarios
-                        </a>
-                    </li>
-                    <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                        <a [routerLink]="['/admin/dashboards']" tooltip="Dashboards" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                            <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
-                        </a>
-                    </li>
-                  </ul>
-                </div>
-            </li>
+            @if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor') {
+                <li class="mb-1">
+                    <button (click)="toggleAdmin()" tooltip="Admin" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!adminIsCollapsed" aria-controls="collapseBasic">
+                        <img src="/assets/icons/3-layers.png" class="icon me-2">Super Admin
+                    </button>
+                    <div [collapse]="adminIsCollapsed" [isAnimated]="true">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            <!-- <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/empresas']" tooltip="Empresas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/briefcase.png" class="icon me-2">Empresas
+                                </a>
+                            </li> -->
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/suscripciones']" tooltip="Suscripciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/device-desktop-dollar.png" class="icon me-2">Suscripciones
+                                </a>
+                            </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/licencias']" tooltip="Organizaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/star.png" class="icon me-2">Organizaciones
+                                </a>
+                            </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/planes']" tooltip="Planes" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/list.png" class="icon me-2">Planes
+                                </a>
+                            </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/pagos']" tooltip="Pagos" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/credit-card.png" class="icon me-2">Ordenes de Pagos
+                                </a>
+                            </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/user.png" class="icon me-2">Usuarios
+                                </a>
+                            </li>
+                            <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                                <a [routerLink]="['/admin/dashboards']" tooltip="Dashboards" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                                    <img src="/assets/icons/pie-chart.png" class="icon me-2">Dashboards
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            }
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
                 <a [routerLink]="['/admin/funcionalidades']" tooltip="Funcionalidades" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
                     <img src="/assets/icons/access.png" class="icon me-2">Funcionalidades

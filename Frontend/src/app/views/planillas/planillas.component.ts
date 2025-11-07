@@ -3,17 +3,20 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-planillas',
     templateUrl: './planillas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
-    
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
+
 })
 export class PlanillasComponent implements OnInit {
   public planillas: any = [];

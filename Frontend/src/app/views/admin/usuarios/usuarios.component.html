@@ -1,19 +1,23 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Usuarios</h2>
     <div class="d-flex gap-2">
-        <button *ngIf="apiService.canCreateTest('organizacion.usuarios.crear')"
-        (click)="openModal(musuario, {})"
-        tooltip="Crear usuario (F4)"
-        class="btn btn-default tcla-F4">
+        @if (apiService.canCreateTest('organizacion.usuarios.crear')) {
+          <button
+            (click)="openModal(musuario, {})"
+            tooltip="Crear usuario (F4)"
+            class="btn btn-default tcla-F4">
             <i class="fa fa-plus"></i>
             Añadir usuario
-        </button>
-        <a routerLink="/roles-permisos" *ngIf="apiService.canCreateTest('administracion.roles.crear')"
-        tooltip="Roles y permisos (F5)"
-        class="btn btn-default tcla-F5">
+          </button>
+        }
+        @if (apiService.canCreateTest('administracion.roles.crear')) {
+          <a routerLink="/roles-permisos"
+            tooltip="Roles y permisos (F5)"
+            class="btn btn-default tcla-F5">
             <i class="fa fa-cog"></i>
             Roles y permisos
-        </a>
+          </a>
+        }
     </div>
 </section>
 <!-- <div>
@@ -27,9 +31,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="usuarios?.total">
+            @if (usuarios?.total) {
+              <span class="text-muted">
                 Mostrando {{ usuarios?.to }} de {{ usuarios?.total + ' registros' }}
-            </span>
+              </span>
+            }
         </div>
 
         <div class="col">
@@ -59,9 +65,11 @@
             </select>
             <select name="id_sucursal" (change)="loadAll()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto" style="max-width: 150px;">
                 <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id" title="{{sucursal.nombre}}">
+                @for (sucursal of sucursales; track sucursal.id) {
+                  <option [value]="sucursal.id" [title]="sucursal.nombre">
                     {{sucursal.nombre}}
-                </option>
+                  </option>
+                }
             </select>
         </div>
     </div>
@@ -75,20 +83,29 @@
                     <th>Sucursal</th>
                     <th>Activo</th>
                     <th>Último inicio de sesión</th>
-                    <th *ngIf="apiService.canEditTest('organizacion.usuarios.editar')" class="text-center"><i class="fa fa-cog"></i></th>
+                    @if (apiService.canEditTest('organizacion.usuarios.editar')) {
+                      <th class="text-center"><i class="fa fa-cog"></i></th>
+                    }
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td colspan="9" class="text-center" *ngIf="usuarios?.total < 1 && !loading">
-                        <span class="badge bg-primary">No tiene usuarios registrados</span>
+                @if (usuarios?.total < 1 && !loading) {
+                  <tr>
+                    <td colspan="9" class="text-center">
+                      <span class="badge bg-primary">No tiene usuarios registrados</span>
                     </td>
-                    <td colspan="9" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
+                  </tr>
+                }
+                @if (loading) {
+                  <tr>
+                    <td colspan="9" class="text-center">
+                      <span class="badge bg-primary">Cargando...</span>
                     </td>
-                </tr>
+                  </tr>
+                }
 
-                <tr *ngFor=" let usuario of usuarios.data">
+                @for (usuario of usuarios.data; track usuario.id) {
+                  <tr>
                     <td>{{usuario.name}}</td>
                     <td>{{usuario.email}}</td>
                     <td>{{getRolName(usuario.rol_id)}}</td>
@@ -100,7 +117,8 @@
                         </select>
                     </td>
                     <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
-                    <td *ngIf="apiService.canEditTest('organizacion.usuarios.editar')"  class="text-center">
+                    @if (apiService.canEditTest('organizacion.usuarios.editar')) {
+                      <td class="text-center">
                         <div class="btn-group" role="group">
 <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
                                 <i class="fa fa-trash"></i>
@@ -113,15 +131,18 @@
                             </a>
 
                         </div>
-                    </td>
-
-                </tr>
+                      </td>
+                    }
+                  </tr>
+                }
             </tbody>
         </table>
 
-        <div class="col-12" *ngIf="usuarios?.last_page > 1">
+        @if (usuarios?.last_page > 1) {
+          <div class="col-12">
             <app-pagination [items]="usuarios" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+          </div>
+        }
     </div>
 </section>
 
@@ -130,8 +151,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="usuario.id">Editar </span>
-            <span *ngIf="!usuario.id">Crear </span>
+            @if (usuario.id) {
+              <span>Editar </span>
+            }
+            @if (!usuario.id) {
+              <span>Crear </span>
+            }
             usuario
         </h2>
     </div>
@@ -209,9 +234,11 @@
             <div class="form-group col-md-6">
                 <label for="tipo">Rol:</label>
                 <select name="tipo" [(ngModel)]="usuario.rol_id" class="form-control form-select">
-                    <option *ngFor="let role of roles" [value]="role.id">
+                    @for (role of roles; track role.id) {
+                      <option [value]="role.id">
                         {{ role.name }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6">
@@ -225,17 +252,21 @@
             <div class="form-group col-md-6">
                 <label for="id_sucursal">* Sucursal:</label>
                 <select [(ngModel)]="usuario.id_sucursal" (change)="selectSucursal()" class="form-control form-select" name="id_sucursal">
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    @for (sucursal of sucursales; track sucursal.id) {
+                      <option [value]="sucursal.id">
                         {{ sucursal.nombre }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6">
                 <label for="id_bodega">* Bodega:</label>
                 <select [(ngModel)]="usuario.id_bodega" class="form-control form-select" name="id_bodega">
-                    <option *ngFor="let bodega of bodegas | filter:'id_sucursal':usuario.id_sucursal" [value]="bodega.id">
+                    @for (bodega of bodegas | filter:'id_sucursal':usuario.id_sucursal; track bodega.id) {
+                      <option [value]="bodega.id">
                         {{ bodega.nombre }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
 
@@ -243,8 +274,12 @@
 
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                  <span>Guardar</span>
+                }
+                @if (saving) {
+                  <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>
@@ -268,9 +303,11 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.sucursal_id" class="form-control form-select" name="filtros.sucursal_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    @for (sucursal of sucursales; track sucursal.id) {
+                      <option [value]="sucursal.id">
                         {{ sucursal.nombre }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-12">
@@ -289,8 +326,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                      <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                      <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

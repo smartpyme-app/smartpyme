@@ -8,12 +8,13 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-proveedores',
     templateUrl: './proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
     
 })
 export class ProveedoresComponent implements OnInit {

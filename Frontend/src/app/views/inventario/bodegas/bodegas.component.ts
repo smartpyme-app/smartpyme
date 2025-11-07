@@ -7,13 +7,14 @@ import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-bodegas',
     templateUrl: './bodegas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
-    
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+
 })
 export class BodegasComponent implements OnInit {
 
@@ -49,6 +50,12 @@ export class BodegasComponent implements OnInit {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    public setPagination(event:any):void{
+        this.loading = true;
+        this.filtros.page = event.page;
+        this.loadAll();
     }
 
     openModal(template: TemplateRef<any>, bodega:any) {

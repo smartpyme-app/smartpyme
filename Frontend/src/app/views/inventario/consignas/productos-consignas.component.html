@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="productos?.length">
-                Mostrando {{ productos?.length + ' registros' }}
-            </span>
+            @if (productos?.length) {
+                <span class="text-muted">
+                    Mostrando {{ productos?.length + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -27,23 +29,22 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn" routerLinkActive="btn-primary" routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
+            @if (puedeVerOpcionesInventario()) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+                <button class="btn" routerLinkActive="btn-primary" (click)="loadAll()" routerLink="/consignas">Consignas</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            }
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="categoria" [(ngModel)]="filtros.categoria" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Categoria</ng-option>
-                <ng-option *ngFor="let categoria of categorias" [value]="categoria.nombre">
-                    {{categoria.nombre}}
-                </ng-option>
+                @for (categoria of categorias; track categoria.id) {
+                    <ng-option [value]="categoria.nombre">
+                        {{categoria.nombre}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -61,23 +62,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene productos en consigna</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria">
+                    @if (productos?.length < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene productos en consigna</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria; track producto.id) {
+                        <tr>
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">
-                            <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
-                                {{ producto.nombre }} ({{ producto.nombre_variante }})
-                            </span>
-                            <ng-template #nombreNormal>
-                                {{ producto.nombre }}
-                            </ng-template>
+                            @if (isShopifyActive() && producto.nombre_variante) {
+                                <span>{{ producto.nombre }} ({{ producto.nombre_variante }})</span>
+                            } @else {
+                                <span>{{ producto.nombre }}</span>
+                            }
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                         <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
@@ -89,13 +96,16 @@
                             </a>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (productos && productos.last_page && productos.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -107,7 +117,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
   <div class="modal-body">
-    <div class="table-responsive" style="max-height: 200px: overflow: auto;">
+    <div class="table-responsive" style="max-height: 200px; overflow: auto;">
         <table class="table table-borderless table-hover">
             <thead>
                 <tr>
@@ -120,20 +130,22 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let venta of producto?.ventas">
-                    <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
-                    <td>{{ venta.cliente}}</td>
-                    <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
-                    <td>
-                        {{ venta.nombre_documento }} # {{ venta.correlativo }}
-                    </td>
-                    <td class="text-end">{{ venta.cantidad }}</td>
-                    <td class="text-end">
-                        <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
-                            <img  src="/assets/icons/search.png" class="icon">
-                        </a>
-                    </td>
-                </tr>
+                @for (venta of producto?.ventas; track venta.id) {
+                    <tr>
+                        <td>{{ venta.fecha | date:'dd/MM/yyy'}}</td>
+                        <td>{{ venta.cliente}}</td>
+                        <td>{{ venta.fecha_pago | date:'dd/MM/yyy' }}</td>
+                        <td>
+                            {{ venta.nombre_documento }} # {{ venta.correlativo }}
+                        </td>
+                        <td class="text-end">{{ venta.cantidad }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
+                                <img  src="/assets/icons/search.png" class="icon">
+                            </a>
+                        </td>
+                    </tr>
+                }
             </tbody>
             <tbody>
                 <tr>

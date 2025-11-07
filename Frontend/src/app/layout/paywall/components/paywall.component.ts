@@ -11,13 +11,14 @@ import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
 import { firstValueFrom } from 'rxjs';
+import { ThreedsModalComponent } from '../../../auth/register/pago/modal/threeds-modal.component';
 
 @Component({
     selector: 'app-paywall',
     templateUrl: './paywall.component.html',
     styleUrls: ['./paywall.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule, ThreedsModalComponent],
     
 })
 export class PaywallComponent implements OnInit {

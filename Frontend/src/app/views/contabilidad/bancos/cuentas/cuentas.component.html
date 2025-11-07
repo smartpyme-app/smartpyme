@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Cuentas</h2>
-    <button *ngIf="apiService.canCreateTest('finanzas.cuentas.crear')" routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+    @if (apiService.canCreateTest('finanzas.cuentas.crear')) {
+        <button routerLink="/bancos/cuenta/crear" tooltip="Crear cuenta (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cuenta</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="cuentas?.total">
-                Mostrando {{ cuentas?.to }} de {{ cuentas?.total + ' registros' }}
-            </span>
+            @if (cuentas?.total) {
+                <span class="text-muted">
+                    Mostrando {{ cuentas?.to }} de {{ cuentas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -58,33 +62,44 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="5" class="text-center" *ngIf="cuentas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene cuentas bancarias registrados</span>
-                        </td>
-                        <td colspan="5" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-
-                    <tr *ngFor=" let cuenta of cuentas?.data">
-                        <td>{{cuenta.nombre_banco}}</td>
-                        <td>{{cuenta.numero}}</td>
-                        <td>{{cuenta.tipo}}</td>
-                        <td class="text-end">{{cuenta.saldo | currency}}</td>
-                        <td *ngIf="apiService.canEditTest('finanzas.cuentas.editar')" class="text-center">
-                            <a class="btn btn-light" routerLink="/bancos/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
-                        </td>
-                    </tr>
+                    @if (cuentas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">No tiene cuentas bancarias registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (cuenta of cuentas?.data; track cuenta.id) {
+                        <tr>
+                            <td>{{cuenta.nombre_banco}}</td>
+                            <td>{{cuenta.numero}}</td>
+                            <td>{{cuenta.tipo}}</td>
+                            <td class="text-end">{{cuenta.saldo | currency}}</td>
+                            @if (apiService.canEditTest('finanzas.cuentas.editar')) {
+                                <td class="text-center">
+                                    <a class="btn btn-light" routerLink="/bancos/cuenta/{{cuenta.id}}" tooltip="Ver y editar">
+                                        <i class="fa fa-pencil-alt"></i>
+                                    </a>
+                                </td>
+                            }
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="cuentas?.last_page > 1">
-            <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (cuentas && cuentas.last_page && cuentas.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="cuentas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -111,17 +126,23 @@
                 <label for="cuenta.id">Cuentas:</label>
                 <select [(ngModel)]="cuenta.id" class="form-control form-select" name="cuenta.id">
                     <option value="">Todos</option>
-                    <option *ngFor="let cuenta of cuentas.data" [value]="cuenta.id">
-                        {{ cuenta.nombre_banco }} - {{ cuenta.numero }}
-                    </option>
+                    @for (cuenta of cuentas.data; track cuenta.id) {
+                        <option [value]="cuenta.id">
+                            {{ cuenta.nombre_banco }} - {{ cuenta.numero }}
+                        </option>
+                    }
                 </select>
             </div>
         </div>
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Generar</span>
-                <span *ngIf="loading">Generando...</span>
+                @if (!loading) {
+                    <span>Generar</span>
+                }
+                @if (loading) {
+                    <span>Generando...</span>
+                }
             </button>
         </div>
     </form>

@@ -6,16 +6,18 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="abonos?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarAbonos()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ abonos?.total + ' registros' }}
-            </span>
+            @if (abonos?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarAbonos()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ abonos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -68,19 +70,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center" *ngIf="abonos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene abonos registrados</span>
-                        </td>
-                        <td colspan="6" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (abonos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <span class="badge bg-primary">No tiene abonos registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor=" let abono of abonos?.data">
+                    @for (abono of abonos?.data; track abono.id) {
+                        <tr>
                         
                         <td>{{abono.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{abono.venta?.nombre_cliente | truncate:30 }}<a *ngIf="abono.venta?.id_cliente && abono.venta?.id_cliente != 1"  class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{abono.venta?.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{abono.venta?.nombre_cliente | truncate:30 }}@if (abono.venta?.id_cliente && abono.venta?.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{abono.venta?.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
                         <td>
                             {{abono.venta?.nombre_documento }} # {{abono.venta?.correlativo }}
                             <a class="float-end d-none"  tooltip="Ver información de la venta" routerLink="/venta/{{abono.id_venta}}"><i class="fa fa-magnifying-glass"></i></a>
@@ -99,9 +108,11 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEditTest('ventas.abonos.editar')" (click)="imprimir(abono)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-print"></i> Imprimir
-                                    </a>
+                                    @if (apiService.canEditTest('ventas.abonos.editar')) {
+                                        <a (click)="imprimir(abono)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-print"></i> Imprimir
+                                        </a>
+                                    }
                                     <a (click)="generarPartidaContable(abono)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-edit"></i> Generar partida contable
                                     </a>
@@ -109,13 +120,16 @@
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="abonos?.last_page > 1">
-            <app-pagination [items]="abonos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (abonos && abonos.last_page && abonos.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="abonos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -144,7 +158,9 @@
                 <label for="forma_pago">Método de pago:</label>
                 <select name="forma_pago" [(ngModel)]="filtros.forma_pago" class="form-select">
                     <option value="">Todos</option>
-                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                    @for (forma of formaPagos; track forma.id) {
+                        <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                    }
                 </select>
             </div>
 
@@ -162,9 +178,11 @@
                 <label for="filtros.id_documento">Documento:</label>
                 <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
                     <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [value]="documento.id">
-                        {{ documento.nombre }}
-                    </option>
+                    @for (documento of documentos; track documento.id) {
+                        <option [value]="documento.id">
+                            {{ documento.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
 
@@ -172,8 +190,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

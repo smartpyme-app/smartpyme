@@ -1,21 +1,25 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Cotizaciones</h2>
-  <button *ngIf="apiService.canCreateTest('ventas.cotizaciones.crear')" routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
+  @if (apiService.canCreateTest('ventas.cotizaciones.crear')) {
+      <button routerLink="/cotizacion/crear" [queryParams]="{ cotizacion:1 }" tooltip="Crear cotizacion (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cotización</button>
+  }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="ventas?.total">
-                Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ ventas?.total + ' registros' }}
-            </span>
+            @if (ventas?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarVentas()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ ventas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -38,9 +42,11 @@
       <div class="col d-flex gap-2 justify-content-end">
           <ng-select name="id_cliente" (change)="filtrarVentas()" [(ngModel)]="filtros.id_cliente" class="form-select p-0 border-0 bg-default  w-auto" style="min-width: 100px;">
               <ng-option value="">Cliente</ng-option>
-              <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                  {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-              </ng-option>
+              @for (cliente of clientes; track cliente.id) {
+                  <ng-option [value]="cliente.id">
+                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                  </ng-option>
+              }
           </ng-select>
       </div>
   </div>
@@ -59,20 +65,27 @@
                   </tr>
               </thead>
               <tbody>
-                  <tr>
-                      <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
-                          <span class="badge bg-primary">No tiene cotizaciones registradas</span>
-                      </td>
-                      <td colspan="10" class="text-center" *ngIf="loading">
-                          <span class="badge bg-primary">Cargando...</span>
-                      </td>
-                  </tr>
+                  @if (ventas?.total < 1 && !loading) {
+                      <tr>
+                          <td colspan="10" class="text-center">
+                              <span class="badge bg-primary">No tiene cotizaciones registradas</span>
+                          </td>
+                      </tr>
+                  }
+                  @if (loading) {
+                      <tr>
+                          <td colspan="10" class="text-center">
+                              <span class="badge bg-primary">Cargando...</span>
+                          </td>
+                      </tr>
+                  }
 
-                  <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                  @for (venta of ventas?.data; track venta.id) {
+                      <tr class="animated fadeIn">
 
                       <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                       <td>{{venta.usuario?.name | truncate:30 }}</td>
-                      <td>{{venta.nombre_cliente| truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1" class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                      <td>{{venta.nombre_cliente| truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
                       <td>
 
 
@@ -103,35 +116,49 @@
                           <ng-template #accionesTemplate>
                               <div class="d-flex flex-column align-items-start">
                                 <!-- <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn"> -->
-                                  <a *ngIf="venta.estado == 'Pendiente' || venta.estado == 'enviada' && apiService.canEditTest('ventas.cotizaciones.editar')" routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
-                                      <i class="fa fa-fw fa-edit"></i> Editar
-                                  </a>
-                                  <a *ngIf="venta.estado == 'enviada' && apiService.canEdit()" (click)="duplicarCotizacion(venta.id)" class="btn">
-                                    <i class="fa fa-fw fa-copy"></i> Duplicar
-                                </a>
+                                  @if (venta.estado == 'Pendiente' || venta.estado == 'enviada' && apiService.canEditTest('ventas.cotizaciones.editar')) {
+                                      <a routerLink="/cotizacion/editar/{{venta.id}}" [queryParams]="{ cotizacion:1 }" class="btn">
+                                          <i class="fa fa-fw fa-edit"></i> Editar
+                                      </a>
+                                  }
+                                  @if (venta.estado == 'enviada' && apiService.canEdit()) {
+                                      <a (click)="duplicarCotizacion(venta.id)" class="btn">
+                                        <i class="fa fa-fw fa-copy"></i> Duplicar
+                                    </a>
+                                  }
                                   <a routerLink="/cotizacion/{{venta.id}}" class="btn">
                                       <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                   </a>
 
-                                  <a *ngIf="venta.estado == 'aceptada' && !venta.facturada " routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
-                                      <i class="fa fa-fw fa-money-bill"></i> Facturar
-                                  </a>
+                                  @if (venta.estado == 'aceptada' && !venta.facturada) {
+                                      <a routerLink="/venta/crear" [queryParams]="{ facturar_cotizacion: 1, id_venta: venta.id }" class="btn">
+                                          <i class="fa fa-fw fa-money-bill"></i> Facturar
+                                      </a>
+                                  }
                                   <a (click)="imprimir(venta)" class="btn">
                                       <i class="fa fa-fw fa-print"></i> Imprimir
                                   </a>
                                   <!-- si esta aprobada se podra crear orden de producción -->
-                                  <a *ngIf="venta.estado == 'aceptada' && venta.tiene_orden_produccion.length == 0" routerLink="/orden-produccion/crear/{{venta.id}}" class="btn">
-                                      <i class="fa fa-fw fa-cogs"></i> Crear Orden de Producción
-                                  </a>
-                                  <a *ngIf="venta.estado == 'pendiente' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'enviada')" class="btn">
-                                    <i class="fa fa-fw fa-paper-plane"></i> Marcar como enviada
-                                  </a>
-                                  <a *ngIf="venta.estado == 'enviada' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'aceptada')" class="btn">
-                                    <i class="fa fa-fw fa-paper-plane"></i> Marcar como aceptada
-                                  </a>
-                                  <a *ngIf="venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()" (click)="changeStateCotizacion(venta.id,'anulada')" class="btn">
-                                    <i class="fa fa-fw fa-trash"></i> Anular
-                                  </a>
+                                  @if (venta.estado == 'aceptada' && venta.tiene_orden_produccion.length == 0) {
+                                      <a routerLink="/orden-produccion/crear/{{venta.id}}" class="btn">
+                                          <i class="fa fa-fw fa-cogs"></i> Crear Orden de Producción
+                                      </a>
+                                  }
+                                  @if (venta.estado == 'pendiente' && apiService.canEdit()) {
+                                      <a (click)="changeStateCotizacion(venta.id,'enviada')" class="btn">
+                                        <i class="fa fa-fw fa-paper-plane"></i> Marcar como enviada
+                                      </a>
+                                  }
+                                  @if (venta.estado == 'enviada' && apiService.canEdit()) {
+                                      <a (click)="changeStateCotizacion(venta.id,'aceptada')" class="btn">
+                                        <i class="fa fa-fw fa-paper-plane"></i> Marcar como aceptada
+                                      </a>
+                                  }
+                                  @if (venta.estado == 'pendiente' || venta.estado == 'enviada' && apiService.canEdit()) {
+                                      <a (click)="changeStateCotizacion(venta.id,'anulada')" class="btn">
+                                        <i class="fa fa-fw fa-trash"></i> Anular
+                                      </a>
+                                  }
                                   <!-- <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
                                       <i class="fa fa-fw fa-trash"></i> Eliminar
                                   </a> -->
@@ -140,13 +167,16 @@
                       </td>
 
                   </tr>
+                  }
               </tbody>
           </table>
       </div>
 
-      <div class="col-12" *ngIf="ventas?.last_page > 1">
-          <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
-      </div>
+      @if (ventas && ventas.last_page && ventas.last_page > 1) {
+          <div class="col-12">
+              <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+          </div>
+      }
   </div>
 </section>
 
@@ -174,45 +204,59 @@
               <label for="filtros.id_cliente">Cliente:</label>
               <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
                   <ng-option value="">Todos</ng-option>
-                  <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                      {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                  </ng-option>
+                  @for (cliente of clientes; track cliente.id) {
+                      <ng-option [value]="cliente.id">
+                          {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                      </ng-option>
+                  }
               </ng-select>
           </div>
           <div class="form-group col-md-6">
               <label for="filtros.id_usuario">Usuario:</label>
               <ng-select [(ngModel)]="filtros.id_usuario" class="form-select  p-0" name="filtros.id_usuario">
                   <ng-option value="">Todos</ng-option>
-                  <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                      {{ usuario.name }}
-                  </ng-option>
+                  @for (usuario of usuarios; track usuario.id) {
+                      <ng-option [value]="usuario.id">
+                          {{ usuario.name }}
+                      </ng-option>
+                  }
               </ng-select>
           </div>
           <div class="form-group col-md-6">
               <label for="filtros.sucursal">Sucursal:</label>
               <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                   <option value="">Todos</option>
-                  <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                      {{ sucursal.nombre }}
-                  </option>
+                  @for (sucursal of sucursales; track sucursal.id) {
+                      <option [value]="sucursal.id">
+                          {{ sucursal.nombre }}
+                      </option>
+                  }
               </select>
           </div>
-          <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
-              <label for="id_proyecto">Proyecto:</label>
-              <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
-                  <ng-option value="">Todos</ng-option>
-                  <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                      {{ proyecto.nombre }}
-                  </ng-option>
-              </ng-select>
-          </div>
+          @if (apiService.auth_user().empresa.modulo_proyectos) {
+              <div class="form-group col-md-6">
+                  <label for="id_proyecto">Proyecto:</label>
+                  <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                      <ng-option value="">Todos</ng-option>
+                      @for (proyecto of proyectos; track proyecto.id) {
+                          <ng-option [value]="proyecto.id">
+                              {{ proyecto.nombre }}
+                          </ng-option>
+                      }
+                  </ng-select>
+              </div>
+          }
 
       </div>
 
       <div class="d-grid mt-3">
           <button type="submit" [disabled]="loading" class="btn btn-primary">
-              <span *ngIf="!loading">Filtrar</span>
-              <span *ngIf="loading">Filtrando...</span>
+              @if (!loading) {
+                  <span>Filtrar</span>
+              }
+              @if (loading) {
+                  <span>Filtrando...</span>
+              }
           </button>
       </div>
   </form>

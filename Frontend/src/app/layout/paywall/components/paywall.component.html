@@ -10,7 +10,8 @@
           </p>
 
           <!-- ✅ Plan actual -->
-          <div class="list-group mt-3 mb-2" *ngIf="showAllPlans">
+          @if (showAllPlans) {
+              <div class="list-group mt-3 mb-2">
             <h4>Plan actual:</h4>
             <div class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible">
               <div class="d-flex justify-content-between align-items-center">
@@ -21,10 +22,12 @@
                 <span class="badge bg-primary rounded-pill">${{ this.montoPlanActual }}/mes</span>
               </div>
             </div>
-          </div>
+              </div>
+          }
 
           <!-- ✅ Botón principal para iniciar pago -->
-          <div class="d-grid gap-2 mb-2" *ngIf="showAllPlans">
+          @if (showAllPlans) {
+              <div class="d-grid gap-2 mb-2">
             <button
               class="btn btn-lg btn-primary rounded-3"
               (click)="showPaymentOptionsModal()"
@@ -33,70 +36,77 @@
               <i class="fas fa-credit-card me-2"></i>
               Realizar Pago
             </button>
-          </div>
+              </div>
+          }
 
           <!-- ✅ Modal de opciones de pago -->
-          <div *ngIf="showPaymentOptions" class="payment-options-container">
-            <h5 class="mb-3">Selecciona tu método de pago</h5>
-            
-            <!-- Opción: Método de pago existente -->
-            <div *ngIf="paymentMethodExists" class="mb-3">
-              <button 
-                class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
-                (click)="selectPaymentOption('existing')"
-                [disabled]="loading">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <i class="fas fa-credit-card me-2"></i>
-                    <strong>Usar tarjeta guardada</strong>
-                    <br>
-                    <small class="text-muted">
-                      {{ existingPaymentMethod?.marca_tarjeta }} 
-                      ****{{ existingPaymentMethod?.ultimos_cuatro }}
-                    </small>
+          @if (showPaymentOptions) {
+              <div class="payment-options-container">
+              <h5 class="mb-3">Selecciona tu método de pago</h5>
+              
+              <!-- Opción: Método de pago existente -->
+              @if (paymentMethodExists) {
+                  <div class="mb-3">
+                      <button 
+                          class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
+                          (click)="selectPaymentOption('existing')"
+                          [disabled]="loading">
+                          <div class="d-flex justify-content-between align-items-center">
+                              <div>
+                                  <i class="fas fa-credit-card me-2"></i>
+                                  <strong>Usar tarjeta guardada</strong>
+                                  <br>
+                                  <small class="text-muted">
+                                      {{ existingPaymentMethod?.marca_tarjeta }} 
+                                      ****{{ existingPaymentMethod?.ultimos_cuatro }}
+                                  </small>
+                              </div>
+                              <i class="fas fa-chevron-right"></i>
+                          </div>
+                      </button>
                   </div>
-                  <i class="fas fa-chevron-right"></i>
-                </div>
-              </button>
-            </div>
+              }
 
-            <!-- Opción: Nueva tarjeta -->
-            <div class="mb-3">
+              <!-- Opción: Nueva tarjeta -->
+              <div class="mb-3">
+                  <button 
+                      class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
+                      (click)="selectPaymentOption('new')"
+                      [disabled]="loading">
+                      <div class="d-flex justify-content-between align-items-center">
+                          <div>
+                              <i class="fas fa-plus me-2"></i>
+                              <strong>Usar nueva tarjeta</strong>
+                              <br>
+                              <small class="text-muted">Ingresar nueva información de pago</small>
+                          </div>
+                          <i class="fas fa-chevron-right"></i>
+                      </div>
+                  </button>
+              </div>
+
+              <!-- Botón cancelar -->
               <button 
-                class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
-                (click)="selectPaymentOption('new')"
-                [disabled]="loading">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <i class="fas fa-plus me-2"></i>
-                    <strong>Usar nueva tarjeta</strong>
-                    <br>
-                    <small class="text-muted">Ingresar nueva información de pago</small>
-                  </div>
-                  <i class="fas fa-chevron-right"></i>
-                </div>
+                  class="btn btn-outline-secondary w-100"
+                  (click)="cancelPayment()">
+                  Cancelar
               </button>
-            </div>
-
-            <!-- Botón cancelar -->
-            <button 
-              class="btn btn-outline-secondary w-100"
-              (click)="cancelPayment()">
-              Cancelar
-            </button>
-          </div>
+              </div>
+          }
 
           <!-- ✅ Formulario de nueva tarjeta -->
-          <div *ngIf="showCardForm" class="payment-form">
+          @if (showCardForm) {
+              <div class="payment-form">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Nueva tarjeta de pago</h5>
-              <button 
-                class="btn btn-sm btn-outline-secondary"
-                (click)="backToPaymentOptions()"
-                *ngIf="paymentMethodExists">
-                <i class="fas fa-arrow-left me-1"></i>
-                Volver
-              </button>
+              @if (paymentMethodExists) {
+                  <button 
+                      class="btn btn-sm btn-outline-secondary"
+                      (click)="backToPaymentOptions()">
+                      <i class="fas fa-arrow-left me-1"></i>
+                      Volver
+                  </button>
+              }
             </div>
 
             <form (ngSubmit)="processPayment()" #paymentForm="ngForm">
@@ -200,7 +210,9 @@
                     <option value="" disabled selected>
                       Seleccione un país
                     </option>
-                    <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                    @for (pais of paises; track pais.cod) {
+                        <option [value]="pais.cod">{{ pais.nombre }}</option>
+                    }
                   </select>
                 </div>
 
@@ -216,7 +228,9 @@
                     #stateCode="ngModel"
                   >
                     <option value="" disabled selected>Selecciona estado</option>
-                    <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                    @for (estado of estados; track estado.codigo) {
+                        <option [value]="estado.codigo">{{ estado.nombre }}</option>
+                    }
                   </select>
                 </div>
 
@@ -242,11 +256,12 @@
                   class="btn btn-primary"
                   [disabled]="!paymentForm.form.valid || loading"
                 >
-                  <span
-                    *ngIf="loading"
-                    class="spinner-border spinner-border-sm me-2"
-                  ></span>
-                  <i class="fas fa-lock me-2" *ngIf="!loading"></i>
+                  @if (loading) {
+                      <span class="spinner-border spinner-border-sm me-2"></span>
+                  }
+                  @if (!loading) {
+                      <i class="fas fa-lock me-2"></i>
+                  }
                   Procesar Pago
                 </button>
                 <button
@@ -258,22 +273,27 @@
                 </button>
               </div>
             </form>
-          </div>
+              </div>
+          }
 
           <!-- Botón cerrar sesión -->
-          <div class="text-center" *ngIf="showAllPlans">
+          @if (showAllPlans) {
+              <div class="text-center">
             <button
               class="btn btn-sm btn-link px-4 rounded-3 text-decoration-none"
               (click)="logout()"
             >
               <p class="text-muted">Cerrar sesión</p>
             </button>
-          </div>
-          <div class="text-center mb-2" *ngIf="showAllPlans">
+              </div>
+          }
+          @if (showAllPlans) {
+              <div class="text-center mb-2">
             <button class="btn btn-sm btn-link text-muted">
               Si tienes alguna duda o problema, contáctanos.
             </button>
-          </div>
+              </div>
+          }
         </div>
       </div>
     </div>
@@ -281,9 +301,10 @@
 </div>
 
 <!-- Modal 3DS -->
-<app-threeds-modal
-  *ngIf="mostrar3DSModal"
-  [authUrl]="urlAutenticacion"
-  (close)="mostrar3DSModal = false"
->
-</app-threeds-modal>
+@if (mostrar3DSModal) {
+    <app-threeds-modal
+        [authUrl]="urlAutenticacion"
+        (close)="mostrar3DSModal = false"
+    >
+    </app-threeds-modal>
+}

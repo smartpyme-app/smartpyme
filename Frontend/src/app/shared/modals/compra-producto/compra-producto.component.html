@@ -16,14 +16,22 @@
             <form autocomplete="off" class="buscador">
                 <input id="producto" type="text" name="producto.nombre" class="form-control" placeholder="Nombre" [(ngModel)]="producto.nombre" focus="true" id="example" (blur)="clear()">
                 <ul class="list-group info">
-                  <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
-                  <a href="javascript:void(0);" class="list-group-item text-warning" *ngIf="!searching && productos?.data?.length == 0"> Ningun registro encontrado </a>
+                    @if (searching) {
+                        <a href="javascript:void(0);" class="list-group-item text-primary"> Buscando... </a>
+                    }
+                    @if (!searching && productos?.data?.length == 0) {
+                        <a href="javascript:void(0);" class="list-group-item text-warning"> Ningun registro encontrado </a>
+                    }
                 </ul>
-                <ul class="list-group opciones" *ngIf="productos?.total > 0">
-                  <a href="javascript:void(0);" class="list-group-item" (click)="selectProducto(producto)" *ngFor=" let producto of productos?.data">
-                    {{producto.nombre}} - <small>{{producto.categoria}}</small>
-                  </a>
-                </ul>
+                @if (productos?.total > 0) {
+                    <ul class="list-group opciones">
+                        @for (producto of productos?.data; track producto.id) {
+                            <a href="javascript:void(0);" class="list-group-item" (click)="selectProducto(producto)">
+                                {{producto.nombre}} - <small>{{producto.categoria}}</small>
+                            </a>
+                        }
+                    </ul>
+                }
             </form>
         </div>
         <div class="form-group col-sm-3">

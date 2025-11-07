@@ -16,9 +16,11 @@
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="">Bodega: </label>
                     <select class="form-control form-select" [(ngModel)]="filtros.id_inventario" name="id_inventario" (change)="loadAll()">
-                        <option [value]="bodega.id" *ngFor="let bodega of bodegas">
-                            {{ bodega.nombre }}
-                        </option>
+                        @for (bodega of bodegas; track bodega.id) {
+                            <option [value]="bodega.id">
+                                {{ bodega.nombre }}
+                            </option>
+                        }
                     </select>
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
@@ -43,8 +45,12 @@
                     <div class="input-group">
                         <input type='date' class="form-control" name="filtros.fin" [(ngModel)]="filtros.fin"/>
                         <button type="submit" class="btn btn-primary tcla-F6" [disabled]="loading" tooltip="Filtrar datos (F6)">
-                            <i *ngIf="!loading" class="fa fa-search"></i>
-                            <i *ngIf="loading" class="fa fa-ellipsis-h"></i>
+                            @if (!loading) {
+                                <i class="fa fa-search"></i>
+                            }
+                            @if (loading) {
+                                <i class="fa fa-ellipsis-h"></i>
+                            }
                         </button>
                     </div>
                 </div>
@@ -68,32 +74,40 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="9" class="text-center" *ngIf="producto?.movimientos?.length < 1 && !loading">
-                                <span class="badge bg-primary">No tiene movimientos registrados</span>
-                            </td>
-                            <td colspan="9" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
+                        @if (producto?.movimientos?.length < 1 && !loading) {
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <span class="badge bg-primary">No tiene movimientos registrados</span>
+                                </td>
+                            </tr>
+                        }
+                        @if (loading) {
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+                        }
 
-                        <tr *ngFor=" let movimiento of producto?.movimientos">
-                            
-                            <td><span tooltip="{{ movimiento.created_at | date:'hh:mm a'}}">{{movimiento.fecha | date:'dd/MM/yyyy'}}</span></td>
-                            <td>{{movimiento.nombre_usuario}}</td>
-                            <td>{{movimiento.detalle}}</td>
-                            <td>
-                                {{movimiento.modelo_detalle}}
-                                <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
-                            </td>
+                        @for (movimiento of producto?.movimientos; track movimiento.id || $index) {
+                            <tr>
+                                
+                                <td><span tooltip="{{ movimiento.created_at | date:'hh:mm a'}}">{{movimiento.fecha | date:'dd/MM/yyyy'}}</span></td>
+                                <td>{{movimiento.nombre_usuario}}</td>
+                                <td>{{movimiento.detalle}}</td>
+                                <td>
+                                    {{movimiento.modelo_detalle}}
+                                    <a class="float-end d-none"  tooltip="Ver detalle de la transacción" routerLink="/{{movimiento.modelo}}/{{movimiento.referencia}}"><i class="fa fa-edit"></i></a>
+                                </td>
 
-                            <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0') : '' }}</td>
-                            <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0') : '' }}</td>
-                            
-                            <td class="text-center">{{ movimiento.total_cantidad > 0 ? (movimiento.total_cantidad | number:'1.0') : '' }}</td>
-                            <td class="text-center">{{ movimiento.costo_unitario > 0 ? (movimiento.costo_unitario | currency ): ''  }}</td>
-                            <td class="text-end">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
-                        </tr>
+                                <td class="text-center">{{ movimiento.entrada_cantidad > 0 ? (movimiento.entrada_cantidad | number:'1.0') : '' }}</td>
+                                <td class="text-center">{{ movimiento.salida_cantidad > 0 ? (movimiento.salida_cantidad | number:'1.0') : '' }}</td>
+                                
+                                <td class="text-center">{{ movimiento.total_cantidad > 0 ? (movimiento.total_cantidad | number:'1.0') : '' }}</td>
+                                <td class="text-center">{{ movimiento.costo_unitario > 0 ? (movimiento.costo_unitario | currency ): ''  }}</td>
+                                <td class="text-end">{{ movimiento.total_valor > 0 ? (movimiento.total_valor | currency ): ''  }}</td>
+                            </tr>
+                        }
 
                     </tbody>
                     

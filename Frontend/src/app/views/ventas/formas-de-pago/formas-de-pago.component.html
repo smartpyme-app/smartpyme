@@ -15,16 +15,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="formas_pago?.length < 1 && !loading">
-                            <span class="badge badge-info">No tiene formas de pago registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge badge-info">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (formas_pago?.length < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge badge-info">No tiene formas de pago registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge badge-info">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor=" let forma_pago of formas_pago">
+                    @for (forma_pago of formas_pago; track forma_pago.id) {
+                        <tr class="animated fadeIn">
                         
                         <td>{{forma_pago.nombre }} </td>
                         <td>{{forma_pago.banco?.nombre_banco }} </td>
@@ -40,6 +47,7 @@
                         </td>
 
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -66,14 +74,20 @@
                 <label for="forma_pago.id_banco">Banco:</label>
                 <ng-select [(ngModel)]="forma_pago.id_banco" class="form-select p-0" name="forma_pago.id_banco">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let banco of bancos" [value]="banco.id">{{ banco.nombre_banco }}</ng-option>
+                    @for (banco of bancos; track banco.id) {
+                        <ng-option [value]="banco.id">{{ banco.nombre_banco }}</ng-option>
+                    }
                 </ng-select>
             </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

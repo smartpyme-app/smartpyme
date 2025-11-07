@@ -13,13 +13,14 @@ import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
     selector: 'app-ajustes',
     templateUrl: './ajustes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule],
-    
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
+
 })
 export class AjustesComponent implements OnInit {
 
@@ -255,6 +256,15 @@ export class AjustesComponent implements OnInit {
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
+    }
+
+    /**
+     * Verifica si el usuario puede ver las opciones de inventario
+     * Oculta ciertas opciones para Supervisores de la empresa 324
+     */
+    public puedeVerOpcionesInventario(): boolean {
+        const user = this.apiService.auth_user();
+        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
     }
 
 }

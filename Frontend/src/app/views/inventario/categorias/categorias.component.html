@@ -1,21 +1,25 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Categorias</h2>
-    <button *ngIf="apiService.canCreateTest('productos.categorias.crear')" (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir categoria</button>
+    @if (apiService.canCreateTest('productos.categorias.crear')) {
+        <button (click)="openModal(mcategoria, {})" tooltip="Crear categoria (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir categoria</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="categorias?.total">
-                Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="filtrarCategorias()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                de {{ categorias?.total + ' registros' }}
-            </span>
+            @if (categorias?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarCategorias()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    de {{ categorias?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -38,9 +42,11 @@
             </select>
             <select name="id_sucursal" (change)="filtrarCategorias()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default w-auto">
                 <option value="">Sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                    {{sucursal.nombre}}
-                </option>
+                @for (sucursal of sucursales; track sucursal.id) {
+                    <option [value]="sucursal.id">
+                        {{sucursal.nombre}}
+                    </option>
+                }
             </select>
         </div>
     </div>
@@ -57,15 +63,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="categorias?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene categorias registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let categoria of categorias?.data">
+                    @if (categorias?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene categorias registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (categoria of categorias?.data; track categoria.id) {
+                        <tr>
                         <td>{{ categoria.nombre }}</td>
                         <td class="d-none d-md-table-cell">{{ categoria.descripcion }}</td>
                         <td class="d-none d-lg-table-cell">
@@ -74,19 +87,24 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td class="text-center" *ngIf="apiService.canEdit()">
-                            <a (click)="openModal(mcategoria, categoria)" class="btn btn-default" tooltip="Editar categoria">
-                                <i class="fa fa-fw fa-pencil-alt"></i>
-                            </a>
-                        </td>
+                        @if (apiService.canEdit()) {
+                            <td class="text-center">
+                                <a (click)="openModal(mcategoria, categoria)" class="btn btn-default" tooltip="Editar categoria">
+                                    <i class="fa fa-fw fa-pencil-alt"></i>
+                                </a>
+                            </td>
+                        }
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="categorias?.last_page > 1">
-            <app-pagination [items]="categorias" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (categorias && categorias.last_page && categorias.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="categorias" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -120,12 +138,18 @@
 
         </div>
 
-        <app-categoria-cuentas [categoria]="categoria" *ngIf="categoria?.id"></app-categoria-cuentas>
+        @if (categoria?.id) {
+            <app-categoria-cuentas [categoria]="categoria"></app-categoria-cuentas>
+        }
 
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Guardar</span>
-                <span *ngIf="loading">Guardando...</span>
+                @if (!loading) {
+                    <span>Guardar</span>
+                }
+                @if (loading) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

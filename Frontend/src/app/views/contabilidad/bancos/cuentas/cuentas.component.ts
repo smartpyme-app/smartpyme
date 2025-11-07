@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -13,7 +15,7 @@ import Swal from 'sweetalert2';
     selector: 'app-cuentas',
     templateUrl: './cuentas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, PaginationComponent],
     
 })
 

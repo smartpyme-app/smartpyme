@@ -3,16 +3,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { VerHistorialButtonComponent } from './shared/ver-historial-button.component';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 @Component({
     selector: 'app-empleados',
     templateUrl: './empleados.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
-    
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent],
+
 })
 export class EmpleadosComponent implements OnInit {
   public empleados: any = [];

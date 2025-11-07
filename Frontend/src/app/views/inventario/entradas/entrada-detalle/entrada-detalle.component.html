@@ -34,30 +34,32 @@
     </div>
 
     <!-- Información del corte (si existe) -->
-    <div class="row mt-3" *ngIf="entrada.corte">
-        <div class="col-12">
-            <div class="alert alert-info">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label><strong>Corte N°:</strong></label>
-                        <div>{{ entrada.corte.id }}</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label><strong>Caja:</strong></label>
-                        <div>{{ entrada.corte.caja?.nombre }}</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label><strong>Fecha Corte:</strong></label>
-                        <div>{{ entrada.corte.fecha_arqueo | date:'dd/MM/yyyy hh:mm a' }}</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label><strong>Cajero:</strong></label>
-                        <div>{{ entrada.corte.usuario?.name }}</div>
+    @if (entrada.corte) {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label><strong>Corte N°:</strong></label>
+                            <div>{{ entrada.corte.id }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label><strong>Caja:</strong></label>
+                            <div>{{ entrada.corte.caja?.nombre }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label><strong>Fecha Corte:</strong></label>
+                            <div>{{ entrada.corte.fecha_arqueo | date:'dd/MM/yyyy hh:mm a' }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label><strong>Cajero:</strong></label>
+                            <div>{{ entrada.corte.usuario?.name }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    }
 
     <!-- Tabla de detalles -->
     <div class="table-responsive mt-4">
@@ -72,19 +74,25 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngIf="entrada.detalles?.length < 1 && !loading">
-            <td colspan="5" class="text-center text-muted">No tiene productos agregados</td>
-          </tr>
-          <tr *ngIf="loading">
-            <td colspan="5" class="text-center text-muted">Cargando...</td>
-          </tr>
-          <tr *ngFor="let detalle of entrada.detalles; let i = index">
-            <td>{{ i + 1 }}</td>
-            <td>{{ detalle.nombre_producto }}</td>
-            <td class="text-end">{{ detalle.cantidad }}</td>
-            <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
-            <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
-          </tr>
+          @if (entrada.detalles?.length < 1 && !loading) {
+            <tr>
+              <td colspan="5" class="text-center text-muted">No tiene productos agregados</td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="5" class="text-center text-muted">Cargando...</td>
+            </tr>
+          }
+          @for (detalle of entrada.detalles; track detalle.id_producto || $index) {
+            <tr>
+              <td>{{ $index + 1 }}</td>
+              <td>{{ detalle.nombre_producto }}</td>
+              <td class="text-end">{{ detalle.cantidad }}</td>
+              <td class="text-end">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
+              <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>

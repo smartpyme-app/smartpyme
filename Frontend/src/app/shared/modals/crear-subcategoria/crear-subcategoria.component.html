@@ -19,8 +19,12 @@
 
                 <div class="form-group col-md-12 mt-3">
                     <button [disabled]="loading" class="btn btn-primary btn-block tcla-F4">
-                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                        <span *ngIf="loading">Guardando...</span>
+                        @if (!loading) {
+                          <span>Guardar <small>(F4)</small></span>
+                        }
+                        @if (loading) {
+                          <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

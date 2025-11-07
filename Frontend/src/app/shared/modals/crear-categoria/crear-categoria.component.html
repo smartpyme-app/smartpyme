@@ -5,8 +5,12 @@
 <ng-template #mcategoria>
   <div class="modal-header">
     <div class="modal-title text-center">
-      <h2 class="text-center no-margin" *ngIf="!categoria.subcategoria">Categoria</h2>
-      <h2 class="text-center no-margin" *ngIf="categoria.subcategoria">Subcategoria</h2>
+      @if (!categoria.subcategoria) {
+        <h2 class="text-center no-margin">Categoria</h2>
+      }
+      @if (categoria.subcategoria) {
+        <h2 class="text-center no-margin">Subcategoria</h2>
+      }
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
   </div>
@@ -33,16 +37,20 @@
         </div>
 
         <!-- Select para elegir la categoría padre (se muestra solo si Subcategoria está activado) -->
-        <div class="form-group col-12" *ngIf="categoria.subcategoria">
-          <label for="categoria.id_cate_padre">Seleccionar Categoría Padre</label>
-          <ng-select [(ngModel)]="categoria.id_cate_padre" 
-                    class="form-select p-0" 
-                    name="categoria.id_cate_padre">
-            <ng-option *ngFor="let cat of categorias" [value]="cat.id">
-              {{ cat.nombre }}
-            </ng-option>
-          </ng-select>
-        </div>
+        @if (categoria.subcategoria) {
+          <div class="form-group col-12">
+            <label for="categoria.id_cate_padre">Seleccionar Categoría Padre</label>
+            <ng-select [(ngModel)]="categoria.id_cate_padre" 
+                      class="form-select p-0" 
+                      name="categoria.id_cate_padre">
+              @for (cat of categorias; track cat.id) {
+                <ng-option [value]="cat.id">
+                  {{ cat.nombre }}
+                </ng-option>
+              }
+            </ng-select>
+          </div>
+        }
 
         <div class="form-group col-md-12">
           <div class="form-switch bg-light-info rounded">
@@ -67,8 +75,12 @@
 
       <div class="d-grid">
         <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-          <span *ngIf="!loading">Añadir</span>
-          <span *ngIf="loading">Añadiendo...</span>
+          @if (!loading) {
+            <span>Añadir</span>
+          }
+          @if (loading) {
+            <span>Añadiendo...</span>
+          }
         </button>
       </div>
     </form>

@@ -1,13 +1,21 @@
 <button type="button" class="btn btn-default tcla-F1" (click)="openModal(mCliente)">
-    <i *ngIf="!id_cliente" tooltip="Crear nuevo cliente (F1)" class="fa fa-plus"></i>
-    <i *ngIf="id_cliente" tooltip="Editar cliente (F1)" class="fa fa-pencil-alt"></i>
+    @if (!id_cliente) {
+        <i tooltip="Crear nuevo cliente (F1)" class="fa fa-plus"></i>
+    }
+    @if (id_cliente) {
+        <i tooltip="Editar cliente (F1)" class="fa fa-pencil-alt"></i>
+    }
 </button>
 
 <ng-template #mCliente>
     <div class="modal-header justify-content-between">
         <h3 class="modal-title">
-            <span *ngIf="!id_cliente">Nuevo cliente</span>
-            <span *ngIf="id_cliente">Editar cliente</span>
+            @if (!id_cliente) {
+                <span>Nuevo cliente</span>
+            }
+            @if (id_cliente) {
+                <span>Editar cliente</span>
+            }
         </h3>
         <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">Cancelar <i class="fa fa-close"></i></button>
     </div>
@@ -22,12 +30,16 @@
                         <option value="Empresa">Empresa</option>
                         <option value="Extranjero">Extranjero</option>
                     </select>
-                    <small class="form-text text-muted" *ngIf="!esNuevo">
-                        Los datos relevantes se adaptarán automáticamente al nuevo tipo de cliente.
-                    </small>
-                    <small class="form-text text-muted" *ngIf="esNuevo">
-                        Si cambias el tipo de cliente, los campos se limpiarán automáticamente.
-                    </small>
+                    @if (!esNuevo) {
+                        <small class="form-text text-muted">
+                            Los datos relevantes se adaptarán automáticamente al nuevo tipo de cliente.
+                        </small>
+                    }
+                    @if (esNuevo) {
+                        <small class="form-text text-muted">
+                            Si cambias el tipo de cliente, los campos se limpiarán automáticamente.
+                        </small>
+                    }
                 </div>
                 <div class="form-group col-12 col-md-6 col-lg-4">
                     <label for="clasificacion" class="form-label">Clasificación</label>
@@ -39,7 +51,8 @@
                     </select>
                 </div>
             </div>
-            <div class="row" *ngIf="cliente.tipo != 'Extranjero'">
+            @if (cliente.tipo != 'Extranjero') {
+                <div class="row">
                 <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Persona', 'order-2' :  cliente.tipo == 'Empresa' }">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
@@ -56,8 +69,12 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="apellido" [(ngModel)]="cliente.apellido">
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">DUI</label>
-                            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Número de Identificación</label>
+                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <label for="ncr">DUI</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <label for="ncr">Número de Identificación</label>
+                            }
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="dui" [(ngModel)]="cliente.dui" [dropSpecialCharacters]="false"  mask={{apiService.auth_user().empresa.validador_dui}}>
                         </div>
                         <div class="form-group col-6 col-lg-3">
@@ -68,51 +85,92 @@
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
                         </div>
-                        <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
-                            <label for="pais">Pais:</label>
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                                <ng-option *ngFor="let pais of paises" [value]="pais.cod">
-                                    {{ pais.nombre }}
-                                </ng-option>
-                            </ng-select>
-                        </div>
-                        <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
-                            <label for="departamento">Departamento:</label>
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
-                                <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
-                                    {{ departamento.nombre }}
-                                </ng-option>
-                            </ng-select>
-                            <input  *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
-
-                        </div>
-                        <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
-                            <label for="distrito">Distrito:</label>
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
-                                <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':cliente.cod_departamento" [value]="distrito.cod">
-                                    {{ distrito.nombre }}
-                                </ng-option>
-                            </ng-select>
-                        </div>
-                        <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Persona'">
-                            <label for="municipio">Municipio:</label>
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
-                                <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
-                                    {{ municipio.nombre }}
-                                </ng-option>
-                            </ng-select>
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
-                        </div>
-                        <div class="form-group col-12 col-md-6" *ngIf="cliente.tipo == 'Persona'">
-                            <label for="direccion">Dirección:</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
-                        </div>
+                        @if (cliente.tipo == 'Persona') {
+                            <div class="form-group col-6 col-lg-3">
+                                <label for="pais">Pais:</label>
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                                }
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                                        @for (pais of paises; track pais.cod) {
+                                            <ng-option [value]="pais.cod">
+                                                {{ pais.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Persona') {
+                            <div class="form-group col-6 col-lg-3">
+                                <label for="departamento">Departamento:</label>
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
+                                        @for (departamento of departamentos; track departamento.cod) {
+                                            <ng-option [value]="departamento.cod">
+                                                {{ departamento.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Persona') {
+                            <div class="form-group col-6 col-lg-3">
+                                <label for="distrito">Distrito:</label>
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
+                                }
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
+                                        @for (distrito of distritos | filter:'cod_departamento':cliente.cod_departamento; track distrito.cod) {
+                                            <ng-option [value]="distrito.cod">
+                                                {{ distrito.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Persona') {
+                            <div class="form-group col-6 col-lg-3">
+                                <label for="municipio">Municipio:</label>
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
+                                        @for (municipio of municipios | filter:'nombre_departamento':cliente.departamento; track municipio.cod) {
+                                            <ng-option [value]="municipio.cod">
+                                                {{ municipio.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Persona') {
+                            <div class="form-group col-12 col-md-6">
+                                <label for="direccion">Dirección:</label>
+                                <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="cliente.direccion">
+                            </div>
+                        }
                         <div class="form-group col-6 col-lg-3">
                             <label for="fecha_cumpleanos">Fecha de cumpleaños</label>
                             <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_cumpleanos" [(ngModel)]="cliente.fecha_cumpleanos">
@@ -131,7 +189,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12" *ngIf="cliente.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  cliente.tipo == 'Empresa', 'order-2' :  cliente.tipo == 'Persona' }">
+                @if (cliente.tipo == 'Empresa') {
+                    <div class="col-12" [ngClass]="{ 'order-1' :  cliente.tipo == 'Empresa', 'order-2' :  cliente.tipo == 'Persona' }">
                     <div class="row">
                         <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
 
@@ -140,13 +199,21 @@
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nombre_empresa" [(ngModel)]="cliente.nombre_empresa">
                         </div>
                         <div class="form-group col-6 col-lg-3">
-                            <label for="nit" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NIT</label>
-                            <label for="nit" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Identificación Fiscal</label>
+                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <label for="nit">NIT</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <label for="nit">Identificación Fiscal</label>
+                            }
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="nit" [(ngModel)]="cliente.nit" [dropSpecialCharacters]="false" mask={{apiService.auth_user().empresa.validador_nit}}>
                         </div>
                         <div class="form-group col-6 col-lg-2">
-                            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais == 'El Salvador'">NCR</label>
-                            <label for="ncr" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'">Registro Tributario</label>
+                            @if (apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <label for="ncr">NCR</label>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <label for="ncr">Registro Tributario</label>
+                            }
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="ncr" [(ngModel)]="cliente.ncr">
                         </div>
                         <div class="form-group col-md-6 col-lg-3">
@@ -161,77 +228,127 @@
                         </div>
                         <div class="form-group col-6 col-lg-6">
                             <label for="giro">Giro:</label>
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="cliente.cod_giro">
-                                <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
-                                    {{ actividad_economica.nombre }}
-                                </ng-option>
-                            </ng-select>
-
-                            <input type="text" *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" class="form-control" [(ngModel)]="cliente.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
+                            @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="cliente.giro">
+                            }
+                            @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                <ng-select [(ngModel)]="cliente.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="cliente.cod_giro">
+                                    @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
+                                        <ng-option [value]="actividad_economica.cod">
+                                            {{ actividad_economica.nombre }}
+                                        </ng-option>
+                                    }
+                                </ng-select>
+                            }
+                            @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                <input type="text" class="form-control" [(ngModel)]="cliente.giro" name="empresa.cod_actividad_economica" placeholder="Escriba aquí">
+                            }
                         </div>
                         <div class="form-group col-6 col-lg-3">
                             <label for="telefono">Teléfono:</label>
                             <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="cliente.empresa_telefono">
                         </div>
-                        <div class="form-group col-6 col-lg-3" *ngIf="cliente.tipo == 'Empresa'">
-                            <label for="pais">Pais:</label>
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                                <ng-option *ngFor="let pais of paises" [value]="pais.cod">
-                                    {{ pais.nombre }}
-                                </ng-option>
-                            </ng-select>
-                        </div>
-                        <div class="form-group col-6 col-lg-4" *ngIf="cliente.tipo == 'Empresa'">
-                            <label for="departamento">Departamento:</label>
+                        @if (cliente.tipo == 'Empresa') {
+                            <div class="form-group col-6 col-lg-3">
+                                <label for="pais">Pais:</label>
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                                }
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                                        @for (pais of paises; track pais.cod) {
+                                            <ng-option [value]="pais.cod">
+                                                {{ pais.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Empresa') {
+                            <div class="form-group col-6 col-lg-4">
+                                <label for="departamento">Departamento:</label>
 
-                            <!-- Si la empresa es SALVADOREÑA -->
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
-                                <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
-                                    {{ departamento.nombre }}
-                                </ng-option>
-                            </ng-select>
+                                <!-- Si la empresa es SALVADOREÑA -->
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_departamento">
+                                        @for (departamento of departamentos; track departamento.cod) {
+                                            <ng-option [value]="departamento.cod">
+                                                {{ departamento.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
 
-                            <!-- Si la empresa NO ES SALVADOREÑA -->
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                                <!-- Si la empresa NO ES SALVADOREÑA -->
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="cliente.departamento">
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Empresa') {
+                            <div class="form-group col-6 col-lg-4">
+                                <label for="distrito">Distrito:</label>
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
+                                }
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
+                                        @for (distrito of distritos | filter:'cod_departamento':cliente.cod_departamento; track distrito.cod) {
+                                            <ng-option [value]="distrito.cod">
+                                                {{ distrito.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Empresa') {
+                            <div class="form-group col-6 col-lg-4">
+                                <label for="municipio">Municipio:</label>
 
-                        </div>
-                        <div class="form-group col-6 col-lg-4" *ngIf="cliente.tipo == 'Empresa'">
-                            <label for="distrito">Distrito:</label>
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="cliente.distrito">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
-                                <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':cliente.cod_departamento" [value]="distrito.cod">
-                                    {{ distrito.nombre }}
-                                </ng-option>
-                            </ng-select>
-                        </div>
-                        <div class="form-group col-6 col-lg-4" *ngIf="cliente.tipo == 'Empresa'">
-                            <label for="municipio">Municipio:</label>
+                                <!-- Si la empresa es SALVADOREÑA -->
+                                @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                                }
+                                @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                                    <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
+                                        @for (municipio of municipios | filter:'nombre_departamento':cliente.departamento; track municipio.cod) {
+                                            <ng-option [value]="municipio.cod">
+                                                {{ municipio.nombre }}
+                                            </ng-option>
+                                        }
+                                    </ng-select>
+                                }
 
-                            <!-- Si la empresa es SALVADOREÑA -->
-                            <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
-                            <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
-                                <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':cliente.departamento" [value]="municipio.cod">
-                                    {{ municipio.nombre }}
-                                </ng-option>
-                            </ng-select>
-
-                            <!-- Si la empresa no es salvadoreña EXTRANJERA -->
-                            <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
-
-                        </div>
-                        <div class="form-group col-12" *ngIf="cliente.tipo == 'Empresa'">
-                            <label for="direccion">Dirección:</label>
-                            <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_direccion" [(ngModel)]="cliente.empresa_direccion">
-                        </div>
+                                <!-- Si la empresa no es salvadoreña EXTRANJERA -->
+                                @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                                    <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="cliente.municipio">
+                                }
+                            </div>
+                        }
+                        @if (cliente.tipo == 'Empresa') {
+                            <div class="form-group col-12">
+                                <label for="direccion">Dirección:</label>
+                                <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_direccion" [(ngModel)]="cliente.empresa_direccion">
+                            </div>
+                        }
                     </div>
                 </div>
-            </div>
-            <div class="row mt-4" *ngIf="cliente.tipo == 'Empresa'">
+                }
+                </div>
+            }
+            @if (cliente.tipo == 'Empresa') {
+                <div class="row mt-4">
                 <div class="col-12 d-flex justify-content-between align-items-center mb-3">
                     <h6 class="mb-0">Contactos adicionales</h6>
                     <button type="button" class="btn btn-default tcla-F1" tooltip="Agregar contacto (F1)" (click)="agregarContacto(mcontacto)">
@@ -241,40 +358,48 @@
 
                 <div class="col-12">
                     <div class="table-responsive">
-                        <table class="table table-borderless table-hover" *ngIf="cliente.contactos?.length > 0">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Correo</th>
-                                    <th>Teléfono</th>
-                                    <th>Cargo</th>
-                                    <th class="text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr *ngFor="let contacto of cliente.contactos">
-                                    <td>{{contacto.nombre}} {{contacto.apellido}}</td>
-                                    <td>{{contacto.correo}}</td>
-                                    <td>{{contacto.telefono}}</td>
-                                    <td>{{contacto.cargo}}</td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-light btn-sm me-2" tooltip="Editar contacto (F2)" (click)="openModalContacto(mcontacto,contacto)">
-                                            <i class="fa fa-pencil"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-light btn-sm" tooltip="Eliminar contacto (F4)" (click)="eliminarContacto(contacto)">
-                                            <i class="fa fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <div class="text-center py-3" *ngIf="!cliente.contactos?.length">
-                            <span class="badge bg-primary">No hay contactos registrados</span>
-                        </div>
+                        @if (cliente.contactos?.length > 0) {
+                            <table class="table table-borderless table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Correo</th>
+                                        <th>Teléfono</th>
+                                        <th>Cargo</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (contacto of cliente.contactos; track contacto.id || $index) {
+                                        <tr>
+                                            <td>{{contacto.nombre}} {{contacto.apellido}}</td>
+                                            <td>{{contacto.correo}}</td>
+                                            <td>{{contacto.telefono}}</td>
+                                            <td>{{contacto.cargo}}</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-light btn-sm me-2" tooltip="Editar contacto (F2)" (click)="openModalContacto(mcontacto,contacto)">
+                                                    <i class="fa fa-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-light btn-sm" tooltip="Eliminar contacto (F4)" (click)="eliminarContacto(contacto)">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        @if (!cliente.contactos?.length) {
+                            <div class="text-center py-3">
+                                <span class="badge bg-primary">No hay contactos registrados</span>
+                            </div>
+                        }
                     </div>
                 </div>
-            </div>
-            <div class="row" *ngIf="cliente.tipo == 'Extranjero'">
+                </div>
+            }
+            @if (cliente.tipo == 'Extranjero') {
+                <div class="row">
                 <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
                 <div class="form-group col-6 col-lg-3">
                     <label for="codigo_cliente">Código de Cliente</label>
@@ -315,12 +440,18 @@
                 </div>
                 <div class="form-group col-6 col-lg-3">
                     <label for="pais">Pais:</label>
-                    <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
-                    <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
-                        <ng-option *ngFor="let pais of paises" [value]="pais.cod">
-                            {{ pais.nombre }}
-                        </ng-option>
-                    </ng-select>
+                    @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                        <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="cliente.pais">
+                    }
+                    @if (apiService.auth_user().empresa.facturacion_electronica) {
+                        <ng-select [(ngModel)]="cliente.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_pais">
+                            @for (pais of paises; track pais.cod) {
+                                <ng-option [value]="pais.cod">
+                                    {{ pais.nombre }}
+                                </ng-option>
+                            }
+                        </ng-select>
+                    }
                 </div>
                 <div class="form-group col-12 col-md-6">
                     <label for="direccion">Dirección:</label>
@@ -338,12 +469,17 @@
                     <label for="telefono">Teléfono:</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="cliente.telefono">
                 </div>
-            </div>
+                </div>
+            }
             <div class="row">
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                        <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
+                        @if (!saving) {
+                            <span>Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        }
+                        @if (saving) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>
@@ -403,8 +539,12 @@
             <div class="row">
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                        <span *ngIf="!saving">Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
+                        @if (!saving) {
+                            <span>Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        }
+                        @if (saving) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

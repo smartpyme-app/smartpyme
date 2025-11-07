@@ -15,11 +15,15 @@
                         <img src="/assets/icons/search.png" class="icon me-2">
                         <form class="d-flex buscador" name="form" autocomplete="off">
                             <input type="search" name="search" [formControl]="searchControl" class="form-control border-0 bg-transparent" id="search" placeholder="Buscar" >
-                            <ul *ngIf="searchControl.value?.length > 0" style="margin-left: -40px;" class="list-group opciones">
-                              <a routerLink="{{item.url}}" (click)="items = []" class="list-group-item d-flex justify-content-between" *ngFor=" let item of items">
-                                {{ item.nombre }} <small class="badge bg-primary">{{ item.tipo }}</small>
-                              </a>
-                            </ul>
+                            @if (searchControl.value?.length > 0) {
+                                <ul style="margin-left: -40px;" class="list-group opciones">
+                                    @for (item of items; track item.id || item.url) {
+                                        <a routerLink="{{item.url}}" (click)="items = []" class="list-group-item d-flex justify-content-between">
+                                            {{ item.nombre }} <small class="badge bg-primary">{{ item.tipo }}</small>
+                                        </a>
+                                    }
+                                </ul>
+                            }
                         </form>
                     </div>
                 </li>
@@ -33,139 +37,232 @@
                     <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
                 </a>
             </li> -->
-            <li *ngIf="apiService.validateRole('admin', true) || apiService.validateRole('super_admin', true) ||  apiService.validateRole('usuario_contador', true) && apiService.hasPermission('inteligencia_negocios.ver')" tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-              <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
-                  <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
-              </a>
-          </li>
-            <li class="mb-1" *ngIf="apiService.hasPermission('productos.ver')">
-                <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
-                  <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
-                </button>
-                <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('productos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a  [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
-                    <li *ngIf="apiService.hasPermission('productos.bodegas.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
-                    <li *ngIf="apiService.hasPermission('productos.categorias.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
-                    <li *ngIf="apiService.hasPermission('productos.campos_personalizados.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
-                    <li *ngIf="usuario.empresa.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
-                  </ul>
-                </div>
-            </li>
-            <li *ngIf="apiService.hasPermission('servicios.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/tool.png" class="icon me-2">Servicios
-                </a>
-            </li>
-            <li *ngIf="apiService.hasPermission('ventas.ver')" class="mb-1">
-                <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
-                    <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
-                </button>
-                <div [collapse]="ventasIsCollapsed" [isAnimated]="true" id="ventas">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('ventas.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                    <li *ngIf="apiService.hasPermission('ventas.cotizaciones.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
-                    <li *ngIf="usuario.empresa.licencia" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/solicitudes-compra']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/shopping-cart.png" class="icon me-2">Solicitudes</a></li>
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li> -->
-                    <li *ngIf="apiService.hasPermission('ventas.clientes.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
-                    <li *ngIf="apiService.hasPermission('ventas.canales_venta.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
-                    <li *ngIf="apiService.hasPermission('ventas.formas_pago.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
-                    <li *ngIf="usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
-                    <li *ngIf="apiService.hasPermission('ventas.ordenes_produccion.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
-                  </ul>
-
-                </div>
-             </li>
-            <li class="mb-1" *ngIf="apiService.hasPermission('compras.ver')">
-                <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/log-in.png" class="icon me-2">Compras
-                </button>
-                <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('compras.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                    <li *ngIf="apiService.hasPermission('compras.ordenes_compra.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Órdenes de compra</a></li>
-                    <li *ngIf="apiService.hasPermission('compras.proveedores.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
-                    <li *ngIf="apiService.hasPermission('compras.retaceo.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/retaceos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book-open.png" class="icon me-2">Retaceo</a></li>
-                  </ul>
-                </div>
-            </li>
-            <li class="mb-1" *ngIf="apiService.hasPermission('gastos.ver')">
-                <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
-                </button>
-                <div [collapse]="gastosIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('gastos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
-                    <li *ngIf="apiService.hasPermission('gastos.categorias.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
-                    <li *ngIf="apiService.hasPermission('gastos.departamentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
-                  </ul>
-                </div>
-            </li>
+            @if (apiService.validateRole('admin', true) || apiService.validateRole('super_admin', true) ||  apiService.validateRole('usuario_contador', true) && apiService.hasPermission('inteligencia_negocios.ver')) {
+                <li tourAnchor="tour.reportes" id="tour.reportes" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                    <a [routerLink]="['/reportes']" tooltip="Inteligencia de negocios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 fw-bold">
+                        <img src="/assets/icons/pie-chart.png" class="icon me-2">Inteligencia de Negocios
+                    </a>
+                </li>
+            }
+            @if (apiService.hasPermission('productos.ver')) {
+                <li class="mb-1">
+                    <button tourAnchor="tour.productos" id="tour.productos" (click)="toggleProductos()" tooltip="Productos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!productosIsCollapsed" aria-controls="productos">
+                        <img src="/assets/icons/briefcase.png" class="icon me-2">Productos
+                    </button>
+                    <div [collapse]="productosIsCollapsed" [isAnimated]="true" id="productos">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('productos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a  [routerLink]="['/productos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Inventario</a></li>
+                            }
+                            @if (apiService.hasPermission('productos.bodegas.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bodegas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/box.png" class="icon me-2">Bodegas</a></li>
+                            }
+                            @if (apiService.hasPermission('productos.categorias.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
+                            }
+                            @if (apiService.hasPermission('productos.campos_personalizados.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
+                            }
+                            @if (usuario.empresa.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/paquetes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/package.png" class="icon me-2">Paquetes</a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
+            @if (apiService.hasPermission('servicios.ver')) {
+                <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                    <a [routerLink]="['/servicios']" tooltip="Servicios" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                        <img src="/assets/icons/tool.png" class="icon me-2">Servicios
+                    </a>
+                </li>
+            }
+            @if (apiService.hasPermission('ventas.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleVentas()" tooltip="Ventas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!ventasIsCollapsed" aria-controls="ventas">
+                        <img src="/assets/icons/trending-up.png" class="icon me-2">Ventas
+                    </button>
+                    <div [collapse]="ventasIsCollapsed" [isAnimated]="true" id="ventas">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('ventas.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ventas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                            }
+                            @if (apiService.hasPermission('ventas.cotizaciones.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cotizaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Cotizaciones</a></li>
+                            }
+                            @if (usuario.empresa.licencia) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/solicitudes-compra']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/shopping-cart.png" class="icon me-2">Solicitudes</a></li>
+                            }
+                            <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/promociones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/zap.png" class="icon me-2">Promociones</a></li> -->
+                            @if (apiService.hasPermission('ventas.clientes.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/clientes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/users.png" class="icon me-2">Clientes</a></li>
+                            }
+                            @if (apiService.hasPermission('ventas.canales_venta.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
+                            }
+                            @if (apiService.hasPermission('ventas.formas_pago.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
+                            }
+                            @if (usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
+                            }
+                            @if (apiService.hasPermission('ventas.ordenes_produccion.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
+            @if (apiService.hasPermission('compras.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleCompras()" tooltip="Compras" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!comprasIsCollapsed" aria-controls="collapseBasic">
+                        <img src="/assets/icons/log-in.png" class="icon me-2">Compras
+                    </button>
+                    <div [collapse]="comprasIsCollapsed" [isAnimated]="true">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('compras.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                            }
+                            @if (apiService.hasPermission('compras.ordenes_compra.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes-de-compras']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tag.png" class="icon me-2">Órdenes de compra</a></li>
+                            }
+                            @if (apiService.hasPermission('compras.proveedores.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
+                            }
+                            @if (apiService.hasPermission('compras.retaceo.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/retaceos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book-open.png" class="icon me-2">Retaceo</a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
+            @if (apiService.hasPermission('gastos.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleGastos()" tooltip="Gastos" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!gastosIsCollapsed" aria-controls="collapseBasic">
+                        <img src="/assets/icons/log-out.png" class="icon me-2">Gastos
+                    </button>
+                    <div [collapse]="gastosIsCollapsed" [isAnimated]="true">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('gastos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/arrow-right.png" class="icon me-2">Registros</a></li>
+                            }
+                            @if (apiService.hasPermission('gastos.categorias.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
+                            }
+                            @if (apiService.hasPermission('gastos.departamentos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
             <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
             </li>
-            <li *ngIf="usuario.empresa.modulo_citas && apiService.hasPermission('citas.ver')"  class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
-                <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
-                    <img src="/assets/icons/calendar.png" class="icon me-2">Citas
-                </a>
-            </li>
-            <li class="mb-1" *ngIf="apiService.hasPermission('finanzas.ver')">
-                <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/dollar-sign.png" class="icon me-2">Finanzas
-                </button>
-                <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('finanzas.bancos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.documentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.libro_iva.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.presupuestos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.documentos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.impuestos.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
-                    <li *ngIf="apiService.hasPermission('finanzas.cierre_caja.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
-                    <li *ngIf="apiService.hasPermission('ventas.formas_pago.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
-                  </ul>
-                </div>
-            </li>
-          <li class="mb-1" *ngIf="apiService.hasPermission('planilla.ver')">
-            <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
-              <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
-            </button>
-            <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
-              <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li *ngIf="apiService.hasPermission('planilla.empleados.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
-                <li *ngIf="apiService.hasPermission('planilla.registros.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
-                <li *ngIf="apiService.hasPermission('planilla.configuracion.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
-                <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
-              </ul>
-            </div>
-          </li>
-            <li class="mb-1" *ngIf="apiService.hasPermission('contabilidad.ver')">
-                <button (click)="toggleContabilidad()" tooltip="Contabilidad" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed" aria-controls="collapseBasic">
-                    <img src="/assets/icons/edit.png" class="icon me-2">Contabilidad
-                </button>
-                <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
-                  <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li *ngIf="apiService.hasPermission('contabilidad.partidas.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/partidas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/columns.png" class="icon me-2">Partidas</a></li>
-                    <li *ngIf="apiService.hasPermission('contabilidad.catalogo_cuentas.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/catalogo/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/list.png" class="icon me-2">Catálogo de cuentas</a></li>
-                    <li *ngIf="apiService.hasPermission('contabilidad.configuracion.ver')" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuraciones</a></li>
-                    <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-diario']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Diario</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-mayor']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Mayor</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-auxiliar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Auxiliar</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/estado-de-resultados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Estado de Resultados</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-de-comprobacion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance de comprobación</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-general']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance general</a></li> -->
-                  </ul>
-                </div>
-            </li>
+            @if (usuario.empresa.modulo_citas && apiService.hasPermission('citas.ver')) {
+                <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+                    <a [routerLink]="['/citas']" tooltip="Citas" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1">
+                        <img src="/assets/icons/calendar.png" class="icon me-2">Citas
+                    </a>
+                </li>
+            }
+            @if (apiService.hasPermission('finanzas.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleFinanzas()" tooltip="Finanzas" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!finanzasIsCollapsed" aria-controls="collapseBasic">
+                        <img src="/assets/icons/dollar-sign.png" class="icon me-2">Finanzas
+                    </button>
+                    <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('finanzas.bancos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.documentos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.libro_iva.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.presupuestos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/presupuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coin-stack.png" class="icon me-2">Presupuestos</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.documentos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/file-text.png" class="icon me-2">Documentos</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.impuestos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/impuestos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/filters-lines.png" class="icon me-2">Impuestos</a></li>
+                            }
+                            @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/inbox.png" class="icon me-2">Cierre de caja</a></li>
+                            }
+                            @if (apiService.hasPermission('ventas.formas_pago.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
+                            }
+                        </ul>
+                    </div>
+                </li>
+            }
+          @if (apiService.hasPermission('planilla.ver')) {
+              <li class="mb-1">
+                  <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
+                      <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
+                  </button>
+                  <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
+                      <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                          @if (apiService.hasPermission('planilla.empleados.ver')) {
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
+                          }
+                          @if (apiService.hasPermission('planilla.registros.ver')) {
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
+                          }
+                          @if (apiService.hasPermission('planilla.configuracion.ver')) {
+                              <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
+                          }
+                          <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->
+                      </ul>
+                  </div>
+              </li>
+          }
+            @if (apiService.hasPermission('contabilidad.ver')) {
+                <li class="mb-1">
+                    <button (click)="toggleContabilidad()" tooltip="Contabilidad" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed" aria-controls="collapseBasic">
+                        <img src="/assets/icons/edit.png" class="icon me-2">Contabilidad
+                    </button>
+                    <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
+                        <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('contabilidad.partidas.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/partidas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/columns.png" class="icon me-2">Partidas</a></li>
+                            }
+                            @if (apiService.hasPermission('contabilidad.catalogo_cuentas.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/catalogo/cuentas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/list.png" class="icon me-2">Catálogo de cuentas</a></li>
+                            }
+                            @if (apiService.hasPermission('contabilidad.configuracion.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/configuracion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuraciones</a></li>
+                            }
+                            <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-diario']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Diario</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-mayor']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Mayor</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/libro-auxiliar']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Libro Auxiliar</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/estado-de-resultados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Estado de Resultados</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-de-comprobacion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance de comprobación</a></li>
+                            <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/balance-general']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/align-justify.png" class="icon me-2">Balance general</a></li> -->
+                        </ul>
+                    </div>
+                </li>
+            }
         </ul>
     </div>
     <div style="min-height: 20vh;">
         <ul class="list-unstyled ps-0 border-top pt-2">
             <!-- <li tourAnchor="tour.crear_venta" id="tour.crear_venta" *ngIf="apiService.auth_user().tipo != 'Contador' && apiService.hasPermission('ventas.crear')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li> -->
-            <li tourAnchor="tour.crear_venta" id="tour.crear_venta" *ngIf="apiService.validateRole('usuario_contador', false) && apiService.hasPermission('ventas.crear')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
+            @if (apiService.validateRole('usuario_contador', false) && apiService.hasPermission('ventas.crear')) {
+                <li tourAnchor="tour.crear_venta" id="tour.crear_venta" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/venta/crear']" tooltip="Crear venta" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-primary"><img src="/assets/icons/plus-stroke.png" class="icon me-2">Crear venta</a></li>
+            }
 
-            <li *ngIf="apiService.hasPermission('finanzas.cierre_caja.ver')" tourAnchor="tour.cierre_caja" id="tour.cierre_caja" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>
+            @if (apiService.hasPermission('finanzas.cierre_caja.ver')) {
+                <li tourAnchor="tour.cierre_caja" id="tour.cierre_caja" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/cierre-de-caja']" tooltip="Ver cierre de caja" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1 text-secondary"><img src="/assets/icons/inbox-stroke.png" class="icon me-2">Cierre de caja</a></li>
+            }
             <!-- <li tourAnchor="tour.notificaciones" id="tour.notificaciones" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/notificaciones']" tooltip="Notificaciones" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center justify-content-between text-decoration-none py-1 w-100"><span><img src="/assets/icons/bell.png" class="icon me-2">Notificaciones</span><span class="badge bg-primary" *ngIf="notificaciones.total">{{ notificaciones.total ? notificaciones.total : 0 }}</span></a> </li> -->
-            <li *ngIf="apiService.hasPermission('ayuda.ver')" class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
+            @if (apiService.hasPermission('ayuda.ver')) {
+                <li class="mb-1" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ayuda']" tooltip="Ayuda" [adaptivePosition]="false" placement="right" class="btn d-inline-flex align-items-center text-decoration-none py-1"><img src="/assets/icons/life-buoy.png" class="icon me-2">Ayuda</a></li>
+            }
             <!-- <li *ngIf="apiService.auth_user().tipo != 'Contador'" class="mb-1" tourAnchor="tour.configuracion" id="tour.configuracion">
                 <button (click)="togglePreferencias()" tooltip="Configuraciones" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!preferenciasIsCollapsed" aria-controls="collapseBasic">
                   <img src="/assets/icons/sliders.png" class="icon me-2">Configuraciones

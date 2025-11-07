@@ -12,17 +12,21 @@
                     <label for="nombre">Título</label>
                     <input type="text" class="form-control" placeholder="Escribe aquí" name="titulo" [(ngModel)]="presupuesto.titulo">
                 </div>
-                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-6">
-                    <label for="">Proyecto</label>
-                    <div class="input-group flex-nowrap">
-                        <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="presupuesto.id_proyecto" class="form-select p-0">
-                            <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                                {{ proyecto.nombre }}
-                            </ng-option>
-                        </ng-select>
-                        <app-crear-proyecto [id_proyecto]="presupuesto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+                @if (apiService.auth_user().empresa.modulo_proyectos) {
+                    <div class="form-group col-md-12 col-lg-6">
+                        <label for="">Proyecto</label>
+                        <div class="input-group flex-nowrap">
+                            <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="presupuesto.id_proyecto" class="form-select p-0">
+                                @for (proyecto of proyectos; track proyecto.id) {
+                                    <ng-option [value]="proyecto.id">
+                                        {{ proyecto.nombre }}
+                                    </ng-option>
+                                }
+                            </ng-select>
+                            <app-crear-proyecto [id_proyecto]="presupuesto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+                        </div>
                     </div>
-                </div>
+                }
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="fecha_inicio">Desde</label>
                     <input type="date" class="form-control" placeholder="Escribe aquí" name="fecha_inicio" [(ngModel)]="presupuesto.fecha_inicio">
@@ -73,8 +77,9 @@
                     </div>
                 </div>
 
-                <div class="row" *ngIf="presupuesto.detalle">
-                    <h6 class="col-12 pb-2 my-3">Calcule el total de egresos estimados (por mes) rellenando las siguientes categorías</h6>
+                @if (presupuesto.detalle) {
+                    <div class="row">
+                        <h6 class="col-12 pb-2 my-3">Calcule el total de egresos estimados (por mes) rellenando las siguientes categorías</h6>
                     
                     <div class="form-group col-6 col-md-4 col-lg-3">
                         <label>Alquiler:</label>
@@ -181,14 +186,19 @@
                             <input (keyup)="sumEgresos()" (change)="sumEgresos()" type="number" class="form-control" placeholder="Escribe aquí" name="gastos_administrativos" [(ngModel)]="presupuesto.gastos_administrativos">
                         </div>
                     </div>
-                </div>
+                    </div>
+                }
                 
                 
                             
                 <div class="form-group col-md-12 mt-3">
                     <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                        <span *ngIf="!saving">Guardar presupuesto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                        <span *ngIf="saving">Guardando...</span>
+                        @if (!saving) {
+                            <span>Guardar presupuesto <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                        }
+                        @if (saving) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

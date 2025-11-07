@@ -9,13 +9,14 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-inventario-salidas',
     templateUrl: './inventario-salidas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
 export class InventarioSalidasComponent implements OnInit {
@@ -214,6 +215,22 @@ export class InventarioSalidasComponent implements OnInit {
                 );
             }
         });
+    }
+
+    /**
+     * Verifica si el usuario puede ver las opciones de inventario
+     * Oculta ciertas opciones para Supervisores de la empresa 324
+     */
+    public puedeVerOpcionesInventario(): boolean {
+        const user = this.apiService.auth_user();
+        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
+    }
+
+    /**
+     * Verifica si el usuario puede crear salidas
+     */
+    public puedeCrearSalida(): boolean {
+        return this.apiService.canCreate() && this.puedeVerOpcionesInventario();
     }
 
 }

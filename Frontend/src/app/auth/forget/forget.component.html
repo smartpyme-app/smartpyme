@@ -22,8 +22,12 @@
                             
                             <div class="d-grid gap-1">
                                 <button type="submit" [disabled]="loading && f.form.valid" class="btn btn-primary d-block">
-                                    <span *ngIf="!loading">Recuperar contraseña</span>
-                                    <span *ngIf="loading">Enviando...</span>
+                                    @if (!loading) {
+                                        <span>Recuperar contraseña</span>
+                                    }
+                                    @if (loading) {
+                                        <span>Enviando...</span>
+                                    }
                                 </button>
                             </div>
                             <p class="mt-3 d-flex justify-content-center align-items-center">¿No recibiste un correo? <a (click)="submit()" class="btn btn-link text-decoration-none py-0">Enviar de nuevo</a></p>

@@ -37,8 +37,12 @@
                             </div>
                             <div class="d-grid gap-1">
                                 <button type="submit" [disabled]="loading" class="btn btn-primary d-block">
-                                    <span *ngIf="!loading">Iniciar sesión</span>
-                                    <span *ngIf="loading">Verificando...</span>
+                                    @if (!loading) {
+                                        <span>Iniciar sesión</span>
+                                    }
+                                    @if (loading) {
+                                        <span>Verificando...</span>
+                                    }
                                 </button>
                             </div>
                         </form>

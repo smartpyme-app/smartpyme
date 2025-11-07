@@ -8,9 +8,11 @@
             <div class="col-md-6 col-lg-3">
                 <select [(ngModel)]="filtro.id_sucursal" (change)="onFiltrar()"  class="float-end form-select bg-default w-100" name="filtro.id_sucursal">
                     <option value="">Sucursal</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
         </div>
@@ -23,7 +25,9 @@
         <a class="btn mx-2 tcla-F7" tooltip="Semana (F7)" [ngClass]="{'btn-primary': filtro.time == 'week', 'btn-default': filtro.time != 'week' }" (click)="setTime('week')">Semana</a>
         <a class="btn mx-2 tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtro.time == 'month', 'btn-default': filtro.time != 'month' }" (click)="setTime('month')">Mes</a>
         <!-- <a *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn mx-2 tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a> -->
-        <a *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)" class="btn mx-2 tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
+        @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {
+            <a class="btn mx-2 tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtro.time == 'year', 'btn-default': filtro.time != 'year' }" (click)="setTime('year')">Año</a>
+        }
 
     </div>
     <div class="col-2 d-flex justify-content-end">
@@ -69,16 +73,22 @@
                 <label for="filtro.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtro.id_sucursal" class="form-select" name="filtro.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [ngValue]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

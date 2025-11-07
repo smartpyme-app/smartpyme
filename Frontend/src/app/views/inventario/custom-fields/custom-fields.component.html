@@ -1,30 +1,33 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading mb-0">Campos Personalizados</h2>
-    <button 
-       *ngIf="apiService.canCreateTest('productos.campos_personalizados.crear')"
+    @if (apiService.canCreateTest('productos.campos_personalizados.crear')) {
+        <button 
             (click)="openModal(modalField, {})"
             tooltip="Crear campo"
             class="btn btn-primary">
-        <i class="fa fa-plus me-2"></i>Añadir campo
-    </button>
+            <i class="fa fa-plus me-2"></i>Añadir campo
+        </button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="customFields?.total">
-                Mostrando 
-                <select name="paginate" 
-                        class="form-select w-auto" 
-                        (change)="filtrarCampos()" 
-                        [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                de {{ customFields?.total }} registros
-            </span>
+            @if (customFields?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="paginate" 
+                            class="form-select w-auto" 
+                            (change)="filtrarCampos()" 
+                            [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    de {{ customFields?.total }} registros
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -60,19 +63,24 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngIf="loading">
-                    <td colspan="6" class="text-center py-4">
-                        <div class="spinner-border text-primary"></div>
-                    </td>
-                </tr>
+                @if (loading) {
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="spinner-border text-primary"></div>
+                        </td>
+                    </tr>
+                }
 
-                <tr *ngIf="!loading && customFields?.data?.length === 0">
-                    <td colspan="6" class="text-center py-4">
-                        <span class="badge bg-primary">No hay campos personalizados registrados</span>
-                    </td>
-                </tr>
+                @if (!loading && customFields?.data?.length === 0) {
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <span class="badge bg-primary">No hay campos personalizados registrados</span>
+                        </td>
+                    </tr>
+                }
 
-                <tr *ngFor="let field of customFields?.data">
+                @for (field of customFields?.data; track field.id) {
+                    <tr>
                     <td>{{ field.name }}</td>
                     <td class="text-center">
                         <span class="badge"
@@ -97,28 +105,32 @@
                         </span>
                     </td>
                     <td class="text-center">
-                        <button *ngIf="field.field_type === 'select'"
-                                class="btn btn-link"
-                                [popover]="valoresTemplate"
-                                [outsideClick]="true"
-                                tooltip="Ver valores">
-                            <span class="badge bg-light text-dark">
-                                {{ field.values?.length || 0 }} valores
-                            </span>
-                        </button>
-                        <ng-template #valoresTemplate>
-                            <div class="p-3">
-                                <h6 class="border-bottom pb-2 mb-3">Valores disponibles</h6>
-                                <div class="d-flex flex-column gap-2">
-                                    <span *ngFor="let value of field.values"
-                                          class="badge"
-                                          [ngClass]="value.in_use ? 'bg-light text-muted' : 'bg-light text-dark'">
-                                        {{ value.value }}
-                                        <small *ngIf="value.in_use">(en uso)</small>
-                                    </span>
+                        @if (field.field_type === 'select') {
+                            <button class="btn btn-link"
+                                    [popover]="valoresTemplate"
+                                    [outsideClick]="true"
+                                    tooltip="Ver valores">
+                                <span class="badge bg-light text-dark">
+                                    {{ field.values?.length || 0 }} valores
+                                </span>
+                            </button>
+                            <ng-template #valoresTemplate>
+                                <div class="p-3">
+                                    <h6 class="border-bottom pb-2 mb-3">Valores disponibles</h6>
+                                    <div class="d-flex flex-column gap-2">
+                                        @for (value of field.values; track value.id || value.temp_id) {
+                                            <span class="badge"
+                                                  [ngClass]="value.in_use ? 'bg-light text-muted' : 'bg-light text-dark'">
+                                                {{ value.value }}
+                                                @if (value.in_use) {
+                                                    <small>(en uso)</small>
+                                                }
+                                            </span>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                        </ng-template>
+                            </ng-template>
+                        }
                     </td>
                     <td class="text-center">
                         <div class="btn-group">
@@ -134,26 +146,30 @@
                                             (click)="openModal(modalField, field)">
                                         <i class="fa fa-edit me-2"></i> Editar
                                     </button>
-                                    <button *ngIf="!field.in_use"
-                                            class="dropdown-item text-danger"
-                                            (click)="deleteField(field)">
-                                        <i class="fa fa-trash me-2"></i> Eliminar
-                                    </button>
+                                    @if (!field.in_use) {
+                                        <button class="dropdown-item text-danger"
+                                                (click)="deleteField(field)">
+                                            <i class="fa fa-trash me-2"></i> Eliminar
+                                        </button>
+                                    }
                                 </div>
                             </ng-template>
                         </div>
                     </td>
                 </tr>
+                }
             </tbody>
         </table>
     </div>
 
 
-    <div class="mt-4" *ngIf="customFields?.last_page > 1">
-        <app-pagination [items]="customFields"
-                       (setPagination)="setPagination($event)">
-        </app-pagination>
-    </div>
+    @if (customFields && customFields.last_page && customFields.last_page > 1) {
+        <div class="mt-4">
+            <app-pagination [items]="customFields"
+                           (setPagination)="setPagination($event)">
+            </app-pagination>
+        </div>
+    }
 </section>
 
 <ng-template #modalField>
@@ -163,11 +179,13 @@
     </div>
     <div class="modal-body">
 
-        <div class="alert alert-info mb-3" *ngIf="field.in_use">
-            <i class="fas fa-info-circle me-2"></i>
-            Este campo está siendo usado en cotizaciones existentes.
-            Algunas opciones de edición están limitadas.
-        </div>
+        @if (field.in_use) {
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Este campo está siendo usado en cotizaciones existentes.
+                Algunas opciones de edición están limitadas.
+            </div>
+        }
 
         <form (ngSubmit)="onSubmit()">
             <div class="mb-3">
@@ -189,54 +207,61 @@
                     <option value="text">Texto</option>
                     <option value="number">Número</option>
                 </select>
-                <small class="text-muted" *ngIf="field.in_use">
-                    No se puede cambiar el tipo de un campo en uso
-                </small>
+                @if (field.in_use) {
+                    <small class="text-muted">
+                        No se puede cambiar el tipo de un campo en uso
+                    </small>
+                }
             </div>
             <input type="hidden" 
                    [(ngModel)]="field.is_required" 
                    name="is_required" 
                    [value]="true">
 
-            <div class="mb-3" *ngIf="field.field_type === 'select'">
-                <label class="form-label d-flex justify-content-between">
-                    <span>Valores</span>
-                    <small class="text-muted">Agregue las opciones disponibles</small>
-                </label>
-                <div class="input-group mb-2">
-                    <input type="text"
-                           class="form-control"
-                           [(ngModel)]="newValue"
-                           name="newValue"
-                           (keyup.enter)="addValue(newValue)"
-                           placeholder="Agregar nuevo valor...">
-                    <button type="button"
-                            class="btn btn-outline-primary"
-                            [disabled]="!newValue?.trim()"
-                            (click)="addValue(newValue)">
-                        <i class="fa fa-plus me-2"></i>Agregar
-                    </button>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2">
-                    <span *ngFor="let value of field.values"
-                          class="badge p-2"
-                          [ngClass]="value.in_use ? 'bg-light text-muted' : 'bg-light text-dark'">
-                        {{ value.value }}
-                        <button class="btn btn-link btn-sm text-danger p-0 ms-2"
-                                (click)="removeValue(value.id || value.temp_id)"
-                                [disabled]="value.in_use"
-                                [tooltip]="value.in_use ? 'Este valor está en uso' : ''">
-                            <i class="fa fa-times"></i>
+            @if (field.field_type === 'select') {
+                <div class="mb-3">
+                    <label class="form-label d-flex justify-content-between">
+                        <span>Valores</span>
+                        <small class="text-muted">Agregue las opciones disponibles</small>
+                    </label>
+                    <div class="input-group mb-2">
+                        <input type="text"
+                               class="form-control"
+                               [(ngModel)]="newValue"
+                               name="newValue"
+                               (keyup.enter)="addValue(newValue)"
+                               placeholder="Agregar nuevo valor...">
+                        <button type="button"
+                                class="btn btn-outline-primary"
+                                [disabled]="!newValue?.trim()"
+                                (click)="addValue(newValue)">
+                            <i class="fa fa-plus me-2"></i>Agregar
                         </button>
-                    </span>
-                </div>
+                    </div>
 
-                <div class="alert alert-warning mt-2" *ngIf="field.values.length === 0">
-                    <i class="fa fa-exclamation-triangle me-2"></i>
-                    Debe agregar al menos un valor
+                    <div class="d-flex flex-wrap gap-2">
+                        @for (value of field.values; track value.id || value.temp_id) {
+                            <span class="badge p-2"
+                                  [ngClass]="value.in_use ? 'bg-light text-muted' : 'bg-light text-dark'">
+                                {{ value.value }}
+                                <button class="btn btn-link btn-sm text-danger p-0 ms-2"
+                                        (click)="removeValue(value.id || value.temp_id)"
+                                        [disabled]="value.in_use"
+                                        [tooltip]="value.in_use ? 'Este valor está en uso' : ''">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </span>
+                        }
+                    </div>
+
+                    @if (field.values.length === 0) {
+                        <div class="alert alert-warning mt-2">
+                            <i class="fa fa-exclamation-triangle me-2"></i>
+                            Debe agregar al menos un valor
+                        </div>
+                    }
                 </div>
-            </div>
+            }
 
             <div class="d-grid">
                 <button type="submit" 

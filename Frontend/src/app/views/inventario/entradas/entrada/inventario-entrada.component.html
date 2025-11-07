@@ -10,12 +10,16 @@
                 <label for="fecha">Fecha:</label>
                 <input type="date" class="form-control" [(ngModel)]="entrada.fecha" name="fecha">
             </div>
-            <div class="form-group col-md-3" *ngIf="apiService.auth_user().tipo != 'Cajero'">
-                <label for="entrada.id_bodega">Bodega:</label>
-                <select class="form-control form-select" [(ngModel)]="entrada.id_bodega" name="id_bodega">
-                    <option value="{{ bodega.id }}" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
-                </select>
-            </div>
+            @if (apiService.auth_user().tipo != 'Cajero') {
+                <div class="form-group col-md-3">
+                    <label for="entrada.id_bodega">Bodega:</label>
+                    <select class="form-control form-select" [(ngModel)]="entrada.id_bodega" name="id_bodega">
+                        @for (bodega of bodegas; track bodega.id) {
+                            <option value="{{ bodega.id }}">{{ bodega.nombre }}</option>
+                        }
+                    </select>
+                </div>
+            }
             <div class="form-group col-md-6">
                 <label for="concepto">Concepto:</label>
                 <input type="text" class="form-control" [(ngModel)]="entrada.concepto" name="concepto" placeholder="Concepto" required>
@@ -46,17 +50,19 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor=" let detalle of entrada?.detalles, let i=index">
-                                    <td>
-                                        <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
-                                        </a>
-                                    </td>
-                                    <td class="text-center">{{ i + 1 }}</td>
-                                    <td>{{ detalle.nombre_producto }}</td>
-                                    <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
-                                    <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
-                                    <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
-                                </tr>
+                                @for (detalle of entrada?.detalles; track detalle.id_producto || $index) {
+                                    <tr>
+                                        <td>
+                                            <a tooltip="Eliminar" class="btn btn-default" (click)="eliminarDetalle(detalle)"><i class="fa fa-trash"></i>
+                                            </a>
+                                        </td>
+                                        <td class="text-center">{{ $index + 1 }}</td>
+                                        <td>{{ detalle.nombre_producto }}</td>
+                                        <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.cantidad" class="form-control text-center"></td>
+                                        <td class="text-center"><input type="number" (change)="updateDetalle(detalle)" [(ngModel)]="detalle.costo" class="form-control text-center"></td>
+                                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                                    </tr>
+                                }
                             </tbody>
                         </table>
                     </div>
@@ -64,8 +70,12 @@
             </div>
         </div>
         <button (click)="onSubmit()" [disabled]="saving" class="btn btn-primary float-end tcla-F10 mr-2" tooltip="Guardar (F10)">
-            <span *ngIf="!saving">Guardar</span>
-            <span *ngIf="saving">Guardando...</span>
+            @if (!saving) {
+                <span>Guardar</span>
+            }
+            @if (saving) {
+                <span>Guardando...</span>
+            }
         </button>
     </div>
 </div>

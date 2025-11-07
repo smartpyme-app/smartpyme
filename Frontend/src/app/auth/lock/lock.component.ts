@@ -13,7 +13,7 @@ declare let $:any;
     selector: 'app-lock',
     templateUrl: './lock.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, FormsModule],
     
 })
 export class LockComponent implements OnInit {

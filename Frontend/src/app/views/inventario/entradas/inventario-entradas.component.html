@@ -1,21 +1,25 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Entradas de Inventario</h2>
-    <button *ngIf="apiService.canCreate() && !(apiService.auth_user().tipo == 'Supervisor' && apiService.auth_user().id_empresa == 324)" routerLink="/entrada/crear" tooltip="Crear entrada (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir entrada</button>
+    @if (puedeCrearEntrada()) {
+        <button routerLink="/entrada/crear" tooltip="Crear entrada (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir entrada</button>
+    }
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="entradas?.total">
-                Mostrando 
-                <select name="per_page" class="form-select w-auto" (change)="filtrar()" [(ngModel)]="filtros.per_page">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ entradas?.total + ' registros' }}
-            </span>
+            @if (entradas?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="per_page" class="form-select w-auto" (change)="filtrar()" [(ngModel)]="filtros.per_page">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ entradas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar">
@@ -38,16 +42,13 @@
     <div class="d-flex flex-wrap gap-2 mb-3">
         <div class="d-flex gap-2 flex-wrap">
             <button class="btn " routerLinkActive="btn-primary" routerLink="/productos">Productos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes" 
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
-            <button class="tecla-F3 btn" routerLinkActive="btn-primary" tooltip="Actualizar (F5)" (click)="loadAll()" routerLink="/entradas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
+            @if (puedeVerOpcionesInventario()) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
+                <button class="tecla-F3 btn" routerLinkActive="btn-primary" tooltip="Actualizar (F5)" (click)="loadAll()" routerLink="/entradas">Otras Entradas</button>
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            }
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="estado" (change)="filtrar()" [(ngModel)]="filtros.estado" class="form-select p-0 border-0 bg-default">
@@ -75,19 +76,28 @@
                         <th (click)="setOrden('bodega_nombre')" [ngClass]="{'sorted-asc': filtros.orden == 'bodega_nombre' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'bodega_nombre' && filtros.direccion == 'desc'}" class="click">Bodega</th>
                         <th (click)="setOrden('concepto')" [ngClass]="{'sorted-asc': filtros.orden == 'concepto' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'concepto' && filtros.direccion == 'desc'}" class="click">Concepto</th>
                         <th (click)="setOrden('estado')" [ngClass]="{'sorted-asc': filtros.orden == 'estado' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'estado' && filtros.direccion == 'desc'}" class="click">Estado</th>
-                        <th class="text-center" *ngIf="!apiService.isSupervisorLimitado()">Más</th>
+                        @if (!apiService.isSupervisorLimitado()) {
+                            <th class="text-center">Más</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="6" class="text-center" *ngIf="entradas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene entradas registradas</span>
-                        </td>
-                        <td colspan="6" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor="let entrada of entradas?.data">
+                    @if (entradas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <span class="badge bg-primary">No tiene entradas registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (entrada of entradas?.data; track entrada.id) {
+                        <tr>
                         <td>
                             <span tooltip="{{ entrada.created_at | date:'hh:mm:ss a' }}">{{entrada.fecha | date:'dd/MM/yyyy'}}</span>
                         </td>
@@ -99,44 +109,59 @@
                                 {{ entrada.estado || 'Pendiente' }}
                             </span>
                         </td>
-                        <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column">
-                                    <button *ngIf="apiService.auth_user().tipo == 'Administrador' && entrada.estado == 'Pendiente'" type="button" [routerLink]="'/entrada/' + entrada.id" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-edit"></i>Editar
-                                    </button>
-                                    <button type="button" [routerLink]="'/entrada/detalle/' + entrada.id" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-file-alt"></i>Detalles
-                                    </button>
-                                    <button type="button" (click)="reemprimir(entrada)" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-print"></i>Imprimir
-                                    </button>
-                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado != 'Aprobada'" type="button" (click)="setEstado(entrada, 'Aprobada')" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-check"></i>Aprobar
-                                    </button>
-                                    <button *ngIf="(apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado == 'Aprobada'" type="button" (click)="setEstado(entrada, 'Anulada')" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-times"></i>Anular
-                                    </button>
-                                    <button *ngIf="entrada.estado == 'Aprobada'" type="button" (click)="generarPartidaContable(entrada)" class="btn text-start border-0">
-                                        <i class="fa fa-fw fa-calculator"></i>Generar partida contable
-                                    </button>
-                                    <button *ngIf="entrada.estado == 'Pendiente'" type="button" (click)="delete(entrada.id)" class="btn text-start text-danger">
-                                        <i class="fa fa-fw fa-trash"></i>Eliminar
-                                    </button>
-                                </div>
-                            </ng-template>
-                        </td>
+                        @if (!apiService.isSupervisorLimitado()) {
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="d-flex flex-column">
+                                        @if (apiService.auth_user().tipo == 'Administrador' && entrada.estado == 'Pendiente') {
+                                            <button type="button" [routerLink]="'/entrada/' + entrada.id" class="btn text-start border-0">
+                                                <i class="fa fa-fw fa-edit"></i>Editar
+                                            </button>
+                                        }
+                                        <button type="button" [routerLink]="'/entrada/detalle/' + entrada.id" class="btn text-start border-0">
+                                            <i class="fa fa-fw fa-file-alt"></i>Detalles
+                                        </button>
+                                        <button type="button" (click)="reemprimir(entrada)" class="btn text-start border-0">
+                                            <i class="fa fa-fw fa-print"></i>Imprimir
+                                        </button>
+                                        @if ((apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado != 'Aprobada') {
+                                            <button type="button" (click)="setEstado(entrada, 'Aprobada')" class="btn text-start border-0">
+                                                <i class="fa fa-fw fa-check"></i>Aprobar
+                                            </button>
+                                        }
+                                        @if ((apiService.auth_user().tipo == 'Administrador' || apiService.auth_user().tipo == 'Supervisor') && entrada.estado == 'Aprobada') {
+                                            <button type="button" (click)="setEstado(entrada, 'Anulada')" class="btn text-start border-0">
+                                                <i class="fa fa-fw fa-times"></i>Anular
+                                            </button>
+                                        }
+                                        @if (entrada.estado == 'Aprobada') {
+                                            <button type="button" (click)="generarPartidaContable(entrada)" class="btn text-start border-0">
+                                                <i class="fa fa-fw fa-calculator"></i>Generar partida contable
+                                            </button>
+                                        }
+                                        @if (entrada.estado == 'Pendiente') {
+                                            <button type="button" (click)="delete(entrada.id)" class="btn text-start text-danger">
+                                                <i class="fa fa-fw fa-trash"></i>Eliminar
+                                            </button>
+                                        }
+                                    </div>
+                                </ng-template>
+                            </td>
+                        }
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="entradas?.last_page > 1">
-            <app-pagination [items]="entradas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (entradas && entradas.last_page && entradas.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="entradas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -174,9 +199,11 @@
                 <label for="filtros.usuario_id">Usuario:</label>
                 <select [(ngModel)]="filtros.usuario_id" class="form-control form-select" name="filtros.usuario_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                        {{ usuario.nombre }}
-                    </option>
+                    @for (usuario of usuarios; track usuario.id) {
+                        <option [value]="usuario.id">
+                            {{ usuario.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -191,8 +218,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>
@@ -211,8 +242,12 @@
             <div class="d-grid mt-4">
                 <label>Descargar detalle de entradas:</label>
                 <button [disabled]="loading" tooltip="Descargar entradas" (click)="descargar()" class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar entradas</span>
-                    <span *ngIf="loading">Descargando...</span>
+                    @if (!loading) {
+                        <span>Descargar entradas</span>
+                    }
+                    @if (loading) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
         </div>

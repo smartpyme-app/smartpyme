@@ -7,11 +7,13 @@
     </button>
     <button (click)="openFilter(mdocgenerate)" tooltip="Generar reporte" class="btn btn-default"> Generar reporte <img
         src="/assets/icons/download.png" style="height: 16px; width: 16px;"></button>
-    <button *ngIf="apiService.canCreateTest('contabilidad.partidas.crear')" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
+    @if (apiService.canCreateTest('contabilidad.partidas.crear')) {
+      <button routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
             class="btn btn-default bn_mrgn"><i class="fa fa-plus"></i> Añadir partida
       <!-- <button *ngIf="apiService.canCreate()" routerLink="/contabilidad/partida/crear" tooltip="Crear partida (F4)"
               class="btn btn-default"><i class="fa fa-plus"></i> Crear partida -->
-    </button>
+      </button>
+    }
     <button (click)="openReordenarModal(mreordenar)" tooltip="Reordenar correlativos" class="btn btn-default">
       <i class="fa fa-sort-numeric-up"></i> Reordenar
     </button>
@@ -29,9 +31,11 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span class="text-muted" *ngIf="partidas?.total">
-        Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
-      </span>
+      @if (partidas?.total) {
+        <span class="text-muted">
+          Mostrando {{ partidas?.to }} de {{ partidas?.total + ' registros' }}
+        </span>
+      }
     </div>
 
     <div class="col-md-6 mb-3">
@@ -60,7 +64,9 @@
             [class]="filtros.incluir_anuladas ? 'btn btn-primary' : 'btn bg-default'"
             (click)="toggleAnuladas()">
       Anuladas
-      <span class="badge bg-danger text-white" *ngIf="partidas.total_anuladas">{{ partidas.total_anuladas }}</span>
+      @if (partidas.total_anuladas) {
+        <span class="badge bg-danger text-white">{{ partidas.total_anuladas }}</span>
+      }
       </button>
 
       <button class="btn bg-default" routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}"
@@ -110,16 +116,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td colspan="6" class="text-center" *ngIf="partidas?.total < 1 && !loading">
-              <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
-            </td>
-            <td colspan="6" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+          @if (partidas?.total < 1 && !loading) {
+            <tr>
+              <td colspan="6" class="text-center">
+                <span class="badge bg-primary">No tiene un catálogo de partidas registrado</span>
+              </td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="6" class="text-center">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+          }
 
-          <tr *ngFor=" let partida of partidas?.data">
+          @for (partida of partidas?.data; track partida.id || $index) {
+            <tr>
             <td>{{ partida.id }}</td>
             <!-- Fecha -->
             <td>{{ partida.fecha | date:'dd/MM/yyyy' }}</td>
@@ -161,41 +174,51 @@
                     <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                   </a>
                   <!-- <a *ngIf="partida.estado == 'Pendiente' && apiService.canEdit()" -->
-                  <a *ngIf="partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')"
-
-                     (click)="setEstado(partida, 'Aplicada')"
-                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-check"></i> Aplicar
-                  </a>
+                  @if (partida.estado == 'Pendiente' && apiService.canEditTest('contabilidad.partidas.editar')) {
+                    <a
+                       (click)="setEstado(partida, 'Aplicada')"
+                       class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-check"></i> Aplicar
+                    </a>
+                  }
                   <a (click)="imprimirPartida(partida)"
                      class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-print"></i>Imprimir/Descargar
                   </a>
                   <!-- <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEdit()" (click)="setEstado(partida, 'Anulada')" -->
-                  <a *ngIf="partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Anulada')"
-                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-ban"></i> Anular
-                  </a>
-                  <a *ngIf="partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')" (click)="setEstado(partida, 'Aplicada')"
-                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-check"></i> Revertir anulación
-                  </a>
-                  <a *ngIf="partida.estado == 'Cerrada' && apiService.auth_user().tipo == 'Administrador'"
-                     (click)="abrirPartida(partida)"
-                     class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-unlock"></i> Abrir partida
-                  </a>
+                  @if (partida.estado != 'Anulada' && partida.estado != 'Cerrada' && apiService.canEditTest('contabilidad.partidas.editar')) {
+                    <a (click)="setEstado(partida, 'Anulada')"
+                       class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-ban"></i> Anular
+                    </a>
+                  }
+                  @if (partida.estado == 'Anulada' && apiService.canEditTest('contabilidad.partidas.editar')) {
+                    <a (click)="setEstado(partida, 'Aplicada')"
+                       class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-check"></i> Revertir anulación
+                    </a>
+                  }
+                  @if (partida.estado == 'Cerrada' && apiService.auth_user().tipo == 'Administrador') {
+                    <a
+                       (click)="abrirPartida(partida)"
+                       class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-unlock"></i> Abrir partida
+                    </a>
+                  }
                 </div>
               </ng-template>
             </td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
 
-    <div class="col-12" *ngIf="partidas?.last_page > 1">
-      <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
-    </div>
+    @if (partidas?.last_page > 1) {
+      <div class="col-12">
+        <app-pagination [items]="partidas" (setPagination)="setPagination($event)"></app-pagination>
+      </div>
+    }
   </div>
 </section>
 
@@ -246,8 +269,12 @@
 
       <div class="d-grid mt-3">
         <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading">Filtrar</span>
-          <span *ngIf="loading">Filtrando...</span>
+          @if (!loading) {
+            <span>Filtrar</span>
+          }
+          @if (loading) {
+            <span>Filtrando...</span>
+          }
         </button>
       </div>
     </form>
@@ -312,18 +339,22 @@
                   <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
+                    @for (month of months; track month.value || $index) {
+                      <option [value]="month.value">
+                        {{ month.label }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
+                    @for (year of years; track year || $index) {
+                      <option [value]="year">
+                        {{ year }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -338,9 +369,11 @@
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
                   <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
                     <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
+                    @for (cat of catalogo; track cat.id || $index) {
+                      <option [value]="cat.id">
+                        {{cat.nombre}}
+                      </option>
+                    }
                   </select>
                 </div>
               </div>
@@ -353,8 +386,12 @@
                     </small>
                     <button type="submit" [disabled]="!auxForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      <span *ngIf="!saving">Generar Documento</span>
-                      <span *ngIf="saving">Generando...</span>
+                      @if (!saving) {
+                        <span>Generar Documento</span>
+                      }
+                      @if (saving) {
+                        <span>Generando...</span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -372,18 +409,22 @@
                   <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
+                    @for (month of months; track month.value || $index) {
+                      <option [value]="month.value">
+                        {{ month.label }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
+                    @for (year of years; track year || $index) {
+                      <option [value]="year">
+                        {{ year }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -398,9 +439,11 @@
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
                   <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
                     <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
+                    @for (cat of catalogo; track cat.id || $index) {
+                      <option [value]="cat.id">
+                        {{cat.nombre}}
+                      </option>
+                    }
                   </select>
                 </div>
               </div>
@@ -413,8 +456,12 @@
                     </small>
                     <button type="submit" [disabled]="reporteForm.invalid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      <span *ngIf="!saving">Generar Documento</span>
-                      <span *ngIf="saving">Generando...</span>
+                      @if (!saving) {
+                        <span>Generar Documento</span>
+                      }
+                      @if (saving) {
+                        <span>Generando...</span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -432,18 +479,22 @@
                   <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
+                    @for (month of months; track month.value || $index) {
+                      <option [value]="month.value">
+                        {{ month.label }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
+                    @for (year of years; track year || $index) {
+                      <option [value]="year">
+                        {{ year }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -458,9 +509,11 @@
                   <label class="form-label fw-bold">Tipo de cuenta:</label>
                   <select name="tipo_cuenta" class="form-select" [(ngModel)]="reporte.tipo_cuenta">
                     <option value="all" selected>Todas las cuentas</option>
-                    <option *ngFor="let cat of catalogo" [value]="cat.id">
-                      {{cat.nombre}}
-                    </option>
+                    @for (cat of catalogo; track cat.id || $index) {
+                      <option [value]="cat.id">
+                        {{cat.nombre}}
+                      </option>
+                    }
                   </select>
                 </div>
               </div>
@@ -473,8 +526,12 @@
                     </small>
                     <button type="submit" [disabled]="!balanceForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      <span *ngIf="!saving">Generar Documento</span>
-                      <span *ngIf="saving">Generando...</span>
+                      @if (!saving) {
+                        <span>Generar Documento</span>
+                      }
+                      @if (saving) {
+                        <span>Generando...</span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -492,18 +549,22 @@
                   <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
+                    @for (month of months; track month.value || $index) {
+                      <option [value]="month.value">
+                        {{ month.label }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
+                    @for (year of years; track year || $index) {
+                      <option [value]="year">
+                        {{ year }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -534,8 +595,12 @@
                     </small>
                     <button type="submit" [disabled]="!balanceGeneralForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      <span *ngIf="!saving">Generar Documento</span>
-                      <span *ngIf="saving">Generando...</span>
+                      @if (!saving) {
+                        <span>Generar Documento</span>
+                      }
+                      @if (saving) {
+                        <span>Generando...</span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -553,18 +618,22 @@
                   <label class="form-label fw-bold">Mes:</label>
                   <select class="form-select" name="month" required [(ngModel)]="reporte.month">
                     <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
+                    @for (month of months; track month.value || $index) {
+                      <option [value]="month.value">
+                        {{ month.label }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Año:</label>
                   <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
                     <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
+                    @for (year of years; track year || $index) {
+                      <option [value]="year">
+                        {{ year }}
+                      </option>
+                    }
                   </select>
                 </div>
                 <div class="col-md-6">
@@ -595,8 +664,12 @@
                     </small>
                     <button type="submit" [disabled]="!estadoResultadosForm.form.valid || saving" class="btn btn-primary">
                       <i class="fas fa-download me-2"></i>
-                      <span *ngIf="!saving">Generar Documento</span>
-                      <span *ngIf="saving">Generando...</span>
+                      @if (!saving) {
+                        <span>Generar Documento</span>
+                      }
+                      @if (saving) {
+                        <span>Generando...</span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -628,13 +701,17 @@
         <div class="form-group col-sm-6">
           <label for="anio">Año:</label>
           <select class="form-select" name="anio" [(ngModel)]="reordenamiento.anio" [disabled]="saving">
-            <option *ngFor="let year of years" [value]="year">{{year}}</option>
+            @for (year of years; track year || $index) {
+              <option [value]="year">{{year}}</option>
+            }
           </select>
         </div>
         <div class="form-group col-sm-6">
           <label for="mes">Mes:</label>
           <select class="form-select" name="mes" [(ngModel)]="reordenamiento.mes" [disabled]="saving">
-            <option *ngFor="let month of months" [value]="month.value">{{month.label}}</option>
+            @for (month of months; track month.value || $index) {
+              <option [value]="month.value">{{month.label}}</option>
+            }
           </select>
         </div>
         <div class="form-group col-sm-12">
@@ -654,25 +731,33 @@
           Cancelar
         </button>
         <button type="submit" [disabled]="saving" class="btn btn-sm btn-default px-2 py-1">
-          <span *ngIf="!saving">
-            <i class="fa fa-sort-numeric-up me-1"></i>
-            Reordenar Correlativos
-          </span>
-          <span *ngIf="saving">
-            <i class="fa fa-spinner fa-spin me-1"></i>
-            Reordenando...
-          </span>
+          @if (!saving) {
+            <span>
+              <i class="fa fa-sort-numeric-up me-1"></i>
+              Reordenar Correlativos
+            </span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fa fa-spinner fa-spin me-1"></i>
+              Reordenando...
+            </span>
+          }
         </button>
         <button type="button" (click)="reordenarTodosLosCorrelativos()" [disabled]="saving"
           class="btn btn-sm btn-default px-2 py-1">
-          <span *ngIf="!saving">
-            <i class="fa fa-database me-1"></i>
-            Reordenar todos
-          </span>
-          <span *ngIf="saving">
-            <i class="fa fa-spinner fa-spin me-1"></i>
-            Procesando...
-          </span>
+          @if (!saving) {
+            <span>
+              <i class="fa fa-database me-1"></i>
+              Reordenar todos
+            </span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fa fa-spinner fa-spin me-1"></i>
+              Procesando...
+            </span>
+          }
         </button>
       </div>
     </form>

@@ -7,6 +7,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
     selector: 'app-cheques',
     templateUrl: './cheques.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
     
 })
 

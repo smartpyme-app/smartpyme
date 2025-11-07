@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 declare var $:any;
 
@@ -14,8 +15,8 @@ declare var $:any;
     selector: 'app-compras-recurrentes',
     templateUrl: './compras-recurrentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe],
-    
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PaginationComponent],
+
 })
 
 export class ComprasRecurrentesComponent implements OnInit {

@@ -11,16 +11,22 @@
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="compra.fecha" name="fecha" id="fecha" required>
             </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.tipo_documento">
+            @if (devolucion.tipo_documento) {
+              <div class="form-group col-md-4 col-lg-2">
                 <label for="tipo_documento">Documento</label>
                 <select name="tipo_documento" [(ngModel)]="devolucion.tipo_documento" class="form-select">
-                    <option value="{{documento.nombre}}" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                  @for (documento of documentos; track documento.nombre || $index) {
+                    <option value="{{documento.nombre}}">{{ documento.nombre }}</option>
+                  }
                 </select>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.tipo_documento">
+              </div>
+            }
+            @if (devolucion.tipo_documento) {
+              <div class="form-group col-md-4 col-lg-2">
                 <label for="referencia">Correlativo</label>
                 <input type="number" class="form-control" [(ngModel)]="devolucion.referencia" name="referencia" id="referencia">
-            </div>
+              </div>
+            }
             <div class="form-group col-md-4 col-lg-2">
                 <label for="tipo">Tipo</label>
                 <select name="tipo" [(ngModel)]="devolucion.tipo" class="form-select" required>
@@ -126,8 +132,12 @@
         <div class="row mt-4">
             <div class="col-md-12">
                 <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
+                    @if (!saving) {
+                      <span>Guardar</span>
+                    }
+                    @if (saving) {
+                      <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

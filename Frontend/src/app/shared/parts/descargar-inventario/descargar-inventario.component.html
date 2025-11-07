@@ -1,6 +1,10 @@
 <button type="button" class="btn btn-primary w-100" (click)="openModal(mfilter)">
-    <span *ngIf="!downloading">Descargar inventario</span>
-    <span *ngIf="downloading">Descargando...</span>
+    @if (!downloading) {
+      <span>Descargar inventario</span>
+    }
+    @if (downloading) {
+      <span>Descargando...</span>
+    }
 </button>
 
 <ng-template #mfilter>
@@ -23,15 +27,21 @@
                 <label for="filtros.sucursal_id">Bodega:</label>
                 <select [(ngModel)]="filtros.id_bodega" class="form-select" name="filtros.id_bodega">
                     <option value="">Todas</option>
-                    <option [value]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                    @for (bodega of bodegas; track bodega.id) {
+                      <option [value]="bodega.id">{{ bodega.nombre }}</option>
+                    }
                 </select>
             </div>            
         </div>
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="downloading" class="btn btn-primary">
-                <span *ngIf="!downloading">Descargar</span>
-                <span *ngIf="downloading">Descargando...</span>
+                @if (!downloading) {
+                  <span>Descargar</span>
+                }
+                @if (downloading) {
+                  <span>Descargando...</span>
+                }
             </button>
         </div>
     </form>

@@ -1,17 +1,23 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h4 class="page-heading">
         Áreas de empresa
-        <span *ngIf="departamentoActual" class="fw-bold">
+        @if (departamentoActual) {
+          <span class="fw-bold">
             - {{ departamentoActual.nombre }}
-        </span>
+          </span>
+        }
     </h4>
     <div class="d-flex gap-2">
-        <button *ngIf="apiService.canCreate()" (click)="openModal(marea)" class="btn btn-default tcla-F4 d-sm-block d-md-none">
+        @if (apiService.canCreate()) {
+          <button (click)="openModal(marea)" class="btn btn-default tcla-F4 d-sm-block d-md-none">
             <i class="fa fa-plus"></i>Añadir
-        </button>
-        <button *ngIf="apiService.canCreate()" (click)="openModal(marea)" tooltip="Crear área de empresa (F4)" class="btn btn-default tcla-F4 d-none d-sm-block">
+          </button>
+        }
+        @if (apiService.canCreate()) {
+          <button (click)="openModal(marea)" tooltip="Crear área de empresa (F4)" class="btn btn-default tcla-F4 d-none d-sm-block">
             <i class="fa fa-plus"></i> Añadir área de empresa 
-        </button>
+          </button>
+        }
         <button class="btn btn-light text-danger" routerLink="/departamentos-empresa"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
     
@@ -20,7 +26,8 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="areas?.total">
+            @if (areas?.total) {
+              <span class="text-muted d-flex align-items-center gap-2">
                 Mostrando 
                 <select name="paginate" class="form-select w-auto" (change)="filtrarArea()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
@@ -29,7 +36,8 @@
                     <option value="100">100</option>
                 </select>
                  de {{ areas?.total + ' registros' }}
-            </span>
+              </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -78,16 +86,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="text-center" *ngIf="areas?.total < 1 && !loading">
+                    @if (areas?.total < 1 && !loading) {
+                      <tr>
+                        <td colspan="7" class="text-center">
                             <span class="badge bg-primary">No tiene áreas registradas</span>
                         </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
+                      </tr>
+                    }
+                    @if (loading) {
+                      <tr>
+                        <td colspan="7" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
-                    </tr>
+                      </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor="let area of areas?.data">
+                    @for (area of areas?.data; track area.id || $index) {
+                      <tr class="animated fadeIn">
                         <td>{{ area.created_at | date:'dd/MM/yyyy' }}</td>
                         <td>{{ area.nombre }}</td>
                         <td>{{ area.descripcion | truncate:50 }}</td>
@@ -98,10 +113,14 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge bg-info text-dark" *ngIf="area.departamento">
+                            @if (area.departamento) {
+                              <span class="badge bg-info text-dark">
                                 {{ area.departamento.nombre }}
-                            </span>
-                            <span class="text-muted" *ngIf="!area.departamento">Sin departamento</span>
+                              </span>
+                            }
+                            @if (!area.departamento) {
+                              <span class="text-muted">Sin departamento</span>
+                            }
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -109,31 +128,40 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEdit()" (click)="editArea(marea, area)" class="list-group-item list-group-item-action border-0 click">
+                                    @if (apiService.canEdit()) {
+                                      <a (click)="editArea(marea, area)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a *ngIf="apiService.canEdit()" 
-                                       (click)="toggleEstado(area)" 
-                                       class="list-group-item list-group-item-action border-0 click">
+                                      </a>
+                                    }
+                                    @if (apiService.canEdit()) {
+                                      <a 
+                                         (click)="toggleEstado(area)" 
+                                         class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw" [ngClass]="{'fa-eye': area.activo == '0' || area.activo == 0, 'fa-eye-slash': area.activo == '1' || area.activo == 1}"></i>
                                         {{ area.activo == '1' || area.activo == 1 ? 'Desactivar' : 'Activar' }}
-                                    </a>
-                                    <a *ngIf="apiService.canDelete()" 
-                                       (click)="delete(area.id)" 
-                                       class="list-group-item list-group-item-action border-0 click text-danger">
+                                      </a>
+                                    }
+                                    @if (apiService.canDelete()) {
+                                      <a 
+                                         (click)="delete(area.id)" 
+                                         class="list-group-item list-group-item-action border-0 click text-danger">
                                         <i class="fa fa-fw fa-trash"></i> Eliminar
-                                    </a>
+                                      </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
-                    </tr>
+                      </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="areas?.last_page > 1">
+        @if (areas?.last_page > 1) {
+          <div class="col-12">
             <app-pagination [items]="areas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+          </div>
+        }
     </div>
 </section>
 
@@ -161,9 +189,11 @@
                     <label for="filtros.sucursal">Sucursal:</label>
                     <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal" (change)="onFilterSucursalChange()">
                         <option value="">Todas</option>
-                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                        @for (sucursal of sucursales; track sucursal.id) {
+                          <option [value]="sucursal.id">
                             {{ sucursal.nombre }}
-                        </option>
+                          </option>
+                        }
                     </select>
                 </div>
 
@@ -171,9 +201,11 @@
                     <label for="filtros.departamento">Departamento:</label>
                     <select [(ngModel)]="filtros.id_departamento" class="form-select" name="filtros.id_departamento">
                         <option value="">Todos</option>
-                        <option *ngFor="let departamento of departamentos" [value]="departamento.id">
+                        @for (departamento of departamentos; track departamento.id) {
+                          <option [value]="departamento.id">
                             {{ departamento.nombre }}
-                        </option>
+                          </option>
+                        }
                     </select>
                 </div>
 
@@ -188,8 +220,12 @@
             </div>
             <div class="d-grid mt-4">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                      <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                      <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </form>
@@ -229,8 +265,12 @@
 
             <div class="d-grid mt-4">
                 <button type="submit" [disabled]="savingDepartamento" class="btn btn-primary btn-block">
-                    <span *ngIf="!savingDepartamento">Guardar</span>
-                    <span *ngIf="savingDepartamento">Guardando...</span>
+                    @if (!savingDepartamento) {
+                      <span>Guardar</span>
+                    }
+                    @if (savingDepartamento) {
+                      <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </form>
@@ -268,19 +308,23 @@
                                 (change)="onDepartamentoChange()"
                                 required>
                             <option value="">Seleccione un departamento</option>
-                            <option *ngFor="let departamento of departamentos" [value]="departamento.id">
+                            @for (departamento of departamentos; track departamento.id) {
+                              <option [value]="departamento.id">
                                 {{ departamento.nombre }}
-                            </option>
+                              </option>
+                            }
                         </select>
                         <button type="button" (click)="openDepartamentoModal(mdepartamento)" class="btn btn-outline-primary" tooltip="Crear nuevo departamento">
                             <i class="fa fa-plus"></i>
                         </button>
                     </div>
                     <!-- Advertencia cuando se cambia departamento -->
-                    <small class="text-warning" *ngIf="mostrarAdvertenciaDepartamento">
+                    @if (mostrarAdvertenciaDepartamento) {
+                      <small class="text-warning">
                         <i class="fa fa-exclamation-triangle"></i>
                         El área se creará para el departamento seleccionado: <strong>{{ getNombreDepartamento(area.id_departamento) }}</strong>
-                    </small>
+                      </small>
+                    }
                 </div>
 
                 <div class="form-group col-md-6">
@@ -294,8 +338,12 @@
 
             <div class="d-grid mt-4">
                 <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">{{ area.id ? 'Actualizar' : 'Guardar' }}</span>
-                    <span *ngIf="saving">{{ area.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                    @if (!saving) {
+                      <span>{{ area.id ? 'Actualizar' : 'Guardar' }}</span>
+                    }
+                    @if (saving) {
+                      <span>{{ area.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                    }
                 </button>
             </div>
         </form>

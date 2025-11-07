@@ -18,8 +18,12 @@
 
                 <div class="d-grid">
                     <button [disabled]="loading" class="btn btn-primary tcla-F4">
-                        <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                        <span *ngIf="loading">Guardando...</span>
+                        @if (!loading) {
+                            <span>Guardar <small>(F4)</small></span>
+                        }
+                        @if (loading) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

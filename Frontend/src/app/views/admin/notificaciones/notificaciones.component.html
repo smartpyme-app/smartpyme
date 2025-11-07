@@ -5,9 +5,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="notificaciones?.total">
+            @if (notificaciones?.total) {
+              <span class="text-muted">
                 Mostrando {{ notificaciones?.to }} de {{ notificaciones?.total + ' registros' }}
-            </span>
+              </span>
+            }
         </div>
 
         <div class="col">
@@ -47,16 +49,23 @@
                 </tr>
             </thead> -->
             <tbody>
-                <tr>
-                    <td colspan="4" class="text-center" *ngIf="notificaciones?.total < 1 && !loading">
-                        <span class="badge bg-primary">No tiene notificaciones registradas</span>
+                @if (notificaciones?.total < 1 && !loading) {
+                  <tr>
+                    <td colspan="4" class="text-center">
+                      <span class="badge bg-primary">No tiene notificaciones registradas</span>
                     </td>
-                    <td colspan="4" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
+                  </tr>
+                }
+                @if (loading) {
+                  <tr>
+                    <td colspan="4" class="text-center">
+                      <span class="badge bg-primary">Cargando...</span>
                     </td>
-                </tr>
+                  </tr>
+                }
 
-                <tr (click)="openModal(mnotificacion, notificacion)" class="click" [ngClass]="{ 'fw-bold' : notificacion.leido == '0' }" *ngFor=" let notificacion of notificaciones?.data">                    
+                @for (notificacion of notificaciones?.data; track notificacion.id || $index) {
+                  <tr (click)="openModal(mnotificacion, notificacion)" class="click" [ngClass]="{ 'fw-bold' : notificacion.leido == '0' }">                    
                     <td>
                         {{ notificacion.tipo }} <br>
                         <small>{{ notificacion.created_at_human }}</small>
@@ -74,14 +83,16 @@
                             </a>
                         </div>  
                     </td>
-
-                </tr>
+                  </tr>
+                }
             </tbody>
         </table>
 
-        <div class="col-12" *ngIf="notificaciones?.last_page > 1">
+        @if (notificaciones && notificaciones.last_page && notificaciones.last_page > 1) {
+          <div class="col-12">
             <app-pagination [items]="notificaciones" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+          </div>
+        }
     </div>
 </section>
 
@@ -97,24 +108,42 @@
             <div class="col-12">
                 <p [innerHTML]="notificacion.titulo"></p>
                 <p>
-                    <span *ngIf="notificacion.prioridad" class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : notificacion?.prioridad == 'Media', 'bg-danger' : notificacion?.prioridad == 'Alta', 'bg-info' : notificacion?.prioridad == 'Baja'}">
+                    @if (notificacion.prioridad) {
+                      <span class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : notificacion?.prioridad == 'Media', 'bg-danger' : notificacion?.prioridad == 'Alta', 'bg-info' : notificacion?.prioridad == 'Baja'}">
                         Prioridad {{ notificacion.prioridad }}
-                    </span>
+                      </span>
+                    }
                 </p>
-                <p *ngIf="notificacion.tipo">Tipo: {{ notificacion.tipo }}</p>
+                @if (notificacion.tipo) {
+                  <p>Tipo: {{ notificacion.tipo }}</p>
+                }
                 <div [innerHTML]="notificacion.descripcion"></div> 
             </div>
         </div>
         <div class="d-grid mt-4">
-            <a *ngIf="notificacion.referencia && notificacion.id_referencia" class="btn btn-primary" target="_black" routerLink="/{{notificacion.referencia}}/{{notificacion.id_referencia}}">
-                <span *ngIf="notificacion.tipo == 'Cuentas por cobrar' "> Ir a la venta </span>
-                <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'compra' "> Ir a la compra </span>
-                <span *ngIf="notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'gasto' "> Ir al gasto </span>
-                <span *ngIf="notificacion.tipo == 'Inventario bajo' "> Ver inventario </span>
-                <span *ngIf="notificacion.tipo == 'Orden de Producción' "> Ver orden de producción </span>
-            </a>
+            @if (notificacion.referencia && notificacion.id_referencia) {
+              <a class="btn btn-primary" target="_black" routerLink="/{{notificacion.referencia}}/{{notificacion.id_referencia}}">
+                @if (notificacion.tipo == 'Cuentas por cobrar') {
+                  <span> Ir a la venta </span>
+                }
+                @if (notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'compra') {
+                  <span> Ir a la compra </span>
+                }
+                @if (notificacion.tipo == 'Cuentas por pagar' && notificacion.referencia == 'gasto') {
+                  <span> Ir al gasto </span>
+                }
+                @if (notificacion.tipo == 'Inventario bajo') {
+                  <span> Ver inventario </span>
+                }
+                @if (notificacion.tipo == 'Orden de Producción') {
+                  <span> Ver orden de producción </span>
+                }
+              </a>
+            }
 
-            <button *ngIf="!notificacion.referencia && !notificacion.id_referencia" class="btn btn-primary"  (click)="modalRef.hide();">Entendido</button>
+            @if (!notificacion.referencia && !notificacion.id_referencia) {
+              <button class="btn btn-primary" (click)="modalRef.hide();">Entendido</button>
+            }
         </div>
   </div>
 </ng-template>

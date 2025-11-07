@@ -16,7 +16,8 @@
             <div class="card-body position-relative">
                 <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
                 <h4 class="card-title">Gastos por categoria</h4>
-                <div class="row" style="min-height: 350px;" *ngIf="dash?.categorias?.length">
+                @if (dash?.categorias?.length) {
+                  <div class="row" style="min-height: 350px;">
                     <div class="col-md-12">
                         <div class="chart-wrapper h-100">
                             <canvas baseChart id="chart"
@@ -28,15 +29,18 @@
                             </canvas>
                         </div>
                     </div>
-                </div>
-                <div class="row" *ngIf="!dash?.categorias?.length"  style="min-height: 350px;">
+                  </div>
+                }
+                @if (!dash?.categorias?.length) {
+                  <div class="row" style="min-height: 350px;">
                     <div class="text-muted text-center py-5 h-100">
                         <i class="fa fa-chart-pie fa-5x"></i>
                         <br>
                         Aún no hay datos
                         <br>
                     </div>
-                </div>
+                  </div>
+                }
             </div> 
         </div>
     </div>
@@ -46,7 +50,8 @@
             <div class="card-body position-relative">
                 <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
                 <h4 class="card-title">Gastos por mes</h4>
-                <div class="row" style="min-height: 350px;" *ngIf="dash?.meses?.length">
+                @if (dash?.meses?.length) {
+                  <div class="row" style="min-height: 350px;">
                     <div class="col-md-12">
                         <div class="chart-wrapper h-100">
                             <canvas baseChart id="chart2"
@@ -58,15 +63,18 @@
                             </canvas>
                         </div>
                     </div>
-                </div>
-                <div class="row" *ngIf="!dash?.meses?.length"  style="min-height: 350px;">
+                  </div>
+                }
+                @if (!dash?.meses?.length) {
+                  <div class="row" style="min-height: 350px;">
                     <div class="text-muted text-center py-5 h-100">
                         <i class="fa fa-chart-pie fa-5x"></i>
                         <br>
                         Aún no hay datos
                         <br>
                     </div>
-                </div>
+                  </div>
+                }
             </div> 
         </div>
     </div>

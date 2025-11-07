@@ -1,14 +1,22 @@
 
 <button type="button" class="btn btn-default tcla-F1" (click)="openModal(mDepartamento)">
-    <i *ngIf="!id_departamento" tooltip="Crear nuevo departamento (F1)" class="fa fa-plus"></i>
-    <i *ngIf="id_departamento" tooltip="Editar departamento (F1)" class="fa fa-pencil-alt"></i>
+    @if (!id_departamento) {
+        <i tooltip="Crear nuevo departamento (F1)" class="fa fa-plus"></i>
+    }
+    @if (id_departamento) {
+        <i tooltip="Editar departamento (F1)" class="fa fa-pencil-alt"></i>
+    }
 </button>
 
 <ng-template #mDepartamento>
     <div class="modal-header justify-content-between">
         <h3 class="modal-title">
-            <span *ngIf="!id_departamento">Nuevo departamento</span>
-            <span *ngIf="id_departamento">Editar departamento</span>
+            @if (!id_departamento) {
+                <span>Nuevo departamento</span>
+            }
+            @if (id_departamento) {
+                <span>Editar departamento</span>
+            }
         </h3>
         <button class="btn btn-light text-danger" (click)="modalRef.hide(); alertService.modal = false;">
             Cancelar <i class="fa fa-close"></i>
@@ -55,11 +63,15 @@
                             [disabled]="saving || !departamento.nombre" 
                             class="btn btn-primary float-end tcla-F10" 
                             tooltip="Guardar (F10)">
-                        <span *ngIf="!saving">
-                            Guardar departamento 
-                            <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-                        </span>
-                        <span *ngIf="saving">Guardando...</span>
+                        @if (!saving) {
+                            <span>
+                                Guardar departamento 
+                                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                            </span>
+                        }
+                        @if (saving) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

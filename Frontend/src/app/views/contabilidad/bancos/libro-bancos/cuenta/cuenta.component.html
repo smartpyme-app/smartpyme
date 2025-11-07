@@ -38,8 +38,12 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar cuenta  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                  <span>Guardar cuenta  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                }
+                @if (saving) {
+                  <span>Guardando...</span>
+                }
             </button>
         </div>
     </div>
@@ -64,23 +68,30 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="3" class="text-center" *ngIf="cuenta?.cotizaciones?.length < 1 && !loading">
+                        @if (cuenta?.cotizaciones?.length < 1 && !loading) {
+                          <tr>
+                            <td colspan="3" class="text-center">
                                 <span class="badge bg-primary">No tiene cotizaciones registradas</span>
                             </td>
-                            <td colspan="3" class="text-center" *ngIf="loading">
+                          </tr>
+                        }
+                        @if (loading) {
+                          <tr>
+                            <td colspan="3" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        </tr>
+                          </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let venta of cuenta.cotizaciones">
-                            
+                        @for (venta of cuenta.cotizaciones; track venta.id || $index) {
+                          <tr class="animated fadeIn">
                             <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                             </td>
                             <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                          </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -123,17 +134,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="10" class="text-center" *ngIf="cuenta?.compras?.length < 1 && !loading">
+                        @if (cuenta?.compras?.length < 1 && !loading) {
+                          <tr>
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">No tiene compras registradas</span>
                             </td>
-                            <td colspan="10" class="text-center" *ngIf="loading">
+                          </tr>
+                        }
+                        @if (loading) {
+                          <tr>
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        </tr>
+                          </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let compra of cuenta.compras">
-                            
+                        @for (compra of cuenta.compras; track compra.id || $index) {
+                          <tr class="animated fadeIn">
                             <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{compra.nombre_proveedor | truncate:30 }}</td>
                             <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
@@ -142,7 +159,8 @@
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
                             </td>
                             <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                          </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -188,17 +206,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="10" class="text-center" *ngIf="cuenta?.gastos?.length < 1 && !loading">
+                        @if (cuenta?.gastos?.length < 1 && !loading) {
+                          <tr>
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">No tiene gastos registradas</span>
                             </td>
-                            <td colspan="10" class="text-center" *ngIf="loading">
+                          </tr>
+                        }
+                        @if (loading) {
+                          <tr>
+                            <td colspan="10" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        </tr>
+                          </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let gasto of cuenta.gastos">
-                            
+                        @for (gasto of cuenta.gastos; track gasto.id || $index) {
+                          <tr class="animated fadeIn">
                             <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
                             <!-- <td>{{gasto.nombre_usuario }}</td> -->
                             <td>{{gasto.nombre_proveedor | truncate:30 }}</td>
@@ -210,8 +234,8 @@
                                 </span>
                             </td>
                             <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
-
-                        </tr>
+                          </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -255,17 +279,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="5" class="text-center" *ngIf="cuenta?.ventas?.length < 1 && !loading">
+                        @if (cuenta?.ventas?.length < 1 && !loading) {
+                          <tr>
+                            <td colspan="5" class="text-center">
                                 <span class="badge bg-primary">No tiene ventas registradas</span>
                             </td>
-                            <td colspan="5" class="text-center" *ngIf="loading">
+                          </tr>
+                        }
+                        @if (loading) {
+                          <tr>
+                            <td colspan="5" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        </tr>
+                          </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let venta of cuenta.ventas">
-                            
+                        @for (venta of cuenta.ventas; track venta.id || $index) {
+                          <tr class="animated fadeIn">
                             <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
                             <td>{{venta.nombre_documento}} #{{venta.referencia}}</td>
                             <td>{{venta.forma_pago}}</td>
@@ -273,7 +303,8 @@
                                 <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
                             </td>
                             <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                          </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>

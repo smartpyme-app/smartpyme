@@ -178,12 +178,14 @@
         </table>
       </div>
   
-      <div class="col-12" *ngIf="empleados?.last_page > 1">
-        <app-pagination
-          [items]="empleados"
-          (setPagination)="setPagination($event)"
-        ></app-pagination>
-      </div>
+      @if (empleados?.total && empleados?.last_page) {
+        <div class="col-12">
+          <app-pagination
+            [items]="empleados"
+            (setPagination)="setPagination($event)"
+          ></app-pagination>
+        </div>
+      }
     </div>
   </section>
   

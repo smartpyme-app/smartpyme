@@ -10,20 +10,28 @@
         <div class="form-group col-md-6">
             <label for="forma_pago">Forma de pago</label>
             <select name="forma_pago" [(ngModel)]="abono.forma_pago" class="form-select">
-                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                @for (forma of formaPagos; track forma.id) {
+                    <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                }
             </select>
         </div>
-        <!-- <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
-            <label for="detalle_banco">Banco</label>
-            <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
-                <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre_banco" *ngFor="let banco of bancos">{{ banco.nombre_banco }}</option>
-            </select>
-        </div> -->
-        <div class="form-group col-md-12" *ngIf="abono.forma_pago != 'Efectivo'">
-            <label for="referencia">Referencia:</label>
-            <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
-        </div>
+        <!-- @if (abono.forma_pago != 'Efectivo') {
+            <div class="form-group col-md-12">
+                <label for="detalle_banco">Banco</label>
+                <select name="detalle_banco" [(ngModel)]="abono.detalle_banco" class="form-select">
+                    <option value="">Seleccione aquí</option>
+                    @for (banco of bancos; track banco.id) {
+                        <option [value]="banco.nombre_banco">{{ banco.nombre_banco }}</option>
+                    }
+                </select>
+            </div>
+        } -->
+        @if (abono.forma_pago != 'Efectivo') {
+            <div class="form-group col-md-12">
+                <label for="referencia">Referencia:</label>
+                <input type="text" class="form-control" [(ngModel)]="abono.referencia" name="referencia">
+            </div>
+        }
 
         <div class="form-group col-md-12">
             <table class="table table-bordered">
@@ -66,8 +74,12 @@
     </div>
     <div class="d-grid mt-3">
         <button type="submit" class="btn btn-primary btn-block" [disabled]="saving">
-            <span *ngIf="!saving">Guardar</span>
-            <span *ngIf="saving">Guardando...</span>
+            @if (!saving) {
+                <span>Guardar</span>
+            }
+            @if (saving) {
+                <span>Guardando...</span>
+            }
         </button>
     </div>
 

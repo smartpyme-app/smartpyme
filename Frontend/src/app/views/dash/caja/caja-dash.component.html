@@ -13,10 +13,16 @@
     </div>
 </div>
 
-<div *ngIf="loading" class="row"> <p class="col-md-12 text-center text-muted">Cargando...</p> </div>
+@if (loading) {
+    <div class="row">
+        <p class="col-md-12 text-center text-muted">Cargando...</p>
+    </div>
+}
 
-<div class="row text-center" *ngIf="!loading">
-</div>
+@if (!loading) {
+    <div class="row text-center">
+    </div>
+}
 <div class="row mb-3">
     <div class="col-12 text-center">
         <button routerLink="/facturacion" class="btn btn-default tcla-F1" tooltip="Ir al módulo de faturación"> <i class="fa fa-file-invoice-dollar"></i> Facturación <small>(F1)</small></button>
@@ -26,7 +32,9 @@
     </div>
 </div>
 
-<app-caja-ordenes *ngIf="caja?.corte?.id"></app-caja-ordenes>
+@if (caja?.corte?.id) {
+    <app-caja-ordenes></app-caja-ordenes>
+}
 
 <ng-template #mcorte>
   <div class="modal-header">
@@ -45,8 +53,12 @@
             </div>
             <div class="col-md-12">
                 <button [disabled]="loading" class="btn btn-primary btn-block" [disabled]="loading">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar</span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </form>
@@ -67,8 +79,12 @@
             </div>
             <div class="col-md-12">
                 <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar</span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </form>

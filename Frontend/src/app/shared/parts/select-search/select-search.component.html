@@ -13,26 +13,29 @@
   (ngModelChange)="onSelectionChange($event)">
   
   <!-- Solo mostrar opciones cuando hay datos -->
-  <ng-option 
-    *ngFor="let item of filteredItems" 
-    [value]="getItemValue(item)">
-    {{ getDisplayText(item) }}
-  </ng-option>
+  @for (item of filteredItems; track getItemValue(item) || $index) {
+    <ng-option 
+      [value]="getItemValue(item)">
+      {{ getDisplayText(item) }}
+    </ng-option>
+  }
   
   <!-- Mensaje personalizado cuando no hay resultados Y no está cargando -->
-  <ng-option 
-    *ngIf="filteredItems.length === 0 && !isLoading && searchTerm.length > 0" 
-    [value]="null" 
-    [disabled]="true">
-    Buscar registros
-  </ng-option>
+  @if (filteredItems.length === 0 && !isLoading && searchTerm.length > 0) {
+    <ng-option 
+      [value]="null" 
+      [disabled]="true">
+      Buscar registros
+    </ng-option>
+  }
   
   <!-- Mensaje cuando está cargando -->
-  <ng-option 
-    *ngIf="isLoading" 
-    [value]="null" 
-    [disabled]="true">
-    Buscando...
-  </ng-option>
+  @if (isLoading) {
+    <ng-option 
+      [value]="null" 
+      [disabled]="true">
+      Buscando...
+    </ng-option>
+  }
   
 </ng-select>

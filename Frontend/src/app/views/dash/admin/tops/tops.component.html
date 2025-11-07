@@ -12,19 +12,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="dash?.total_ventas_canal?.length < 1">
-                            <td colspan="2">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let canal of dash?.total_ventas_canal">
-                            <td>{{ canal.nombre }}</td>
-                            <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
-                        <tr *ngIf="dash?.total_ventas_canal?.length > 0">
-                            <td>Total</td>
-                            <td class="text-right">{{ dash?.total_ventas_canal | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
+                        @if (dash?.total_ventas_canal?.length < 1) {
+                            <tr>
+                                <td colspan="2">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (canal of dash?.total_ventas_canal; track canal.nombre) {
+                            <tr>
+                                <td>{{ canal.nombre }}</td>
+                                <td class="text-right">{{ canal.total | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
+                        @if (dash?.total_ventas_canal?.length > 0) {
+                            <tr>
+                                <td>Total</td>
+                                <td class="text-right">{{ dash?.total_ventas_canal | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -44,19 +50,25 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="dash?.total_ventas_forma_pago?.length < 1">
-                            <td colspan="2">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let forma_pago of dash?.total_ventas_forma_pago">
-                            <td>{{ forma_pago.nombre }}</td>
-                            <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
-                        <tr *ngIf="dash?.total_ventas_forma_pago?.length > 0">
-                            <td>Total</td>
-                            <td class="text-right">{{ dash?.total_ventas_forma_pago | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
+                        @if (dash?.total_ventas_forma_pago?.length < 1) {
+                            <tr>
+                                <td colspan="2">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (forma_pago of dash?.total_ventas_forma_pago; track forma_pago.nombre) {
+                            <tr>
+                                <td>{{ forma_pago.nombre }}</td>
+                                <td class="text-right">{{ forma_pago.total | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
+                        @if (dash?.total_ventas_forma_pago?.length > 0) {
+                            <tr>
+                                <td>Total</td>
+                                <td class="text-right">{{ dash?.total_ventas_forma_pago | sum:'total' | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -76,23 +88,31 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="dash?.total_compras == 0 && dash?.total_gastos == 0">
-                            <td colspan="2">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngIf="dash?.total_compras > 0">
-                            <td>Compras</td>
-                            <td class="text-right">{{ dash?.total_compras | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
-                        <tr *ngIf="dash?.total_gastos > 0">
-                            <td>Gastos</td>
-                            <td class="text-right">{{ dash?.total_gastos | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
-                        <tr *ngIf="dash?.total_compras > 0 && dash?.total_gastos > 0">
-                            <td>Total</td>
-                            <td class="text-right">{{ dash?.total_salidas | currency:'USD':'symbol':'1.2' }}</td>
-                        </tr>
+                        @if (dash?.total_compras == 0 && dash?.total_gastos == 0) {
+                            <tr>
+                                <td colspan="2">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @if (dash?.total_compras > 0) {
+                            <tr>
+                                <td>Compras</td>
+                                <td class="text-right">{{ dash?.total_compras | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
+                        @if (dash?.total_gastos > 0) {
+                            <tr>
+                                <td>Gastos</td>
+                                <td class="text-right">{{ dash?.total_gastos | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
+                        @if (dash?.total_compras > 0 && dash?.total_gastos > 0) {
+                            <tr>
+                                <td>Total</td>
+                                <td class="text-right">{{ dash?.total_salidas | currency:'USD':'symbol':'1.2' }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>

@@ -131,7 +131,7 @@ export class SubCategoriasComponent implements OnInit {
 
     openModalCategorias(subcategoria:any) {
         this.subcategoria = subcategoria;
-        if(!this.categorias.lenght){
+        if(!this.categorias.length){
             this.apiService.getAll('categorias').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });

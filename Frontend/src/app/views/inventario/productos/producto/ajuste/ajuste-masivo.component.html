@@ -36,33 +36,42 @@
             <label for="id_bodega" class="mb-1">Bodega:</label>
             <select name="id_bodega" [(ngModel)]="filtros.id_bodega" (change)="filtrarProductos()" class="form-select">
                 <option value="">Seleccione una bodega</option>
-                <option *ngFor="let bodega of bodegas" [value]="bodega.id">
-                    {{bodega.nombre}}
-                </option>
+                @for (bodega of bodegas; track bodega.id) {
+                    <option [value]="bodega.id">
+                        {{bodega.nombre}}
+                    </option>
+                }
             </select>
         </div>
         <div class="col-12 col-md-4 mb-3 mb-md-0">
             <label for="id_categoria" class="mb-1">Categoría:</label>
             <select name="id_categoria" [(ngModel)]="filtros.id_categoria" (change)="filtrarProductos()" class="form-select">
                 <option value="">Todas las categorías</option>
-                <option *ngFor="let categoria of categorias" [value]="categoria.id">
-                    {{categoria.nombre}}
-                </option>
+                @for (categoria of categorias; track categoria.id) {
+                    <option [value]="categoria.id">
+                        {{categoria.nombre}}
+                    </option>
+                }
             </select>
         </div>
         <div class="col-12 col-md-4">
             <button class="btn btn-primary tcla-F6 w-100 mt-md-4" (click)="openModalConfirmar(mConfirmar)" [disabled]="seleccionados.length === 0">
-                <i class="fa fa-save me-1"></i> Guardar cambios <span *ngIf="seleccionados.length > 0">({{seleccionados.length}})</span>
+                <i class="fa fa-save me-1"></i> Guardar cambios @if (seleccionados.length > 0) {
+                    <span>({{seleccionados.length}})</span>
+                }
             </button>
         </div>
     </div>
 
-    <div class="alert alert-info d-flex align-items-center" *ngIf="!filtros.id_bodega">
-        <i class="fa fa-info-circle me-2"></i>
-        <span>Seleccione una bodega para realizar ajustes de inventario.</span>
-    </div>
+    @if (!filtros.id_bodega) {
+        <div class="alert alert-info d-flex align-items-center">
+            <i class="fa fa-info-circle me-2"></i>
+            <span>Seleccione una bodega para realizar ajustes de inventario.</span>
+        </div>
+    }
 
-    <div class="row" *ngIf="filtros.id_bodega">
+    @if (filtros.id_bodega) {
+        <div class="row">
         <div class="col-12 table-responsive">
             <table class="table table-borderless table-hover align-middle">
                 <thead>
@@ -81,59 +90,70 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No hay productos disponibles</span>
-                        </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor="let producto of productos?.data" [ngClass]="{'table-light': producto.seleccionado}">
-                        <td (click)="toggleSeleccion(producto)" style="cursor: pointer">
-                            <div class="form-check" (click)="$event.stopPropagation()">
-                                <input type="checkbox" class="form-check-input" 
-                                       [(ngModel)]="producto.seleccionado" 
-                                       (ngModelChange)="actualizarSeleccionados()">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
-                                <span>{{ producto.nombre }}</span>
-                            </div>
-                        </td>
-                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
-                        <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="text-center">
-                            <span class="badge bg-light text-dark">{{ producto.stock_actual }}</span>
-                        </td>
-                        <td>
-                            <input 
-                                type="number" 
-                                class="form-control text-center" 
-                                [(ngModel)]="producto.stock_nuevo" 
-                                (input)="calcularDiferencia(producto)"
-                                min="0"
-                                step="1"
-                                [disabled]="!producto.seleccionado">
-                        </td>
-                        <td class="text-center">
-                            <span 
-                                class="badge" 
-                                [ngClass]="{'bg-success': producto.diferencia > 0, 'bg-danger': producto.diferencia < 0, 'bg-secondary': producto.diferencia == 0}">
-                                {{ producto.diferencia > 0 ? '+' + producto.diferencia : producto.diferencia }}
-                            </span>
-                        </td>
-                    </tr>
+                    @if (productos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">No hay productos disponibles</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (producto of productos?.data; track producto.id) {
+                        <tr [ngClass]="{'table-light': producto.seleccionado}">
+                            <td (click)="toggleSeleccion(producto)" style="cursor: pointer">
+                                <div class="form-check" (click)="$event.stopPropagation()">
+                                    <input type="checkbox" class="form-check-input" 
+                                           [(ngModel)]="producto.seleccionado" 
+                                           (ngModelChange)="actualizarSeleccionados()">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
+                                    <span>{{ producto.nombre }}</span>
+                                </div>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
+                            <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ producto.stock_actual }}</span>
+                            </td>
+                            <td>
+                                <input 
+                                    type="number" 
+                                    class="form-control text-center" 
+                                    [(ngModel)]="producto.stock_nuevo" 
+                                    (input)="calcularDiferencia(producto)"
+                                    min="0"
+                                    step="1"
+                                    [disabled]="!producto.seleccionado">
+                            </td>
+                            <td class="text-center">
+                                <span 
+                                    class="badge" 
+                                    [ngClass]="{'bg-success': producto.diferencia > 0, 'bg-danger': producto.diferencia < 0, 'bg-secondary': producto.diferencia == 0}">
+                                    {{ producto.diferencia > 0 ? '+' + producto.diferencia : producto.diferencia }}
+                                </span>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (productos?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
+    }
 </section>
 
 <ng-template #mConfirmar>
@@ -154,34 +174,42 @@
             <p class="mb-0">Productos con cambios: {{ ajusteMasivo.productos.length }}</p>
         </div>
 
-        <div class="table-responsive mt-3" *ngIf="ajusteMasivo.productos.length > 0">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th class="text-center">Actual</th>
-                        <th class="text-center">Nuevo</th>
-                        <th class="text-center">Diferencia</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr *ngFor="let item of ajusteMasivo.productos">
-                        <td>{{ getNombreProducto(item.id_producto) }}</td>
-                        <td class="text-center">{{ item.stock_actual }}</td>
-                        <td class="text-center">{{ item.stock_nuevo }}</td>
-                        <td class="text-center" [ngClass]="getDiferenciaClass(item.diferencia)">
-                            {{ item.diferencia > 0 ? '+' + item.diferencia : item.diferencia }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        @if (ajusteMasivo.productos.length > 0) {
+            <div class="table-responsive mt-3">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-center">Actual</th>
+                            <th class="text-center">Nuevo</th>
+                            <th class="text-center">Diferencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (item of ajusteMasivo.productos; track item.id_producto) {
+                            <tr>
+                                <td>{{ getNombreProducto(item.id_producto) }}</td>
+                                <td class="text-center">{{ item.stock_actual }}</td>
+                                <td class="text-center">{{ item.stock_nuevo }}</td>
+                                <td class="text-center" [ngClass]="getDiferenciaClass(item.diferencia)">
+                                    {{ item.diferencia > 0 ? '+' + item.diferencia : item.diferencia }}
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
         <button type="button" class="btn btn-primary" [disabled]="!ajusteMasivo.detalle || saving" (click)="guardarAjusteMasivo()">
-            <span *ngIf="!saving">Guardar Ajuste</span>
-            <span *ngIf="saving">Guardando...</span>
+            @if (!saving) {
+                <span>Guardar Ajuste</span>
+            }
+            @if (saving) {
+                <span>Guardando...</span>
+            }
         </button>
     </div>
 </ng-template>
@@ -203,9 +231,11 @@
                 <label for="bodega_select" class="form-label">Bodega:</label>
                 <select id="bodega_select" class="form-select" [(ngModel)]="bodegaSeleccionada" name="bodega" required>
                     <option [ngValue]="null">Seleccione una bodega...</option>
-                    <option *ngFor="let bodega of bodegas" [ngValue]="bodega">
-                        {{ bodega.nombre }}
-                    </option>
+                    @for (bodega of bodegas; track bodega.id) {
+                        <option [ngValue]="bodega">
+                            {{ bodega.nombre }}
+                        </option>
+                    }
                 </select>
                 <small class="text-muted">Todos los productos serán ajustados en esta bodega.</small>
             </div>
@@ -230,8 +260,12 @@
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
         <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
         (click)="importarAjustes(fileInput, importForm.value.detalle)">
-    <span *ngIf="!saving">Importar Ajustes</span>
-    <span *ngIf="saving">Importando...</span>
-</button>
+            @if (!saving) {
+                <span>Importar Ajustes</span>
+            }
+            @if (saving) {
+                <span>Importando...</span>
+            }
+        </button>
     </div>
 </ng-template>

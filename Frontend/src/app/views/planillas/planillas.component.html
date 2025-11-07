@@ -229,12 +229,14 @@
       </table>
     </div>
 
-    <div class="col-12" *ngIf="planillas?.last_page > 1">
-      <app-pagination
-        [items]="planillas"
-        (setPagination)="setPagination($event)"
-      ></app-pagination>
-    </div>
+    @if (planillas?.total && planillas?.last_page) {
+      <div class="col-12">
+        <app-pagination
+          [items]="planillas"
+          (setPagination)="setPagination($event)"
+        ></app-pagination>
+      </div>
+    }
   </div>
 </section>
 

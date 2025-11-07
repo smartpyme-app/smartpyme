@@ -33,7 +33,7 @@ export class MateriasPrimaComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
-        if(!this.categorias.lenght){
+        if(!this.categorias.length){
             this.apiService.getAll('categorias/list').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
@@ -92,7 +92,7 @@ export class MateriasPrimaComponent implements OnInit {
     // Filtros
     openFilter(template: TemplateRef<any>) {
         this.filtro.id_categoria = '';
-        if(!this.categorias.lenght){
+        if(!this.categorias.length){
             this.apiService.getAll('categorias').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });

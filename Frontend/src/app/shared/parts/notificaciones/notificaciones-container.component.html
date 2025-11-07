@@ -1,4 +1,5 @@
-<div focus="true" *ngIf="alertMessage?.titulo" class="alert border-0 d-flex justify-content-between align-content-center" [ngClass]="alertMessage.tipo">
+@if (alertMessage?.titulo) {
+  <div focus="true" class="alert border-0 d-flex justify-content-between align-content-center" [ngClass]="alertMessage.tipo">
     <div class="d-flex gap-2">
         <div>   
             <i class="fa fa-check-circle"></i>
@@ -9,4 +10,5 @@
         </div>
     </div>
     <button type="button" class="btn btn-link text-decoration-none text-dark" (click)="closeAlert()">Entendido</button>
-</div>
+  </div>
+}

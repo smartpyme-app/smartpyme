@@ -1,8 +1,12 @@
-<button *ngIf="tipo == 'button'" (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">
+@if (tipo == 'button') {
+  <button (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">
     <img src="/assets/icons/upload.png" class="icon">
-</button>
+  </button>
+}
 
-<a role="button" class="btn-link" *ngIf="tipo == 'text'" (click)="openModal(importar)" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">Importar {{ this.nombre.replace('-', ' ') }}</a>
+@if (tipo == 'text') {
+  <a role="button" class="btn-link" (click)="openModal(importar)" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">Importar {{ this.nombre.replace('-', ' ') }}</a>
+}
 
 <ng-template #importar>
   <div class="modal-header text-center">
@@ -16,7 +20,8 @@
     <app-notificaciones-container></app-notificaciones-container>
 
     <!-- Sección: Selección de archivo -->
-    <div *ngIf="!showResults" class="import-form">
+    @if (!showResults) {
+      <div class="import-form">
       <form #form="ngForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
 
         <!-- Información y plantilla -->
@@ -60,38 +65,47 @@
             type="submit"
             class="btn btn-primary btn-block"
             [disabled]="!form.form.valid || loading">
-            <span *ngIf="!loading">
-              <i class="fa fa-upload me-2"></i>
-              Importar
-            </span>
-            <span *ngIf="loading">
-              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-              Procesando archivo...
-            </span>
+            @if (!loading) {
+              <span>
+                <i class="fa fa-upload me-2"></i>
+                Importar
+              </span>
+            }
+            @if (loading) {
+              <span>
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Procesando archivo...
+              </span>
+            }
           </button>
         </div>
 
         <!-- Referencia a precios para productos -->
-        <div class="mt-3 text-center" *ngIf="this.nombre == 'productos'">
-          <hr>
-          <p class="text-muted">
-            ¿Desea importar un listado de precios?
-            <app-importar-excel
-              (click)="modalRef.hide();"
-              (loadAll)="loadAll.emit()"
-              [tipo]="'text'"
-              [nombre]="'precios'">
-            </app-importar-excel>
-          </p>
-        </div>
+        @if (this.nombre == 'productos') {
+          <div class="mt-3 text-center">
+            <hr>
+            <p class="text-muted">
+              ¿Desea importar un listado de precios?
+              <app-importar-excel
+                (click)="modalRef.hide();"
+                (loadAll)="loadAll.emit()"
+                [tipo]="'text'"
+                [nombre]="'precios'">
+              </app-importar-excel>
+            </p>
+          </div>
+        }
       </form>
-    </div>
+      </div>
+    }
 
     <!-- Sección: Resultados de la importación -->
-    <div *ngIf="showResults" class="import-results">
+    @if (showResults) {
+      <div class="import-results">
 
-      <!-- Resultado exitoso -->
-      <div *ngIf="importResult?.success" class="text-center">
+        <!-- Resultado exitoso -->
+        @if (importResult?.success) {
+          <div class="text-center">
         <h4 class="text-success mb-3">¡Importación exitosa!</h4>
         <div class="alert alert-success">
           <p class="mb-2">{{ importResult.message }}</p>
@@ -100,10 +114,12 @@
             {{ importResult.filas_procesadas === 1 ? 'fila procesada' : 'filas procesadas' }}
           </p>
         </div>
-      </div>
+        </div>
+      }
 
       <!-- Errores de validación -->
-      <div *ngIf="validationErrors.length > 0" class="validation-errors">
+      @if (validationErrors.length > 0) {
+        <div class="validation-errors">
         <h4 class="text-warning mb-3">Errores de validación encontrados</h4>
 
         <div class="alert alert-warning">
@@ -121,47 +137,57 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let error of validationErrors">
-                <td><span class="badge bg-warning">{{ error.fila }}</span></td>
-                <td><code>{{ error.columna }}</code></td>
-                <td>
-                  <ul class="mb-0 list-unstyled">
-                    <li *ngFor="let err of error.errores" class="text-danger">
-                      <i class="fa fa-times me-1"></i>{{ err }}
-                    </li>
-                  </ul>
-                </td>
-                <td><small class="text-muted">{{ error.valores[error.columna] || 'N/A' }}</small></td>
-              </tr>
+              @for (error of validationErrors; track error.fila || $index) {
+                <tr>
+                  <td><span class="badge bg-warning">{{ error.fila }}</span></td>
+                  <td><code>{{ error.columna }}</code></td>
+                  <td>
+                    <ul class="mb-0 list-unstyled">
+                      @for (err of error.errores; track err || $index) {
+                        <li class="text-danger">
+                          <i class="fa fa-times me-1"></i>{{ err }}
+                        </li>
+                      }
+                    </ul>
+                  </td>
+                  <td><small class="text-muted">{{ error.valores[error.columna] || 'N/A' }}</small></td>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
       </div>
+      }
 
       <!-- Errores de negocio -->
-      <div *ngIf="businessErrors.length > 0" class="business-errors">
+      @if (businessErrors.length > 0) {
+        <div class="business-errors">
         <h4 class="text-danger mb-3">Error en la importación</h4>
 
         <div class="alert alert-danger">
-          <div *ngFor="let error of businessErrors; let i = index">
-            <p class="mb-2" [class.mb-0]="i === businessErrors.length - 1">
-              <i class="fa fa-exclamation-circle me-2"></i>
-              {{ error }}
-            </p>
-          </div>
+          @for (error of businessErrors; track error || $index; let i = $index) {
+            <div>
+              <p class="mb-2" [class.mb-0]="i === businessErrors.length - 1">
+                <i class="fa fa-exclamation-circle me-2"></i>
+                {{ error }}
+              </p>
+            </div>
+          }
         </div>
       </div>
+      }
 
       <!-- Botones de acción en resultados -->
       <div class="d-flex gap-2 justify-content-center mt-4">
-        <button
-          *ngIf="!importResult?.success"
-          type="button"
-          class="btn btn-outline-primary"
-          (click)="tryAgain()">
-          <i class="fa fa-redo me-2"></i>
-          Intentar de nuevo
-        </button>
+        @if (!importResult?.success) {
+          <button
+            type="button"
+            class="btn btn-outline-primary"
+            (click)="tryAgain()">
+            <i class="fa fa-redo me-2"></i>
+            Intentar de nuevo
+          </button>
+        }
 
         <button
           type="button"
@@ -179,7 +205,8 @@
           {{ importResult?.success ? 'Finalizar' : 'Cerrar' }}
         </button>
       </div>
-    </div>
+      </div>
+    }
 
   </div>
 </ng-template>

@@ -1,23 +1,27 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h3 class="page-heading">Departamentos de empresa</h3>
-    <button *ngIf="apiService.canCreate()" (click)="openModal(mdepartamento)" tooltip="Crear departamento de empresa (F4)" class="btn btn-default tcla-F4">
-        <i class="fa fa-plus"></i> Añadir departamento
-    </button>
+    @if (apiService.canCreate()) {
+        <button (click)="openModal(mdepartamento)" tooltip="Crear departamento de empresa (F4)" class="btn btn-default tcla-F4">
+            <i class="fa fa-plus"></i> Añadir departamento
+        </button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="departamentos?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarDepartamento()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ departamentos?.total + ' registros' }}
-            </span>
+            @if (departamentos?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarDepartamento()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ departamentos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -67,16 +71,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="7" class="text-center" *ngIf="departamentos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene departamentos registrados</span>
-                        </td>
-                        <td colspan="7" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (departamentos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">No tiene departamentos registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor="let departamento of departamentos?.data">
+                    @for (departamento of departamentos?.data; track departamento.id) {
+                        <tr class="animated fadeIn">
                         <td>{{ departamento.created_at | date:'dd/MM/yyyy' }}</td>
                         <td>{{ departamento.nombre }}</td>
                         <td>{{ departamento.descripcion | truncate:50 }}</td>
@@ -88,17 +99,21 @@
                         </td>
                         <td>{{ departamento.sucursalNombre || 'N/A' }}</td>
                         <td>
-                            <span *ngIf="departamento.areas_count == 1">
+                            @if (departamento.areas_count == 1) {
                                 <span class="badge bg-info text-dark">
                                     {{ departamento.areas_count }} área
                                 </span>
-                            </span>
-                            <span class="badge bg-info text-dark" *ngIf="departamento.areas_count > 1">
-                                {{ departamento.areas_count }} áreas
-                            </span>
-                            <span class="text-muted" *ngIf="!departamento.areas_count || departamento.areas_count == 0">
-                                Sin áreas
-                            </span>
+                            }
+                            @if (departamento.areas_count > 1) {
+                                <span class="badge bg-info text-dark">
+                                    {{ departamento.areas_count }} áreas
+                                </span>
+                            }
+                            @if (!departamento.areas_count || departamento.areas_count == 0) {
+                                <span class="text-muted">
+                                    Sin áreas
+                                </span>
+                            }
                         </td>
                         <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -106,18 +121,17 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="departamento.estado == '1' || departamento.estado == 1" 
-                                       (click)="verAreas(departamento)" 
-                                       class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-eye"></i> Ver áreas
-                                    </a>
-                                    <a
-                                       (click)="editDepartamento(mdepartamento,departamento)" 
+                                    @if (departamento.estado == '1' || departamento.estado == 1) {
+                                        <a (click)="verAreas(departamento)" 
+                                           class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-eye"></i> Ver áreas
+                                        </a>
+                                    }
+                                    <a (click)="editDepartamento(mdepartamento,departamento)" 
                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-edit"></i> Editar
                                     </a>
-                                    <a
-                                       (click)="toggleEstado(departamento)" 
+                                    <a (click)="toggleEstado(departamento)" 
                                        class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw" [ngClass]="{'fa-eye': departamento.estado == '0' || departamento.estado == 0, 'fa-eye-slash': departamento.estado == '1' || departamento.estado == 1}"></i>
                                         {{ departamento.estado == '1' || departamento.estado == 1 ? 'Desactivar' : 'Activar' }}
@@ -126,13 +140,16 @@
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="departamentos?.last_page > 1">
-            <app-pagination [items]="departamentos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (departamentos && departamentos.last_page && departamentos.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="departamentos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -160,9 +177,11 @@
                     <label for="filtros.sucursal">Sucursal:</label>
                     <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal" (change)="onFilterSucursalChange()">
                         <option value="">Todas</option>
-                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
+                        @for (sucursal of sucursales; track sucursal.id) {
+                            <option [value]="sucursal.id">
+                                {{ sucursal.nombre }}
+                            </option>
+                        }
                     </select>
                 </div>
 
@@ -177,8 +196,12 @@
             </div>
             <div class="d-grid mt-4">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </form>
@@ -211,25 +234,33 @@
                     <label for="id_sucursal">Sucursal *</label>
                     <select [(ngModel)]="departamento.id_sucursal" class="form-select" name="id_sucursal" (change)="onSucursalChange()" required>
                         <option value="">Seleccione una sucursal</option>
-                        <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                            {{ sucursal.nombre }}
-                        </option>
+                        @for (sucursal of sucursales; track sucursal.id) {
+                            <option [value]="sucursal.id">
+                                {{ sucursal.nombre }}
+                            </option>
+                        }
                     </select>
                 </div>
 
-                <div class="form-group col-md-6" *ngIf="departamento.id">
-                    <label for="activo">Estado</label>
-                    <select [(ngModel)]="departamento.estado" class="form-select" name="activo">
-                        <option value="1">Activo</option>
-                        <option value="0">Inactivo</option>
-                    </select>
-                </div>
+                @if (departamento.id) {
+                    <div class="form-group col-md-6">
+                        <label for="activo">Estado</label>
+                        <select [(ngModel)]="departamento.estado" class="form-select" name="activo">
+                            <option value="1">Activo</option>
+                            <option value="0">Inactivo</option>
+                        </select>
+                    </div>
+                }
             </div>
 
             <div class="d-grid mt-4">
                 <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">{{ departamento.id ? 'Actualizar' : 'Guardar' }}</span>
-                    <span *ngIf="saving">{{ departamento.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                    @if (!saving) {
+                        <span>{{ departamento.id ? 'Actualizar' : 'Guardar' }}</span>
+                    }
+                    @if (saving) {
+                        <span>{{ departamento.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                    }
                 </button>
             </div>
         </form>

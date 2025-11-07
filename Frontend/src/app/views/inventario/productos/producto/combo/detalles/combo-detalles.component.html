@@ -14,40 +14,44 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngIf="producto?.detalles?.length < 1">
-          <td colspan="7" class="text-center">
-            <p class="text-muted my-3">
-              Agregue productos y servicios
-            </p>
-          </td>
-        </tr>
-        <tr *ngFor="let detalle of producto?.detalles; let i = index">
-          <td>
-            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
-            {{ detalle.nombre_producto }}
-          </td>
-          <td style="width: 150px;">
-            <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control">
-          </td>
-          <td style="width: 150px;">
-            <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)"
-              (keyup)="updateTotal(detalle)" class="form-control" name="costo">
-          </td>
-          <td style="width: 150px;">
-            <input type="number" [(ngModel)]="detalle.cantidad_combo" class="form-control" name="cantidad_combo"
-              disabled>
-          </td>
-          <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}
-          </td>
-          <td style="width: 50px;" class="text-center">
-            <div class="btn-group">
-              <span class="btn btn-link" (click)="delete(detalle)">
-                <i class="fa fa-trash"></i>
-              </span>
-            </div>
-          </td>
-        </tr>
+        @if (producto?.detalles?.length < 1) {
+            <tr>
+                <td colspan="7" class="text-center">
+                    <p class="text-muted my-3">
+                        Agregue productos y servicios
+                    </p>
+                </td>
+            </tr>
+        }
+        @for (detalle of producto?.detalles; track detalle.id_producto || $index) {
+            <tr>
+                <td>
+                    <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                    {{ detalle.nombre_producto }}
+                </td>
+                <td style="width: 150px;">
+                    <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)"
+                        (keyup)="updateTotal(detalle)" class="form-control">
+                </td>
+                <td style="width: 150px;">
+                    <input type="number" [(ngModel)]="detalle.costo" (change)="updateTotal(detalle)"
+                        (keyup)="updateTotal(detalle)" class="form-control" name="costo">
+                </td>
+                <td style="width: 150px;">
+                    <input type="number" [(ngModel)]="detalle.cantidad_combo" class="form-control" name="cantidad_combo"
+                        disabled>
+                </td>
+                <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}
+                </td>
+                <td style="width: 50px;" class="text-center">
+                    <div class="btn-group">
+                        <span class="btn btn-link" (click)="delete(detalle)">
+                            <i class="fa fa-trash"></i>
+                        </span>
+                    </div>
+                </td>
+            </tr>
+        }
       </tbody>
     </table>
   </div>
@@ -68,8 +72,12 @@
         </div>
         <div class="d-grid mt-4">
           <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
-            <span *ngIf="!loading">Autorizar</span>
-            <span *ngIf="loading">Autorizando...</span>
+            @if (!loading) {
+                <span>Autorizar</span>
+            }
+            @if (loading) {
+                <span>Autorizando...</span>
+            }
           </button>
         </div>
       </form>

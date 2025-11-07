@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Canales</h2>
-    <button *ngIf="apiService.canCreateTest('ventas.canales_venta.crear')" (click)="openModal(mdetalle, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir canal</button>
+    @if (apiService.canCreateTest('ventas.canales_venta.crear')) {
+        <button (click)="openModal(mdetalle, {})"  tooltip="Crear canal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir canal</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="canales?.lenght">
-                Mostrando {{ canales?.lenght + ' registros' }}
-            </span>
+            @if (canales?.length) {
+                <span class="text-muted">
+                    Mostrando {{ canales?.length + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -42,20 +46,29 @@
                         <th>Estado</th>
                         <!-- <th>Propina</th> -->
                         <!-- <th>Envios</th> -->
-                        <th *ngIf="apiService.canEditTest('ventas.canales_venta.editar')" class="text-center"><i class="fa fa-cog"></i></th>
+                        @if (apiService.canEditTest('ventas.canales_venta.editar')) {
+                            <th class="text-center"><i class="fa fa-cog"></i></th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="canales?.lenght < 1 && !loading">
-                            <span class="badge bg-primary">No tiene canales registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (canales?.length < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene canales registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor="let canal of canales | filter:['nombre']:filtro.nombre | filter:'enable':filtro.estado">
+                    @for (canal of canales | filter:['nombre']:filtro.nombre | filter:'enable':filtro.estado; track canal.id) {
+                        <tr>
                         <td>{{canal.nombre }}</td>
                         <td>{{canal.descripcion}}</td>
                         <td>
@@ -70,27 +83,32 @@
                         <td class="text-center">
                             {{canal.envios}}
                         </td> -->
-                        <td class="text-center">
-                            <span *ngIf="apiService.canEditTest('ventas.canales_venta.editar')" class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column align-items-start">
-                                    <a (click)="openModal(mdetalle, canal)" class="btn">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
+                        @if (apiService.canEditTest('ventas.canales_venta.editar')) {
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="d-flex flex-column align-items-start">
+                                        <a (click)="openModal(mdetalle, canal)" class="btn">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                    </div>
+                                </ng-template>
+                            </td>
+                        }
 
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="canales?.last_page > 1">
-            <app-pagination [items]="canales" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (canales && canales.last_page && canales.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="canales" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -130,8 +148,12 @@
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Añadir</span>
-                <span *ngIf="loading">Añadiendo...</span>
+                @if (!loading) {
+                    <span>Añadir</span>
+                }
+                @if (loading) {
+                    <span>Añadiendo...</span>
+                }
             </button>
         </div>
     </form>
