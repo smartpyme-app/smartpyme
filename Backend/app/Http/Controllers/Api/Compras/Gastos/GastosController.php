@@ -148,7 +148,7 @@ class GastosController extends Controller
 
         // Incrementar el correlarivo de Sujeto excluido
         if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $gasto->tipo_documento)->first();
+            $documento = Documento::where('nombre', $gasto->tipo_documento)->where('id_sucursal', $gasto->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 
