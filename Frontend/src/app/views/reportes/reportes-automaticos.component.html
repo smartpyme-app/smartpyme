@@ -1,36 +1,38 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Reportes Automáticos</h2>
-  <button
-    *ngIf="apiService.isAdminCreate()"
-    (click)="openModalConfigurar(mconfigurarReporte)"
-    tooltip="Configurar nuevo reporte"
-    class="btn btn-default"
-  >
-    <i class="fa fa-plus"></i> Añadir configuración
-  </button>
+  @if (apiService.isAdminCreate()) {
+    <button
+      (click)="openModalConfigurar(mconfigurarReporte)"
+      tooltip="Configurar nuevo reporte"
+      class="btn btn-default"
+    >
+      <i class="fa fa-plus"></i> Añadir configuración
+    </button>
+  }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span
-        class="text-muted d-flex align-items-center gap-2"
-        *ngIf="configuraciones?.total"
-      >
-        Mostrando
-        <select
-          name="paginate"
-          class="form-select w-auto"
-          (change)="filtrarConfiguraciones()"
-          [(ngModel)]="filtros.paginate"
+      @if (configuraciones?.total) {
+        <span
+          class="text-muted d-flex align-items-center gap-2"
         >
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        de {{ configuraciones?.total + " registros" }}
-      </span>
+          Mostrando
+          <select
+            name="paginate"
+            class="form-select w-auto"
+            (change)="filtrarConfiguraciones()"
+            [(ngModel)]="filtros.paginate"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          de {{ configuraciones?.total + " registros" }}
+        </span>
+      }
     </div>
 
     <div class="col-md-6 mb-3">
@@ -76,90 +78,91 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td
-              colspan="7"
-              class="text-center"
-              *ngIf="configuraciones?.total < 1 && !loading"
-            >
-              <span class="badge bg-primary"
-                >No hay configuraciones de reportes automáticos</span
+          @if (configuraciones?.total < 1 && !loading) {
+            <tr>
+              <td
+                colspan="7"
+                class="text-center"
               >
-            </td>
-            <td colspan="7" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+                <span class="badge bg-primary"
+                  >No hay configuraciones de reportes automáticos</span
+                >
+              </td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="7" class="text-center">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+          }
 
-          <tr *ngFor="let config of configuraciones?.data">
+          @for (config of configuraciones?.data; track config.id) {
+            <tr>
             <td>{{ config.nombre_reporte || "Sin nombre" }}</td>
             <td>
-              <span *ngIf="config.tipo_reporte === 'ventas-por-vendedor'"
-                >Ventas por Vendedor</span
-              >
-              <span *ngIf="config.tipo_reporte === 'ventas-diarias'"
-                >Ventas Diarias</span
-              >
-              <span *ngIf="config.tipo_reporte === 'productos-vendidos'"
-                >Productos Vendidos</span
-              >
-              <span
-                *ngIf="config.tipo_reporte === 'ventas-por-categoria-vendedor'"
-                >Ventas por Categoría y Vendedor</span
-              >
-              <span
-                *ngIf="
-                  config.tipo_reporte ===
-                  'estado-financiero-consolidado-sucursales'
-                "
-                >Estado Financiero Consolidado por Sucursales</span
-              >
-              <span
-                *ngIf="
-                  config.tipo_reporte ===
-                  'detalle-ventas-vendedor'
-                "
-                >Detalle de Ventas por Vendedor</span
-              >
-              <span
-                *ngIf="
-                  config.tipo_reporte ===
-                  'inventario-por-sucursal'
-                "
-                >Inventario por Sucursal</span
-              >
-              <span
-                *ngIf="
-                  config.tipo_reporte !== 'ventas-por-vendedor' &&
-                  config.tipo_reporte !== 'ventas-diarias' &&
-                  config.tipo_reporte !== 'productos-vendidos' &&
-                  config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
-                  config.tipo_reporte !==
-                    'estado-financiero-consolidado-sucursales' &&
-                  config.tipo_reporte !== 'detalle-ventas-vendedor' &&
-                  config.tipo_reporte !== 'inventario-por-sucursal'
-                "
-                >{{ config.tipo_reporte }}</span
-              >
+              @if (config.tipo_reporte === 'ventas-por-vendedor') {
+                <span>Ventas por Vendedor</span>
+              }
+              @if (config.tipo_reporte === 'ventas-diarias') {
+                <span>Ventas Diarias</span>
+              }
+              @if (config.tipo_reporte === 'productos-vendidos') {
+                <span>Productos Vendidos</span>
+              }
+              @if (config.tipo_reporte === 'ventas-por-categoria-vendedor') {
+                <span>Ventas por Categoría y Vendedor</span>
+              }
+              @if (config.tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+                <span>Estado Financiero Consolidado por Sucursales</span>
+              }
+              @if (config.tipo_reporte === 'detalle-ventas-vendedor') {
+                <span>Detalle de Ventas por Vendedor</span>
+              }
+              @if (config.tipo_reporte === 'inventario-por-sucursal') {
+                <span>Inventario por Sucursal</span>
+              }
+              @if (
+                config.tipo_reporte !== 'ventas-por-vendedor' &&
+                config.tipo_reporte !== 'ventas-diarias' &&
+                config.tipo_reporte !== 'productos-vendidos' &&
+                config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
+                config.tipo_reporte !== 'estado-financiero-consolidado-sucursales' &&
+                config.tipo_reporte !== 'detalle-ventas-vendedor' &&
+                config.tipo_reporte !== 'inventario-por-sucursal'
+              ) {
+                <span>{{ config.tipo_reporte }}</span>
+              }
             </td>
             <td>
-              <span *ngIf="config.frecuencia === 'diario'">Diario</span>
-              <span *ngIf="config.frecuencia === 'semanal'">Semanal</span>
-              <span *ngIf="config.frecuencia === 'mensual'"
-                >Mensual (Día {{ config.dia_mes }})</span
-              >
+              @if (config.frecuencia === 'diario') {
+                <span>Diario</span>
+              }
+              @if (config.frecuencia === 'semanal') {
+                <span>Semanal</span>
+              }
+              @if (config.frecuencia === 'mensual') {
+                <span>Mensual (Día {{ config.dia_mes }})</span>
+              }
             </td>
             <td>
               <div class="d-flex flex-wrap gap-1">
-                <span *ngIf="config.envio_matutino" class="badge bg-info">{{
-                  formatHora(config.hora_matutino)
-                }}</span>
-                <span *ngIf="config.envio_mediodia" class="badge bg-info">{{
-                  formatHora(config.hora_mediodia)
-                }}</span>
-                <span *ngIf="config.envio_nocturno" class="badge bg-info">{{
-                  formatHora(config.hora_nocturno)
-                }}</span>
+                @if (config.envio_matutino) {
+                  <span class="badge bg-info">{{
+                    formatHora(config.hora_matutino)
+                  }}</span>
+                }
+                @if (config.envio_mediodia) {
+                  <span class="badge bg-info">{{
+                    formatHora(config.hora_mediodia)
+                  }}</span>
+                }
+                @if (config.envio_nocturno) {
+                  <span class="badge bg-info">{{
+                    formatHora(config.hora_nocturno)
+                  }}</span>
+                }
               </div>
             </td>
             <td>
@@ -168,10 +171,12 @@
               </span>
             </td>
             <td>
-              <span *ngIf="config.activo" class="badge bg-success">Activo</span>
-              <span *ngIf="!config.activo" class="badge bg-secondary"
-                >Inactivo</span
-              >
+              @if (config.activo) {
+                <span class="badge bg-success">Activo</span>
+              }
+              @if (!config.activo) {
+                <span class="badge bg-secondary">Inactivo</span>
+              }
             </td>
             <td class="text-center">
               <span
@@ -185,79 +190,87 @@
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
               </span>
             </td>
-          </tr>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
 
-    <div class="col-12" *ngIf="configuraciones?.last_page > 1">
-      <app-pagination
-        [items]="configuraciones"
-        (setPagination)="setPagination($event)"
-      ></app-pagination>
-    </div>
+    @if (configuraciones?.last_page > 1) {
+      <div class="col-12">
+        <app-pagination
+          [items]="configuraciones"
+          (setPagination)="setPagination($event)"
+        ></app-pagination>
+      </div>
+    }
   </div>
 </section>
 
 <!-- Template de acciones no pode editar si esta deshabilitado -->
 <ng-template #accionesTemplate let-config="config">
   <div class="list-group border-0">
-    <a
-      (click)="openModal(mconfigurarReporte, config)"
-      *ngIf="apiService.isAdminCreate() && config.activo"
-      class="list-group-item list-group-item-action border-0 click"
-    >
-      <i class="fa fa-fw fa-edit"></i> Editar
-    </a>
-    <a
-      (click)="cambiarEstado(config)"
-      *ngIf="apiService.canChange()"
-      class="list-group-item list-group-item-action border-0 click"
-    >
-      <i
-        class="fa fa-fw"
-        [ngClass]="{
-          'fa-toggle-on': config.activo,
-          'fa-toggle-off': !config.activo
-        }"
-      ></i>
-      {{ config.activo ? "Desactivar" : "Activar" }}
-    </a>
-    <a
-      (click)="enviarReportePrueba(mEnvioPrueba, config)"
-      *ngIf="config.activo && apiService.canChange()"
-      class="list-group-item list-group-item-action border-0 click"
-    >
-      <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
-    </a>
-    <a
-      (click)="eliminarConfiguracion(mEliminar, config)"
-      *ngIf="config.activo && apiService.canChange()"
-      class="list-group-item list-group-item-action border-0 click text-danger"
-    >
-      <i class="fa fa-fw fa-trash"></i> Eliminar
-    </a>
+    @if (apiService.isAdminCreate() && config.activo) {
+      <a
+        (click)="openModal(mconfigurarReporte, config)"
+        class="list-group-item list-group-item-action border-0 click"
+      >
+        <i class="fa fa-fw fa-edit"></i> Editar
+      </a>
+    }
+    @if (apiService.canChange()) {
+      <a
+        (click)="cambiarEstado(config)"
+        class="list-group-item list-group-item-action border-0 click"
+      >
+        <i
+          class="fa fa-fw"
+          [ngClass]="{
+            'fa-toggle-on': config.activo,
+            'fa-toggle-off': !config.activo
+          }"
+        ></i>
+        {{ config.activo ? "Desactivar" : "Activar" }}
+      </a>
+    }
+    @if (config.activo && apiService.canChange()) {
+      <a
+        (click)="enviarReportePrueba(mEnvioPrueba, config)"
+        class="list-group-item list-group-item-action border-0 click"
+      >
+        <i class="fa fa-fw fa-paper-plane"></i> Enviar prueba
+      </a>
+    }
+    @if (config.activo && apiService.canChange()) {
+      <a
+        (click)="eliminarConfiguracion(mEliminar, config)"
+        class="list-group-item list-group-item-action border-0 click text-danger"
+      >
+        <i class="fa fa-fw fa-trash"></i> Eliminar
+      </a>
+    }
     <!--descargar reporte por configuracion-->
-    <a 
-      (click)="descargarReporte(config, mSeleccionarFechas)"
-      *ngIf="config.activo"
-      class="list-group-item list-group-item-action border-0 click text-success"
-    >
-    <span>
-      <i class="fa fa-fw fa-download"></i> Descargar
-    </span>
+    @if (config.activo) {
+      <a 
+        (click)="descargarReporte(config, mSeleccionarFechas)"
+        class="list-group-item list-group-item-action border-0 click text-success"
+      >
+        <span>
+          <i class="fa fa-fw fa-download"></i> Descargar
+        </span>
+      </a>
+    }
 
-    </a>
-
-    <a 
-      (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
-      *ngIf="config.activo && getPermissionsPDf(config.tipo_reporte)"
-      class="list-group-item list-group-item-action border-0 click text-primary"
-    >
-    <span>
-      <i class="fa fa-fw fa-download"></i> Descargar PDF
-    </span>
-    </a>
+    @if (config.activo && getPermissionsPDf(config.tipo_reporte)) {
+      <a 
+        (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
+        class="list-group-item list-group-item-action border-0 click text-primary"
+      >
+        <span>
+          <i class="fa fa-fw fa-download"></i> Descargar PDF
+        </span>
+      </a>
+    }
   </div>
 </ng-template>
 
@@ -309,21 +322,24 @@
           required
         >
           <option value="" disabled>Seleccione un tipo de reporte</option>
-          <option *ngFor="let tipo of tiposReporte" [value]="tipo.tipo">
-            {{ tipo.nombre }}
-          </option>
+          @for (tipo of tiposReporte; track tipo.tipo) {
+            <option [value]="tipo.tipo">
+              {{ tipo.nombre }}
+            </option>
+          }
         </select>
       </div>
 
-      <div
-        class="alert alert-info py-3 small mb-3"
-        *ngIf="configuracionActual.tipo_reporte"
-      >
-        <div class="d-flex">
-          <i class="fa fa-info-circle me-2 mt-1"></i>
-          <div>
-            <ng-container [ngSwitch]="configuracionActual.tipo_reporte">
-              <div *ngSwitchCase="'ventas-por-categoria-vendedor'">
+      @if (configuracionActual.tipo_reporte) {
+        <div
+          class="alert alert-info py-3 small mb-3"
+        >
+          <div class="d-flex">
+            <i class="fa fa-info-circle me-2 mt-1"></i>
+            <div>
+              @switch (configuracionActual.tipo_reporte) {
+                @case ('ventas-por-categoria-vendedor') {
+                  <div>
                 <strong class="d-block mb-1"
                   >Reporte de Ventas por Categoría y Vendedor</strong
                 >
@@ -354,10 +370,11 @@
                   <strong>Ideal para:</strong> Análisis de comisiones,
                   evaluación de desempeño y seguimiento de especialización por
                   categoría.
-                </p>
-              </div>
-
-              <div *ngSwitchCase="'ventas-por-vendedor'">
+                  </p>
+                  </div>
+                }
+                @case ('ventas-por-vendedor') {
+                  <div>
                 <strong class="d-block mb-1"
                   >Reporte de Ventas por Vendedor</strong
                 >
@@ -385,10 +402,11 @@
                 <p class="mb-0 mt-2">
                   <strong>Ideal para:</strong> Cálculo de comisiones, evaluación
                   de desempeño y seguimiento de metas de ventas.
-                </p>
-              </div>
-
-              <div *ngSwitchCase="'estado-financiero-consolidado-sucursales'">
+                  </p>
+                  </div>
+                }
+                @case ('estado-financiero-consolidado-sucursales') {
+                  <div>
                 <strong class="d-block mb-1"
                   >Estado Financiero Consolidado por Sucursales</strong
                 >
@@ -417,10 +435,11 @@
                   <strong>Ideal para:</strong> Análisis de rentabilidad por
                   sucursal, toma de decisiones estratégicas y planificación
                   financiera.
-                </p>
-              </div>
-
-              <div *ngSwitchCase="'stock-productos'">
+                  </p>
+                  </div>
+                }
+                @case ('stock-productos') {
+                  <div>
                 <strong class="d-block mb-1"
                   >Reporte de Inventario y Stock de Productos</strong
                 >
@@ -448,32 +467,33 @@
                 <p class="mb-0 mt-2">
                   <strong>Ideal para:</strong> Control de inventario,
                   planificación de compras y prevención de desabastecimiento.
-                </p>
-              </div>
-
-              <div *ngSwitchDefault>
-                <strong class="d-block mb-1"
-                  >Información del Reporte Seleccionado</strong
-                >
-                <p class="mb-0">
-                  Este reporte proporcionará información detallada según el tipo
-                  seleccionado. Por favor configure los parámetros necesarios
-                  para personalizar la generación y envío automático del mismo.
-                </p>
-              </div>
-            </ng-container>
+                  </p>
+                  </div>
+                }
+                @default {
+                  <div>
+                    <strong class="d-block mb-1"
+                      >Información del Reporte Seleccionado</strong
+                    >
+                    <p class="mb-0">
+                      Este reporte proporcionará información detallada según el tipo
+                      seleccionado. Por favor configure los parámetros necesarios
+                      para personalizar la generación y envío automático del mismo.
+                    </p>
+                  </div>
+                }
+              }
+            </div>
           </div>
         </div>
-      </div>
+      }
 
-      <div
-        class="mb-4"
-        *ngIf="
-          configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor'
-        "
-        id="config-categorias"
-      >
-        <div class="d-flex justify-content-between align-items-center mb-2">
+      @if (configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor') {
+        <div
+          class="mb-4"
+          id="config-categorias"
+        >
+          <div class="d-flex justify-content-between align-items-center mb-2">
           <label class="form-label fw-bold mb-0"
             >Configuración de Categorías</label
           >
@@ -491,23 +511,24 @@
           porcentaje a cada una:
         </p>
 
-        <div
-          *ngIf="categorias.length === 0"
-          class="alert alert-info py-2 small"
-        >
-          <i class="fa fa-info-circle me-1"></i> No hay categorías disponibles
-          en el sistema.
-        </div>
-
-        <div
-          *ngIf="categorias.length > 0"
-          class="categoria-lista border rounded mb-3"
-          style="max-height: 350px; overflow-y: auto"
-        >
+        @if (categorias.length === 0) {
           <div
-            *ngFor="let categoria of categorias; let i = index"
-            class="py-2 px-3 d-flex flex-wrap align-items-center gap-2 border-bottom"
+            class="alert alert-info py-2 small"
           >
+            <i class="fa fa-info-circle me-1"></i> No hay categorías disponibles
+            en el sistema.
+          </div>
+        }
+
+        @if (categorias.length > 0) {
+          <div
+            class="categoria-lista border rounded mb-3"
+            style="max-height: 350px; overflow-y: auto"
+          >
+            @for (categoria of categorias; track categoria.id; let i = $index) {
+              <div
+                class="py-2 px-3 d-flex flex-wrap align-items-center gap-2 border-bottom"
+              >
             <!-- Checkbox y nombre -->
             <div class="form-check d-flex align-items-center flex-grow-1 me-2">
               <input
@@ -528,10 +549,10 @@
             </div>
 
             <!-- Campo de porcentaje (visible solo cuando está seleccionado) -->
-            <div
-              class="ms-auto d-flex align-items-center"
-              *ngIf="categoria.seleccionada"
-            >
+            @if (categoria.seleccionada) {
+              <div
+                class="ms-auto d-flex align-items-center"
+              >
               <div class="input-group input-group-sm" style="width: 120px">
                 <input
                   type="number"
@@ -546,30 +567,35 @@
                 />
                 <span class="input-group-text bg-light">%</span>
               </div>
-            </div>
+              </div>
+            }
+              </div>
+            }
           </div>
-        </div>
+        }
 
         <!-- Resumen de categorías seleccionadas -->
-        <div
-          class="mt-3"
-          *ngIf="
-            configuracionActual.configuracion &&
-            configuracionActual.configuracion.length > 0
-          "
-        >
-          <div class="d-flex align-items-center flex-wrap mb-2">
-            <span class="text-muted me-2 small">Categorías seleccionadas:</span>
-            <div class="d-flex flex-wrap gap-1">
-              <span
-                *ngFor="let catSel of configuracionActual.configuracion"
-                class="badge bg-primary rounded-pill"
-              >
-                {{ catSel.nombre }} ({{ catSel.porcentaje }}%)
-              </span>
+        @if (
+          configuracionActual.configuracion &&
+          configuracionActual.configuracion.length > 0
+        ) {
+          <div
+            class="mt-3"
+          >
+            <div class="d-flex align-items-center flex-wrap mb-2">
+              <span class="text-muted me-2 small">Categorías seleccionadas:</span>
+              <div class="d-flex flex-wrap gap-1">
+                @for (catSel of configuracionActual.configuracion; track catSel.id) {
+                  <span
+                    class="badge bg-primary rounded-pill"
+                  >
+                    {{ catSel.nombre }} ({{ catSel.porcentaje }}%)
+                  </span>
+                }
+              </div>
             </div>
           </div>
-        </div>
+        }
 
         <!-- Alerta informativa -->
         <!-- <div class="alert alert-info mt-3 py-2 small">
@@ -577,16 +603,15 @@
           Los porcentajes se utilizarán para ponderar las ventas en cada categoría dentro del reporte.
           Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
         </div> -->
-      </div>
-      <div
-        class="mb-4"
-        *ngIf="
-          configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor'
-        "
-        id="config-categorias"
-      >
-        <div class="form-group mb-3">
-          <label for="sucursales" class="form-label fw-bold">Sucursales</label>
+          </div>
+        }
+      @if (configuracionActual?.tipo_reporte === 'ventas-por-categoria-vendedor') {
+        <div
+          class="mb-4"
+          id="config-categorias"
+        >
+          <div class="form-group mb-3">
+            <label for="sucursales" class="form-label fw-bold">Sucursales</label>
           <div class="mb-2">
             <button
               type="button"
@@ -627,7 +652,8 @@
             sucursales seleccionadas.
           </small>
         </div>
-      </div>
+        </div>
+      }
 
       <div class="form-group mb-3">
         <label for="frecuencia" class="form-label fw-bold"
@@ -647,15 +673,16 @@
       </div>
 
       <!-- Opciones específicas por frecuencia -->
-      <div class="mb-3" [ngSwitch]="configuracionActual.frecuencia">
-        <!-- Opciones para frecuencia semanal -->
-        <div *ngSwitchCase="'semanal'" class="p-3">
-          <label class="form-label fw-bold">Días de la semana</label>
-          <div class="row">
-            <div
-              class="col-md-3 col-6 mb-2"
-              *ngFor="let dia of diasSemana; let i = index"
-            >
+      @switch (configuracionActual.frecuencia) {
+        @case ('semanal') {
+          <div class="mb-3">
+            <div class="p-3">
+              <label class="form-label fw-bold">Días de la semana</label>
+              <div class="row">
+                @for (dia of diasSemana; track dia.nombre; let i = $index) {
+                  <div
+                    class="col-md-3 col-6 mb-2"
+                  >
               <div class="form-check">
                 <input
                   class="form-check-input"
@@ -668,23 +695,30 @@
                   {{ dia.nombre }}
                 </label>
               </div>
+                  </div>
+                }
+              </div>
             </div>
           </div>
-        </div>
-
-        <!-- Opciones para frecuencia mensual -->
-        <div *ngSwitchCase="'mensual'" class="p-3">
-          <label for="dia_mes" class="form-label fw-bold">Día del mes</label>
-          <select
-            name="dia_mes"
-            id="dia_mes"
-            class="form-select w-auto"
-            [(ngModel)]="configuracionActual.dia_mes"
-          >
-            <option *ngFor="let dia of diasMes" [value]="dia">{{ dia }}</option>
-          </select>
-        </div>
-      </div>
+        }
+        @case ('mensual') {
+          <div class="mb-3">
+            <div class="p-3">
+              <label for="dia_mes" class="form-label fw-bold">Día del mes</label>
+              <select
+                name="dia_mes"
+                id="dia_mes"
+                class="form-select w-auto"
+                [(ngModel)]="configuracionActual.dia_mes"
+              >
+                @for (dia of diasMes; track dia) {
+                  <option [value]="dia">{{ dia }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        }
+      }
 
       <!-- Horarios de Envío -->
       <div class="mb-4">
@@ -800,13 +834,10 @@
         </div>
 
         <div id="lista-emails" class="d-flex flex-wrap gap-2">
-          <div
-            *ngFor="
-              let email of configuracionActual.destinatarios;
-              let i = index
-            "
-            class="d-flex align-items-center bg-light rounded px-2 py-1"
-          >
+          @for (email of configuracionActual.destinatarios; track email; let i = $index) {
+            <div
+              class="d-flex align-items-center bg-light rounded px-2 py-1"
+            >
             <span>{{ email }}</span>
             <button
               type="button"
@@ -816,7 +847,8 @@
             >
               <i class="fa fa-times"></i>
             </button>
-          </div>
+            </div>
+          }
         </div>
       </div>
 
@@ -841,10 +873,14 @@
       <!-- Botones de acción end -->
       <div class="d-flex justify-content-end mt-4">
         <button type="submit" class="btn btn-primary" [disabled]="saving">
-          <span *ngIf="!saving">
-            Guardar Configuración <i class="fa fa-save"></i
-          ></span>
-          <span *ngIf="saving">Guardando...</span>
+          @if (!saving) {
+            <span>
+              Guardar Configuración <i class="fa fa-save"></i
+            ></span>
+          }
+          @if (saving) {
+            <span>Guardando...</span>
+          }
         </button>
       </div>
     </form>
@@ -880,8 +916,12 @@
         (click)="confirmarEliminacion()"
         [disabled]="eliminando"
       >
-        <span *ngIf="!eliminando">Eliminar</span>
-        <span *ngIf="eliminando">Eliminando...</span>
+        @if (!eliminando) {
+          <span>Eliminar</span>
+        }
+        @if (eliminando) {
+          <span>Eliminando...</span>
+        }
       </button>
     </div>
   </div>
@@ -974,7 +1014,7 @@
             </div>
 
             <!-- Opciones adicionales (visible solo cuando periodosExpandidos = true) -->
-            <ng-container *ngIf="periodosExpandidos">
+            @if (periodosExpandidos) {
               <!-- Semanas -->
               <div class="col-12">
                 <small class="text-muted d-block mb-1">Semanas:</small>
@@ -1072,44 +1112,49 @@
                   </button>
                 </div>
               </div>
-            </ng-container>
+            }
           </div>
         </div>
       </div>
 
       <!-- Controles adicionales -->
       <div class="d-flex justify-content-end">
-        <button
-          type="button"
-          class="btn btn-sm btn-link text-muted"
-          (click)="toggleMostrarPeriodos()"
-          *ngIf="periodosExpandidos"
-        >
-          <i class="fa fa-chevron-up me-1"></i> Mostrar menos
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-link text-muted"
-          (click)="toggleMostrarPeriodos()"
-          *ngIf="!periodosExpandidos"
-        >
-          <i class="fa fa-chevron-down me-1"></i> Mostrar más
-        </button>
+        @if (periodosExpandidos) {
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted"
+            (click)="toggleMostrarPeriodos()"
+          >
+            <i class="fa fa-chevron-up me-1"></i> Mostrar menos
+          </button>
+        }
+        @if (!periodosExpandidos) {
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted"
+            (click)="toggleMostrarPeriodos()"
+          >
+            <i class="fa fa-chevron-down me-1"></i> Mostrar más
+          </button>
+        }
       </div>
     </div>
-    <div class="alert alert-info py-2 small" *ngIf="!fechaInicio || !fechaFin">
-      <i class="fa fa-info-circle me-1"></i>
-      Debe seleccionar tanto la fecha de inicio como la fecha de fin para
-      generar el reporte.
-    </div>
+    @if (!fechaInicio || !fechaFin) {
+      <div class="alert alert-info py-2 small">
+        <i class="fa fa-info-circle me-1"></i>
+        Debe seleccionar tanto la fecha de inicio como la fecha de fin para
+        generar el reporte.
+      </div>
+    }
 
-    <div
-      class="alert alert-warning py-2 small"
-      *ngIf="fechaInicio && fechaFin && fechaInicio > fechaFin"
-    >
-      <i class="fa fa-exclamation-triangle me-1"></i>
-      La fecha de inicio no puede ser posterior a la fecha de fin.
-    </div>
+    @if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+      <div
+        class="alert alert-warning py-2 small"
+      >
+        <i class="fa fa-exclamation-triangle me-1"></i>
+        La fecha de inicio no puede ser posterior a la fecha de fin.
+      </div>
+    }
 
     <div class="d-flex justify-content-end gap-2 mt-4">
       <button
@@ -1128,16 +1173,18 @@
         "
       >
         <i class="fa fa-download me-1"></i>
-        <span
-          *ngIf="!downloading"
-          tooltip="Descargar reporte con fechas seleccionadas"
-          >Descargar</span
-        >
-        <span
-          *ngIf="downloading"
-          tooltip="Descargando reporte con fechas seleccionadas"
-          >Descargando...</span
-        >
+        @if (!downloading) {
+          <span
+            tooltip="Descargar reporte con fechas seleccionadas"
+            >Descargar</span
+          >
+        }
+        @if (downloading) {
+          <span
+            tooltip="Descargando reporte con fechas seleccionadas"
+            >Descargando...</span
+          >
+        }
       </button>
     </div>
   </div>
@@ -1233,7 +1280,7 @@
             </div>
 
             <!-- Opciones adicionales (visible solo cuando periodosExpandidos = true) -->
-            <ng-container *ngIf="periodosExpandidos">
+            @if (periodosExpandidos) {
               <!-- Semanas -->
               <div class="col-12">
                 <small class="text-muted d-block mb-1">Semanas:</small>
@@ -1331,40 +1378,43 @@
                   </button>
                 </div>
               </div>
-            </ng-container>
+            }
           </div>
         </div>
       </div>
 
       <!-- Controles adicionales -->
       <div class="d-flex justify-content-end">
-        <button
-          type="button"
-          class="btn btn-sm btn-link text-muted"
-          (click)="toggleMostrarPeriodos()"
-          *ngIf="periodosExpandidos"
-        >
-          <i class="fa fa-chevron-up me-1"></i> Mostrar menos
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-link text-muted"
-          (click)="toggleMostrarPeriodos()"
-          *ngIf="!periodosExpandidos"
-        >
-          <i class="fa fa-chevron-down me-1"></i> Mostrar más
-        </button>
+        @if (periodosExpandidos) {
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted"
+            (click)="toggleMostrarPeriodos()"
+          >
+            <i class="fa fa-chevron-up me-1"></i> Mostrar menos
+          </button>
+        }
+        @if (!periodosExpandidos) {
+          <button
+            type="button"
+            class="btn btn-sm btn-link text-muted"
+            (click)="toggleMostrarPeriodos()"
+          >
+            <i class="fa fa-chevron-down me-1"></i> Mostrar más
+          </button>
+        }
       </div>
     </div>
 
     <!-- Alerta si las fechas no son válidas -->
-    <div
-      class="alert alert-warning py-2 small"
-      *ngIf="fechaInicio && fechaFin && fechaInicio > fechaFin"
-    >
-      <i class="fa fa-exclamation-triangle me-1"></i>
-      La fecha de inicio no puede ser posterior a la fecha de fin.
-    </div>
+    @if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+      <div
+        class="alert alert-warning py-2 small"
+      >
+        <i class="fa fa-exclamation-triangle me-1"></i>
+        La fecha de inicio no puede ser posterior a la fecha de fin.
+      </div>
+    }
 
     <div class="form-group mb-3">
       <label for="email-prueba" class="form-label"
@@ -1397,8 +1447,12 @@
           enviandoPrueba || (fechaInicio && fechaFin && fechaInicio > fechaFin)
         "
       >
-        <span *ngIf="!enviandoPrueba">Enviar Prueba</span>
-        <span *ngIf="enviandoPrueba">Enviando...</span>
+        @if (!enviandoPrueba) {
+          <span>Enviar Prueba</span>
+        }
+        @if (enviandoPrueba) {
+          <span>Enviando...</span>
+        }
       </button>
     </div>
   </div>

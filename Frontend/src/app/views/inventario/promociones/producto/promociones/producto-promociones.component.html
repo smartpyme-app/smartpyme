@@ -14,27 +14,35 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td colspan="6" class="text-center" *ngIf="producto?.promociones?.length < 1 && !loading">
-                    <span class="label label-info">No tiene promociones asignados</span>
-                </td>
-            </tr>
+            @if (producto?.promociones?.length < 1 && !loading) {
+                <tr>
+                    <td colspan="6" class="text-center">
+                        <span class="label label-info">No tiene promociones asignados</span>
+                    </td>
+                </tr>
+            }
 
-            <tr class="animated fadeIn" *ngFor=" let promocion of producto?.promociones">
-                <td class="text-center">
-                    <a (click)="deletePromocion(promocion)" class="btn btn-danger btn-sm"><i class="fa fa-minus"></i></a>
-                    <a (click)="openModal(mPromocion, promocion)" class="btn btn-default btn-sm"><i class="fa fa-pencil-alt"></i></a>
-                </td>
-                <td class="text-center">{{ promocion.precio | currency:'USD':'symbol':'1.2' }}</td>
-                <td class="text-center">
-                    <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
-                        <span *ngIf="promocion.activa">Si</span>
-                        <span *ngIf="!promocion.activa">No</span>
-                    </span>
-                </td>
-                <td class="text-center">{{ promocion.inicio | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
-                <td class="text-center">{{ promocion.fin | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
-            </tr>
+            @for (promocion of producto?.promociones; track promocion.id) {
+                <tr class="animated fadeIn">
+                    <td class="text-center">
+                        <a (click)="deletePromocion(promocion)" class="btn btn-danger btn-sm"><i class="fa fa-minus"></i></a>
+                        <a (click)="openModal(mPromocion, promocion)" class="btn btn-default btn-sm"><i class="fa fa-pencil-alt"></i></a>
+                    </td>
+                    <td class="text-center">{{ promocion.precio | currency:'USD':'symbol':'1.2' }}</td>
+                    <td class="text-center">
+                        <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
+                            @if (promocion.activa) {
+                                <span>Si</span>
+                            }
+                            @if (!promocion.activa) {
+                                <span>No</span>
+                            }
+                        </span>
+                    </td>
+                    <td class="text-center">{{ promocion.inicio | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
+                    <td class="text-center">{{ promocion.fin | date:'dd-MM-yyyy hh:mm:ss a' }}</td>
+                </tr>
+            }
         </tbody>
     </table>
 </div> 
@@ -69,8 +77,12 @@
         <div class="row">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block" [disabled]="!promocion.precio || !promocion.inicio || !promocion.fin">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar</span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

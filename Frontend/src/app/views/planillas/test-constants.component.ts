@@ -26,41 +26,55 @@ import { PlanillaConstants } from './../../constants/planilla.constants';
         </div>
       </div>
 
-      <div class="row mt-4" *ngIf="constantsData">
-        <div class="col-md-6">
-          <h4>Estados de Planilla</h4>
-          <ul>
-            <li *ngFor="let estado of planillaEstados">{{ estado.key }}: {{ estado.value }}</li>
-          </ul>
+      @if (constantsData) {
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <h4>Estados de Planilla</h4>
+            <ul>
+              @for (estado of planillaEstados; track estado.key) {
+                <li>{{ estado.key }}: {{ estado.value }}</li>
+              }
+            </ul>
+          </div>
+          
+          <div class="col-md-6">
+            <h4>Estados de Empleado</h4>
+            <ul>
+              @for (estado of empleadoEstados; track estado.key) {
+                <li>{{ estado.key }}: {{ estado.value }}</li>
+              }
+            </ul>
+          </div>
         </div>
-        
-        <div class="col-md-6">
-          <h4>Estados de Empleado</h4>
-          <ul>
-            <li *ngFor="let estado of empleadoEstados">{{ estado.key }}: {{ estado.value }}</li>
-          </ul>
-        </div>
-      </div>
+      }
 
-      <div class="row mt-4" *ngIf="constantsData">
-        <div class="col-md-6">
-          <h4>Tipos de Contrato</h4>
-          <ul>
-            <li *ngFor="let tipo of tiposContrato">{{ tipo.key }}: {{ tipo.value }}</li>
-          </ul>
+      @if (constantsData) {
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <h4>Tipos de Contrato</h4>
+            <ul>
+              @for (tipo of tiposContrato; track tipo.key) {
+                <li>{{ tipo.key }}: {{ tipo.value }}</li>
+              }
+            </ul>
+          </div>
+          
+          <div class="col-md-6">
+            <h4>Tipos de Jornada</h4>
+            <ul>
+              @for (tipo of tiposJornada; track tipo.key) {
+                <li>{{ tipo.key }}: {{ tipo.value }}</li>
+              }
+            </ul>
+          </div>
         </div>
-        
-        <div class="col-md-6">
-          <h4>Tipos de Jornada</h4>
-          <ul>
-            <li *ngFor="let tipo of tiposJornada">{{ tipo.key }}: {{ tipo.value }}</li>
-          </ul>
-        </div>
-      </div>
+      }
 
-      <div class="alert alert-info mt-4" *ngIf="message">
-        {{ message }}
-      </div>
+      @if (message) {
+        <div class="alert alert-info mt-4">
+          {{ message }}
+        </div>
+      }
     </div>
   `,
     standalone: true,

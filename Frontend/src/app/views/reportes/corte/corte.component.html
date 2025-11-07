@@ -9,15 +9,21 @@
             <input type="date" name="fecha" (change)="filtrar()" [(ngModel)]="filtros.fecha" class="form-control">
             <ng-select [(ngModel)]="filtros.id_usuario" (change)="filtrar()" (clear)="onUsuarioClear()" [clearable]="filtros.id_usuario !== ''" class="form-select  p-0" name="filtros.id_usuario">
                 <ng-option value="">Usuario</ng-option>
-                <ng-option *ngFor="let usuario of usuarios" [value]="usuario.id">
-                    {{ usuario.name }}
-                </ng-option>
+                @for (usuario of usuarios; track usuario.id) {
+                    <ng-option [value]="usuario.id">
+                        {{ usuario.name }}
+                    </ng-option>
+                }
             </ng-select>
             <select name="id_sucursal" (change)="filtrar()" [(ngModel)]="filtros.id_sucursal" class="form-select bg-default ">
-                <option value="" *ngIf="usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado'">Todas las sucursal</option>
-                <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                    {{sucursal.nombre}}
-                </option>
+                @if (usuario.tipo != 'Ventas' && usuario.tipo != 'Ventas Limitado') {
+                    <option value="">Todas las sucursal</option>
+                }
+                @for (sucursal of sucursales; track sucursal.id) {
+                    <option [value]="sucursal.id">
+                        {{sucursal.nombre}}
+                    </option>
+                }
             </select>
         </div>
     </div>
@@ -48,12 +54,14 @@
         </h3>
         <p class="mb-0 text-center">TOTAL <br> DEVOLUCIONES</p>
     </div>
-    <div class="card p-3" *ngIf="usuario.tipo == 'Administrador'">
-        <h3 class="text-center text-secondary">
-            {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
-        </h3>
-        <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
-    </div>
+    @if (usuario.tipo == 'Administrador') {
+        <div class="card p-3">
+            <h3 class="text-center text-secondary">
+                {{ (indicadores.totalGastosPagados ? indicadores.totalGastosPagados : 0) | currency }}
+            </h3>
+            <p class="mb-0 text-center">TOTAL <br> GASTOS</p>
+        </div>
+    }
 </section>
 
 
@@ -85,7 +93,9 @@
                     </tr>
                     <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">{{ indicadores.totalRecibos | currency}}</td></tr>
                     <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">{{ indicadores.totalDevolucionesVenta | currency}}</td></tr>
-                    <tr *ngIf="usuario.tipo == 'Administrador'"><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastos }}</td><td class="text-right">{{ indicadores.totalGastos | currency}}</td></tr>
+                    @if (usuario.tipo == 'Administrador') {
+                        <tr><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastos }}</td><td class="text-right">{{ indicadores.totalGastos | currency}}</td></tr>
+                    }
                     <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">{{ indicadores.totalVentasPendientes | currency}}</td></tr>
                     </tbody>
                 </table>
@@ -108,16 +118,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="indicadores?.resumen_de_caja?.length < 1">
-                            <td colspan="3">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let forma_pago of indicadores?.resumen_de_caja">
-                            <td>{{ forma_pago.nombre }}</td>
-                            <td class="text-right">{{ forma_pago.cantidad }}</td>
-                            <td class="text-right">{{ forma_pago.total | currency }}</td>
-                        </tr>
+                        @if (indicadores?.resumen_de_caja?.length < 1) {
+                            <tr>
+                                <td colspan="3">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (forma_pago of indicadores?.resumen_de_caja; track forma_pago.id || forma_pago.nombre) {
+                            <tr>
+                                <td>{{ forma_pago.nombre }}</td>
+                                <td class="text-right">{{ forma_pago.cantidad }}</td>
+                                <td class="text-right">{{ forma_pago.total | currency }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -139,16 +153,20 @@
                         </tr>
                     </thead>
                   <tbody>
-                        <tr *ngIf="indicadores?.total_ventas_canal?.length < 1">
-                            <td colspan="3">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let canal of indicadores?.total_ventas_canal">
-                            <td>{{ canal.nombre }}</td>
-                            <td class="text-right">{{ canal.cantidad }}</td>
-                            <td class="text-right">{{ canal.total | currency }}</td>
-                        </tr>
+                        @if (indicadores?.total_ventas_canal?.length < 1) {
+                            <tr>
+                                <td colspan="3">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (canal of indicadores?.total_ventas_canal; track canal.id || canal.nombre) {
+                            <tr>
+                                <td>{{ canal.nombre }}</td>
+                                <td class="text-right">{{ canal.cantidad }}</td>
+                                <td class="text-right">{{ canal.total | currency }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -170,16 +188,20 @@
                         </tr>
                     </thead>
                   <tbody>
-                        <tr *ngIf="indicadores?.total_documentos_emitidos?.length < 1">
-                            <td colspan="3">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let documento of indicadores?.total_documentos_emitidos">
-                            <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
-                            <td class="text-right" width="20%">{{ documento.inicio + ' - ' + documento.fin }}</td>
-                            <td class="text-right" width="17%">{{ documento.total | currency }}</td>
-                        </tr>
+                        @if (indicadores?.total_documentos_emitidos?.length < 1) {
+                            <tr>
+                                <td colspan="3">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (documento of indicadores?.total_documentos_emitidos; track documento.id || $index) {
+                            <tr>
+                                <td>{{ documento.nombre_sucursal }} - {{ documento.nombre }}</td>
+                                <td class="text-right" width="20%">{{ documento.inicio + ' - ' + documento.fin }}</td>
+                                <td class="text-right" width="17%">{{ documento.total | currency }}</td>
+                            </tr>
+                        }
 
                     </tbody>
                 </table>
@@ -202,16 +224,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngIf="indicadores?.total_documentos_con_devolucion?.length < 1">
-                            <td colspan="3">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let devolucion of indicadores?.total_documentos_con_devolucion">
-                            <td>{{ devolucion?.venta?.nombre_documento }}</td>
-                            <td class="text-right" width="20%">{{ devolucion?.venta?.correlativo }}</td>
-                            <td class="text-right" width="17%">{{ devolucion.total | currency }}</td>
-                        </tr>
+                        @if (indicadores?.total_documentos_con_devolucion?.length < 1) {
+                            <tr>
+                                <td colspan="3">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (devolucion of indicadores?.total_documentos_con_devolucion; track devolucion.id || $index) {
+                            <tr>
+                                <td>{{ devolucion?.venta?.nombre_documento }}</td>
+                                <td class="text-right" width="20%">{{ devolucion?.venta?.correlativo }}</td>
+                                <td class="text-right" width="17%">{{ devolucion.total | currency }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -233,16 +259,20 @@
                         </tr>
                     </thead>
                   <tbody>
-                        <tr *ngIf="indicadores?.total_documentos_anulados?.length < 1">
-                            <td colspan="3">
-                                <p class="text-muted">No hay datos que mostrar</p>
-                            </td>
-                        </tr>
-                        <tr *ngFor="let venta of indicadores?.total_documentos_anulados">
-                            <td>{{ venta.nombre_documento }}</td>
-                            <td class="text-right" width="20%">{{ venta.correlativo }}</td>
-                            <td class="text-right" width="17%">{{ venta.total | currency }}</td>
-                        </tr>
+                        @if (indicadores?.total_documentos_anulados?.length < 1) {
+                            <tr>
+                                <td colspan="3">
+                                    <p class="text-muted">No hay datos que mostrar</p>
+                                </td>
+                            </tr>
+                        }
+                        @for (venta of indicadores?.total_documentos_anulados; track venta.id || $index) {
+                            <tr>
+                                <td>{{ venta.nombre_documento }}</td>
+                                <td class="text-right" width="20%">{{ venta.correlativo }}</td>
+                                <td class="text-right" width="17%">{{ venta.total | currency }}</td>
+                            </tr>
+                        }
                     </tbody>
                 </table>
 

@@ -17,31 +17,37 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td colspan="5" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="5" class="text-center" *ngIf="!loading && producto?.inventarios.length == 0">
-                        <span class="text-muted">No tiene inventarios configurados</span>
-                    </td>
-                </tr>       
-                <tr *ngFor=" let bodega of producto.inventarios">
-                    <td>{{ bodega.nombre_bodega }}</td>
-                    <td>{{ bodega.nombre_sucursal }}</td>
-                    <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
-                    <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
-                    <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
-                    <td class="text-center">
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
-                                <i class="fa fa-sliders-h"></i>
-                            </a>
-                            <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
-                        </div>
-                    </td>
-                </tr>
+                @if (loading) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                }
+                @if (!loading && producto?.inventarios.length == 0) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            <span class="text-muted">No tiene inventarios configurados</span>
+                        </td>
+                    </tr>
+                }
+                @for (bodega of producto.inventarios; track bodega.id) {
+                    <tr>
+                        <td>{{ bodega.nombre_bodega }}</td>
+                        <td>{{ bodega.nombre_sucursal }}</td>
+                        <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
+                        <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
+                        <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
+                        <td class="text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a class="btn btn-light" (click)="openModal(mbodega, bodega)" tooltip="Configurar inventario">
+                                    <i class="fa fa-sliders-h"></i>
+                                </a>
+                                <app-crear-ajuste [producto]="producto" [inventario]="bodega" (setAjuste)="setAjuste($event)"></app-crear-ajuste>
+                            </div>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
 
@@ -61,7 +67,9 @@
                 <label for="id_bodega">Bodega:</label>
                 <select [(ngModel)]="inventario.id_bodega" class="form-select" name="id_bodega" (change)="obtenerIdSucursal(inventario.id_bodega)">
                     <option value="">Seleccione aquí</option>
-                    <option [ngValue]="bodega.id" *ngFor="let bodega of bodegas">{{ bodega.nombre }}</option>
+                    @for (bodega of bodegas; track bodega.id) {
+                        <option [ngValue]="bodega.id">{{ bodega.nombre }}</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6">
@@ -76,8 +84,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Guardar</span>
-                <span *ngIf="loading">Guardando...</span>
+                @if (!loading) {
+                    <span>Guardar</span>
+                }
+                @if (loading) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

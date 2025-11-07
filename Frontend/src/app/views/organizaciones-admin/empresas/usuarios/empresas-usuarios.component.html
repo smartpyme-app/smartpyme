@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="usuarios?.total">
-                Mostrando {{ usuarios?.to }} de {{ usuarios?.total + ' registros' }}
-            </span>
+            @if (usuarios?.total) {
+                <span class="text-muted">
+                    Mostrando {{ usuarios?.to }} de {{ usuarios?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -39,9 +41,11 @@
             </select>
             <ng-select name="id_empresa" (change)="loadAll()" [(ngModel)]="filtros.id_empresa" class="form-select p-0 border-0 bg-default w-auto">
                 <ng-option value="">Empresa</ng-option>
-                <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                    {{empresa.nombre_empresa}}
-                </ng-option>
+                @for (empresa of empresas; track empresa.id) {
+                    <ng-option [value]="empresa.id">
+                        {{empresa.nombre_empresa}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -58,44 +62,54 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td colspan="9" class="text-center" *ngIf="usuarios?.total < 1 && !loading">
-                        <span class="badge bg-primary">No tiene usuarios registrados</span>
-                    </td>
-                    <td colspan="9" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
-                    </td>
-                </tr>
+                @if (usuarios?.total < 1 && !loading) {
+                    <tr>
+                        <td colspan="9" class="text-center">
+                            <span class="badge bg-primary">No tiene usuarios registrados</span>
+                        </td>
+                    </tr>
+                }
+                @if (loading) {
+                    <tr>
+                        <td colspan="9" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                }
 
-                <tr *ngFor=" let usuario of usuarios.data">                    
-                    <td>{{usuario.name}}</td>
-                    <td>{{usuario.rol_name}}</td>
-                    <td>{{usuario.empresa.nombre}}</td>
-                    <td>
-                        <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
-                    </td>
-                    <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
-                    <td class="text-center">
-                        <div class="btn-group" role="group">
-<!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
-                                <i class="fa fa-trash"></i>
-                            </a> -->
-                            <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
-                                <i class="fa fa-arrow-right"></i>
-                            </a>
-                        </div>  
-                    </td>
+                @for (usuario of usuarios.data; track usuario.id) {
+                    <tr>                    
+                        <td>{{usuario.name}}</td>
+                        <td>{{usuario.rol_name}}</td>
+                        <td>{{usuario.empresa.nombre}}</td>
+                        <td>
+                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(usuario)" [(ngModel)]="usuario.enable" [ngClass]="{'bg-light-danger' : usuario?.enable == '0', 'bg-light-success' : usuario?.enable == '1'}">
+                                <option value="1">Activo</option>
+                                <option value="0">Inactivo</option>
+                            </select>
+                        </td>
+                        <td>{{ usuario.ultimo_login | date:'dd/MM/yyy hh:mm a' }}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group">
+    <!--                             <a *ngIf="usuario.id != 1" class="btn btn-default" (click)="delete(usuario.id)" data-toggle="tooltip" title="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a> -->
+                                <a class="btn btn-default" (click)="openModal(musuario, usuario)" data-toggle="tooltip" title="Ver">
+                                    <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </div>  
+                        </td>
 
-                </tr>
+                    </tr>
+                }
             </tbody>
         </table>
 
-        <div class="col-12" *ngIf="usuarios?.last_page > 1">
-            <app-pagination [items]="usuarios" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (usuarios?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="usuarios" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -104,8 +118,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="usuario.id">Editar </span>
-            <span *ngIf="!usuario.id">Crear </span>
+            @if (usuario.id) {
+                <span>Editar </span>
+            }
+            @if (!usuario.id) {
+                <span>Crear </span>
+            }
             usuario
         </h2>
     </div>
@@ -159,24 +177,30 @@
             <div class="form-group col-md-6">
                 <label for="tipo">Rol:</label>
                 <select name="tipo" [(ngModel)]="usuario.rol_id" class="form-control form-select">
-                    <option *ngFor="let rol of roles" [value]="rol.id">{{rol.name}}</option>
+                    @for (rol of roles; track rol.id) {
+                        <option [value]="rol.id">{{rol.name}}</option>
+                    }
                 </select>
             </div>
             
             <div class="form-group col-md-6">
                 <label for="id_empresa">Empresa:</label>
                 <ng-select [(ngModel)]="usuario.id_empresa" (change)="setSucursales()"  class="form-select p-0" name="id_empresa">
-                    <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                        {{ empresa.nombre_empresa }}
-                    </ng-option>
+                    @for (empresa of empresas; track empresa.id) {
+                        <ng-option [value]="empresa.id">
+                            {{ empresa.nombre_empresa }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
             <div class="form-group col-md-6">
                 <label for="id_sucursal">Sucursal:</label>
                 <ng-select [(ngModel)]="usuario.id_sucursal" class="form-select p-0" name="id_sucursal">
-                    <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </ng-option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <ng-option [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
 
@@ -184,8 +208,12 @@
 
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>
@@ -209,9 +237,11 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.sucursal_id" class="form-control form-select" name="filtros.sucursal_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [value]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-12">
@@ -230,8 +260,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

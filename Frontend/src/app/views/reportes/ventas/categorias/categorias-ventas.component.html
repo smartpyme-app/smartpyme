@@ -24,7 +24,9 @@
             </div>
             <div class="form-group">
                 <button type="submit" class="btn btn-default" tooltip="Filtrar"><i class="fa fa-filter"></i></button>
-                <app-descargar-excel *ngIf="ventas?.length > 0" [nombre]="'Ventas por Categoria'"></app-descargar-excel>
+                @if (ventas?.length > 0) {
+                    <app-descargar-excel [nombre]="'Ventas por Categoria'"></app-descargar-excel>
+                }
             </div>
         </form>
     </div>
@@ -42,32 +44,39 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="8" class="text-center" *ngIf="ventas?.length < 1 && !loading">
-                        <span class="badge badge-info">No tiene ventas registradas</span>
-                    </td>
-                    <td colspan="8" class="text-center" *ngIf="loading">
-                        <span class="badge badge-info">Cargando...</span>
-                    </td>
+                    @if (ventas?.length < 1 && !loading) {
+                        <td colspan="8" class="text-center">
+                            <span class="badge badge-info">No tiene ventas registradas</span>
+                        </td>
+                    }
+                    @if (loading) {
+                        <td colspan="8" class="text-center">
+                            <span class="badge badge-info">Cargando...</span>
+                        </td>
+                    }
                 </tr>
 
-                <tr class="animated fadeIn" *ngFor=" let venta of ventas">
-                    
-                    <td>{{venta.categoria}}</td>
-                    <td class="text-center">{{venta.cantidad}}</td>
-                    <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{venta.costo | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{venta.utilidad | currency:'USD':'symbol':'1.2'}}</td>
-                    <td class="text-center">{{venta.margen | number:'1.2'}} %</td>
-                </tr>
+                @for (venta of ventas; track venta.categoria || $index) {
+                    <tr class="animated fadeIn">
+                        <td>{{venta.categoria}}</td>
+                        <td class="text-center">{{venta.cantidad}}</td>
+                        <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{venta.costo | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{venta.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                        <td class="text-center">{{venta.margen | number:'1.2'}} %</td>
+                    </tr>
+                }
 
-                <tr *ngIf="ventas?.length > 0 && !loading">
-                    <td class="text-center"><b>Total</b></td>                                
-                    <td class="text-center"><b>{{ ventas | sum:'cantidad'}}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
-                    <td class="text-center"><b>{{ ventas | avg:'margen' | number:'1.2'}} %</b></td>
-                </tr>
+                @if (ventas?.length > 0 && !loading) {
+                    <tr>
+                        <td class="text-center"><b>Total</b></td>                                
+                        <td class="text-center"><b>{{ ventas | sum:'cantidad'}}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'costo' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ ventas | sum:'utilidad' | currency:'USD':'symbol':'1.2' }}</b></td>
+                        <td class="text-center"><b>{{ ventas | avg:'margen' | number:'1.2'}} %</b></td>
+                    </tr>
+                }
             </tbody>
         </table>
     </div>
@@ -101,9 +110,11 @@
                 <label for="filtro.usuario">Empleado:</label>
                 <select [(ngModel)]="filtro.usuario_id" class="form-control" name="filtro.usuario_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
-                        {{ usuario.name }}
-                    </option>
+                    @for (usuario of usuarios; track usuario.id) {
+                        <option [ngValue]="usuario.id">
+                            {{ usuario.name }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-4">
@@ -130,8 +141,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

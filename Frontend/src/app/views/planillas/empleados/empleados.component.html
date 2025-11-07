@@ -1,36 +1,38 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Empleados</h2>
-    <button
-      *ngIf="apiService.canCreate()"
-      routerLink="/planilla/empleado/crear"
-      tooltip="Crear empleado (F4)"
-      class="btn btn-default tcla-F4"
-    >
-      <i class="fa fa-plus"></i> Añadir empleado
-    </button>
+    @if (apiService.canCreate()) {
+      <button
+        routerLink="/planilla/empleado/crear"
+        tooltip="Crear empleado (F4)"
+        class="btn btn-default tcla-F4"
+      >
+        <i class="fa fa-plus"></i> Añadir empleado
+      </button>
+    }
   </section>
   
   <section class="bg-white p-4 rounded mb-3">
     <div class="row">
       <div class="col-md-6 mb-3">
-        <span
-          class="text-muted d-flex align-items-center gap-2"
-          *ngIf="empleados?.total"
-        >
-          Mostrando
-          <select
-            name="paginate"
-            class="form-select w-auto"
-            (change)="filtrarEmpleados()"
-            [(ngModel)]="filtros.paginate"
+        @if (empleados?.total) {
+          <span
+            class="text-muted d-flex align-items-center gap-2"
           >
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-          de {{ empleados?.total + " registros" }}
-        </span>
+            Mostrando
+            <select
+              name="paginate"
+              class="form-select w-auto"
+              (change)="filtrarEmpleados()"
+              [(ngModel)]="filtros.paginate"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            de {{ empleados?.total + " registros" }}
+          </span>
+        }
       </div>
   
       <div class="col-md-6 mb-3">
@@ -98,20 +100,26 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td
-                colspan="8"
-                class="text-center"
-                *ngIf="empleados?.total < 1 && !loading"
-              >
-                <span class="badge bg-primary">No hay empleados registrados</span>
-              </td>
-              <td colspan="8" class="text-center" *ngIf="loading">
-                <span class="badge bg-primary">Cargando...</span>
-              </td>
-            </tr>
+            @if (empleados?.total < 1 && !loading) {
+              <tr>
+                <td
+                  colspan="8"
+                  class="text-center"
+                >
+                  <span class="badge bg-primary">No hay empleados registrados</span>
+                </td>
+              </tr>
+            }
+            @if (loading) {
+              <tr>
+                <td colspan="8" class="text-center">
+                  <span class="badge bg-primary">Cargando...</span>
+                </td>
+              </tr>
+            }
   
-            <tr *ngFor="let empleado of empleados?.data">
+            @for (empleado of empleados?.data; track empleado.id) {
+              <tr>
               <td>{{ empleado.codigo }}</td>
               <td>{{ empleado.dui }}</td>
               <td>{{ empleado.nombres }}</td>
@@ -146,34 +154,38 @@
                     >
                       <i class="fa fa-fw fa-edit"></i> Editar
                     </a>
-                    <a
-                      *ngIf="empleado.estado == 'Activo'"
-                      (click)="cambiarEstado(empleado, 'Inactivo')"
-                      class="list-group-item list-group-item-action border-0 click"
-                    >
-                      <i class="fa fa-fw fa-ban"></i> Desactivar
-                    </a>
-                    <a
-                      *ngIf="empleado.estado == '0'"
-                      (click)="openModalDarAlta(mDarAlta, empleado)"
-                      class="list-group-item list-group-item-action border-0 click"
-                    >
-                      <i class="fa fa-fw fa-check"></i> Dar de alta
-                    </a>
-                    <a
-                      *ngIf="empleado.estado != '0'"
-                      (click)="openModalDarBaja(mDarBaja, empleado)"
-                      class="list-group-item list-group-item-action border-0 click"
-                    >
-                      <i class="fa fa-fw fa-ban"></i> Dar de baja
-                    </a>
+                    @if (empleado.estado == 'Activo') {
+                      <a
+                        (click)="cambiarEstado(empleado, 'Inactivo')"
+                        class="list-group-item list-group-item-action border-0 click"
+                      >
+                        <i class="fa fa-fw fa-ban"></i> Desactivar
+                      </a>
+                    }
+                    @if (empleado.estado == '0') {
+                      <a
+                        (click)="openModalDarAlta(mDarAlta, empleado)"
+                        class="list-group-item list-group-item-action border-0 click"
+                      >
+                        <i class="fa fa-fw fa-check"></i> Dar de alta
+                      </a>
+                    }
+                    @if (empleado.estado != '0') {
+                      <a
+                        (click)="openModalDarBaja(mDarBaja, empleado)"
+                        class="list-group-item list-group-item-action border-0 click"
+                      >
+                        <i class="fa fa-fw fa-ban"></i> Dar de baja
+                      </a>
+                    }
                     <app-ver-historial-button
                       [empleado]="empleado"
                     ></app-ver-historial-button>
                   </div>
                 </ng-template>
               </td>
-            </tr>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
@@ -226,12 +238,13 @@
               name="filtros.id_departamento"
             >
               <option value="">Todos</option>
-              <option
-                *ngFor="let departamento of departamentos"
-                [value]="departamento.id"
-              >
-                {{ departamento.nombre }}
-              </option>
+              @for (departamento of departamentos; track departamento.id) {
+                <option
+                  [value]="departamento.id"
+                >
+                  {{ departamento.nombre }}
+                </option>
+              }
             </select>
           </div>
           <div class="form-group col-sm-6">
@@ -242,17 +255,23 @@
               name="filtros.id_cargo"
             >
               <option value="">Todos</option>
-              <option *ngFor="let cargo of cargos" [value]="cargo.id">
-                {{ cargo.nombre }}
-              </option>
+              @for (cargo of cargos; track cargo.id) {
+                <option [value]="cargo.id">
+                  {{ cargo.nombre }}
+                </option>
+              }
             </select>
           </div>
         </div>
   
         <div class="d-grid mt-3">
           <button type="submit" [disabled]="loading" class="btn btn-primary">
-            <span *ngIf="!loading">Filtrar</span>
-            <span *ngIf="loading">Filtrando...</span>
+            @if (!loading) {
+              <span>Filtrar</span>
+            }
+            @if (loading) {
+              <span>Filtrando...</span>
+            }
           </button>
         </div>
       </form>
@@ -350,12 +369,13 @@
               required
             >
               <option value="">Seleccione...</option>
-              <option
-                *ngFor="let departamento of departamentos"
-                [value]="departamento.id"
-              >
-                {{ departamento.nombre }}
-              </option>
+              @for (departamento of departamentos; track departamento.id) {
+                <option
+                  [value]="departamento.id"
+                >
+                  {{ departamento.nombre }}
+                </option>
+              }
             </select>
           </div>
           <div class="form-group col-md-6">
@@ -367,9 +387,11 @@
               required
             >
               <option value="">Seleccione...</option>
-              <option *ngFor="let cargo of cargos" [value]="cargo.id">
-                {{ cargo.nombre }}
-              </option>
+              @for (cargo of cargos; track cargo.id) {
+                <option [value]="cargo.id">
+                  {{ cargo.nombre }}
+                </option>
+              }
             </select>
           </div>
   
@@ -455,8 +477,12 @@
   
           <div class="d-grid mt-4">
             <button [disabled]="saving" class="btn btn-primary btn-block">
-              <span *ngIf="!saving">Guardar</span>
-              <span *ngIf="saving">Guardando...</span>
+              @if (!saving) {
+                <span>Guardar</span>
+              }
+              @if (saving) {
+                <span>Guardando...</span>
+              }
             </button>
           </div>
         </div>
@@ -523,9 +549,11 @@
                 Terminación de contrato
               </option>
             </select>
-            <small class="text-muted" *ngIf="empleado.tipo_baja === 'Renuncia'">
-              Según la ley, el empleado debe dar un preaviso de 15 días.
-            </small>
+            @if (empleado.tipo_baja === 'Renuncia') {
+              <small class="text-muted">
+                Según la ley, el empleado debe dar un preaviso de 15 días.
+              </small>
+            }
           </div>
   
           <div class="form-group col-12 mb-3">
@@ -561,12 +589,16 @@
   
           <div class="d-grid gap-2">
             <button type="submit" [disabled]="saving" class="btn btn-danger">
-              <span *ngIf="!saving">
-                <i class="fa fa-save"></i> Confirmar baja
-              </span>
-              <span *ngIf="saving">
-                <i class="fa fa-spinner fa-spin"></i> Procesando...
-              </span>
+              @if (!saving) {
+                <span>
+                  <i class="fa fa-save"></i> Confirmar baja
+                </span>
+              }
+              @if (saving) {
+                <span>
+                  <i class="fa fa-spinner fa-spin"></i> Procesando...
+                </span>
+              }
             </button>
             <button type="button" class="btn btn-light" (click)="modalRef.hide()">
               Cancelar
@@ -617,12 +649,16 @@
   
           <div class="d-grid gap-2">
             <button type="submit" [disabled]="saving" class="btn btn-success">
-              <span *ngIf="!saving">
-                <i class="fa fa-save"></i> Confirmar alta
-              </span>
-              <span *ngIf="saving">
-                <i class="fa fa-spinner fa-spin"></i> Procesando...
-              </span>
+              @if (!saving) {
+                <span>
+                  <i class="fa fa-save"></i> Confirmar alta
+                </span>
+              }
+              @if (saving) {
+                <span>
+                  <i class="fa fa-spinner fa-spin"></i> Procesando...
+                </span>
+              }
             </button>
             <button type="button" class="btn btn-light" (click)="modalRef.hide()">
               Cancelar

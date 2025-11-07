@@ -18,11 +18,13 @@
                 </tr>
             </thead>
             <tbody>
+                @if (loading) {
                 <tr>
-                    <td colspan="3" class="text-center" *ngIf="loading">
+                    <td colspan="3" class="text-center">
                         <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
+                }
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
                     <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
@@ -30,7 +32,8 @@
                     <td>Todos los usuarios</td>
                 </tr>
 
-                <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
+                @for (precio of producto?.precios; track precio.id) {
+                <tr class="animated fadeIn">
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                     <td>{{ precio.clasificacion }}</td>
@@ -50,6 +53,7 @@
                         </div>
                     </td>
                 </tr>
+                }
             </tbody>
         </table>
     </div>
@@ -103,23 +107,29 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let usuario of usuarios">
+                        @for (usuario of usuarios; track usuario.id) {
+                        <tr>
                             <td>
-                                <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="50px"> 
+                                <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="50px">
                                 {{ usuario.name }}
                             </td>
                             <td class="text-center">
                                 <input type="checkbox" name="autorizado" [(ngModel)]="usuario.autorizado">
                             </td>
                         </tr>
+                        }
                     </tbody>
                 </table>
             </div>
         </div>
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Agregar</span>
-                <span *ngIf="loading">Agregando...</span>
+                @if (!loading) {
+                <span>Agregar</span>
+                }
+                @if (loading) {
+                <span>Agregando...</span>
+                }
             </button>
         </div>
         </form>

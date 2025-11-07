@@ -19,17 +19,22 @@
                 </tr>
             </thead>
             <tbody>
+                @if (loading) {
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="loading">
+                    <td colspan="6" class="text-center">
                         <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
+                }
+                @if (!loading && producto?.proveedores.length == 0) {
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="!loading && producto?.proveedores.length == 0">
+                    <td colspan="6" class="text-center">
                         <span class="text-muted">No tiene proveedores agregados</span>
                     </td>
-                </tr>        
-                <tr *ngFor=" let proveedor of producto.proveedores">
+                </tr>
+                }
+                @for (proveedor of producto.proveedores; track proveedor.id) {
+                <tr>
                     <td>{{ proveedor?.proveedor.tipo == 'Persona' ? proveedor?.proveedor.nombre_completo : proveedor?.proveedor.nombre_empresa | truncate:30 }}</td>
                     <td>{{ proveedor?.proveedor.correo }}</td>
                     <td>{{ proveedor?.proveedor.telefono }}</td>
@@ -39,6 +44,7 @@
                         <a (click)="delete(proveedor)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
                     </td>
                 </tr>
+                }
             </tbody>
         </table>
 
@@ -59,9 +65,11 @@
                 <div class="input-group">
                     <ng-select name="id_proveedor" [(ngModel)]="proveedor.id_proveedor" class="form-select p-0">
                         <ng-option value="">Seleccione aquí</ng-option>
-                        <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                        @for (proveedor of proveedores; track proveedor.id) {
+                        <ng-option [value]="proveedor.id">
                             {{ proveedor.tipo == 'Persona' ? proveedor.nombre_completo : proveedor.nombre_empresa }}
                         </ng-option>
+                        }
                     </ng-select>
                     <app-crear-proveedor [id_proveedor]="proveedor.id_proveedor" (update)="setProveedor($event)"></app-crear-proveedor>
                 </div>
@@ -69,8 +77,12 @@
         </div>
         <div class="d-grid mt-3">
             <button type="submit" class="btn btn-primary">
-                <span *ngIf="!loading">Agregar</span>
-                <span *ngIf="loading">Agregando...</span>
+                @if (!loading) {
+                <span>Agregar</span>
+                }
+                @if (loading) {
+                <span>Agregando...</span>
+                }
             </button>
         </div>
     </form>

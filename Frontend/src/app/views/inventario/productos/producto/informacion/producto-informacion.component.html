@@ -13,9 +13,11 @@
       <div class="input-group">
         <ng-select name="id_categoria" [(ngModel)]="producto.id_categoria" class="form-select p-0"
           (change)="updateInputValue($event)">
-          <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
+          @for (categoria of categorias; track categoria.id) {
+          <ng-option [value]="categoria.id">
             {{categoria.nombre}}
           </ng-option>
+          }
         </ng-select>
         <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
       </div>
@@ -28,9 +30,11 @@
       <div class="input-group">
         <ng-select name="id_subcategoria" [(ngModel)]="producto.id_subcategoria" class="form-select p-0"
           (change)="updateInputValue($event)">
-          <ng-option *ngFor="let subcategoria of subcategRes" [value]="subcategoria.id">
+          @for (subcategoria of subcategRes; track subcategoria.id) {
+          <ng-option [value]="subcategoria.id">
             {{subcategoria.nombre}}
           </ng-option>
+          }
         </ng-select>
         <app-crear-categoria (update)="setCategoria($event)"></app-crear-categoria>
       </div>
@@ -62,23 +66,29 @@
       </div>
     </div>
      <!-- unidad de medida -->
-     <div class="form-group col-md-4 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
+     @if (producto.tipo != 'Servicio') {
+     <div class="form-group col-md-4 col-lg-3">
       <label for="medida">U. de Medida</label>
       <ng-select [(ngModel)]="producto.medida" class="form-select p-0" name="medida">
-        <ng-option *ngFor="let medida of medidas" [value]="medida.nombre">
+        @for (medida of medidas; track medida.nombre) {
+        <ng-option [value]="medida.nombre">
           {{ medida.nombre }}
         </ng-option>
+        }
       </ng-select>
     </div>
+    }
     <!-- codigo de barra  -->
     <div class="form-group col-md-6 col-lg-3">
       <label for="barcode">Código de barras</label>
       <div class="input-group">
         <input type="text" class="form-control" [(ngModel)]="producto.barcode" name="barcode" placeholder="Escribe aquí"
           mask='0*'>
-        <span class="input-group-text" *ngIf="producto.barcode">
+        @if (producto.barcode) {
+        <span class="input-group-text">
           <a class="click" tooltip="Generar codigo de barra" (click)="barcode()"><i class="fa fa-barcode"></i></a>
         </span>
+        }
       </div>
     </div>
 
@@ -90,7 +100,8 @@
     </div>
 
         <h6 class="my-3 font-weight-bold">Precio</h6>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+        @if (!loading && producto.tipo != 'Materia prima') {
+        <div class="form-group col-md-4 col-lg-2">
             <label for="precio">Precio sin IVA</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -98,7 +109,9 @@
                 <input type="number" class="form-control" (change)="calPrecioFinal()" (keyup)="calPrecioFinal()" [(ngModel)]="producto.precio" name="precio" placeholder="$0.00" required>
             </div>
         </div>
-        <div *ngIf="apiService.auth_user().empresa.valor_inventario != 'promedio'" class="form-group col-md-4 col-lg-2">
+        }
+        @if (apiService.auth_user().empresa.valor_inventario != 'promedio') {
+        <div class="form-group col-md-4 col-lg-2">
             <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Última compra)</small></label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -106,7 +119,9 @@
                 <input type="number" class="form-control" (change)="actualizarCostoPromedio();" [(ngModel)]="producto.costo" name="costo" placeholder="Escribe aquí" required>
             </div>
         </div>
-        <div *ngIf="apiService.auth_user().empresa.valor_inventario == 'promedio'" class="form-group col-md-4 col-lg-2">
+        }
+        @if (apiService.auth_user().empresa.valor_inventario == 'promedio') {
+        <div class="form-group col-md-4 col-lg-2">
             <label for="costo">Costo <small class="text-muted" style="font-size: 10px;">(Promedio)</small></label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -114,7 +129,9 @@
                 <input type="number" class="form-control" (change)="actualizarCosto();" [(ngModel)]="producto.costo_promedio" name="costo_promedio" placeholder="Escribe aquí" required>
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+        }
+        @if (!loading && producto.tipo != 'Materia prima') {
+        <div class="form-group col-md-4 col-lg-2">
             <label for="tipo_impuesto">Ganancia</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -122,14 +139,18 @@
                 <input type="number" class="form-control" disabled value="{{ (producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)).toFixed(2)}}">
             </div>
         </div>
-        <div class="form-group col-md-4 col-lg-2" *ngIf="!loading && producto.tipo != 'Materia prima'">
+        }
+        @if (!loading && producto.tipo != 'Materia prima') {
+        <div class="form-group col-md-4 col-lg-2">
             <label for="impuesto">Margen</label>
             <div class="input-group">
                 <input type="number" class="form-control" disabled value="{{ ((producto.precio - (apiService.auth_user().empresa.valor_inventario == 'promedio' ? producto.costo_promedio : producto.costo)) / producto.precio * 100).toFixed(2) }}">
                 <span class="input-group-text">%</span>
             </div>
         </div>
-        <div *ngIf="usuario.empresa.iva > 0" class="form-group col-md-4 col-lg-2">
+        }
+        @if (usuario.empresa.iva > 0) {
+        <div class="form-group col-md-4 col-lg-2">
             <label class="fw-bold" for="precio_final">Precio con IVA:</label>
             <div class="input-group">
                 <!-- <span class="input-group-text">$</span> -->
@@ -137,6 +158,7 @@
                 <input type="number" placeholder="Escribe aquí" class="form-control" (change)="calPrecioBase()" (keyup)="calPrecioBase()" [(ngModel)]="producto.precio_final" name="precio_final">
             </div>
         </div>
+        }
 
     <!-- <div class="form-group col-md-4 col-lg-4 mb-3 mt-3">
       <div class="form-switch border rounded">
@@ -148,7 +170,8 @@
 
     <div class="row">
 
-      <div class="row" *ngIf="producto.tipo != 'Servicio'">
+      @if (producto.tipo != 'Servicio') {
+      <div class="row">
         <h5 class="my-3 font-weight-bold">Organización</h5>
             <!-- talla -->
 
@@ -156,9 +179,11 @@
           <label for="talla" class="w-100">Talla</label>
           <div class="input-group">
             <ng-select name="talla" [(ngModel)]="producto.talla" class="form-select p-0" placeholder="Selecciona o agrega una talla">
-              <ng-option *ngFor="let talla of tallas" [value]="talla.valor">
+              @for (talla of tallas; track talla.valor) {
+              <ng-option [value]="talla.valor">
                 {{ talla.valor }}
               </ng-option>
+              }
             </ng-select>
             <button type="button" class="btn btn-default" (click)="openModalAtributo('talla')" tooltip="Agregar talla">
               <i class="fa fa-plus"></i>
@@ -172,9 +197,11 @@
           <label for="color" class="w-100">Color</label>
           <div class="input-group">
           <ng-select name="color" [(ngModel)]="producto.color" class="form-select p-0" placeholder="Selecciona o agrega un color">
-            <ng-option *ngFor="let color of colores" [value]="color.valor">
+            @for (color of colores; track color.valor) {
+            <ng-option [value]="color.valor">
               {{ color.valor }}
             </ng-option>
+            }
           </ng-select>
             <button type="button" class="btn btn-default" (click)="openModalAtributo('color')" tooltip="Agregar color">
               <i class="fa fa-plus"></i>
@@ -187,9 +214,11 @@
           <label for="material" class="w-100">Material</label>
           <div class="input-group">
           <ng-select name="material" [(ngModel)]="producto.material" class="form-select p-0" placeholder="Selecciona o agrega un material">
-            <ng-option *ngFor="let material of materiales" [value]="material.valor">
+            @for (material of materiales; track material.valor) {
+            <ng-option [value]="material.valor">
               {{ material.valor }}
             </ng-option>
+            }
           </ng-select>
             <button type="button" class="btn btn-default" (click)="openModalAtributo('material')" tooltip="Agregar material">
               <i class="fa fa-plus"></i>
@@ -204,6 +233,7 @@
             placeholder="Escribe aquí">
         </div>
       </div>
+      }
 
     <hr style=" width: 95%; border-top: 2px solid #d7e2ff; margin: 20px auto;">
 
@@ -239,8 +269,12 @@
 
     <div class="form-group col-lg-12 mt-3">
       <button [disabled]="guardar" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-        <span *ngIf="!guardar">Guardar</span>
-        <span *ngIf="guardar">Guardando...</span>
+        @if (!guardar) {
+        <span>Guardar</span>
+        }
+        @if (guardar) {
+        <span>Guardando...</span>
+        }
       </button>
     </div>
   </div>
@@ -260,8 +294,12 @@
       </div>
       <div class="d-grid gap-2 mt-3">
         <button type="submit" class="btn btn-primary" [disabled]="!nuevoAtributo.valor">
-          <span *ngIf="!guardandoAtributo">Guardar</span>
-          <span *ngIf="guardandoAtributo">Guardando...</span>
+          @if (!guardandoAtributo) {
+          <span>Guardar</span>
+          }
+          @if (guardandoAtributo) {
+          <span>Guardando...</span>
+          }
         </button>
       </div>
     </form>

@@ -1,36 +1,38 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Planillas</h2>
-  <button
-    *ngIf="apiService.canCreate()"
-    (click)="openNuevaPlanilla(mNuevaPlanilla)"
-    tooltip="Generar nueva planilla"
-    class="btn btn-primary"
-  >
-    <i class="fa fa-plus"></i> Nueva Planilla
-  </button>
+  @if (apiService.canCreate()) {
+    <button
+      (click)="openNuevaPlanilla(mNuevaPlanilla)"
+      tooltip="Generar nueva planilla"
+      class="btn btn-primary"
+    >
+      <i class="fa fa-plus"></i> Nueva Planilla
+    </button>
+  }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span
-        class="text-muted d-flex align-items-center gap-2"
-        *ngIf="planillas?.total"
-      >
-        Mostrando
-        <select
-          name="paginate"
-          class="form-select w-auto"
-          (change)="filtrarPlanillas()"
-          [(ngModel)]="filtros.paginate"
+      @if (planillas?.total) {
+        <span
+          class="text-muted d-flex align-items-center gap-2"
         >
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        de {{ planillas?.total + " registros" }}
-      </span>
+          Mostrando
+          <select
+            name="paginate"
+            class="form-select w-auto"
+            (change)="filtrarPlanillas()"
+            [(ngModel)]="filtros.paginate"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          de {{ planillas?.total + " registros" }}
+        </span>
+      }
     </div>
 
     <div class="col-md-6 mb-3">
@@ -91,20 +93,26 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td
-              colspan="8"
-              class="text-center"
-              *ngIf="planillas?.total < 1 && !loading"
-            >
-              <span class="badge bg-primary">No hay planillas registradas</span>
-            </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+          @if (planillas?.total < 1 && !loading) {
+            <tr>
+              <td
+                colspan="8"
+                class="text-center"
+              >
+                <span class="badge bg-primary">No hay planillas registradas</span>
+              </td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="8" class="text-center">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+          }
 
-          <tr *ngFor="let planilla of planillas?.data">
+          @for (planilla of planillas?.data; track planilla.id) {
+            <tr>
             <td>{{ planilla.codigo }}</td>
             <td>
               {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
@@ -140,55 +148,62 @@
               </span>
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
-                  <a
-                    [routerLink]="['/planilla/detalle', planilla.id]"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado != 6 || planilla.estado != 0"
-                  >
-                    <i class="fa fa-fw fa-eye"></i> Ver detalles
-                  </a>
-                  <a
-                    (click)="openEditarPlanilla(planilla, mEditarPlanilla)"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 2 || planilla.estado == 3"
-                  >
-                    <i class="fa fa-fw fa-edit"></i> Editar
-                  </a>
-                  <a
-                    (click)="aprobarPlanilla(planilla)"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 2 || planilla.estado == 3"
-                  >
-                    <i class="fa fa-fw fa-check"></i> Aprobar
-                  </a>
-                  <a
-                    (click)="revertirPlanilla(planilla)"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 4"
-                  >
-                    <i class="fa fa-fw fa-undo"></i> Revertir
-                  </a>
-                  <a
-                    (click)="procesarPago(planilla)"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 2 || planilla.estado == 4"
-                  >
-                    <i class="fa fa-fw fa-money-bill"></i> Procesar Pago
-                  </a>
-                  <a
-                    (click)="generarBoletas(planilla)"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 5"
-                  >
-                    <i class="fa fa-fw fa-file-pdf"></i> Generar Boletas
-                  </a>
-                  <a
-                    routerLink="/planilla/boletas/{{ planilla.id }}"
-                    class="list-group-item list-group-item-action border-0 click"
-                    *ngIf="planilla.estado == 5"
-                  >
-                    <i class="fa fa-fw fa-eye"></i> Ver Boletas
-                  </a>
+                  @if (planilla.estado != 6 || planilla.estado != 0) {
+                    <a
+                      [routerLink]="['/planilla/detalle', planilla.id]"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-eye"></i> Ver detalles
+                    </a>
+                  }
+                  @if (planilla.estado == 2 || planilla.estado == 3) {
+                    <a
+                      (click)="openEditarPlanilla(planilla, mEditarPlanilla)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-edit"></i> Editar
+                    </a>
+                  }
+                  @if (planilla.estado == 2 || planilla.estado == 3) {
+                    <a
+                      (click)="aprobarPlanilla(planilla)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-check"></i> Aprobar
+                    </a>
+                  }
+                  @if (planilla.estado == 4) {
+                    <a
+                      (click)="revertirPlanilla(planilla)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-undo"></i> Revertir
+                    </a>
+                  }
+                  @if (planilla.estado == 2 || planilla.estado == 4) {
+                    <a
+                      (click)="procesarPago(planilla)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-money-bill"></i> Procesar Pago
+                    </a>
+                  }
+                  @if (planilla.estado == 5) {
+                    <a
+                      (click)="generarBoletas(planilla)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-file-pdf"></i> Generar Boletas
+                    </a>
+                  }
+                  @if (planilla.estado == 5) {
+                    <a
+                      routerLink="/planilla/boletas/{{ planilla.id }}"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-eye"></i> Ver Boletas
+                    </a>
+                  }
                   <!-- <a
                     (click)="enviarBoletas(planilla)"
                     class="list-group-item list-group-item-action border-0 click"
@@ -208,13 +223,14 @@
                   >
                     <i class="fa fa-fw fa-file-pdf"></i> Exportar PDF
                   </a>
-                  <a
-                    (click)="eliminarPlanilla(planilla)"
-                    class="list-group-item list-group-item-action border-0 click text-danger"
-                    *ngIf="puedeEliminarPlanilla(planilla)"
-                  >
-                    <i class="fa fa-fw fa-trash"></i> Eliminar
-                  </a>
+                  @if (puedeEliminarPlanilla(planilla)) {
+                    <a
+                      (click)="eliminarPlanilla(planilla)"
+                      class="list-group-item list-group-item-action border-0 click text-danger"
+                    >
+                      <i class="fa fa-fw fa-trash"></i> Eliminar
+                    </a>
+                  }
                   <a
                     (click)="duplicarPlanilla(planilla, mNuevaPlanilla)"
                     class="list-group-item list-group-item-action border-0 click"
@@ -225,6 +241,7 @@
               </ng-template>
             </td>
           </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -264,12 +281,13 @@
             class="form-select"
           >
             <option value="">Todos los períodos</option>
-            <option
-              *ngFor="let periodo of periodos"
-              [value]="periodo.anio + '-' + periodo.mes"
-            >
-              {{ periodo.nombre }}
-            </option>
+            @for (periodo of periodos; track periodo.anio + '-' + periodo.mes) {
+              <option
+                [value]="periodo.anio + '-' + periodo.mes"
+              >
+                {{ periodo.nombre }}
+              </option>
+            }
           </select>
         </div>
 
@@ -303,8 +321,12 @@
 
       <div class="d-grid mt-3">
         <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading">Filtrar</span>
-          <span *ngIf="loading">Filtrando...</span>
+          @if (!loading) {
+            <span>Filtrar</span>
+          }
+          @if (loading) {
+            <span>Filtrando...</span>
+          }
         </button>
       </div>
     </form>
@@ -333,12 +355,16 @@
             <option value="quincenal">Quincenal</option>
             <option value="semanal">Semanal</option>
           </select>
-          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'semanal'">
-            Planilla semanal: El salario base se dividirá entre 4.33 (semanas promedio por mes).
-          </small>
-          <small class="form-text text-muted" *ngIf="planilla.tipo_planilla === 'quincenal'">
-            Planilla quincenal: El salario base se dividirá entre 2.
-          </small>
+          @if (planilla.tipo_planilla === 'semanal') {
+            <small class="form-text text-muted">
+              Planilla semanal: El salario base se dividirá entre 4.33 (semanas promedio por mes).
+            </small>
+          }
+          @if (planilla.tipo_planilla === 'quincenal') {
+            <small class="form-text text-muted">
+              Planilla quincenal: El salario base se dividirá entre 2.
+            </small>
+          }
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -367,12 +393,16 @@
           type="submit"
           [disabled]="saving"
           class="btn btn-primary">
-          <span *ngIf="!saving">
-            <i class="fa fa-save"></i> Generar Planilla
-          </span>
-          <span *ngIf="saving">
-            <i class="fa fa-spinner fa-spin"></i> Generando...
-          </span>
+          @if (!saving) {
+            <span>
+              <i class="fa fa-save"></i> Generar Planilla
+            </span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fa fa-spinner fa-spin"></i> Generando...
+            </span>
+          }
         </button>
       </div>
     </form>
@@ -507,12 +537,16 @@
           class="btn btn-primary"
           [disabled]="saving || planillaEdit.estado !== 2"
         >
-          <span *ngIf="!saving">
-            <i class="fa fa-save"></i> Guardar Cambios
-          </span>
-          <span *ngIf="saving">
-            <i class="fa fa-spinner fa-spin"></i> Guardando...
-          </span>
+          @if (!saving) {
+            <span>
+              <i class="fa fa-save"></i> Guardar Cambios
+            </span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fa fa-spinner fa-spin"></i> Guardando...
+            </span>
+          }
         </button>
       </div>
     </form>
@@ -589,19 +623,18 @@
         </div>
 
         <!-- Validación del rango de fechas -->
-        <div
-          class="col-12"
-          *ngIf="
-            !esRangoFechasValido() &&
-            datosImportacion.fecha_inicio &&
-            datosImportacion.fecha_fin
-          "
-        >
-          <div class="alert alert-warning">
-            <i class="fa fa-exclamation-triangle me-2"></i>
-            La fecha de fin debe ser posterior a la fecha de inicio
+        @if (
+          !esRangoFechasValido() &&
+          datosImportacion.fecha_inicio &&
+          datosImportacion.fecha_fin
+        ) {
+          <div class="col-12">
+            <div class="alert alert-warning">
+              <i class="fa fa-exclamation-triangle me-2"></i>
+              La fecha de fin debe ser posterior a la fecha de inicio
+            </div>
           </div>
-        </div>
+        }
 
         <div class="col-12">
           <button
@@ -609,12 +642,16 @@
             class="btn btn-primary w-100"
             [disabled]="!esFormularioValido()"
           >
-            <span *ngIf="!procesandoImportacion">
-              <i class="fa fa-upload"></i> Importar Planillas
-            </span>
-            <span *ngIf="procesandoImportacion">
-              <i class="fa fa-spinner fa-spin"></i> Procesando...
-            </span>
+            @if (!procesandoImportacion) {
+              <span>
+                <i class="fa fa-upload"></i> Importar Planillas
+              </span>
+            }
+            @if (procesandoImportacion) {
+              <span>
+                <i class="fa fa-spinner fa-spin"></i> Procesando...
+              </span>
+            }
           </button>
         </div>
       </div>
@@ -689,12 +726,16 @@
             class="btn btn-primary w-100"
             [disabled]="procesandoExportacion"
           >
-            <span *ngIf="!procesandoExportacion">
-              <i class="fa fa-download"></i> Exportar Planillas
-            </span>
-            <span *ngIf="procesandoExportacion">
-              <i class="fa fa-spinner fa-spin"></i> Procesando...
-            </span>
+            @if (!procesandoExportacion) {
+              <span>
+                <i class="fa fa-download"></i> Exportar Planillas
+              </span>
+            }
+            @if (procesandoExportacion) {
+              <span>
+                <i class="fa fa-spinner fa-spin"></i> Procesando...
+              </span>
+            }
           </button>
         </div>
       </div>

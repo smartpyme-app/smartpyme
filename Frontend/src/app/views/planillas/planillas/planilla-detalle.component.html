@@ -5,21 +5,24 @@
       <h6 class="text-muted mb-0 badge bg-primary">Planilla {{ planilla.tipo_planilla | titlecase }}</h6>
     </div>
     
-    <p class="text-muted mb-0 " *ngIf="planilla?.codigo">
-      Código: {{ planilla.codigo }} | Período:
-      {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
-      {{ planilla.fecha_fin | date : "dd/MM/yyyy" }} | Tipo:
-      {{ planilla.tipo_planilla | titlecase }}
-    </p>
+    @if (planilla?.codigo) {
+      <p class="text-muted mb-0 ">
+        Código: {{ planilla.codigo }} | Período:
+        {{ planilla.fecha_inicio | date : "dd/MM/yyyy" }} -
+        {{ planilla.fecha_fin | date : "dd/MM/yyyy" }} | Tipo:
+        {{ planilla.tipo_planilla | titlecase }}
+      </p>
+    }
   </div>
   <button class="btn btn-light text-danger" routerLink="/planilla">
     <i class="fa fa-arrow-left"></i> Regresar
   </button>
 </section>
 
-<section class="bg-white p-4 rounded mb-1" *ngIf="!notValue">
-  <!-- Cards de Resumen -->
-  <div class="row">
+@if (!notValue) {
+  <section class="bg-white p-4 rounded mb-1">
+    <!-- Cards de Resumen -->
+    <div class="row">
     <div class="col-md-3">
       <div class="card bg-primary text-white">
         <div class="card-body">
@@ -57,22 +60,25 @@
       </div>
     </div>
   </div>
-</section>
+  </section>
+}
 
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span class="text-muted d-flex align-items-center gap-2" *ngIf="detalles">
-        Mostrando
-        <select name="paginate" class="form-select w-auto" (change)="filtrarDetallePlanillas()"
-          [(ngModel)]="filtros.paginate">
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        de {{ getTotalRegistros() }}
-      </span>
+      @if (detalles) {
+        <span class="text-muted d-flex align-items-center gap-2">
+          Mostrando
+          <select name="paginate" class="form-select w-auto" (change)="filtrarDetallePlanillas()"
+            [(ngModel)]="filtros.paginate">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          de {{ getTotalRegistros() }}
+        </span>
+      }
     </div>
 
     <div class="col-md-6 mb-3">
@@ -81,12 +87,16 @@
         <button [disabled]="downloading"
           tooltip="Exportar {{ vistaActual === 'descuentos_patronales' ? 'descuentos patronales' : 'detalles de empleados' }}"
           (click)="exportarVistaActual()" class="btn btn-default tcla-F6">
-          <span *ngIf="!downloading">
-            <img src="/assets/icons/download.png" class="icon">
-          </span>
-          <span *ngIf="downloading">
-            <i class="fa fa-spinner fa-spin"></i> Exportando...
-          </span>
+          @if (!downloading) {
+            <span>
+              <img src="/assets/icons/download.png" class="icon">
+            </span>
+          }
+          @if (downloading) {
+            <span>
+              <i class="fa fa-spinner fa-spin"></i> Exportando...
+            </span>
+          }
         </button>
 
         <!-- Controles de búsqueda existentes -->
@@ -121,7 +131,8 @@
   </div>
 
   <!-- Tabla de Detalles -->
-  <section class="bg-white p-2 rounded mb-3" *ngIf="vistaActual === 'empleados'">
+  @if (vistaActual === 'empleados') {
+    <section class="bg-white p-2 rounded mb-3">
     <div class="row mb-4">
       <div class="col-12">
         <h5><i class="fa fa-user"></i> Detalle de Empleados</h5>
@@ -139,23 +150,28 @@
             <th class="text-end">Total Ingresos</th>
         
             <!-- Columnas para El Salvador -->
-            <th class="text-end" *ngIf="esElSalvador">ISSS</th>
-            <th class="text-end" *ngIf="esElSalvador">AFP</th>
-            <th class="text-end" *ngIf="esElSalvador">ISR</th>
+            @if (esElSalvador) {
+              <th class="text-end">ISSS</th>
+              <th class="text-end">AFP</th>
+              <th class="text-end">ISR</th>
+            }
         
             <!-- Columnas dinámicas para otros países -->
-            <ng-container *ngIf="!esElSalvador">
-              <th class="text-end" *ngFor="let concepto of conceptosEmpleado">
-                {{ concepto[1].nombre }}
-              </th>
-            </ng-container>
+            @if (!esElSalvador) {
+              @for (concepto of conceptosEmpleado; track concepto[0]) {
+                <th class="text-end">
+                  {{ concepto[1].nombre }}
+                </th>
+              }
+            }
         
             <th class="text-end">Total Neto</th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>        
         <tbody>
-          <tr *ngFor="let detalle of detalles">
+          @for (detalle of detalles; track detalle.id) {
+            <tr>
             <td>
               {{ detalle.empleado?.nombres }} {{ detalle.empleado?.apellidos }}<br />
               <small class="text-muted">{{ detalle.empleado?.codigo }}</small>
@@ -178,22 +194,26 @@
             </td>
         
             <!-- Para El Salvador: columnas fijas -->
-            <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.isss_empleado | number : "1.2-2" }}
-            </td>
-            <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.afp_empleado | number : "1.2-2" }}
-            </td>
-            <td class="text-end" *ngIf="esElSalvador">
-              ${{ detalle.renta | number : "1.2-2" }}
-            </td>
+            @if (esElSalvador) {
+              <td class="text-end">
+                ${{ detalle.isss_empleado | number : "1.2-2" }}
+              </td>
+              <td class="text-end">
+                ${{ detalle.afp_empleado | number : "1.2-2" }}
+              </td>
+              <td class="text-end">
+                ${{ detalle.renta | number : "1.2-2" }}
+              </td>
+            }
         
             <!-- Para otros países: columnas dinámicas -->
-            <ng-container *ngIf="!esElSalvador">
-              <td class="text-end" *ngFor="let concepto of conceptosEmpleado">
-                ${{ calcularConcepto(detalle, concepto[1]) | number : "1.2-2" }}
-              </td>
-            </ng-container>
+            @if (!esElSalvador) {
+              @for (concepto of conceptosEmpleado; track concepto[0]) {
+                <td class="text-end">
+                  ${{ calcularConcepto(detalle, concepto[1]) | number : "1.2-2" }}
+                </td>
+              }
+            }
         
             <td class="text-end">
               ${{ detalle.sueldo_neto | number : "1.2-2" }}
@@ -209,26 +229,33 @@
                   <a (click)="editarDetalle(detalle)" class="list-group-item list-group-item-action border-0 click">
                     <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a (click)="withdrawPayroll(detalle)" *ngIf="detalle.estado !== 0"
-                    class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-trash"></i> Retirar de la planilla
-                  </a>
-                  <a (click)="includePayroll(detalle)" *ngIf="detalle.estado == 0"
-                    class="list-group-item list-group-item-action border-0 click">
-                    <i class="fa fa-fw fa-plus"></i> Incluir en la planilla
-                  </a>
-                  <a (click)="downloadInvoice(detalle)" *ngIf="detalle.estado != 0"
-                    class="list-group-item list-group-item-action border-0 click" [class.disabled]="procesando">
-                    <i class="fa" [ngClass]="{
-                      'fa-money-bill': !procesando,
-                      'fa-spinner fa-spin': procesando
-                    }"></i>
-                    {{ procesando ? "Generando..." : "Descargar Boleta de Pago" }}
-                  </a>
+                  @if (detalle.estado !== 0) {
+                    <a (click)="withdrawPayroll(detalle)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-trash"></i> Retirar de la planilla
+                    </a>
+                  }
+                  @if (detalle.estado == 0) {
+                    <a (click)="includePayroll(detalle)"
+                      class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-plus"></i> Incluir en la planilla
+                    </a>
+                  }
+                  @if (detalle.estado != 0) {
+                    <a (click)="downloadInvoice(detalle)"
+                      class="list-group-item list-group-item-action border-0 click" [class.disabled]="procesando">
+                      <i class="fa" [ngClass]="{
+                        'fa-money-bill': !procesando,
+                        'fa-spinner fa-spin': procesando
+                      }"></i>
+                      {{ procesando ? "Generando..." : "Descargar Boleta de Pago" }}
+                    </a>
+                  }
                 </div>
               </ng-template>
             </td>
-          </tr>
+            </tr>
+          }
         </tbody>
         
         <tfoot>
@@ -248,22 +275,26 @@
             </th>
         
             <!-- Columnas fijas si es El Salvador -->
-            <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('isss_empleado') | number : '1.2-2' }}
-            </th>
-            <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('afp_empleado') | number : '1.2-2' }}
-            </th>
-            <th class="text-end" *ngIf="esElSalvador">
-              ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
-            </th>
+            @if (esElSalvador) {
+              <th class="text-end">
+                ${{ getTotalCampoReal('isss_empleado') | number : '1.2-2' }}
+              </th>
+              <th class="text-end">
+                ${{ getTotalCampoReal('afp_empleado') | number : '1.2-2' }}
+              </th>
+              <th class="text-end">
+                ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
+              </th>
+            }
             
             <!-- Columnas dinámicas si NO es El Salvador -->
-            <ng-container *ngIf="!esElSalvador">
-              <th class="text-end" *ngFor="let concepto of conceptosEmpleado">
-                ${{ getTotalConcepto(concepto[0]) | number : '1.2-2' }}
-              </th>
-            </ng-container>
+            @if (!esElSalvador) {
+              @for (concepto of conceptosEmpleado; track concepto[0]) {
+                <th class="text-end">
+                  ${{ getTotalConcepto(concepto[0]) | number : '1.2-2' }}
+                </th>
+              }
+            }
         
             <th class="text-end">
               ${{ getTotalCampoReal('sueldo_neto') | number : "1.2-2" }}
@@ -273,10 +304,12 @@
         </tfoot>
       </table>
     </div>
-  </section>
+    </section>
+  }
 
   <!-- Nueva vista para descuentos patronales -->
-  <section class="bg-white p-4 rounded mb-3" *ngIf="vistaActual === 'descuentos_patronales'">
+  @if (vistaActual === 'descuentos_patronales') {
+    <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-4">
       <div class="col-12">
         <h5><i class="fa fa-percentage"></i> Descuentos Patronales</h5>
@@ -285,7 +318,8 @@
     </div>
 
     <!-- Cards de resumen de descuentos patronales -->
-    <div class="row mb-4" *ngIf="descuentosPatronales">
+    @if (descuentosPatronales) {
+      <div class="row mb-4">
       <div class="col-md-4">
         <div class="card bg-warning text-white">
           <div class="card-body">
@@ -319,7 +353,8 @@
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    }
 
     <!-- Tabla de descuentos patronales por empleado -->
     <div class="table-responsive">
@@ -331,17 +366,16 @@
             <th class="text-end">Salario Devengado</th>
         
             <!-- ✅ Aportes patronales para El Salvador -->
-            <ng-container *ngIf="esElSalvador; else dinamicosHead">
+            @if (esElSalvador) {
               <th class="text-end">ISSS Patronal</th>
               <th class="text-end">AFP Patronal</th>
-            </ng-container>
-        
-            <!-- ✅ Conceptos dinámicos para otros países -->
-            <ng-template #dinamicosHead>
-              <th class="text-end" *ngFor="let concepto of conceptosPatronales">
-                {{ concepto[1].nombre }}
-              </th>
-            </ng-template>
+            } @else {
+              @for (concepto of conceptosPatronales; track concepto[0]) {
+                <th class="text-end">
+                  {{ concepto[1].nombre }}
+                </th>
+              }
+            }
         
             <th class="text-end text-danger">Total Aportes</th>
             <th class="text-end text-muted">% sobre Salario</th>
@@ -349,7 +383,8 @@
         </thead>        
         
         <tbody>
-          <tr *ngFor="let detalle of descuentosPatronales?.detalles" class="table-row">
+          @for (detalle of descuentosPatronales?.detalles; track detalle.id) {
+            <tr class="table-row">
             <td>
               <div class="d-flex align-items-center">
                 <div>
@@ -370,17 +405,16 @@
             </td>
         
             <!-- ✅ Aportes patronales para El Salvador -->
-            <ng-container *ngIf="esElSalvador; else dinamicos">
+            @if (esElSalvador) {
               <td class="text-end">$ {{ detalle.isss_patronal | number : '1.2-2' }}</td>
               <td class="text-end">$ {{ detalle.afp_patronal | number : '1.2-2' }}</td>
-            </ng-container>
-        
-            <!-- ✅ Aportes patronales dinámicos para otros países -->
-            <ng-template #dinamicos>
-              <td class="text-end" *ngFor="let concepto of conceptosPatronales">
-                ${{ calcularConcepto(detalle, concepto[1]) | number : '1.2-2' }}
-              </td>
-            </ng-template>
+            } @else {
+              @for (concepto of conceptosPatronales; track concepto[0]) {
+                <td class="text-end">
+                  ${{ calcularConcepto(detalle, concepto[1]) | number : '1.2-2' }}
+                </td>
+              }
+            }
         
             <!-- Total aportes patronales -->
             <td class="text-end text-danger fw-bold">
@@ -391,18 +425,23 @@
             <td class="text-end text-muted">
               {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : "1.2-2" }}%
             </td>
-          </tr>
+            </tr>
+          }
         </tbody>
         
         
       </table>
     </div>
-    <div class="text-center p-4" *ngIf="!descuentosPatronales?.detalles || descuentosPatronales.detalles.length === 0">
-      <p class="text-muted">No hay descuentos patronales disponibles para esta planilla.</p>
-    </div>
-  </section>
+    @if (!descuentosPatronales?.detalles || descuentosPatronales.detalles.length === 0) {
+      <div class="text-center p-4">
+        <p class="text-muted">No hay descuentos patronales disponibles para esta planilla.</p>
+      </div>
+    }
+    </section>
+  }
 
-  <div *ngIf="detalleSeleccionado" class="mt-4 animate__animated animate__fadeIn">
+  @if (detalleSeleccionado) {
+    <div class="mt-4 animate__animated animate__fadeIn">
     <div class="card">
       <div class="card-header bg-light">
         <div class="d-flex justify-content-between align-items-center">
@@ -432,13 +471,15 @@
           </div>
 
           <!-- ✅ Mostrar advertencia para servicios profesionales -->
-          <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-            <i class="fa fa-info-circle"></i>
-            <strong>Servicios Profesionales:</strong>
-            Este empleado tiene contrato de servicios profesionales.
-            Solo se aplica retención de renta del 10% sobre el total de ingresos.
-            No aplican descuentos de ISSS ni AFP.
-          </div>
+          @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+            <div class="alert alert-info">
+              <i class="fa fa-info-circle"></i>
+              <strong>Servicios Profesionales:</strong>
+              Este empleado tiene contrato de servicios profesionales.
+              Solo se aplica retención de renta del 10% sobre el total de ingresos.
+              No aplican descuentos de ISSS ni AFP.
+            </div>
+          }
 
           <div class="row">
             <!-- Sección de Ingresos -->
@@ -458,17 +499,21 @@
                       <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_base"
                         name="salario_base" disabled />
                     </div>
-                    <small class="text-info" *ngIf="planilla.tipo_planilla === 'quincenal'">
-                      Salario quincenal: ${{
-                      detalleSeleccionado.salario_base / 2 | number : "1.2-2"
-                      }}
-                    </small>
-                    <small class="text-info" *ngIf="planilla.tipo_planilla === 'semanal'">
-                      Salario semanal: ${{
-                      detalleSeleccionado.salario_base / 4.33
-                      | number : "1.2-2"
-                      }}
-                    </small>
+                    @if (planilla.tipo_planilla === 'quincenal') {
+                      <small class="text-info">
+                        Salario quincenal: ${{
+                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                        }}
+                      </small>
+                    }
+                    @if (planilla.tipo_planilla === 'semanal') {
+                      <small class="text-info">
+                        Salario semanal: ${{
+                        detalleSeleccionado.salario_base / 4.33
+                        | number : "1.2-2"
+                        }}
+                      </small>
+                    }
                   </div>
 
                   <div class="mb-3">
@@ -485,9 +530,15 @@
                     </div>
                     <small class="text-muted">
                       De
-                      <span *ngIf="planilla.tipo_planilla === 'mensual'">30 días mensuales</span>
-                      <span *ngIf="planilla.tipo_planilla === 'quincenal'">15 días quincenales</span>
-                      <span *ngIf="planilla.tipo_planilla === 'semanal'">7 días semanales</span>
+                      @if (planilla.tipo_planilla === 'mensual') {
+                        <span>30 días mensuales</span>
+                      }
+                      @if (planilla.tipo_planilla === 'quincenal') {
+                        <span>15 días quincenales</span>
+                      }
+                      @if (planilla.tipo_planilla === 'semanal') {
+                        <span>7 días semanales</span>
+                      }
                     </small>
                   </div>
 
@@ -517,9 +568,11 @@
                     </div>
                     <small class="text-muted">
                       Monto: ${{ detalleSeleccionado.monto_horas_extra | number : "1.2-2" }}
-                      <span *ngIf="detalleSeleccionado.horas_extra > 0" class="text-info">
-                        (Valor hora: ${{ calcularValorHora() | number : "1.2-2" }})
-                      </span>
+                      @if (detalleSeleccionado.horas_extra > 0) {
+                        <span class="text-info">
+                          (Valor hora: ${{ calcularValorHora() | number : "1.2-2" }})
+                        </span>
+                      }
                     </small>
                   </div>
 
@@ -585,7 +638,7 @@
             
                 <div class="card-body">
                   <!-- 🔁 ESTÁTICO para El Salvador -->
-                  <ng-container *ngIf="esElSalvador">
+                  @if (esElSalvador) {
                     <div class="mb-3">
                       <label>ISSS (3%):</label>
                       <div class="input-group">
@@ -594,12 +647,16 @@
                           name="isss_empleado" [disabled]="true"
                           [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                       </div>
-                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                        Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
-                      </small>
-                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                        No aplica para servicios profesionales
-                      </small>
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                        <small class="text-muted">
+                          Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
+                        </small>
+                      }
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                        <small class="text-info">
+                          No aplica para servicios profesionales
+                        </small>
+                      }
                     </div>
             
                     <div class="mb-3">
@@ -610,36 +667,49 @@
                           name="afp_empleado" [disabled]="true"
                           [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
                       </div>
-                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                        Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
-                      </small>
-                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                        No aplica para servicios profesionales
-                      </small>
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                        <small class="text-muted">
+                          Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
+                        </small>
+                      }
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                        <small class="text-info">
+                          No aplica para servicios profesionales
+                        </small>
+                      }
                     </div>
             
                     <div class="mb-3">
                       <label>
-                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">ISR:</span>
-                        <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">ISR (10% fijo):</span>
+                        @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                          <span>ISR:</span>
+                        }
+                        @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                          <span>ISR (10% fijo):</span>
+                        }
                       </label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
                           [disabled]="true" />
                       </div>
-                      <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 4">
-                        Según tablas de renta vigentes
-                      </small>
-                      <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
-                        10% fijo sobre total de ingresos
-                      </small>
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                        <small class="text-muted">
+                          Según tablas de renta vigentes
+                        </small>
+                      }
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                        <small class="text-info">
+                          10% fijo sobre total de ingresos
+                        </small>
+                      }
                     </div>
-                  </ng-container>
+                  }
             
                   <!-- 🌍 DINÁMICO para otros países -->
-                  <ng-container *ngIf="!esElSalvador">
-                    <div class="mb-3" *ngFor="let concepto of conceptosDeduccion">
+                  @if (!esElSalvador) {
+                    @for (concepto of conceptosDeduccion; track concepto[0]) {
+                      <div class="mb-3">
                       <label>{{ concepto[1].nombre }}:</label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
@@ -653,8 +723,9 @@
                       <small class="text-muted">
                         {{ concepto[1].tipo === 'porcentaje' ? concepto[1].valor + '%' : 'Monto fijo' }}
                       </small>
-                    </div>
-                  </ng-container>
+                      </div>
+                    }
+                  }
             
                   <!-- 🟡 Préstamos y Anticipos (siempre aplican) -->
                   <div class="mb-3">
@@ -714,18 +785,23 @@
             <button type="submit" class="btn btn-primary" [disabled]="
                 saving || (planilla.estado !== 2 && planilla.estado !== 3)
               ">
-              <span *ngIf="!saving">
-                <i class="fa fa-save"></i> Guardar Cambios
-              </span>
-              <span *ngIf="saving">
-                <i class="fa fa-spinner fa-spin"></i> Guardando...
-              </span>
+              @if (!saving) {
+                <span>
+                  <i class="fa fa-save"></i> Guardar Cambios
+                </span>
+              }
+              @if (saving) {
+                <span>
+                  <i class="fa fa-spinner fa-spin"></i> Guardando...
+                </span>
+              }
             </button>
           </div>
         </form>
       </div>
     </div>
-  </div>
+    </div>
+  }
 </section>
 
 <ng-template #mfilter>
@@ -761,9 +837,11 @@
           <select [(ngModel)]="filtros.id_departamento" (ngModelChange)="onDepartamentoChange()" name="id_departamento"
             class="form-select">
             <option value="">Todos los departamentos</option>
-            <option *ngFor="let depto of departamentos" [value]="depto.id">
-              {{ depto.nombre }}
-            </option>
+            @for (depto of departamentos; track depto.id) {
+              <option [value]="depto.id">
+                {{ depto.nombre }}
+              </option>
+            }
           </select>
         </div>
 
@@ -773,9 +851,11 @@
           <select [(ngModel)]="filtros.id_cargo" name="id_cargo" class="form-select"
             [disabled]="!filtros.id_departamento">
             <option value="">Todos los cargos</option>
-            <option *ngFor="let cargo of cargosFiltrados" [value]="cargo.id">
-              {{ cargo.nombre }}
-            </option>
+            @for (cargo of cargosFiltrados; track cargo.id) {
+              <option [value]="cargo.id">
+                {{ cargo.nombre }}
+              </option>
+            }
           </select>
         </div>
       </div>
@@ -785,10 +865,14 @@
           <i class="fa fa-refresh"></i> Limpiar
         </button>
         <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading"> <i class="fa fa-filter"></i> Filtrar </span>
-          <span *ngIf="loading">
-            <i class="fa fa-spinner fa-spin"></i> Filtrando...
-          </span>
+          @if (!loading) {
+            <span> <i class="fa fa-filter"></i> Filtrar </span>
+          }
+          @if (loading) {
+            <span>
+              <i class="fa fa-spinner fa-spin"></i> Filtrando...
+            </span>
+          }
         </button>
       </div>
     </form>

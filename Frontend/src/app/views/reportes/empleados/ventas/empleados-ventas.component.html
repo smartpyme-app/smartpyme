@@ -12,7 +12,9 @@
 
 <div class="card">
     <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="empleados?.length"> {{ empleados?.length + ' registros' }} </span>
+        @if (empleados?.length) {
+            <span class="text-muted float-start p-2"> {{ empleados?.length + ' registros' }} </span>
+        }
 
         <div class="input-group float-end w-75">
             <input type="text" name="search" placeholder="Filtrar empleado" [(ngModel)]="buscador" focus="true" class="form-control">
@@ -53,41 +55,53 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="empleados?.length < 1 && !loading">
-                            <span class="badge badge-primary">No tiene empleados registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
-                        </td>
+                        @if (empleados?.length < 1 && !loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-primary">No tiene empleados registrados</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
 
-                    <tr *ngFor=" let empleado of empleados | filter:['nombre']:buscador">
-                        
-                        <!-- <td class="text-center">{{empleado.id}}</td> -->
-                        <td>{{empleado.nombre}} <a class="float-end d-none"  tooltip="Ver información del empleado" routerLink="/empleado/{{empleado.id}}"><i class="fa fa-edit"></i></a></td>
-                        <td>{{empleado.nombre_cargo}}</td>
-                        <td>{{empleado.comisiones_mes | currency:'USD':'symbol':'1.2'}}</td>
-                        <td>{{empleado.meta_mes | currency:'USD':'symbol':'1.2'}}</td>
-                        <td>
-                            <progressbar *ngIf="empleado.meta_mes" [value]="(empleado.ventas_brutas_mes / empleado.meta_mes) * 100" type="success" tooltip="{{ (empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2') + ' de ' + (empleado.meta_mes | currency:'USD':'symbol':'1.2')}}">
-                                <span *ngIf="empleado.meta_mes">{{ (empleado.ventas_brutas_mes / empleado.meta_mes) * 100  | number:'1.0'}}%</span>
-                                <span *ngIf="!empleado.meta_mes">0%</span>
-                            </progressbar>
-                        </td>
-                        <td>
-                            <span tooltip="Sin IVA: {{ empleado.ventas_netas_mes | currency:'USD':'symbol':'1.2'}}">{{empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2'}}</span>
-                        </td>
-
-                    </tr>
+                    @for (empleado of empleados | filter:['nombre']:buscador; track empleado.id) {
+                        <tr>
+                            <!-- <td class="text-center">{{empleado.id}}</td> -->
+                            <td>{{empleado.nombre}} <a class="float-end d-none"  tooltip="Ver información del empleado" routerLink="/empleado/{{empleado.id}}"><i class="fa fa-edit"></i></a></td>
+                            <td>{{empleado.nombre_cargo}}</td>
+                            <td>{{empleado.comisiones_mes | currency:'USD':'symbol':'1.2'}}</td>
+                            <td>{{empleado.meta_mes | currency:'USD':'symbol':'1.2'}}</td>
+                            <td>
+                                @if (empleado.meta_mes) {
+                                    <progressbar [value]="(empleado.ventas_brutas_mes / empleado.meta_mes) * 100" type="success" tooltip="{{ (empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2') + ' de ' + (empleado.meta_mes | currency:'USD':'symbol':'1.2')}}">
+                                        <span>{{ (empleado.ventas_brutas_mes / empleado.meta_mes) * 100  | number:'1.0'}}%</span>
+                                    </progressbar>
+                                }
+                                @if (!empleado.meta_mes) {
+                                    <progressbar [value]="0" type="success">
+                                        <span>0%</span>
+                                    </progressbar>
+                                }
+                            </td>
+                            <td>
+                                <span tooltip="Sin IVA: {{ empleado.ventas_netas_mes | currency:'USD':'symbol':'1.2'}}">{{empleado.ventas_brutas_mes | currency:'USD':'symbol':'1.2'}}</span>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
          </div>
     </div>
-    <div class="card-footer" *ngIf="empleados?.last_page > 1">
-        <div class="d-flex justify-content-center">
-            <app-pagination [items]="empleados" (setPagination)="setPagination($event)"></app-pagination>
+    @if (empleados?.last_page > 1) {
+        <div class="card-footer">
+            <div class="d-flex justify-content-center">
+                <app-pagination [items]="empleados" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 
@@ -108,18 +122,22 @@
                 <label for="filtro.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtro.sucursal_id" class="form-control form-select" name="filtro.sucursal_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [ngValue]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-12">
                 <label for="filtro.cargo_id">Cargo:</label>
                 <select [(ngModel)]="filtro.cargo_id" class="form-control form-select" name="filtro.cargo_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let cargo of cargos" [ngValue]="cargo.id">
-                        {{ cargo.nombre }}
-                    </option>
+                    @for (cargo of cargos; track cargo.id) {
+                        <option [ngValue]="cargo.id">
+                            {{ cargo.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
         </div>
@@ -128,8 +146,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

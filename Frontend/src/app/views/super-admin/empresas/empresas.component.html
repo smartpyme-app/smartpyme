@@ -7,9 +7,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="empresas?.total">
-                Mostrando {{ empresas?.to }} de {{ empresas?.total + ' registros' }}
-            </span>
+            @if (empresas?.total) {
+                <span class="text-muted">
+                    Mostrando {{ empresas?.to }} de {{ empresas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -50,60 +52,72 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="empresas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene empresas registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
+                        @if (empresas?.total < 1 && !loading) {
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene empresas registradas</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
 
-                    <tr class="animated fadeIn" *ngFor=" let empresa of empresas?.data">
-                        
-                        <td>{{empresa.id }}</td>
-                        <td>{{empresa.nombre }}</td>
-                        <td>{{empresa.plan }}</td>
-                        <td>{{empresa.created_at | date:'dd/MM/yyyy' }}</td>
-                        <td>{{empresa.fecha_cancelacion | date:'dd/MM/yyyy' }}</td>
-                        <td>
-                            <select name="activo" [(ngModel)]="empresa.activo" class="form-select w-auto border-0" (change)="setEstado(empresa)" [ngClass]="{'bg-light-danger' : empresa.activo == 0, 'bg-light-success' : empresa.activo == 1}">
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                        </td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a *ngIf="empresa.activo == 'Pendiente'" (click)="setEstado(empresa, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-credit-card"></i> Pagar
-                                    </a>
-                                    <a routerLink="/admin/facturacion/crear" [queryParams]="{ id_empresa: empresa.id }"  class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fas fa-fw fa-credit-card"></i> Facturar
-                                    </a>
-                                    <a *ngIf="empresa.activo != 'Cancelado'" (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Cancelar
-                                    </a>
-                                    <a *ngIf="empresa.activo == 'Cancelado'" (click)="setEstado(empresa, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-
-                    </tr>
+                    @for (empresa of empresas?.data; track empresa.id) {
+                        <tr class="animated fadeIn">
+                            <td>{{empresa.id }}</td>
+                            <td>{{empresa.nombre }}</td>
+                            <td>{{empresa.plan }}</td>
+                            <td>{{empresa.created_at | date:'dd/MM/yyyy' }}</td>
+                            <td>{{empresa.fecha_cancelacion | date:'dd/MM/yyyy' }}</td>
+                            <td>
+                                <select name="activo" [(ngModel)]="empresa.activo" class="form-select w-auto border-0" (change)="setEstado(empresa)" [ngClass]="{'bg-light-danger' : empresa.activo == 0, 'bg-light-success' : empresa.activo == 1}">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        @if (empresa.activo == 'Pendiente') {
+                                            <a (click)="setEstado(empresa, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fas fa-fw fa-credit-card"></i> Pagar
+                                            </a>
+                                        }
+                                        <a routerLink="/admin/facturacion/crear" [queryParams]="{ id_empresa: empresa.id }"  class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fas fa-fw fa-credit-card"></i> Facturar
+                                        </a>
+                                        @if (empresa.activo != 'Cancelado') {
+                                            <a (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-ban"></i> Cancelar
+                                            </a>
+                                        }
+                                        @if (empresa.activo == 'Cancelado') {
+                                            <a (click)="setEstado(empresa, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                            </a>
+                                        }
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="empresas?.last_page > 1">
-            <app-pagination [items]="empresas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (empresas?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="empresas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -177,8 +191,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

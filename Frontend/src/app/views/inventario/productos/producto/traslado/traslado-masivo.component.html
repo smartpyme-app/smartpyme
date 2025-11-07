@@ -9,18 +9,22 @@
             <label for="id_bodega_origen">Bodega origen</label>
             <select name="id_bodega_origen" [(ngModel)]="filtros.id_bodega_origen" (change)="cambiarBodegaOrigen()" class="form-select">
                 <option value="">Seleccione bodega origen</option>
-                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
+                @for (bodega of bodegas; track bodega.id) {
+                <option [value]="bodega.id">
                     {{ bodega.nombre }}
                 </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-4">
             <label for="id_bodega_destino">Bodega destino</label>
             <select name="id_bodega_destino" [(ngModel)]="filtros.id_bodega_destino" (change)="cambiarBodegaDestino()" class="form-select">
                 <option value="">Seleccione bodega destino</option>
-                <option [value]="bodega.id" *ngFor="let bodega of bodegas" [disabled]="bodega.id == filtros.id_bodega_origen">
+                @for (bodega of bodegas; track bodega.id) {
+                <option [value]="bodega.id" [disabled]="bodega.id == filtros.id_bodega_origen">
                     {{ bodega.nombre }}
                 </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-4">
@@ -28,7 +32,8 @@
             <input type="text" class="form-control" placeholder="Escribe aquí el motivo del traslado" [(ngModel)]="trasladoInventario.detalle" name="concepto">
         </div>
     </div>
-    <div class="row mt-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+    @if (filtros.id_bodega_origen && filtros.id_bodega_destino) {
+    <div class="row mt-3">
         <div class="col-md-12">
             <div class="d-flex gap-2">
                 <!-- Barra de búsqueda -->
@@ -45,45 +50,62 @@
                 <button class="btn btn-default tcla-F3" tooltip="Importar traslado" (click)="openModalImportar(mImportar)">
                     <i class="fa fa-upload"></i>
                 </button>
-                <button class="btn btn-default tcla-F3" tooltip="Limpiar selección" *ngIf="seleccionados.length > 0" (click)="limpiarSeleccion()">
+                @if (seleccionados.length > 0) {
+                <button class="btn btn-default tcla-F3" tooltip="Limpiar selección" (click)="limpiarSeleccion()">
                     <i class="fa fa-trash-alt"></i>
                 </button>
+                }
             </div>
             
             <!-- Dropdown de resultados de búsqueda -->
-            <ul *ngIf="searchControl.value?.length > 0" class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 0">
-                <li class="list-group-item text-center" *ngIf="loading">
+            @if (searchControl.value?.length > 0) {
+            <ul class="list-group opciones" style="position: absolute; width: 100%; z-index: 1000; margin-top: 0">
+                @if (loading) {
+                <li class="list-group-item text-center">
                     <small>Buscando productos...</small>
                 </li>
-                <li class="list-group-item text-center" *ngIf="!loading && productos.length === 0 && searchControl.value?.length > 0">
+                }
+                @if (!loading && productos.length === 0 && searchControl.value?.length > 0) {
+                <li class="list-group-item text-center">
                     <small>No se encontraron productos</small>
                 </li>
-                <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)" 
-                   *ngFor="let producto of productos">
-                    <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" 
+                }
+                @for (producto of productos; track producto.id) {
+                <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)">
+                    <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}"
                          class="rounded-circle img-fluid col-1">
                     <span id="producto_nombre" class="col-7 ps-2">
                         {{ producto.nombre }} <br>
                         <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span></small>
                     </span>
                     <span class="col-2 text-center" id="stock">
-                        <span *ngIf="getStockOrigen(producto) > 0" class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
-                        <span *ngIf="getStockOrigen(producto) <= 0" class="badge bg-danger">Sin stock</span>
+                        @if (getStockOrigen(producto) > 0) {
+                        <span class="badge bg-success">{{ getStockOrigen(producto) }} en origen</span>
+                        }
+                        @if (getStockOrigen(producto) <= 0) {
+                        <span class="badge bg-danger">Sin stock</span>
+                        }
                     </span>
                     <span class="col-2 text-end">
                         <span class="badge bg-light text-dark p-1">{{ getStockDestino(producto) }} en destino</span>
                     </span>
                 </a>
+                }
             </ul>
+            }
         </div>
     </div>
-    <div class="alert alert-info d-flex align-items-center mt-3" *ngIf="!filtros.id_bodega_origen || !filtros.id_bodega_destino">
+    }
+    @if (!filtros.id_bodega_origen || !filtros.id_bodega_destino) {
+    <div class="alert alert-info d-flex align-items-center mt-3">
         <i class="fa fa-info-circle me-2"></i>
         <span>Seleccione la bodega origen y destino para realizar el traslado de inventario.</span>
     </div>
+    }
 </section>
 
-<section class="card border-0 p-3 mb-3" *ngIf="filtros.id_bodega_origen && filtros.id_bodega_destino">
+@if (filtros.id_bodega_origen && filtros.id_bodega_destino) {
+<section class="card border-0 p-3 mb-3">
     <h6 class="mt-3">Productos a trasladar</h6>
     <div class="row">
         <div class="col-md-12 table-responsive">
@@ -99,16 +121,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngIf="seleccionados.length === 0">
+                    @if (seleccionados.length === 0) {
+                    <tr>
                         <td colspan="6" class="text-center py-3">
-                            <i class="fa fa-info-circle me-1 text-muted"></i> 
+                            <i class="fa fa-info-circle me-1 text-muted"></i>
                             Busque y agregue productos para realizar el traslado
                         </td>
                     </tr>
-                    <tr *ngFor="let producto of seleccionados">
+                    }
+                    @for (producto of seleccionados; track producto.id) {
+                    <tr>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
+                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px">
                                 <span>{{ producto.nombre }}</span>
                             </div>
                         </td>
@@ -120,10 +145,10 @@
                             <span class="badge bg-light text-dark">{{ producto.stock_destino || 0 }}</span>
                         </td>
                         <td>
-                            <input 
-                                type="number" 
-                                class="form-control text-center" 
-                                [(ngModel)]="producto.cantidad_traslado" 
+                            <input
+                                type="number"
+                                class="form-control text-center"
+                                [(ngModel)]="producto.cantidad_traslado"
                                 (change)="validarCantidadTraslado(producto)"
                                 min="1"
                                 [max]="producto.stock_origen"
@@ -137,6 +162,7 @@
                             </div>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -145,18 +171,23 @@
     <!-- Botón de acción en la parte inferior -->
     <div class="row mt-3">
         <div class="col-md-12 text-end">
-            <button type="submit" (click)="openModalConfirmar(mConfirmar)" 
-                    [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle" 
+            <button type="submit" (click)="openModalConfirmar(mConfirmar)"
+                    [disabled]="saving || productosParaTraslado.length === 0 || !trasladoInventario.detalle"
                     class="btn btn-primary">
-                <span *ngIf="!saving">
+                @if (!saving) {
+                <span>
                     Realizar traslado
                     <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
                 </span>
-                <span *ngIf="saving">Procesando...</span>
+                }
+                @if (saving) {
+                <span>Procesando...</span>
+                }
             </button>
         </div>
     </div>
 </section>
+}
 
 <ng-template #mConfirmar>
     <div class="modal-header">
@@ -177,7 +208,8 @@
             <p class="mb-1">Productos a trasladar: <strong>{{ productosParaTraslado.length }}</strong></p>
         </div>
 
-        <div class="table-responsive mt-3" *ngIf="productosParaTraslado.length > 0">
+        @if (productosParaTraslado.length > 0) {
+        <div class="table-responsive mt-3">
             <table class="table table-sm">
                 <thead>
                     <tr>
@@ -188,23 +220,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let item of productosParaTraslado">
+                    @for (item of productosParaTraslado; track item.id) {
+                    <tr>
                         <td>{{ item.nombre }}</td>
                         <td class="text-center">{{ item.stock_origen }}</td>
                         <td class="text-center text-primary">{{ item.cantidad_traslado }}</td>
                         <td class="text-center">{{ item.stock_origen - item.cantidad_traslado }}</td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
+        }
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" 
-                [disabled]="!trasladoInventario.detalle || productosParaTraslado.length === 0 || saving" 
+        <button type="button" class="btn btn-primary"
+                [disabled]="!trasladoInventario.detalle || productosParaTraslado.length === 0 || saving"
                 (click)="realizarTraslado()">
-            <span *ngIf="!saving">Confirmar Traslado</span>
-            <span *ngIf="saving">Procesando...</span>
+            @if (!saving) {
+            <span>Confirmar Traslado</span>
+            }
+            @if (saving) {
+            <span>Procesando...</span>
+            }
         </button>
     </div>
 </ng-template>
@@ -240,10 +279,14 @@
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
+        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving"
         (click)="importarTraslado(fileInput, importForm.value.detalle)">
-            <span *ngIf="!saving">Importar Traslado</span>
-            <span *ngIf="saving">Importando...</span>
+            @if (!saving) {
+            <span>Importar Traslado</span>
+            }
+            @if (saving) {
+            <span>Importando...</span>
+            }
         </button>
     </div>
 </ng-template>
