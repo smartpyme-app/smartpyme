@@ -304,15 +304,15 @@ class ComprasController extends Controller
             }
 
         // Incrementar el correlarivo de orden de compra
-        if ($request->estado == 'Pre-compra') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+        if ($request->tipo_documento == 'Orden de compra') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 
         
         // Incrementar el correlarivo de Sujeto excluido
         if ($request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->first();
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
             $documento->increment('correlativo');
         }
 
