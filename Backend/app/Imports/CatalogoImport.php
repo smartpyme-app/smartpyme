@@ -17,6 +17,7 @@ class CatalogoImport implements ToCollection, WithHeadingRow, WithValidation
     private $numRows = 0;
     private $errores = [];
     private $empresa_id;
+    private $cuentasProcesadas = []; // Mapa de código => id de cuentas ya procesadas
 
     public function __construct()
     {
@@ -103,11 +104,13 @@ class CatalogoImport implements ToCollection, WithHeadingRow, WithValidation
     }
 
     /**
-     * Ordenar filas por jerarquía (nivel ascendente)
+     * Ordenar filas por jerarquía (nivel ascendente, luego por código)
      */
     private function ordenarPorJerarquia(Collection $rows)
     {
-        return $rows->sortBy('nivel');
+        return $rows->sortBy(function ($row) {
+            return [$row['nivel'], $row['codigo']];
+        });
     }
 
     /**
@@ -134,22 +137,52 @@ class CatalogoImport implements ToCollection, WithHeadingRow, WithValidation
             $cuenta->saldo = isset($row['saldo']) ? $row['saldo'] : 0;
             $cuenta->saldo_inicial = isset($row['saldo']) ? $row['saldo'] : 0;
 
-            // ✅ SEGURO: Buscar cuenta padre SOLO en la empresa actual
+            // ✅ SEGURO: Buscar cuenta padre primero en las cuentas ya procesadas, luego en BD
             if (!empty($row['id_cuenta_padre'])) {
-                $cuentaPadre = Cuenta::where('codigo', $row['id_cuenta_padre'])
-                    ->where('id_empresa', $this->empresa_id) // ✅ FILTRO CRÍTICO
-                    ->first();
+                // Normalizar código padre (convertir a string para consistencia)
+                $codigoPadre = (string)$row['id_cuenta_padre'];
+                $idPadre = null;
 
-                if (!$cuentaPadre) {
-                    throw new Exception("Cuenta padre '{$row['id_cuenta_padre']}' no encontrada para la fila " . ($index + 1));
+                // 1. Buscar primero en las cuentas ya procesadas del archivo
+                if (isset($this->cuentasProcesadas[$codigoPadre])) {
+                    $idPadre = $this->cuentasProcesadas[$codigoPadre];
+                } else {
+                    // 2. Si no está en las procesadas, buscar en la base de datos
+                    // Buscar tanto como string como número para mayor compatibilidad
+                    $cuentaPadre = Cuenta::where('id_empresa', $this->empresa_id)
+                        ->where(function($query) use ($codigoPadre) {
+                            $query->where('codigo', $codigoPadre)
+                                  ->orWhere('codigo', (int)$codigoPadre);
+                        })
+                        ->first();
+
+                    if ($cuentaPadre) {
+                        $idPadre = $cuentaPadre->id;
+                    }
                 }
 
-                $cuenta->id_cuenta_padre = $cuentaPadre->id;
+                if (!$idPadre) {
+                    // Log adicional para debugging
+                    Log::warning("Cuenta padre no encontrada", [
+                        'codigo_padre' => $codigoPadre,
+                        'codigo_cuenta_actual' => $cuenta->codigo,
+                        'fila' => $index + 1,
+                        'cuentas_procesadas' => array_keys($this->cuentasProcesadas)
+                    ]);
+                    throw new Exception("Cuenta padre '{$codigoPadre}' no encontrada para la fila " . ($index + 1));
+                }
+
+                $cuenta->id_cuenta_padre = $idPadre;
             } else {
                 $cuenta->id_cuenta_padre = null;
             }
 
             $cuenta->save();
+
+            // Guardar la cuenta procesada en el mapa para futuras referencias
+            // Normalizar código a string para consistencia en las búsquedas
+            $codigoNormalizado = (string)$cuenta->codigo;
+            $this->cuentasProcesadas[$codigoNormalizado] = $cuenta->id;
 
         } catch (Exception $e) {
             $this->errores[] = "Fila " . ($index + 1) . ": " . $e->getMessage();
