@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="retenciones?.length">
-                Mostrando {{ retenciones?.length + ' registros' }}
-            </span>
+            @if (retenciones?.length) {
+                <span class="text-muted">
+                    Mostrando {{ retenciones?.length + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -43,16 +45,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="retenciones?.length < 1 && !loading">
-                            <span class="badge bg-primary">No tiene retenciones registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    } @else if (retenciones?.length < 1) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene retenciones registradas</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor="let retencion of retenciones | filter:['nombre']:filtro.buscador">
+                    @for (retencion of retenciones | filter:['nombre']:filtro.buscador; track retencion.id) {
+                        <tr>
                         <td>{{retencion.nombre }}</td>
                         <td>{{retencion.porcentaje}}%</td>
                         <td class="text-center">
@@ -70,15 +78,17 @@
                                 </div>
                             </ng-template>
                         </td>
-
-                    </tr>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="retenciones?.last_page > 1">
-            <app-pagination [items]="retenciones" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (retenciones?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="retenciones" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -111,24 +121,28 @@
                         <label for="retencion.id_cuenta_contable_ventas">Cuenta contable para ventas:</label>
                         <ng-select [(ngModel)]="retencion.id_cuenta_contable_ventas" class="form-select p-0" name="retencion.id_cuenta_contable_ventas">
                             <ng-option value="">Seleccione aquí</ng-option>
-                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
-                                <div class="d-flex align-items-center">
-                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
-                                </div>
-                            </ng-option>
+                            @for (cuenta of catalogo; track cuenta.id) {
+                                <ng-option [value]="cuenta.id">
+                                    <div class="d-flex align-items-center">
+                                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                    </div>
+                                </ng-option>
+                            }
                         </ng-select>
                     </div>
                     <div class="form-group col-md-12">
                         <label for="retencion.id_cuenta_contable_compras">Cuenta contable para compras:</label>
                         <ng-select [(ngModel)]="retencion.id_cuenta_contable_compras" class="form-select p-0" name="retencion.id_cuenta_contable_compras">
                             <ng-option value="">Seleccione aquí</ng-option>
-                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
-                                <div class="d-flex align-items-center">
-                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
-                                </div>
-                            </ng-option>
+                            @for (cuenta of catalogo; track cuenta.id) {
+                                <ng-option [value]="cuenta.id">
+                                    <div class="d-flex align-items-center">
+                                        <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                        <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                    </div>
+                                </ng-option>
+                            }
                         </ng-select>
                     </div>
                 </div>
@@ -136,8 +150,11 @@
         </div>
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (saving) {
+                    <span>Guardando...</span>
+                } @else {
+                    <span>Guardar</span>
+                }
             </button>
         </div>
     </form>

@@ -16,27 +16,31 @@
             <div class="card-body position-relative">
                 <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
                 <h4 class="card-title">Municipios</h4>
-                <div class="row" style="min-height: 350px;" *ngIf="dash?.municipios?.length">
-                    <div class="col-md-12">
-                        <div class="chart-wrapper h-100">
-                            <canvas baseChart id="chart"
-                                [data]="chartData"
-                                [options]="chartOptions"
-                                [labels]="chartLabels"
-                                [legend]="false"
-                                [type]="'bar'">
-                            </canvas>
+                @if (dash?.municipios?.length) {
+                    <div class="row" style="min-height: 350px;">
+                        <div class="col-md-12">
+                            <div class="chart-wrapper h-100">
+                                <canvas baseChart id="chart"
+                                    [data]="chartData"
+                                    [options]="chartOptions"
+                                    [labels]="chartLabels"
+                                    [legend]="false"
+                                    [type]="'bar'">
+                                </canvas>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="row" *ngIf="!dash?.municipios?.length"  style="min-height: 350px;">
-                    <div class="text-muted text-center py-5 h-100">
-                        <i class="fa fa-chart-pie fa-5x"></i>
-                        <br>
-                        Aún no hay datos
-                        <br>
+                }
+                @if (!dash?.municipios?.length) {
+                    <div class="row" style="min-height: 350px;">
+                        <div class="text-muted text-center py-5 h-100">
+                            <i class="fa fa-chart-pie fa-5x"></i>
+                            <br>
+                            Aún no hay datos
+                            <br>
+                        </div>
                     </div>
-                </div>
+                }
             </div> 
         </div>
     </div>
@@ -46,27 +50,31 @@
             <div class="card-body position-relative">
                 <button (click)="loadAll()" class="btn btn-default float-end"><i class="fa fa-sync-alt"></i></button>
                 <h4 class="card-title">Ventas</h4>
-                <div class="row" style="min-height: 350px;" *ngIf="dash?.ventas?.length">
-                    <div class="col-md-12">
-                        <div class="chart-wrapper h-100">
-                            <canvas baseChart id="chart2"
-                                [data]="chartData2"
-                                [options]="chartOptions"
-                                [labels]="chartLabels"
-                                [legend]="false"
-                                [type]="'bar'">
-                            </canvas>
+                @if (dash?.ventas?.length) {
+                    <div class="row" style="min-height: 350px;">
+                        <div class="col-md-12">
+                            <div class="chart-wrapper h-100">
+                                <canvas baseChart id="chart2"
+                                    [data]="chartData2"
+                                    [options]="chartOptions"
+                                    [labels]="chartLabels"
+                                    [legend]="false"
+                                    [type]="'bar'">
+                                </canvas>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="row" *ngIf="!dash?.ventas?.length"  style="min-height: 350px;">
-                    <div class="text-muted text-center py-5 h-100">
-                        <i class="fa fa-chart-pie fa-5x"></i>
-                        <br>
-                        Aún no hay datos
-                        <br>
+                }
+                @if (!dash?.ventas?.length) {
+                    <div class="row" style="min-height: 350px;">
+                        <div class="text-muted text-center py-5 h-100">
+                            <i class="fa fa-chart-pie fa-5x"></i>
+                            <br>
+                            Aún no hay datos
+                            <br>
+                        </div>
                     </div>
-                </div>
+                }
             </div> 
         </div>
     </div>

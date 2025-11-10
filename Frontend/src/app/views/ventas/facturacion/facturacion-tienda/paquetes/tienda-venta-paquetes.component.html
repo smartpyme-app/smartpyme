@@ -12,9 +12,11 @@
         <section class="bg-white p-4 rounded mb-3">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <span class="text-muted" *ngIf="paquetes?.total">
-                        Mostrando {{ paquetes?.to }} de {{ paquetes?.total + ' registros' }}
-                    </span>
+                    @if (paquetes?.total) {
+                        <span class="text-muted">
+                            Mostrando {{ paquetes?.to }} de {{ paquetes?.total + ' registros' }}
+                        </span>
+                    }
                 </div>
 
                 <div class="col-md-6 mb-3">
@@ -30,9 +32,11 @@
                         </select>
                         <ng-select name="id_cliente" (change)="filtrarPaquetes()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto p-0">
                             <ng-option value="">Cliente</ng-option>
-                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                                {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                            </ng-option>
+                            @for (cliente of clientes; track cliente.id) {
+                                <ng-option [value]="cliente.id">
+                                    {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                                </ng-option>
+                            }
                         </ng-select>
                     </div>
                 </div>
@@ -60,53 +64,69 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="10" class="text-center" *ngIf="paquetes?.total < 1 && !loading">
-                                    <span class="badge bg-primary">No tiene paquetes registrados</span>
-                                </td>
-                                <td colspan="10" class="text-center" *ngIf="loading">
-                                    <span class="badge bg-primary">Cargando...</span>
-                                </td>
-                            </tr>
+                            @if (paquetes?.total < 1 && !loading) {
+                                <tr>
+                                    <td colspan="10" class="text-center">
+                                        <span class="badge bg-primary">No tiene paquetes registrados</span>
+                                    </td>
+                                </tr>
+                            }
+                            @if (loading) {
+                                <tr>
+                                    <td colspan="10" class="text-center">
+                                        <span class="badge bg-primary">Cargando...</span>
+                                    </td>
+                                </tr>
+                            }
 
-                            <tr *ngFor=" let paquete of paquetes?.data">
-                                
-                                <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
-                                <td>{{paquete.nombre_cliente}}</td>
-                                <td>{{paquete.nombre_asesor}}</td>
-                                <td>{{paquete.wr}}</td>
-                                <td>{{paquete.num_guia}}</td>
-                                <td>{{paquete.num_seguimiento}}</td>
-                                <!-- <td>{{paquete.transportista}}</td> -->
-                                <!-- <td>{{paquete.consignatario}}</td> -->
-                                <!-- <td>{{paquete.transportador}}</td> -->
-                                <td class="text-end">{{paquete.piezas}}</td>
-                                <td class="text-end">{{paquete.peso}}</td>
-                                <td>
-                                    <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : paquete?.estado == 'En bodega', 'bg-warning' : paquete?.estado == 'Pendiente', 'bg-success' : paquete?.estado == 'Facturado'}">
-                                        {{ paquete.estado }}
-                                    </span>
-                                </td>
-                                <td class="text-end">{{paquete.total | currency}}</td>
-                                <td class="text-end">
-                                    <input type="checkbox" name="paquetes" id="paquete{{paquete.id}}" class="form-check d-inline" (click)="onCheckPaquete(paquete)">
-                                    <!-- <button (click)="onCheckProducto(paquete)" class="btn btn-primary float-end">Agregar</button> -->
-                                </td>
-
-                            </tr>
+                            @for (paquete of paquetes?.data; track paquete.id) {
+                                <tr>
+                                    <td><span tooltip="{{ paquete.created_at | date:'hh:mm a'}}">{{paquete.fecha | date:'dd/MM/yyyy'}}</span></td>
+                                    <td>{{paquete.nombre_cliente}}</td>
+                                    <td>{{paquete.nombre_asesor}}</td>
+                                    <td>{{paquete.wr}}</td>
+                                    <td>{{paquete.num_guia}}</td>
+                                    <td>{{paquete.num_seguimiento}}</td>
+                                    <!-- <td>{{paquete.transportista}}</td> -->
+                                    <!-- <td>{{paquete.consignatario}}</td> -->
+                                    <!-- <td>{{paquete.transportador}}</td> -->
+                                    <td class="text-end">{{paquete.piezas}}</td>
+                                    <td class="text-end">{{paquete.peso}}</td>
+                                    <td>
+                                        <span style="font-size: 0.8rem;" class="badge py-2" [ngClass]="{'bg-info' : paquete?.estado == 'En bodega', 'bg-warning' : paquete?.estado == 'Pendiente', 'bg-success' : paquete?.estado == 'Facturado'}">
+                                            {{ paquete.estado }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">{{paquete.total | currency}}</td>
+                                    <td class="text-end">
+                                        <input type="checkbox" name="paquetes" id="paquete{{paquete.id}}" class="form-check d-inline" (click)="onCheckPaquete(paquete)">
+                                        <!-- <button (click)="onCheckProducto(paquete)" class="btn btn-primary float-end">Agregar</button> -->
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
 
-                <div class="col-12" *ngIf="paquetes?.last_page > 1">
-                    <app-pagination [items]="paquetes" (setPagination)="setPagination($event)"></app-pagination>
-                </div>
+                @if (paquetes?.last_page > 1) {
+                    <div class="col-12">
+                        <app-pagination [items]="paquetes" (setPagination)="setPagination($event)"></app-pagination>
+                    </div>
+                }
             </div>
         </section>
         <section>
             <div class="row">
                 <div class="col">
-                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} paquete</span><span *ngIf="detalles.length > 1">s</span></button>
+                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">
+                        Agregar 
+                        @if (detalles.length > 0) {
+                            <span>{{ detalles.length }} paquete</span>
+                        }
+                        @if (detalles.length > 1) {
+                            <span>s</span>
+                        }
+                    </button>
                 </div>
             </div>
         </section>

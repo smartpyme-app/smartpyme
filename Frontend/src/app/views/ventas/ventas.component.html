@@ -399,10 +399,12 @@
                         }
                     </ng-select>
                 </div>
-                <!-- <div class="form-group col-md-6" *ngIf="venta.estado == 'Pendiente'">
-                <label for="fecha_pago">Fecha de pago:</label>
-                <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
-            </div> -->
+                <!-- <div class="form-group col-md-6">
+                    @if (venta.estado == 'Pendiente') {
+                        <label for="fecha_pago">Fecha de pago:</label>
+                        <input type="date" [(ngModel)]="venta.fecha_pago" name="fecha_pago" class="form-control">
+                    }
+                </div> -->
                 <div class="form-group col-md-6">
                     <label for="num_cotizacion">Núm Cotización:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.num_cotizacion" name="num_cotizacion">
@@ -582,7 +584,9 @@
     <div class="modal-title text-center">
       <h2 class="text-center">
         Filtrar
-        <!-- <span *ngIf="filtrosActivos()" class="badge bg-primary ms-2">Filtros activos</span> -->
+        <!-- @if (filtrosActivos()) {
+            <span class="badge bg-primary ms-2">Filtros activos</span>
+        } -->
       </h2>
     </div>
     <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>

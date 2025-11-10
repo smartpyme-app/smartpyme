@@ -1,10 +1,14 @@
 <div class="card">
     <div class="card-header p-2">
         <h5 class="col-12 pb-2 mb-2">Historial de ventas:</h5>
-        <span class="text-muted float-start p-2" *ngIf="ventas?.total">
-            {{ ventas?.total + ' registros' }}
-            <span *ngIf="filtrado">{{ ventas?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
-        </span>
+        @if (ventas?.total) {
+            <span class="text-muted float-start p-2">
+                {{ ventas?.total + ' registros' }}
+                @if (filtrado) {
+                    <span>{{ ventas?.data | sum:'total' | currency:'USD':'symbol':'1.2'  }}</span>
+                }
+            </span>
+        }
 
         <form name="form" autocomplete="off" (ngSubmit)="onFiltrar()">
             <div class="input-group float-end w-50">
@@ -48,16 +52,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene ventas registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (ventas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge badge-primary">No tiene ventas registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge badge-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor=" let venta of ventas?.data">
+                    @for (venta of ventas?.data; track venta.id) {
+                        <tr class="animated fadeIn">
                         
                         <td>{{ venta.id }}</td>
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
@@ -71,31 +82,39 @@
                                 {{venta.estado}}
                             </span>
                         </td> -->
-                        <td class="text-center" *ngIf="apiService.validateRole('super_admin', false) || apiService.validateRole('admin', false)">
-                            <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}">
-                                {{venta.estado}}
-                            </span>
-                        </td>
-                        <td class="text-center" *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)">
-                            <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
-                                {{venta.estado}}
-                            </span>
-                            <ng-template #popTemplate>
-                                <button class="btn btn-default" (click)="setEstado(venta, 'Pagada')">Pagada</button>
-                                <button class="btn btn-default" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
-                                <button class="btn btn-default" (click)="setEstado(venta, 'Anulada')">Anulada</button>
-                            </ng-template>
-                        </td>
+                        @if (apiService.validateRole('super_admin', false) || apiService.validateRole('admin', false)) {
+                            <td class="text-center">
+                                <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}">
+                                    {{venta.estado}}
+                                </span>
+                            </td>
+                        }
+                        @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {
+                            <td class="text-center">
+                                <span class="badge click" [ngClass]="{'badge-dark' : venta?.estado == 'En Proceso', 'badge-warning' : venta?.estado == 'Pendiente', 'badge-danger' : venta?.estado == 'Anulada', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                                    {{venta.estado}}
+                                </span>
+                                <ng-template #popTemplate>
+                                    <button class="btn btn-default" (click)="setEstado(venta, 'Pagada')">Pagada</button>
+                                    <button class="btn btn-default" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
+                                    <button class="btn btn-default" (click)="setEstado(venta, 'Anulada')">Anulada</button>
+                                </ng-template>
+                            </td>
+                        }
 
                         <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">
                             <div class="btn-group" role="group">
-                                <a *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a *ngIf="venta.credito" routerLink="/credito/{{venta.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
-                                    <i class="fa fa-money-check"></i>
-                                </a>
+                                @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {
+                                    <a class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                }
+                                @if (venta.credito) {
+                                    <a routerLink="/credito/{{venta.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
+                                        <i class="fa fa-money-check"></i>
+                                    </a>
+                                }
                                 <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver">
                                     <i class="fa fa-arrow-right"></i>
                                 </a>
@@ -104,17 +123,19 @@
                                 </a> -->
                             </div>  
                         </td>
-
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="card-footer" *ngIf="ventas?.last_page > 1">
-        <div class="d-flex justify-content-center">
-            <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+    @if (ventas?.last_page > 1) {
+        <div class="card-footer">
+            <div class="d-flex justify-content-center">
+                <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 

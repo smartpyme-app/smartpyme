@@ -6,9 +6,11 @@
     <div class="card-body">
         <h4 class="card-title">
             <!-- Información -->
-            <a *ngIf="devolucion.credito" routerLink="/credito/{{devolucion.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
-                <i class="fa fa-money-check"></i>
-            </a>
+            @if (devolucion.credito) {
+                <a routerLink="/credito/{{devolucion.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
+                    <i class="fa fa-money-check"></i>
+                </a>
+            }
         </h4>
         <div class="table-responsive">
             <table class="table table-borderless">
@@ -48,26 +50,40 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <td colspan="8" class="text-center" *ngIf="devolucion.detalles?.length < 1 && !loading">
-                        <span class="badge badge-info">No tiene productos agregados</span>
-                    </td>
-                    <td colspan="8" class="text-center" *ngIf="loading">
-                        <span class="badge badge-info">Cargando...</span>
-                    </td>
-                    <tr *ngFor="let detalle of devolucion.detalles; let i=index">
-                        <td class="text-center"> {{ i + 1 }} </td>
-                        <div class="ms-3">
-                            {{ detalle.nombre_producto }} <br>
-                            <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
-                            <ul style="font-size: 14px;">
-                                <li class="text-muted" *ngFor="let comp of detalle?.composiciones">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
-                            </ul>
-                        </div>
-                        <td class="text-end">{{ detalle.cantidad }}</td>
-                        <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
-                    </tr>
+                    @if (devolucion.detalles?.length < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-info">No tiene productos agregados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-info">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (detalle of devolucion.detalles; track detalle.id || $index) {
+                        <tr>
+                            <td class="text-center"> {{ $index + 1 }} </td>
+                            <td>
+                                <div class="ms-3">
+                                    {{ detalle.nombre_producto }} <br>
+                                    <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
+                                    <ul style="font-size: 14px;">
+                                        @for (comp of detalle?.composiciones; track comp.id || $index) {
+                                            <li class="text-muted">{{ comp.producto_nombre }} X {{ comp.cantidad }}</li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+                            <td class="text-end">{{ detalle.cantidad }}</td>
+                            <td class="text-end">{{ detalle.precio | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-end">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
+                        </tr>
+                    }
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Sub Total:</b></td>
@@ -78,31 +94,41 @@
                         <td class="text-end"><b>IVA:</b></td>
                         <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="devolucion?.descuento > 0">
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>Descuento:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion?.iva_retenido > 0">
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>Retención:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion?.exenta > 0">
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>Ventas Exentas:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion?.no_sujeta > 0">
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"><b>Ventas No Sujetas:</b></td>
-                        <td class="text-end"><b>{{ devolucion?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion.cuenta_a_terceros > 0">
-                        <td colspan="4" class="text-end"></td>
-                        <td class="text-end"> <b>Cuenta a terceros</b> </td>
-                        <td class="text-end"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
-                    </tr>
+                    @if (devolucion?.descuento > 0) {
+                        <tr>
+                            <td colspan="4" class="text-end"></td>
+                            <td class="text-end"><b>Descuento:</b></td>
+                            <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
+                        </tr>
+                    }
+                    @if (devolucion?.iva_retenido > 0) {
+                        <tr>
+                            <td colspan="4" class="text-end"></td>
+                            <td class="text-end"><b>Retención:</b></td>
+                            <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
+                        </tr>
+                    }
+                    @if (devolucion?.exenta > 0) {
+                        <tr>
+                            <td colspan="4" class="text-end"></td>
+                            <td class="text-end"><b>Ventas Exentas:</b></td>
+                            <td class="text-end"><b>{{ devolucion?.exenta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        </tr>
+                    }
+                    @if (devolucion?.no_sujeta > 0) {
+                        <tr>
+                            <td colspan="4" class="text-end"></td>
+                            <td class="text-end"><b>Ventas No Sujetas:</b></td>
+                            <td class="text-end"><b>{{ devolucion?.no_sujeta | currency:'USD':'symbol':'1.2' }}</b></td>
+                        </tr>
+                    }
+                    @if (devolucion.cuenta_a_terceros > 0) {
+                        <tr>
+                            <td colspan="4" class="text-end"></td>
+                            <td class="text-end"> <b>Cuenta a terceros</b> </td>
+                            <td class="text-end"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                        </tr>
+                    }
                     <tr>
                         <td colspan="4" class="text-end"></td>
                         <td class="text-end"><b>Total:</b></td>
@@ -114,28 +140,30 @@
     </div>
 </div>
 
-<section class="card" *ngIf="devolucion?.venta">
-    <div class="card-body">
-        <h6 class="my-3">Datos de la venta</h6>
-        <div class="table-responsive">
-            <table class="table table-borderless">
-                <tr>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th>Usuario</th>
-                    <th>Estado</th>
-                    <th>Forma de pago</th>
-                    <th>Tipo de documento</th>
-                </tr>
-                <tr>
-                    <td>{{ devolucion?.venta.fecha | date:'dd/MM/yyyy'}}</td>
-                    <td>{{ devolucion?.venta.nombre_cliente }}</td>
-                    <td>{{ devolucion?.venta.nombre_usuario }}</td>
-                    <td>{{ devolucion?.venta.estado }}</td>
-                    <td>{{ devolucion?.venta.forma_pago }}</td>
-                    <td>{{ devolucion?.venta.nombre_documento }} #{{ devolucion?.venta.correlativo }}</td>
-                </tr>
-            </table>
-        </div>    
-    </div>
-</section>
+@if (devolucion?.venta) {
+    <section class="card">
+        <div class="card-body">
+            <h6 class="my-3">Datos de la venta</h6>
+            <div class="table-responsive">
+                <table class="table table-borderless">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Usuario</th>
+                        <th>Estado</th>
+                        <th>Forma de pago</th>
+                        <th>Tipo de documento</th>
+                    </tr>
+                    <tr>
+                        <td>{{ devolucion?.venta.fecha | date:'dd/MM/yyyy'}}</td>
+                        <td>{{ devolucion?.venta.nombre_cliente }}</td>
+                        <td>{{ devolucion?.venta.nombre_usuario }}</td>
+                        <td>{{ devolucion?.venta.estado }}</td>
+                        <td>{{ devolucion?.venta.forma_pago }}</td>
+                        <td>{{ devolucion?.venta.nombre_documento }} #{{ devolucion?.venta.correlativo }}</td>
+                    </tr>
+                </table>
+            </div>    
+        </div>
+    </section>
+}

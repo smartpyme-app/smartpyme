@@ -13,9 +13,11 @@
         <section class="bg-white p-2 p-md-4 rounded mb-3">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <span class="text-muted" *ngIf="productosData?.total">
-                        Mostrando {{ productosData?.to }} de {{ productosData?.total + ' registros' }}
-                    </span>
+                    @if (productosData?.total) {
+                        <span class="text-muted">
+                            Mostrando {{ productosData?.to }} de {{ productosData?.total + ' registros' }}
+                        </span>
+                    }
                 </div>
 
                 <div class="col-md-6 mb-3">
@@ -36,9 +38,11 @@
                 <button class="btn btn-primary" (click)="loadAll()">Todos</button>
                 <ng-select style="width: 300px;" name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default">
                     <ng-option value="">Categoria</ng-option>
-                    <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                        {{categoria.nombre}}
-                    </ng-option>
+                    @for (categoria of categorias; track categoria.id) {
+                        <ng-option [value]="categoria.id">
+                            {{categoria.nombre}}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
             <div class="row">
@@ -55,15 +59,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="8" class="text-center" *ngIf="productosData?.total < 1 && !loading">
-                                    <span class="badge bg-primary">No tiene productos registrados</span>
-                                </td>
-                                <td colspan="8" class="text-center" *ngIf="loading">
-                                    <span class="badge bg-primary">Cargando...</span>
-                                </td>
-                            </tr>
-                            <tr *ngFor="let producto of productosData?.data" class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
+                            @if (productosData?.total < 1 && !loading) {
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <span class="badge bg-primary">No tiene productos registrados</span>
+                                    </td>
+                                </tr>
+                            }
+                            @if (loading) {
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <span class="badge bg-primary">Cargando...</span>
+                                    </td>
+                                </tr>
+                            }
+                            @for (producto of productosData?.data; track producto.id) {
+                                <tr class="click" [ngClass]="{'table-primary' : detalle.id_producto == producto.id}">
                                 <!-- <td>
                                     <input type="radio" name="producto" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td> -->
@@ -75,58 +86,83 @@
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
                                 <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
                                 <td class="text-right">
-                                    <div *ngIf="apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado' ">
-                                        {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
-                                    </div>
-                                    <div *ngIf="apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado' ">
-                                        <div *ngIf="filtros.id_sucursal">
-                                            {{ producto.inventarios | sum:'stock' }}
+                                    @if (apiService.auth_user().tipo == 'Ventas' || apiService.auth_user().tipo == 'Ventas Limitado') {
+                                        <div>
+                                            {{ producto.inventarios | filter:'id_bodega': apiService.auth_user().id_bodega | sum:'stock' }}
                                         </div>
-                                        <div *ngIf="!filtros.id_sucursal">
-                                            <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                                {{ producto.inventarios | sum:'stock' }}
-                                            </span>
-                                            <span *ngIf="producto?.inventarios?.length == 0" >
-                                                Sin control
-                                            </span>
-                                            <ng-template #popTemplate>
-                                                <table width="200px">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Sucursal</th>
-                                                            <th class="text-right">Stock</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr *ngFor="let inventario of producto?.inventarios">
-                                                            <td>{{ inventario.nombre_sucursal}}</td>
-                                                            <td class="text-right">{{ inventario.stock }}</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </ng-template>
+                                    }
+                                    @if (apiService.auth_user().tipo != 'Ventas' && apiService.auth_user().tipo != 'Ventas Limitado') {
+                                        <div>
+                                            @if (filtros.id_sucursal) {
+                                                <div>
+                                                    {{ producto.inventarios | sum:'stock' }}
+                                                </div>
+                                            }
+                                            @if (!filtros.id_sucursal) {
+                                                <div>
+                                                    @if (producto?.inventarios?.length > 0) {
+                                                        <span style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                                            {{ producto.inventarios | sum:'stock' }}
+                                                        </span>
+                                                    }
+                                                    @if (producto?.inventarios?.length == 0) {
+                                                        <span>
+                                                            Sin control
+                                                        </span>
+                                                    }
+                                                    <ng-template #popTemplate>
+                                                        <table width="200px">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Sucursal</th>
+                                                                    <th class="text-right">Stock</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @for (inventario of producto?.inventarios; track inventario.id) {
+                                                                    <tr>
+                                                                        <td>{{ inventario.nombre_sucursal}}</td>
+                                                                        <td class="text-right">{{ inventario.stock }}</td>
+                                                                    </tr>
+                                                                }
+                                                            </tbody>
+                                                        </table>
+                                                    </ng-template>
+                                                </div>
+                                            }
                                         </div>
-                                    </div>
+                                    }
                                 </td>
                                 <td class="text-end">
                                     <input type="checkbox" name="producto" id="producto{{producto.id}}" class="form-check d-inline" (click)="onCheckProducto(producto)">
                                     <!-- <button (click)="onCheckProducto(producto)" class="btn btn-primary float-end">Agregar</button> -->
                                 </td>
-                            </tr>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
 
 
-                <div class="col-12" *ngIf="productosData?.last_page > 1">
-                    <app-pagination [items]="productosData" (setPagination)="setPagination($event)"></app-pagination>
-                </div>
+                @if (productosData?.last_page > 1) {
+                    <div class="col-12">
+                        <app-pagination [items]="productosData" (setPagination)="setPagination($event)"></app-pagination>
+                    </div>
+                }
             </div>
         </section>
         <section>
             <div class="row">
                 <div class="col">
-                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} producto</span><span *ngIf="detalles.length > 1">s</span></button>
+                    <button class="btn btn-primary float-end" (click)="agregarDetalles();">
+                        Agregar 
+                        @if (detalles.length > 0) {
+                            <span>{{ detalles.length }} producto</span>
+                        }
+                        @if (detalles.length > 1) {
+                            <span>s</span>
+                        }
+                    </button>
                 </div>
             </div>
         </section>

@@ -11,16 +11,22 @@
                 <label for="fecha">Fecha</label><br>
                 <input type="date" class="form-control" [(ngModel)]="devolucion.fecha" name="fecha" id="fecha" required>
             </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.id_documento">
-                <label for="id_documento">Documento</label>
-                <select name="id_documento" [(ngModel)]="devolucion.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
-                    <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
-                </select>
-            </div>
-            <div class="form-group col-md-4 col-lg-2" *ngIf="devolucion.id_documento">
-                <label for="correlativo">Correlativo</label>
-                <input type="number" class="form-control" [(ngModel)]="devolucion.correlativo" name="correlativo" id="correlativo">
-            </div>
+            @if (devolucion.id_documento) {
+                <div class="form-group col-md-4 col-lg-2">
+                    <label for="id_documento">Documento</label>
+                    <select name="id_documento" [(ngModel)]="devolucion.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
+                        @for (documento of documentos; track documento.id) {
+                            <option [value]="documento.id">{{ documento.nombre }}</option>
+                        }
+                    </select>
+                </div>
+            }
+            @if (devolucion.id_documento) {
+                <div class="form-group col-md-4 col-lg-2">
+                    <label for="correlativo">Correlativo</label>
+                    <input type="number" class="form-control" [(ngModel)]="devolucion.correlativo" name="correlativo" id="correlativo">
+                </div>
+            }
             <div class="form-group col-md-4 col-lg-2">
                 <label for="tipo">Tipo</label>
                 <select name="tipo" [(ngModel)]="devolucion.tipo" class="form-select" required>
@@ -73,26 +79,34 @@
                             <td class="text-right"> IVA: </td>
                             <td width="70px" class="text-right"> {{ devolucion.iva | currency:'USD':'symbol':'1.2'}} </td>
                         </tr>
-                       <tr *ngIf="devolucion.retencion">
-                           <td class="text-right"> <b>Retención (1%)</b></td>
-                           <td style="width: 150px;" class="text-right"> {{ devolucion.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
-                           <td style="width: 50px;"></td>
-                       </tr>
-                       <tr *ngIf="devolucion.exenta > 0">
-                           <td class="text-right"> <b>Ventas Exentas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
-                           <td style="width: 50px;"></td>
-                       </tr>
-                       <tr *ngIf="devolucion.no_sujeta > 0">
-                           <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
-                           <td style="width: 50px;"></td>
-                       </tr>
-                       <tr *ngIf="devolucion.cuenta_a_terceros > 0">
-                           <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                           <td style="width: 150px;" class="text-right"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
-                           <td style="width: 50px;"></td>
-                       </tr>
+                       @if (devolucion.retencion) {
+                           <tr>
+                               <td class="text-right"> <b>Retención (1%)</b></td>
+                               <td style="width: 150px;" class="text-right"> {{ devolucion.iva_retenido | currency:'USD':'symbol':'1.2'}} </td>
+                               <td style="width: 50px;"></td>
+                           </tr>
+                       }
+                       @if (devolucion.exenta > 0) {
+                           <tr>
+                               <td class="text-right"> <b>Ventas Exentas</b> </td>
+                               <td style="width: 150px;" class="text-right"><b> {{ devolucion.exenta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                               <td style="width: 50px;"></td>
+                           </tr>
+                       }
+                       @if (devolucion.no_sujeta > 0) {
+                           <tr>
+                               <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                               <td style="width: 150px;" class="text-right"><b> {{ devolucion.no_sujeta | currency:'USD':'symbol':'1.2'}}</b> </td>
+                               <td style="width: 50px;"></td>
+                           </tr>
+                       }
+                       @if (devolucion.cuenta_a_terceros > 0) {
+                           <tr>
+                               <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                               <td style="width: 150px;" class="text-right"><b> {{ devolucion.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</b> </td>
+                               <td style="width: 50px;"></td>
+                           </tr>
+                       }
                         <tr>
                             <td class="text-right"> <b>Total:</b> </td>
                             <td width="70px" class="text-right"><b> {{ devolucion.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -106,8 +120,12 @@
         <div class="row mt-4">
             <div class="col-md-12">
                 <button type="submit" class="btn btn-primary float-end" id="submit" [disabled]="saving">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
+                    @if (!saving) {
+                        <span>Guardar</span>
+                    }
+                    @if (saving) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

@@ -16,33 +16,39 @@
   </div>
 </section>
 
-<div class="row" *ngIf="loading">
-  <div class="col-12 text-center">
-    <span class="badge bg-primary" *ngIf="!isDetalles"
-      >Cargando información de la cotización...</span
-    >
-    <span class="badge bg-primary" *ngIf="isDetalles"
-      >Cargando información de la orden de producción...</span
-    >
+@if (loading) {
+  <div class="row">
+    <div class="col-12 text-center">
+      @if (!isDetalles) {
+        <span class="badge bg-primary">Cargando información de la cotización...</span>
+      }
+      @if (isDetalles) {
+        <span class="badge bg-primary">Cargando información de la orden de producción...</span>
+      }
+    </div>
   </div>
-</div>
+}
 
-<form
-  (ngSubmit)="guardar()"
-  #ordenForm="ngForm"
-  autocomplete="off"
-  *ngIf="!loading"
->
+@if (!loading) {
+  <form
+    (ngSubmit)="guardar()"
+    #ordenForm="ngForm"
+    autocomplete="off"
+  >
   <!-- Información de la Cotización -->
   <div class="col-md-12 mb-3">
     <div class="bg-white p-4 rounded">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 *ngIf="!isDetalles">
-          Información de la Cotización #{{ cotizacion.correlativo }}
-        </h4>
-        <h4 *ngIf="isDetalles">
-          Información de la Orden de Producción #{{ cotizacion.codigo }}
-        </h4>
+        @if (!isDetalles) {
+          <h4>
+            Información de la Cotización #{{ cotizacion.correlativo }}
+          </h4>
+        }
+        @if (isDetalles) {
+          <h4>
+            Información de la Orden de Producción #{{ cotizacion.codigo }}
+          </h4>
+        }
         <!-- <span class="badge bg-success">{{cotizacion.estado}}</span> -->
       </div>
       <div class="row">
@@ -67,11 +73,12 @@
           <label class="form-label fw-bold">Fecha Cotización:</label>
           <p>{{ cotizacion.fecha | date : "dd/MM/yyyy" }}</p>
         </div>
-        <div class="col-md-3" *ngIf="isDetalles">
-          <!-- <label class="form-label fw-bold">Estado:</label>
-          <span class="badge bg-success">{{cotizacion.estado}}</span>
-          <td> -->
-          <label class="form-label fw-bold">Estado:</label>
+        @if (isDetalles) {
+          <div class="col-md-3">
+            <!-- <label class="form-label fw-bold">Estado:</label>
+            <span class="badge bg-success">{{cotizacion.estado}}</span>
+            <td> -->
+            <label class="form-label fw-bold">Estado:</label>
           <select
             name="enable"
             class="form-select w-auto border-0"
@@ -93,7 +100,8 @@
             <option value="entregada">Entregada</option>
           </select>
           <!-- </td> -->
-        </div>
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -150,15 +158,11 @@
             #fechaEntrega="ngModel"
             required
           />
-          <div
-            class="invalid-feedback"
-            *ngIf="
-              fechaEntrega.invalid &&
-              (fechaEntrega.dirty || fechaEntrega.touched)
-            "
-          >
-            La fecha de entrega es requerida
-          </div>
+          @if (fechaEntrega.invalid && (fechaEntrega.dirty || fechaEntrega.touched)) {
+            <div class="invalid-feedback">
+              La fecha de entrega es requerida
+            </div>
+          }
         </div>
 
         <!-- Container para términos y observaciones -->
@@ -196,58 +200,64 @@
         Documento Adjunto
         <i class="fas fa-file-pdf"></i>
       </h4>
-      <div class="row" *ngIf="!isDetalles">
-        <div class="col-12 mb-3 col-md-6">
-          <div class="form-group">
-            <label class="form-label">Agregar Documento (PDF opcional)</label>
-            <div class="input-group">
-              <input
-                type="file"
-                class="form-control"
-                (change)="onFileSelected($event)"
-                accept="application/pdf"
-                [disabled]="loading"
-              />
-              <!-- <button class="btn btn-outline-secondary" 
-                                type="button" 
-                                (click)="fileInput.value=''; selectedFile = null"
-                                *ngIf="selectedFile">
-                            <i class="fas fa-times"></i>
-                        </button> -->
-            </div>
-            <small class="text-muted d-block mt-1">
-              <i class="fas fa-info-circle me-1"></i>
-              Tamaño máximo permitido: 5MB
-            </small>
-            <!-- Muestra el nombre del archivo seleccionado -->
-            <div class="mt-2" *ngIf="selectedFile">
-              <span class="badge bg-info">
-                <i class="fas fa-file-pdf me-1"></i>
-                {{ selectedFile.name }}
-                ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
-              </span>
+      @if (!isDetalles) {
+        <div class="row">
+          <div class="col-12 mb-3 col-md-6">
+            <div class="form-group">
+              <label class="form-label">Agregar Documento (PDF opcional)</label>
+              <div class="input-group">
+                <input
+                  type="file"
+                  class="form-control"
+                  (change)="onFileSelected($event)"
+                  accept="application/pdf"
+                  [disabled]="loading"
+                />
+                <!-- <button class="btn btn-outline-secondary" 
+                                  type="button" 
+                                  (click)="fileInput.value=''; selectedFile = null"
+                                  *ngIf="selectedFile">
+                              <i class="fas fa-times"></i>
+                          </button> -->
+              </div>
+              <small class="text-muted d-block mt-1">
+                <i class="fas fa-info-circle me-1"></i>
+                Tamaño máximo permitido: 5MB
+              </small>
+              <!-- Muestra el nombre del archivo seleccionado -->
+              @if (selectedFile) {
+                <div class="mt-2">
+                  <span class="badge bg-info">
+                    <i class="fas fa-file-pdf me-1"></i>
+                    {{ selectedFile.name }}
+                    ({{ (selectedFile.size / 1024 / 1024).toFixed(2) }} MB)
+                  </span>
+                </div>
+              }
             </div>
           </div>
         </div>
-      </div>
+      }
       <!-- Mostar el documento adjunto si existe -->
       <!-- Mostrar el documento adjunto si existe -->
-      <div class="row" *ngIf="cotizacion.documento_adjunto && isDetalles">
-        <div class="col-12 mb-3 col-md-6">
-          <div class="form-group">
-            <label class="form-label">Documento Adjunto</label>
-            <div class="d-flex align-items-center gap-2">
-              <button
-                (click)="verDocumento($event)"
-                class="btn btn-outline-primary"
-              >
-                <i class="fas fa-file-pdf me-2"></i>
-                {{ cotizacion.nombre_documento || "Ver documento" }}
-              </button>
+      @if (cotizacion.documento_adjunto && isDetalles) {
+        <div class="row">
+          <div class="col-12 mb-3 col-md-6">
+            <div class="form-group">
+              <label class="form-label">Documento Adjunto</label>
+              <div class="d-flex align-items-center gap-2">
+                <button
+                  (click)="verDocumento($event)"
+                  class="btn btn-outline-primary"
+                >
+                  <i class="fas fa-file-pdf me-2"></i>
+                  {{ cotizacion.nombre_documento || "Ver documento" }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      }
     </div>
   </div>
   <!-- Detalles de Producción -->
@@ -260,42 +270,39 @@
           <thead>
             <tr>
               <th>Descripción</th>
-              <th
-                class="text-center"
-                *ngFor="let field of customFields"
-                [hidden]="!hasCustomField(field.id)"
-              >
-                {{ field?.name }}
-              </th>
+              @for (field of customFields; track field.id) {
+                <th
+                  class="text-center"
+                  [hidden]="!hasCustomField(field.id)"
+                >
+                  {{ field?.name }}
+                </th>
+              }
               <th class="text-center">Cantidad</th>
-              <th
-                class="text-center"
-                *ngIf="(cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles"
-              >
-                Cantidad Producida
-              </th>
-              <th
-                class="text-center"
-                *ngIf="(cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles"
-              >
-                Porcentaje
-              </th>
+              @if ((cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles) {
+                <th class="text-center">
+                  Cantidad Producida
+                </th>
+                <th class="text-center">
+                  Porcentaje
+                </th>
+              }
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td
-                colspan="8"
-                class="text-center"
-                *ngIf="orden.detalles?.length < 1"
-              >
-                <span class="badge bg-primary"
-                  >No tiene productos agregados</span
+            @if (orden.detalles?.length < 1) {
+              <tr>
+                <td
+                  colspan="8"
+                  class="text-center"
                 >
-              </td>
-            </tr>
+                  <span class="badge bg-primary">No tiene productos agregados</span>
+                </td>
+              </tr>
+            }
 
-            <tr *ngFor="let detalle of orden.detalles" class="align-middle">
+            @for (detalle of orden.detalles; track detalle.id || detalle.id_producto) {
+              <tr class="align-middle">
               <td>
                 <div class="d-flex align-items-center gap-2">
                   <div class="ms-2">
@@ -306,83 +313,74 @@
                   </div>
                 </div>
               </td>
-              <td
-                class="text-center"
-                *ngFor="let field of customFields"
-                [hidden]="!hasCustomField(field.id)"
-              >
-                <span
-                  [ngClass]="{
-                    'badge bg-info': field.field_type === 'select',
-                    'text-muted': field.field_type === 'text'
-                  }"
+              @for (field of customFields; track field.id) {
+                <td
+                  class="text-center"
+                  [hidden]="!hasCustomField(field.id)"
                 >
-                  {{ getCustomFieldValue(detalle, field.id) }}
-                </span>
-              </td>
+                  <span
+                    [ngClass]="{
+                      'badge bg-info': field.field_type === 'select',
+                      'text-muted': field.field_type === 'text'
+                    }"
+                  >
+                    {{ getCustomFieldValue(detalle, field.id) }}
+                  </span>
+                </td>
+              }
               <td class="text-center">{{ detalle.cantidad }}</td>
-              <td
-                class="text-center"
-                *ngIf="
-                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && editar
-                "
-                style="width: 100px"
-              >
-                <input
-                  type="number"
-                  class="form-control form-control-sm"
-                  [name]="'cantidad_producida_' + detalle.id_producto"
-                  [(ngModel)]="detalle.cantidad_producida"
-                  min="0"
-                  [max]="detalle.cantidad"
-                  (ngModelChange)="updatePorcentaje(detalle)"
-                />
-              </td>
+              @if ((cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && editar) {
+                <td
+                  class="text-center"
+                  style="width: 100px"
+                >
+                  <input
+                    type="number"
+                    class="form-control form-control-sm"
+                    [name]="'cantidad_producida_' + detalle.id_producto"
+                    [(ngModel)]="detalle.cantidad_producida"
+                    min="0"
+                    [max]="detalle.cantidad"
+                    (ngModelChange)="updatePorcentaje(detalle)"
+                  />
+                </td>
+              }
 
-              <td
-                class="text-center"
-                *ngIf="
-                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') &&
-                  !editar &&
-                  isDetalles
-                "
-              >
-                {{ detalle.cantidad_producida }}
-              </td>
+              @if ((cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && !editar && isDetalles) {
+                <td class="text-center">
+                  {{ detalle.cantidad_producida }}
+                </td>
+              }
 
               <!-- <td class="text-center" *ngIf="cotizacion.estado?.toLowerCase() === 'aceptada' && isDetalles">
                 {{detalle.porcentaje | number:'1.2-2'}}%
               </td> -->
 
-              <td
-                style="width: 150px"
-                *ngIf="
-                  (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles
-                "
-              >
-                <div class="d-flex align-items-center">
-                  <div class="progress flex-grow-1" style="height: 8px">
-                    <div
-                      class="progress-bar"
-                      role="progressbar"
-                      [style.width]="detalle.porcentaje + '%'"
-                      [ngClass]="{
-                        'bg-danger': detalle.porcentaje < 30,
-                        'bg-warning':
-                          detalle.porcentaje >= 30 && detalle.porcentaje < 70,
-                        'bg-success': detalle.porcentaje >= 70
-                      }"
-                      [attr.aria-valuenow]="detalle.porcentaje"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    ></div>
+              @if ((cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso') && isDetalles) {
+                <td style="width: 150px">
+                  <div class="d-flex align-items-center">
+                    <div class="progress flex-grow-1" style="height: 8px">
+                      <div
+                        class="progress-bar"
+                        role="progressbar"
+                        [style.width]="detalle.porcentaje + '%'"
+                        [ngClass]="{
+                          'bg-danger': detalle.porcentaje < 30,
+                          'bg-warning':
+                            detalle.porcentaje >= 30 && detalle.porcentaje < 70,
+                          'bg-success': detalle.porcentaje >= 70
+                        }"
+                        [attr.aria-valuenow]="detalle.porcentaje"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                    <span class="ms-2 small">{{ detalle.porcentaje | number : "1.2-2" }}%</span>
                   </div>
-                  <span class="ms-2 small"
-                    >{{ detalle.porcentaje | number : "1.2-2" }}%</span
-                  >
-                </div>
-              </td>
-            </tr>
+                </td>
+              }
+              </tr>
+            }
           </tbody>
         </table>
       </div>
@@ -395,26 +393,27 @@
       <i class="fa fa-times me-2"></i>Cancelar
     </button> -->
 
-    <button
-      *ngIf="!isDetalles"
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="!ordenForm.form.valid || loading"
-    >
-      <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-      <span class="ms-2">{{ loading ? "Guardando..." : "Crear Orden" }}</span>
-    </button>
-    <button
-      *ngIf="
-        isDetalles && editar && (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso')
-      "
-      type="submit"
-      class="btn btn-primary"
-      [disabled]="!ordenForm.form.valid || loading"
-    >
-      <!--editar orden-->
-      <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-      <span class="ms-2">{{ loading ? "Guardando..." : "Editar Orden" }}</span>
-    </button>
+    @if (!isDetalles) {
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!ordenForm.form.valid || loading"
+      >
+        <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+        <span class="ms-2">{{ loading ? "Guardando..." : "Crear Orden" }}</span>
+      </button>
+    }
+    @if (isDetalles && editar && (cotizacion.estado?.toLowerCase() === 'aceptada' || cotizacion.estado?.toLowerCase() === 'en_proceso')) {
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!ordenForm.form.valid || loading"
+      >
+        <!--editar orden-->
+        <i class="fa" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+        <span class="ms-2">{{ loading ? "Guardando..." : "Editar Orden" }}</span>
+      </button>
+    }
   </div>
-</form>
+  </form>
+}

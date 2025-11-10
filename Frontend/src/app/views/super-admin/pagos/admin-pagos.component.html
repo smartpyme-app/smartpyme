@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="pagos?.total">
-                Mostrando {{ pagos?.to }} de {{ pagos?.total + ' registros' }}
-            </span>
+            @if (pagos?.total) {
+                <span class="text-muted">
+                    Mostrando {{ pagos?.to }} de {{ pagos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -54,54 +56,66 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="pagos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene pagos registradas</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
+                        @if (pagos?.total < 1 && !loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene pagos registradas</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
-                    <tr *ngFor=" let pago of pagos.data">
-                        <td>{{ pago.fecha_transaccion | date:'dd/MM/yyyy'}}</td>
-                        <td>{{ pago.nombre_cliente }}</td>
-                        <td>{{ pago.plan }}</td>
-                        <td>{{ pago.estado }}</td>
-                        <td>{{ pago.tipo_pago ?? 'N/A' }}</td>
-                        <td class="text-end">{{ pago.monto | currency }}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a (click)="openModalEdit(mpagos, pago)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a (click)="generarVenta(pago)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-credit-card"></i> Generar venta
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-                    </tr>
+                    @for (pago of pagos.data; track pago.id || $index) {
+                        <tr>
+                            <td>{{ pago.fecha_transaccion | date:'dd/MM/yyyy'}}</td>
+                            <td>{{ pago.nombre_cliente }}</td>
+                            <td>{{ pago.plan }}</td>
+                            <td>{{ pago.estado }}</td>
+                            <td>{{ pago.tipo_pago ?? 'N/A' }}</td>
+                            <td class="text-end">{{ pago.monto | currency }}</td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a (click)="openModalEdit(mpagos, pago)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a (click)="generarVenta(pago)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-credit-card"></i> Generar venta
+                                        </a>
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="col-12" *ngIf="pagos?.last_page > 1">
-        <app-pagination
-          [items]="pagos"
-          (setPagination)="setPagination($event)"
-        ></app-pagination>
-      </div>
+    @if (pagos?.last_page > 1) {
+        <div class="col-12">
+            <app-pagination
+              [items]="pagos"
+              (setPagination)="setPagination($event)"
+            ></app-pagination>
+        </div>
+    }
 </section>
 
 <ng-template #mpagos>
     <div class="modal-header">
       <div class="modal-title">
         <h2 class="text-center">
-          <span *ngIf="pago.id">Editar </span>
-          <span *ngIf="!pago.id">Crear </span>
+          @if (pago.id) {
+            <span>Editar </span>
+          }
+          @if (!pago.id) {
+            <span>Crear </span>
+          }
           pago manual
         </h2>
       </div>
@@ -117,7 +131,9 @@
             <label class="form-label">Empresa/Cliente:</label>
             <select class="form-select" name="empresaId" [(ngModel)]="pago.empresa_id" required>
               <option value="">Seleccionar empresa</option>
-              <option *ngFor="let empresa of empresas" [value]="empresa.id">{{empresa.nombre}}</option>
+              @for (empresa of empresas; track empresa.id) {
+                <option [value]="empresa.id">{{empresa.nombre}}</option>
+              }
             </select>
           </div>
         </div>
@@ -138,7 +154,9 @@
             <label class="form-label">Plan:</label>
             <select class="form-select" name="planId" [(ngModel)]="pago.plan_id" required (change)="onPlanSelected($event.target.value)">
               <option value="">Seleccionar plan</option>
-              <option *ngFor="let plan of planes" [value]="plan.id">{{plan.nombre}} - {{plan.precio | currency}}</option>
+              @for (plan of planes; track plan.id) {
+                <option [value]="plan.id">{{plan.nombre}} - {{plan.precio | currency}}</option>
+              }
             </select>
           </div>
         </div>
@@ -159,7 +177,9 @@
                 min="0" 
                 step="0.01">
             </div>
-            <small class="text-muted" *ngIf="pago.plan_id">El monto se establece según el plan seleccionado</small>
+            @if (pago.plan_id) {
+              <small class="text-muted">El monto se establece según el plan seleccionado</small>
+            }
           </div>
           
           <div class="col-md-6 mb-3">
@@ -203,8 +223,12 @@
             class="btn btn-primary" 
             [disabled]="saving || !pagoForm.form.valid">
             <i class="fa" [ngClass]="saving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
-            <span *ngIf="!saving"> Guardar pago</span>
-            <span *ngIf="saving"> Procesando...</span>
+            @if (!saving) {
+              <span> Guardar pago</span>
+            }
+            @if (saving) {
+              <span> Procesando...</span>
+            }
           </button>
           <button 
             type="button" 

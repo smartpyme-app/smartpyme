@@ -12,9 +12,11 @@
         <section class="bg-white p-4 rounded mb-3">
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <span class="text-muted" *ngIf="citas?.total">
-                        Mostrando {{ citas?.to }} de {{ citas?.total + ' registros' }}
-                    </span>
+                    @if (citas?.total) {
+                        <span class="text-muted">
+                            Mostrando {{ citas?.to }} de {{ citas?.total + ' registros' }}
+                        </span>
+                    }
                 </div>
 
                 <div class="col-md-12 mb-3">
@@ -41,9 +43,11 @@
                         </select>
                         <ng-select name="id_cliente" (change)="filtrarCitas()" [(ngModel)]="filtros.id_cliente" class="form-select bg-default w-auto p-0" style="min-width: 250px;">
                             <ng-option value="">Cliente</ng-option>
-                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                                {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                            </ng-option>
+                            @for (cliente of clientes; track cliente.id) {
+                                <ng-option [value]="cliente.id">
+                                    {{cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                                </ng-option>
+                            }
                         </ng-select>
                     </div>
                 </div>
@@ -64,46 +68,64 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="6" class="text-center" *ngIf="citas?.total < 1 && !saving">
-                                    <span class="badge bg-primary">No tiene citas registrados</span>
-                                </td>
-                                <td colspan="6" class="text-center" *ngIf="loading">
-                                    <span class="badge bg-primary">Cargando...</span>
-                                </td>
+                                @if (citas?.total < 1 && !saving) {
+                                    <td colspan="6" class="text-center">
+                                        <span class="badge bg-primary">No tiene citas registrados</span>
+                                    </td>
+                                }
+                                @if (loading) {
+                                    <td colspan="6" class="text-center">
+                                        <span class="badge bg-primary">Cargando...</span>
+                                    </td>
+                                }
                             </tr>
 
-                            <tr *ngFor=" let cita of citas?.data">
-                                
-                                <td><span tooltip="{{ cita.created_at | date:'hh:mm a'}}">{{cita.inicio | date:'dd/MM/yyyy'}}</span></td>
-                                <td>{{cita.nombre_cliente}}</td>
-                                <td>{{cita.descripcion}}</td>
-                                <td>
-                                    <small class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-dark' : cita?.tipo == 'Pendiente','bg-warning' : cita?.tipo == 'Sin confirmar', 'bg-danger' : cita?.tipo == 'Cancelado', 'bg-info' : cita?.tipo == 'Confirmado', 'bg-success' : cita?.tipo == 'Pagado'}">{{ cita.tipo }}</small>
-                                </td>
-                                <td>
-                                    <ul *ngIf="cita?.productos?.length > 0">
-                                        <li *ngFor="let item of cita.productos">{{item.nombre_producto}}</li>
-                                    </ul>
-                                </td>
-                                <td class="text-end">
-                                    <input type="checkbox" name="citas" id="cita{{cita.id}}" class="form-check d-inline" (click)="onCheckPaquete(cita)">
-                                    <!-- <button (click)="onCheckProducto(cita)" class="btn btn-primary float-end">Agregar</button> -->
-                                </td>
-
-                            </tr>
+                            @for (cita of citas?.data; track cita.id) {
+                                <tr>
+                                    <td><span tooltip="{{ cita.created_at | date:'hh:mm a'}}">{{cita.inicio | date:'dd/MM/yyyy'}}</span></td>
+                                    <td>{{cita.nombre_cliente}}</td>
+                                    <td>{{cita.descripcion}}</td>
+                                    <td>
+                                        <small class="badge" style="font-size: 0.8rem;" [ngClass]="{'bg-dark' : cita?.tipo == 'Pendiente','bg-warning' : cita?.tipo == 'Sin confirmar', 'bg-danger' : cita?.tipo == 'Cancelado', 'bg-info' : cita?.tipo == 'Confirmado', 'bg-success' : cita?.tipo == 'Pagado'}">{{ cita.tipo }}</small>
+                                    </td>
+                                    <td>
+                                        @if (cita?.productos?.length > 0) {
+                                            <ul>
+                                                @for (item of cita.productos; track item.id_producto) {
+                                                    <li>{{item.nombre_producto}}</li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="checkbox" name="citas" id="cita{{cita.id}}" class="form-check d-inline" (click)="onCheckPaquete(cita)">
+                                        <!-- <button (click)="onCheckProducto(cita)" class="btn btn-primary float-end">Agregar</button> -->
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
 
-                <div class="col-12" *ngIf="citas?.last_page > 1">
-                    <app-pagination [items]="citas" (setPagination)="setPagination($event)"></app-pagination>
-                </div>
+                @if (citas?.last_page > 1) {
+                    <div class="col-12">
+                        <app-pagination [items]="citas" (setPagination)="setPagination($event)"></app-pagination>
+                    </div>
+                }
             </div>
         </section>
         <section>
             <div class="row">
                 <div class="col">
-                    <button [disabled]="saving" class="btn btn-primary float-end" (click)="agregarDetalles();">Agregar <span *ngIf="detalles.length > 0">{{ detalles.length }} detalle</span><span *ngIf="detalles.length > 1">s</span></button>
+                    <button [disabled]="saving" class="btn btn-primary float-end" (click)="agregarDetalles();">
+                        Agregar 
+                        @if (detalles.length > 0) {
+                            <span>{{ detalles.length }} detalle</span>
+                        }
+                        @if (detalles.length > 1) {
+                            <span>s</span>
+                        }
+                    </button>
                 </div>
             </div>
         </section>

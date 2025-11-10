@@ -14,30 +14,36 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-3 col-md-4 col-6" *ngFor="let documento of documentos; let i = index">
-                    <div class="card">
-                        <div class="file">
-                            <a class="click">
-                                <div class="hover">
-                                    <button type="button" class="btn btn-icon btn-danger" (click)="delete(documento)" tooltip="Eliminar" placement="bottom">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-icon btn-default ml-3" (click)="verDocumento(documento)" tooltip="Ver" placement="bottom">
-                                        <i class="fa fa-expand"></i>
-                                    </button>
+                @for (documento of documentos; track documento.id) {
+                    <div class="col-lg-3 col-md-4 col-6">
+                        <div class="card">
+                            <div class="file">
+                                <a class="click">
+                                    <div class="hover">
+                                        <button type="button" class="btn btn-icon btn-danger" (click)="delete(documento)" tooltip="Eliminar" placement="bottom">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-icon btn-default ml-3" (click)="verDocumento(documento)" tooltip="Ver" placement="bottom">
+                                            <i class="fa fa-expand"></i>
+                                        </button>
+                                    </div>
+                                    <div class="icon">
+                                        @if (documento.tipo == 'jpeg' || documento.tipo == 'jpg') {
+                                            <i class="fa fa-image text-warning"></i>
+                                        }
+                                        @if (documento.tipo == 'pdf') {
+                                            <i class="fa fa-file-pdf text-primary"></i>
+                                        }
+                                    </div>
+                                </a>
+                                <div class="file-name">
+                                    <p class="m-b-5 text-muted"><input type="text" class="border-0" [(ngModel)]="documento.nombre" name="nombre" (change)="updateNombre(documento)" title="Edita el nombre desde acá"/><span class="float-end"> {{ documento.tipo }}</span></p>
+                                    <small>Tamaño: {{ documento.tamano }} <span class="date text-muted">{{ documento.created_at | date:'MMM d, YYYY'}}</span></small>
                                 </div>
-                                <div class="icon">
-                                    <i *ngIf="documento.tipo == 'jpeg' || documento.tipo == 'jpg'" class="fa fa-image text-warning"></i>
-                                    <i *ngIf="documento.tipo == 'pdf'" class="fa fa-file-pdf text-primary"></i>
-                                </div>
-                            </a>
-                            <div class="file-name">
-                                <p class="m-b-5 text-muted"><input type="text" class="border-0" [(ngModel)]="documento.nombre" name="nombre" (change)="updateNombre(documento)" title="Edita el nombre desde acá"/><span class="float-end"> {{ documento.tipo }}</span></p>
-                                <small>Tamaño: {{ documento.tamano }} <span class="date text-muted">{{ documento.created_at | date:'MMM d, YYYY'}}</span></small>
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
         </div>
     </div>

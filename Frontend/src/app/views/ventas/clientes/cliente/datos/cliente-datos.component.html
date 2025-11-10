@@ -22,19 +22,21 @@
                     </div>
                 </div>
             </div>
-            <div class="col-6 col-md-4 col-lg-4" *ngIf="dash?.total_fletes_pagados">
-                <div class="card">
-                    <div class="card-body pb-0">
-                        <div class="row justify-content-between">
-                            <div class="col py-4">
-                                <h5 class="text-warning mb-3"><i class="fa fa-screwdriver-wrench"></i> Fletes</h5>
-                                <h3 class="text-warning">{{ (dash?.total_fletes_pagados ? dash?.total_fletes_pagados : 0) | currency:'USD':'symbol':'1.2' }}</h3>
-                                <p>Pendientes:<span class="float-end">{{ (dash?.total_fletes_pendientes ? dash?.total_fletes_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+            @if (dash?.total_fletes_pagados) {
+                <div class="col-6 col-md-4 col-lg-4">
+                    <div class="card">
+                        <div class="card-body pb-0">
+                            <div class="row justify-content-between">
+                                <div class="col py-4">
+                                    <h5 class="text-warning mb-3"><i class="fa fa-screwdriver-wrench"></i> Fletes</h5>
+                                    <h3 class="text-warning">{{ (dash?.total_fletes_pagados ? dash?.total_fletes_pagados : 0) | currency:'USD':'symbol':'1.2' }}</h3>
+                                    <p>Pendientes:<span class="float-end">{{ (dash?.total_fletes_pendientes ? dash?.total_fletes_pendientes : 0) | currency:'USD':'symbol':'1.2' }}</span></p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            }
             <div class="col-6 col-md-4 col-lg-4">
                 <div class="card">
                     <div class="card-body pb-0">
