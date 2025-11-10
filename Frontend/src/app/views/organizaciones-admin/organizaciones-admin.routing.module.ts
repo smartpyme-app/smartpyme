@@ -1,12 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
-
-import { OrganizacionEmpresasComponent } from '@views/organizaciones-admin/empresas/organizacion-empresas.component';
-import { CrearEmpresaComponent } from '@views/super-admin/empresas/empresa/crear-empresa.component';
-import { AdminUsuariosComponent } from '@views/super-admin/usuarios/admin-usuarios.component';
-import { EmpresasUsuariosComponent } from './empresas/usuarios/empresas-usuarios.component';
-import { UsuariosComponent } from '@views/admin/usuarios/usuarios.component';
 import { PermissionGuard } from '@guards/permission.guard';
 
 const routes: Routes = [
@@ -16,40 +10,39 @@ const routes: Routes = [
     children: [
       {
         path: 'empresas',
-        component: OrganizacionEmpresasComponent,
+        loadComponent: () => import('@views/organizaciones-admin/empresas/organizacion-empresas.component').then(m => m.OrganizacionEmpresasComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'organizacion.empresas.ver' },
         title: 'Empresas',
       },
-
       {
         path: 'empresa/crear',
-        component: CrearEmpresaComponent,
+        loadComponent: () => import('@views/super-admin/empresas/empresa/crear-empresa.component').then(m => m.CrearEmpresaComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'organizacion.empresas.crear' },
         title: 'Empresa',
       },
       {
         path: 'empresa/:id',
-        component: CrearEmpresaComponent,
+        loadComponent: () => import('@views/super-admin/empresas/empresa/crear-empresa.component').then(m => m.CrearEmpresaComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'organizacion.empresas.editar' },
         title: 'Empresa',
       },
-
       {
         path: 'empresas/usuarios',
-        component: EmpresasUsuariosComponent,
+        loadComponent: () => import('./empresas/usuarios/empresas-usuarios.component').then(m => m.EmpresasUsuariosComponent),
         title: 'Usuarios',
         canActivate: [PermissionGuard],
         data: { permission: 'organizacion.usuarios.ver' },
       },
-
-      { path: 'usuarios',
-         component: UsuariosComponent, title: 'Empresas',
-         canActivate: [PermissionGuard],
-         data: { permission: 'organizacion.usuarios.ver' },
-        },
+      { 
+        path: 'usuarios',
+        loadComponent: () => import('@views/admin/usuarios/usuarios.component').then(m => m.UsuariosComponent), 
+        title: 'Empresas',
+        canActivate: [PermissionGuard],
+        data: { permission: 'organizacion.usuarios.ver' },
+      },
     ],
   },
 ];

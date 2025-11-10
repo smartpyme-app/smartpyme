@@ -1,14 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { AuthGuard } from '../../guards/auth.guard';
 import { LayoutComponent } from '../../layout/layout.component';
-
-import { DashComponent }     from '../../views/dash/dash.component';
-import { CajaVentasComponent }     from '../../views/dash/caja/ventas/caja-ventas.component';
-import { CajaDevolucionesComponent }     from '../../views/dash/caja/devoluciones/caja-devoluciones.component';
-import { VendedorProductosComponent }     from '../../views/dash/vendedor/productos/vendedor-productos.component';
-
-import { CorteComponent }    from '@views/reportes/corte/corte.component';
 
 const routes: Routes = [
   {
@@ -16,11 +8,27 @@ const routes: Routes = [
     component: LayoutComponent,
     title: 'Dashboard',
     children: [
-        { path: '', component: DashComponent },
-        { path: 'vendedor/ventas', component: CajaVentasComponent },
-        { path: 'vendedor/productos', component: VendedorProductosComponent },
-        { path: 'vendedor/devoluciones/ventas', component: CajaDevolucionesComponent },
-        { path: 'cierre-de-caja', component: CorteComponent, title: 'Cierre de caja'},
+        { 
+          path: '', 
+          loadComponent: () => import('../../views/dash/dash.component').then(m => m.DashComponent) 
+        },
+        { 
+          path: 'vendedor/ventas', 
+          loadComponent: () => import('../../views/dash/caja/ventas/caja-ventas.component').then(m => m.CajaVentasComponent) 
+        },
+        { 
+          path: 'vendedor/productos', 
+          loadComponent: () => import('../../views/dash/vendedor/productos/vendedor-productos.component').then(m => m.VendedorProductosComponent) 
+        },
+        { 
+          path: 'vendedor/devoluciones/ventas', 
+          loadComponent: () => import('../../views/dash/caja/devoluciones/caja-devoluciones.component').then(m => m.CajaDevolucionesComponent) 
+        },
+        { 
+          path: 'cierre-de-caja', 
+          loadComponent: () => import('@views/reportes/corte/corte.component').then(m => m.CorteComponent), 
+          title: 'Cierre de caja'
+        },
     ]
   }
 ];

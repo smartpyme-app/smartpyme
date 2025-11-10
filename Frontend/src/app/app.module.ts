@@ -26,48 +26,11 @@ import { ConstantsService } from '@services/constants.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import { SharedModule } from './shared/shared.module';
-import { AppComponent } from './app.component';
-
-import { AuthModule } from './auth/auth.module';
-import { DashModule } from '@views/dash/dash.module';
 import { LayoutModule } from '@layout/layout.module';
 import { ReactiveFormsModule } from '@angular/forms';
-// Super Admin
-import { SuperAdminModule } from '@views/super-admin/super-admin.module';
 
-// Organizacion Admin
-import { OrganizacionesAdminModule } from '@views/organizaciones-admin/organizaciones-admin.module';
-
-// Ventas
-import { VentasModule } from '@views/ventas/ventas.module';
-import { ClientesModule } from '@views/ventas/clientes/clientes.module';
-import { FacturacionModule } from '@views/ventas/facturacion/facturacion.module';
-
-// Inventario
-import { InventarioModule } from '@views/inventario/inventario.module';
-
-// Compras
-import { ComprasModule } from '@views/compras/compras.module';
-import { ProveedoresModule } from '@views/compras/proveedores/proveedores.module';
-
-// Contabilidad
-import { ContabilidadModule } from '@views/contabilidad/contabilidad.module';
-
-
-// Planillas
-import { PlanillasModule } from '@views/planillas/planillas.module';
-
-
-// Paquetes
-import { PaquetesModule } from '@views/paquetes/paquetes.module';
-
-// Proyectos
-import { ProyectosModule } from '@views/proyectos/proyectos.module';
-
-// Admin
-import { AdminModule } from '@views/admin/admin.module';
-import { ReportesModule } from '@views/reportes/reportes.module';
-import { CitasModule } from '@views/citas/citas.module';
+// Los módulos de funcionalidades están configurados para lazy loading en app.routing.module.ts
+// No deben importarse aquí para mantener los beneficios del lazy loading
 import { HasPermissionDirective } from './directives/has-permission.directive';
 import { RoleGuard } from './guards/role.guard';
 import { PermissionGuard } from './guards/permission.guard';
@@ -76,9 +39,7 @@ import { ServiceWorkerModule } from '@angular/service-worker';
 @NgModule({ 
     declarations: [
     ],
-    bootstrap: [AppComponent],
     imports: [
-        AppComponent,
         BrowserModule,
         CommonModule,
         FormsModule,
@@ -89,23 +50,6 @@ import { ServiceWorkerModule } from '@angular/service-worker';
         SharedModule,
         QuicklinkModule,
         LayoutModule,
-        AuthModule,
-        DashModule,
-        SuperAdminModule,
-        OrganizacionesAdminModule,
-        VentasModule,
-        FacturacionModule,
-        ClientesModule,
-        InventarioModule,
-        ComprasModule,
-        ProveedoresModule,
-        ContabilidadModule,
-        AdminModule,
-        ReportesModule,
-        CitasModule,
-        PaquetesModule,
-        ProyectosModule,
-        PlanillasModule,
         ReactiveFormsModule,
         HasPermissionDirective, // Directiva standalone
         ServiceWorkerModule.register('ngsw-worker.js', {

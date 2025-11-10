@@ -1,94 +1,14 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
-import { TooltipModule } from 'ngx-bootstrap/tooltip';
-import { ProgressbarModule } from 'ngx-bootstrap/progressbar';
-import { PopoverModule } from 'ngx-bootstrap/popover';
-import { ModalModule } from 'ngx-bootstrap/modal';
-import { TabsModule } from 'ngx-bootstrap/tabs';
-import { TagInputModule } from 'ngx-chips';
-import { NgSelectModule } from '@ng-select/ng-select';
-import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
-import { PipesModule } from '@pipes/pipes.module';
-import { SharedModule } from '@shared/shared.module';
-
 import { SuperAdminRoutingModule } from './super-admin.routing.module';
 
-import { EmpresasComponent } from './empresas/empresas.component';
-import { CrearEmpresaComponent } from './empresas/empresa/crear-empresa.component';
-import { LicenciasComponent } from './licencias/licencias.component';
-import { LicenciaComponent } from './licencias/licencia/licencia.component';
-import { LicenciaEmpresasComponent } from './licencias/licencia/empresas/licencia-empresas.component';
-import { AdminUsuariosComponent } from './usuarios/admin-usuarios.component';
-import { AdminPlanesComponent } from './planes/admin-planes.component';
-import { AdminPagosComponent } from './pagos/admin-pagos.component';
-import { DashboardsComponent } from './dashboards/dashboards.component';
-import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
-
-import { AdminSucursalesComponent } from './sucursales/admin-sucursales.component';
-import { AdminSucursalComponent } from './sucursales/sucursal/admin-sucursal.component';
-
-import { AdminSuscripcionesComponent } from './suscripciones/admin-suscripciones.component';
-
-import { EmpresasFuncionalidadesComponent } from './funcionalidades/empresas-funcionalidades.component';
-
-import { RolesPermisosComponent } from '@views/admin/roles-permisos/roles-permisos.component';
-import { ModulesComponent } from '@views/admin/modules/modules.component';
-import { ModuleFormComponent } from '@views/admin/modules/create/module-form.component';
+// Los componentes standalone se cargan de forma lazy en el routing
+// y importan sus propias dependencias, por lo que no necesitan estar aquí
 
 @NgModule({
   imports: [
-    CommonModule,
-    FormsModule,
-    RouterModule,
-    SharedModule,
-    PipesModule,
-    TagInputModule,
-    NgSelectModule,
     SuperAdminRoutingModule,
-    NgxMaskDirective, NgxMaskPipe,
-    PopoverModule.forRoot(),
-    TabsModule.forRoot(),
-    TooltipModule.forRoot(),
-    // Componentes standalone
-    EmpresasComponent,
-    CrearEmpresaComponent,
-    LicenciasComponent,
-    LicenciaComponent,
-    LicenciaEmpresasComponent,
-    AdminUsuariosComponent,
-    AdminPlanesComponent,
-    AdminPagosComponent,
-    DashboardsComponent,
-    DashboardComponent,
-    AdminSucursalesComponent,
-    AdminSucursalComponent,
-    AdminSuscripcionesComponent,
-    EmpresasFuncionalidadesComponent,
-    RolesPermisosComponent,
-    ModulesComponent,
-    ModuleFormComponent
   ],
-  exports: [
-    EmpresasComponent,
-    CrearEmpresaComponent,
-    LicenciasComponent,
-    LicenciaComponent,
-    LicenciaEmpresasComponent,
-    AdminUsuariosComponent,
-    AdminPlanesComponent,
-    AdminPagosComponent,
-    DashboardsComponent,
-    DashboardComponent,
-    AdminSucursalesComponent,
-    AdminSucursalComponent,
-    AdminSuscripcionesComponent,
-    RolesPermisosComponent,
-    ModulesComponent,
-    ModuleFormComponent
-  ]
+  declarations: [],
+  exports: []
 })
 export class SuperAdminModule { }

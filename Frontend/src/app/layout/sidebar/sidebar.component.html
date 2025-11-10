@@ -200,20 +200,20 @@
                     </div>
                 </li>
             }
-          @if (apiService.hasPermission('planilla.ver')) {
+          @if (!apiService.hasPermission('planilla.ver')) {
               <li class="mb-1">
                   <button (click)="togglePlanilla()" tooltip="Planilla" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!planillaIsCollapsed" aria-controls="collapsePlanilla">
                       <img src="/assets/icons/clipboard.png" class="icon me-2">Planilla
                   </button>
                   <div [collapse]="planillaIsCollapsed" [isAnimated]="true">
                       <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                          @if (apiService.hasPermission('planilla.empleados.ver')) {
+                          @if (!apiService.hasPermission('planilla.empleados.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/empleados']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Empleados</a></li>
                           }
-                          @if (apiService.hasPermission('planilla.registros.ver')) {
+                          @if (!apiService.hasPermission('planilla.registros.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Planillas</a></li>
                           }
-                          @if (apiService.hasPermission('planilla.configuracion.ver')) {
+                          @if (!apiService.hasPermission('planilla.configuracion.ver')) {
                               <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/configuracion-planilla']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Configuración Planillas</a></li>
                           }
                           <!-- <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/planilla/detalles']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/clipboard.png" class="icon me-2">Detalles planilla</a></li> -->

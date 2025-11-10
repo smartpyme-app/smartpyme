@@ -13,10 +13,9 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaywallRoutingModule } from './paywall-layout.routing.module';
-import { PaymentSuccessPaywallComponent }    from './components/payment-success/payment-success.component';
 
-import { PaywallComponent }         from './components/paywall.component';
-import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
+// Los componentes standalone se cargan de forma lazy en el routing
+// No necesitan ser importados aquí
 
 @NgModule({
   imports: [
@@ -34,16 +33,8 @@ import { PaywallLayoutComponent }    from './layout/paywall-layout.component';
     TabsModule.forRoot(),
     CollapseModule.forRoot(),
     ProgressbarModule.forRoot(),
-    // Componentes standalone
-    PaywallComponent
   ],
-  declarations: [
-    // PaywallComponent ahora es standalone
-    // PaywallLayoutComponent ahora es standalone
-  ],
-  exports: [
-    PaywallComponent
-  ]
-
+  declarations: [],
+  exports: []
 })
 export class PaywallModule { }

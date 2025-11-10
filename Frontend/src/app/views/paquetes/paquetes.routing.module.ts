@@ -1,9 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
-
-import { PaquetesComponent } from '@views/paquetes/paquetes.component';
-import { PaqueteComponent } from '@views/paquetes/paquete/paquete.component';
 import { PermissionGuard } from '@guards/permission.guard';
 
 const routes: Routes = [
@@ -14,21 +11,21 @@ const routes: Routes = [
     children: [
       {
         path: 'paquetes',
-        component: PaquetesComponent,
+        loadComponent: () => import('@views/paquetes/paquetes.component').then(m => m.PaquetesComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.paquetes.ver' },
         title: 'Paquetes',
       },
       {
         path: 'paquete/crear',
-        component: PaqueteComponent,
+        loadComponent: () => import('@views/paquetes/paquete/paquete.component').then(m => m.PaqueteComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.paquetes.crear' },
         title: 'Paquete',
       },
       {
         path: 'paquete/editar/:id',
-        component: PaqueteComponent,
+        loadComponent: () => import('@views/paquetes/paquete/paquete.component').then(m => m.PaqueteComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.paquetes.editar' },
         title: 'Paquete',
