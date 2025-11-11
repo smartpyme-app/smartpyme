@@ -37,7 +37,6 @@
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/animate.css/animate.min.css",
               "src/assets/css/template.min.css",
-              "node_modules/angular-notifier/styles.scss",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "src/assets/plugins/chartist/css/chartist.min.css",
               "src/assets/plugins/owl.carousel/dist/css/owl.carousel.min.css",
@@ -68,7 +67,7 @@
                 {
                   "type": "anyComponentStyle",
                   "maximumWarning": "4kb",
-                  "maximumError": "8kb"
+                  "maximumError": "9kb"
                 }
               ],
               "fileReplacements": [

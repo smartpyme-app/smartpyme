@@ -18,7 +18,6 @@ import { SuperAdminGuard } from '@guards/super-admin.guard';
 import { SubscriptionGuard } from '@guards/SuscriptionGuard.guard';
 import { UsuariosGuard } from '@guards/usuarios.guard';
 
-import { NotifierModule } from 'angular-notifier';
 import { AlertService } from '@services/alert.service';
 import { MHService } from './services/MH.service';
 import { ApiService } from '@services/api.service';
@@ -46,7 +45,6 @@ import { ServiceWorkerModule } from '@angular/service-worker';
         RouterModule,
         AppRoutingModule,
         ModalModule.forRoot(),
-        NotifierModule.withConfig({ position: { horizontal: { position: 'middle' } }, theme: 'material' }),
         SharedModule,
         QuicklinkModule,
         LayoutModule,

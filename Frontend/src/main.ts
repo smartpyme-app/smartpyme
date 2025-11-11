@@ -6,7 +6,6 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { QuicklinkStrategy } from 'ngx-quicklink';
 import { provideEnvironmentNgxMask } from 'ngx-mask';
 import { ModalModule } from 'ngx-bootstrap/modal';
-import { NotifierModule } from 'angular-notifier';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { isDevMode } from '@angular/core';
 
@@ -35,7 +34,6 @@ bootstrapApplication(AppComponent, {
   providers: [
     importProvidersFrom(
       ModalModule.forRoot(),
-      NotifierModule.withConfig({ position: { horizontal: { position: 'middle' } }, theme: 'material' }),
       SharedModule,
       LayoutModule,
       ServiceWorkerModule.register('ngsw-worker.js', {
