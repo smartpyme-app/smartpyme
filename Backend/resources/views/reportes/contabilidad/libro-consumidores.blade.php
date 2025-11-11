@@ -60,15 +60,14 @@
         <thead>
             <tr>
                 <th>N°</th>
-                <th>DÍA</th>
-                <th>DOCMENTO EMITIDO (DEL)</th>
-                <th>DOCUMENTO EMITIDO (AL)</th>
-                <th>N° DE CAJA O SISTEMA COMPUTARIZADO</th>
+                <th>FECHA</th>
+                <th>CORRELATIVO INICIAL</th>
+                <th>CORRELATIVO FINAL</th>
                 <th class="text-right">VENTAS EXENTAS</th>
                 <th class="text-right">VENTAS INTERNAS GRAVADAS</th>
                 <th class="text-right">EXPORTACIONES</th>
-                <th class="text-right">TOTAL DE VENTAS DIARIAS PROPIAS </th>
-                <th class="text-right">VENTAS A CUENTAS DE TERCEROS</th>
+                <th class="text-right">TOTAL DE VENTAS DIARIAS PROPIAS</th>
+                <th class="text-right">VENTAS A CUENTA DE TERCEROS</th>
             </tr>
         </thead>
         <tbody>
@@ -76,16 +75,25 @@
                 <tr>
                     <td>{{ $loop->iteration }}</td>
                     <td>{{ Carbon\Carbon::parse($venta['fecha'])->format('d/m/Y') }}</td>
-                    <td>{{ $venta['correlativo'] }}</td>
-                    <td>{{ $venta['correlativo'] }}</td>
-                    <td></td>
-                    <td class="text-right">${{ $venta['ventas_exentas'] }}</td>
-                    <td class="text-right">${{ $venta['ventas_gravadas'] }}</td>
-                    <td class="text-right">${{ $venta['exportaciones'] }}</td>
-                    <td class="text-right">${{ $venta['total'] }}</td>
-                    <td class="text-right">${{ $venta['cuenta_a_terceros'] }}</td>
+                    <td>{{ $venta['correlativo_inicial'] }}</td>
+                    <td>{{ $venta['correlativo_final'] }}</td>
+                    <td class="text-right">${{ number_format($venta['ventas_exentas'], 2) }}</td>
+                    <td class="text-right">${{ number_format($venta['ventas_internas_gravadas'], 2) }}</td>
+                    <td class="text-right">${{ number_format($venta['exportaciones'], 2) }}</td>
+                    <td class="text-right">${{ number_format($venta['total_ventas_diarias_propias'], 2) }}</td>
+                    <td class="text-right">${{ number_format($venta['ventas_a_cuenta_de_terceros'], 2) }}</td>
                 </tr>
             @endforeach
+            @if(isset($totalesConsumidores))
+                <tr>
+                    <td colspan="4" class="text-center"><b>Totales</b></td>
+                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_exentas'], 2) }}</b></td>
+                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_internas_gravadas'], 2) }}</b></td>
+                    <td class="text-right"><b>${{ number_format($totalesConsumidores['exportaciones'], 2) }}</b></td>
+                    <td class="text-right"><b>${{ number_format($totalesConsumidores['total_ventas_diarias_propias'], 2) }}</b></td>
+                    <td class="text-right"><b>${{ number_format($totalesConsumidores['ventas_a_cuenta_de_terceros'], 2) }}</b></td>
+                </tr>
+            @endif
         </tbody>  
     </table>
 

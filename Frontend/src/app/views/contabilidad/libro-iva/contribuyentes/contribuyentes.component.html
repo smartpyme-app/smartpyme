@@ -101,16 +101,16 @@
                         <tr>
                             <th>N°</th>
                             <th>Fecha</th>
-                            <th>Correlativo</th>
-                            <th>Número de control interno</th>
-                            <th>Cliente</th>
-                            <th>NIT/NRC</th>
+                            <th>Código de Generación</th>
+                            <th>Número de Control</th>
+                            <th>Sello</th>
+                            <th>Nombre del Cliente Mandante o Mandatario</th>
+                            <th>NRC del Cliente</th>
                             <th class="text-end">Ventas Exentas</th>
-                            <th class="text-end">Ventas No Sujetas</th>
-                            <th class="text-end">Ventas Gravadas</th>
+                            <th class="text-end">Ventas Internas Gravadas</th>
                             <th class="text-end">Débito Fiscal</th>
                             <th class="text-end">Ventas Exentas a Cuenta de Terceros</th>
-                            <th class="text-end">Ventas Gravadas a Cuenta de Terceros</th>
+                            <th class="text-end">Ventas Internas Gravadas a Cuenta de Terceros</th>
                             <th class="text-end">Débito Fiscal por Cuenta de Terceros</th>
                             <th class="text-end">IVA Retenido</th>
                             <th class="text-end">IVA Percibido</th>
@@ -129,31 +129,30 @@
                         <tr class="animated fadeIn" *ngFor=" let iva of ivas; let i = index">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.correlativo}}</td>
-                            <td>{{iva.num_documento}}</td>
+                            <td>{{iva.codigo_generacion}}</td>
+                            <td>{{iva.numero_control}}</td>
+                            <td>{{iva.sello}}</td>
                             <td class="text-nowrap"><span tooltip="{{ iva.nombre_cliente }}">{{iva.nombre_cliente | truncate:50}}</span></td>
-                            <td>{{iva.nit_nrc}}</td>
+                            <td>{{iva.nrc_cliente}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.ventas_no_sujetas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_internas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.debito_fiscal | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.ventas_exentas_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.ventas_gravadas_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.debito_fiscal_cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_exentas_a_cuenta_de_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_internas_gravadas_a_cuenta_de_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.debito_fiscal_por_cuenta_de_terceros | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.iva_retenido | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.iva_percibido | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
 
                         </tr>
                         <tr>
-                            <td colspan="6" class="text-center"><b>Totales</b></td>
+                            <td colspan="7" class="text-center"><b>Totales</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_no_sujetas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_internas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'debito_fiscal' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_exentas_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'debito_fiscal_cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_exentas_a_cuenta_de_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_internas_gravadas_a_cuenta_de_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'debito_fiscal_por_cuenta_de_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'iva_retenido' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'iva_percibido' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
