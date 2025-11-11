@@ -30,13 +30,15 @@ class ShopifyController extends Controller
     protected $transformer;
     protected $cache;
     protected $shippingService;
+    protected $impuestosService;
 
 
-    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService)
+    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService, \App\Services\ImpuestosService $impuestosService)
     {
         $this->transformer = $transformer;
         $this->cache = $cache;
         $this->shippingService = $shippingService;
+        $this->impuestosService = $impuestosService;
     }
 
     public function handle($tokenEmpresa, Request $request)
@@ -66,37 +68,88 @@ class ShopifyController extends Controller
             ->first();
 
         if (!$usuario) {
+            Log::error("Usuario no encontrado para empresa", [
+                'empresa_id' => $empresa->id,
+                'empresa_nombre' => $empresa->nombre,
+                'token' => $tokenEmpresa
+            ]);
             return response()->json([
                 'status' => 'error',
                 'mensaje' => 'Usuario no encontrado'
             ], 401);
         }
 
+        Log::info("Usuario encontrado para webhook", [
+            'usuario_id' => $usuario->id,
+            'usuario_nombre' => $usuario->name,
+            'id_empresa' => $usuario->id_empresa,
+            'id_bodega' => $usuario->id_bodega,
+            'id_sucursal' => $usuario->id_sucursal,
+            'shopify_status' => $usuario->shopify_status
+        ]);
+
+        // Verificar que el usuario tenga bodega asignada
+        if (!$usuario->id_bodega) {
+            Log::error("Usuario sin bodega asignada", [
+                'usuario_id' => $usuario->id,
+                'usuario_nombre' => $usuario->name,
+                'id_empresa' => $usuario->id_empresa
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario sin bodega asignada'
+            ], 400);
+        }
+
         try {
             switch ($webhookTopic) {
                 case 'test':
+                    Log::info("Procesando prueba webhook");
                     return $this->procesarPruebaWebhook($request, $empresa);
 
                 case 'orders/create':
+                    Log::info("Procesando venta creada");
                     return $this->procesarVenta($tokenEmpresa, $request);
 
                 case 'orders/cancelled':
+                    Log::info("Procesando venta cancelada");
                     return $this->procesarVentaCancelada($tokenEmpresa, $request);
 
                 case 'orders/updated':
+                    Log::info("Procesando venta actualizada");
                     return $this->procesarVentaActualizada($tokenEmpresa, $request);
 
+                case 'orders/edited':
+                    Log::info("Procesando venta editada - redirigiendo a orders/updated");
+                    // orders/edited no tiene información completa, usar orders/updated
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'orders/edited recibido - usar orders/updated para información completa'
+                    ], 200);
+
                 case 'customers/create':
+                    Log::info("Procesando cliente creado");
                     return $this->procesarClienteCreado($request, $empresa, $usuario);
 
                 case 'customers/update':
+                    Log::info("Procesando cliente actualizado");
                     return $this->procesarClienteActualizado($request, $empresa, $usuario);
 
                 case 'products/create':
+                    Log::info("Procesando producto creado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
 
                 case 'products/update':
+                    Log::info("Procesando producto actualizado");
                     return $this->procesarProductoActualizado($request, $empresa, $usuario);
+
+                case 'draft_orders/create':
+                    // return $this->procesarDraftOrderCreado($tokenEmpresa, $request);
+                    Log::info("Draft order ignorado - solo se procesan órdenes pagadas");
+                    return response()->json([
+                        'status' => 'ignored',
+                        'mensaje' => 'Draft orders no se procesan - solo órdenes pagadas'
+                    ], 200);
 
                 default:
                     Log::warning("Tipo de webhook no manejado: {$webhookTopic}");
@@ -284,7 +337,18 @@ class ShopifyController extends Controller
             ->first();
             
         if ($inventario) {
+            Log::info('Inventario encontrado después de crear producto, guardando snapshot', [
+                'producto_id' => $producto->id,
+                'inventario_id' => $inventario->id,
+                'stock' => $inventario->stock
+            ]);
             $this->cache->saveInventorySnapshot($inventario, $producto->id);
+        } else {
+            Log::error('Inventario NO encontrado después de crear producto', [
+                'producto_id' => $producto->id,
+                'bodega_id' => $usuario->id_bodega,
+                'stock_solicitado' => $stock
+            ]);
         }
 
         // Log::info("Producto creado desde Shopify", ['producto_id' => $producto->id]);
@@ -309,14 +373,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteCreado(Request $request, $empresa, $usuario)
     {
-        Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
-            'shopify_customer_id' => $request->id,
-            'customer_email' => $request->email ?? 'N/A',
-            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-            'empresa_id' => $empresa->id,
-            'usuario_id' => $usuario->id,
-            'webhook_type' => 'customers/create'
-        ]);
+        // Log::info('=== PROCESANDO CLIENTE CREADO DESDE SHOPIFY ===', [
+        //     'shopify_customer_id' => $request->id,
+        //     'customer_email' => $request->email ?? 'N/A',
+        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+        //     'empresa_id' => $empresa->id,
+        //     'usuario_id' => $usuario->id,
+        //     'webhook_type' => 'customers/create'
+        // ]);
 
         try {
             DB::beginTransaction();
@@ -328,21 +392,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
-                'cliente_data' => $clienteData,
-                'shopify_customer_id' => $request->id
-            ]);
+            // Log::info('=== CLIENTE CREADO - DATOS TRANSFORMADOS ===', [
+            //     'cliente_data' => $clienteData,
+            //     'shopify_customer_id' => $request->id
+            // ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
-                'cliente_id' => $cliente->id,
-                'cliente_correo' => $cliente->correo,
-                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-                'cliente_creado' => $cliente->wasRecentlyCreated,
-                'shopify_customer_id' => $request->id,
-                'webhook_type' => 'customers/create'
-            ]);
+            // Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_customer_id' => $request->id,
+            //     'webhook_type' => 'customers/create'
+            // ]);
 
             DB::commit();
 
@@ -365,14 +429,14 @@ class ShopifyController extends Controller
 
     private function procesarClienteActualizado(Request $request, $empresa, $usuario)
     {
-        Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
-            'shopify_customer_id' => $request->id,
-            'customer_email' => $request->email ?? 'N/A',
-            'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
-            'empresa_id' => $empresa->id,
-            'usuario_id' => $usuario->id,
-            'webhook_type' => 'customers/update'
-        ]);
+        // Log::info('=== PROCESANDO CLIENTE ACTUALIZADO DESDE SHOPIFY ===', [
+        //     'shopify_customer_id' => $request->id,
+        //     'customer_email' => $request->email ?? 'N/A',
+        //     'customer_name' => ($request->first_name ?? '') . ' ' . ($request->last_name ?? ''),
+        //     'empresa_id' => $empresa->id,
+        //     'usuario_id' => $usuario->id,
+        //     'webhook_type' => 'customers/update'
+        // ]);
 
         try {
             DB::beginTransaction();
@@ -384,21 +448,21 @@ class ShopifyController extends Controller
 
             $clienteData = $this->transformer->transformarClienteDesdeShopify($request->all());
             
-            Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
-                'cliente_data' => $clienteData,
-                'shopify_customer_id' => $request->id
-            ]);
+            // Log::info('=== CLIENTE ACTUALIZADO - DATOS TRANSFORMADOS ===', [
+            //     'cliente_data' => $clienteData,
+            //     'shopify_customer_id' => $request->id
+            // ]);
             
             $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
-            Log::info('=== CLIENTE ACTUALIZADO ===', [
-                'cliente_id' => $cliente->id,
-                'cliente_correo' => $cliente->correo,
-                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-                'cliente_creado' => $cliente->wasRecentlyCreated,
-                'shopify_customer_id' => $request->id,
-                'webhook_type' => 'customers/update'
-            ]);
+            // Log::info('=== CLIENTE ACTUALIZADO ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_customer_id' => $request->id,
+            //     'webhook_type' => 'customers/update'
+            // ]);
 
             DB::commit();
 
@@ -486,6 +550,51 @@ class ShopifyController extends Controller
         // Log::info("Documento encontrado", ['documento_id' => $documento->id, 'documento_nombre' => $documento->nombre]);
 
         try {
+            // Verificar si la orden ya fue procesada previamente
+            $referenciaShopify = 'SHOPIFY-' . $request->id;
+            $ventaExistente = Venta::where('referencia_shopify', $referenciaShopify)
+                ->where('id_empresa', $usuario->id_empresa)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info("Venta duplicada detectada - orden ya procesada previamente", [
+                    'shopify_order_id' => $request->id,
+                    'venta_id_existente' => $ventaExistente->id,
+                    'referencia_shopify' => $referenciaShopify,
+                    'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
+                    'fecha_creacion_venta' => $ventaExistente->created_at
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Orden ya procesada previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+
+            // Verificar duplicados por webhook_id usando cache
+            $webhookId = $request->header('X-Shopify-Webhook-Id');
+            if ($webhookId) {
+                $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                if (Cache::has($cacheKey)) {
+                    Log::warning("Webhook duplicado detectado por webhook_id", [
+                        'shopify_order_id' => $request->id,
+                        'webhook_id' => $webhookId,
+                        'referencia_shopify' => $referenciaShopify
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Webhook ya procesado previamente',
+                        'duplicado' => true
+                    ], 200);
+                }
+
+                // Marcar webhook como procesado por 1 hora
+                Cache::put($cacheKey, true, 3600);
+            }
+
             DB::beginTransaction();
 
             // Log::info("Iniciando procesamiento de venta", [
@@ -495,38 +604,61 @@ class ShopifyController extends Controller
             //     'documento_id' => $documento->id
             // ]);
 
+            // Mapear canal de venta según el tipo de canal de Shopify
+            $canalId = $this->mapearCanalVenta($request, $usuario->id_empresa);
+
             $request->merge([
                 'id_empresa' => $usuario->id_empresa,
                 'id_usuario' => $usuario->id,
                 'id_bodega' => $usuario->id_bodega,
                 'id_sucursal' => $usuario->id_sucursal,
                 'id_documento' => $documento->id,
-                'id_canal' => $empresa->shopify_canal_id
+                'id_canal' => $canalId
             ]);
 
             // Log::info("Datos del request después del merge", $request->all());
 
-            $clienteData = $this->transformer->transformarCliente($request->all());
+            // Verificar si hay datos de cliente válidos
+            $customer = $request->customer ?? [];
+            $hasValidCustomer = !empty($customer) && 
+                (!empty($customer['first_name']) || !empty($customer['last_name']) || 
+                 !empty($customer['email']) || !empty($customer['phone']));
             
-            Log::info('=== PROCESANDO CLIENTE EN VENTA SHOPIFY ===', [
-                'shopify_order_id' => $request->id ?? 'N/A',
-                'shopify_customer_id' => $request->customer['id'] ?? 'N/A',
-                'customer_email' => $clienteData['correo'],
-                'customer_name' => $clienteData['nombre'] . ' ' . $clienteData['apellido'],
-                'empresa_id' => $usuario->id_empresa,
-                'usuario_id' => $usuario->id
-            ]);
+            if ($hasValidCustomer) {
+                // Transformar cliente si hay datos válidos
+                $clienteData = $this->transformer->transformarCliente($request->all());
+                
+                // Log::info('=== PROCESANDO CLIENTE EN VENTA SHOPIFY ===', [
+                //     'shopify_order_id' => $request->id ?? 'N/A',
+                //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A',
+                //     'customer_email' => $clienteData['correo'],
+                //     'customer_name' => $clienteData['nombre'] . ' ' . $clienteData['apellido'],
+                //     'empresa_id' => $usuario->id_empresa,
+                //     'usuario_id' => $usuario->id
+                // ]);
+                
+                $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+            } else {
+                // Usar cliente "Consumidor Final" por defecto
+                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                
+                // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL EN VENTA ===', [
+                //     'shopify_order_id' => $request->id ?? 'N/A',
+                //     'cliente_id' => $cliente->id,
+                //     'cliente_nombre' => $cliente->nombre_completo,
+                //     'empresa_id' => $usuario->id_empresa,
+                //     'usuario_id' => $usuario->id
+                // ]);
+            }
             
-            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
-            
-            Log::info('=== CLIENTE PROCESADO EN VENTA ===', [
-                'cliente_id' => $cliente->id,
-                'cliente_correo' => $cliente->correo,
-                'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
-                'cliente_creado' => $cliente->wasRecentlyCreated,
-                'shopify_order_id' => $request->id ?? 'N/A',
-                'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
-            ]);
+            // Log::info('=== CLIENTE PROCESADO EN VENTA ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_order_id' => $request->id ?? 'N/A',
+            //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
+            // ]);
 
             $ventaData = $this->transformer->transformarVenta(
                 $request->all(),
@@ -584,7 +716,7 @@ class ShopifyController extends Controller
                     // Log::info("Producto creado", ['producto_id' => $producto->id]);
                 }
 
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id);
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
@@ -622,6 +754,22 @@ class ShopifyController extends Controller
                     'detalles_creados' => count($detallesEnvio)
                 ]);
             }
+
+            // Guardar impuesto de la venta en venta_impuestos
+            // Comentado: El IVA ya se guarda directamente en la venta
+            // if ($venta->iva > 0) {
+            //     $this->impuestosService->guardarImpuestoVenta(
+            //         $venta->id,
+            //         $venta->iva,
+            //         $usuario->id_empresa
+            //     );
+
+            //     Log::info("Impuesto de venta guardado", [
+            //         'venta_id' => $venta->id,
+            //         'monto_impuesto' => $venta->iva,
+            //         'empresa_id' => $usuario->id_empresa
+            //     ]);
+            // }
 
             $documento = Documento::findOrfail($venta->id_documento);
             $documento->increment('correlativo');
@@ -699,35 +847,72 @@ class ShopifyController extends Controller
     //actualizar inventario
     private function actualizarInventario($productoId, $cantidad, $bodegaId, $usuarioId)
     {
-        $inventario = Inventario::where('id_producto', $productoId)
-            ->where('id_bodega', $bodegaId)
-            ->first();
-
-        if ($inventario) {
-            $inventario->update([
-                'stock' => $cantidad
+        try {
+            Log::info('Iniciando actualización de inventario', [
+                'producto_id' => $productoId,
+                'cantidad' => $cantidad,
+                'bodega_id' => $bodegaId,
+                'usuario_id' => $usuarioId
             ]);
-            $producto = Producto::find($productoId);
 
-            if ($inventario->stock > 0) {
-                $producto->id_usuario = $usuarioId;
-                $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+            $inventario = Inventario::where('id_producto', $productoId)
+                ->where('id_bodega', $bodegaId)
+                ->first();
+
+            if ($inventario) {
+                Log::info('Inventario existente encontrado, actualizando stock', [
+                    'inventario_id' => $inventario->id,
+                    'stock_anterior' => $inventario->stock,
+                    'stock_nuevo' => $cantidad
+                ]);
+
+                $inventario->update([
+                    'stock' => $cantidad
+                ]);
+                $producto = Producto::find($productoId);
+
+                if ($inventario->stock > 0) {
+                    $producto->id_usuario = $usuarioId;
+                    $inventario->kardex($producto, 0, $producto->precio, $producto->costo);
+                }
+            } else {
+                Log::info('Inventario no existe, creando nuevo registro', [
+                    'producto_id' => $productoId,
+                    'bodega_id' => $bodegaId,
+                    'stock' => $cantidad
+                ]);
+
+                $inventario = Inventario::create([
+                    'id_producto' => $productoId,
+                    'id_bodega' => $bodegaId,
+                    'stock' => $cantidad,
+                    'stock_minimo' => 0,
+                    'stock_maximo' => 0,
+                ]);
+
+                Log::info('Inventario creado exitosamente', [
+                    'inventario_id' => $inventario->id,
+                    'producto_id' => $productoId,
+                    'bodega_id' => $bodegaId,
+                    'stock' => $cantidad
+                ]);
             }
-        } else {
-            $inventario = Inventario::create([
+
+            return [
                 'id_producto' => $productoId,
                 'id_bodega' => $bodegaId,
-                'stock' => $cantidad,
-                'stock_minimo' => 0,
-                'stock_maximo' => 0,
+                'stock' => ['decrement' => $cantidad],
+                'updated_at' => now()
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error en actualizarInventario', [
+                'producto_id' => $productoId,
+                'bodega_id' => $bodegaId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
+            throw $e;
         }
-        return [
-            'id_producto' => $productoId,
-            'id_bodega' => $bodegaId,
-            'stock' => ['decrement' => $cantidad],
-            'updated_at' => now()
-        ];
     }
 
     public function storeImage($data)
@@ -761,7 +946,7 @@ class ShopifyController extends Controller
             if (isset($data['src']) && $data['src']) {
                 // Verificar si ya existe una imagen con la misma URL para el mismo producto
                 $imagenExistente = Imagen::where('id_producto', $data['id_producto'])
-                    ->where('src', $data['src'])
+                    ->where('img', $data['src'])
                     ->first();
 
                 if ($imagenExistente && $imagenExistente->id !== $imagen->id) {
@@ -773,13 +958,13 @@ class ShopifyController extends Controller
                 }
 
                 // Solo eliminar y recrear si la imagen ya existe y tiene una URL diferente
-                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->src !== $data['src']) {
+                if ($imagen->id && $imagen->img && $imagen->img != 'productos/default.jpg' && $imagen->img !== $data['src']) {
                     Storage::delete($imagen->img);
                     Log::info('Imagen anterior eliminada por cambio de URL', ['path' => $imagen->img]);
                 }
 
                 // Solo procesar si no existe o si la URL cambió
-                if (!$imagen->id || $imagen->src !== $data['src']) {
+                if (!$imagen->id || $imagen->img !== $data['src']) {
                     try {
                         $imageContent = file_get_contents($data['src']);
                         if ($imageContent === false) {
@@ -1294,7 +1479,7 @@ class ShopifyController extends Controller
             'partially_paid' => 'Pendiente',
             'paid' => 'Pagada',
             'partially_refunded' => 'Pagada',
-            'refunded' => 'Reembolsada',
+            'refunded' => 'Anulada', // Cambiado de 'Reembolsada' a 'Anulada'
             'voided' => 'Anulada'
         ];
 
@@ -1360,6 +1545,8 @@ class ShopifyController extends Controller
             $cantidadAnterior = $detalle->cantidad;
             // Usar current_quantity si está disponible, sino quantity
             $cantidadNueva = $item['current_quantity'] ?? $item['quantity'];
+            $financialStatus = $request->financial_status ?? 'pending';
+            $esReembolso = $financialStatus === 'refunded';
             
             Log::info("Comparando cantidades de producto", [
                 'venta_id' => $venta->id,
@@ -1369,51 +1556,101 @@ class ShopifyController extends Controller
                 'quantity_shopify' => $item['quantity'],
                 'current_quantity_shopify' => $item['current_quantity'] ?? 'N/A',
                 'fulfillable_quantity_shopify' => $item['fulfillable_quantity'] ?? 'N/A',
-                'diferencia' => $cantidadNueva - $cantidadAnterior
+                'diferencia' => $cantidadNueva - $cantidadAnterior,
+                'financial_status' => $financialStatus,
+                'es_reembolso' => $esReembolso
             ]);
             
-            // Solo actualizar si la cantidad ha cambiado
-            if ($cantidadAnterior != $cantidadNueva) {
+            // Solo actualizar si la cantidad ha cambiado O si es un reembolso
+            if ($cantidadAnterior != $cantidadNueva || $esReembolso) {
                 Log::info("Actualizando cantidad de producto", [
                     'venta_id' => $venta->id,
                     'producto_id' => $producto->id,
                     'cantidad_anterior' => $cantidadAnterior,
                     'cantidad_nueva' => $cantidadNueva,
-                    'diferencia' => $cantidadNueva - $cantidadAnterior
+                    'diferencia' => $cantidadNueva - $cantidadAnterior,
+                    'precio_original_detalle' => $detalle->precio,
+                    'precio_shopify' => $item['price'] ?? 'N/A',
+                    'es_reembolso' => $esReembolso,
+                    'financial_status' => $financialStatus
                 ]);
                 
-                // Actualizar la cantidad en el detalle
+                // Para reembolsos, mantener la cantidad y total originales para evidencia
+                if ($esReembolso) {
+                    // Mantener cantidad y total originales para evidencia
+                    $cantidadFinal = $cantidadAnterior; // Mantener cantidad original
+                    $precioProducto = $detalle->precio; // Mantener precio original
+                    $totalFinal = $detalle->total; // Mantener total original para evidencia
+                    $ivaFinal = $detalle->iva; // Mantener IVA original
+                    $gravadaFinal = $detalle->gravada; // Mantener gravada original
+                    
+                    Log::info("Procesando reembolso - manteniendo valores originales", [
+                        'venta_id' => $venta->id,
+                        'producto_id' => $producto->id,
+                        'cantidad_original' => $cantidadAnterior,
+                        'cantidad_mantenida' => $cantidadFinal,
+                        'precio_mantenido' => $precioProducto,
+                        'total_original' => $detalle->total,
+                        'total_mantenido' => $totalFinal
+                    ]);
+                } else {
+                // Actualización normal
+                $cantidadFinal = $cantidadNueva;
+                $precioProducto = $detalle->precio;
+                if ($cantidadNueva == 0 && !empty($item['price'])) {
+                    $precioProducto = floatval($item['price']);
+                }
+                $totalFinal = $cantidadFinal * $precioProducto;
+                
+                // Recalcular IVA y gravada para el detalle individual
+                // $precioProducto ya es el precio sin IVA, así que calculamos el IVA correctamente
+                $ivaPorUnidad = round($precioProducto * 0.13, 2); // 13% IVA sobre precio sin IVA, redondeado a 2 decimales
+                $ivaFinal = round($cantidadFinal * $ivaPorUnidad, 2); // IVA total redondeado
+                $gravadaFinal = round($cantidadFinal * $precioProducto, 2); // Gravada = cantidad × precio sin IVA, redondeado
+                }
+                
                 $detalle->update([
-                    'cantidad' => $cantidadNueva,
-                    'total' => $cantidadNueva * $detalle->precio
+                    'cantidad' => $cantidadFinal,
+                    'precio' => $precioProducto,
+                    'total' => $totalFinal,
+                    'iva' => $ivaFinal,
+                    'gravada' => $gravadaFinal
                 ]);
                 
-                // Ajustar el inventario
-                $diferenciaStock = $cantidadNueva - $cantidadAnterior;
-                
-                if ($diferenciaStock != 0) {
-                    $inventario = Inventario::where('id_producto', $producto->id)
-                        ->where('id_bodega', $venta->id_bodega)
-                        ->first();
-                        
-                    if ($inventario) {
-                        if ($diferenciaStock > 0) {
-                            // Se agregaron productos, reducir stock
-                            $inventario->decrement('stock', $diferenciaStock);
-                        } else {
-                            // Se quitaron productos, incrementar stock
-                            $inventario->increment('stock', abs($diferenciaStock));
+                // Ajustar el inventario solo si NO es un reembolso
+                if (!$esReembolso) {
+                    $diferenciaStock = $cantidadNueva - $cantidadAnterior;
+                    
+                    if ($diferenciaStock != 0) {
+                        $inventario = Inventario::where('id_producto', $producto->id)
+                            ->where('id_bodega', $venta->id_bodega)
+                            ->first();
+                            
+                        if ($inventario) {
+                            if ($diferenciaStock > 0) {
+                                // Se agregaron productos, reducir stock
+                                $inventario->decrement('stock', $diferenciaStock);
+                            } else {
+                                // Se quitaron productos, incrementar stock
+                                $inventario->increment('stock', abs($diferenciaStock));
+                            }
+                            
+                            // Registrar en el kardex
+                            $inventario->kardex($venta, abs($diferenciaStock), $detalle->precio, $producto->costo);
+                            
+                            Log::info("Inventario ajustado por cambio de cantidad", [
+                                'producto_id' => $producto->id,
+                                'diferencia_stock' => $diferenciaStock,
+                                'stock_actual' => $inventario->stock
+                            ]);
                         }
-                        
-                        // Registrar en el kardex
-                        $inventario->kardex($venta, abs($diferenciaStock), $detalle->precio, $producto->costo);
-                        
-                        Log::info("Inventario ajustado por cambio de cantidad", [
-                            'producto_id' => $producto->id,
-                            'diferencia_stock' => $diferenciaStock,
-                            'stock_actual' => $inventario->stock
-                        ]);
                     }
+                } else {
+                    Log::info("Reembolso detectado - no se ajusta inventario", [
+                        'venta_id' => $venta->id,
+                        'producto_id' => $producto->id,
+                        'cantidad_mantenida' => $cantidadAnterior
+                    ]);
                 }
             } else {
                 Log::info("Cantidad sin cambios para producto", [
@@ -1441,13 +1678,11 @@ class ShopifyController extends Controller
         $gravada = 0;
         
         foreach ($venta->detalles as $detalle) {
-            $subtotal += $detalle->subtotal;
-            $iva += $detalle->iva;
-            $gravada += $detalle->gravada;
+            $subtotal += round($detalle->cantidad * $detalle->precio, 2);
+            $iva += round($detalle->iva, 2);
+            $gravada += round($detalle->gravada, 2);
         }
         
-        // Para ventas de Shopify, el total debe ser gravada + iva
-        // Redondear a 2 decimales para evitar problemas de precisión
         $total = round($gravada + $iva, 2);
         
         $venta->update([
@@ -1459,10 +1694,12 @@ class ShopifyController extends Controller
         
         Log::info("Totales de venta recalculados", [
             'venta_id' => $venta->id,
+            'referencia_shopify' => $venta->referencia_shopify,
             'subtotal' => round($subtotal, 2),
             'iva' => round($iva, 2),
             'gravada' => round($gravada, 2),
-            'total' => $total
+            'total' => $total,
+            'es_venta_shopify' => !empty($venta->referencia_shopify)
         ]);
     }
 
@@ -1477,6 +1714,8 @@ class ShopifyController extends Controller
     {
         Log::info("Webhook de pedido actualizado recibido de Shopify", [
             'shopify_order_id' => $request->id,
+            'order_id' => $request->order_id ?? 'N/A',
+            'order_edit_order_id' => $request->order_edit['order_id'] ?? 'N/A',
             'token_empresa' => $tokenEmpresa,
             'financial_status' => $request->financial_status ?? 'N/A',
             'fulfillment_status' => $request->fulfillment_status ?? 'N/A'
@@ -1496,16 +1735,36 @@ class ShopifyController extends Controller
 
         try {
             // Buscar la venta existente
-            $shopifyOrderId = $request->id;
+            $shopifyOrderId = $request->id ?? $request->order_id;
+            
+            // Para webhook orders/edited, el order_id está en order_edit.order_id
+            if (!$shopifyOrderId && isset($request->order_edit['order_id'])) {
+                $shopifyOrderId = $request->order_edit['order_id'];
+            }
+            
+            $orderNumber = $request->order_number;
             $referencia = 'SHOPIFY-' . $shopifyOrderId;
             
             $venta = Venta::where('referencia_shopify', $referencia)
                 ->where('id_empresa', $empresa->id)
                 ->first();
 
+            // Si no se encuentra por ID, buscar por order_number
+            if (!$venta && $orderNumber) {
+                Log::info("Buscando venta por order_number", [
+                    'order_number' => $orderNumber,
+                    'empresa_id' => $empresa->id
+                ]);
+                
+                $venta = Venta::where('referencia_shopify', 'SHOPIFY-' . $orderNumber)
+                    ->where('id_empresa', $empresa->id)
+                    ->first();
+            }
+
             if (!$venta) {
                 Log::warning("Venta no encontrada para actualización", [
                     'shopify_order_id' => $shopifyOrderId,
+                    'order_number' => $orderNumber,
                     'referencia_buscada' => $referencia,
                     'empresa_id' => $empresa->id
                 ]);
@@ -1515,20 +1774,44 @@ class ShopifyController extends Controller
                 ], 404);
             }
 
+            // AGREGAR: Verificar si la venta se creó hace menos de 10 segundos
+            if ($venta->created_at->diffInSeconds(now()) < 10) {
+                Log::info("Venta recién creada, ignorando actualización inmediata", [
+                    'venta_id' => $venta->id,
+                    'created_at' => $venta->created_at,
+                    'shopify_order_id' => $request->id,
+                    'tiempo_transcurrido' => $venta->created_at->diffInSeconds(now()) . ' segundos'
+                ]);
+                
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Actualización ignorada - venta recién creada',
+                    'venta_id' => $venta->id
+                ], 200);
+            }
+
             // Actualizar estado de la venta si es necesario
             $nuevoEstado = $this->mapearEstado($request->financial_status ?? 'pending');
+            $financialStatus = $request->financial_status ?? 'pending';
             
             if ($venta->estado !== $nuevoEstado) {
+                $observacion = 'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s');
+                
+                // Agregar observación específica para reembolsos
+                if ($financialStatus === 'refunded') {
+                    $observacion = 'Pedido reembolsado en Shopify el ' . now()->format('d/m/Y H:i:s');
+                }
+                
                 $venta->update([
                     'estado' => $nuevoEstado,
-                    'observaciones' => ($venta->observaciones ? $venta->observaciones . ' | ' : '') . 
-                        'Pedido actualizado en Shopify el ' . now()->format('d/m/Y H:i:s')
+                    'observaciones' => ($venta->observaciones ? $venta->observaciones . ' | ' : '') . $observacion
                 ]);
                 
                 Log::info("Estado de venta actualizado", [
                     'venta_id' => $venta->id,
                     'estado_anterior' => $venta->getOriginal('estado'),
                     'estado_nuevo' => $nuevoEstado,
+                    'financial_status' => $financialStatus,
                     'shopify_order_id' => $shopifyOrderId
                 ]);
             }
@@ -1556,6 +1839,385 @@ class ShopifyController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Procesa el webhook de draft order creado de Shopify
+     * 
+     * @param string $tokenEmpresa
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function procesarDraftOrderCreado($tokenEmpresa, Request $request)
+    {
+        // Log::info("=== PROCESANDO DRAFT ORDER CREADO DESDE SHOPIFY ===", [
+        //     'shopify_draft_order_id' => $request->id ?? 'N/A',
+        //     'token_empresa' => $tokenEmpresa,
+        //     'status' => $request->status ?? 'N/A',
+        //     'total_price' => $request->total_price ?? 'N/A'
+        // ]);
+
+        $empresa = Empresa::where('woocommerce_api_key', $tokenEmpresa)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$empresa) {
+            Log::error("Token de empresa Shopify no válido: {$tokenEmpresa}");
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Token de acceso no válido o no conectado'
+            ], 401);
+        }
+
+        $usuario = User::where('id_empresa', $empresa->id)
+            ->where('shopify_status', 'connected')
+            ->first();
+
+        if (!$usuario) {
+            Log::error("Usuario no encontrado", ['empresa_id' => $empresa->id]);
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario no encontrado'
+            ], 401);
+        }
+
+        // Verificar que el usuario tenga bodega asignada
+        if (!$usuario->id_bodega) {
+            Log::error("Usuario sin bodega asignada", [
+                'usuario_id' => $usuario->id,
+                'usuario_nombre' => $usuario->name,
+                'id_empresa' => $usuario->id_empresa
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Usuario sin bodega asignada'
+            ], 400);
+        }
+
+        // Obtener documento apropiado
+        if ($empresa->facturacion_electronica) {
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                ->where('nombre', 'Factura')
+                ->where('activo', true)
+                ->first();
+        } else {
+            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                ->where('nombre', 'Ticket')
+                ->where('activo', true)
+                ->first();
+        }
+
+        if (!$documento) {
+            Log::error("Ningún documento encontrado", [
+                'id_sucursal' => $usuario->id_sucursal,
+                'facturacion_electronica' => $empresa->facturacion_electronica
+            ]);
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Ningún documento activo encontrado para la sucursal'
+            ], 500);
+        }
+
+        try {
+            // Verificar si el draft order ya fue procesado previamente
+            $referenciaShopify = 'DRAFT-' . $request->id;
+            $ventaExistente = Venta::where('referencia_shopify', $referenciaShopify)
+                ->where('id_empresa', $usuario->id_empresa)
+                ->first();
+
+            if ($ventaExistente) {
+                Log::info("Draft Order duplicado detectado - orden ya procesada previamente", [
+                    'shopify_draft_order_id' => $request->id,
+                    'venta_id_existente' => $ventaExistente->id,
+                    'referencia_shopify' => $referenciaShopify,
+                    'webhook_id' => $request->header('X-Shopify-Webhook-Id'),
+                    'fecha_creacion_venta' => $ventaExistente->created_at
+                ]);
+
+                return response()->json([
+                    'status' => 'success',
+                    'mensaje' => 'Draft Order ya procesado previamente',
+                    'venta_id' => $ventaExistente->id,
+                    'duplicado' => true
+                ], 200);
+            }
+
+            // Verificar duplicados por webhook_id usando cache
+            $webhookId = $request->header('X-Shopify-Webhook-Id');
+            if ($webhookId) {
+                $cacheKey = "shopify_webhook_processed_{$webhookId}";
+                if (Cache::has($cacheKey)) {
+                    Log::warning("Webhook duplicado detectado por webhook_id (Draft Order)", [
+                        'shopify_draft_order_id' => $request->id,
+                        'webhook_id' => $webhookId,
+                        'referencia_shopify' => $referenciaShopify
+                    ]);
+
+                    return response()->json([
+                        'status' => 'success',
+                        'mensaje' => 'Webhook ya procesado previamente',
+                        'duplicado' => true
+                    ], 200);
+                }
+
+                // Marcar webhook como procesado por 1 hora
+                Cache::put($cacheKey, true, 3600);
+            }
+
+            DB::beginTransaction();
+
+            // Mapear canal de venta según el tipo de canal de Shopify
+            $canalId = $this->mapearCanalVenta($request, $usuario->id_empresa);
+
+            // Preparar datos del request para el transformer
+            $request->merge([
+                'id_empresa' => $usuario->id_empresa,
+                'id_usuario' => $usuario->id,
+                'id_bodega' => $usuario->id_bodega,
+                'id_sucursal' => $usuario->id_sucursal,
+                'id_documento' => $documento->id,
+                'id_canal' => $canalId
+            ]);
+
+            // Verificar si hay datos de cliente válidos
+            $customer = $request->customer ?? [];
+            $hasValidCustomer = !empty($customer) && 
+                (!empty($customer['first_name']) || !empty($customer['last_name']) || 
+                 !empty($customer['email']) || !empty($customer['phone']));
+            
+            if ($hasValidCustomer) {
+                // Transformar cliente si hay datos válidos
+                $clienteData = $this->transformer->transformarCliente($request->all());
+                
+                // Log::info('=== PROCESANDO CLIENTE EN DRAFT ORDER SHOPIFY ===', [
+                //     'shopify_draft_order_id' => $request->id ?? 'N/A',
+                //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A',
+                //     'customer_email' => $clienteData['correo'],
+                //     'customer_name' => $clienteData['nombre'] . ' ' . $clienteData['apellido'],
+                //     'empresa_id' => $usuario->id_empresa,
+                //     'usuario_id' => $usuario->id
+                // ]);
+                
+                $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+            } else {
+                // Usar cliente "Consumidor Final" por defecto
+                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                
+                // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL ===', [
+                //     'shopify_draft_order_id' => $request->id ?? 'N/A',
+                //     'cliente_id' => $cliente->id,
+                //     'cliente_nombre' => $cliente->nombre_completo,
+                //     'empresa_id' => $usuario->id_empresa,
+                //     'usuario_id' => $usuario->id
+                // ]);
+            }
+            
+            // Log::info('=== CLIENTE PROCESADO EN DRAFT ORDER ===', [
+            //     'cliente_id' => $cliente->id,
+            //     'cliente_correo' => $cliente->correo,
+            //     'cliente_nombre' => $cliente->nombre . ' ' . $cliente->apellido,
+            //     'cliente_creado' => $cliente->wasRecentlyCreated,
+            //     'shopify_draft_order_id' => $request->id ?? 'N/A',
+            //     'shopify_customer_id' => $request->customer['id'] ?? 'N/A'
+            // ]);
+
+            // Transformar venta (draft order se trata como venta pendiente)
+            $ventaData = $this->transformer->transformarVenta(
+                $request->all(),
+                $cliente->id,
+                $documento->id,
+                $documento->correlativo
+            );
+
+            // Marcar como draft order y estado pendiente
+            $ventaData['estado'] = 'Pendiente';
+            $ventaData['referencia_shopify'] = 'DRAFT-' . $request->id;
+            $ventaData['observaciones'] = 'Draft Order creado desde Shopify - ' . now()->format('d/m/Y H:i:s');
+
+            $venta = Venta::create($ventaData);
+            
+            Log::info("Draft Order creado como venta pendiente", [
+                'venta_id' => $venta->id,
+                'shopify_draft_order_id' => $request->id,
+                'referencia' => $ventaData['referencia_shopify']
+            ]);
+
+            // Procesar line items del draft order
+            if (!empty($request->line_items)) {
+                foreach ($request->line_items as $item) {
+                    // Validar que el item tenga los datos mínimos necesarios
+                    if (empty($item) || !is_array($item)) {
+                        Log::warning("Line item inválido o vacío en draft order", ['item' => $item]);
+                        continue;
+                    }
+
+                    Log::info("Procesando line item de draft order", [
+                        'variant_id' => $item['variant_id'] ?? 'N/A', 
+                        'sku' => $item['sku'] ?? 'N/A',
+                        'title' => $item['title'] ?? 'N/A'
+                    ]);
+                    
+                    $producto = null;
+                    
+                    // Buscar producto por variant_id si existe
+                    if (!empty($item['variant_id'])) {
+                        $producto = Producto::where('shopify_variant_id', $item['variant_id'])
+                            ->where('id_empresa', $usuario->id_empresa)
+                            ->first();
+                    }
+
+                    // Si no se encuentra por variant_id, buscar por SKU
+                    if (!$producto && !empty($item['sku'])) {
+                        $producto = Producto::where('codigo', $item['sku'])
+                            ->where('id_empresa', $usuario->id_empresa)
+                            ->first();
+                    }
+
+                    // Si no se encuentra el producto, crearlo
+                    if (!$producto) {
+                        Log::info("Producto no encontrado en draft order, creando nuevo producto", [
+                            'variant_id' => $item['variant_id'] ?? 'N/A',
+                            'sku' => $item['sku'] ?? 'N/A',
+                            'title' => $item['title'] ?? 'N/A'
+                        ]);
+                        
+                        $productoData = $this->transformer->transformarProducto(
+                            $item,
+                            $usuario->id_empresa,
+                            $usuario->id,
+                            $usuario->id_sucursal
+                        );
+                        $producto = Producto::create($productoData);
+                        
+                        Log::info("Producto creado para draft order", ['producto_id' => $producto->id]);
+                    }
+
+                    // Crear detalle de venta
+                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
+                    $detalleData['id_producto'] = $producto->id;
+                    $venta->detalles()->create($detalleData);
+
+                    Log::info("Detalle de draft order creado", [
+                        'venta_id' => $venta->id,
+                        'producto_id' => $producto->id,
+                        'cantidad' => $item['quantity'],
+                        'precio' => $item['price']
+                    ]);
+                }
+            }
+
+            // Procesar tipos de envío si existen
+            // Los draft orders usan shipping_line (singular) en lugar de shipping_lines (plural)
+            $shippingLines = $request->shipping_lines ?? [];
+            if (empty($shippingLines) && !empty($request->shipping_line)) {
+                $shippingLines = [$request->shipping_line];
+            }
+            
+            if (!empty($shippingLines)) {
+                Log::info("Procesando tipos de envío en draft order", [
+                    'venta_id' => $venta->id,
+                    'shipping_lines_count' => count($shippingLines),
+                    'shipping_line_singular' => !empty($request->shipping_line),
+                    'shipping_lines_plural' => !empty($request->shipping_lines)
+                ]);
+
+                $detallesEnvio = $this->shippingService->procesarTiposEnvio(
+                    $shippingLines,
+                    $venta->id,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+
+                Log::info("Detalles de envío procesados en draft order", [
+                    'venta_id' => $venta->id,
+                    'detalles_creados' => count($detallesEnvio)
+                ]);
+            }
+
+            // Guardar impuesto de la venta en venta_impuestos
+            // Comentado: El IVA ya se guarda directamente en la venta
+            // if ($venta->iva > 0) {
+            //     $this->impuestosService->guardarImpuestoVenta(
+            //         $venta->id,
+            //         $venta->iva,
+            //         $usuario->id_empresa
+            //     );
+
+            //     Log::info("Impuesto de draft order guardado", [
+            //         'venta_id' => $venta->id,
+            //         'monto_impuesto' => $venta->iva,
+            //         'empresa_id' => $usuario->id_empresa
+            //     ]);
+            // }
+
+            // Incrementar correlativo del documento
+            $documento = Documento::findOrfail($venta->id_documento);
+            $documento->increment('correlativo');
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'mensaje' => 'Draft Order procesado correctamente como venta pendiente',
+                'venta_id' => $venta->id,
+                'referencia' => $ventaData['referencia_shopify']
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error procesando draft order de Shopify: ' . $e->getMessage(), [
+                'shopify_draft_order_id' => $request->id ?? 'N/A',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'mensaje' => 'Error al procesar el draft order',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtiene o crea el cliente "Consumidor Final" por defecto
+     * 
+     * @param int $empresaId
+     * @return Cliente
+     */
+    private function obtenerClienteConsumidorFinal($empresaId)
+    {
+        // Buscar cliente "Consumidor Final" existente
+        $cliente = Cliente::where('nombre', 'Consumidor Final')
+            ->where('apellido', '')
+            ->where('id_empresa', $empresaId)
+            ->first();
+            
+        if (!$cliente) {
+            // Crear cliente "Consumidor Final" si no existe
+            $cliente = Cliente::create([
+                'nombre' => 'Consumidor Final',
+                'apellido' => '',
+                'correo' => '',
+                'telefono' => '',
+                'direccion' => '',
+                'pais' => '',
+                'municipio' => '',
+                'departamento' => '',
+                'tipo' => 'Persona',
+                'enable' => 1,
+                'id_empresa' => $empresaId,
+                'id_usuario' => null, // No asociado a usuario específico
+            ]);
+            
+            Log::info('Cliente Consumidor Final creado', [
+                'cliente_id' => $cliente->id,
+                'empresa_id' => $empresaId
+            ]);
+        }
+        
+        return $cliente;
     }
 
     /**
@@ -1599,5 +2261,87 @@ class ShopifyController extends Controller
         // Log::info("Respuesta del webhook de prueba", $response);
 
         return response()->json($response, 200);
+    }
+
+    /**
+     * Mapea el canal de venta de Shopify al canal correspondiente en el sistema
+     * 
+     * @param Request $request
+     * @param int $empresaId
+     * @return int
+     */
+    private function mapearCanalVenta(Request $request, $empresaId)
+    {
+        // Obtener el canal de Shopify desde el request
+        $shopifyChannel = $request->input('source_name', '');
+        
+        Log::info('Mapeando canal de venta desde Shopify', [
+            'shopify_channel' => $shopifyChannel,
+            'empresa_id' => $empresaId,
+            'shopify_order_id' => $request->id ?? 'N/A'
+        ]);
+
+        // Buscar o crear los canales según el mapeo
+        $canalId = null;
+
+        switch ($shopifyChannel) {
+            case 'Online Store':
+                // Mapear a "Página Web"
+                $canalId = $this->buscarOCrearCanal('Página Web', $empresaId);
+                break;
+                
+            case 'Point of sale':
+                // Mapear a "Tienda Física"
+                $canalId = $this->buscarOCrearCanal('Tienda Física', $empresaId);
+                break;
+                
+            case '':
+            case null:
+            default:
+                // Cuando está vacío o es otro tipo, mapear a "Redes Sociales"
+                $canalId = $this->buscarOCrearCanal('Redes Sociales', $empresaId);
+                break;
+        }
+
+        Log::info('Canal de venta mapeado', [
+            'shopify_channel' => $shopifyChannel,
+            'canal_id' => $canalId,
+            'empresa_id' => $empresaId
+        ]);
+
+        return $canalId;
+    }
+
+    /**
+     * Busca o crea un canal de venta
+     * 
+     * @param string $nombreCanal
+     * @param int $empresaId
+     * @return int
+     */
+    private function buscarOCrearCanal($nombreCanal, $empresaId)
+    {
+        $canal = \App\Models\Admin\Canal::where('nombre', $nombreCanal)
+            ->where('id_empresa', $empresaId)
+            ->first();
+
+        if (!$canal) {
+            $canal = \App\Models\Admin\Canal::create([
+                'nombre' => $nombreCanal,
+                'descripcion' => "Canal creado automáticamente desde Shopify - {$nombreCanal}",
+                'enable' => true,
+                'cobra_propina' => false,
+                'envios' => false,
+                'id_empresa' => $empresaId
+            ]);
+
+            Log::info('Canal de venta creado automáticamente', [
+                'canal_id' => $canal->id,
+                'nombre' => $nombreCanal,
+                'empresa_id' => $empresaId
+            ]);
+        }
+
+        return $canal->id;
     }
 }

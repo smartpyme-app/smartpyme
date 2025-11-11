@@ -10,6 +10,7 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use Auth;
 
 class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
@@ -43,13 +44,13 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
         return[
             'N°',
             'Fecha',
-            'Correlativo',
-            'Ventas Exentas',
-            'Ventas Gravadas',
-            'Ventas No Sujetas',
-            'Exportaciones',
-            'Total',
-            'Venta a Cuenta de Terceros',
+            'Correlativo Inicial',
+            'Correlativo Final',
+            'VENTAS EXENTAS',
+            'VENTAS INTERNAS GRAVADAS',
+            'EXPORTACIONES',
+            'TOTAL DE VENTAS DIARIAS PROPIAS',
+            'VENTAS A CUENTA DE TERCEROS',
         ];
     }
 
@@ -68,35 +69,139 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
                         })
                         ->whereBetween('fecha', [$request->inicio, $request->fin])
                         ->where('cotizacion', 0)
-                        ->orderByDesc('fecha')
-                        ->orderByDesc('correlativo')
                         ->get();
-        return $ventas;
+
+        $ventasSinSello = $ventas->filter(function ($venta) {
+            return empty($venta->sello_mh);
+        });
+
+        if ($ventasSinSello->isNotEmpty()) {
+            Log::warning('Se excluyeron ventas sin sello al exportar libro consumidores', [
+                'ventas' => $ventasSinSello->pluck('id'),
+            ]);
+        }
+
+        $filas = $this->generarFilas($ventas);
+
+        return $filas;
 
     }
 
-    public function map($venta): array{
+    public function map($fila): array{
+        $fila = is_array($fila) ? $fila : (array) $fila;
 
-        $documento = $venta->documento;
-        $cliente = optional($venta->cliente);
-
-        if ($venta->iva > 0) {
-            $venta->gravada = $venta->sub_total;
-        }else{
-            $venta->gravada = 0;
-            $venta->exenta = $venta->sub_total;
+        if (!empty($fila['es_total'])) {
+            return [
+                '',
+                'Totales',
+                '',
+                '',
+                $fila['ventas_exentas'],
+                $fila['ventas_internas_gravadas'],
+                $fila['exportaciones'],
+                $fila['total_ventas_diarias_propias'],
+                $fila['ventas_a_cuenta_de_terceros'],
+            ];
         }
 
         return [
             $this->index++,
-            $venta->fecha,
-            $venta->correlativo,
-            $venta->exenta,
-            $venta->documento->nombre === 'Factura de exportación' ? '0' : $venta->gravada,
-            $venta->no_sujeta,
-            $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0',
-            $venta->total,
-            $venta->cuenta_a_terceros,
+            Carbon::parse($fila['fecha'])->format('d/m/Y'),
+            $fila['correlativo_inicial'],
+            $fila['correlativo_final'],
+            $fila['ventas_exentas'],
+            $fila['ventas_internas_gravadas'],
+            $fila['exportaciones'],
+            $fila['total_ventas_diarias_propias'],
+            $fila['ventas_a_cuenta_de_terceros'],
         ];
+    }
+
+    protected function generarFilas($ventas)
+    {
+        $ventasConSello = $ventas->reject(function ($venta) {
+            return empty($venta->sello_mh);
+        });
+
+        $filas = $ventasConSello
+            ->groupBy(function ($venta) {
+                return Carbon::parse($venta->fecha)->format('Y-m-d');
+            })
+            ->map(function ($ventasDia, $fecha) {
+                $ventasOrdenadasPorCorrelativo = $ventasDia->sortBy(function ($venta) {
+                    return trim((string) $venta->correlativo);
+                });
+
+                $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
+                    return $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])
+                        ? $venta->dte['identificacion']['codigoGeneracion']
+                        : trim((string) $venta->correlativo);
+                });
+
+                $obtenerCodigoGeneracion = function ($venta) {
+                    if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+                        return $venta->dte['identificacion']['codigoGeneracion'];
+                    }
+
+                    return trim((string) $venta->correlativo);
+                };
+
+                $ventasExentas = $ventasDia->sum(function ($venta) {
+                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                });
+
+                $ventasGravadas = $ventasDia->sum(function ($venta) {
+                    if ($venta->documento && $venta->documento->nombre === 'Factura de exportación') {
+                        return 0;
+                    }
+
+                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                });
+
+                $exportaciones = $ventasDia->sum(function ($venta) {
+                    return $venta->documento && $venta->documento->nombre === 'Factura de exportación'
+                        ? (float) $venta->total
+                        : 0;
+                });
+
+                $ventasTerceros = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->cuenta_a_terceros;
+                });
+
+                $totalDiario = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->total;
+                });
+
+                $primeraVenta = $ventasOrdenadasPorCodigo->first();
+                $ultimaVenta = $ventasOrdenadasPorCodigo->last();
+                $correlativoInicial = optional($ventasOrdenadasPorCorrelativo->first())->correlativo;
+
+                return [
+                    'fecha' => $fecha,
+                    'correlativo_inicial' => $primeraVenta ? $obtenerCodigoGeneracion($primeraVenta) : null,
+                    'correlativo_final' => $ultimaVenta ? $obtenerCodigoGeneracion($ultimaVenta) : null,
+                    'ventas_exentas' => round($ventasExentas, 2),
+                    'ventas_internas_gravadas' => round($ventasGravadas, 2),
+                    'exportaciones' => round($exportaciones, 2),
+                    'total_ventas_diarias_propias' => round($totalDiario, 2),
+                    'ventas_a_cuenta_de_terceros' => round($ventasTerceros, 2),
+                    'correlativo_orden' => trim((string) $correlativoInicial),
+                ];
+            })
+            ->sortBy(function ($item) {
+                return [$item['fecha'], $item['correlativo_orden'] ?? ''];
+            })
+            ->values();
+
+        $totales = [
+            'es_total' => true,
+            'ventas_exentas' => $filas->sum('ventas_exentas'),
+            'ventas_internas_gravadas' => $filas->sum('ventas_internas_gravadas'),
+            'exportaciones' => $filas->sum('exportaciones'),
+            'total_ventas_diarias_propias' => $filas->sum('total_ventas_diarias_propias'),
+            'ventas_a_cuenta_de_terceros' => $filas->sum('ventas_a_cuenta_de_terceros'),
+        ];
+
+        return $filas->push($totales);
     }
 }

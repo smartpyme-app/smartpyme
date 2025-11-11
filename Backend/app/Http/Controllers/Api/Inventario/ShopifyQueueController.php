@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Inventario;
 
 use App\Http\Controllers\Controller;
 use App\Services\ShopifyStockService;
+use App\Services\ShopifyTransformer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,13 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ShopifyQueueController extends Controller
 {
+    protected $shopifyTransformer;
+
+    public function __construct(ShopifyTransformer $shopifyTransformer)
+    {
+        $this->shopifyTransformer = $shopifyTransformer;
+    }
+
     /**
      * Iniciar importación por trabajos pendientes (compatible con Hostinger)
      */
@@ -259,13 +267,12 @@ class ShopifyQueueController extends Controller
 
     private function procesarLote($productos, $usuario)
     {
-        $shopifyTransformer = new \App\Services\ShopifyTransformer();
         $productosImportados = 0;
-        
+
         foreach ($productos as $productoShopify) {
             try {
                 // Transformar productos usando ShopifyTransformer
-                $productosTransformados = $shopifyTransformer->transformarProductoDesdeShopify(
+                $productosTransformados = $this->shopifyTransformer->transformarProductoDesdeShopify(
                     $productoShopify, 
                     $usuario->id_empresa, 
                     $usuario->id, 

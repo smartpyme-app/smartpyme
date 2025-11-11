@@ -24,6 +24,7 @@ use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use Auth;
+use Illuminate\Support\Str;
 
 class DevolucionVentasController extends Controller
 {
@@ -264,27 +265,46 @@ class DevolucionVentasController extends Controller
             'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
         ]);
 
-        // Validar que la suma de devoluciones no supere el total de la venta
+        // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
             $venta = Venta::findOrFail($request->id_venta);
-            $totalDevolucionesExistentes = Devolucion::where('id_venta', $request->id_venta)
-                ->where('enable', true)
-                ->sum('total');
 
-            // Si es una actualización, excluir la devolución actual del cálculo
-            if ($request->id) {
-                $devolucionActual = Devolucion::find($request->id);
-                if ($devolucionActual) {
-                    $totalDevolucionesExistentes -= $devolucionActual->total;
+            $devolucionesActivas = Devolucion::where('id_venta', $request->id_venta)
+                ->where('enable', true)
+                ->when($request->id, function ($query) use ($request) {
+                    $query->where('id', '!=', $request->id);
+                })
+                ->with('documento')
+                ->get();
+
+            $totalCreditos = 0;
+            $totalDebitos = 0;
+
+            foreach ($devolucionesActivas as $devolucionExistente) {
+                $nombreDocumentoExistente = optional($devolucionExistente->documento)->nombre;
+
+                if ($nombreDocumentoExistente == 'Nota de crédito') {
+                    $totalCreditos += $devolucionExistente->total;
+                } elseif ($nombreDocumentoExistente == 'Nota de débito') {
+                    $totalDebitos += $devolucionExistente->total;
                 }
             }
 
-            $totalNuevaDevolucion = $request->total;
+            $documentoNuevo = $request->id_documento ? Documento::find($request->id_documento) : null;
+            $nombreDocumentoNuevo = optional($documentoNuevo)->nombre;
+
+            if ($nombreDocumentoNuevo == 'Nota de crédito') {
+                $totalCreditos += $request->total;
+            } elseif ($nombreDocumentoNuevo == 'Nota de débito') {
+                $totalDebitos += $request->total;
+            }
+
+            $diferencia = abs($totalCreditos - $totalDebitos);
             $totalVenta = $venta->total;
 
-            if (($totalDevolucionesExistentes + $totalNuevaDevolucion) > $totalVenta) {
+            if ($diferencia > $totalVenta) {
                 return Response()->json([
-                    'error' => 'No se puede registrar la devolución. El monto total de devoluciones (' .
-                              number_format($totalDevolucionesExistentes + $totalNuevaDevolucion, 2) .
+                    'error' => 'No se puede registrar la devolución. La diferencia entre notas de crédito y notas de débito (' .
+                              number_format($diferencia, 2) .
                               ') supera el total de la venta (' . number_format($totalVenta, 2) . ').'
                 ], 400);
             }

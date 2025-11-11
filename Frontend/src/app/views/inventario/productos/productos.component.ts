@@ -5,23 +5,23 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-productos',
-  templateUrl: './productos.component.html',
+    selector: 'app-productos',
+    templateUrl: './productos.component.html',
 })
 export class ProductosComponent implements OnInit {
 
-    public productos:any = [];
-    public loading:boolean = false;
-    public downloading:boolean = false;
-    public filtros:any = {};
-    public producto:any = {};
-    public bodegas:any = [];
-    public categorias:any = [];
-    public proveedores:any = [];
-    public marcas:any = [];
-    public ajuste:any = {};
-    public inventario:any = {};
-    public filtrosKardex:any = {
+    public productos: any = [];
+    public loading: boolean = false;
+    public downloading: boolean = false;
+    public filtros: any = {};
+    public producto: any = {};
+    public bodegas: any = [];
+    public categorias: any = [];
+    public proveedores: any = [];
+    public marcas: any = [];
+    public ajuste: any = {};
+    public inventario: any = {};
+    public filtrosKardex: any = {
         fecha_inicio: '',
         fecha_fin: ''
     };
@@ -30,27 +30,36 @@ export class ProductosComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+        private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    ) { }
 
     ngOnInit() {
+        // Verificar si Shopify está activo y obtener la bodega del usuario
+        const empresa = this.apiService.auth_user()?.empresa;
+        const usuario = this.apiService.auth_user();
+        const shopifyActivo = !!(empresa?.shopify_store_url);
 
         this.route.queryParams.subscribe(params => {
-        this.filtros = {
-            buscador: params['buscador'] || '',
-            id_bodega: +params['id_bodega'] || '',
-            id_categoria: +params['id_categoria'] || '',
-            id_proveedor: +params['id_proveedor'] || '',
-            id_sucursal: +params['id_sucursal'] || '',
-            estado: params['estado'] || '',
-            marca: params['marca'] || '',
-            sin_stock: params['sin_stock'] || '',
-            compuestos: params['compuestos'] || '',
-            orden: params['orden'] || 'id',
-            direccion: params['direccion'] || 'desc',
-            paginate: params['paginate'] || 10,
-            page: params['page'] || 1,
-        };
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_bodega: +params['id_bodega'] || '',
+                id_categoria: +params['id_categoria'] || '',
+                id_proveedor: +params['id_proveedor'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                estado: params['estado'] || '',
+                marca: params['marca'] || '',
+                sin_stock: params['sin_stock'] || '',
+                compuestos: params['compuestos'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: params['paginate'] || 10,
+                page: params['page'] || 1,
+            };
+
+            // Si Shopify está activo y no hay bodega seleccionada, seleccionar automáticamente la bodega del usuario
+            if (shopifyActivo && !this.filtros.id_bodega && usuario?.id_bodega) {
+                this.filtros.id_bodega = usuario.id_bodega;
+            }
 
             this.filtrarProductos();
         });
@@ -59,15 +68,15 @@ export class ProductosComponent implements OnInit {
 
         this.apiService.getAll('categorias/list').subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+        }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
             this.marcas = marcas;
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
 
     }
 
@@ -77,6 +86,14 @@ export class ProductosComponent implements OnInit {
     }
 
     public loadAll() {
+        // Verificar si Shopify está activo para mantener el filtro de bodega
+        const empresa = this.apiService.auth_user()?.empresa;
+        const usuario = this.apiService.auth_user();
+        const shopifyActivo = !!(empresa?.shopify_store_url);
+
+        // Guardar temporalmente la bodega si Shopify está activo
+        const bodegaActual = shopifyActivo && this.filtros.id_bodega ? this.filtros.id_bodega : '';
+
         this.filtros.id_bodega = '';
         this.filtros.id_categoria = '';
         this.filtros.id_proveedor = '';
@@ -91,10 +108,15 @@ export class ProductosComponent implements OnInit {
         this.filtros.page = 1;
         this.filtros.tipo = '';
 
+        // Si Shopify está activo, restaurar la bodega del usuario
+        if (shopifyActivo) {
+            this.filtros.id_bodega = bodegaActual || usuario?.id_bodega || '';
+        }
+
         this.filtrarProductos();
     }
 
-    public filtrarProductos(){
+    public filtrarProductos() {
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -103,38 +125,41 @@ export class ProductosComponent implements OnInit {
 
         this.loading = true;
 
-        if(!this.filtros.sin_stock){
+        if (!this.filtros.sin_stock) {
             this.filtros.sin_stock = '';
         }
-        if(!this.filtros.id_categoria){
+
+        if (!this.filtros.id_categoria) {
             this.filtros.id_categoria = '';
         }
 
-        if(!this.filtros.marca){
+        if (!this.filtros.marca) {
             this.filtros.marca = '';
         }
 
         this.apiService.getAll('productos', this.filtros).subscribe(productos => {
             this.productos = productos;
             this.loading = false;
-            if(this.modalRef){ this.modalRef.hide(); }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            if (this.modalRef) {
+                this.modalRef.hide();
+            }
+        }, error => { this.alertService.error(error); this.loading = false; });
     }
 
-    public setEstado(producto:any){
+    public setEstado(producto: any) {
         this.apiService.store('producto', producto).subscribe(producto => {
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
     }
 
-    public delete(id:number) {
+    public delete(id: number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id) .subscribe(data => {
+            this.apiService.delete('producto/', id).subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) {
-                    if (this.productos['data'][i].id == data.id )
+                    if (this.productos['data'][i].id == data.id)
                         this.productos['data'].splice(i, 1);
                 }
-            }, error => {this.alertService.error(error); });
+            }, error => { this.alertService.error(error); });
 
         }
 
@@ -142,16 +167,16 @@ export class ProductosComponent implements OnInit {
 
     public setOrden(columna: string) {
         if (this.filtros.orden === columna) {
-          this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+            this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
         } else {
-          this.filtros.orden = columna;
-          this.filtros.direccion = 'asc';
+            this.filtros.orden = columna;
+            this.filtros.direccion = 'asc';
         }
 
         this.filtrarProductos();
     }
 
-    public setPagination(event:any):void{
+    public setPagination(event: any): void {
         this.loading = true;
         this.filtros.page = event.page;
         this.filtrarProductos();
@@ -159,21 +184,21 @@ export class ProductosComponent implements OnInit {
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('producto', this.producto).subscribe(producto=> {
+        this.apiService.store('producto', this.producto).subscribe(producto => {
             this.producto = {};
             this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
             this.loading = false;
             this.modalRef.hide();
-        },error => {this.alertService.error(error); this.loading = false; });
+        }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);
     }
 
-    public descargar(){
+    public descargar() {
         this.downloading = true;
-        this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('productos/exportar', this.filtros).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -184,30 +209,30 @@ export class ProductosComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+        }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
 
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('proveedores/list').subscribe(proveedores => {
             this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template);
     }
 
-    public openModalAjuste(template: TemplateRef<any>, producto:any) {
-       this.ajuste = {};
-       this.producto = producto;
-       this.inventario = this.producto.inventarios.find((item:any) => item.id_bodega == this.filtros.id_bodega);
-    //    console.log(this.filtros);
-    //    console.log(this.producto);
-       this.ajuste.stock_actual = this.inventario.stock;
-       this.alertService.modal = true;
-       this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+    public openModalAjuste(template: TemplateRef<any>, producto: any) {
+        this.ajuste = {};
+        this.producto = producto;
+        this.inventario = this.producto.inventarios.find((item: any) => item.id_bodega == this.filtros.id_bodega);
+        console.log(this.filtros);
+        console.log(this.producto);
+        this.ajuste.stock_actual = this.inventario.stock;
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
     }
 
-    public calAjuste(){
+    public calAjuste() {
         this.ajuste.ajuste = parseFloat(this.ajuste.stock_real) - parseFloat(this.ajuste.stock_actual);
     }
 
@@ -224,36 +249,36 @@ export class ProductosComponent implements OnInit {
             this.modalRef.hide();
             this.alertService.modal = false;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        }, error => { this.alertService.error(error); this.loading = false; });
 
     }
 
-    public descargarKardex(){
+    public descargarKardex() {
         this.loading = true;
-        
+
         // Debug: verificar estructura de datos
         console.log('Estructura completa de productos:', this.productos);
         console.log('Productos.data:', this.productos.data);
         console.log('Tipo de productos.data:', typeof this.productos.data);
         console.log('Es array:', Array.isArray(this.productos.data));
-        
+
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
         console.log('Productos en página actual:', this.productos.data.length);
         console.log('IDs de productos a enviar:', productoIds);
         console.log('Tipo de productoIds:', typeof productoIds);
         console.log('Es array productoIds:', Array.isArray(productoIds));
-        
+
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
             inicio: undefined, // Sin filtro de fecha
             fin: undefined // Sin filtro de fecha
         };
-        
-        console.log('Filtros con productos:', filtrosConProductos);
-        console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
-        
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
+
+        // console.log('Filtros con productos:', filtrosConProductos);
+        // console.log('Tipo de filtrosConProductos.producto_ids:', typeof filtrosConProductos.producto_ids);
+
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -264,9 +289,9 @@ export class ProductosComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.loading = false;
-        }, (error) => { 
-            this.alertService.error(error); 
-            this.loading = false; 
+        }, (error) => {
+            this.alertService.error(error);
+            this.loading = false;
         });
     }
 
@@ -275,13 +300,13 @@ export class ProductosComponent implements OnInit {
         if (this.modalRef) {
             this.modalRef.hide();
         }
-        
+
         // Resetear filtros de kardex
         this.filtrosKardex = {
             fecha_inicio: '',
             fecha_fin: ''
         };
-        
+
         // Abrir el modal de kardex
         this.modalRef = this.modalService.show(template);
     }
@@ -292,23 +317,23 @@ export class ProductosComponent implements OnInit {
             this.alertService.error('Debe seleccionar fecha de inicio y fecha fin');
             return;
         }
-        
+
         this.loading = true;
-        
+
         // Usar directamente los productos de la página actual
         const productoIds = this.productos.data.map((p: any) => p.id);
         console.log('Productos en página actual:', this.productos.data.length);
         console.log('IDs de productos a enviar:', productoIds);
-        
+
         const filtrosConProductos = {
             producto_ids: productoIds.join(','), // Enviar como string separado por comas
             inicio: this.filtrosKardex.fecha_inicio,
             fin: this.filtrosKardex.fecha_fin
         };
-        
+
         console.log('Filtros con productos:', filtrosConProductos);
-        
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
+
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -320,9 +345,9 @@ export class ProductosComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.loading = false;
             this.modalRef.hide();
-        }, (error) => { 
-            this.alertService.error(error); 
-            this.loading = false; 
+        }, (error) => {
+            this.alertService.error(error);
+            this.loading = false;
         });
     }
 
@@ -331,10 +356,10 @@ export class ProductosComponent implements OnInit {
         if (this.modalRef) {
             this.modalRef.hide();
         }
-        
+
         // Resetear email
         this.emailKardex = '';
-        
+
         // Abrir el modal de kardex masivo
         this.modalRef = this.modalService.show(template);
     }
@@ -345,21 +370,21 @@ export class ProductosComponent implements OnInit {
             this.alertService.error('Debe ingresar un correo electrónico válido');
             return;
         }
-        
+
         this.loading = true;
-        
+
         const datosSolicitud = {
             email: this.emailKardex,
             id_empresa: this.apiService.auth_user().id_empresa
         };
-        
+
         this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud).subscribe((response: any) => {
             this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
             this.modalRef.hide();
-        }, (error) => { 
-            this.alertService.error(error); 
-            this.loading = false; 
+        }, (error) => {
+            this.alertService.error(error);
+            this.loading = false;
         });
     }
 
@@ -369,11 +394,11 @@ export class ProductosComponent implements OnInit {
     public isShopifyActive(): boolean {
         const empresa = this.apiService.auth_user()?.empresa;
         if (!empresa) return false;
-        
+
         // Verificar si Shopify está configurado y conectado
-        return !!(empresa.shopify_store_url && 
-                 empresa.shopify_consumer_secret && 
-                 empresa.shopify_status === 'connected');
+        return !!(empresa.shopify_store_url &&
+            empresa.shopify_consumer_secret &&
+            empresa.shopify_status === 'connected');
     }
 
 

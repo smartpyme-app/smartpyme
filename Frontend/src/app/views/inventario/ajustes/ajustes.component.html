@@ -161,7 +161,7 @@
                     [loading]="loadingProductos"
                     placeholder="Escriba para buscar productos...">
                     <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{producto.nombre}}
+                        {{getNombreCompleto(producto)}}
                     </ng-option>
                 </ng-select>
             </div>
@@ -232,7 +232,7 @@
                 <ng-select name="id_producto" [(ngModel)]="filtros.id_producto" class="form-select p-0">
                     <ng-option value="" selected>Todos</ng-option>
                     <ng-option *ngFor="let producto of productos" [value]="producto.id">
-                        {{producto.nombre}}
+                        {{getNombreCompleto(producto)}}
                     </ng-option>
                 </ng-select>
             </div>

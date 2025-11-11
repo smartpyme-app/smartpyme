@@ -6,6 +6,12 @@ use Illuminate\Support\Facades\Log;
 
 class ShopifyTransformer
 {
+    protected $impuestosService;
+
+    public function __construct(ImpuestosService $impuestosService)
+    {
+        $this->impuestosService = $impuestosService;
+    }
 
     public function transformarCliente($shopifyData)
     {
@@ -135,25 +141,60 @@ class ShopifyTransformer
 
     public function transformarVenta($shopifyData, $clienteId, $documentoId, $correlativo)
     {
-        $estado = $this->mapearEstado($shopifyData['financial_status'] ?? 'pending');
+        $estado = $this->mapearEstado($shopifyData['financial_status'] ?? $shopifyData['status'] ?? 'pending');
+        $empresaId = $shopifyData['id_empresa'];
 
-        // Calcular subtotal sin IVA basado en los line_items y shipping_lines
-        $subtotalSinIVA = $this->calcularSubtotalSinIVA(
+        // Manejar shipping_lines (plural) y shipping_line (singular) para draft orders
+        $shippingLines = $shopifyData['shipping_lines'] ?? [];
+        if (empty($shippingLines) && !empty($shopifyData['shipping_line'])) {
+            $shippingLines = [$shopifyData['shipping_line']];
+        }
+
+        // Calcular subtotal sin impuesto basado en los line_items y shipping_lines
+        $subtotalSinImpuesto = $this->calcularSubtotalSinImpuesto(
             $shopifyData['line_items'] ?? [],
-            $shopifyData['shipping_lines'] ?? []
+            $shippingLines,
+            $empresaId
         );
-        
-        // Calcular IVA total incluyendo el IVA de los envíos
-        $ivaProductos = floatval($shopifyData['total_tax'] ?? 0);
-        $ivaEnvio = $this->calcularIVAEnvio($shopifyData['shipping_lines'] ?? []);
-        $ivaTotal = $ivaProductos + $ivaEnvio;
-        
-        Log::info("IVA calculado para venta", [
-            'iva_productos' => $ivaProductos,
-            'iva_envio' => $ivaEnvio,
-            'iva_total' => $ivaTotal,
-            'shipping_lines_count' => count($shopifyData['shipping_lines'] ?? [])
+
+        // Calcular impuesto total basado en nuestros cálculos exactos
+        $impuestoProductos = 0;
+        $impuestoEnvio = 0;
+
+        // Calcular impuesto de productos
+        foreach ($shopifyData['line_items'] ?? [] as $item) {
+            $precioConImpuesto = floatval($item['price'] ?? 0);
+            $cantidad = floatval($item['quantity'] ?? 0);
+            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+            $impuestoPorUnidad = $precioConImpuesto - $precioSinImpuesto;
+            $impuestoProductos += $impuestoPorUnidad * $cantidad;
+        }
+
+        // Calcular impuesto de envíos
+        foreach ($shippingLines as $shipping) {
+            $precioConImpuesto = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
+            if ($precioConImpuesto > 0) {
+                $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+                $impuestoEnvio += $precioConImpuesto - $precioSinImpuesto;
+            }
+        }
+
+        $impuestoTotal = $impuestoProductos + $impuestoEnvio;
+
+        Log::info("Impuesto calculado para venta", [
+            'impuesto_productos' => $impuestoProductos,
+            'impuesto_envio' => $impuestoEnvio,
+            'impuesto_total' => $impuestoTotal,
+            'impuesto_shopify' => floatval($shopifyData['total_tax'] ?? 0),
+            'shipping_lines_count' => count($shippingLines),
+            'shipping_line_singular' => !empty($shopifyData['shipping_line']),
+            'shipping_lines_plural' => !empty($shopifyData['shipping_lines']),
+            'empresa_id' => $empresaId,
+            'porcentaje_impuesto' => $this->impuestosService->obtenerPorcentajeImpuesto($empresaId)
         ]);
+
+        // Usar el total exacto de Shopify para evitar diferencias de redondeo
+        $totalShopify = floatval($shopifyData['current_total_price'] ?? $shopifyData['total_price'] ?? ($subtotalSinImpuesto + $impuestoTotal));
         
         return [
             'codigo_generacion' => null,
@@ -163,14 +204,14 @@ class ShopifyTransformer
             'fecha' => date('Y-m-d', strtotime($shopifyData['created_at'])),
             'fecha_pago' => date('Y-m-d', strtotime($shopifyData['processed_at'] ?? $shopifyData['created_at'])),
             'total_costo' => 0,
-            'total' => $subtotalSinIVA + $ivaTotal, // Total = Gravada + IVA
-            'sub_total' => 0, // Subtotal debe ser 0 para ventas con impuestos incluidos
-            'gravada' => $subtotalSinIVA, // Gravada sin IVA
+            'total' => $totalShopify, // Usar total exacto de Shopify
+            'sub_total' => $subtotalSinImpuesto, // Subtotal sin impuesto (correcto)
+            'gravada' => $subtotalSinImpuesto, // Gravada sin impuesto
             'cuenta_a_terceros' => 0,
-            'iva' => $ivaTotal, // IVA total incluyendo envíos
+            'iva' => $impuestoTotal, // Impuesto total incluyendo envíos
             'iva_retenido' => 0,
             'iva_percibido' => 0,
-            'descuento' => $shopifyData['total_discounts'],
+            'descuento' => $shopifyData['total_discounts'] ?? 0,
             'id_cliente' => $clienteId,
             'correlativo' => $correlativo,
             'id_documento' => $documentoId,
@@ -184,31 +225,41 @@ class ShopifyTransformer
         ];
     }
 
-    public function transformarDetallesVenta($lineItem, $ventaId)
+    public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null)
     {
-        // Calcular precio sin IVA y IVA por línea de producto
-        $precioConIVA = floatval($lineItem['price']);
-        $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
-        $ivaPorUnidad = $precioConIVA - $precioSinIVA;
-        
+        // Calcular precio sin impuesto y impuesto por línea de producto
+        $precioConImpuesto = floatval($lineItem['price']);
+
+        // Si se proporciona empresaId, usar el servicio de impuestos, sino usar el método antiguo
+        if ($empresaId) {
+            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+        } else {
+            // Fallback al método antiguo si no se proporciona empresaId
+            $precioSinImpuesto = $this->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+        }
+
+        $impuestoPorUnidad = $precioConImpuesto - $precioSinImpuesto;
+
         // Calcular totales
-        $totalConIVA = $lineItem['quantity'] * $precioConIVA;
-        $totalSinIVA = $lineItem['quantity'] * $precioSinIVA;
-        $totalIVA = $lineItem['quantity'] * $ivaPorUnidad;
-        
+        $totalConImpuesto = $lineItem['quantity'] * $precioConImpuesto;
+        $totalSinImpuesto = $lineItem['quantity'] * $precioSinImpuesto;
+        $totalImpuesto = $lineItem['quantity'] * $impuestoPorUnidad;
+
         return [
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
-            'precio' => $precioSinIVA, // Precio sin IVA para SmartPyme
-            'total' => $totalSinIVA, // Total sin IVA
+            'precio' => $precioSinImpuesto, // Precio sin impuesto para SmartPyme
+            'precio_sin_iva' => $precioSinImpuesto, // Precio sin IVA por unidad
+            'precio_con_iva' => $precioConImpuesto, // Precio con IVA por unidad (precio original de Shopify)
+            'total' => $totalSinImpuesto, // Total sin impuesto
             'total_costo' => 0,
             'descuento' => 0, // Shopify maneja descuentos a nivel de orden
             'no_sujeta' => 0,
             'exenta' => 0,
             'cuenta_a_terceros' => 0,
-            'subtotal' => $totalSinIVA, // Subtotal sin IVA
-            'gravada' => $totalSinIVA, // Gravada sin IVA
-            'iva' => $totalIVA, // IVA calculado por línea
+            'subtotal' => $totalSinImpuesto, // Subtotal sin impuesto
+            'gravada' => $totalSinImpuesto, // Gravada sin impuesto
+            'iva' => $totalImpuesto, // Impuesto calculado por línea
             'descripcion' => $lineItem['title'],
             'id_producto' => null,
             'id_venta' => $ventaId
@@ -230,15 +281,26 @@ class ShopifyTransformer
         $nombreBase = $this->obtenerNombreBase($shopifyData['title']);
         $nombreVariante = $this->construirNombreVariante($shopifyData);
 
+        // Obtener categoría "Uncategorized" por defecto para productos personalizados
+        $categoriaUncategorized = \App\Models\Inventario\Categorias\Categoria::where('id_empresa', $id_empresa)
+            ->where('nombre', 'Uncategorized')
+            ->first();
+
+        // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
+        $descripcionCompleta = $shopifyData['product']['body_html'] ?? '';
+        $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
+
         return [
             'codigo' => $shopifyData['sku'] ?? '',
             'barcode' => $shopifyData['sku'] ?? '',
             'nombre' => $nombreBase,
             'nombre_variante' => $nombreVariante,
-            'descripcion' => $shopifyData['product']['body_html'] ?? '',
+            'descripcion' => $descripcionCorta,
+            'descripcion_completa' => $descripcionCompleta,
             'id_empresa' => $id_empresa,
             'id_usuario' => $id_usuario,
             'id_sucursal' => $id_sucursal,
+            'id_categoria' => $categoriaUncategorized ? $categoriaUncategorized->id : null,
             'costo' => $shopifyData['price'],
             'precio' => $shopifyData['price'],
             'shopify_id' => $shopifyData['id'],
@@ -254,7 +316,7 @@ class ShopifyTransformer
             'partially_paid' => 'Pendiente',
             'paid' => 'Pagada',
             'partially_refunded' => 'Pagada',
-            'refunded' => 'Reembolsada',
+            'refunded' => 'Anulada', // Cambiado de 'Reembolsada' a 'Anulada'
             'voided' => 'Anulada'
         ];
 
@@ -270,36 +332,54 @@ class ShopifyTransformer
 
     private function mapearFormaPago($shopifyData)
     {
-        // Shopify envía payment_gateway_names como array
         $paymentGateways = $shopifyData['payment_gateway_names'] ?? [];
         $gateway = !empty($paymentGateways) ? $paymentGateways[0] : 'unknown';
+        $financialStatus = $shopifyData['financial_status'] ?? $shopifyData['status'] ?? 'pending';
 
-        // Log::info('Mapeando forma de pago', [
-        //     'payment_gateway_names' => $paymentGateways,
-        //     'gateway_selected' => $gateway
-        // ]);
+        // Normalizar solo para búsqueda (no modifica el original)
+        $gatewayLower = strtolower(trim($gateway));
 
+        // Mapeo en minúsculas (más simple y seguro)
         $mapeo = [
             'shopify_payments' => 'Tarjeta de crédito/débito',
             'paypal' => 'PayPal',
+            'paypal_express' => 'PayPal',
+            'paypal_express_checkout' => 'PayPal',
+            'kueski_pay' => 'KueskiPay',
+            'kueskipay' => 'KueskiPay',
+            'kueski pay' => 'KueskiPay',
             'manual' => 'Manual',
-            'Cash on Delivery (COD)' => 'Contra entrega',
-            'Pago contra entrega' => 'Contra entrega',
+            'cash on delivery (cod)' => 'Contra entrega',
+            'pago contra entrega' => 'Contra entrega',
             'bank_transfer' => 'Transferencia bancaria',
-            'Bank Transfer' => 'Transferencia bancaria',
-            'Bank Deposit' => 'Transferencia bancaria',
-            'Depósito Bancario' => 'Transferencia bancaria',
+            'bank deposit' => 'Transferencia bancaria',
+            'depósito bancario' => 'Transferencia bancaria',
             'stripe' => 'Tarjeta de crédito/débito',
             'square' => 'Tarjeta de crédito/débito',
-            'Wompi El Salvador' => 'Wompi',
+            'wompi el salvador' => 'Wompi',
         ];
 
-        $formaPago = $mapeo[$gateway] ?? 'Tarjeta de crédito/débito';
+        // Buscar usando la versión normalizada
+        $formaPago = $mapeo[$gatewayLower] ?? null;
 
-        // Log::info('Forma de pago mapeada', [
-        //     'gateway' => $gateway,
-        //     'forma_pago' => $formaPago
-        // ]);
+        // Fallbacks inteligentes (solo si no encontró coincidencia)
+        if (!$formaPago) {
+            if (str_contains($gatewayLower, 'paypal')) {
+                $formaPago = 'PayPal';
+            } elseif (str_contains($gatewayLower, 'kueski')) {
+                $formaPago = 'KueskiPay';
+            } elseif (str_contains($gatewayLower, 'wompi')) {
+                $formaPago = 'Wompi';
+            }
+        }
+
+        // Default final
+        $formaPago = $formaPago ?? 'Tarjeta de crédito/débito';
+
+        // Caso especial: Manual + Pagado = Wompi
+        if ($gatewayLower === 'manual' && in_array($financialStatus, ['paid', 'partially_paid'])) {
+            $formaPago = 'Wompi';
+        }
 
         return $formaPago;
     }
@@ -355,21 +435,31 @@ class ShopifyTransformer
                 'variant_id' => $variant['id'],
                 'nombre_base' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
-                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
+                'precio' => $this->impuestosService->calcularPrecioSinImpuesto($variant['price'] ?? 0, $id_empresa),
                 'costo_original' => $variant['cost'] ?? 'no_existe',
                 'costo_asignado' => $costo,
                 'status_shopify' => $status,
                 'sera_activo' => $productoActivo == 1
             ]);
 
+            $precioConIva = floatval($variant['price'] ?? 0);
+            $precioSinIva = $this->impuestosService->calcularPrecioSinImpuesto($precioConIva, $id_empresa);
+
+            // Procesar descripción: limitar a 100 caracteres para descripcion, completa para descripcion_completa
+            $descripcionCompleta = strip_tags($shopifyData['body_html'] ?? '');
+            $descripcionCorta = mb_substr($descripcionCompleta, 0, 100);
+
             $productos[] = [
                 'codigo' => $variant['sku'] ?? '',
                 'barcode' => $variant['barcode'] ?? '',
                 'nombre' => $nombreBase,
                 'nombre_variante' => $nombreVariante,
-                'descripcion' => strip_tags($shopifyData['body_html'] ?? ''),
+                'descripcion' => $descripcionCorta,
+                'descripcion_completa' => $descripcionCompleta,
                 'id_empresa' => $id_empresa,
-                'precio' => $this->calcularPrecioSinIVA($variant['price'] ?? 0),
+                'precio' => $precioSinIva,
+                'precio_sin_iva' => $precioSinIva,
+                'precio_con_iva' => $precioConIva,
                 'shopify_product_id' => $shopifyData['id'],
                 'shopify_variant_id' => $variant['id'],
                 'shopify_inventory_item_id' => $variant['inventory_item_id'] ?? null,
@@ -482,45 +572,45 @@ class ShopifyTransformer
     }
 
     /**
-     * Calcula el subtotal sin IVA basado en los line_items y shipping_lines de Shopify
-     * 
+     * Calcula el subtotal sin impuesto basado en los line_items y shipping_lines de Shopify
+     *
      * @param array $lineItems Line items de Shopify
      * @param array $shippingLines Shipping lines de Shopify
-     * @return float Subtotal sin IVA
+     * @param int $empresaId ID de la empresa para obtener el porcentaje de impuesto
+     * @return float Subtotal sin impuesto
      */
-    private function calcularSubtotalSinIVA($lineItems, $shippingLines = [])
+    private function calcularSubtotalSinImpuesto($lineItems, $shippingLines = [], $empresaId = null)
     {
-        $subtotalSinIVA = 0;
-        
+        $subtotalSinImpuesto = 0;
+
         // Calcular subtotal de productos
         foreach ($lineItems as $item) {
-            $precioConIVA = floatval($item['price'] ?? 0);
+            $precioConImpuesto = floatval($item['price'] ?? 0);
             $cantidad = floatval($item['quantity'] ?? 0);
-            $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
-            $subtotalSinIVA += $precioSinIVA * $cantidad;
+            $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+            $subtotalSinImpuesto += $precioSinImpuesto * $cantidad;
         }
-        
-        // Calcular subtotal de envíos (sin IVA si no tienen tax_lines)
+
+        // Calcular subtotal de envíos (siempre sin impuesto)
         foreach ($shippingLines as $shipping) {
-            $precioConIVA = floatval($shipping['price'] ?? 0);
-            if ($precioConIVA > 0) {
-                // Si el envío no tiene tax_lines, usar el precio completo
-                if (empty($shipping['tax_lines']) || !is_array($shipping['tax_lines'])) {
-                    $subtotalSinIVA += $precioConIVA;
-                } else {
-                    $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
-                    $subtotalSinIVA += $precioSinIVA;
-                }
+            // Usar el precio con descuento si está disponible, sino el precio original
+            $precioConImpuesto = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
+            if ($precioConImpuesto > 0) {
+                // Siempre calcular el precio sin impuesto para el subtotal
+                $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+                $subtotalSinImpuesto += $precioSinImpuesto;
             }
         }
-        
-        Log::info("Subtotal sin IVA calculado", [
-            'subtotal_sin_iva' => $subtotalSinIVA,
+
+        Log::info("Subtotal sin impuesto calculado", [
+            'subtotal_sin_impuesto' => $subtotalSinImpuesto,
             'line_items_count' => count($lineItems),
-            'shipping_lines_count' => count($shippingLines)
+            'shipping_lines_count' => count($shippingLines),
+            'empresa_id' => $empresaId,
+            'porcentaje_impuesto' => $this->impuestosService->obtenerPorcentajeImpuesto($empresaId)
         ]);
-        
-        return round($subtotalSinIVA, 2);
+
+        return round($subtotalSinImpuesto, 2);
     }
 
     /**
@@ -534,7 +624,8 @@ class ShopifyTransformer
         $ivaEnvio = 0;
         
         foreach ($shippingLines as $shipping) {
-            $precioConIVA = floatval($shipping['price'] ?? 0);
+            // Usar el precio con descuento si está disponible, sino el precio original
+            $precioConIVA = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
             if ($precioConIVA > 0) {
                 // Solo calcular IVA si el envío tiene tax_lines
                 if (!empty($shipping['tax_lines']) && is_array($shipping['tax_lines'])) {
@@ -553,48 +644,41 @@ class ShopifyTransformer
     }
 
     /**
-     * Calcula el precio sin IVA desde el precio con IVA de Shopify
-     * 
-     * @param float|string $precioConIVA Precio con IVA desde Shopify
-     * @return float Precio sin IVA para SmartPyme
+     * Calcula el precio sin impuesto desde el precio con impuesto de Shopify
+     * DEPRECATED: Usa ImpuestosService::calcularPrecioSinImpuesto en su lugar
+     *
+     * @param float|string $precioConImpuesto Precio con impuesto desde Shopify
+     * @param int $empresaId ID de la empresa para obtener el porcentaje de impuesto
+     * @return float Precio sin impuesto para SmartPyme
      */
-    private function calcularPrecioSinIVA($precioConIVA)
+    private function calcularPrecioSinImpuesto($precioConImpuesto, $empresaId = null)
     {
-        $precioConIVA = floatval($precioConIVA);
-        
-        if ($precioConIVA <= 0) {
+        // Delegar al servicio de impuestos si se proporciona empresaId
+        if ($empresaId) {
+            return $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+        }
+
+        // Fallback: usar cálculo hardcodeado para compatibilidad con código antiguo
+        $precioConImpuesto = floatval($precioConImpuesto);
+
+        if ($precioConImpuesto <= 0) {
             return 0.0;
         }
-        
-        // Calcular precio sin IVA usando factor más preciso
-        // Factor: 1 / 1.13 = 0.8849557522123894
-        $factorSinIVA = 1 / 1.13;
-        $precioSinIVA = $precioConIVA * $factorSinIVA;
-        
+
+        // Usar 13% como fallback (para compatibilidad con código existente)
+        $factorSinImpuesto = 1 / 1.13;
+        $precioSinImpuesto = $precioConImpuesto * $factorSinImpuesto;
+
         // Redondear a 2 decimales para evitar problemas de precisión
-        $precioSinIVA = round($precioSinIVA, 2);
-        
-        // Validar precisión: verificar que el cálculo inverso coincida
-        $precioInverso = round($precioSinIVA * 1.13, 2);
-        $diferencia = abs($precioConIVA - $precioInverso);
-        
-        Log::info("Precio calculado sin IVA", [
-            'precio_con_iva' => $precioConIVA,
-            'precio_sin_iva' => $precioSinIVA,
-            'precio_inverso' => $precioInverso,
-            'diferencia' => $diferencia,
-            'iva_calculado' => $precioConIVA - $precioSinIVA
+        $precioSinImpuesto = round($precioSinImpuesto, 2);
+
+        Log::warning("Usando cálculo de impuesto hardcodeado (13%) - considera pasar empresaId", [
+            'precio_con_impuesto' => $precioConImpuesto,
+            'precio_sin_impuesto' => $precioSinImpuesto,
+            'impuesto_calculado' => $precioConImpuesto - $precioSinImpuesto
         ]);
-        
-        // Si la diferencia es muy pequeña (menos de 1 centavo), usar el precio original
-        if ($diferencia < 0.01) {
-            Log::info("Diferencia mínima detectada, usando precio original", [
-                'precio_original' => $precioConIVA,
-                'diferencia' => $diferencia
-            ]);
-        }
-        
-        return $precioSinIVA;
+
+        return $precioSinImpuesto;
     }
 
     private function obtenerPrimeraImagen($shopifyData)

@@ -9,7 +9,7 @@
               <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)" *ngFor=" let producto of productos">
                 <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px"> 
                 <p class="mb-0">
-                    {{ producto.nombre }} <br>
+                    {{ getNombreCompleto(producto) }} <br>
                     <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
                 </p>
               </a>
@@ -93,7 +93,7 @@
                                 </td>
                                 <td>
                                     <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
-                                    {{ producto.nombre }}
+                                    {{ getNombreCompleto(producto) }}
                                 </td>
                                 <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
                                 <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>

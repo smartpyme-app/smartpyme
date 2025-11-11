@@ -22,10 +22,10 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
         // Carga las bodegas de la empresa
         $this->bodegas = Bodega::where('id_empresa', $this->request->id_empresa)
-                                ->when($request->id_bodega, function ($q) use ($request) {
-                                    $q->where('id', $request->id_bodega);
-                                })
-                                ->where('activo', true)->get();
+            ->when($request->id_bodega, function ($q) use ($request) {
+                $q->where('id', $request->id_bodega);
+            })
+            ->where('activo', true)->get();
 
         // Precalcula los datos del Kardex agrupados por sucursal y producto
         $this->kardexData = DB::table('kardexs')
@@ -50,8 +50,16 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
 
     public function map($producto): array
     {
+        // Obtener la empresa y verificar si tiene shopify_store_url configurado
+        $nombreProducto = $producto->nombre;
+
+        // Si la empresa tiene shopify_store_url y el producto tiene nombre_variante, concatenar
+        if ($producto->empresa && $producto->empresa->shopify_store_url && $producto->nombre_variante) {
+            $nombreProducto = $producto->nombre . ' ' . $producto->nombre_variante;
+        }
+
         $fields = [
-            $producto->nombre,
+            $nombreProducto,
             $producto->nombre_categoria,
             $producto->codigo,
             $producto->costo,
@@ -93,12 +101,12 @@ class InventarioAFechaExport implements FromCollection, WithHeadings, WithMappin
     public function collection()
     {
         $request = $this->request;
-        
+
         return Producto::with(['inventarios' => function ($q) use ($request) {
-                if ($request->id_bodega) {
-                    $q->where('id_bodega', $request->id_bodega);
-                }
-            }])
+            if ($request->id_bodega) {
+                $q->where('id_bodega', $request->id_bodega);
+            }
+        }, 'empresa'])
             ->where('id_empresa', $this->request->id_empresa)
             ->whereIn('tipo', ['Producto', 'Compuesto'])
             ->where('enable', true)

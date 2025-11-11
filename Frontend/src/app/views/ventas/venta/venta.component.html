@@ -67,6 +67,10 @@
                 <label class="fw-medium">Origen</label>
                 <p><span class="badge bg-info">Shopify</span> {{ venta.referencia_shopify }}</p>
             </div>
+            <div class="form-group col-lg-4" *ngIf="venta.referencia_shopify">
+                <label class="fw-medium">Canal de venta</label>
+                <p><span class="badge bg-info">Shopify</span> {{ venta.nombre_canal }}</p>
+            </div>
         </div>
     </div>
 

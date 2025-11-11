@@ -75,7 +75,7 @@
                     </tr>
                     <tr *ngFor=" let producto of productos?.data">
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px"> 
+                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
                             {{ producto.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">
@@ -116,7 +116,7 @@
                                 </ng-template>
                             </div> -->
                         </td>
-                        <td class="text-center" *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario" >
+                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario && !apiService.isVentasLimitado()" >
                             <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
                                 <i class="fa fa-pencil-alt"></i>
                             </a>

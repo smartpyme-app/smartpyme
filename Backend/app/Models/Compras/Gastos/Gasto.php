@@ -43,6 +43,7 @@ class Gasto extends Model {
         'id_sucursal',
         'dte',
         'dte_invalidacion',
+        'prueba_masiva',
         'otros_impuestos',
         'es_retaceo',
         'clasificacion',
@@ -73,31 +74,35 @@ class Gasto extends Model {
 
     public function getDteAttribute($value)
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        return is_string($value) ? json_decode($value, true) : $value;
     }
 
     public function getDteInvalidacionAttribute($value)
     {
-        return is_string($value) ? json_decode($value,true) : $value;
+        return is_string($value) ? json_decode($value, true) : $value;
     }
 
-    public function getNombreUsuarioAttribute(){
+    public function getNombreUsuarioAttribute()
+    {
         return $this->usuario()->pluck('name')->first();
     }
 
-    public function getNombreCategoriaAttribute(){
+    public function getNombreCategoriaAttribute()
+    {
         return $this->categoria()->pluck('nombre')->first();
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        $proveedor = $this->proveedor()->first();
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
         return 'Consumidor Final';
     }
 
-    public function getNombreSucursalAttribute(){
+    public function getNombreSucursalAttribute()
+    {
         return $this->sucursal()->pluck('nombre')->first();
     }
 
@@ -128,23 +133,28 @@ class Gasto extends Model {
         return $total;
     }
 
-    public function usuario(){
+    public function usuario()
+    {
         return $this->belongsTo('App\Models\User', 'id_usuario');
     }
 
-    public function proveedor(){
+    public function proveedor()
+    {
         return $this->belongsTo('App\Models\Compras\Proveedores\Proveedor', 'id_proveedor');
     }
 
-    public function categoria(){
+    public function categoria()
+    {
         return $this->belongsTo('App\Models\Compras\Gastos\Categoria', 'id_categoria');
     }
 
-    public function sucursal(){
+    public function sucursal()
+    {
         return $this->belongsTo('App\Models\Admin\Sucursal', 'id_sucursal');
     }
 
-    public function empresa(){
+    public function empresa()
+    {
         return $this->belongsTo('App\Models\Admin\Empresa', 'id_empresa');
     }
 

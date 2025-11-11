@@ -8,7 +8,7 @@
         <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle img-fluid col-1"> 
         <span id="producto_nombre" class="col-7 ps-1">
             <!-- <small>Nombre:</small> <br> -->
-            {{ producto.nombre }} <br>
+            {{ getNombreCompleto(producto) }} <br>
             <small><span class="badge bg-light text-muted">{{ producto.nombre_categoria }}</span> <span class="ms-3 badge bg-light text-muted">{{ producto.tipo }}</span></small>
         </span>
         <span class="col-2 text-center" id="stock">

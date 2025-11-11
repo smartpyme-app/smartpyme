@@ -29,8 +29,9 @@ class KardexFiltradoExport implements FromCollection, WithHeadings, WithMapping,
         return 1000;
     }
 
-    public function headings():array{
-        return[
+    public function headings(): array
+    {
+        return [
             'Fecha',
             'Producto',
             'Inventario',
@@ -54,50 +55,51 @@ class KardexFiltradoExport implements FromCollection, WithHeadings, WithMapping,
 
         // Usar producto_ids que vienen del frontend
         $productoIds = $request->producto_ids ?? [];
-        
+
         // Convertir a array si viene como string separado por comas
         if (is_string($productoIds)) {
             $productoIds = explode(',', $productoIds);
         }
-        
+
         // Asegurar que todos los IDs sean enteros
         $productoIds = array_map('intval', $productoIds);
-        
+
         // Log::info('KardexFiltradoExport - IDs de productos recibidos:', ['producto_ids' => $productoIds]);
-        
-        if(empty($productoIds)) {
+
+        if (empty($productoIds)) {
             // Log::info('KardexFiltradoExport - No se recibieron producto_ids');
             return collect([]);
         }
-        
+
         // Obtener kardex de los productos filtrados
         $kardexQuery = Kardex::whereIn('id_producto', $productoIds)
-            ->when($request->inicio, function($q) use ($request){
+            ->when($request->inicio, function ($q) use ($request) {
                 $q->where('fecha', '>=', $request->inicio);
             })
-            ->when($request->fin, function($q) use ($request){
+            ->when($request->fin, function ($q) use ($request) {
                 $q->where('fecha', '<=', $request->fin);
             })
-            ->when($request->detalle, function($q) use ($request){
-                return $q->where('detalle', 'like' ,'%' . $request->detalle . '%');
+            ->when($request->detalle, function ($q) use ($request) {
+                return $q->where('detalle', 'like', '%' . $request->detalle . '%');
             })
-            ->with(['producto.categoria', 'inventario.sucursal', 'usuario'])
+            ->with(['producto.categoria', 'producto.empresa', 'inventario.sucursal', 'usuario'])
             ->orderBy('fecha', 'desc')
             ->orderBy('id', 'desc');
 
         $kardex = $kardexQuery->get();
         // Log::info('KardexFiltradoExport - Kardex encontrados:', ['count' => $kardex->count()]);
-        
+
         // Cargar relaciones manualmente para asegurar que estén disponibles
-        $kardex->load(['inventario.sucursal', 'producto.categoria', 'usuario']);
-        
+        $kardex->load(['inventario.sucursal', 'producto.categoria', 'producto.empresa', 'usuario']);
+
         return $kardex;
     }
 
-    public function map($row): array{
+    public function map($row): array
+    {
         // Log para debug del primer registro
         static $firstRow = true;
-        if($firstRow) {
+        if ($firstRow) {
             // Log::info('KardexFiltradoExport - Primer registro MAP:', [
             //     'fecha' => $row->fecha,
             //     'producto' => $row->producto->nombre ?? 'NULL',
@@ -111,22 +113,28 @@ class KardexFiltradoExport implements FromCollection, WithHeadings, WithMapping,
             // ]);
             $firstRow = false;
         }
-        
-               // Obtener la sucursal directamente desde la relación inventario (que apunta a Bodega)
-               $sucursalNombre = '';
-               try {
-                   if(isset($row->inventario) && isset($row->inventario->sucursal)) {
-                       $sucursalNombre = $row->inventario->sucursal->nombre;
-                   } else {
-                       $sucursalNombre = 'SIN SUCURSAL';
-                   }
-               } catch (Exception $e) {
-                   $sucursalNombre = 'ERROR: ' . $e->getMessage();
-               }
-        
+
+        // Obtener la sucursal directamente desde la relación inventario (que apunta a Bodega)
+        $sucursalNombre = '';
+        try {
+            if (isset($row->inventario) && isset($row->inventario->sucursal)) {
+                $sucursalNombre = $row->inventario->sucursal->nombre;
+            } else {
+                $sucursalNombre = 'SIN SUCURSAL';
+            }
+        } catch (Exception $e) {
+            $sucursalNombre = 'ERROR: ' . $e->getMessage();
+        }
+
+        // Obtener el nombre completo del producto (nombre + nombre_variante si aplica)
+        $nombreProducto = $row->producto->nombre ?? '';
+        if ($row->producto && $row->producto->empresa && $row->producto->empresa->shopify_store_url && $row->producto->nombre_variante) {
+            $nombreProducto = $row->producto->nombre . ' ' . $row->producto->nombre_variante;
+        }
+
         return [
             $row->fecha,
-            $row->producto->nombre ?? '',
+            $nombreProducto,
             $sucursalNombre,
             $row->detalle,
             $row->referencia,

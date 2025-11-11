@@ -29,7 +29,8 @@ export class CompraProductoComponent implements OnInit {
     public buscador:any = '';
     public loading:boolean = false;
     public search:any = '';
-    // private apiService: ApiService, private alertService: AlertService,
+    private tieneShopify: boolean = false;
+
     constructor(
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
@@ -38,6 +39,10 @@ export class CompraProductoComponent implements OnInit {
 
     ngOnInit() {
         this.alertService.modal = false;
+
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.searchControl.valueChanges
               .pipe(
@@ -145,7 +150,9 @@ export class CompraProductoComponent implements OnInit {
     onProductoCreated(producto: any) {
         // Aquí puedes manejar el producto creado si es necesario
         producto.id_producto    = producto.id;
-        producto.nombre_producto = producto.nombre;
+
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        producto.nombre_producto = this.getNombreCompleto(producto);
         producto.img            = producto.img;
         producto.precio         = parseFloat(producto.precio);
         producto.costo          = parseFloat(producto.costo);
@@ -162,7 +169,9 @@ export class CompraProductoComponent implements OnInit {
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -176,7 +185,9 @@ export class CompraProductoComponent implements OnInit {
     onCheckProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.nombre_producto = producto.nombre;
+
+        // Si la empresa tiene shopify_store_url configurado, concatenar nombre_variante al nombre
+        this.detalle.nombre_producto = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.costo          = parseFloat(producto.costo);
@@ -200,6 +211,16 @@ export class CompraProductoComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 
 }

@@ -154,36 +154,42 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
     }
 
     public function map($row): array{
+           $venta = $row->venta()->first();
+           $documentoNombre = $venta ? $venta->documento()->pluck('nombre')->first() : null;
+           $esFacturaExportacion = strtolower($documentoNombre) === 'factura de exportación';
+           $calcularIva = $venta && $venta->iva && !$esFacturaExportacion;
+           $iva = $calcularIva ? $row->total * 0.13 : 0;
+           
            $fields = [
               $row->venta()->pluck('fecha')->first(),
-              $row->venta()->first() ? $row->venta()->first()->nombre_cliente : 'Comsumidor Final',
-              $row->venta()->first()->cliente()->pluck('telefono')->first(),
-              $row->venta()->first()->cliente()->pluck('dui')->first(),
-              $row->venta()->first()->cliente()->pluck('nit')->first(),
+              $venta ? $venta->nombre_cliente : 'Comsumidor Final',
+              $venta ? $venta->cliente()->pluck('telefono')->first() : null,
+              $venta ? $venta->cliente()->pluck('dui')->first() : null,
+              $venta ? $venta->cliente()->pluck('nit')->first() : null,
               $row->producto()->pluck('nombre')->first(),
               $row->producto()->pluck('codigo')->first(),
               $row->producto()->pluck('marca')->first(),
               $row->producto()->first() ? $row->producto()->first()->categoria()->pluck('nombre')->first() : '',
-              $row->venta()->first()->documento()->pluck('nombre')->first(),
+              $documentoNombre,
               $row->nombre_proyecto,
               $row->venta()->pluck('num_identificacion')->first(),
               $row->venta()->pluck('correlativo')->first(),
               $row->venta()->pluck('forma_pago')->first(),
               $row->venta()->pluck('detalle_banco')->first(),
               $row->venta()->pluck('estado')->first(),
-              $row->venta()->first()->canal()->pluck('nombre')->first(),
+              $venta ? $venta->canal()->pluck('nombre')->first() : null,
               $row->cantidad,
               round($row->costo,2),
               round($row->precio,2),
               round($row->descuento,2),
-              round($row->venta()->first()->iva ? $row->total * 0.13 : 0,2),
+              round($iva,2),
               round($row->total - ($row->costo * $row->cantidad),2),
-              round($row->total + ($row->venta()->first()->iva ? $row->total * 0.13 : 0),2),
-              $row->venta()->first()->sucursal()->first()->empresa()->pluck('nombre')->first(),
+              round($row->total + $iva,2),
+              $venta ? $venta->sucursal()->first()->empresa()->pluck('nombre')->first() : null,
               $row->venta()->pluck('observaciones')->first(),
-              $row->venta()->first()->usuario()->pluck('name')->first(),
+              $venta ? $venta->usuario()->pluck('name')->first() : null,
               $row->vendedor()->pluck('name')->first(),
-              $row->venta()->first()->sucursal()->pluck('nombre')->first()
+              $venta ? $venta->sucursal()->pluck('nombre')->first() : null
          ];
         return $fields;
     }

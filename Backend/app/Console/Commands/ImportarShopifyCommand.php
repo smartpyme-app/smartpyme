@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\TrabajosPendientes;
 use App\Services\ShopifyTransformer;
+use App\Services\ImpuestosService;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Bodega;
@@ -15,6 +16,14 @@ class ImportarShopifyCommand extends Command
 {
     protected $signature = 'shopify:procesar-trabajos {--lote=10} {--procesar-productos-shopify}';
     protected $description = 'Procesar trabajos pendientes de importación Shopify';
+
+    protected $transformer;
+
+    public function __construct(ShopifyTransformer $transformer)
+    {
+        parent::__construct();
+        $this->transformer = $transformer;
+    }
 
     public function handle()
     {
@@ -106,10 +115,9 @@ class ImportarShopifyCommand extends Command
     private function procesarProductoShopify($datos)
     {
         $this->info("Procesando producto Shopify: " . ($datos['producto_shopify']['title'] ?? 'N/A'));
-        
+
         // Transformar producto usando ShopifyTransformer
-        $transformer = new ShopifyTransformer();
-        $productosTransformados = $transformer->transformarProductoDesdeShopify(
+        $productosTransformados = $this->transformer->transformarProductoDesdeShopify(
             $datos['producto_shopify'],
             $datos['id_empresa'],
             $datos['id_usuario'],

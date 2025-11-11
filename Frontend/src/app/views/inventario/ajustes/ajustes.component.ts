@@ -25,6 +25,7 @@ export class AjustesComponent implements OnInit {
     public usuarios:any = [];
     public producto:any = {};
     public sucursal:any = {};
+    private tieneShopify: boolean = false;
     public productosInput$ = new Subject<string>();
     public loadingProductos: boolean = false;
 
@@ -44,6 +45,10 @@ export class AjustesComponent implements OnInit {
     }
 
     ngOnInit() {
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
+
         this.route.queryParams.subscribe(params => {
             this.filtros = {
                 search: params['search'] || '',
@@ -62,7 +67,7 @@ export class AjustesComponent implements OnInit {
         });
 
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
 
@@ -101,7 +106,7 @@ export class AjustesComponent implements OnInit {
             queryParamsHandling: 'merge',
         });
         this.loading = true;
-        this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => { 
+        this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => {
             this.ajustes = ajustes;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -147,7 +152,7 @@ export class AjustesComponent implements OnInit {
 
     public setProducto(){
         if (!this.ajuste.id_producto) return;
-        
+
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
         if (this.producto) {
             this.ajuste.costo = this.producto.costo;
@@ -184,7 +189,7 @@ export class AjustesComponent implements OnInit {
             id_usuario: this.apiService.auth_user().id,
             id_empresa: this.apiService.auth_user().id_empresa
         };
-        
+
         this.productos = [];
         this.producto = {};
 
@@ -193,10 +198,10 @@ export class AjustesComponent implements OnInit {
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('productos/list').subscribe(productos => { 
+        this.apiService.getAll('productos/list').subscribe(productos => {
             this.productos = productos;
         }, error => {this.alertService.error(error); });
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
@@ -204,7 +209,7 @@ export class AjustesComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => { 
+        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
             this.modalRef.hide();
@@ -215,7 +220,7 @@ export class AjustesComponent implements OnInit {
 
     public delete(id:number) {
         this.saving = true;
-        this.apiService.delete('ajuste/', id).subscribe(ajuste => { 
+        this.apiService.delete('ajuste/', id).subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
             this.modalRef.hide();
@@ -245,6 +250,16 @@ export class AjustesComponent implements OnInit {
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 
 }

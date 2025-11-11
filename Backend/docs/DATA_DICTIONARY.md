@@ -104,6 +104,57 @@ Este documento describe todas las columnas y campos de datos que se envían a tr
 
 ---
 
+## 🔄 DEVOLUCIONES (Returns)
+
+### 📋 Estructura Principal de Devolución
+
+| Campo | Tipo | Descripción | Ejemplo | Notas |
+|-------|------|-------------|---------|-------|
+| `id` | Integer | Identificador único de la devolución | `789` | Clave primaria, autoincremental |
+| `fecha` | Date | Fecha de la devolución | `"2024-10-21"` | Formato: YYYY-MM-DD |
+| `correlativo` | String | Número correlativo de la devolución | `"DEV-001234"` | Único por empresa |
+| `tipo` | String | Tipo de devolución | `"Devolucion"` | Tipo de documento |
+| `sub_total` | Decimal(10,2) | Subtotal antes de impuestos | `130.00` | Total antes de IVA |
+| `no_sujeta` | Decimal(10,2) | Monto no sujeto a impuestos | `0.00` | Productos exentos de impuestos |
+| `exenta` | Decimal(10,2) | Monto exento de impuestos | `0.00` | Productos con exención fiscal |
+| `cuenta_a_terceros` | Decimal(10,2) | Monto por cuenta de terceros | `0.00` | Servicios facturados por terceros |
+| `total` | Decimal(10,2) | Total final de la devolución | `149.50` | Monto total devuelto |
+| `iva` | Decimal(10,2) | Total de IVA de la devolución | `19.50` | Impuesto sobre el valor agregado |
+| `iva_retenido` | Decimal(10,2) | IVA retenido en la transacción | `2.30` | Retención fiscal |
+| `observaciones` | Text | Comentarios adicionales | `"Producto defectuoso"` | Motivo de la devolución |
+| `enable` | Boolean | Estado activo de la devolución | `true` | true = activa, false = inactiva |
+| `id_venta` | Integer | ID de la venta original | `12345` | Referencia a la venta devuelta |
+| `created_at` | Timestamp | Fecha de creación del registro | `"2024-10-21T10:30:00Z"` | ISO 8601 format |
+| `updated_at` | Timestamp | Fecha de última actualización | `"2024-10-21T10:30:00Z"` | ISO 8601 format |
+
+### 👥 Campos Relacionados (Nombres)
+
+| Campo | Tipo | Descripción | Ejemplo |
+|-------|------|-------------|---------|
+| `nombre_cliente` | String | Nombre del cliente | `"Juan Pérez"` |
+| `nombre_usuario` | String | Usuario que registró la devolución | `"admin"` |
+| `nombre_documento` | String | Tipo de documento fiscal | `"Nota de Crédito"` |
+
+### 🔄 Detalles de Devolución (Return Details)
+
+| Campo | Tipo | Descripción | Ejemplo | Notas |
+|-------|------|-------------|---------|-------|
+| `nombre_producto` | String | Nombre del producto devuelto | `"Laptop Dell Inspiron"` | Nombre comercial |
+| `codigo_producto` | String | Código interno del producto | `"LAP-DELL-001"` | SKU del producto devuelto |
+| `marca_producto` | String | Marca del producto devuelto | `"Dell"` | Fabricante o marca del producto |
+| `descripcion` | String | Descripción del producto | `"Laptop Dell Inspiron 15"` | Descripción detallada |
+| `cantidad` | Decimal(10,3) | Cantidad devuelta | `1.000` | Permite decimales para productos fraccionables |
+| `precio` | Decimal(10,2) | Precio unitario original | `750.00` | Precio al que se vendió |
+| `costo` | Decimal(10,2) | Costo unitario del producto | `600.00` | Costo de adquisición |
+| `descuento` | Decimal(10,2) | Descuento aplicado al ítem | `50.00` | Descuento por producto |
+| `no_sujeta` | Decimal(10,2) | Monto no sujeto a impuestos | `0.00` | Productos exentos |
+| `cuenta_a_terceros` | Decimal(10,2) | Monto por cuenta de terceros | `0.00` | Servicios de terceros |
+| `exenta` | Decimal(10,2) | Monto exento de impuestos | `0.00` | Productos con exención |
+| `total` | Decimal(10,2) | Total del ítem devuelto | `700.00` | Monto total del producto devuelto |
+| `medida` | String | Unidad de medida | `"Unidad"` | Ej: Unidad, Kg, Litro |
+
+---
+
 ## 📊 TIPOS DE DATOS
 
 ### 🔢 Especificaciones Técnicas
