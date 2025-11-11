@@ -28,6 +28,7 @@ use App\Exports\Contabilidad\AnexoPercepcion1Export;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade as PDF;
+use Carbon\Carbon;
 
 class LibrosIVAController extends Controller
 {
@@ -46,40 +47,121 @@ class LibrosIVAController extends Controller
             })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->orderByDesc('fecha')
             ->get();
 
-        $ivas = $ventas->map(function ($venta) {
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
-
-            return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'           => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
-                'num_control_interno'   => $venta->correlativo,
-                'ventas_exentas'        => $venta->iva == 0 ? $venta->total : 0,
-                'ventas_gravadas'       => $venta->iva > 0 ? ($venta->documento->nombre === 'Factura de exportación' ? '0.00' : $venta->total) : 0,
-                'exportaciones'         => $venta->documento->nombre === 'Factura de exportación' ? $venta->total : '0.00',
-                'total'                 => $venta->total,
-                'cuenta_a_terceros'     => $venta->cuenta_a_terceros,
-                'no_sujeta'            => $venta->no_sujeta,
-                'id_venta'              => $venta->id,
-            ];
+        $ventasSinSello = $ventas->filter(function ($venta) {
+            return empty($venta->sello_mh);
         });
-        //
 
+        if ($ventasSinSello->isNotEmpty()) {
+            Log::warning('Se excluyeron ventas sin sello en libro consumidores', [
+                'ventas' => $ventasSinSello->pluck('id'),
+            ]);
+        }
 
-        // Ordenamos por 'correlativo' de forma descendente y reindexamos
-        $libroconsumidores = $ivas->sortByDesc(function ($item) {
-                return [$item['fecha'], $item['correlativo']];
-            })->values()->all();
+        $ventasConSello = $ventas->reject(function ($venta) {
+            return empty($venta->sello_mh);
+        });
+
+        $libroconsumidores = $ventasConSello
+            ->groupBy(function ($venta) {
+                return Carbon::parse($venta->fecha)->format('Y-m-d');
+            })
+            ->map(function ($ventasDia, $fecha) {
+                $ventasOrdenadasPorCorrelativo = $ventasDia->sortBy(function ($venta) {
+                    return trim((string) $venta->correlativo);
+                });
+
+                $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
+                    return $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])
+                        ? $venta->dte['identificacion']['codigoGeneracion']
+                        : trim((string) $venta->correlativo);
+                });
+
+                $obtenerCodigoGeneracion = function ($venta) {
+                    if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+                        return $venta->dte['identificacion']['codigoGeneracion'];
+                    }
+
+                    return trim((string) $venta->correlativo);
+                };
+
+                $ventasExentas = $ventasDia->sum(function ($venta) {
+                    return $venta->iva == 0 ? (float) $venta->total : 0;
+                });
+
+                $ventasGravadas = $ventasDia->sum(function ($venta) {
+                    if ($venta->documento && $venta->documento->nombre === 'Factura de exportación') {
+                        return 0;
+                    }
+
+                    return $venta->iva > 0 ? (float) $venta->total : 0;
+                });
+
+                $exportaciones = $ventasDia->sum(function ($venta) {
+                    return $venta->documento && $venta->documento->nombre === 'Factura de exportación'
+                        ? (float) $venta->total
+                        : 0;
+                });
+
+                $ventasTerceros = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->cuenta_a_terceros;
+                });
+
+                $totalDiario = $ventasDia->sum(function ($venta) {
+                    return (float) $venta->total;
+                });
+
+                $primeraVenta = $ventasOrdenadasPorCodigo->first();
+                $ultimaVenta = $ventasOrdenadasPorCodigo->last();
+                $correlativoInicial = optional($ventasOrdenadasPorCorrelativo->first())->correlativo;
+
+                return [
+                    'fecha' => $fecha,
+                    'correlativo_inicial' => $primeraVenta ? $obtenerCodigoGeneracion($primeraVenta) : null,
+                    'correlativo_final' => $ultimaVenta ? $obtenerCodigoGeneracion($ultimaVenta) : null,
+                    'ventas_exentas' => round($ventasExentas, 2),
+                    'ventas_internas_gravadas' => round($ventasGravadas, 2),
+                    'exportaciones' => round($exportaciones, 2),
+                    'total_ventas_diarias_propias' => round($totalDiario, 2),
+                    'ventas_a_cuenta_de_terceros' => round($ventasTerceros, 2),
+                    'correlativo_orden' => trim((string) $correlativoInicial),
+                ];
+            })
+            ->sortBy(function ($item) {
+                return [$item['fecha'], $item['correlativo_orden'] ?? ''];
+            })
+            ->values()
+            ->all();
+
+        $totalesConsumidores = collect($libroconsumidores)->reduce(function ($carry, $item) {
+            $carry['ventas_exentas'] += $item['ventas_exentas'];
+            $carry['ventas_internas_gravadas'] += $item['ventas_internas_gravadas'];
+            $carry['exportaciones'] += $item['exportaciones'];
+            $carry['total_ventas_diarias_propias'] += $item['total_ventas_diarias_propias'];
+            $carry['ventas_a_cuenta_de_terceros'] += $item['ventas_a_cuenta_de_terceros'];
+            return $carry;
+        }, [
+            'ventas_exentas' => 0,
+            'ventas_internas_gravadas' => 0,
+            'exportaciones' => 0,
+            'total_ventas_diarias_propias' => 0,
+            'ventas_a_cuenta_de_terceros' => 0,
+        ]);
         
 
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-consumidores', compact('libroconsumidores', 'request'));
-            $pdf->setPaper('US Letter', 'landscape');
+            $pdf = PDF::loadView(
+                'reportes.contabilidad.libro-consumidores',
+                [
+                    'libroconsumidores' => $libroconsumidores,
+                    'request' => $request,
+                    'totalesConsumidores' => $totalesConsumidores,
+                ]
+            );
+            $pdf->setPaper('Legal', 'landscape');
 
             return $pdf->stream('libro-consumidores.pdf');
         }
@@ -116,28 +198,51 @@ class LibrosIVAController extends Controller
             })
             ->whereBetween('fecha', [$request->inicio, $request->fin])
             ->where('cotizacion', 0)
-            ->orderByDesc('fecha')
             ->get();
+        $ventasSinSello = $ventas->filter(function ($venta) {
+            return empty($venta->sello_mh);
+        });
 
-        $ventasData = $ventas->map(function ($venta) {
-            $documento = $venta->documento;
+        if ($ventasSinSello->isNotEmpty()) {
+            Log::warning('Se excluyeron ventas sin sello en libro contribuyentes', [
+                'ventas' => $ventasSinSello->pluck('id'),
+            ]);
+        }
+
+        $ventasConSello = $ventas->reject(function ($venta) {
+            return empty($venta->sello_mh);
+        });
+
+        $ventasData = $ventasConSello->map(function ($venta) {
             $cliente = optional($venta->cliente);
 
+            $codigoGeneracion = $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])
+                ? $venta->dte['identificacion']['codigoGeneracion']
+                : trim($venta->correlativo);
+
+            $numeroControl = $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])
+                ? $venta->dte['identificacion']['numeroControl']
+                : ($venta->numero_control ?? trim($venta->correlativo));
+
+            $sello = $venta->dte['sello'] ?? $venta->sello_mh;
+
             return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'           => $venta->correlativo,
-                'num_documento'         => $venta->sello_mh ? $venta->dte['identificacion']['codigoGeneracion'] : trim($venta->correlativo),
-                'nombre_cliente'        => $venta->nombre_cliente,
-                'nit_nrc'               => $cliente->ncr ?? $cliente->nit,
-                'ventas_exentas'        => $venta->iva == 0 ? $venta->sub_total : 0,
-                'ventas_gravadas'       => $venta->iva > 0 ? $venta->sub_total : 0,
-                'debito_fiscal'         => $venta->iva,
-                'ventas_exentas_cuenta_a_terceros' => 0.00,
-                'ventas_gravadas_cuenta_a_terceros' => $venta->cuenta_a_terceros,
-                'debito_fiscal_cuenta_a_terceros' => 0.00,
-                'iva_percibido'         => $venta->iva_percibido,
-                'total'                 => $venta->total,
-                'id_venta'              => $venta->id,
+                'fecha' => $venta->fecha,
+                'codigo_generacion' => $codigoGeneracion,
+                'numero_control' => $numeroControl,
+                'sello' => $sello,
+                'correlativo' => trim((string) $venta->correlativo),
+                'nombre_cliente' => $venta->nombre_cliente,
+                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
+                'ventas_exentas' => $venta->iva == 0 ? (float) $venta->sub_total : 0,
+                'ventas_internas_gravadas' => $venta->iva > 0 ? (float) $venta->sub_total : 0,
+                'debito_fiscal' => (float) $venta->iva,
+                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
+                'ventas_internas_gravadas_a_cuenta_de_terceros' => (float) $venta->cuenta_a_terceros,
+                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
+                'iva_retenido' => (float) $venta->iva_retenido,
+                'iva_percibido' => (float) $venta->iva_percibido,
+                'total' => (float) $venta->total,
             ];
         });
 
@@ -154,44 +259,82 @@ class LibrosIVAController extends Controller
 
 
         // Transformar devoluciones
-        $devolucionesData = $devoluciones->map(function ($venta) {
-            $documento = $venta->documento;
-            $cliente = optional($venta->cliente);
+        $devolucionesData = $devoluciones->map(function ($devolucion) {
+            $cliente = optional($devolucion->cliente);
+            $dte = $devolucion->dte;
+
+            $codigoGeneracion = $devolucion->codigo_generacion
+                ?? ($dte['identificacion']['codigoGeneracion'] ?? trim($devolucion->correlativo));
+
+            $numeroControl = $devolucion->numero_control
+                ?? ($dte['identificacion']['numeroControl'] ?? trim($devolucion->correlativo));
+
+            $sello = $dte['sello'] ?? $devolucion->sello_mh;
 
             return [
-                'fecha'                 => $venta->fecha,
-                'correlativo'         => $venta->correlativo,
-                'num_documento'         => $venta->correlativo,
-                'nombre_cliente'        => $venta->nombre_cliente,
-                'nit_nrc'               => $cliente->nit ?? $cliente->ncr,
-                'ventas_exentas'        => $venta->exenta > 0 ? $venta->exenta * -1 : $venta->exenta,
-                'ventas_no_sujetas'     => $venta->no_sujeta > 0 ? $venta->no_sujeta * -1 : $venta->no_sujeta,
-                'ventas_gravadas'       => $venta->sub_total > 0 ? $venta->sub_total * -1 : $venta->sub_total,
-                'cuenta_a_terceros'     => $venta->cuenta_a_terceros > 0 ? $venta->cuenta_a_terceros * -1 : $venta->cuenta_a_terceros,
-                'debito_fiscal'         => $venta->iva > 0 ? $venta->iva * -1 : $venta->iva,
-                'ventas_exentas_cuenta_a_terceros' => 0,
-                'ventas_gravadas_cuenta_a_terceros' => 0,
-                'debito_fiscal_cuenta_a_terceros' => 0,
-                'iva_retenido'         => $venta->iva_retenido > 0 ? $venta->iva_retenido * -1 : $venta->iva_retenido,
-                'iva_percibido'         => $venta->iva_percibido > 0 ? $venta->iva_percibido * -1 : $venta->iva_percibido,
-                'total'                 => $venta->total > 0 ? $venta->total * -1 : $venta->total,
+                'fecha' => $devolucion->fecha,
+                'codigo_generacion' => $codigoGeneracion,
+                'numero_control' => $numeroControl,
+                'sello' => $sello,
+                'correlativo' => trim((string) $devolucion->correlativo),
+                'nombre_cliente' => $devolucion->nombre_cliente,
+                'nrc_cliente' => $cliente->ncr ?? $cliente->nit,
+                'ventas_exentas' => $devolucion->exenta > 0 ? $devolucion->exenta * -1 : $devolucion->exenta,
+                'ventas_internas_gravadas' => $devolucion->sub_total > 0 ? $devolucion->sub_total * -1 : $devolucion->sub_total,
+                'debito_fiscal' => $devolucion->iva > 0 ? $devolucion->iva * -1 : $devolucion->iva,
+                'ventas_exentas_a_cuenta_de_terceros' => 0.0,
+                'ventas_internas_gravadas_a_cuenta_de_terceros' => $devolucion->cuenta_a_terceros > 0 ? $devolucion->cuenta_a_terceros * -1 : $devolucion->cuenta_a_terceros,
+                'debito_fiscal_por_cuenta_de_terceros' => 0.0,
+                'iva_retenido' => $devolucion->iva_retenido > 0 ? $devolucion->iva_retenido * -1 : $devolucion->iva_retenido,
+                'iva_percibido' => $devolucion->iva_percibido > 0 ? $devolucion->iva_percibido * -1 : $devolucion->iva_percibido,
+                'total' => $devolucion->total > 0 ? $devolucion->total * -1 : $devolucion->total,
             ];
         });
 
         // Unir y ordenar ambas colecciones por fecha
         $librocontribuyentes = collect($ventasData)
-            ->merge(collect($devolucionesData))
-            ->sortByDesc(function ($item) {
+            ->merge($devolucionesData)
+            ->sortBy(function ($item) {
                 return [$item['fecha'], $item['correlativo']];
             })
             ->values()
             ->all();
 
+        $totalesContribuyentes = collect($librocontribuyentes)->reduce(function ($carry, $item) {
+            $carry['ventas_exentas'] += $item['ventas_exentas'];
+            $carry['ventas_internas_gravadas'] += $item['ventas_internas_gravadas'];
+            $carry['debito_fiscal'] += $item['debito_fiscal'];
+            $carry['ventas_exentas_a_cuenta_de_terceros'] += $item['ventas_exentas_a_cuenta_de_terceros'];
+            $carry['ventas_internas_gravadas_a_cuenta_de_terceros'] += $item['ventas_internas_gravadas_a_cuenta_de_terceros'];
+            $carry['debito_fiscal_por_cuenta_de_terceros'] += $item['debito_fiscal_por_cuenta_de_terceros'];
+            $carry['iva_retenido'] += $item['iva_retenido'];
+            $carry['iva_percibido'] += $item['iva_percibido'];
+            $carry['total'] += $item['total'];
+            return $carry;
+        }, [
+            'ventas_exentas' => 0,
+            'ventas_internas_gravadas' => 0,
+            'debito_fiscal' => 0,
+            'ventas_exentas_a_cuenta_de_terceros' => 0,
+            'ventas_internas_gravadas_a_cuenta_de_terceros' => 0,
+            'debito_fiscal_por_cuenta_de_terceros' => 0,
+            'iva_retenido' => 0,
+            'iva_percibido' => 0,
+            'total' => 0,
+        ]);
+
         $formato = $request->query('formato') ?? 'json';
 
         if ($formato === 'pdf') {
-            $pdf = PDF::loadView('reportes.contabilidad.libro-contribuyentes', compact('librocontribuyentes', 'request'));
-            $pdf->setPaper('US Letter', 'landscape');
+            $pdf = PDF::loadView(
+                'reportes.contabilidad.libro-contribuyentes',
+                [
+                    'librocontribuyentes' => $librocontribuyentes,
+                    'request' => $request,
+                    'totalesContribuyentes' => $totalesContribuyentes,
+                ]
+            );
+            $pdf->setPaper('Legal', 'landscape');
 
             return $pdf->stream('libro-contribuyentes.pdf');
         }
