@@ -1,14 +1,13 @@
 import { NgModule } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe, PercentPipe, AsyncPipe, JsonPipe, LowerCasePipe, UpperCasePipe, TitleCasePipe, SlicePipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
-import { TooltipModule } from 'ngx-bootstrap/tooltip';
-import { TypeaheadModule } from 'ngx-bootstrap/typeahead';
+// TooltipModule removido - los módulos lo importan directamente cuando lo necesitan (LayoutModule ya lo tiene)
+// TypeaheadModule removido - los componentes lo importan directamente cuando lo necesitan
 import { AlertService } from '@services/alert.service';
-import { MultimediaComponent } from './multimedia/multimedia.component';
+// MultimediaComponent removido - los componentes lo importan directamente cuando lo necesitan
 import { PipesModule } from '@pipes/pipes.module';
-import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
@@ -30,19 +29,18 @@ import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.comp
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
-import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
-import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
+// CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
+// CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
-// PaginationComponent, TimerComponent, DescargarExcelComponent, NotificacionesContainerComponent, ImportarExcelComponent, DescargarInventarioComponent ahora son standalone (importados más abajo)
-import { VerHistorialButtonComponent } from '../../app/views/planillas/empleados/shared/ver-historial-button.component';
-import { ThreedsModalComponent } from '../auth/register/pago/modal/threeds-modal.component';
-import { AlertsHaciendaComponent } from './parts/alerts-hacienda/alerts-hacienda.component';
-import { PopoverModule } from 'ngx-bootstrap/popover';
-import { AuthorizationRequestModalComponent } from './authorization/authorization-request/authorization-request-modal.component';
-import { AuthorizationViewComponent } from './authorization/authorization-view/authorization-view.component';
-import { CrearDepartamentoComponent } from './modals/crear-departamento-empresa/crear-departamento-empresa.component';
-import { CrearAreaEmpresaComponent } from './modals/crear-area-empresa/crear-area-empresa.component';
-import { SelectSearchComponent } from './parts/select-search/select-search.component';
+// VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
+// ThreedsModalComponent removido - solo se usa en auth, los componentes lo importan directamente
+// AlertsHaciendaComponent removido - solo se usa en módulos lazy
+// PopoverModule removido - los componentes lo importan directamente cuando lo necesitan
+// AuthorizationRequestModalComponent removido - se carga dinámicamente cuando se necesita
+// AuthorizationViewComponent removido - solo se usa en módulos lazy
+// CrearDepartamentoComponent removido - solo se usa en módulos lazy
+// CrearAreaEmpresaComponent removido - solo se usa en módulos lazy
+// SelectSearchComponent removido - solo se usa en módulos lazy
 // Componentes y pipes standalone
 import { NotFoundComponent } from './404/not-found.component';
 import { PaginationComponent } from './parts/pagination/pagination.component';
@@ -59,12 +57,9 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     ReactiveFormsModule,
     RouterModule,
     PipesModule,
-    TagInputModule,
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
-    TooltipModule.forRoot(),
-    PopoverModule.forRoot(),
-    TypeaheadModule.forRoot(),
+    // TooltipModule removido - los módulos lo importan directamente
     // Componentes y pipes standalone
     NotFoundComponent,
     SafeHtmlPipe,
@@ -79,7 +74,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     BusquedaProductoComponent,
     CrearProductoComponent,
     ClienteDireccionComponent,
-    MultimediaComponent,
+    // MultimediaComponent removido - los componentes lo importan directamente
     BuscadorProductosComponent,
     BuscadorClientesComponent,
     BuscadorMateriasPrimasComponent,
@@ -93,17 +88,17 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
-    CrearEventoComponent,
-    CrearProyectoComponent,
+    // CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
+    // CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
     CrearImpuestoComponent,
-    VerHistorialButtonComponent,
-    ThreedsModalComponent,
-    AlertsHaciendaComponent,
-    AuthorizationRequestModalComponent,
-    AuthorizationViewComponent,
-    CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent,
-    SelectSearchComponent
+    // VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
+    // ThreedsModalComponent removido - solo se usa en auth, los componentes lo importan directamente
+    // AlertsHaciendaComponent removido - solo se usa en módulos lazy
+    // AuthorizationRequestModalComponent removido - se carga dinámicamente cuando se necesita
+    // AuthorizationViewComponent removido - solo se usa en módulos lazy
+    // CrearDepartamentoComponent removido - solo se usa en módulos lazy
+    // CrearAreaEmpresaComponent removido - solo se usa en módulos lazy
+    // SelectSearchComponent removido - solo se usa en módulos lazy
   ],
   declarations: [
     // Todos los componentes son standalone, se importan arriba
@@ -114,7 +109,6 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     ReactiveFormsModule,
     RouterModule,
     PipesModule,
-    TagInputModule,
     NgSelectModule,
     NgxMaskDirective,
     NgxMaskPipe,
@@ -122,7 +116,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     BusquedaProductoComponent,
     CrearProductoComponent,
     ClienteDireccionComponent,
-    MultimediaComponent,
+    // MultimediaComponent removido
     BuscadorProductosComponent,
     BuscadorClientesComponent,
     BuscadorMateriasPrimasComponent,
@@ -142,18 +136,18 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
-    CrearEventoComponent,
+    // CrearEventoComponent removido
     CrearImpuestoComponent,
-    CrearProyectoComponent,
-    ThreedsModalComponent,
-    VerHistorialButtonComponent,
+    // CrearProyectoComponent removido
+    // ThreedsModalComponent removido
+    // VerHistorialButtonComponent removido - solo se usa en planillas (módulo lazy)
     // SafeHtmlPipe ahora es standalone (exportado como import standalone)
-    AlertsHaciendaComponent,
-    AuthorizationRequestModalComponent,
-    AuthorizationViewComponent,
-    CrearDepartamentoComponent,
-    CrearAreaEmpresaComponent,
-    SelectSearchComponent,
+    // AlertsHaciendaComponent removido - solo se usa en módulos lazy
+    // AuthorizationRequestModalComponent removido - se carga dinámicamente cuando se necesita
+    // AuthorizationViewComponent removido - solo se usa en módulos lazy
+    // CrearDepartamentoComponent removido - solo se usa en módulos lazy
+    // CrearAreaEmpresaComponent removido - solo se usa en módulos lazy
+    // SelectSearchComponent removido - solo se usa en módulos lazy
     // Componentes y pipes standalone
     NotFoundComponent,
     SafeHtmlPipe,

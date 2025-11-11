@@ -1,9 +1,8 @@
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes, RouterModule, NoPreloading } from '@angular/router';
 
 import { AuthGuard } from './guards/auth.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
-import { QuicklinkStrategy } from 'ngx-quicklink';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -131,7 +130,7 @@ export const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forRoot(routes, {
-    preloadingStrategy: QuicklinkStrategy
+    preloadingStrategy: NoPreloading
   })],
   exports: [RouterModule],
 })

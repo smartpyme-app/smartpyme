@@ -1,5 +1,5 @@
 import { NgModule } from '@angular/core';
-import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { SumPipe } from './sum.pipe';
 import { AvgPipe } from './avg.pipe';
 import { TruncatePipe } from './truncate.pipe';
@@ -30,14 +30,10 @@ import { CurrencyPipe as CustomCurrencyPipe } from './currency-format.pipe';
     CustomCurrencyPipe,
     CurrencyPipe,
     DatePipe,
-    DecimalPipe,
-    PercentPipe,
   ],
   providers: [
     CurrencyPipe,
     DatePipe,
-    DecimalPipe,
-    PercentPipe,
   ]
 })
 export class PipesModule { }

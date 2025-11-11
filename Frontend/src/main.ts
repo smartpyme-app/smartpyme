@@ -3,7 +3,7 @@ import { importProvidersFrom } from '@angular/core';
 import { provideRouter, withPreloading } from '@angular/router';
 import { provideHttpClient, withInterceptorsFromDi, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { QuicklinkStrategy } from 'ngx-quicklink';
+import { NoPreloading } from '@angular/router';
 import { provideEnvironmentNgxMask } from 'ngx-mask';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -41,7 +41,7 @@ bootstrapApplication(AppComponent, {
         registrationStrategy: 'registerWhenStable:30000'
       })
     ),
-    provideRouter(routes, withPreloading(QuicklinkStrategy)),
+    provideRouter(routes, withPreloading(NoPreloading)),
     provideHttpClient(withInterceptorsFromDi()),
     provideAnimations(),
     provideEnvironmentNgxMask(),

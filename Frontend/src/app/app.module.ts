@@ -8,7 +8,6 @@ import { AuthorizationInterceptor } from '@services/Authorization/authorization.
 
 import { AppRoutingModule } from './app.routing.module';
 import { JwtInterceptor } from '@services/JwtInterceptor';
-import { QuicklinkModule } from 'ngx-quicklink';
 import { provideEnvironmentNgxMask } from 'ngx-mask';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { AuthGuard } from '@guards/auth.guard';
@@ -46,7 +45,6 @@ import { ServiceWorkerModule } from '@angular/service-worker';
         AppRoutingModule,
         ModalModule.forRoot(),
         SharedModule,
-        QuicklinkModule,
         LayoutModule,
         ReactiveFormsModule,
         HasPermissionDirective, // Directiva standalone
