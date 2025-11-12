@@ -234,7 +234,7 @@ class PlanillasImport implements ToCollection, WithHeadingRow
     {
         // Normalizar nombre completo (quitar espacios extras)
         $nombreCompleto = preg_replace('/\s+/', ' ', trim($nombreCompleto));
-        
+    
         // Si hay código, buscar SOLO por código (más confiable)
         if (!empty($codigoEmpleado)) {
             $codigoEmpleado = trim($codigoEmpleado);

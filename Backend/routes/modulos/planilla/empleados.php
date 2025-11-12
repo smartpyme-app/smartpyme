@@ -20,6 +20,7 @@ Route::group(['prefix' => 'empleados', 'middleware' => ['auth:api']], function (
         Route::get('contratos/{id}/descargar', 'descargarContrato');
         Route::post('{id}/documentos', 'subirDocumentos');
         Route::get('{id}/documentos', 'getDocumentos');
+        Route::post('/importar', 'importar');
 
 
     });
