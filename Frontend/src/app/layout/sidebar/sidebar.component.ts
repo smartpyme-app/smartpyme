@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
@@ -50,7 +50,11 @@ export class SidebarComponent implements OnInit {
 
     searchControl = new FormControl();
 
-    constructor(public apiService: ApiService, public alertService: AlertService) {}
+    constructor(
+        public apiService: ApiService,
+        public alertService: AlertService,
+        private router: Router
+    ) {}
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {

@@ -22,6 +22,7 @@
             "tsConfig": "tsconfig.app.json",
             "allowedCommonJsDependencies": [
               "chart.js",
+              "chartist",
               "sweetalert2",
               "moment",
               "google-libphonenumber",
@@ -39,6 +40,7 @@
               "src/assets/css/template.min.css",
               "node_modules/@fortawesome/fontawesome-free/css/all.min.css",
               "node_modules/@ng-select/ng-select/themes/default.theme.css",
+              "node_modules/chartist/dist/index.css",
               "src/styles.css"
             ],
             "scripts": [

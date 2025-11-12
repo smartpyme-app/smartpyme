@@ -56,7 +56,7 @@ export class AppComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         
         // Cargar constantes si no están disponibles
-        this.loadConstantsIfNeeded();
+        // this.loadConstantsIfNeeded();
         
         // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
         /* 
