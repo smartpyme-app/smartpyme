@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -6,8 +9,11 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-ajuste',
-  templateUrl: './ajuste.component.html'
+    selector: 'app-ajuste',
+    templateUrl: './ajuste.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class AjusteComponent implements OnInit {
 

@@ -1,18 +1,22 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3>
-        <ng-container *ngIf="!venta.cotizacion">
+        @if (!venta.cotizacion) {
             Nueva venta
-        </ng-container>
-        <ng-container *ngIf="venta.cotizacion">
+        }
+        @if (venta.cotizacion) {
             {{editar ? 'Editar' : 'Nueva'}} cotización
-        </ng-container>
+        }
     </h3>
-    <button *ngIf="venta.cotizacion == 1" class="btn btn-light text-danger" routerLink="/cotizaciones"><i
-            class="fa fa-arrow-left"></i> Regresar
-    </button>
-    <button *ngIf="venta.cotizacion != 1" class="btn btn-light text-danger" routerLink="/ventas"><i
-            class="fa fa-arrow-left"></i> Regresar
-    </button>
+    @if (venta.cotizacion == 1) {
+        <button class="btn btn-light text-danger" routerLink="/cotizaciones"><i
+                class="fa fa-arrow-left"></i> Regresar
+        </button>
+    }
+    @if (venta.cotizacion != 1) {
+        <button class="btn btn-light text-danger" routerLink="/ventas"><i
+                class="fa fa-arrow-left"></i> Regresar
+        </button>
+    }
 </div>
 
 <section class="card border-0 p-3 mb-3">
@@ -50,7 +54,9 @@
             <label for="id_documento">Documento</label>
             <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)"
                 class="form-select">
-                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                @for (documento of documentos; track documento.id) {
+                    <option [value]="documento.id">{{ documento.nombre }}</option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-4">
@@ -60,29 +66,35 @@
         </div>
 
     </div>
-    <div class="row" *ngIf="opAvanzadas">
-        <div class="form-group col-md-4 col-lg-4">
-            <label for="fecha">Fecha</label><br>
-            <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+    @if (opAvanzadas) {
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-4">
+                <label for="fecha">Fecha</label><br>
+                <input type="date" class="form-control" [(ngModel)]="venta.fecha" name="fecha" id="fecha">
+            </div>
+            <div class="form-group col-md-4 col-lg-4">
+                <label for="id_usuario">Usuario</label>
+                <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
+                    <option value="">Seleccione aquí</option>
+                    @for (usuario of usuarios | filter:'id_sucursal':venta.id_sucursal; track usuario.id) {
+                        <option [value]="usuario.id">
+                            {{ usuario.name }}
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="form-group col-md-4 col-lg-4">
+                <label for="id_bodega">Bodega</label>
+                <select name="id_bodega" [(ngModel)]="venta.id_bodega" class="form-select" (change)="setBodega()">
+                    @for (bodega of bodegas; track bodega.id) {
+                        <option [value]="bodega.id">
+                            {{ bodega.nombre }}
+                        </option>
+                    }
+                </select>
+            </div>
         </div>
-        <div class="form-group col-md-4 col-lg-4">
-            <label for="id_usuario">Usuario</label>
-            <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
-                <option value="">Seleccione aquí</option>
-                <option [value]="usuario.id" *ngFor="let usuario of usuarios | filter:'id_sucursal':venta.id_sucursal">
-                    {{ usuario.name }}
-                </option>
-            </select>
-        </div>
-        <div class="form-group col-md-4 col-lg-4">
-            <label for="id_bodega">Bodega</label>
-            <select name="id_bodega" [(ngModel)]="venta.id_bodega" class="form-select" (change)="setBodega()">
-                <option [value]="bodega.id" *ngFor="let bodega of bodegas">
-                    {{ bodega.nombre }}
-                </option>
-            </select>
-        </div>
-    </div>
+    }
 
 </section>
 
@@ -190,78 +202,89 @@
 <!--</section>-->
 
 
-<section class="card border-0 p-3 mb-3" *ngIf="venta.cotizacion == 1 && customField">
-    <h6>Campos personalizados a utilizar</h6>
-    <div class="row">
-        <div class="col-md-12">
-            <ng-select [items]="customFields.data" [multiple]="true" bindLabel="name" bindValue="id"
-                placeholder="Seleccione campos personalizados" [(ngModel)]="selectedCustomFields"
-                (change)="updateCustomFields()" [clearable]="false" [searchable]="true"
-                class="form-control form-select p-0" dropdownPosition="bottom" [loading]="loading">
-                <ng-template ng-option-tmp let-item="item">
-                    <div *ngIf="
-                item.field_type !== 'select' ||
-                (item.field_type === 'select' && item.values?.length > 0)
-              ">
-                        {{ item.name }}
-                        <small class="text-muted">({{ item.field_type }})</small>
-                    </div>
-                </ng-template>
-                <ng-template ng-notfound-tmp>
-                    <div class="text-muted p-2">
-                        No hay campos personalizados disponibles
-                    </div>
-                </ng-template>
-            </ng-select>
+@if (venta.cotizacion == 1 && customField) {
+    <section class="card border-0 p-3 mb-3">
+        <h6>Campos personalizados a utilizar</h6>
+        <div class="row">
+            <div class="col-md-12">
+                <ng-select [items]="customFields.data" [multiple]="true" bindLabel="name" bindValue="id"
+                    placeholder="Seleccione campos personalizados" [(ngModel)]="selectedCustomFields"
+                    (change)="updateCustomFields()" [clearable]="false" [searchable]="true"
+                    class="form-control form-select p-0" dropdownPosition="bottom" [loading]="loading">
+                    <ng-template ng-option-tmp let-item="item">
+                        @if (
+                            item.field_type !== 'select' ||
+                            (item.field_type === 'select' && item.values?.length > 0)
+                        ) {
+                            <div>
+                                {{ item.name }}
+                                <small class="text-muted">({{ item.field_type }})</small>
+                            </div>
+                        }
+                    </ng-template>
+                    <ng-template ng-notfound-tmp>
+                        <div class="text-muted p-2">
+                            No hay campos personalizados disponibles
+                        </div>
+                    </ng-template>
+                </ng-select>
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+}
 
-<section class="card border-0 p-3 mb-3"
-    *ngIf="venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación'">
-    <div class="row">
-        <h6 class="mt-3">Detalles de exportación</h6>
-        <div class="form-group col-md-6 col-lg-4">
-            <label for="tipo_item_export">Tipo de Ítem</label>
-            <ng-select name="tipo_item_export" [(ngModel)]="venta.tipo_item_export" placeholder="Seleccione aquí"
-                class="form-select p-0">
-                <ng-option value="1">Bienes</ng-option>
-                <ng-option value="2">Servicios</ng-option>
-                <ng-option value="3">Ambos</ng-option>
-                <ng-option value="4">Otros</ng-option>
-            </ng-select>
+@if (venta.cotizacion != 1 && venta.nombre_documento == 'Factura de exportación') {
+    <section class="card border-0 p-3 mb-3">
+        <div class="row">
+            <h6 class="mt-3">Detalles de exportación</h6>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="tipo_item_export">Tipo de Ítem</label>
+                <ng-select name="tipo_item_export" [(ngModel)]="venta.tipo_item_export" placeholder="Seleccione aquí"
+                    class="form-select p-0">
+                    <ng-option value="1">Bienes</ng-option>
+                    <ng-option value="2">Servicios</ng-option>
+                    <ng-option value="3">Ambos</ng-option>
+                    <ng-option value="4">Otros</ng-option>
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="cod_incoterm">Tipo de Incoterm</label>
+                <ng-select name="cod_incoterm" [(ngModel)]="venta.cod_incoterm" placeholder="Seleccione aquí"
+                    (change)="setIncoterm()" class="form-select p-0">
+                    @for (item of incoterms; track item.cod) {
+                        <ng-option [value]="item.cod">{{ item.nombre }}</ng-option>
+                    }
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6 col-lg-4">
+                <label for="recinto_fiscal">Recinto Fiscal</label>
+                <ng-select name="recinto_fiscal" [(ngModel)]="venta.recinto_fiscal" placeholder="Seleccione aquí"
+                    class="form-select p-0">
+                    @for (item of recintos; track item.cod) {
+                        <ng-option [value]="item.cod">{{ item.nombre }}</ng-option>
+                    }
+                </ng-select>
+            </div>
+            <div class="form-group col-md-6 col-lg-6">
+                <label for="regimen">Régimen</label>
+                <ng-select name="regimen" [(ngModel)]="venta.regimen" placeholder="Seleccione aquí" class="form-select p-0">
+                    @for (item of regimenes; track item.cod) {
+                        <ng-option [value]="item.cod">{{ item.nombre }}</ng-option>
+                    }
+                </ng-select>
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="seguro">Seguro</label><br>
+                <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.seguro"
+                    name="seguro">
+            </div>
+            <div class="form-group col-md-4 col-lg-3">
+                <label for="flete">Flete</label><br>
+                <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.flete" name="flete">
+            </div>
         </div>
-        <div class="form-group col-md-6 col-lg-4">
-            <label for="cod_incoterm">Tipo de Incoterm</label>
-            <ng-select name="cod_incoterm" [(ngModel)]="venta.cod_incoterm" placeholder="Seleccione aquí"
-                (change)="setIncoterm()" class="form-select p-0">
-                <ng-option [value]="item.cod" *ngFor="let item of incoterms">{{ item.nombre }}</ng-option>
-            </ng-select>
-        </div>
-        <div class="form-group col-md-6 col-lg-4">
-            <label for="recinto_fiscal">Recinto Fiscal</label>
-            <ng-select name="recinto_fiscal" [(ngModel)]="venta.recinto_fiscal" placeholder="Seleccione aquí"
-                class="form-select p-0">
-                <ng-option [value]="item.cod" *ngFor="let item of recintos">{{ item.nombre }}</ng-option>
-            </ng-select>
-        </div>
-        <div class="form-group col-md-6 col-lg-6">
-            <label for="regimen">Régimen</label>
-            <ng-select name="regimen" [(ngModel)]="venta.regimen" placeholder="Seleccione aquí" class="form-select p-0">
-                <ng-option [value]="item.cod" *ngFor="let item of regimenes">{{ item.nombre }}</ng-option>
-            </ng-select>
-        </div>
-        <div class="form-group col-md-4 col-lg-3">
-            <label for="seguro">Seguro</label><br>
-            <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.seguro"
-                name="seguro">
-        </div>
-        <div class="form-group col-md-4 col-lg-3">
-            <label for="flete">Flete</label><br>
-            <input type="number" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.flete" name="flete">
-        </div>
-    </div>
-</section>
+    </section>
+}
 
 <section class="card border-0 p-3 mb-3">
     <h6 class="mt-3">Productos y servicios</h6>
@@ -291,46 +314,61 @@
                         </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre }} </td>
-                        <td style="width: 150px;" class="text-right">
-                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
-                            <span *ngIf="impuesto?.monto > 0"
-                                tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje
-                                }}</span>
-                        </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="venta.retencion">
-                        <td class="text-right"> <b>Retención (1%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido |
-                            currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="venta.renta">
-                        <td class="text-right"> <b>Renta (10%)</b></td>
-                        <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida |
-                            currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="venta.exenta > 0">
-                        <td class="text-right"> <b>Ventas Exentas</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.exenta |
-                                currency:'USD':'symbol':'1.2'}}</b> </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="venta.no_sujeta > 0">
-                        <td class="text-right"> <b>Ventas No Sujetas</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta |
-                                currency:'USD':'symbol':'1.2'}}</b> </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
-                    <tr *ngIf="venta.cuenta_a_terceros > 0">
-                        <td class="text-right"> <b>Cuenta a terceros</b> </td>
-                        <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros |
-                                currency:'USD':'symbol':'1.2'}}</b> </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
+                    @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
+                        <tr>
+                            <td class="text-right"> {{ impuesto.nombre }} </td>
+                            <td style="width: 150px;" class="text-right">
+                                @if (!impuesto?.monto) {
+                                    <span>%{{ impuesto.porcentaje }}</span>
+                                }
+                                @if (impuesto?.monto > 0) {
+                                    <span tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje
+                                        }}</span>
+                                }
+                            </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
+                    @if (venta.retencion) {
+                        <tr>
+                            <td class="text-right"> <b>Retención (1%)</b></td>
+                            <td style="width: 150px;" class="text-right"> {{ venta.iva_retenido |
+                                currency:'USD':'symbol':'1.2'}} </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
+                    @if (venta.renta) {
+                        <tr>
+                            <td class="text-right"> <b>Renta (10%)</b></td>
+                            <td style="width: 150px;" class="text-right"> {{ venta.renta_retenida |
+                                currency:'USD':'symbol':'1.2'}} </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
+                    @if (venta.exenta > 0) {
+                        <tr>
+                            <td class="text-right"> <b>Ventas Exentas</b> </td>
+                            <td style="width: 150px;" class="text-right"><b> {{ venta.exenta |
+                                    currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
+                    @if (venta.no_sujeta > 0) {
+                        <tr>
+                            <td class="text-right"> <b>Ventas No Sujetas</b> </td>
+                            <td style="width: 150px;" class="text-right"><b> {{ venta.no_sujeta |
+                                    currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
+                    @if (venta.cuenta_a_terceros > 0) {
+                        <tr>
+                            <td class="text-right"> <b>Cuenta a terceros</b> </td>
+                            <td style="width: 150px;" class="text-right"><b> {{ venta.cuenta_a_terceros |
+                                    currency:'USD':'symbol':'1.2'}}</b> </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total |
@@ -368,74 +406,95 @@
     </div>
     <div class="row">
 
-        <div class="row" *ngIf="opAvanzadas">
-            <div class="form-group col-md-4 col-lg-2">
-                <label for="id_documento">Documento</label>
-                <select name="id_documento" [(ngModel)]="venta.id_documento"
-                    (change)="setDocumento($event.target.value)" class="form-select">
-                    <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
-                </select>
-            </div>
-            <div class="form-group col-md-12 col-lg-5" *ngIf="venta.cotizacion != 1">
-                <label for="observaciones">Observaciones:</label><br>
-                <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones"
-                    name="observaciones">
-            </div>
-            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
-                <label for="">Proyecto</label>
-                <div class="input-group flex-nowrap">
-                    <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto"
-                        class="form-select p-0">
-                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                            {{ proyecto.nombre }}
-                        </ng-option>
-                    </ng-select>
-                    <app-crear-proyecto [id_proyecto]="venta.id_proyecto"
-                        (update)="setProyecto($event)"></app-crear-proyecto>
+        @if (opAvanzadas) {
+            <div class="row">
+                <div class="form-group col-md-4 col-lg-2">
+                    <label for="id_documento">Documento</label>
+                    <select name="id_documento" [(ngModel)]="venta.id_documento"
+                        (change)="setDocumento($event.target.value)" class="form-select">
+                        @for (documento of documentos; track documento.id) {
+                            <option [value]="documento.id">{{ documento.nombre }}</option>
+                        }
+                    </select>
                 </div>
+                @if (venta.cotizacion != 1) {
+                    <div class="form-group col-md-12 col-lg-5">
+                        <label for="observaciones">Observaciones:</label><br>
+                        <input type="text" class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones"
+                            name="observaciones">
+                    </div>
+                }
+                @if (apiService.auth_user().empresa.modulo_proyectos) {
+                    <div class="form-group col-md-12 col-lg-3">
+                        <label for="">Proyecto</label>
+                        <div class="input-group flex-nowrap">
+                            <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto"
+                                class="form-select p-0">
+                                @for (proyecto of proyectos; track proyecto.id) {
+                                    <ng-option [value]="proyecto.id">
+                                        {{ proyecto.nombre }}
+                                    </ng-option>
+                                }
+                            </ng-select>
+                            <app-crear-proyecto [id_proyecto]="venta.id_proyecto"
+                                (update)="setProyecto($event)"></app-crear-proyecto>
+                        </div>
+                    </div>
+                }
+                @if (isColumnEnabled('columna_proyecto')) {
+                    <div class="form-group col-md-4 col-lg-3">
+                        <label for="num_identificacion">Número identificación:</label>
+                        <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion" class="form-control"
+                            id="num_identificacion" placeholder="Número de identificación">
+                    </div>
+                }
             </div>
-            <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
-                <label for="num_identificacion">Número identificación:</label>
-                <input type="text" [(ngModel)]="venta.num_identificacion" name="num_identificacion" class="form-control"
-                    id="num_identificacion" placeholder="Número de identificación">
-            </div>
-        </div>
+        }
 
 
         <!-- Estado: {{ venta.estado }} -->
         <div class="row">
-            <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
-                <div class="form-switch border rounded">
-                    <label for="credito">Venta al crédito</label>
-                    <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()"
-                        [(ngModel)]="venta.credito" name="venta.credito">
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3 without-label">
+                    <div class="form-switch border rounded">
+                        <label for="credito">Venta al crédito</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setCredito()"
+                            [(ngModel)]="venta.credito" name="venta.credito">
+                    </div>
                 </div>
-            </div>
-            <div class="form-group col-md-6 col-lg-3 without-label"
-                *ngIf="apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1"
-                [hidden]="!venta.credito">
-                <div class="form-switch border rounded">
-                    <label for="consigna">Consigna</label>
-                    <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch"
-                        (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+            }
+            @if (apiService.auth_user().empresa.venta_consigna && venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3 without-label" [hidden]="!venta.credito">
+                    <div class="form-switch border rounded">
+                        <label for="consigna">Consigna</label>
+                        <input [disabled]="!venta.credito" class="form-check-input float-end" type="checkbox" role="switch"
+                            (change)="setConsigna()" [(ngModel)]="venta.consigna" name="venta.credito">
+                    </div>
                 </div>
-                <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion == 1">
+            }
+            @if (venta.cotizacion == 1) {
+                <div class="form-group col-md-4 col-lg-3">
                     <label for="fecha_expiracion">Fecha de expiración:</label><br>
                     <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion"
                         id="fecha_expiracion">
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="fecha_pago">Fecha de pago:</label><br>
                     <input type="date" class="form-control" [(ngModel)]="venta.fecha_pago" name="fecha_pago"
                         id="fecha_pago">
                 </div>
-                <div class="form-group col-md-6 col-lg-3 without-label" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3 without-label">
                     <div class="form-switch bg-light-info rounded">
                         <label for="recurrente">Recurrente</label>
                         <input class="form-check-input float-end" type="checkbox" role="switch"
                             [(ngModel)]="venta.recurrente" name="venta.recurrente">
                     </div>
                 </div>
+            }
                 <div class="form-group col-md-6 col-lg-3 without-label">
                     <div class="form-switch bg-light-info rounded">
                         <label for="cobrar_impuestos">Con IVA ({{ apiService.auth_user().empresa.iva | number:'1.0'
@@ -458,48 +517,66 @@
                             [(ngModel)]="venta.renta" name="renta">
                     </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="forma_pago">Método de pago</label>
                     <div class="input-group flex-nowrap">
                         <select name="forma_pago" (change)="cambioMetodoDePago()" [(ngModel)]="venta.forma_pago"
                             class="form-select">
-                            <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                            @for (forma of formaPagos; track forma.id || forma.nombre) {
+                                <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                            }
                         </select>
                         <app-metodos-de-pago [venta]="venta" [formaPagos]="formaPagos"
                             (update)="totalPorMetodoDePago()"></app-metodos-de-pago>
                     </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-3"
-                    *ngIf="venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi'">
+            }
+            @if (venta.forma_pago != 'Efectivo' && venta.forma_pago != 'Wompi') {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="detalle_banco">Bancos</label>
                     <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
                         <option value="">Seleccione aquí</option>
-                        <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
+                        @for (banco of bancos; track banco.id || banco.nombre) {
+                            <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                        }
                     </select>
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="id_canal">Canal</label>
                     <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
                         <option value="">Seleccione aquí</option>
-                        <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
+                        @for (canal of canales; track canal.id) {
+                            <option [value]="canal.id">{{ canal.nombre }}</option>
+                        }
                     </select>
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="id_vendedor">Vendedor</label>
                     <select name="id_vendedor" [(ngModel)]="venta.id_vendedor" class="form-select">
                         <option value="">Seleccione aquí</option>
-                        <option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                            {{ usuario.codigo ? usuario.codigo + ' - ' : '' }} {{ usuario.name }}
-                        </option>
+                        @for (usuario of usuarios; track usuario.id) {
+                            <option [value]="usuario.id">
+                                {{ usuario.codigo ? usuario.codigo + ' - ' : '' }} {{ usuario.name }}
+                            </option>
+                        }
                     </select>
 
                 </div>
-                <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
+            }
+            @if (venta.cotizacion == 1) {
+                <div class="form-group col-md-12 col-lg-12">
                     <label for="observaciones">Términos de venta:</label><br>
                     <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones"
                         name="observaciones" cols="30" rows="3"></textarea>
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="monto_pago">Efectivo recibido:</label><br>
                     <div class="input-group">
                         <!-- <div class="input-group-text">$</div> -->
@@ -510,7 +587,9 @@
                             [(ngModel)]="venta.monto_pago" name="monto_pago" id="monto_pago">
                     </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-3" *ngIf="venta.cotizacion != 1">
+            }
+            @if (venta.cotizacion != 1) {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="cambio">Cambio:</label><br>
                     <div class="input-group">
                         <!-- <div class="input-group-text">$</div> -->
@@ -520,20 +599,24 @@
                             id="cambio">
                     </div>
                 </div>
-                <div class="form-group col-md-6 col-lg-3"
-                    *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            }
+            @if (venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras') {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="num_orden">Número de orden:</label><br>
                     <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden"
                         id="num_orden">
                 </div>
-                <div class="form-group col-md-6 col-lg-3"
-                    *ngIf="venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras'">
+            }
+            @if (venta.cotizacion != 1 && apiService.auth_user().empresa.pais == 'Honduras') {
+                <div class="form-group col-md-6 col-lg-3">
                     <label for="num_orden_exento">Número de orden exento:</label><br>
                     <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento"
                         id="num_orden_exento">
                 </div>
-            </div>
-            <div class="row" *ngIf="apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1">
+            }
+        </div>
+        @if (apiService.auth_user().empresa.editar_descripcion_venta && venta.cotizacion != 1) {
+            <div class="row">
                 <div class="form-group col-md-12 col-lg-6 without-label">
                     <div class="form-switch bg-light-info rounded">
                         <label for="descripcion_personalizada">Agrupar detalles de venta y personalizar
@@ -542,33 +625,39 @@
                             [(ngModel)]="venta.descripcion_personalizada" name="compra.descripcion_personalizada">
                     </div>
                 </div>
-                <div class="form-group col-md-12 col-lg-6"
-                    *ngIf="venta.cotizacion != 1 && venta.descripcion_personalizada">
-                    <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
-                    <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion"
-                        name="descripcion_impresion" rows="2"></textarea>
-                </div>
+                @if (venta.cotizacion != 1 && venta.descripcion_personalizada) {
+                    <div class="form-group col-md-12 col-lg-6">
+                        <label for="descripcion_impresion">Descripción a mostrar el la impresión del documento:</label>
+                        <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion"
+                            name="descripcion_impresion" rows="2"></textarea>
+                    </div>
+                }
             </div>
+        }
 
-            <div class="row">
-                <div class="form-group col-md-4 col-lg-3" *ngIf="venta.cotizacion == 1">
+        <div class="row">
+            @if (venta.cotizacion == 1) {
+                <div class="form-group col-md-4 col-lg-3">
                     <label for="fecha_expiracion">Fecha de expiración:</label><br>
                     <input type="date" class="form-control" [(ngModel)]="venta.fecha_expiracion" name="fecha_expiracion"
                         id="fecha_expiracion">
                 </div>
-            </div>
+            }
+        </div>
 
+        <div class="form-group col-md-12 col-lg-12">
+            <label for="terminos_de_venta">Términos de venta:</label><br>
+            <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.terminos_de_venta" name="terminos_de_venta"
+                        cols="30" rows="3"></textarea>
+        </div>
+
+        @if (venta.cotizacion == 1) {
             <div class="form-group col-md-12 col-lg-12">
-                <label for="terminos_de_venta">Términos de venta:</label><br>
-                <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.terminos_de_venta" name="terminos_de_venta"
-                            cols="30" rows="3"></textarea>
-            </div>
-
-            <div class="form-group col-md-12 col-lg-12" *ngIf="venta.cotizacion == 1">
                 <label for="observaciones">Observaciones:</label><br>
                 <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.observaciones" name="observaciones"
                             cols="30" rows="3"></textarea>
             </div>
+        }
 
             <div class="row">
                 <div class="form-group col-6 col-lg-4">
@@ -606,19 +695,24 @@
             </div>
 
             <!-- Opciones avanzadas de facturación -->
-            <div class="row" *ngIf="opAvanzadasFacturacion">
-                <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6 col-lg-3">
-                    <label for="">Proyecto</label>
-                    <div class="input-group flex-nowrap">
-                    <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto"
-                                class="form-select p-0">
-                        <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                        {{ proyecto.nombre }}
-                        </ng-option>
-                    </ng-select>
-                    <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
-                    </div>
-                </div>
+            @if (opAvanzadasFacturacion) {
+                <div class="row">
+                    @if (apiService.auth_user().empresa.modulo_proyectos) {
+                        <div class="form-group col-md-6 col-lg-3">
+                            <label for="">Proyecto</label>
+                            <div class="input-group flex-nowrap">
+                            <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="venta.id_proyecto"
+                                        class="form-select p-0">
+                                @for (proyecto of proyectos; track proyecto.id) {
+                                    <ng-option [value]="proyecto.id">
+                                    {{ proyecto.nombre }}
+                                    </ng-option>
+                                }
+                            </ng-select>
+                            <app-crear-proyecto [id_proyecto]="venta.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+                            </div>
+                        </div>
+                    }
 
                 <div class="col-md-6 col-lg-3 without-label">
                     <div class="form-switch bg-light-info rounded">
@@ -636,20 +730,31 @@
                     </div>
                 </div>
 
-                
-            </div>
+                    
+                </div>
+            }
             <div class="row mt-5">
                 <div class="col-md-12">
                     <button type="submit" (click)="onFacturar()" [disabled]="saving || emiting"
                         class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
-                        <span *ngIf="!saving && !emiting">
-                            Procesar
-                            <span *ngIf="venta.cotizacion == 1">cotización</span>
-                            <span *ngIf="venta.cotizacion != 1">venta</span>
-                            <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-                        </span>
-                        <span *ngIf="saving && !emiting">Procesando...</span>
-                        <span *ngIf="emiting">Emitiendo...</span>
+                        @if (!saving && !emiting) {
+                            <span>
+                                Procesar
+                                @if (venta.cotizacion == 1) {
+                                    <span>cotización</span>
+                                }
+                                @if (venta.cotizacion != 1) {
+                                    <span>venta</span>
+                                }
+                                <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                            </span>
+                        }
+                        @if (saving && !emiting) {
+                            <span>Procesando...</span>
+                        }
+                        @if (emiting) {
+                            <span>Emitiendo...</span>
+                        }
                     </button>
                     <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar venta (F10)">
                 Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
@@ -854,9 +959,15 @@
                         <div class="row text-center">
                             <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total |
                                     currency:'USD':'symbol':'1.2' }}</span></h4>
-                            <h4 class="col-md-6">Vuelto: <span class="badge badge-info" *ngIf="venta.recibido">{{
-                                    venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span> <span
-                                    class="badge badge-info" *ngIf="!venta.recibido">$0.00</span></h4>
+                            <h4 class="col-md-6">Vuelto: 
+                                @if (venta.recibido) {
+                                    <span class="badge badge-info">{{
+                                        venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span>
+                                }
+                                @if (!venta.recibido) {
+                                    <span class="badge badge-info">$0.00</span>
+                                }
+                            </h4>
                             <div class="form-group text-center col-md-12 my-3">
                                 <label for="recibido">Recibido:</label>
                                 <input type="number" name="recibido" [(ngModel)]="venta.recibido"
@@ -864,10 +975,12 @@
                                     class="form-control text-center">
                             </div>
 
-                            <div class="form-group col-md-12 mb-3" *ngIf="!venta.nota">
-                                <label for="nota">Nota:</label><br>
-                                <input type="text" class="form-control" [(ngModel)]="venta.nota" name="nota" id="nota">
-                            </div>
+                            @if (!venta.nota) {
+                                <div class="form-group col-md-12 mb-3">
+                                    <label for="nota">Nota:</label><br>
+                                    <input type="text" class="form-control" [(ngModel)]="venta.nota" name="nota" id="nota">
+                                </div>
+                            }
 
                             <label class="mt-4" style="font-size: 16px;"><input style="width: 15px; height: 15px;"
                                     type="checkbox" [(ngModel)]="imprimir" name="imprimir"> Imprimir</label>
@@ -877,8 +990,12 @@
                             <div class="col-md-12 mt-4">
                                 <button type="submit" class="btn btn-primary btn-block tcla-F12" id="submit"
                                     [disabled]="loading">
-                                    <span *ngIf="!loading">Cobrar <small>(F12)</small></span>
-                                    <span *ngIf="loading">Cobrando...</span>
+                                    @if (!loading) {
+                                        <span>Cobrar <small>(F12)</small></span>
+                                    }
+                                    @if (loading) {
+                                        <span>Cobrando...</span>
+                                    }
                                 </button>
                             </div>
                         </div>
@@ -900,8 +1017,12 @@
                             </div>
                             <div class="col-md-12">
                                 <button [disabled]="loading || !supervisor.codigo" class="btn btn-primary btn-block">
-                                    <span *ngIf="!loading">Guardar</span>
-                                    <span *ngIf="loading">Guardando...</span>
+                                    @if (!loading) {
+                                        <span>Guardar</span>
+                                    }
+                                    @if (loading) {
+                                        <span>Guardando...</span>
+                                    }
                                 </button>
                             </div>
                         </form>

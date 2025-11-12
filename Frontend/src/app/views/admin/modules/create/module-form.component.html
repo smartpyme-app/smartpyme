@@ -53,13 +53,16 @@
                                         #displayName="ngModel"
                                         placeholder="Ej: Gestión de Usuarios">
                                     <small class="text-muted">Ingrese un nombre descriptivo y fácil de entender</small>
-                                    <div *ngIf="displayName.invalid && (displayName.dirty || displayName.touched)" 
-                                        class="text-danger mt-1 small">
-                                        <small *ngIf="displayName.errors?.['required']">
+                                    @if (displayName.invalid && (displayName.dirty || displayName.touched)) {
+                                      <div class="text-danger mt-1 small">
+                                        @if (displayName.errors?.['required']) {
+                                          <small>
                                             <i class="fas fa-exclamation-circle me-1"></i>
                                             El nombre es requerido
-                                        </small>
-                                    </div>
+                                          </small>
+                                        }
+                                      </div>
+                                    }
                                 </div>
 
                                 <!-- Technical Name -->
@@ -106,7 +109,8 @@
 
                                     <!-- Submodules List -->
                                     <div class="submodules-list">
-                                        <div class="bg-light p-3 rounded mb-3" *ngFor="let submodule of module.submodules; let i = index">
+                                        @for (submodule of module.submodules; track submodule.name || $index; let i = $index) {
+                                          <div class="bg-light p-3 rounded mb-3">
                                             <!-- <div class="d-flex justify-content-between align-items-center mb-3">
                                                 <h6 class="mb-0">Submódulo {{i + 1}}</h6>
                                                 <button type="button" 
@@ -127,11 +131,14 @@
                                                 [value]="submodule.name"
                                                 readonly
                                                 disabled>
-                                        </div>
+                                          </div>
+                                        }
 
-                                        <div class="text-center p-4 bg-light rounded" *ngIf="!module.submodules?.length">
+                                        @if (!module.submodules?.length) {
+                                          <div class="text-center p-4 bg-light rounded">
                                             <p class="text-muted mb-0">No hay submódulos agregados</p>
-                                        </div>
+                                          </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -152,21 +159,27 @@
                                 <div class="mb-4">
                                     <small class="text-muted d-block mb-2">Módulo: {{module.name || 'nombre_modulo'}}</small>
                                     <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-primary" *ngFor="let perm of getDefaultModulePermissions()">
+                                        @for (perm of getDefaultModulePermissions(); track perm) {
+                                          <span class="badge bg-primary">
                                             {{perm}}
-                                        </span>
+                                          </span>
+                                        }
                                     </div>
                                 </div>
 
                                 <!-- Submodule Permissions -->
-                                <div class="mb-3" *ngFor="let submodule of module.submodules">
+                                @for (submodule of module.submodules; track submodule.name || $index) {
+                                  <div class="mb-3">
                                     <small class="text-muted d-block mb-2">Submódulo: {{submodule.name}}</small>
                                     <div class="d-flex flex-wrap gap-2">
-                                        <span class="badge bg-info" *ngFor="let perm of getDefaultSubmodulePermissions(submodule.name)">
+                                        @for (perm of getDefaultSubmodulePermissions(submodule.name); track perm) {
+                                          <span class="badge bg-info">
                                             {{perm}}
-                                        </span>
+                                          </span>
+                                        }
                                     </div>
-                                </div>
+                                  </div>
+                                }
                             </div>
 
                             <!-- Custom Permissions -->

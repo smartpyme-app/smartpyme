@@ -19,9 +19,11 @@
                 <label for="id_cuenta_padre">Cuenta padre:</label>
                 <select class="form-select" name="id_cuenta_padre" [(ngModel)]="cuenta.id_cuenta_padre">
                     <option [ngValue]="null">Sin cuenta padre</option>
-                    <option *ngFor="let c of cuentas" [ngValue]="c.id">
+                    @for (c of cuentas; track c.id || $index) {
+                      <option [ngValue]="c.id">
                         {{ c.codigo }} - {{ c.nombre }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6 col-lg-4">
@@ -67,8 +69,12 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar cuenta  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                  <span>Guardar cuenta  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                }
+                @if (saving) {
+                  <span>Guardando...</span>
+                }
             </button>
         </div>
     </div>

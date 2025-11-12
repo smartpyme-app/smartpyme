@@ -1,13 +1,23 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { NgxMaskDirective } from 'ngx-mask';
 
 
 @Component({
-  selector: 'app-crear-empresa',
-  templateUrl: './crear-empresa.component.html'
+    selector: 'app-crear-empresa',
+    templateUrl: './crear-empresa.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, FilterPipe, NgxMaskDirective],
+    
 })
 
 export class CrearEmpresaComponent implements OnInit {

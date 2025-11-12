@@ -16,20 +16,30 @@
         <div class="success-container">
             <div class="success-card">
               <div class="success-icon">
-                <i class="fas fa-check-circle" *ngIf="paymentResponse?.success"></i>
-                <i class="fas fa-times-circle" *ngIf="!paymentResponse?.success"></i>
+                @if (paymentResponse?.success) {
+                    <i class="fas fa-check-circle"></i>
+                }
+                @if (!paymentResponse?.success) {
+                    <i class="fas fa-times-circle"></i>
+                }
               </div>
               
-              <h2 *ngIf="paymentResponse?.success">¡Pago Exitoso!</h2>
-              <h2 *ngIf="!paymentResponse?.success">¡Pago Rechazado!</h2>
+              @if (paymentResponse?.success) {
+                  <h2>¡Pago Exitoso!</h2>
+              }
+              @if (!paymentResponse?.success) {
+                  <h2>¡Pago Rechazado!</h2>
+              }
               
-              <div class="payment-details" *ngIf="paymentResponse">
+              @if (paymentResponse) {
+                  <div class="payment-details">
                 <p>{{ paymentResponse.message }}</p>
                 <div class="amount">
-                  <strong>Monto:</strong> 
-                  {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
-                </div>
-              </div>
+                      <strong>Monto:</strong> 
+                      {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
+                    </div>
+                  </div>
+              }
               
               <div class="countdown">
                 Serás redirigido al inicio de sesión en {{ countdown }} segundos...

@@ -12,23 +12,29 @@
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_usuario">Usuario</label>
             <select name="id_usuario" [(ngModel)]="venta.id_usuario" class="form-select">
-                <option [value]="usuario.id" *ngFor="let usuario of usuarios">
-                    {{ usuario.name }}
-                </option>
+                @for (usuario of usuarios; track usuario.id || $index) {
+                    <option [value]="usuario.id">
+                        {{ usuario.name }}
+                    </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-3">
             <label for="id_sucursal">Sucursal</label>
             <select name="id_sucursal" [(ngModel)]="venta.id_sucursal" class="form-select">
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-                    {{ sucursal.nombre }}
-                </option>
+                @for (sucursal of sucursales; track sucursal.id || $index) {
+                    <option [value]="sucursal.id">
+                        {{ sucursal.nombre }}
+                    </option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-2">
             <label for="id_documento">Documento</label>
             <select name="id_documento" [(ngModel)]="venta.id_documento" (change)="setDocumento($event.target.value)" class="form-select">
-                <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                @for (documento of documentos; track documento.id || $index) {
+                    <option [value]="documento.id">{{ documento.nombre }}</option>
+                }
             </select>
         </div>
         <div class="form-group col-md-4 col-lg-2">
@@ -67,32 +73,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngIf="venta?.detalles?.length < 1">
-                        <td colspan="7" class="text-center">
-                            <p class="text-muted my-3">
-                                Agregue productos y servicios
-                            </p>
-                        </td>
-                    </tr>
-                    <tr *ngFor="let detalle of venta?.detalles; let i = index">
-                        <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
-                            {{ detalle.nombre_producto }}
-                        </td>
-                        <td style="width: 150px;">
-                            <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
-                        </td>
-                        <td style="width: 150px;"> {{ detalle.precio  | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 150px;"> {{ detalle.descuento  | currency:'USD':'symbol':'1.2'}} </td>
-                        <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
-                        <td style="width: 50px;" class="text-center">
-                            <div class="btn-group">
-                                <button class="btn btn-link" (click)="delete(detalle)">
-                                  <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                    @if (venta?.detalles?.length < 1) {
+                        <tr>
+                            <td colspan="7" class="text-center">
+                                <p class="text-muted my-3">
+                                    Agregue productos y servicios
+                                </p>
+                            </td>
+                        </tr>
+                    }
+                    @for (detalle of venta?.detalles; track detalle.id || $index) {
+                        <tr>
+                            <td>
+                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                                {{ detalle.nombre_producto }}
+                            </td>
+                            <td style="width: 150px;">
+                                <input type="number" [(ngModel)]="detalle.cantidad" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="cantidad">
+                            </td>
+                            <td style="width: 150px;"> {{ detalle.precio  | currency:'USD':'symbol':'1.2'}} </td>
+                            <td style="width: 150px;"> {{ detalle.descuento  | currency:'USD':'symbol':'1.2'}} </td>
+                            <td style="width: 100px;" class="text-right">{{ detalle.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td style="width: 50px;" class="text-center">
+                                <div class="btn-group">
+                                    <button class="btn btn-link" (click)="delete(detalle)">
+                                      <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -116,14 +126,20 @@
                         <td style="width: 150px;" class="text-right"> {{ venta.iva | currency:'USD':'symbol':'1.2'}} </td>
                         <td style="width: 50px;"></td>
                     </tr>
-                    <tr *ngFor="let impuesto of venta?.impuestos">
-                        <td class="text-right"> {{ impuesto.nombre }} </td>
-                        <td style="width: 150px;" class="text-right">
-                            <span *ngIf="!impuesto?.monto">%{{ impuesto.porcentaje }}</span>
-                            <span *ngIf="impuesto?.monto > 0" tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
-                        </td>
-                        <td style="width: 50px;"></td>
-                    </tr>
+                    @for (impuesto of venta?.impuestos; track impuesto.id || $index) {
+                        <tr>
+                            <td class="text-right"> {{ impuesto.nombre }} </td>
+                            <td style="width: 150px;" class="text-right">
+                                @if (!impuesto?.monto) {
+                                    <span>%{{ impuesto.porcentaje }}</span>
+                                }
+                                @if (impuesto?.monto > 0) {
+                                    <span tooltip="{{ impuesto.monto | currency:'USD':'symbol':'1.2'}}">%{{ impuesto.porcentaje }}</span>
+                                }
+                            </td>
+                            <td style="width: 50px;"></td>
+                        </tr>
+                    }
                     <tr>
                         <td class="text-right"> <b>Total</b> </td>
                         <td style="width: 150px;" class="text-right"><b> {{ venta.total | currency:'USD':'symbol':'1.2'}}</b> </td>
@@ -142,21 +158,29 @@
         <div class="form-group col-md-6 col-lg-3">
             <label for="forma_pago">Forma de pago</label>
             <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
-                <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                @for (forma of formaPagos; track forma.id || $index) {
+                    <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                }
             </select>
         </div>
-        <div class="form-group col-md-6 col-lg-3" *ngIf="venta.forma_pago != 'Efectivo'">
-            <label for="detalle_banco">Bancos</label>
-            <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
-                <option value="">Seleccione aquí</option>
-                <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
-            </select>
-        </div>
+        @if (venta.forma_pago != 'Efectivo') {
+            <div class="form-group col-md-6 col-lg-3">
+                <label for="detalle_banco">Bancos</label>
+                <select name="detalle_banco" [(ngModel)]="venta.detalle_banco" class="form-select">
+                    <option value="">Seleccione aquí</option>
+                    @for (banco of bancos; track banco.id || $index) {
+                        <option [value]="banco.nombre">{{ banco.nombre }}</option>
+                    }
+                </select>
+            </div>
+        }
         <div class="form-group col-md-6 col-lg-3">
             <label for="id_canal">Canal</label>
             <select name="id_canal" [(ngModel)]="venta.id_canal" class="form-select">
                 <option value="">Seleccione aquí</option>
-                <option [value]="canal.id" *ngFor="let canal of canales">{{ canal.nombre }}</option>
+                @for (canal of canales; track canal.id || $index) {
+                    <option [value]="canal.id">{{ canal.nombre }}</option>
+                }
             </select>
         </div>
         <div class="form-group col-md-6 col-lg-3 without-label">
@@ -169,13 +193,21 @@
     <div class="row mt-5">
         <div class="col-md-12">
             <button type="submit" (click)="onFacturar()" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F8" title="Procesar venta (F8)">
-                <span *ngIf="!loading">
-                    Procesar 
-                    <span *ngIf="venta.estado == 'Pre-venta'">cotización</span> 
-                    <span *ngIf="venta.estado != 'Pre-venta'">venta</span> 
-                    <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
-                </span>
-                <span *ngIf="loading">Procesando...</span>
+                @if (!loading) {
+                    <span>
+                        Procesar 
+                        @if (venta.estado == 'Pre-venta') {
+                            <span>cotización</span>
+                        }
+                        @if (venta.estado != 'Pre-venta') {
+                            <span>venta</span>
+                        }
+                        <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                    </span>
+                }
+                @if (loading) {
+                    <span>Procesando...</span>
+                }
             </button>
         </div>
     </div>

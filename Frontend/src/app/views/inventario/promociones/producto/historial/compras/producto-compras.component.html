@@ -12,17 +12,24 @@
             </tr>
         </thead>
         <tbody>
+            @if (compras?.total < 1 && !loading) {
             <tr>
-                <td colspan="8" class="text-center" *ngIf="compras?.total < 1 && !loading">
+                <td colspan="8" class="text-center">
                     <span class="badge badge-primary">No tiene compras registradas</span>
                 </td>
-                <td colspan="8" class="text-center" *ngIf="loading">
+            </tr>
+            }
+            @if (loading) {
+            <tr>
+                <td colspan="8" class="text-center">
                     <span class="badge badge-primary">Cargando...</span>
                 </td>
             </tr>
+            }
 
-            <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
-                
+            @for (compra of compras?.data; track compra.id) {
+            <tr class="animated fadeIn">
+
                 <td>{{compra.id }}</td>
                 <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                 <td><a routerLink="/proveedor/{{compra.proveedor_id}}">{{compra.proveedor | truncate:30 }}</a></td>
@@ -34,14 +41,17 @@
                         <a class="btn btn-default" routerLink="/compra/{{compra.id}}" tooltip="Editar">
                             <i class="fa fa-arrow-right"></i>
                         </a>
-                    </div>  
+                    </div>
                 </td>
 
             </tr>
+            }
         </tbody>
     </table>
-    <div class="text-center" *ngIf="compras?.last_page > 1">
+    @if (compras?.last_page > 1) {
+    <div class="text-center">
         <app-pagination [items]="compras" (setPagination)="setPagination($event)"></app-pagination>
     </div>
+    }
 </div>
            

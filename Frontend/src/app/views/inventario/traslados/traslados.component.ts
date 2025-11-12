@@ -1,12 +1,23 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { TruncatePipe } from '@pipes/truncate.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
-  selector: 'app-traslados',
-  templateUrl: './traslados.component.html',
+    selector: 'app-traslados',
+    templateUrl: './traslados.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
+
 })
 export class TrasladosComponent implements OnInit {
 

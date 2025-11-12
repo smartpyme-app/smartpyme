@@ -13,90 +13,93 @@
 
 <div class="card mb-5">
     <div class="card-body">
-        <div class="row" *ngIf="loading">
-            <div class="text-muted text-center thumbler">
-              Cargando...
+        @if (loading) {
+            <div class="row">
+                <div class="text-muted text-center thumbler">
+                  Cargando...
+                </div>
             </div>
-        </div>
+        }
 
-        <div class="row" *ngIf="!loading">   
-            <h3 class="text-center mb-2">{{ producto.nombre }}</h3>
-            <div class="col-md-12">
-                <tabset type="pills" [justified]="true">
-                    <tab class="pt-3">
-                        <ng-template tabHeading>
-                            <i class="fa fa-info-circle"></i> Información
-                        </ng-template>
-                        <div class="card">
-                            <div class="card-body">
-                                <app-producto-informacion [producto]='producto'></app-producto-informacion>
+        @if (!loading) {
+            <div class="row">   
+                <h3 class="text-center mb-2">{{ producto.nombre }}</h3>
+                <div class="col-md-12">
+                    <tabset type="pills" [justified]="true">
+                        <tab class="pt-3">
+                            <ng-template tabHeading>
+                                <i class="fa fa-info-circle"></i> Información
+                            </ng-template>
+                            <div class="card">
+                                <div class="card-body">
+                                    <app-producto-informacion [producto]='producto'></app-producto-informacion>
+                                </div>
                             </div>
-                        </div>
-                    </tab>
-                    <tab class="pt-3" [disabled]="!producto.id">
-                        <ng-template tabHeading>
-                            <i class="fa fa-inbox"></i> Inventario
-                        </ng-template>
-                        <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
-                    </tab>
-                    <tab class="pt-3" [disabled]="!producto.id">
-                        <ng-template tabHeading>
-                            <i class="fa fa-object-group"></i> Composición
-                        </ng-template>
-                        <div class="card">
-                            <div class="card-body">
-                                <app-producto-composicion  [producto]='producto'></app-producto-composicion>
+                        </tab>
+                        <tab class="pt-3" [disabled]="!producto.id">
+                            <ng-template tabHeading>
+                                <i class="fa fa-inbox"></i> Inventario
+                            </ng-template>
+                            <app-producto-inventarios [producto]='producto'></app-producto-inventarios>
+                        </tab>
+                        <tab class="pt-3" [disabled]="!producto.id">
+                            <ng-template tabHeading>
+                                <i class="fa fa-object-group"></i> Composición
+                            </ng-template>
+                            <div class="card">
+                                <div class="card-body">
+                                    <app-producto-composicion  [producto]='producto'></app-producto-composicion>
+                                </div>
                             </div>
-                        </div>
-                    </tab>
-                    <tab class="pt-3" [disabled]="!producto.id">
-                        <ng-template tabHeading>
-                            <i class="fa fa-percent"></i> Promociones
-                        </ng-template>
-                        <div class="card">
-                            <div class="card-body">
-                                <app-producto-promociones  [producto]='producto'></app-producto-promociones>
+                        </tab>
+                        <tab class="pt-3" [disabled]="!producto.id">
+                            <ng-template tabHeading>
+                                <i class="fa fa-percent"></i> Promociones
+                            </ng-template>
+                            <div class="card">
+                                <div class="card-body">
+                                    <app-producto-promociones  [producto]='producto'></app-producto-promociones>
+                                </div>
                             </div>
-                        </div>
-                    </tab>
-                    <tab class="pt-3" [disabled]="!producto.id">
-                        <ng-template tabHeading>
-                            <i class="fa fa-images"></i> Imagenes
-                        </ng-template>
-                        <div class="card">
-                            <div class="card-body">
-                                <app-producto-imagenes  [producto]='producto'></app-producto-imagenes>
+                        </tab>
+                        <tab class="pt-3" [disabled]="!producto.id">
+                            <ng-template tabHeading>
+                                <i class="fa fa-images"></i> Imagenes
+                            </ng-template>
+                            <div class="card">
+                                <div class="card-body">
+                                    <app-producto-imagenes  [producto]='producto'></app-producto-imagenes>
+                                </div>
                             </div>
-                        </div>
-                    </tab>
-                    <tab class="pt-3" [disabled]="!producto.id">
-                        <ng-template tabHeading>
-                            <i class="fa fa-history"></i> Historial
-                        </ng-template>
-                        <div class="card">
-                            <div class="card-body">
-
-                                <tabset #staticTabs *ngIf="producto.id">
-                                    <tab class="pt-4" heading="Compras">
-                                        <app-producto-compras></app-producto-compras>
-                                    </tab>
-                                    <tab class="pt-4" heading="Ajustes">
-                                        <app-producto-ajustes></app-producto-ajustes>
-                                    </tab>
-                                    <tab class="pt-4" heading="Ventas">
-                                        <app-producto-ventas></app-producto-ventas>
-                                    </tab>
-                                    <tab class="pt-4" heading="Precios">
-                                        <app-producto-precios></app-producto-precios>
-                                    </tab>
-                                </tabset>
-
+                        </tab>
+                        <tab class="pt-3" [disabled]="!producto.id">
+                            <ng-template tabHeading>
+                                <i class="fa fa-history"></i> Historial
+                            </ng-template>
+                            <div class="card">
+                                <div class="card-body">
+                                    @if (producto.id) {
+                                        <tabset #staticTabs>
+                                            <tab class="pt-4" heading="Compras">
+                                                <app-producto-compras></app-producto-compras>
+                                            </tab>
+                                            <tab class="pt-4" heading="Ajustes">
+                                                <app-producto-ajustes></app-producto-ajustes>
+                                            </tab>
+                                            <tab class="pt-4" heading="Ventas">
+                                                <app-producto-ventas></app-producto-ventas>
+                                            </tab>
+                                            <tab class="pt-4" heading="Precios">
+                                                <app-producto-precios></app-producto-precios>
+                                            </tab>
+                                        </tabset>
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    </tab>
-                </tabset>
+                        </tab>
+                    </tabset>
+                </div>
             </div>
-
-        </div>
+        }
     </div>
 </div>

@@ -21,7 +21,8 @@
                 <label class="btn" [ngClass]="{'btn-default' : proveedor.tipo == 'Extranjero', 'btn-light' : proveedor.tipo != 'Extranjero' }" for="option3">Extranjero</label>
             </div>
         </div>
-        <div class="row" *ngIf="proveedor.tipo != 'Extranjero'">
+        @if (proveedor.tipo != 'Extranjero') {
+          <div class="row">
             <div class="col-12" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Persona', 'order-2' :  proveedor.tipo == 'Empresa' }">
                 <div class="row">
                     <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
@@ -49,47 +50,83 @@
                         <label for="telefono">Teléfono:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
                     </div>
-                    <div class="form-group col-6 col-lg-4" *ngIf="proveedor.tipo == 'Persona'">
+                    @if (proveedor.tipo == 'Persona') {
+                      <div class="form-group col-6 col-lg-4">
                         <label for="pais">Pais:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
-                            <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
+                            @for (pais of paises; track pais.cod) {
+                              <ng-option [value]="pais.cod">
                                 {{ pais.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-4" *ngIf="proveedor.tipo == 'Persona'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Persona') {
+                      <div class="form-group col-6 col-lg-4">
                         <label for="departamento">Departamento:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
-                            <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                            @for (departamento of departamentos; track departamento.cod) {
+                              <ng-option [value]="departamento.cod">
                                 {{ departamento.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-4" *ngIf="proveedor.tipo == 'Persona'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Persona') {
+                      <div class="form-group col-6 col-lg-4">
                         <label for="distrito">Distrito:</label>
-                        <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
-                            <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento" [value]="distrito.cod">
+                        @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
+                        }
+                        @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
+                            @for (distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento; track distrito.cod) {
+                              <ng-option [value]="distrito.cod">
                                 {{ distrito.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-4" *ngIf="proveedor.tipo == 'Persona'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Persona') {
+                      <div class="form-group col-6 col-lg-4">
                         <label for="municipio">Municipio:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':proveedor.departamento" [value]="municipio.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
+                              <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-12 col-md-6" *ngIf="proveedor.tipo == 'Persona'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Persona') {
+                      <div class="form-group col-12 col-md-6">
                         <label for="direccion">Dirección:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="proveedor.direccion">
-                    </div>
+                      </div>
+                    }
                     <div class="form-group col-lg-6">
                         <label for="etiquetas">Etiquetas:</label>
                         <tag-input theme='bootstrap' secondaryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="proveedor.etiquetas" name="etiquetas"></tag-input>
@@ -100,7 +137,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12" *ngIf="proveedor.tipo == 'Empresa'" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Empresa', 'order-2' :  proveedor.tipo == 'Persona' }">
+            @if (proveedor.tipo == 'Empresa') {
+              <div class="col-12" [ngClass]="{ 'order-1' :  proveedor.tipo == 'Empresa', 'order-2' :  proveedor.tipo == 'Persona' }">
                 <div class="row">
                     <h6 class="col-12 pb-2 mb-2">Información de la empresa</h6>
 
@@ -128,62 +166,107 @@
                     </div>
                     <div class="form-group col-6 col-lg-9">
                         <label for="giro">Giro:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="proveedor.cod_giro">
-                            <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="giro" [(ngModel)]="proveedor.giro">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_giro" (change)="setGiro()" placeholder="Escribe aquí" class="form-select p-0" name="proveedor.cod_giro">
+                            @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
+                              <ng-option [value]="actividad_economica.cod">
                                 {{ actividad_economica.nombre }}
-                            </ng-option>
-                        </ng-select>
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
                     </div>
                     <div class="form-group col-6 col-lg-3">
                         <label for="telefono">Teléfono:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="empresa_telefono" [(ngModel)]="proveedor.empresa_telefono">
                     </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                    @if (proveedor.tipo == 'Empresa') {
+                      <div class="form-group col-6 col-lg-3">
                         <label for="pais">Pais:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
-                            <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="pais" [(ngModel)]="proveedor.pais">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
+                            @for (pais of paises; track pais.cod) {
+                              <ng-option [value]="pais.cod">
                                 {{ pais.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Empresa') {
+                      <div class="form-group col-6 col-lg-3">
                         <label for="departamento">Departamento:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
-                            <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="departamento" [(ngModel)]="proveedor.departamento">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_departamento" (change)="setDepartamento()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_departamento">
+                            @for (departamento of departamentos; track departamento.cod) {
+                              <ng-option [value]="departamento.cod">
                                 {{ departamento.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Empresa') {
+                      <div class="form-group col-6 col-lg-3">
                         <label for="distrito">Distrito:</label>
-                        <input *ngIf="apiService.auth_user().empresa.pais != 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador'" [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
-                            <ng-option *ngFor="let distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento" [value]="distrito.cod">
+                        @if (apiService.auth_user().empresa.pais != 'El Salvador') {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
+                        }
+                        @if (!apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="distrito" [(ngModel)]="proveedor.distrito">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
+                          <ng-select [(ngModel)]="proveedor.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_distrito">
+                            @for (distrito of distritos | filter:'cod_departamento':proveedor.cod_departamento; track distrito.cod) {
+                              <ng-option [value]="distrito.cod">
                                 {{ distrito.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="proveedor.tipo == 'Empresa'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Empresa') {
+                      <div class="form-group col-6 col-lg-3">
                         <label for="municipio">Municipio:</label>
-                        <input *ngIf="!apiService.auth_user().empresa.facturacion_electronica" type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
-                        <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
-                            <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':proveedor.departamento" [value]="municipio.cod">
+                        @if (!apiService.auth_user().empresa.facturacion_electronica) {
+                          <input type="text" class="form-control" placeholder="Escribe aquí" name="municipio" [(ngModel)]="proveedor.municipio">
+                        }
+                        @if (apiService.auth_user().empresa.facturacion_electronica) {
+                          <ng-select [(ngModel)]="proveedor.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_municipio">
+                            @for (municipio of municipios | filter:'nombre_departamento':proveedor.departamento; track municipio.cod) {
+                              <ng-option [value]="municipio.cod">
                                 {{ municipio.nombre }}
-                            </ng-option>
-                        </ng-select>
-                    </div>
-                    <div class="form-group col-12 col-md-9" *ngIf="proveedor.tipo == 'Empresa'">
+                              </ng-option>
+                            }
+                          </ng-select>
+                        }
+                      </div>
+                    }
+                    @if (proveedor.tipo == 'Empresa') {
+                      <div class="form-group col-12 col-md-9">
                         <label for="direccion">Dirección:</label>
                         <input type="text" class="form-control" placeholder="Escribe aquí" name="direccion" [(ngModel)]="proveedor.direccion">
-                    </div>
+                      </div>
+                    }
                 </div>
-            </div>
-        </div>
-        <div class="row" *ngIf="proveedor.tipo == 'Extranjero'">
+              </div>
+            }
+          </div>
+        }
+        @if (proveedor.tipo == 'Extranjero') {
+          <div class="row">
             <h6 class="col-12 pb-2 mb-2">Información de contacto</h6>
             <div class="form-group col-lg-3">
                 <label for="nombre">Nombre</label>
@@ -220,11 +303,15 @@
             </div>
             <div class="form-group col-6 col-lg-3">
                 <label for="pais">Pais:</label>
-                <ng-select *ngIf="apiService.auth_user().empresa.facturacion_electronica" [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
-                    <ng-option *ngFor="let pais of paises" [value]="pais.cod">
+                @if (apiService.auth_user().empresa.facturacion_electronica) {
+                  <ng-select [(ngModel)]="proveedor.cod_pais" (change)="setPais()" placeholder="Escribe aquí" class="form-control form-select p-0" name="proveedor.cod_pais">
+                    @for (pais of paises; track pais.cod) {
+                      <ng-option [value]="pais.cod">
                         {{ pais.nombre }}
-                    </ng-option>
-                </ng-select>
+                      </ng-option>
+                    }
+                  </ng-select>
+                }
             </div>
             <div class="form-group col-12 col-md-6">
                 <label for="direccion">Dirección:</label>
@@ -242,7 +329,8 @@
                 <label for="telefono">Teléfono:</label>
                 <input type="text" class="form-control" placeholder="Escribe aquí" name="telefono" [(ngModel)]="proveedor.telefono">
             </div>
-        </div>
+          </div>
+        }
         <div class="row">
             <div class="col-md-8 col-lg-6">
                 <h6>Configuración Contable</h6>
@@ -250,12 +338,14 @@
                     <label for="proveedor.id_cuenta_contable">Cuenta contable:</label>
                     <ng-select [(ngModel)]="proveedor.id_cuenta_contable" class="form-select p-0" name="proveedor.id_cuenta_contable">
                         <ng-option value="">Seleccione aquí</ng-option>
-                        <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
+                        @for (cuenta of catalogo; track cuenta.id) {
+                          <ng-option [value]="cuenta.id">
                             <div class="d-flex align-items-center">
                                 <span style="width: 75px;">{{ cuenta.codigo }} </span>
                                 <span class="col-8"> - {{ cuenta.nombre }}</span>
                             </div>
-                        </ng-option>
+                          </ng-option>
+                        }
                     </ng-select>
                 </div>
             </div>
@@ -263,8 +353,12 @@
         <div class="row">
             <div class="form-group col-md-12 mt-3">
                 <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                    <span *ngIf="!saving">Guardar proveedor <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                    <span *ngIf="saving">Guardando...</span>
+                    @if (!saving) {
+                      <span>Guardar proveedor <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    }
+                    @if (saving) {
+                      <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

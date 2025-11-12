@@ -16,127 +16,169 @@
             <div class="card-body"> 
                 <div class="row">
                     <h6 class="col-12 pb-2 mb-3">Información del cliente</h6>
-                    <div class="form-group col-lg-3" *ngIf="mostrarCampo('nombre')">
-                        <label class="fw-medium">Nombre:</label>
-                        <p>{{ cliente.nombre }}</p>
-                    </div>
-                    <div class="form-group col-lg-3" *ngIf="mostrarCampo('apellido')">
-                        <label class="fw-medium">Apellido:</label>
-                        <p>{{ cliente.apellido }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('dui')">
-                        <label class="fw-medium">DUI:</label>
-                        <p>{{ cliente.dui }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('correo')">
-                        <label class="fw-medium">Correo:</label>
-                        <p>{{ cliente.correo }}</p>
-                    </div>
-                    <div class="form-group col-md-6 col-lg-3" *ngIf="mostrarCampo('tipo_contribuyente')">
-                        <label class="fw-medium">Tipo de contribuyente:</label>
-                        <p>{{ cliente.tipo_contribuyente }}</p>
-                    </div>
+                    @if (mostrarCampo('nombre')) {
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Nombre:</label>
+                            <p>{{ cliente.nombre }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('apellido')) {
+                        <div class="form-group col-lg-3">
+                            <label class="fw-medium">Apellido:</label>
+                            <p>{{ cliente.apellido }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('dui')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">DUI:</label>
+                            <p>{{ cliente.dui }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('correo')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">Correo:</label>
+                            <p>{{ cliente.correo }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('tipo_contribuyente')) {
+                        <div class="form-group col-md-6 col-lg-3">
+                            <label class="fw-medium">Tipo de contribuyente:</label>
+                            <p>{{ cliente.tipo_contribuyente }}</p>
+                        </div>
+                    }
                     <!-- <div class="form-group col-lg-6" *ngIf="mostrarCampo('etiquetas')">
                         <label class="fw-medium">Etiquetas:</label>
                         <p><tag-input theme='bootstrap' seconda</p>ryPlaceholder="Etiquetas" [placeholder]="'etiquetas'" [separatorKeyCodes]="[32]" [(ngModel)]="cliente.etiquetas" name="etiquetas"></tag-input>
                     </div> -->
                     <!-- <h6 class="col-12 pb-2 my-3">Información de la empresa (Opcional)</h6> -->
                     
-                    <div class="form-group col-6 col-lg-6" *ngIf="mostrarCampo('nombre_empresa')">
-                        <label class="fw-medium">Empresa:</label>
-                        <p>{{ cliente.nombre_empresa }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('ncr')">
-                        <label class="fw-medium">NRC:</label>
-                        <p>{{ cliente.ncr }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('nit')">
-                        <label class="fw-medium">NIT:</label>
-                        <p>{{ cliente.nit }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-6" *ngIf="mostrarCampo('giro')">
-                        <label class="fw-medium">Giro:</label>
-                        <p>{{ cliente.giro }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('telefono')">
-                        <label class="fw-medium">Teléfono:</label>
-                        <p>{{ cliente.telefono }}</p>
-                    </div>
+                    @if (mostrarCampo('nombre_empresa')) {
+                        <div class="form-group col-6 col-lg-6">
+                            <label class="fw-medium">Empresa:</label>
+                            <p>{{ cliente.nombre_empresa }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('ncr')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">NRC:</label>
+                            <p>{{ cliente.ncr }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('nit')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">NIT:</label>
+                            <p>{{ cliente.nit }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('giro')) {
+                        <div class="form-group col-6 col-lg-6">
+                            <label class="fw-medium">Giro:</label>
+                            <p>{{ cliente.giro }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('telefono')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">Teléfono:</label>
+                            <p>{{ cliente.telefono }}</p>
+                        </div>
+                    }
 
-                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('tipo_documento')">
-                        <label class="fw-medium">Tipo de documento:</label>
-                        <p>{{ obtenerNombreTipoDocumento() }}</p>
-                    </div>
+                    @if (mostrarCampo('tipo_documento')) {
+                        <div class="form-group col-12 col-md-3">
+                            <label class="fw-medium">Tipo de documento:</label>
+                            <p>{{ obtenerNombreTipoDocumento() }}</p>
+                        </div>
+                    }
 
-                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('numero_identificacion')">
-                        <label class="fw-medium">Número de identificación:</label>
-                        <p>{{ cliente.dui }}</p>
-                    </div>
+                    @if (mostrarCampo('numero_identificacion')) {
+                        <div class="form-group col-12 col-md-3">
+                            <label class="fw-medium">Número de identificación:</label>
+                            <p>{{ cliente.dui }}</p>
+                        </div>
+                    }
 
-                    <div class="form-group col-12 col-md-3" *ngIf="mostrarCampo('tipo_persona')">
-                        <label class="fw-medium">Tipo persona:</label>
-                        <p>{{ cliente.tipo_persona }}</p>
-                    </div>
+                    @if (mostrarCampo('tipo_persona')) {
+                        <div class="form-group col-12 col-md-3">
+                            <label class="fw-medium">Tipo persona:</label>
+                            <p>{{ cliente.tipo_persona }}</p>
+                        </div>
+                    }
 
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('municipio')">
-                        <label class="fw-medium">Municipio:</label>
-                        <p>{{ cliente.municipio }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarCampo('departamento')">
-                        <label class="fw-medium">Departamento:</label>
-                        <p>{{ cliente.departamento }}</p>
-                    </div>
-                    <div class="form-group col-6 col-lg-3" *ngIf="mostrarAlgunCampo(['direccion', 'empresa_direccion'])">
-                        <label class="fw-medium">Dirección:</label>
-                        <p>{{ obtenerDireccion() }}</p>
-                    </div>
+                    @if (mostrarCampo('municipio')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">Municipio:</label>
+                            <p>{{ cliente.municipio }}</p>
+                        </div>
+                    }
+                    @if (mostrarCampo('departamento')) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">Departamento:</label>
+                            <p>{{ cliente.departamento }}</p>
+                        </div>
+                    }
+                    @if (mostrarAlgunCampo(['direccion', 'empresa_direccion'])) {
+                        <div class="form-group col-6 col-lg-3">
+                            <label class="fw-medium">Dirección:</label>
+                            <p>{{ obtenerDireccion() }}</p>
+                        </div>
+                    }
 
-                    <div class="form-group col-lg-9" *ngIf="mostrarCampo('nota')">
-                        <label class="fw-medium">Observaciones:</label>
-                        <p>{{ cliente.nota }}</p>
-                    </div>
+                    @if (mostrarCampo('nota')) {
+                        <div class="form-group col-lg-9">
+                            <label class="fw-medium">Observaciones:</label>
+                            <p>{{ cliente.nota }}</p>
+                        </div>
+                    }
 
                     
                 </div>
-                <div class="row mt-4" *ngIf="mostrarContactosAdicionales()">
-                    <div class="col-12 d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0">Contactos adicionales</h6>
-                    </div>
-                    
-                    <div class="col-12">
-                        <div class="table-responsive">
-                            <table class="table table-borderless table-hover" *ngIf="cliente.contactos?.length > 0">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Correo</th>
-                                        <th>Teléfono</th>
-                                        <th>Cargo</th>
-                                        <th class="text-center">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr *ngFor="let contacto of cliente.contactos">
-                                        <td>{{contacto.nombre}} {{contacto.apellido}}</td>
-                                        <td>{{contacto.correo}}</td>
-                                        <td>{{contacto.telefono}}</td>
-                                        <td>{{contacto.cargo}}</td>
-                                        <td class="text-center">
-                                            <!--Ver detalles-->
-                                            <button type="button" class="btn btn-light btn-sm me-2" tooltip="Ver detalles (F2)" (click)="openModal(mcontacto,contacto)">
-                                                <i class="fa fa-eye"></i>
-                                            </button>
-                                          
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="text-center py-3" *ngIf="!cliente.contactos?.length">
-                                <span class="badge bg-primary">No hay contactos registrados</span>
+                @if (mostrarContactosAdicionales()) {
+                    <div class="row mt-4">
+                        <div class="col-12 d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Contactos adicionales</h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="table-responsive">
+                                @if (cliente.contactos?.length > 0) {
+                                    <table class="table table-borderless table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Correo</th>
+                                                <th>Teléfono</th>
+                                                <th>Cargo</th>
+                                                <th class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (contacto of cliente.contactos; track contacto.id || $index) {
+                                                <tr>
+                                                    <td>{{contacto.nombre}} {{contacto.apellido}}</td>
+                                                    <td>{{contacto.correo}}</td>
+                                                    <td>{{contacto.telefono}}</td>
+                                                    <td>{{contacto.cargo}}</td>
+                                                    <td class="text-center">
+                                                        <!--Ver detalles-->
+                                                        <button type="button" class="btn btn-light btn-sm me-2" tooltip="Ver detalles (F2)" (click)="openModal(mcontacto,contacto)">
+                                                            <i class="fa fa-eye"></i>
+                                                        </button>
+                                                      
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
+                                @if (!cliente.contactos?.length) {
+                                    <div class="text-center py-3">
+                                        <span class="badge bg-primary">No hay contactos registrados</span>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
         </div>
     </div>

@@ -1,14 +1,24 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BsModalService } from 'ngx-bootstrap/modal';
+import { VentaDetallesComponent } from '../detalles/venta-detalles.component';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
-  selector: 'app-cotizacion-form',
-  templateUrl: './cotizacion-form.component.html',
-  styleUrls: ['./cotizacion-form.component.css']
+    selector: 'app-cotizacion-form',
+    templateUrl: './cotizacion-form.component.html',
+    styleUrls: ['./cotizacion-form.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent],
+    
 })
 export class CotizacionFormComponent implements OnInit {
   venta: any = {};

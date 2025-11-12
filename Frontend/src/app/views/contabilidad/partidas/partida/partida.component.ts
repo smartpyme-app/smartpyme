@@ -1,7 +1,11 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PartidaDetallesComponent } from './detalles/partida-detalles.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -9,9 +13,12 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-partida',
-  templateUrl: './partida.component.html',
-  providers: [ SumPipe ]
+    selector: 'app-partida',
+    templateUrl: './partida.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PartidaDetallesComponent],
+    providers: [SumPipe],
+    
 })
 export class PartidaComponent implements OnInit {
 

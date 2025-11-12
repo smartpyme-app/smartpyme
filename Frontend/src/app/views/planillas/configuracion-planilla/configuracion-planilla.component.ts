@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, FormArray } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { 
@@ -11,8 +14,11 @@ import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 
 @Component({
-  selector: 'app-configuracion-planilla',
-  templateUrl: './configuracion-planilla.component.html'
+    selector: 'app-configuracion-planilla',
+    templateUrl: './configuracion-planilla.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    
 })
 export class ConfiguracionPlanillaComponent implements OnInit {
 

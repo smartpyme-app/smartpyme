@@ -34,10 +34,12 @@
     <p>{{producto.codigo}}</p>
   </div>
    <!-- unidad de medida -->
-   <div class="form-group col-md-4 col-lg-3" *ngIf="producto.tipo != 'Servicio'">
+   @if (producto.tipo != 'Servicio') {
+   <div class="form-group col-md-4 col-lg-3">
     <label for="medida">U. de Medida</label>
     <p>{{producto.medida}}</p>
   </div>
+  }
   <!-- codigo de barra  -->
   <div class="form-group col-md-6 col-lg-3">
     <label for="barcode">Código de barras</label>
@@ -123,7 +125,8 @@
   </div>
 </div>
 
-  <div class="bg-white rounded p-3 mb-3" *ngIf="producto.tipo == 'Compuesto'">
+  @if (producto.tipo == 'Compuesto') {
+  <div class="bg-white rounded p-3 mb-3">
     <div class="col-lg-12">
       <div class="row">
         <h6 class="my-3 font-weight-bold">Composiciones</h6>
@@ -139,27 +142,33 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!loading && producto?.composiciones?.length == 0) {
                     <tr>
-                        <td colspan="5" class="text-center" *ngIf="!loading && producto?.composiciones?.length == 0">
+                        <td colspan="5" class="text-center">
                             <span class="text-muted">No tiene productos agregados</span>
                         </td>
-                    </tr>  
-                    <tr *ngFor=" let composicion of producto?.composiciones">
+                    </tr>
+                    }
+                    @for (composicion of producto?.composiciones; track composicion.id) {
+                    <tr>
                         <td>{{ composicion?.nombre_producto }}</td>
                         <td>{{ composicion?.nombre_categoria }}</td>
                         <td class="text-end">{{ composicion.precio | currency }}</td>
                         <td class="text-end">{{ composicion.costo | currency }}</td>
                         <td class="text-end">{{ composicion.cantidad | number:'1.1' }}</td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
-    </div>        
-        
+    </div>
+
     </div>
 </div>
+  }
 
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
+@if (producto.id && producto.tipo !='Servicio') {
+<div class="bg-white rounded p-3 mb-3">
     <div class="col-lg-12">
       <div class="row">
         <h6 class="my-3 font-weight-bold">Inventario <span class="badge bg-default text-dark">{{ producto.inventarios | sum:'stock' }} unidades</span>
@@ -176,20 +185,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    
+
+                    @if (!loading && producto?.inventarios.length == 0) {
                     <tr>
-                        <td colspan="5" class="text-center" *ngIf="!loading && producto?.inventarios.length == 0">
+                        <td colspan="5" class="text-center">
                             <span class="text-muted">No tiene inventarios configurados</span>
                         </td>
-                    </tr>       
-                    <tr *ngFor=" let bodega of producto.inventarios">
+                    </tr>
+                    }
+                    @for (bodega of producto.inventarios; track bodega.id) {
+                    <tr>
                         <td>{{ bodega.nombre_bodega }}</td>
                         <td>{{ bodega.nombre_sucursal }}</td>
                         <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_minimo }}</span></td>
                         <td class="text-center d-none d-lg-table-cell"><span class="w-100 click d-block" (click)="openModal(mbodega, bodega)">{{ bodega.stock_maximo }}</span></td>
                         <td class="text-center">{{ bodega.stock | number:'1.2' }}</td>
-                     
+
                     </tr>
+                    }
                 </tbody>
             </table>
 
@@ -197,7 +210,9 @@
     </div>
   </div>
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id">
+}
+@if (producto.id) {
+<div class="bg-white rounded p-3 mb-3">
   <div class="row">
     <h6 class="my-3 font-weight-bold">
         Lista de precios
@@ -212,33 +227,39 @@
                 </tr>
             </thead>
             <tbody>
-               
+
                 <tr>
                     <td>{{ producto.precio | currency }}</td>
                     <td>{{ (producto.precio * 1) + (producto.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                     <td>Todos</td>
                 </tr>
 
-                <tr class="animated fadeIn" *ngFor=" let precio of producto?.precios">
+                @for (precio of producto?.precios; track precio.id) {
+                <tr class="animated fadeIn">
                     <td>{{ precio.precio | currency }}</td>
                     <td>{{ (precio.precio * 1) + (precio.precio * (apiService.auth_user().empresa.iva / 100) )  | currency:'USD':'symbol':'1.2' }}</td>
                     <td>
                         <div class="d-flex gap-2 flex-wrap">
-                            <span class="badge bg-default text-dark" *ngFor=" let usuario of precio.usuarios">
+                            @for (usuario of precio.usuarios; track usuario.id) {
+                            <span class="badge bg-default text-dark">
                                 <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="25px">
                                 {{ usuario.nombre }}
-                            </span> 
+                            </span>
+                            }
                         </div>
                     </td>
-                   
+
                 </tr>
+                }
             </tbody>
         </table>
     </div>
-</div>        
+</div>
 
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto.tipo !='Servicio'">
+}
+@if (producto.id && producto.tipo !='Servicio') {
+<div class="bg-white rounded p-3 mb-3">
   <div class="row">
     <h6 class="my-3 font-weight-bold">Proveedores</h6>
     <div class="table-responsive">
@@ -250,43 +271,54 @@
                     <th>Teléfono</th>
                     <th class="d-none d-md-table-cell">DUI</th>
                     <th class="d-none d-md-table-cell">NCR</th>
-               
+
                 </tr>
             </thead>
             <tbody>
+                @if (loading) {
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="loading">
+                    <td colspan="6" class="text-center">
                         <span class="badge bg-primary">Cargando...</span>
                     </td>
                 </tr>
+                }
+                @if (!loading && producto?.proveedores.length == 0) {
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="!loading && producto?.proveedores.length == 0">
+                    <td colspan="6" class="text-center">
                         <span class="text-muted">No tiene proveedores agregados</span>
                     </td>
-                </tr>        
-                <tr *ngFor=" let proveedor of producto.proveedores">
+                </tr>
+                }
+                @for (proveedor of producto.proveedores; track proveedor.id) {
+                <tr>
                     <td>{{ proveedor?.proveedor.tipo == 'Persona' ? proveedor?.proveedor.nombre_completo : proveedor?.proveedor.nombre_empresa | truncate:30 }}</td>
                     <td>{{ proveedor?.proveedor.correo }}</td>
                     <td>{{ proveedor?.proveedor.telefono }}</td>
                     <td>{{ proveedor?.proveedor.dui }}</td>
                     <td>{{ proveedor?.proveedor.ncr }}</td>
-                    
+
                 </tr>
+                }
             </tbody>
         </table>
 
     </div>
 </div>
 </div>
-<div class="bg-white rounded p-3 mb-3" *ngIf="producto.id && producto?.imagenes.length > 0">
+}
+@if (producto.id && producto?.imagenes.length > 0) {
+<div class="bg-white rounded p-3 mb-3">
   <h6 class="my-3 font-weight-bold">Imágenes</h6>
   <div class="d-flex gap-2 flex-wrap">
-      <figure *ngFor="let imagen of producto.imagenes; let i = index" class="position-relative img-fluid img-thumbnail" style="width: 200px; height: 200px; background-size: cover; background-position: center; background-image: url({{ apiService.baseUrl + '/img/' + imagen.img }});">
+      @for (imagen of producto.imagenes; track imagen.id; let i = $index) {
+      <figure class="position-relative img-fluid img-thumbnail" style="width: 200px; height: 200px; background-size: cover; background-position: center; background-image: url({{ apiService.baseUrl + '/img/' + imagen.img }});">
           <a class="position-absolute fixed-bottom btn btn-sm btn-danger text-white" (click)="delete(imagen)" tooltip="Eliminar">
               <i class="fa fa-trash"></i>
           </a>
-      </figure>  
+      </figure>
+      }
   </div>
 </div>
+}
 
 

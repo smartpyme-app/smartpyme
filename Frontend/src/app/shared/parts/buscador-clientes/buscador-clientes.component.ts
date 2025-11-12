@@ -1,12 +1,18 @@
 import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { fromEvent } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-buscador-clientes',
-  templateUrl: './buscador-clientes.component.html'
+    selector: 'app-buscador-clientes',
+    templateUrl: './buscador-clientes.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class BuscadorClientesComponent implements OnInit {
 

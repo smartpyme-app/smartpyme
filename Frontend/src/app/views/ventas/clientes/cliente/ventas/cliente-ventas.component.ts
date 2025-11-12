@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-cliente-ventas',
-  templateUrl: './cliente-ventas.component.html'
+    selector: 'app-cliente-ventas',
+    templateUrl: './cliente-ventas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    
 })
 export class ClienteVentasComponent implements OnInit {
 

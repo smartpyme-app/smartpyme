@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -6,8 +9,11 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-cliente-datos',
-  templateUrl: './cliente-datos.component.html',
+    selector: 'app-cliente-datos',
+    templateUrl: './cliente-datos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class ClienteDatosComponent implements OnInit {
 

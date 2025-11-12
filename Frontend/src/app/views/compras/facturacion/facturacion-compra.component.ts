@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
@@ -7,15 +10,22 @@ import { ApiService } from '@services/api.service';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { CompraDetallesComponent } from './detalles/compra-detalles.component';
 
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-facturacion-compra',
-  templateUrl: './facturacion-compra.component.html',
-  providers: [SumPipe]
+    selector: 'app-facturacion-compra',
+    templateUrl: './facturacion-compra.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
+    providers: [SumPipe],
+    
 })
 
 export class FacturacionCompraComponent implements OnInit {

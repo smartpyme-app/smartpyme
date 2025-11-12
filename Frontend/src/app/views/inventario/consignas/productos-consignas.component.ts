@@ -1,11 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
-  selector: 'app-productos-consignas',
-  templateUrl: './productos-consignas.component.html',
+    selector: 'app-productos-consignas',
+    templateUrl: './productos-consignas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent],
+    
 })
 export class ProductosConsignasComponent implements OnInit {
 
@@ -134,6 +143,15 @@ export class ProductosConsignasComponent implements OnInit {
         return !!(empresa.shopify_store_url && 
                  empresa.shopify_consumer_secret && 
                  empresa.shopify_status === 'connected');
+    }
+
+    /**
+     * Verifica si el usuario puede ver las opciones de inventario
+     * Oculta ciertas opciones para Supervisores de la empresa 324
+     */
+    public puedeVerOpcionesInventario(): boolean {
+        const user = this.apiService.auth_user();
+        return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
     }
 
 }

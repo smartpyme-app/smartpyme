@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -9,8 +12,11 @@ import { of } from 'rxjs';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-traslado-masivo',
-  templateUrl: './traslado-masivo.component.html',
+    selector: 'app-traslado-masivo',
+    templateUrl: './traslado-masivo.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    
 })
 export class TrasladoMasivoComponent implements OnInit {
     public productos: any = [];

@@ -1,14 +1,18 @@
-<div *ngIf="erroresList.length" class="alert alert-danger">
-  <strong class="d-block mb-2">No se pudo emitir el DTE debido a los siguientes errores:</strong>
-  <ul class="mt-2 mb-0 ps-3">
-    <li *ngFor="let error of erroresList" class="mb-1">
-      <ng-container *ngIf="error.includes('Campo #/')">
-        <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
-        <span class="text-dark"> {{ parseError(error).mensaje }}</span>
-      </ng-container>
-      <ng-container *ngIf="!error.includes('Campo #/')">
-        <span class="text-dark">{{ error }}</span>
-      </ng-container>
-    </li>
-  </ul>
-</div>
+@if (erroresList.length) {
+  <div class="alert alert-danger">
+    <strong class="d-block mb-2">No se pudo emitir el DTE debido a los siguientes errores:</strong>
+    <ul class="mt-2 mb-0 ps-3">
+      @for (error of erroresList; track error || $index) {
+        <li class="mb-1">
+          @if (error.includes('Campo #/')) {
+            <span class="fw-bold text-danger">{{ parseError(error).campo }}:</span>
+            <span class="text-dark"> {{ parseError(error).mensaje }}</span>
+          }
+          @if (!error.includes('Campo #/')) {
+            <span class="text-dark">{{ error }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </div>
+}

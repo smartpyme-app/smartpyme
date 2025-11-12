@@ -1,14 +1,21 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule, CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
 
 @Component({
-  selector: 'app-devolucion-nueva',
-  templateUrl: './devolucion-nueva.component.html',
-  providers: [ SumPipe ]
+    selector: 'app-devolucion-nueva',
+    templateUrl: './devolucion-nueva.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe],
+    providers: [SumPipe],
+    
 })
 
 export class DevolucionVentaNuevaComponent implements OnInit {

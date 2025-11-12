@@ -1,4 +1,7 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { FormControl } from '@angular/forms';
@@ -9,8 +12,11 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-tienda-venta-paquetes',
-  templateUrl: './tienda-venta-paquetes.component.html'
+    selector: 'app-tienda-venta-paquetes',
+    templateUrl: './tienda-venta-paquetes.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    
 })
 export class TiendaVentaPaquetesComponent implements OnInit {
 

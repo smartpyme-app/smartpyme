@@ -4,7 +4,7 @@ import { HttpInterceptor, HttpRequest, HttpHandler, HttpErrorResponse } from '@a
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { AuthorizationRequestModalComponent } from '../../shared/authorization/authorization-request/authorization-request-modal.component';
+// AuthorizationRequestModalComponent se carga dinámicamente para reducir el bundle inicial
 
 // Interfaces para tipado
 interface AuthConfig {
@@ -36,7 +36,7 @@ export class AuthorizationInterceptor implements HttpInterceptor {
     );
   }
 
-  private handleAuthorizationRequired(errorData: any, originalRequest: HttpRequest<any>) {
+  private async handleAuthorizationRequired(errorData: any, originalRequest: HttpRequest<any>) {
     console.log('=== INTERCEPTOR DEBUG ===');
     console.log('errorData:', errorData);
     console.log('originalRequest.url:', originalRequest.url);
@@ -47,6 +47,9 @@ export class AuthorizationInterceptor implements HttpInterceptor {
     
     console.log('=== AUTH CONFIG RESULTADO ===');
     console.log('authConfig:', authConfig);
+    
+    // Cargar el componente dinámicamente para reducir el bundle inicial
+    const { AuthorizationRequestModalComponent } = await import('../../shared/authorization/authorization-request/authorization-request-modal.component');
     
     const modalRef = this.modalService.show(AuthorizationRequestModalComponent, {
       initialState: {

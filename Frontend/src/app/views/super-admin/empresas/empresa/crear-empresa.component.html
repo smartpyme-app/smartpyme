@@ -27,17 +27,21 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="departamento">Departamento:</label>
                     <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
-                        <ng-option *ngFor="let departamento of departamentos" [value]="departamento.cod">
-                            {{ departamento.nombre }}
-                        </ng-option>
+                        @for (departamento of departamentos; track departamento.cod) {
+                            <ng-option [value]="departamento.cod">
+                                {{ departamento.nombre }}
+                            </ng-option>
+                        }
                     </ng-select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="municipio">Municipio:</label>
                     <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
-                        <ng-option *ngFor="let municipio of municipios | filter:'nombre_departamento':empresa.departamento" [value]="municipio.cod">
-                            {{ municipio.nombre }}
-                        </ng-option>
+                        @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track municipio.cod) {
+                            <ng-option [value]="municipio.cod">
+                                {{ municipio.nombre }}
+                            </ng-option>
+                        }
                     </ng-select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -55,9 +59,11 @@
                 <div class="form-group col-md-6 col-lg-4">
                     <label for="actividad_economica">Actividad económica:</label>
                     <ng-select [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
-                        <ng-option *ngFor="let actividad_economica of actividad_economicas" [value]="actividad_economica.cod">
-                            {{ actividad_economica.nombre }}
-                        </ng-option>
+                        @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
+                            <ng-option [value]="actividad_economica.cod">
+                                {{ actividad_economica.nombre }}
+                            </ng-option>
+                        }
                     </ng-select>
                 </div>
                 <div class="form-group col-md-6 col-lg-4">
@@ -125,10 +131,14 @@
                     <div class="input-group flex-nowrap">
                         <ng-select name="id_cliente" placeholder="Seleccione aquí" [(ngModel)]="empresa.id_cliente" class="form-select p-0">
                             <ng-option value=""> Seleccione aquí </ng-option>
-                            <ng-option value="" *ngIf="loading"> Cargando clientes... </ng-option>
-                            <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                                {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                            </ng-option>
+                            @if (loading) {
+                                <ng-option value=""> Cargando clientes... </ng-option>
+                            }
+                            @for (cliente of clientes; track cliente.id) {
+                                <ng-option [value]="cliente.id">
+                                    {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                                </ng-option>
+                            }
                         </ng-select>
                         <app-crear-cliente [id_cliente]="empresa.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
                     </div>
@@ -136,7 +146,9 @@
                 <div class="form-group col-md-6 col-lg-3">
                     <label for="id_documento">Tipo Documento</label>
                     <select name="id_documento" [(ngModel)]="empresa.id_documento" class="form-select">
-                        <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                        @for (documento of documentos; track documento.id) {
+                            <option [value]="documento.id">{{ documento.nombre }}</option>
+                        }
                     </select>
                 </div>
                 <div class="form-group col-md-6 col-lg-3">
@@ -245,8 +257,12 @@
             <div class="row mt-5">
                 <div class="form-group col-lg-12 mt-3">
                     <button [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
-                        <span *ngIf="!saving">Guardar</span>
-                        <span *ngIf="saving">Guardando...</span>
+                        @if (!saving) {
+                            <span>Guardar</span>
+                        }
+                        @if (saving) {
+                            <span>Guardando...</span>
+                        }
                     </button>
                 </div>
             </div>

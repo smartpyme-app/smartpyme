@@ -1,13 +1,20 @@
 import { Component, OnInit, Input, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { TruncatePipe } from '../../../pipes/truncate.pipe';
 
 @Component({
-  selector: 'app-notificaciones',
-  templateUrl: './notificaciones.component.html'
+    selector: 'app-notificaciones',
+    templateUrl: './notificaciones.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe],
+    
 })
 
 export class NotificacionesComponent implements OnInit {

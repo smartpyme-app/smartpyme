@@ -1,11 +1,17 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
-  selector: 'app-cuentas-pagar',
-  templateUrl: './cuentas-pagar.component.html'
+    selector: 'app-cuentas-pagar',
+    templateUrl: './cuentas-pagar.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 
 export class CuentasPagarComponent implements OnInit {

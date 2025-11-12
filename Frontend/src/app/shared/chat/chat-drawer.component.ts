@@ -8,11 +8,17 @@ import {
 } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ChatService, ChatMessage } from '@services/chat/chat.service';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 
 @Component({
-  selector: 'app-chat-drawer',
-  templateUrl: './chat-drawer.component.html',
-  styleUrls: ['./chat-drawer.component.css'],
+    selector: 'app-chat-drawer',
+    templateUrl: './chat-drawer.component.html',
+    styleUrls: ['./chat-drawer.component.css'],
+    standalone: true,
+    imports: [CommonModule, FormsModule, SafeHtmlPipe],
+    
 })
 export class ChatDrawerComponent
   implements OnInit, OnDestroy, AfterViewChecked

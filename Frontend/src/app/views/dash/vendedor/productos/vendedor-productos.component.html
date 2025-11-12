@@ -1,16 +1,20 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
     <h2 class="page-heading">Inventario</h2>
     <!-- <button *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
-    <button *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+        <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+    }
 
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="productos?.total">
-                Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
-            </span>
+            @if (productos?.total) {
+                <span class="text-muted">
+                    Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -61,83 +65,97 @@
                         <th (click)="setOrden('precio')" [ngClass]="{'sorted-asc': filtros.orden == 'precio' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'precio' && filtros.direccion == 'desc'}" class="click text-right">Precio</th>
                         <th (click)="setOrden('stock')" [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}" class="click text-center">Stock</th>
                         <!-- <th *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th> -->
-                        <th *ngIf="apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario"  class="text-center">Más</th>
+                        @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+                            <th class="text-center">Más</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene productos registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let producto of productos?.data">
-                        <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
-                            {{ producto.nombre }}
-                        </td>
-                        <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                        </td>
-                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
-                        <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
-                        <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">
-                            <!-- <div *ngIf="filtros.id_sucursal"> -->
-                                {{ producto.inventarios | filter:'id_bodega': usuario.id_bodega | sum:'stock' }}
-                            <!-- </div> -->
-                            <!-- <div *ngIf="!filtros.id_sucursal">
-                                <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                    {{ producto.inventarios | sum:'stock' }}
-                                </span>
-                                <span *ngIf="producto?.inventarios?.length == 0" >
-                                    Sin control
-                                </span>
-                                <ng-template #popTemplate>
-                                    <table width="200px">
-                                        <thead>
-                                            <tr>
-                                                <th>Sucursal</th>
-                                                <th class="text-right">Stock</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td>{{ inventario.nombre_sucursal}}</td>
-                                                <td class="text-right">{{ inventario.stock }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </ng-template>
-                            </div> -->
-                        </td>
-                        <td class="text-center" *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario && !apiService.isVentasLimitado()" >
-                            <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
-                            <!-- <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column">
-                                    <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">
-                                        <img  src="/assets/icons/file-text.png" class="icon me-2">Kardex
-                                    </button>
-                                </div>
-                            </ng-template> -->
-                        </td>
-                    </tr>
+                    @if (productos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene productos registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (producto of productos?.data; track producto.id) {
+                        <tr>
+                            <td>
+                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
+                                {{ producto.nombre }}
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
+                            <td class="d-none d-md-table-cell">{{ producto.codigo }}</td>
+                            <td class="text-right">{{ producto.precio  | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-center">
+                                <!-- <div *ngIf="filtros.id_sucursal"> -->
+                                    {{ producto.inventarios | filter:'id_bodega': usuario.id_bodega | sum:'stock' }}
+                                <!-- </div> -->
+                                <!-- <div *ngIf="!filtros.id_sucursal">
+                                    <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                        {{ producto.inventarios | sum:'stock' }}
+                                    </span>
+                                    <span *ngIf="producto?.inventarios?.length == 0" >
+                                        Sin control
+                                    </span>
+                                    <ng-template #popTemplate>
+                                        <table width="200px">
+                                            <thead>
+                                                <tr>
+                                                    <th>Sucursal</th>
+                                                    <th class="text-right">Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let inventario of producto?.inventarios">
+                                                    <td>{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-right">{{ inventario.stock }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </ng-template>
+                                </div> -->
+                            </td>
+                            @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
+                                <td class="text-center">
+                                    <a class="btn btn-default" routerLink="/producto/editar/{{producto.id}}" tooltip="Ver y editar">
+                                        <i class="fa fa-pencil-alt"></i>
+                                    </a>
+                                    <!-- <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                        <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                    </span>
+                                    <ng-template #accionesTemplate>
+                                        <div class="d-flex flex-column">
+                                            <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">
+                                                <img  src="/assets/icons/file-text.png" class="icon me-2">Kardex
+                                            </button>
+                                        </div>
+                                    </ng-template> -->
+                                </td>
+                            }
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (productos?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>

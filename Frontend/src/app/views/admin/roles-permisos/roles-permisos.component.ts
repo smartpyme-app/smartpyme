@@ -1,12 +1,18 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
-  selector: 'app-roles-permisos',
-  templateUrl: './roles-permisos.component.html'
+    selector: 'app-roles-permisos',
+    templateUrl: './roles-permisos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class RolesPermisosComponent implements OnInit {
   public roles: any = {};

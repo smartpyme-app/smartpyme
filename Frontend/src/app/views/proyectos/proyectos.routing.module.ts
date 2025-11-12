@@ -1,9 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
-
-import { ProyectosComponent } from '@views/proyectos/proyectos.component';
-import { ProyectoComponent } from '@views/proyectos/proyecto/proyecto.component';
 import { PermissionGuard } from '@guards/permission.guard';
 
 const routes: Routes = [
@@ -16,21 +13,21 @@ const routes: Routes = [
     children: [
       {
         path: 'proyectos',
-        component: ProyectosComponent,
+        loadComponent: () => import('@views/proyectos/proyectos.component').then(m => m.ProyectosComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'ventas.proyectos.ver' },
         title: 'Proyectos',
       },
       {
         path: 'proyecto/crear',
-        component: ProyectoComponent,
+        loadComponent: () => import('@views/proyectos/proyecto/proyecto.component').then(m => m.ProyectoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'ventas.proyectos.crear' },
         title: 'Proyecto',
       },
       {
         path: 'proyecto/editar/:id',
-        component: ProyectoComponent,
+        loadComponent: () => import('@views/proyectos/proyecto/proyecto.component').then(m => m.ProyectoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'ventas.proyectos.editar' },
         title: 'Proyecto',

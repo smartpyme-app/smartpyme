@@ -1,8 +1,11 @@
 import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 @Component({
-  selector: 'app-descargar-excel',
-  templateUrl: './descargar-excel.component.html'
+    selector: 'app-descargar-excel',
+    templateUrl: './descargar-excel.component.html',
+    standalone: true,
+    imports: [CommonModule]
 })
 export class DescargarExcelComponent implements OnInit {
 

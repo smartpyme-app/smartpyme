@@ -43,10 +43,12 @@
                             </tbody>
                         </table>
                     </div>
-                    <p *ngIf="!showDirectPayment" class="text-center">
-                        <b>Puedes pagar en este momento o después de 3 días de prueba</b>. <br>
-                            <!-- Puedes desactivar tu suscripción en cualquier momento. -->
-                    </p>
+                    @if (!showDirectPayment) {
+                        <p class="text-center">
+                            <b>Puedes pagar en este momento o después de 3 días de prueba</b>. <br>
+                                <!-- Puedes desactivar tu suscripción en cualquier momento. -->
+                        </p>
+                    }
                     <div class="d-grid gap-1">
                         <div class="row justify-content-md-center">
                             <div class="col-12 col-md-8">
@@ -54,24 +56,27 @@
                                     Suscribirte a través de
                                     <img src="assets/img/logo-n1co.png" height="30px;" alt="N1co">
                                 </h4> -->
-                                <div *ngIf="!showDirectPayment" class="mb-4">
-                                    <div class="d-grid gap-3">
-                                        <button class="btn btn-outline-primary" (click)="showDirectPayment = true">
-                                            <i class="fas fa-credit-card me-2"></i>
-                                            Pagar con tarjeta
-                                        </button>
+                                @if (!showDirectPayment) {
+                                    <div class="mb-4">
+                                        <div class="d-grid gap-3">
+                                            <button class="btn btn-outline-primary" (click)="showDirectPayment = true">
+                                                <i class="fas fa-credit-card me-2"></i>
+                                                Pagar con tarjeta
+                                            </button>
+                                        </div>
+                                        <div class="d-grid gap-3">
+                                            <button class="btn btn-link text-decoration-none text-dark" (click)="backToHome()">
+                                                Pagar después
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="d-grid gap-3">
-                                        <button class="btn btn-link text-decoration-none text-dark" (click)="backToHome()">
-                                            Pagar después
-                                        </button>
-                                    </div>
-                                </div>
+                                }
                             </div>
                          </div>
                     </div>
 
-                    <div *ngIf="showDirectPayment" class="payment-form">
+                    @if (showDirectPayment) {
+                        <div class="payment-form">
                         <form (ngSubmit)="createMethodPaymentWithCharge()" #paymentForm="ngForm">
                             <!-- Número de tarjeta -->
                             <div class="mb-3">
@@ -92,9 +97,11 @@
                                         <i class="fas fa-credit-card"></i>
                                     </span>
                                 </div>
-                                <div class="invalid-feedback" *ngIf="cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)">
-                                    Por favor, ingrese un número de tarjeta válido
-                                </div>
+                                @if (cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)) {
+                                    <div class="invalid-feedback">
+                                        Por favor, ingrese un número de tarjeta válido
+                                    </div>
+                                }
                             </div>
 
                             <!-- Nombre del titular -->
@@ -109,9 +116,11 @@
                                     [ngClass]="{'is-invalid': cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)}"
                                     placeholder="Como aparece en la tarjeta"
                                     #cardHolder="ngModel">
-                                <div class="invalid-feedback" *ngIf="cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)">
-                                    El nombre del titular es requerido
-                                </div>
+                                @if (cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)) {
+                                    <div class="invalid-feedback">
+                                        El nombre del titular es requerido
+                                    </div>
+                                }
                             </div>
 
                             <div class="row">
@@ -129,9 +138,11 @@
                                         maxlength="2"
                                         placeholder="MM"
                                         #expMonth="ngModel">
-                                    <div class="invalid-feedback" *ngIf="expMonth.invalid && (expMonth.dirty || expMonth.touched)">
-                                        Mes inválido (01-12)
-                                    </div>
+                                    @if (expMonth.invalid && (expMonth.dirty || expMonth.touched)) {
+                                        <div class="invalid-feedback">
+                                            Mes inválido (01-12)
+                                        </div>
+                                    }
                                 </div>
 
                                 <!-- Año de expiración -->
@@ -148,9 +159,11 @@
                                         maxlength="2"
                                         placeholder="YY"
                                         #expYear="ngModel">
-                                    <div class="invalid-feedback" *ngIf="expYear.invalid && (expYear.dirty || expYear.touched)">
-                                        Año inválido
-                                    </div>
+                                    @if (expYear.invalid && (expYear.dirty || expYear.touched)) {
+                                        <div class="invalid-feedback">
+                                            Año inválido
+                                        </div>
+                                    }
                                 </div>
 
                                 <!-- CVV -->
@@ -167,9 +180,11 @@
                                         maxlength="4"
                                         placeholder="123"
                                         #cvv="ngModel">
-                                    <div class="invalid-feedback" *ngIf="cvv.invalid && (cvv.dirty || cvv.touched)">
-                                        CVV inválido
-                                    </div>
+                                    @if (cvv.invalid && (cvv.dirty || cvv.touched)) {
+                                        <div class="invalid-feedback">
+                                            CVV inválido
+                                        </div>
+                                    }
                                 </div>
                             </div>
 
@@ -193,17 +208,15 @@
                                       <option value="" disabled selected>
                                         Seleccione un país
                                       </option>
-                                      <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                                      @for (pais of paises; track pais.cod) {
+                                          <option [value]="pais.cod">{{ pais.nombre }}</option>
+                                      }
                                     </select>
-                                    <div
-                                      class="invalid-feedback"
-                                      *ngIf="
-                                        countryCode.invalid &&
-                                        (countryCode.dirty || countryCode.touched)
-                                      "
-                                    >
-                                      País inválido
-                                    </div>
+                                    @if (countryCode.invalid && (countryCode.dirty || countryCode.touched)) {
+                                        <div class="invalid-feedback">
+                                            País inválido
+                                        </div>
+                                    }
                                   </div>
 
                                 <!-- Código de Estado -->
@@ -223,16 +236,15 @@
                                       #stateCode="ngModel"
                                     >
                                       <option value="" disabled selected>Selecciona estado</option>
-                                      <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                                      @for (estado of estados; track estado.codigo) {
+                                          <option [value]="estado.codigo">{{ estado.nombre }}</option>
+                                      }
                                     </select>
-                                    <div
-                                      class="invalid-feedback"
-                                      *ngIf="
-                                        stateCode.invalid && (stateCode.dirty || stateCode.touched)
-                                      "
-                                    >
-                                      Estado inválido
-                                    </div>
+                                    @if (stateCode.invalid && (stateCode.dirty || stateCode.touched)) {
+                                        <div class="invalid-feedback">
+                                            Estado inválido
+                                        </div>
+                                    }
                                   </div>
 
                                 <!-- Código ZIP -->
@@ -252,14 +264,11 @@
                                       placeholder="1101"
                                       #zipCode="ngModel"
                                     />
-                                    <div
-                                      class="invalid-feedback"
-                                      *ngIf="
-                                        zipCode.invalid && (zipCode.dirty || zipCode.touched)
-                                      "
-                                    >
-                                      Código ZIP inválido
-                                    </div>
+                                    @if (zipCode.invalid && (zipCode.dirty || zipCode.touched)) {
+                                        <div class="invalid-feedback">
+                                            Código ZIP inválido
+                                        </div>
+                                    }
                                   </div>
                             </div>
 
@@ -281,7 +290,8 @@
                                 </button>
                             </div>
                         </form>
-                    </div>
+                        </div>
+                    }
                     <!-- <p class="text-center">¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a></p> -->
                     <div class="bg-white text-center mt-5">
                         <p class="my-3">
@@ -296,9 +306,10 @@
         </div>
     </div>
 </div>
-<app-threeds-modal 
-    *ngIf="mostrar3DSModal"
-    [authUrl]="urlAutenticacion"
-    (close)="mostrar3DSModal = false">
-</app-threeds-modal>
+@if (mostrar3DSModal) {
+    <app-threeds-modal 
+        [authUrl]="urlAutenticacion"
+        (close)="mostrar3DSModal = false">
+    </app-threeds-modal>
+}
 

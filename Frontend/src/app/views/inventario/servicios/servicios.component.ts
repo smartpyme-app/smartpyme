@@ -1,12 +1,21 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 @Component({
-  selector: 'app-servicios',
-  templateUrl: './servicios.component.html',
+    selector: 'app-servicios',
+    templateUrl: './servicios.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent],
+
 })
 export class ServiciosComponent implements OnInit {
 

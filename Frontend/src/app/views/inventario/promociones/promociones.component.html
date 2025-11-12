@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Promociones</h2>
-    <button *ngIf="apiService.canCreateTest('productos.promociones.crear')" routerLink="/Promocion/crear" tooltip="Crear promoción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    @if (apiService.canCreateTest('productos.promociones.crear')) {
+    <button routerLink="/Promocion/crear" tooltip="Crear promoción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir venta</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="promociones?.total">
+            @if (promociones?.total) {
+            <span class="text-muted">
                 Mostrando {{ promociones?.to }} de {{ promociones?.total + ' registros' }}
             </span>
+            }
         </div>
 
         <div class="col">
@@ -49,17 +53,24 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (promociones?.total < 1 && !loading) {
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="promociones?.total < 1 && !loading">
+                        <td colspan="10" class="text-center">
                             <span class="badge bg-primary">No tiene promociones registradas</span>
                         </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
+                    </tr>
+                    }
+                    @if (loading) {
+                    <tr>
+                        <td colspan="10" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
                     </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor=" let venta of promociones?.data">
-                        
+                    @for (venta of promociones?.data; track venta.id) {
+                    <tr class="animated fadeIn">
+
                         <td>{{venta.nombre}}</td>
                         <td>{{venta.descripcion}}</td>
                         <td>{{venta.precio}}</td>
@@ -90,13 +101,16 @@
                         </td>
 
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="promociones?.last_page > 1">
+        @if (promociones?.last_page > 1) {
+        <div class="col-12">
             <app-pagination [items]="promociones" (setPagination)="setPagination($event)"></app-pagination>
         </div>
+        }
     </div>
 </section>
 
@@ -127,18 +141,22 @@
                 <label for="filtro.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtro.sucursal_id" class="form-select" name="filtro.sucursal_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
+                    @for (sucursal of sucursales; track sucursal.id) {
+                    <option [ngValue]="sucursal.id">
                         {{ sucursal.nombre }}
                     </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtro.usuario">Empleado:</label>
                 <select [(ngModel)]="filtro.usuario_id" class="form-select" name="filtro.usuario_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
+                    @for (usuario of usuarios; track usuario.id) {
+                    <option [ngValue]="usuario.id">
                         {{ usuario.name }}
                     </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -165,8 +183,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                    <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                    <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

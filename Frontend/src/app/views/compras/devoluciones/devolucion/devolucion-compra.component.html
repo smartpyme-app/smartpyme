@@ -7,9 +7,11 @@
     <div class="card-body">
         <h4 class="card-title text-center">
             <!-- Información -->
-            <a *ngIf="devolucion.credito" routerLink="/credito/{{devolucion.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
-                <i class="fa fa-money-check"></i>
-            </a>
+            @if (devolucion.credito) {
+              <a routerLink="/credito/{{devolucion.credito.id}}" class="btn btn-default float-end" tooltip="Ver crédito">
+                  <i class="fa fa-money-check"></i>
+              </a>
+            }
         </h4>
         <div class="table-responsive">
             <table class="table table-borderless">
@@ -51,20 +53,30 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <td colspan="8" class="text-center" *ngIf="devolucion.detalles?.length < 1 && !loading">
-                        <span class="badge badge-info">No tiene productos agregados</span>
-                    </td>
-                    <td colspan="8" class="text-center" *ngIf="loading">
-                        <span class="badge badge-info">Cargando...</span>
-                    </td>
-                    <tr *ngFor="let detalle of devolucion.detalles; let i=index">
-                        <td class="text-center"> {{ i + 1 }} </td>
+                    @if (devolucion.detalles?.length < 1 && !loading) {
+                      <tr>
+                        <td colspan="8" class="text-center">
+                            <span class="badge badge-info">No tiene productos agregados</span>
+                        </td>
+                      </tr>
+                    }
+                    @if (loading) {
+                      <tr>
+                        <td colspan="8" class="text-center">
+                            <span class="badge badge-info">Cargando...</span>
+                        </td>
+                      </tr>
+                    }
+                    @for (detalle of devolucion.detalles; track detalle.id || $index) {
+                      <tr>
+                        <td class="text-center"> {{ $index + 1 }} </td>
                         <td> {{ detalle.nombre_producto }} </td>
                         <td class="text-center">{{ detalle.costo | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">{{ detalle.descuento | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">{{ detalle.cantidad }}</td>
                         <td class="text-end">{{ detalle.total | currency:'USD':'symbol':'1.2' }}</td>
-                    </tr>
+                      </tr>
+                    }
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Sub Total:</b></td>
@@ -75,21 +87,27 @@
                         <td class="text-right"><b>IVA:</b></td>
                         <td class="text-end"><b>{{ devolucion?.iva | currency:'USD':'symbol':'1.2' }}</b></td>
                     </tr>
-                    <tr *ngIf="devolucion?.descuento > 0">
+                    @if (devolucion?.descuento > 0) {
+                      <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Descuento:</b></td>
                         <td class="text-end"><b>{{ devolucion?.descuento | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion?.iva_retenido > 0">
+                      </tr>
+                    }
+                    @if (devolucion?.iva_retenido > 0) {
+                      <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Retención:</b></td>
                         <td class="text-end"><b>{{ devolucion?.iva_retenido | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
-                    <tr *ngIf="devolucion?.iva_percibido > 0">
+                      </tr>
+                    }
+                    @if (devolucion?.iva_percibido > 0) {
+                      <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Percepción:</b></td>
                         <td class="text-end"><b>{{ devolucion?.iva_percibido | currency:'USD':'symbol':'1.2' }}</b></td>
-                    </tr>
+                      </tr>
+                    }
                     <tr>
                         <td colspan="4" class="text-right"></td>
                         <td class="text-right"><b>Total:</b></td>
@@ -101,7 +119,8 @@
     </div>
 </div>
 
-<section class="card" *ngIf="devolucion?.compra">
+@if (devolucion?.compra) {
+  <section class="card">
     <div class="card-body">
         <h6 class="my-3">Datos de la compra</h6>
         <div class="table-responsive">
@@ -125,4 +144,5 @@
             </table>
         </div>
     </div>
-</section>
+  </section>
+}

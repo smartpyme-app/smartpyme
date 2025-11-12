@@ -1,5 +1,10 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -9,8 +14,11 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-tienda-venta-producto',
-  templateUrl: './tienda-venta-producto.component.html'
+    selector: 'app-tienda-venta-producto',
+    templateUrl: './tienda-venta-producto.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent],
+    
 })
 export class TiendaVentaProductoComponent implements OnInit {
 

@@ -1,7 +1,13 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -9,8 +15,11 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-proyecto',
-  templateUrl: './proyecto.component.html'
+    selector: 'app-proyecto',
+    templateUrl: './proyecto.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, SumPipe],
+    
 })
 export class ProyectoComponent implements OnInit {
 

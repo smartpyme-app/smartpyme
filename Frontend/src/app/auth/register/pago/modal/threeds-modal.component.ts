@@ -1,9 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
-  selector: 'app-threeds-modal',
-  template: `
+    selector: 'app-threeds-modal',
+    template: `
     <div class="modal-backdrop"></div>
     <div class="modal-container">
       <div class="modal-header">
@@ -15,7 +18,7 @@ import { SafeResourceUrl } from '@angular/platform-browser';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .modal-backdrop {
       position: fixed;
       top: 0;
@@ -38,7 +41,9 @@ import { SafeResourceUrl } from '@angular/platform-browser';
       width: 90%;
       max-width: 600px;
     }
-  `]
+  `],
+    standalone: true,
+    imports: [CommonModule, RouterModule]
 })
 export class ThreedsModalComponent {
     @Input() authUrl!: SafeResourceUrl;

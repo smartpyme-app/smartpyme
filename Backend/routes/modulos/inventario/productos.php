@@ -100,6 +100,8 @@ Route::delete('/producto/composicion/opcion/{id}', [OpcionesController::class, '
     Route::get('/productos/exportar',          [ProductosController::class, 'export']);
     //exportar-plantilla
     Route::get('/productos/exportar-plantilla', [ProductosController::class, 'exportarPlantilla']);
+    //descargar-plantilla
+    Route::get('/productos/plantilla', [ProductosController::class, 'descargarPlantilla']);
     //productos/ajuste-masivo/importar
     Route::post('/productos/ajuste-masivo/importar', [ProductosController::class, 'importarAjustes']);
     //productos/ajuste-masivo

@@ -5,9 +5,12 @@
             <p class="text-center mb-4">
                 Seleccione su usuario para ingresar la clave de acceso.
                 <br>
-                <span class="badge badge-info mt-3" *ngIf="loading">Cargando...</span>
+                @if (loading) {
+                    <span class="badge badge-info mt-3">Cargando...</span>
+                }
             </p>
-            <div class="col-12 col-md-6 col-lg-3" *ngFor="let usuario of usuarios.data">
+            @for (usuario of usuarios.data; track usuario.id) {
+                <div class="col-12 col-md-6 col-lg-3">
                 <div class="card click" (click)="openModal(mpin, usuario)">
                     <div class="card-body text-center">
                         <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
@@ -15,7 +18,8 @@
                         <p class="login-box-msg text-info">Bienvenido</p>
                     </div>
                 </div>
-            </div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -32,8 +36,12 @@
             </div>
             <div class="col-md-12">
                 <button type="submit" [disabled]="loading || !user.password" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Entrar</span>
-                    <span *ngIf="loading">Verificando...</span>
+                    @if (!loading) {
+                        <span>Entrar</span>
+                    }
+                    @if (loading) {
+                        <span>Verificando...</span>
+                    }
                 </button>
             </div>
         </form>

@@ -1,15 +1,25 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { lastValueFrom } from 'rxjs';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { CompraDetallesComponent } from '@views/compras/facturacion/detalles/compra-detalles.component';
 
 @Component({
-  selector: 'app-orden-compra-form',
-  templateUrl: './orden-compra-form.component.html',
-  styleUrls: ['./orden-compra-form.component.css'],
+    selector: 'app-orden-compra-form',
+    templateUrl: './orden-compra-form.component.html',
+    styleUrls: ['./orden-compra-form.component.css'],
+    standalone: true,
+    imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
+    
 })
 export class OrdenCompraFormComponent implements OnInit {
   ordenCompraForm?: FormGroup;

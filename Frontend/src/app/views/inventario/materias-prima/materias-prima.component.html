@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Materias primas</h2>
-    <button *ngIf="apiService.canCreateTest('productos.materias_primas.crear')" routerLink="/materia-prima/crear" [queryParams]="{ tipo:'Materia prima' }" tooltip="Crear materia prima (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir materia prima</button>
+    @if (apiService.canCreateTest('productos.materias_primas.crear')) {
+        <button routerLink="/materia-prima/crear" [queryParams]="{ tipo:'Materia prima' }" tooltip="Crear materia prima (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir materia prima</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="productos?.total">
-                Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
-            </span>
+            @if (productos?.total) {
+                <span class="text-muted">
+                    Mostrando {{ productos?.to }} de {{ productos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -30,9 +34,11 @@
         <div class="col d-flex gap-2 justify-content-end">
             <ng-select name="id_categoria" (change)="onFiltrar()" [(ngModel)]="filtro.id_categoria" class="form-select p-0 border-0 bg-default" style="width: 150px;">
                 <ng-option value="">Categoria</ng-option>
-                <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                    {{categoria.nombre}}
-                </ng-option>
+                @for (categoria of categorias; track categoria.id) {
+                    <ng-option [value]="categoria.id">
+                        {{categoria.nombre}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -50,88 +56,108 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene productos registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let producto of productos?.data">
-                        <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
-                            {{ producto.nombre }}
-                        </td>
-                        <td class="d-none d-lg-table-cell">
-                            <select name="enable" class="form-select w-auto border-0" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                        </td>
-                        <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
-                        <td class="text-center">
-                            <span *ngIf="producto?.inventarios?.length > 0" style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
-                                {{ producto.inventarios | sum:'stock' }}
-                            </span>
-                            <span *ngIf="producto?.inventarios?.length == 0" >
-                                Sin control
-                            </span>
-                            <ng-template #popTemplate>
-                                <span *ngIf="producto?.inventarios?.length > 0">
-                                    <table width="200px">
-                                        <thead>
-                                            <tr>
-                                                <td>Sucursal</td>
-                                                <td class="text-right">Stock</td>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td>{{ inventario.nombre_sucursal}}</td>
-                                                <td class="text-right">{{ inventario.stock }}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                    @if (productos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene productos registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (producto of productos?.data; track producto.id) {
+                        <tr>
+                            <td>
+                                <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px"> 
+                                {{ producto.nombre }}
+                            </td>
+                            <td class="d-none d-lg-table-cell">
+                                <select name="enable" class="form-select w-auto border-0" [(ngModel)]="producto.enable" [ngClass]="{'bg-light-danger' : producto?.enable == 0, 'bg-light-success' : producto?.enable == 1}">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>
+                            <td class="text-center">
+                                @if (producto?.inventarios?.length > 0) {
+                                    <span style="display: block; height: 40px; line-height: 40px;" class="click" placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                        {{ producto.inventarios | sum:'stock' }}
+                                    </span>
+                                }
+                                @if (producto?.inventarios?.length == 0) {
+                                    <span>
+                                        Sin control
+                                    </span>
+                                }
+                                <ng-template #popTemplate>
+                                    @if (producto?.inventarios?.length > 0) {
+                                        <span>
+                                            <table width="200px">
+                                                <thead>
+                                                    <tr>
+                                                        <td>Sucursal</td>
+                                                        <td class="text-right">Stock</td>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (inventario of producto?.inventarios; track inventario.id || $index) {
+                                                        <tr>
+                                                            <td>{{ inventario.nombre_sucursal}}</td>
+                                                            <td class="text-right">{{ inventario.stock }}</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </span>
+                                    }
+                                    @if (producto?.inventarios?.length == 0) {
+                                        <span>
+                                            <p> Sin inventarios configurados </p>
+                                        </span>
+                                    }
+                                </ng-template>
+                            </td>
+                            <td class="text-right">{{ producto.costo  | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
                                 </span>
-                                <span *ngIf="producto?.inventarios?.length == 0">
-                                    <p> Sin inventarios configurados </p>
-                                </span>
-                            </ng-template>
-                        </td>
-                        <td class="text-right">{{ producto.costo  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column align-items-start">
-                                    <a routerLink="/materia-prima/editar/{{producto.id}}" class="btn">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a routerLink="/kardex/{{producto.id}}" class="btn">
-                                        <i class="fa fa-fw fa-right-left"></i> Kardex
-                                    </a>
-                                    <a routerLink="/devolucion-venta/nueva" class="btn">
-                                        <i class="fa fa-fw fa-wrench"></i> Ajustar
-                                    </a>
-                                    <a routerLink="/devolucion-venta/nueva" class="btn">
-                                        <i class="fa fa-fw fa-arrow-right-from-bracket"></i> Trasladar
-                                    </a>
-                                    <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
-                                        <i class="fa fa-fw fa-trash"></i> Eliminar
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-                    </tr>
+                                <ng-template #accionesTemplate>
+                                    <div class="d-flex flex-column align-items-start">
+                                        <a routerLink="/materia-prima/editar/{{producto.id}}" class="btn">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a routerLink="/kardex/{{producto.id}}" class="btn">
+                                            <i class="fa fa-fw fa-right-left"></i> Kardex
+                                        </a>
+                                        <a routerLink="/devolucion-venta/nueva" class="btn">
+                                            <i class="fa fa-fw fa-wrench"></i> Ajustar
+                                        </a>
+                                        <a routerLink="/devolucion-venta/nueva" class="btn">
+                                            <i class="fa fa-fw fa-arrow-right-from-bracket"></i> Trasladar
+                                        </a>
+                                        <a routerLink="/devolucion-venta/nueva" class="btn text-danger">
+                                            <i class="fa fa-fw fa-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (productos?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -152,9 +178,11 @@
                 <label for="filtro.categoria_id">Categoria:</label>
                 <select [(ngModel)]="filtro.categoria_id" class="form-control" name="filtro.categoria_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
-                        {{ categoria.nombre }}
-                    </option>
+                    @for (categoria of categorias; track categoria.id) {
+                        <option [ngValue]="categoria.id">
+                            {{ categoria.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -179,8 +207,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -210,8 +242,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading || !producto.precio">
-                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar <small>(F4)</small></span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

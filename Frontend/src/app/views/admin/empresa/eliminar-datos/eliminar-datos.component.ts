@@ -1,4 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
@@ -7,8 +10,11 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-eliminar-datos',
-  templateUrl: './eliminar-datos.component.html'
+    selector: 'app-eliminar-datos',
+    templateUrl: './eliminar-datos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class EliminarDatosComponent implements OnInit {
 

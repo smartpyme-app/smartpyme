@@ -8,16 +8,18 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="documentos?.total">
-                Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="cargarDocumentos()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                de {{ documentos?.total + ' registros' }}
-            </span>
+            @if (documentos?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" (change)="cargarDocumentos()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    de {{ documentos?.total + ' registros' }}
+                </span>
+            }
     </div>
   </div>
 
@@ -33,50 +35,58 @@
       </tr>
       </thead>
       <tbody>
-      <tr *ngIf="documentos?.total < 1 && !loading">
-        <td colspan="6" class="text-center">
-          <span class="badge bg-primary">No hay documentos en el historial</span>
-        </td>
-      </tr>
-      <tr *ngIf="loading">
-        <td colspan="6" class="text-center">
-          <span class="badge bg-primary">Cargando...</span>
-        </td>
-      </tr>
-      <tr *ngFor="let documento of documentos?.data">
-        <td>{{ documento.nombre }}</td>
-        <td>{{ documento.correlativo }}</td>
-        <td>{{ documento.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-        <td>
-                        <span class="badge" [ngClass]="{
-                            'bg-success': documento.activo == 1,
-                            'bg-warning': documento.activo == 0
-                        }">
-                            {{ documento.activo == 1 ? 'Activo' : 'Inactivo' }}
-                        </span>
-        </td>
-        <td class="text-center">
-                        <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                            <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                        </span>
-          <ng-template #accionesTemplate>
-            <div class="list-group border-0">
-              <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mdetalle, documento)" tooltip="Ver detalles">
-                <i class="fa fa-pencil-alt"></i> Ver Detalles
-              </a>
-            </div>
-          </ng-template>
+      @if (documentos?.total < 1 && !loading) {
+        <tr>
+          <td colspan="6" class="text-center">
+            <span class="badge bg-primary">No hay documentos en el historial</span>
+          </td>
+        </tr>
+      }
+      @if (loading) {
+        <tr>
+          <td colspan="6" class="text-center">
+            <span class="badge bg-primary">Cargando...</span>
+          </td>
+        </tr>
+      }
+      @for (documento of documentos?.data; track documento.id || $index) {
+        <tr>
+          <td>{{ documento.nombre }}</td>
+          <td>{{ documento.correlativo }}</td>
+          <td>{{ documento.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>
+                          <span class="badge" [ngClass]="{
+                              'bg-success': documento.activo == 1,
+                              'bg-warning': documento.activo == 0
+                          }">
+                              {{ documento.activo == 1 ? 'Activo' : 'Inactivo' }}
+                          </span>
+          </td>
+          <td class="text-center">
+                          <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                              <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                          </span>
+            <ng-template #accionesTemplate>
+              <div class="list-group border-0">
+                <a class="list-group-item list-group-item-action border-0 click" (click)="openModal(mdetalle, documento)" tooltip="Ver detalles">
+                  <i class="fa fa-pencil-alt"></i> Ver Detalles
+                </a>
+              </div>
+            </ng-template>
 
 
-        </td>
-      </tr>
+          </td>
+        </tr>
+      }
       </tbody>
     </table>
   </div>
 
-  <div class="col-12" *ngIf="documentos?.last_page > 1">
-    <app-pagination [items]="documentos" (setPagination)="setPagination($event)"></app-pagination>
-  </div>
+  @if (documentos?.last_page > 1) {
+    <div class="col-12">
+      <app-pagination [items]="documentos" (setPagination)="setPagination($event)"></app-pagination>
+    </div>
+  }
 </section>
 
 <ng-template #mdetalle>
@@ -108,9 +118,11 @@
         <div class="form-group col-md-6">
           <label for="id_sucursal">Sucursal</label>
           <select name="id_sucursal" [(ngModel)]="documento.id_sucursal" class="form-select">
-            <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-              {{ sucursal.nombre }}
-            </option>
+            @for (sucursal of sucursales; track sucursal.id || $index) {
+              <option [value]="sucursal.id">
+                {{ sucursal.nombre }}
+              </option>
+            }
           </select>
         </div>
         <div class="form-group col-md-6">

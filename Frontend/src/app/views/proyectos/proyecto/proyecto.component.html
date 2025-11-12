@@ -11,9 +11,11 @@
                 <div class="input-group flex-nowrap">
                     <ng-select name="id_cliente" placeholder="Consumidor Final" [(ngModel)]="proyecto.id_cliente" class="form-select p-0">
                         <ng-option value=""> Seleccione aquí </ng-option>
-                        <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                        </ng-option>
+                        @for (cliente of clientes; track cliente.id) {
+                            <ng-option [value]="cliente.id">
+                                {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                            </ng-option>
+                        }
                     </ng-select>
                     <app-crear-cliente [id_cliente]="proyecto.id_cliente" (update)="setCliente($event)"></app-crear-cliente>
                 </div>
@@ -50,8 +52,12 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar proyecto  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar proyecto  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </div>
@@ -76,23 +82,30 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="3" class="text-center" *ngIf="proyecto?.cotizaciones?.length < 1 && !loading">
-                                <span class="badge bg-primary">No tiene cotizaciones registradas</span>
-                            </td>
-                            <td colspan="3" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
+                        @if (proyecto?.cotizaciones?.length < 1 && !loading) {
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <span class="badge bg-primary">No tiene cotizaciones registradas</span>
+                                </td>
+                            </tr>
+                        }
+                        @if (loading) {
+                            <tr>
+                                <td colspan="3" class="text-center">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let venta of proyecto.cotizaciones">
-                            
-                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>
-                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
-                            </td>
-                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                        @for (venta of proyecto.cotizaciones; track venta.id) {
+                            <tr class="animated fadeIn">
+                                <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                                <td>
+                                    <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                                </td>
+                                <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -135,26 +148,33 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="10" class="text-center" *ngIf="proyecto?.compras?.length < 1 && !loading">
-                                <span class="badge bg-primary">No tiene compras registradas</span>
-                            </td>
-                            <td colspan="10" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
+                        @if (proyecto?.compras?.length < 1 && !loading) {
+                            <tr>
+                                <td colspan="10" class="text-center">
+                                    <span class="badge bg-primary">No tiene compras registradas</span>
+                                </td>
+                            </tr>
+                        }
+                        @if (loading) {
+                            <tr>
+                                <td colspan="10" class="text-center">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let compra of proyecto.compras">
-                            
-                            <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{compra.nombre_proveedor | truncate:30 }}</td>
-                            <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
-                            <td>{{compra.forma_pago}}</td>
-                            <td>
-                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
-                            </td>
-                            <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                        @for (compra of proyecto.compras; track compra.id) {
+                            <tr class="animated fadeIn">
+                                <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
+                                <td>{{compra.nombre_proveedor | truncate:30 }}</td>
+                                <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
+                                <td>{{compra.forma_pago}}</td>
+                                <td>
+                                    <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : compra?.estado == 'Pendiente', 'bg-danger' : compra?.estado == 'Anulada', 'bg-info' : compra?.estado == 'Consigna', 'bg-success' : compra?.estado == 'Pagada', 'bg-primary' : compra?.estado == 'Pre-compra'}">{{ compra.estado }}</span>
+                                </td>
+                                <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
+                            </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -200,30 +220,36 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="10" class="text-center" *ngIf="proyecto?.gastos?.length < 1 && !loading">
-                                <span class="badge bg-primary">No tiene gastos registradas</span>
-                            </td>
-                            <td colspan="10" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
+                        @if (proyecto?.gastos?.length < 1 && !loading) {
+                            <tr>
+                                <td colspan="10" class="text-center">
+                                    <span class="badge bg-primary">No tiene gastos registradas</span>
+                                </td>
+                            </tr>
+                        }
+                        @if (loading) {
+                            <tr>
+                                <td colspan="10" class="text-center">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let gasto of proyecto.gastos">
-                            
-                            <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
-                            <!-- <td>{{gasto.nombre_usuario }}</td> -->
-                            <td>{{gasto.nombre_proveedor | truncate:30 }}</td>
-                            <td>{{gasto.concepto}}</td>
-                            <td>{{gasto.forma_pago}}</td>
-                            <td>
-                                <span class="badge" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
-                                    {{gasto.estado}}
-                                </span>
-                            </td>
-                            <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
-
-                        </tr>
+                        @for (gasto of proyecto.gastos; track gasto.id) {
+                            <tr class="animated fadeIn">
+                                <td>{{gasto.fecha | date:'dd/MM/yyyy'}}</td>
+                                <!-- <td>{{gasto.nombre_usuario }}</td> -->
+                                <td>{{gasto.nombre_proveedor | truncate:30 }}</td>
+                                <td>{{gasto.concepto}}</td>
+                                <td>{{gasto.forma_pago}}</td>
+                                <td>
+                                    <span class="badge" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado', 'bg-warning' : gasto.estado == 'Pendiente', 'bg-success' : gasto.estado == 'Confirmado'}">
+                                        {{gasto.estado}}
+                                    </span>
+                                </td>
+                                <td class="text-end">{{gasto.total | currency:'USD':'symbol':'1.2'}}</td>
+                            </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>
@@ -267,25 +293,32 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="5" class="text-center" *ngIf="proyecto?.ventas?.length < 1 && !loading">
-                                <span class="badge bg-primary">No tiene ventas registradas</span>
-                            </td>
-                            <td colspan="5" class="text-center" *ngIf="loading">
-                                <span class="badge bg-primary">Cargando...</span>
-                            </td>
-                        </tr>
+                        @if (proyecto?.ventas?.length < 1 && !loading) {
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <span class="badge bg-primary">No tiene ventas registradas</span>
+                                </td>
+                            </tr>
+                        }
+                        @if (loading) {
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <span class="badge bg-primary">Cargando...</span>
+                                </td>
+                            </tr>
+                        }
 
-                        <tr class="animated fadeIn" *ngFor=" let venta of proyecto.ventas">
-                            
-                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
-                            <td>{{venta.forma_pago}}</td>
-                            <td>
-                                <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
-                            </td>
-                            <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        </tr>
+                        @for (venta of proyecto.ventas; track venta.id) {
+                            <tr class="animated fadeIn">
+                                <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                                <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
+                                <td>{{venta.forma_pago}}</td>
+                                <td>
+                                    <span class="badge py-2" style="font-size: 0.8rem;" [ngClass]="{'bg-warning' : venta?.estado == 'Pendiente', 'bg-danger' : venta?.estado == 'Anulada', 'bg-info' : venta?.estado == 'Consigna', 'bg-success' : venta?.estado == 'Pagada', 'bg-primary' : venta?.estado == 'Pre-venta'}">{{ venta.estado }}</span>
+                                </td>
+                                <td class="text-right">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            </tr>
+                        }
                     </tbody>
                     <tfoot>
                         <tr>

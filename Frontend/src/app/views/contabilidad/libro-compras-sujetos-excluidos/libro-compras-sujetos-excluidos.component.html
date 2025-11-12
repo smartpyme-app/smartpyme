@@ -37,7 +37,9 @@
         <div class="ms-auto d-flex gap-2">
             <select class="form-select" [(ngModel)]="filtros.id_sucursal" name="id_sucursal" (change)="loadAll()">
                 <option value="">Todas las sucursales</option>
-                <option [value]="sucursal.id" *ngFor="let sucursal of sucursales"> {{ sucursal.nombre }} </option>
+                @for (sucursal of sucursales; track sucursal.id || $index) {
+                  <option [value]="sucursal.id"> {{ sucursal.nombre }} </option>
+                }
             </select>
             <select class="form-select" name="mes" [(ngModel)]="filtros.mes" (change)="setTime()">
                 <option value="1">Enero</option>
@@ -54,9 +56,11 @@
                 <option value="12">Diciembre</option>
             </select>
             <select class="form-select" name="anio" [(ngModel)]="filtros.anio" (change)="setTime()">
-              <option *ngFor="let year of years" [value]="year">
+              @for (year of years; track year || $index) {
+                <option [value]="year">
                   {{ year }}
                 </option>
+              }
             </select>
             <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
         </div>
@@ -85,15 +89,22 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td colspan="14" class="text-center" *ngIf="ivas?.length < 1 && !loading">
+                        @if (ivas?.length < 1 && !loading) {
+                          <tr>
+                            <td colspan="14" class="text-center">
                                 <span class="badge bg-primary">No tiene ivas registrados</span>
                             </td>
-                            <td colspan="14" class="text-center" *ngIf="loading">
+                          </tr>
+                        }
+                        @if (loading) {
+                          <tr>
+                            <td colspan="14" class="text-center">
                                 <span class="badge bg-primary">Cargando...</span>
                             </td>
-                        </tr>
-                        <tr *ngFor=" let iva of ivas; let i = index">
+                          </tr>
+                        }
+                        @for (iva of ivas; track iva.referencia || $index; let i = $index) {
+                          <tr>
                             <td>{{ iva.tipo_documento }}</td>
                             <td>{{ iva.num_documento }}</td>
                             <td>{{ iva.proveedor }}</td>
@@ -107,7 +118,8 @@
                             <td>{{ iva.sector }}</td>
                             <td>{{ iva.tipo }}</td>
                             <td>{{ iva.num_anexo }}</td>
-                        </tr>
+                          </tr>
+                        }
                     </tbody>
                 </table>
             </div>
@@ -138,16 +150,22 @@
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
+                    @for (sucursal of sucursales; track sucursal.id || $index) {
+                      <option [value]="sucursal.id">
                         {{ sucursal.nombre }}
-                    </option>
+                      </option>
+                    }
                 </select>
             </div>
         </div>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                  <span>Filtrar</span>
+                }
+                @if (loading) {
+                  <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

@@ -19,9 +19,11 @@
               (change)="onCambiarPeriodo()"
               [disabled]="procesandoCierre">
         <option value="">Seleccione mes</option>
-        <option *ngFor="let month of months" [value]="month.value">
-          {{month.label}}
-        </option>
+        @for (month of months; track month.value || $index) {
+          <option [value]="month.value">
+            {{month.label}}
+          </option>
+        }
       </select>
     </div>
 
@@ -33,9 +35,11 @@
               (change)="onCambiarPeriodo()"
               [disabled]="procesandoCierre">
         <option value="">Seleccione año</option>
-        <option *ngFor="let year of years" [value]="year">
-          {{year}}
-        </option>
+        @for (year of years; track year || $index) {
+          <option [value]="year">
+            {{year}}
+          </option>
+        }
       </select>
     </div>
 
@@ -55,79 +59,94 @@
 </section>
 
 <!-- Estado del Período -->
-<section class="bg-white p-4 rounded mb-4 shadow-sm" *ngIf="selectedMonth && selectedYear">
-  <div class="d-flex align-items-center mb-3">
-    <i class="fa fa-info-circle text-primary me-2"></i>
-    <h4 class="mb-0">Estado del Período</h4>
-  </div>
-
-  <!-- Cargando -->
-  <div *ngIf="cargandoPeriodo" class="text-center py-4">
-    <div class="spinner-border text-primary me-2" role="status"></div>
-    <span>Cargando información del período...</span>
-  </div>
-
-  <!-- Información del período -->
-  <div *ngIf="!cargandoPeriodo && estadoPeriodo" class="row">
-    <div class="col-md-6">
-      <div class="d-flex align-items-center mb-2">
-        <span class="fw-bold me-2">Período:</span>
-        <span>{{ getMonthName(selectedMonth) }} {{ selectedYear }}</span>
-      </div>
-      <div class="d-flex align-items-center mb-2">
-        <span class="fw-bold me-2">Estado:</span>
-        <span class="badge py-2 px-3"
-              [ngClass]="estadoPeriodo.cerrado ? 'bg-success' : 'bg-warning'">
-          {{ estadoPeriodo.cerrado ? 'Cerrado' : 'Abierto' }}
-        </span>
-      </div>
+@if (selectedMonth && selectedYear) {
+  <section class="bg-white p-4 rounded mb-4 shadow-sm">
+    <div class="d-flex align-items-center mb-3">
+      <i class="fa fa-info-circle text-primary me-2"></i>
+      <h4 class="mb-0">Estado del Período</h4>
     </div>
 
-    <div class="col-md-6">
-      <div *ngIf="estadoPeriodo.cerrado" class="mb-3">
-        <div class="d-flex align-items-center mb-2">
-          <span class="fw-bold me-2">Fecha de cierre:</span>
-          <span>
-            {{ estadoPeriodo.fecha_cierre | date:'dd/MM/yyyy' }}
-          </span>
+    <!-- Cargando -->
+    @if (cargandoPeriodo) {
+      <div class="text-center py-4">
+        <div class="spinner-border text-primary me-2" role="status"></div>
+        <span>Cargando información del período...</span>
+      </div>
+    }
+
+    <!-- Información del período -->
+    @if (!cargandoPeriodo && estadoPeriodo) {
+      <div class="row">
+        <div class="col-md-6">
+          <div class="d-flex align-items-center mb-2">
+            <span class="fw-bold me-2">Período:</span>
+            <span>{{ getMonthName(selectedMonth) }} {{ selectedYear }}</span>
+          </div>
+          <div class="d-flex align-items-center mb-2">
+            <span class="fw-bold me-2">Estado:</span>
+            <span class="badge py-2 px-3"
+                  [ngClass]="estadoPeriodo.cerrado ? 'bg-success' : 'bg-warning'">
+              {{ estadoPeriodo.cerrado ? 'Cerrado' : 'Abierto' }}
+            </span>
+          </div>
         </div>
-        <div *ngIf="estadoPeriodo.usuario_cierre" class="d-flex align-items-center mb-2">
-          <span class="fw-bold me-2">Cerrado por:</span>
-          <span>
-            {{ estadoPeriodo.usuario_cierre }}
-          </span>
+
+        <div class="col-md-6">
+          @if (estadoPeriodo.cerrado) {
+            <div class="mb-3">
+              <div class="d-flex align-items-center mb-2">
+                <span class="fw-bold me-2">Fecha de cierre:</span>
+                <span>
+                  {{ estadoPeriodo.fecha_cierre | date:'dd/MM/yyyy' }}
+                </span>
+              </div>
+              @if (estadoPeriodo.usuario_cierre) {
+                <div class="d-flex align-items-center mb-2">
+                  <span class="fw-bold me-2">Cerrado por:</span>
+                  <span>
+                    {{ estadoPeriodo.usuario_cierre }}
+                  </span>
+                </div>
+              }
+            </div>
+          }
         </div>
       </div>
-    </div>
-  </div>
+    }
 
-  <!-- Botón de reapertura -->
-  <div *ngIf="!cargandoPeriodo && estadoPeriodo?.cerrado" class="mt-3">
-    <button (click)="reabrirPeriodo()"
-            [disabled]="procesandoCierre"
-            class="btn btn-warning">
-      <i class="fa fa-unlock me-1"></i>
-      Reabrir Período
-    </button>
-  </div>
-</section>
+    <!-- Botón de reapertura -->
+    @if (!cargandoPeriodo && estadoPeriodo?.cerrado) {
+      <div class="mt-3">
+        <button (click)="reabrirPeriodo()"
+                [disabled]="procesandoCierre"
+                class="btn btn-warning">
+          <i class="fa fa-unlock me-1"></i>
+          Reabrir Período
+        </button>
+      </div>
+    }
+  </section>
+}
 
 <!-- Validaciones Previas -->
-<section class="bg-white p-4 rounded mb-4 shadow-sm"
-         *ngIf="!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado">
-  <div class="d-flex align-items-center mb-3">
-    <i class="fa fa-check-circle text-primary me-2"></i>
-    <h4 class="mb-0">Validaciones Previas</h4>
-  </div>
+@if (!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado) {
+  <section class="bg-white p-4 rounded mb-4 shadow-sm">
+    <div class="d-flex align-items-center mb-3">
+      <i class="fa fa-check-circle text-primary me-2"></i>
+      <h4 class="mb-0">Validaciones Previas</h4>
+    </div>
 
-  <!-- Cargando validaciones -->
-  <div *ngIf="cargandoValidaciones" class="text-center py-3">
-    <div class="spinner-border text-primary me-2" role="status"></div>
-    <span>Ejecutando validaciones...</span>
-  </div>
+    <!-- Cargando validaciones -->
+    @if (cargandoValidaciones) {
+      <div class="text-center py-3">
+        <div class="spinner-border text-primary me-2" role="status"></div>
+        <span>Ejecutando validaciones...</span>
+      </div>
+    }
 
-  <!-- Resultados de validaciones -->
-  <div *ngIf="!cargandoValidaciones" class="row">
+    <!-- Resultados de validaciones -->
+    @if (!cargandoValidaciones) {
+      <div class="row">
     <div class="col-md-4">
       <div class="card border-0 h-100"
            [ngClass]="validacionesPrevias.periodoAnteriorCerrado ? 'bg-light-success' : 'bg-light-danger'">
@@ -158,12 +177,18 @@
              }"></i>
           <h6 class="card-title">Balance</h6>
           <p class="card-text text-muted">
-            <span *ngIf="validacionesPrevias.balanceCuadra">Cuadrado</span>
-            <span *ngIf="!validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia">
-              Diferencia menor<br>
-              <small>${{ validacionesPrevias.diferenciaBalance | number:'1.2-2' }}</small>
-            </span>
-            <span *ngIf="!validacionesPrevias.balanceCuadraConTolerancia">Descuadrado</span>
+            @if (validacionesPrevias.balanceCuadra) {
+              <span>Cuadrado</span>
+            }
+            @if (!validacionesPrevias.balanceCuadra && validacionesPrevias.balanceCuadraConTolerancia) {
+              <span>
+                Diferencia menor<br>
+                <small>${{ validacionesPrevias.diferenciaBalance | number:'1.2-2' }}</small>
+              </span>
+            }
+            @if (!validacionesPrevias.balanceCuadraConTolerancia) {
+              <span>Descuadrado</span>
+            }
           </p>
         </div>
       </div>
@@ -182,44 +207,52 @@
         </div>
       </div>
     </div>
-  </div>
-</section>
+      </div>
+    }
+  </section>
+}
 
 <!-- Simulación de Cierre -->
-<section class="bg-white p-4 rounded mb-4 shadow-sm"
-         *ngIf="!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div class="d-flex align-items-center">
-      <i class="fa fa-play-circle text-primary me-2"></i>
-      <h4 class="mb-0">Simulación de Cierre</h4>
-    </div>
-    <div class="d-flex gap-2">
-      <button (click)="simularCierre()"
-              [disabled]="cargandoSimulacion || procesandoCierre"
-              class="btn btn-primary">
-        <span *ngIf="!cargandoSimulacion">
-          <i class="fa fa-play me-1"></i>
-          Simular Cierre
-        </span>
-        <span *ngIf="cargandoSimulacion">
-          <div class="spinner-border spinner-border-sm me-1" role="status"></div>
-          Simulando...
-        </span>
-      </button>
+@if (!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado) {
+  <section class="bg-white p-4 rounded mb-4 shadow-sm">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <i class="fa fa-play-circle text-primary me-2"></i>
+        <h4 class="mb-0">Simulación de Cierre</h4>
+      </div>
+      <div class="d-flex gap-2">
+        <button (click)="simularCierre()"
+                [disabled]="cargandoSimulacion || procesandoCierre"
+                class="btn btn-primary">
+          @if (!cargandoSimulacion) {
+            <span>
+              <i class="fa fa-play me-1"></i>
+              Simular Cierre
+            </span>
+          }
+          @if (cargandoSimulacion) {
+            <span>
+              <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+              Simulando...
+            </span>
+          }
+        </button>
       <!-- <button (click)="mostrarBalance()"
               [disabled]="cargandoBalance || procesandoCierre"
               class="btn btn-outline-primary">
         <i class="fa fa-table me-1"></i>
         Ver Balance
       </button> -->
+      </div>
     </div>
-  </div>
 
   <!-- Resultados de simulación -->
-  <div *ngIf="mostrandoSimulacion && resultadoSimulacion" class="mt-4">
+  @if (mostrandoSimulacion && resultadoSimulacion) {
+    <div class="mt-4">
 
-    <!-- Balance Proyectado -->
-    <div class="row mb-4" *ngIf="resultadoSimulacion.balance_proyectado">
+      <!-- Balance Proyectado -->
+      @if (resultadoSimulacion.balance_proyectado) {
+        <div class="row mb-4">
       <div class="col-12">
         <div class="card border-0 bg-light mb-3">
           <div class="card-body">
@@ -275,7 +308,8 @@
           </div>
         </div>
       </div>
-    </div>
+        </div>
+      }
 
     <div class="row">
       <!-- Métricas principales -->
@@ -370,96 +404,112 @@
       </div>
     </div>
 
-    <!-- Advertencias -->
-    <div *ngIf="resultadoSimulacion.advertencias?.length > 0" class="mt-4">
-      <h6 class="text-warning">
-        <i class="fa fa-exclamation-triangle me-1"></i>
-        Advertencias
-      </h6>
-      <div class="alert alert-warning">
-        <ul class="mb-0">
-          <li *ngFor="let advertencia of resultadoSimulacion.advertencias">
-            <strong>{{ advertencia.tipo | uppercase }}:</strong> {{ advertencia.mensaje }}
-            <small class="d-block text-muted">{{ advertencia.accion }}</small>
-          </li>
-        </ul>
-      </div>
-    </div>
+      <!-- Advertencias -->
+      @if (resultadoSimulacion.advertencias?.length > 0) {
+        <div class="mt-4">
+          <h6 class="text-warning">
+            <i class="fa fa-exclamation-triangle me-1"></i>
+            Advertencias
+          </h6>
+          <div class="alert alert-warning">
+            <ul class="mb-0">
+              @for (advertencia of resultadoSimulacion.advertencias; track advertencia.tipo || $index) {
+                <li>
+                  <strong>{{ advertencia.tipo | uppercase }}:</strong> {{ advertencia.mensaje }}
+                  <small class="d-block text-muted">{{ advertencia.accion }}</small>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
 
-    <!-- Recomendaciones -->
-    <div *ngIf="resultadoSimulacion.recomendaciones?.length > 0" class="mt-3">
-      <h6 class="text-info">
-        <i class="fa fa-lightbulb me-1"></i>
-        Recomendaciones
-      </h6>
-      <div class="alert alert-info">
-        <ul class="mb-0">
-          <li *ngFor="let recomendacion of resultadoSimulacion.recomendaciones">
-            {{ recomendacion }}
-          </li>
-        </ul>
-      </div>
+      <!-- Recomendaciones -->
+      @if (resultadoSimulacion.recomendaciones?.length > 0) {
+        <div class="mt-3">
+          <h6 class="text-info">
+            <i class="fa fa-lightbulb me-1"></i>
+            Recomendaciones
+          </h6>
+          <div class="alert alert-info">
+            <ul class="mb-0">
+              @for (recomendacion of resultadoSimulacion.recomendaciones; track $index) {
+                <li>
+                  {{ recomendacion }}
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      }
     </div>
-  </div>
+  }
 </section>
+}
 
 <!-- Balance de Comprobación -->
-<section class="bg-white p-4 rounded mb-4 shadow-sm" *ngIf="mostrandoBalance">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <div class="d-flex align-items-center">
-      <i class="fa fa-table text-primary me-2"></i>
-      <h4 class="mb-0">Balance de Comprobación</h4>
+@if (mostrandoBalance) {
+  <section class="bg-white p-4 rounded mb-4 shadow-sm">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center">
+        <i class="fa fa-table text-primary me-2"></i>
+        <h4 class="mb-0">Balance de Comprobación</h4>
+      </div>
+      <button (click)="ocultarBalance()" class="btn btn-outline-secondary btn-sm">
+        <i class="fa fa-times me-1"></i>
+        Ocultar
+      </button>
     </div>
-    <button (click)="ocultarBalance()" class="btn btn-outline-secondary btn-sm">
-      <i class="fa fa-times me-1"></i>
-      Ocultar
-    </button>
-  </div>
 
-  <!-- Nota explicativa -->
-  <div class="alert alert-info">
-    <div class="d-flex align-items-start">
-      <i class="fa fa-info-circle me-2 mt-1"></i>
-      <div>
-        <strong>Entendiendo el Balance:</strong>
-        <ul class="mb-0 mt-1">
-          <li><strong>Totales Movimientos:</strong> Suma de todos los movimientos del período (debe vs haber) - <em>Estos deben cuadrar</em></li>
-          <li><strong>Totales por Naturaleza:</strong> Suma de saldos finales por tipo de cuenta - <em>Solo para información</em></li>
-        </ul>
+    <!-- Nota explicativa -->
+    <div class="alert alert-info">
+      <div class="d-flex align-items-start">
+        <i class="fa fa-info-circle me-2 mt-1"></i>
+        <div>
+          <strong>Entendiendo el Balance:</strong>
+          <ul class="mb-0 mt-1">
+            <li><strong>Totales Movimientos:</strong> Suma de todos los movimientos del período (debe vs haber) - <em>Estos deben cuadrar</em></li>
+            <li><strong>Totales por Naturaleza:</strong> Suma de saldos finales por tipo de cuenta - <em>Solo para información</em></li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Cargando balance -->
-  <div *ngIf="cargandoBalance" class="text-center py-4">
-    <div class="spinner-border text-primary me-2" role="status"></div>
-    <span>Cargando balance de comprobación...</span>
-  </div>
+    <!-- Cargando balance -->
+    @if (cargandoBalance) {
+      <div class="text-center py-4">
+        <div class="spinner-border text-primary me-2" role="status"></div>
+        <span>Cargando balance de comprobación...</span>
+      </div>
+    }
 
-  <!-- Tabla de balance -->
-  <div *ngIf="!cargandoBalance && balanceComprobacion" class="table-responsive">
-    <table class="table table-sm table-hover">
-      <thead class="table-dark">
-        <tr>
-          <th>Código</th>
-          <th>Cuenta</th>
-          <th class="text-end">Saldo Inicial</th>
-          <th class="text-end">Debe</th>
-          <th class="text-end">Haber</th>
-          <th class="text-end">Saldo Final</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let cuenta of balanceComprobacion.balance"
-            [ngClass]="{'table-success': cuenta.saldo_final > 0, 'table-light': cuenta.saldo_final === 0}">
-          <td>{{ cuenta.codigo }}</td>
-          <td>{{ cuenta.nombre }}</td>
-          <td class="text-end">{{ cuenta.saldo_inicial | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end">{{ cuenta.debe | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end">{{ cuenta.haber | currency:'USD':'symbol':'1.2-2' }}</td>
-          <td class="text-end fw-bold">{{ cuenta.saldo_final | currency:'USD':'symbol':'1.2-2' }}</td>
-        </tr>
-      </tbody>
+    <!-- Tabla de balance -->
+    @if (!cargandoBalance && balanceComprobacion) {
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th>Código</th>
+              <th>Cuenta</th>
+              <th class="text-end">Saldo Inicial</th>
+              <th class="text-end">Debe</th>
+              <th class="text-end">Haber</th>
+              <th class="text-end">Saldo Final</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cuenta of balanceComprobacion.balance; track cuenta.codigo || $index) {
+              <tr
+                  [ngClass]="{'table-success': cuenta.saldo_final > 0, 'table-light': cuenta.saldo_final === 0}">
+                <td>{{ cuenta.codigo }}</td>
+                <td>{{ cuenta.nombre }}</td>
+                <td class="text-end">{{ cuenta.saldo_inicial | currency:'USD':'symbol':'1.2-2' }}</td>
+                <td class="text-end">{{ cuenta.debe | currency:'USD':'symbol':'1.2-2' }}</td>
+                <td class="text-end">{{ cuenta.haber | currency:'USD':'symbol':'1.2-2' }}</td>
+                <td class="text-end fw-bold">{{ cuenta.saldo_final | currency:'USD':'symbol':'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
       <tfoot>
         <!-- Totales de Movimientos (Principal) -->
         <tr class="table-success">
@@ -501,72 +551,83 @@
                title="Esta diferencia es normal y no indica error"></i>
           </th>
         </tr>
-      </tfoot>
-    </table>
-  </div>
-</section>
+        </tfoot>
+      </table>
+    </div>
+    }
+  </section>
+}
 
 <!-- Confirmación Final -->
-<section class="bg-white p-4 rounded mb-4 shadow-sm"
-         *ngIf="!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado">
-  <div class="d-flex align-items-center mb-3">
-    <i class="fa fa-exclamation-triangle text-warning me-2"></i>
-    <h4 class="mb-0">Confirmación de Cierre</h4>
-  </div>
-
-  <div class="row">
-    <div class="col-md-8">
-      <div class="alert alert-info">
-        <h6 class="alert-heading">
-          <i class="fa fa-info-circle me-1"></i>
-          Antes de proceder
-        </h6>
-        <p class="mb-2">Asegúrese de que:</p>
-        <ul class="mb-0">
-          <li>Todas las partidas del período están aplicadas</li>
-          <li>El balance de comprobación está cuadrado</li>
-          <li>Ha generado los reportes necesarios</li>
-        </ul>
-      </div>
+@if (!cargandoPeriodo && estadoPeriodo && !estadoPeriodo.cerrado) {
+  <section class="bg-white p-4 rounded mb-4 shadow-sm">
+    <div class="d-flex align-items-center mb-3">
+      <i class="fa fa-exclamation-triangle text-warning me-2"></i>
+      <h4 class="mb-0">Confirmación de Cierre</h4>
     </div>
 
-    <div class="col-md-4 d-flex align-items-center justify-content-center">
-      <div class="text-center">
-        <div *ngIf="!confirmacionFinal">
-          <button (click)="prepararConfirmacion()"
-                  [disabled]="!puedeRealizarCierre() || procesandoCierre"
-                  class="btn btn-warning btn-lg">
-            <i class="fa fa-lock me-1"></i>
-            Preparar Cierre
-          </button>
-          <small class="d-block text-muted mt-2">
-            {{ !puedeRealizarCierre() ? 'Resuelva las validaciones primero' : 'Proceder con precaución' }}
-          </small>
+    <div class="row">
+      <div class="col-md-8">
+        <div class="alert alert-info">
+          <h6 class="alert-heading">
+            <i class="fa fa-info-circle me-1"></i>
+            Antes de proceder
+          </h6>
+          <p class="mb-2">Asegúrese de que:</p>
+          <ul class="mb-0">
+            <li>Todas las partidas del período están aplicadas</li>
+            <li>El balance de comprobación está cuadrado</li>
+            <li>Ha generado los reportes necesarios</li>
+          </ul>
         </div>
+      </div>
 
-        <div *ngIf="confirmacionFinal" class="d-flex gap-2">
-          <button (click)="realizarCierre()"
-                  [disabled]="procesandoCierre"
-                  class="btn btn-danger">
-            <span *ngIf="!procesandoCierre">
-              <i class="fa fa-lock me-1"></i>
-              Cerrar Definitivamente
-            </span>
-            <span *ngIf="procesandoCierre">
-              <div class="spinner-border spinner-border-sm me-1" role="status"></div>
-              Cerrando...
-            </span>
-          </button>
-          <button (click)="cancelarConfirmacion()"
-                  [disabled]="procesandoCierre"
-                  class="btn btn-secondary">
-            Cancelar
-          </button>
+      <div class="col-md-4 d-flex align-items-center justify-content-center">
+        <div class="text-center">
+          @if (!confirmacionFinal) {
+            <div>
+              <button (click)="prepararConfirmacion()"
+                      [disabled]="!puedeRealizarCierre() || procesandoCierre"
+                      class="btn btn-warning btn-lg">
+                <i class="fa fa-lock me-1"></i>
+                Preparar Cierre
+              </button>
+              <small class="d-block text-muted mt-2">
+                {{ !puedeRealizarCierre() ? 'Resuelva las validaciones primero' : 'Proceder con precaución' }}
+              </small>
+            </div>
+          }
+
+          @if (confirmacionFinal) {
+            <div class="d-flex gap-2">
+              <button (click)="realizarCierre()"
+                      [disabled]="procesandoCierre"
+                      class="btn btn-danger">
+                @if (!procesandoCierre) {
+                  <span>
+                    <i class="fa fa-lock me-1"></i>
+                    Cerrar Definitivamente
+                  </span>
+                }
+                @if (procesandoCierre) {
+                  <span>
+                    <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+                    Cerrando...
+                  </span>
+                }
+              </button>
+              <button (click)="cancelarConfirmacion()"
+                      [disabled]="procesandoCierre"
+                      class="btn btn-secondary">
+                Cancelar
+              </button>
+            </div>
+          }
         </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+}
 
 <!-- Footer de ayuda -->
 <section class="bg-light p-3 rounded text-center">

@@ -1,5 +1,10 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -7,8 +12,11 @@ import * as moment from 'moment';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-catalogo-cuentas',
-  templateUrl: './catalogo-cuentas.component.html'
+    selector: 'app-catalogo-cuentas',
+    templateUrl: './catalogo-cuentas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent],
+    
 })
 
 export class CatalogoCuentasComponent implements OnInit {

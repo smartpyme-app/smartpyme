@@ -12,7 +12,9 @@
 
 <div class="card">
     <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="cobros?.total">{{ cobros?.total + ' registros' }}</span>
+        @if (cobros?.total) {
+            <span class="text-muted float-start p-2">{{ cobros?.total + ' registros' }}</span>
+        }
 
         <form name="form" (ngSubmit)="search()" autocomplete="off">
         <div class="input-group float-end w-50">
@@ -39,51 +41,61 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="cobros?.total < 1 && !loading">
-                            <span class="badge badge-primary">No tiene cobros registradas</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge badge-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (cobros?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-primary">No tiene cobros registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge badge-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor=" let venta of cobros?.data">
-                        
-                        <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td><a routerLink="/cliente/{{venta.cliente_id}}">{{venta.nombre_cliente}}</a></td>
-                        <td class="text-center">{{venta.nota}}</td>
-                        <td class="text-center">
-                            <span class="badge click" [ngClass]="{'badge-warning' : venta?.estado == 'Pendiente', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
-                                {{venta.estado}}
-                            </span>
-                            <ng-template #popTemplate>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pagada')">Pagada</button>
-                                <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
-                            </ng-template>
-                        </td>
-                        <td class="text-center"> {{venta.tipo_documento }} #{{venta.correlativo }}</td>
-                        <td class="text-center">{{venta.metodo_pago}}</td>
-                        <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-center">
-                            <div class="btn-group" role="group">
-                                <a *ngIf="apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)"  class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a>
-                                <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver detalle">
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>  
-                        </td>
-
-                    </tr>
+                    @for (venta of cobros?.data; track venta.id) {
+                        <tr>
+                            <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
+                            <td><a routerLink="/cliente/{{venta.cliente_id}}">{{venta.nombre_cliente}}</a></td>
+                            <td class="text-center">{{venta.nota}}</td>
+                            <td class="text-center">
+                                <span class="badge click" [ngClass]="{'badge-warning' : venta?.estado == 'Pendiente', 'badge-success' : venta?.estado == 'Pagada'}" [popover]="popTemplate" [outsideClick]="true">
+                                    {{venta.estado}}
+                                </span>
+                                <ng-template #popTemplate>
+                                    <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pagada')">Pagada</button>
+                                    <button class="btn btn-default btn-xs" (click)="setEstado(venta, 'Pendiente')">Pendiente</button>
+                                </ng-template>
+                            </td>
+                            <td class="text-center"> {{venta.tipo_documento }} #{{venta.correlativo }}</td>
+                            <td class="text-center">{{venta.metodo_pago}}</td>
+                            <td class="text-center">{{venta.total | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    @if (apiService.validateRole('super_admin', true) || apiService.validateRole('admin', true)) {
+                                        <a class="btn btn-default" (click)="delete(venta.id)" tooltip="Eliminar">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    }
+                                    <a class="btn btn-default" routerLink="/venta/{{venta.id}}" tooltip="Ver detalle">
+                                        <i class="fa fa-arrow-right"></i>
+                                    </a>
+                                </div>  
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
     </div>
-    <div class="card-footer" *ngIf="cobros?.last_page > 1">
-        <div class="d-flex justify-content-center">
-            <app-pagination [items]="cobros" (setPagination)="setPagination($event)"></app-pagination>
+    @if (cobros?.last_page > 1) {
+        <div class="card-footer">
+            <div class="d-flex justify-content-center">
+                <app-pagination [items]="cobros" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
         </div>
-    </div>
+    }
 </div>

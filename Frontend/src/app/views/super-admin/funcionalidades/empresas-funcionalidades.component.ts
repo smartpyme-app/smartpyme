@@ -1,4 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { AlertService } from '@services/alert.service';
@@ -22,9 +25,12 @@ interface Funcionalidad {
 }
 
 @Component({
-  selector: 'app-empresas-funcionalidades',
-  templateUrl: './empresas-funcionalidades.component.html',
-  styleUrls: ['./empresas-funcionalidades.component.css']
+    selector: 'app-empresas-funcionalidades',
+    templateUrl: './empresas-funcionalidades.component.html',
+    styleUrls: ['./empresas-funcionalidades.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
   // Datos principales

@@ -1,13 +1,19 @@
 import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-crear-impuesto',
-  templateUrl: './crear-impuesto.component.html'
+    selector: 'app-crear-impuesto',
+    templateUrl: './crear-impuesto.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class CrearImpuestoComponent implements OnInit {
 

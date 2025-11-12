@@ -1,4 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgChartsModule } from 'ng2-charts';
 
@@ -7,8 +10,11 @@ import { ApiService } from '../../../../../services/api.service';
 
 
 @Component({
-  selector: 'app-producto-precios',
-  templateUrl: './producto-precios.component.html'
+    selector: 'app-producto-precios',
+    templateUrl: './producto-precios.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class ProductoPreciosComponent implements OnInit {
 

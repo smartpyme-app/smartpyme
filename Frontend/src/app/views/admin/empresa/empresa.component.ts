@@ -1,7 +1,13 @@
 import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef, } from 'ngx-bootstrap/modal';
 import { Router, ActivatedRoute } from '@angular/router';
-import { TabsetComponent } from 'ngx-bootstrap/tabs';
+import { TabsetComponent, TabsModule } from 'ngx-bootstrap/tabs';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { NgxMaskDirective } from 'ngx-mask';
+import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
@@ -9,7 +15,10 @@ import Swal from 'sweetalert2';
 
 @Component({
     selector: 'app-empresa',
-    templateUrl: './empresa.component.html'
+    templateUrl: './empresa.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective],
+
 })
 export class EmpresaComponent implements OnInit {
 
@@ -506,8 +515,8 @@ export class EmpresaComponent implements OnInit {
     getMensajeConfirmacion(): string {
         let mensaje = `<div class="alert alert-info mt-2">
             <i class="fa fa-info-circle me-2"></i>
-            <strong>Proceso automático:</strong> Además de los ${this.cantidadFaltante} CCF, 
-            se generarán automáticamente ${this.cantidadFaltante} Notas de Crédito y 
+            <strong>Proceso automático:</strong> Además de los ${this.cantidadFaltante} CCF,
+            se generarán automáticamente ${this.cantidadFaltante} Notas de Crédito y
             ${this.cantidadFaltante} Notas de Débito relacionadas.
         </div>
         `;

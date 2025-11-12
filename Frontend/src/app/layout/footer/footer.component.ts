@@ -1,8 +1,14 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-footer',
-  templateUrl: './footer.component.html'
+    selector: 'app-footer',
+    templateUrl: './footer.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class FooterComponent implements OnInit {
 

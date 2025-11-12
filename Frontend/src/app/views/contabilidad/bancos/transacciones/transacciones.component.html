@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bancos</h2>
-    <button *ngIf="apiService.canCreateTest('finanzas.transacciones.crear')" routerLink="/bancos/transaccion/crear" tooltip="Crear transacción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transacción</button>
+    @if (apiService.canCreateTest('finanzas.transacciones.crear')) {
+        <button routerLink="/bancos/transaccion/crear" tooltip="Crear transacción (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir transacción</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="transacciones?.total">
-                Mostrando {{ transacciones?.to }} de {{ transacciones?.total + ' registros' }}
-            </span>
+            @if (transacciones?.total) {
+                <span class="text-muted">
+                    Mostrando {{ transacciones?.to }} de {{ transacciones?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -63,15 +67,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="9" class="text-center" *ngIf="transacciones?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene transacciones registrados</span>
-                        </td>
-                        <td colspan="9" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let transaccion of transacciones?.data">
+                    @if (transacciones?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <span class="badge bg-primary">No tiene transacciones registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (transaccion of transacciones?.data; track transaccion.id) {
+                        <tr>
                         <td>{{transaccion.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{transaccion.nombre_usuario}}</td>
                         <td>{{transaccion.cuenta.nombre_banco}} : {{transaccion.cuenta.numero}}</td>
@@ -93,21 +104,31 @@
                                     <a routerLink="/bancos/transaccion/{{transaccion.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="transaccion.estado == 'Pendiente' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Aprobar
-                                    </a>
-                                    <a *ngIf="transaccion.url_referencia" (click)="verDocumento(transaccion)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
-                                    </a>
-                                    <a *ngIf="transaccion.id_referencia" routerLink="/{{transaccion.ruta_referencia}}/{{transaccion.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
-                                    </a>
-                                    <a *ngIf="transaccion.estado != 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Anular
-                                    </a>
-                                    <a *ngIf="transaccion.estado == 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')" (click)="setEstado(transaccion, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
+                                    @if (transaccion.estado == 'Pendiente' && apiService.canEditTest('finanzas.transacciones.editar')) {
+                                        <a (click)="setEstado(transaccion, 'Aprobada')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-check"></i> Aprobar
+                                        </a>
+                                    }
+                                    @if (transaccion.url_referencia) {
+                                        <a (click)="verDocumento(transaccion)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa-regular fa-fw fa-file"></i> Ver comprobante
+                                        </a>
+                                    }
+                                    @if (transaccion.id_referencia) {
+                                        <a routerLink="/{{transaccion.ruta_referencia}}/{{transaccion.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                        </a>
+                                    }
+                                    @if (transaccion.estado != 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')) {
+                                        <a (click)="setEstado(transaccion, 'Anulada')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-ban"></i> Anular
+                                        </a>
+                                    }
+                                    @if (transaccion.estado == 'Anulada' && apiService.canEditTest('finanzas.transacciones.editar')) {
+                                        <a (click)="setEstado(transaccion, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                        </a>
+                                    }
                                     <a (click)="generarPartidaContable(transaccion)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-edit"></i> Generar partida contable
                                     </a>
@@ -115,13 +136,16 @@
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="transacciones?.last_page > 1">
-            <app-pagination [items]="transacciones" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (transacciones && transacciones.last_page && transacciones.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="transacciones" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -176,8 +200,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

@@ -17,15 +17,17 @@
         class="dropdown-menu dropdown-menu-end"
         aria-labelledby="dropdownMenuButton"
       >
-        <li *ngIf="suscripcion?.metodoPago">
-          <a
-            class="dropdown-item cursor-pointer"
-            (click)="openModal(mmetodoPago)"
-          >
-            <i class="fa-regular fa-credit-card me-2"></i> Actualizar método de
-            pago
-          </a>
-        </li>
+        @if (suscripcion?.metodoPago) {
+          <li>
+            <a
+              class="dropdown-item cursor-pointer"
+              (click)="openModal(mmetodoPago)"
+            >
+              <i class="fa-regular fa-credit-card me-2"></i> Actualizar método de
+              pago
+            </a>
+          </li>
+        }
         <li>
           <a class="dropdown-item cursor-pointer" (click)="openModal(mmPagar)">
             <i class="fa-regular fa-credit-card me-2"></i> Pagar suscripción
@@ -114,59 +116,61 @@
         </thead>
         <tbody>
           <!-- Loading State -->
-          <tr *ngIf="loading">
-            <td colspan="5" class="text-center">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-              </div>
-            </td>
-          </tr>
+          @if (loading) {
+            <tr>
+              <td colspan="5" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </td>
+            </tr>
+          }
 
           <!-- Empty State -->
-          <tr
-            *ngIf="
-              !loading &&
-              (!suscripcion?.pagos || suscripcion?.pagos?.length === 0)
-            "
-          >
-            <td colspan="5" class="text-center">
-              <span class="badge bg-primary">No hay pagos registrados</span>
-            </td>
-          </tr>
+          @if (!loading && (!suscripcion?.pagos || suscripcion?.pagos?.length === 0)) {
+            <tr>
+              <td colspan="5" class="text-center">
+                <span class="badge bg-primary">No hay pagos registrados</span>
+              </td>
+            </tr>
+          }
 
           <!-- Payment Rows -->
-          <tr *ngFor="let pago of suscripcion?.pagos">
-            <td>{{ pago?.fecha_transaccion | date : "dd/MM/yyyy" }}</td>
-            <td>{{ getConcepto(pago) }}</td>
-            <td>
-              <span
-                class="badge"
-                [ngClass]="{
-                  'bg-success': pago.estado.toLowerCase() === 'completado',
-                  'bg-warning': pago.estado.toLowerCase() === 'pendiente',
-                  'bg-danger': pago.estado.toLowerCase() === 'cancelado',
-                  'bg-info': pago.estado.toLowerCase() === 'autenticacion_pendiente',
-                  'bg-primary': pago.estado.toLowerCase() === 'autenticacion_completado',
-                  'bg-danger': pago.estado.toLowerCase() === 'autenticacion_fallida',
+          @for (pago of suscripcion?.pagos; track pago.id) {
+            <tr>
+              <td>{{ pago?.fecha_transaccion | date : "dd/MM/yyyy" }}</td>
+              <td>{{ getConcepto(pago) }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    'bg-success': pago.estado.toLowerCase() === 'completado',
+                    'bg-warning': pago.estado.toLowerCase() === 'pendiente',
+                    'bg-danger': pago.estado.toLowerCase() === 'cancelado',
+                    'bg-info': pago.estado.toLowerCase() === 'autenticacion_pendiente',
+                    'bg-primary': pago.estado.toLowerCase() === 'autenticacion_completado',
+                    'bg-danger': pago.estado.toLowerCase() === 'autenticacion_fallida',
 
-                }"
-              >
-                {{ pago.estado | titlecase }}
-              </span>
-            </td>
-            <td class="text-end">
-              {{ pago?.monto | currency : pago?.divisa : "symbol" : "1.2-2" }}
-            </td>
-            <td class="text-center">
-              <a
-                class="btn btn-default click"
-                (click)="imprimirRecibo(pago)"
-                *ngIf="pago.estado.toLowerCase() === 'completado'"
-              >
-                <i class="fa fa-print"></i>
-              </a>
-            </td>
-          </tr>
+                  }"
+                >
+                  {{ pago.estado | titlecase }}
+                </span>
+              </td>
+              <td class="text-end">
+                {{ pago?.monto | currency : pago?.divisa : "symbol" : "1.2-2" }}
+              </td>
+              <td class="text-center">
+                @if (pago.estado.toLowerCase() === 'completado') {
+                  <a
+                    class="btn btn-default click"
+                    (click)="imprimirRecibo(pago)"
+                  >
+                    <i class="fa fa-print"></i>
+                  </a>
+                }
+              </td>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -220,37 +224,35 @@
           </div>
         </div>
         <hr>
-        <div
-          class="col-md-12 mb-4"
-          *ngIf="!showUpdateForm && suscripcion?.metodoPago"
-        >
-          <h7 class="text-start text-dark fw-bold">Método de pago actual</h7>
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <span
-                class="d-flex align-items-center me-2"
-                [innerHTML]="getCardSvg(suscripcion?.metodoPago)"
-              ></span>
-              <p class="mb-0">
-                {{ suscripcion?.metodoPago?.marca_tarjeta }} ****
-                {{ suscripcion?.metodoPago?.ultimos_cuatro }}
-              </p>
+        @if (!showUpdateForm && suscripcion?.metodoPago) {
+          <div class="col-md-12 mb-4">
+            <h7 class="text-start text-dark fw-bold">Método de pago actual</h7>
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <span
+                  class="d-flex align-items-center me-2"
+                  [innerHTML]="getCardSvg(suscripcion?.metodoPago)"
+                ></span>
+                <p class="mb-0">
+                  {{ suscripcion?.metodoPago?.marca_tarjeta }} ****
+                  {{ suscripcion?.metodoPago?.ultimos_cuatro }}
+                </p>
+              </div>
+              @if (!showUpdateForm) {
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="showUpdateForm = true"
+                >
+                  <i class="fas fa-edit me-1"></i> Cambiar método de pago
+                </button>
+              }
             </div>
-            <button
-              class="btn btn-outline-primary btn-sm"
-              (click)="showUpdateForm = true"
-              *ngIf="!showUpdateForm"
-            >
-              <i class="fas fa-edit me-1"></i> Cambiar método de pago
-            </button>
           </div>
-        </div>
+        }
 
         <div class="form-group col-md-12">
-          <div
-            class="payment-form"
-            *ngIf="showUpdateForm || !suscripcion?.metodoPago"
-          >
+          @if (showUpdateForm || !suscripcion?.metodoPago) {
+            <div class="payment-form">
             <!-- Formulario de tarjeta (igual que el original) -->
             <!-- Número de tarjeta -->
             <div class="mb-3">
@@ -276,14 +278,11 @@
                   <i class="fas fa-credit-card"></i>
                 </span>
               </div>
-              <div
-                class="invalid-feedback"
-                *ngIf="
-                  cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)
-                "
-              >
-                Por favor, ingrese un número de tarjeta válido
-              </div>
+              @if (cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)) {
+                <div class="invalid-feedback">
+                  Por favor, ingrese un número de tarjeta válido
+                </div>
+              }
             </div>
 
             <!-- Resto del formulario (igual que el original) -->
@@ -306,14 +305,11 @@
                 placeholder="Como aparece en la tarjeta"
                 #cardHolder="ngModel"
               />
-              <div
-                class="invalid-feedback"
-                *ngIf="
-                  cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)
-                "
-              >
-                El nombre del titular es requerido
-              </div>
+              @if (cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)) {
+                <div class="invalid-feedback">
+                  El nombre del titular es requerido
+                </div>
+              }
             </div>
 
             <div class="row">
@@ -335,14 +331,11 @@
                   placeholder="MM"
                   #expMonth="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    expMonth.invalid && (expMonth.dirty || expMonth.touched)
-                  "
-                >
-                  Mes inválido (01-12)
-                </div>
+                @if (expMonth.invalid && (expMonth.dirty || expMonth.touched)) {
+                  <div class="invalid-feedback">
+                    Mes inválido (01-12)
+                  </div>
+                }
               </div>
 
               <!-- Año de expiración -->
@@ -363,12 +356,11 @@
                   placeholder="YY"
                   #expYear="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="expYear.invalid && (expYear.dirty || expYear.touched)"
-                >
-                  Año inválido
-                </div>
+                @if (expYear.invalid && (expYear.dirty || expYear.touched)) {
+                  <div class="invalid-feedback">
+                    Año inválido
+                  </div>
+                }
               </div>
 
               <!-- CVV -->
@@ -388,12 +380,11 @@
                   placeholder="123"
                   #cvv="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="cvv.invalid && (cvv.dirty || cvv.touched)"
-                >
-                  CVV inválido
-                </div>
+                @if (cvv.invalid && (cvv.dirty || cvv.touched)) {
+                  <div class="invalid-feedback">
+                    CVV inválido
+                  </div>
+                }
               </div>
             </div>
 
@@ -417,17 +408,15 @@
                   <option value="" disabled selected>
                     Seleccione un país
                   </option>
-                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                  @for (pais of paises; track pais.cod) {
+                    <option [value]="pais.cod">{{ pais.nombre }}</option>
+                  }
                 </select>
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    countryCode.invalid &&
-                    (countryCode.dirty || countryCode.touched)
-                  "
-                >
-                  País inválido
-                </div>
+                @if (countryCode.invalid && (countryCode.dirty || countryCode.touched)) {
+                  <div class="invalid-feedback">
+                    País inválido
+                  </div>
+                }
               </div>
 
               <!-- Código de Estado -->
@@ -447,16 +436,15 @@
                   #stateCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona estado</option>
-                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                  @for (estado of estados; track estado.codigo) {
+                    <option [value]="estado.codigo">{{ estado.nombre }}</option>
+                  }
                 </select>
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    stateCode.invalid && (stateCode.dirty || stateCode.touched)
-                  "
-                >
-                  Estado inválido
-                </div>
+                @if (stateCode.invalid && (stateCode.dirty || stateCode.touched)) {
+                  <div class="invalid-feedback">
+                    Estado inválido
+                  </div>
+                }
               </div>
 
               <!-- Código ZIP -->
@@ -476,41 +464,39 @@
                   placeholder="1101"
                   #zipCode="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    zipCode.invalid && (zipCode.dirty || zipCode.touched)
-                  "
-                >
-                  Código ZIP inválido
-                </div>
+                @if (zipCode.invalid && (zipCode.dirty || zipCode.touched)) {
+                  <div class="invalid-feedback">
+                    Código ZIP inválido
+                  </div>
+                }
               </div>
             </div>
-          </div>
+            </div>
+          }
         </div>
       </div>
 
-      <div
-        class="d-grid gap-2 mt-3"
-        *ngIf="showUpdateForm || !suscripcion?.metodoPago"
-      >
-        <button
-          type="submit"
-          class="btn btn-primary"
-          [disabled]="!updatePaymentForm?.valid || saving"
-        >
-          <i class="fas fa-save me-2"></i>
-          {{ saving ? "Guardando..." : "Guardar cambios" }}
-        </button>
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          (click)="showUpdateForm = false"
-          *ngIf="suscripcion?.metodoPago"
-        >
-          Cancelar
-        </button>
-      </div>
+      @if (showUpdateForm || !suscripcion?.metodoPago) {
+        <div class="d-grid gap-2 mt-3">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!updatePaymentForm?.valid || saving"
+          >
+            <i class="fas fa-save me-2"></i>
+            {{ saving ? "Guardando..." : "Guardar cambios" }}
+          </button>
+          @if (suscripcion?.metodoPago) {
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              (click)="showUpdateForm = false"
+            >
+              Cancelar
+            </button>
+          }
+        </div>
+      }
     </form>
   </div>
 </ng-template>
@@ -542,37 +528,35 @@
         <app-notificaciones-container></app-notificaciones-container>
 
         <!-- Mostrar método de pago actual si existe -->
-        <div
-          class="col-md-12 mb-4"
-          *ngIf="!showPaymentForm && suscripcion?.metodoPago"
-        >
-          <h7 class="text-start text-dark fw-bold">Método de pago guardado</h7>
-          <div class="d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-              <span
-                class="d-flex align-items-center me-2"
-                [innerHTML]="getCardSvg(suscripcion?.metodoPago)"
-              ></span>
-              <p class="mb-0">
-                {{ suscripcion?.metodoPago?.marca_tarjeta }} ****
-                {{ suscripcion?.metodoPago?.ultimos_cuatro }}
-              </p>
+        @if (!showPaymentForm && suscripcion?.metodoPago) {
+          <div class="col-md-12 mb-4">
+            <h7 class="text-start text-dark fw-bold">Método de pago guardado</h7>
+            <div class="d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center">
+                <span
+                  class="d-flex align-items-center me-2"
+                  [innerHTML]="getCardSvg(suscripcion?.metodoPago)"
+                ></span>
+                <p class="mb-0">
+                  {{ suscripcion?.metodoPago?.marca_tarjeta }} ****
+                  {{ suscripcion?.metodoPago?.ultimos_cuatro }}
+                </p>
+              </div>
+              @if (!showPaymentForm) {
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  (click)="showPaymentForm = true"
+                >
+                  <i class="fas fa-edit me-1"></i> Usar otra tarjeta
+                </button>
+              }
             </div>
-            <button
-              class="btn btn-outline-primary btn-sm"
-              (click)="showPaymentForm = true"
-              *ngIf="!showPaymentForm"
-            >
-              <i class="fas fa-edit me-1"></i> Usar otra tarjeta
-            </button>
           </div>
-        </div>
+        }
 
         <div class="form-group col-md-12">
-          <div
-            class="payment-form"
-            *ngIf="showPaymentForm || !suscripcion?.metodoPago"
-          >
+          @if (showPaymentForm || !suscripcion?.metodoPago) {
+            <div class="payment-form">
             <div class="alert alert-info">
               <i class="fas fa-info-circle me-2"></i>
               <span>
@@ -604,14 +588,11 @@
                   <i class="fas fa-credit-card"></i>
                 </span>
               </div>
-              <div
-                class="invalid-feedback"
-                *ngIf="
-                  cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)
-                "
-              >
-                Por favor, ingrese un número de tarjeta válido
-              </div>
+              @if (cardNumber.invalid && (cardNumber.dirty || cardNumber.touched)) {
+                <div class="invalid-feedback">
+                  Por favor, ingrese un número de tarjeta válido
+                </div>
+              }
             </div>
 
             <!-- Resto del formulario (igual que el original) -->
@@ -632,14 +613,11 @@
                 placeholder="Como aparece en la tarjeta"
                 #cardHolder="ngModel"
               />
-              <div
-                class="invalid-feedback"
-                *ngIf="
-                  cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)
-                "
-              >
-                El nombre del titular es requerido
-              </div>
+              @if (cardHolder.invalid && (cardHolder.dirty || cardHolder.touched)) {
+                <div class="invalid-feedback">
+                  El nombre del titular es requerido
+                </div>
+              }
             </div>
 
             <div class="row">
@@ -661,14 +639,11 @@
                   placeholder="MM"
                   #expMonth="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    expMonth.invalid && (expMonth.dirty || expMonth.touched)
-                  "
-                >
-                  Mes inválido (01-12)
-                </div>
+                @if (expMonth.invalid && (expMonth.dirty || expMonth.touched)) {
+                  <div class="invalid-feedback">
+                    Mes inválido (01-12)
+                  </div>
+                }
               </div>
 
               <!-- Año de expiración -->
@@ -689,12 +664,11 @@
                   placeholder="YY"
                   #expYear="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="expYear.invalid && (expYear.dirty || expYear.touched)"
-                >
-                  Año inválido
-                </div>
+                @if (expYear.invalid && (expYear.dirty || expYear.touched)) {
+                  <div class="invalid-feedback">
+                    Año inválido
+                  </div>
+                }
               </div>
 
               <!-- CVV -->
@@ -714,12 +688,11 @@
                   placeholder="123"
                   #cvv="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="cvv.invalid && (cvv.dirty || cvv.touched)"
-                >
-                  CVV inválido
-                </div>
+                @if (cvv.invalid && (cvv.dirty || cvv.touched)) {
+                  <div class="invalid-feedback">
+                    CVV inválido
+                  </div>
+                }
               </div>
             </div>
 
@@ -741,17 +714,15 @@
                   #countryCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona país</option>
-                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                  @for (pais of paises; track pais.cod) {
+                    <option [value]="pais.cod">{{ pais.nombre }}</option>
+                  }
                 </select>
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    countryCode.invalid &&
-                    (countryCode.dirty || countryCode.touched)
-                  "
-                >
-                  País inválido
-                </div>
+                @if (countryCode.invalid && (countryCode.dirty || countryCode.touched)) {
+                  <div class="invalid-feedback">
+                    País inválido
+                  </div>
+                }
               </div>
 
               <!-- Código de Estado -->
@@ -771,16 +742,15 @@
                   #stateCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona estado</option>
-                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                  @for (estado of estados; track estado.codigo) {
+                    <option [value]="estado.codigo">{{ estado.nombre }}</option>
+                  }
                 </select>
-                <div
-                  class="invalid-feedback"
-                  *ngIf="
-                    stateCode.invalid && (stateCode.dirty || stateCode.touched)
-                  "
-                >
-                  Estado inválido
-                </div>
+                @if (stateCode.invalid && (stateCode.dirty || stateCode.touched)) {
+                  <div class="invalid-feedback">
+                    Estado inválido
+                  </div>
+                }
               </div>
 
               <!-- Código ZIP -->
@@ -800,62 +770,66 @@
                   placeholder="Ejemplo: 1101"
                   #zipCode="ngModel"
                 />
-                <div
-                  class="invalid-feedback"
-                  *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)"
-                >
-                  Código ZIP inválido
-                </div>
+                @if (zipCode.invalid && (zipCode.dirty || zipCode.touched)) {
+                  <div class="invalid-feedback">
+                    Código ZIP inválido
+                  </div>
+                }
               </div>
             </div>
-          </div>
+            </div>
+          }
         </div>
       </div>
 
       <div class="d-grid gap-2 mt-3">
         <!-- Si hay método de pago guardado y no se está mostrando el formulario -->
-        <button
-          type="button"
-          class="btn btn-primary"
-          *ngIf="!showPaymentForm && suscripcion?.metodoPago"
-          (click)="payWithSavedMethod()"
-          [disabled]="saving"
-        >
-          <i class="fas fa-credit-card me-2"></i>
-          {{ saving ? "Procesando..." : "Pagar con tarjeta guardada" }}
-        </button>
+        @if (!showPaymentForm && suscripcion?.metodoPago) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="payWithSavedMethod()"
+            [disabled]="saving"
+          >
+            <i class="fas fa-credit-card me-2"></i>
+            {{ saving ? "Procesando..." : "Pagar con tarjeta guardada" }}
+          </button>
+        }
 
         <!-- Si se está mostrando el formulario o no hay método guardado -->
-        <button
-          type="submit"
-          class="btn btn-primary"
-          *ngIf="showPaymentForm || !suscripcion?.metodoPago"
-          [disabled]="!paymentForm?.valid || saving"
-        >
-          <i class="fas fa-save me-2"></i>
-          {{ saving ? "Procesando..." : "Pagar con nueva tarjeta" }}
-        </button>
+        @if (showPaymentForm || !suscripcion?.metodoPago) {
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!paymentForm?.valid || saving"
+          >
+            <i class="fas fa-save me-2"></i>
+            {{ saving ? "Procesando..." : "Pagar con nueva tarjeta" }}
+          </button>
+        }
 
         <!-- Botón para cancelar y volver a mostrar la tarjeta guardada -->
-        <button
-          type="button"
-          class="btn btn-outline-secondary"
-          (click)="showPaymentForm = false"
-          *ngIf="showPaymentForm && suscripcion?.metodoPago"
-        >
-          Cancelar
-        </button>
+        @if (showPaymentForm && suscripcion?.metodoPago) {
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="showPaymentForm = false"
+          >
+            Cancelar
+          </button>
+        }
       </div>
     </form>
   </div>
 </ng-template>
 
-<app-threeds-modal
-  *ngIf="mostrar3DSModal"
-  [authUrl]="urlAutenticacion"
-  (close)="mostrar3DSModal = false"
->
-</app-threeds-modal>
+@if (mostrar3DSModal) {
+  <app-threeds-modal
+    [authUrl]="urlAutenticacion"
+    (close)="mostrar3DSModal = false"
+  >
+  </app-threeds-modal>
+}
 
 <!-- 
 <section class="bg-white p-4 rounded mb-3">
@@ -980,10 +954,14 @@
           [disabled]="!cancelForm.form.valid || saving"
         >
           <i class="fas fa-ban me-2"></i>
-          <span *ngIf="!saving">Confirmar cancelación</span>
-          <span *ngIf="saving">
-            <i class="fas fa-spinner fa-spin me-2"></i>Procesando...
-          </span>
+          @if (!saving) {
+            <span>Confirmar cancelación</span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fas fa-spinner fa-spin me-2"></i>Procesando...
+            </span>
+          }
         </button>
         <button
           type="button"

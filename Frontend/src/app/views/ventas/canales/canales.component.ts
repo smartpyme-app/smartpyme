@@ -1,12 +1,22 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FilterPipe } from '@pipes/filter.pipe';
+import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
 
 @Component({
-  selector: 'app-canales',
-  templateUrl: './canales.component.html'
+    selector: 'app-canales',
+    templateUrl: './canales.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
+
 })
 
 export class CanalesComponent implements OnInit {

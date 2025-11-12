@@ -14,9 +14,11 @@
                 <label for="">Cuenta:</label>
                 <ng-select [(ngModel)]="conciliacion.id_cuenta" (change)="filtrarTransacciones()" class="form-select p-0" name="id_cuenta">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of cuentas" [value]="cuenta.id">
+                    @for (cuenta of cuentas; track cuenta.id || $index) {
+                      <ng-option [value]="cuenta.id">
                         {{ cuenta.nombre_banco }} : {{ cuenta.numero }}
-                    </ng-option>
+                      </ng-option>
+                    }
                 </ng-select>
             </div>
             <div class="form-group col-md-6 col-lg-3">
@@ -88,15 +90,20 @@
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
-                <span *ngIf="!saving">Guardar conciliacion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                  <span>Guardar conciliacion  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                }
+                @if (saving) {
+                  <span>Guardando...</span>
+                }
             </button>
         </div>
     </div>
 
 </form>
 
-<div class="bg-white rounded p-3 mb-3" *ngIf="transacciones?.total">
+@if (transacciones?.total) {
+  <div class="bg-white rounded p-3 mb-3">
     <div class="row">
         <h4>Listado de Transacciones</h4>
         <div class="table-responsive">
@@ -115,15 +122,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="9" class="text-center" *ngIf="transacciones?.total < 1 && !loading">
+                    @if (transacciones?.total < 1 && !loading) {
+                      <tr>
+                        <td colspan="9" class="text-center">
                             <span class="badge bg-primary">No tiene transacciones registrados</span>
                         </td>
-                        <td colspan="9" class="text-center" *ngIf="loading">
+                      </tr>
+                    }
+                    @if (loading) {
+                      <tr>
+                        <td colspan="9" class="text-center">
                             <span class="badge bg-primary">Cargando...</span>
                         </td>
-                    </tr>
-                    <tr *ngFor=" let transaccion of transacciones?.data">
+                      </tr>
+                    }
+                    @for (transaccion of transacciones?.data; track transaccion.id || $index) {
+                      <tr>
                         <td>{{transaccion.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{transaccion.nombre_usuario}}</td>
                         <td>{{transaccion.cuenta.nombre_banco}} : {{transaccion.cuenta.numero}}</td>
@@ -137,11 +151,13 @@
                         </td>
                         <td class="text-end">{{transaccion.total | currency}}</td>
                         <!-- <td class="text-center"> </td> -->
-                    </tr>
+                      </tr>
+                    }
                 </tbody>
             </table>
         </div>
     </div>
-</div>
+  </div>
+}
 
 

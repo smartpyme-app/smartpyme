@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
@@ -8,11 +11,15 @@ import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
 import { firstValueFrom } from 'rxjs';
+import { ThreedsModalComponent } from '../../../auth/register/pago/modal/threeds-modal.component';
 
 @Component({
-  selector: 'app-paywall',
-  templateUrl: './paywall.component.html',
-  styleUrls: ['./paywall.component.css']
+    selector: 'app-paywall',
+    templateUrl: './paywall.component.html',
+    styleUrls: ['./paywall.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, ThreedsModalComponent],
+    
 })
 export class PaywallComponent implements OnInit {
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;

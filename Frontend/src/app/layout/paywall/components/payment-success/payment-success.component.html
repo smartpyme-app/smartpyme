@@ -5,23 +5,33 @@
           <div class="card-body text-center p-5">
             <!-- Icono de éxito/error -->
             <div class="success-icon mb-4">
-              <i class="fas fa-check-circle text-success fa-4x" *ngIf="paymentResponse?.success"></i>
-              <i class="fas fa-times-circle text-danger fa-4x" *ngIf="!paymentResponse?.success"></i>
+              @if (paymentResponse?.success) {
+                  <i class="fas fa-check-circle text-success fa-4x"></i>
+              }
+              @if (!paymentResponse?.success) {
+                  <i class="fas fa-times-circle text-danger fa-4x"></i>
+              }
             </div>
   
             <!-- Título -->
-            <h2 class="mb-4" *ngIf="paymentResponse?.success">¡Pago Exitoso!</h2>
-            <h2 class="mb-4" *ngIf="!paymentResponse?.success">¡Pago Rechazado!</h2>
+            @if (paymentResponse?.success) {
+                <h2 class="mb-4">¡Pago Exitoso!</h2>
+            }
+            @if (!paymentResponse?.success) {
+                <h2 class="mb-4">¡Pago Rechazado!</h2>
+            }
   
             <!-- Detalles del pago -->
-            <div class="payment-details mb-4" *ngIf="paymentResponse">
+            @if (paymentResponse) {
+                <div class="payment-details mb-4">
               <p class="text-muted">{{ paymentResponse.message }}</p>
               <div class="amount">
                 <h3 class="mb-0">
-                  {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
-                </h3>
-              </div>
-            </div>
+                      {{ paymentResponse.amount | currency:paymentResponse.currency:'symbol':'1.2-2' }}
+                    </h3>
+                  </div>
+                </div>
+            }
   
             <!-- Línea divisoria -->
             <hr class="my-4">

@@ -13,13 +13,16 @@
             </tr>
         </thead>
         <tbody>
+            @if (producto?.composiciones?.length < 1 && !loading) {
             <tr>
-                <td colspan="8" class="text-center" *ngIf="producto?.composiciones?.length < 1 && !loading">
+                <td colspan="8" class="text-center">
                     <span class="badge badge-info">No tiene productos agregados</span>
                 </td>
             </tr>
+            }
 
-            <tr class="animated fadeIn" *ngFor=" let composicion of producto?.composiciones">
+            @for (composicion of producto?.composiciones; track composicion.id) {
+            <tr class="animated fadeIn">
                 <td class="text-center">
                     <a (click)="deleteComposicion(composicion)" class="btn btn-danger btn-sm"><i class="fa fa-minus"></i></a>
                     <a (click)="openModal(mComposicion, composicion)" class="btn btn-default btn-sm"><i class="fa fa-pencil-alt"></i></a>
@@ -28,6 +31,7 @@
                 <td class="text-center">{{ composicion.medida }}</td>
                 <td class="text-center">{{ composicion.cantidad | number:'1.1' }}</td>
             </tr>
+            }
         </tbody>
     </table>
 </div>        
@@ -42,8 +46,10 @@
     <div class="modal-body">
         <form autocomplete="off" (ngSubmit)="onSubmit()">
         <div class="row">
-            <app-buscador-productos *ngIf="!composicion.id" class="p-0" (selectProducto)="selectProducto($event)"></app-buscador-productos>
-            
+            @if (!composicion.id) {
+            <app-buscador-productos class="p-0" (selectProducto)="selectProducto($event)"></app-buscador-productos>
+            }
+
             <div class="form-group col-md-6">
                 <label for="medida">Medida:</label>
                 <input id="medida" type="text" class="form-control" [(ngModel)]="composicion.medida" name="medida" placeholder="Unidad de medida">
@@ -57,8 +63,12 @@
         <div class="row">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading || !composicion.compuesto_id" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Agregar</span>
-                    <span *ngIf="loading">Agregando...</span>
+                    @if (!loading) {
+                    <span>Agregar</span>
+                    }
+                    @if (loading) {
+                    <span>Agregando...</span>
+                    }
                 </button>
             </div>
         </div>

@@ -1,12 +1,18 @@
-<p class="text-center" *ngIf="loading">Cargando...</p>
-<div class="row" *ngIf="!loading">
-    <div class="col-md-12" *ngFor=" let sucursal of producto.sucursales">
+@if (loading) {
+<p class="text-center">Cargando...</p>
+}
+@if (!loading) {
+<div class="row">
+    @for (sucursal of producto.sucursales; track sucursal.id) {
+    <div class="col-md-12">
         <div class="card">
             <div class="card-header">
                 <div class="col col-12">
                     <h3 class="text-center">
                         {{ sucursal.nombre_sucursal }}
-                        <small class="btn-option text-muted float-end" *ngIf="sucursal.inventario">{{ sucursal.inventarios | sum:'stock' }} en stock </small>
+                        @if (sucursal.inventario) {
+                        <small class="btn-option text-muted float-end">{{ sucursal.inventarios | sum:'stock' }} en stock </small>
+                        }
                     </h3>
                 </div>
             </div>
@@ -20,25 +26,33 @@
                         <label>Llevar control de Inventario: </label>
                         <input type="checkbox" class="form-check" (change)="agregarSucursal(sucursal)" [(ngModel)]="sucursal.inventario" name="inventario">
                     </div>
-                    <div class="form-group col-md-3" *ngIf="sucursal.inventario">
+                    @if (sucursal.inventario) {
+                    <div class="form-group col-md-3">
                         <label for="bodega_venta_id">Bodega de venta :</label>
                         <select name="bodega_venta_id" (change)="agregarSucursal(sucursal)" [(ngModel)]="sucursal.bodega_venta_id" class="form-control form-select">
-                            <option [value]="bodega.id" *ngFor="let bodega of sucursal.bodegas">{{ bodega.nombre }}</option>
+                            @for (bodega of sucursal.bodegas; track bodega.id) {
+                            <option [value]="bodega.id">{{ bodega.nombre }}</option>
+                            }
                         </select>
                 </div>
-                <div *ngIf="sucursal.inventario">
+                }
+                @if (sucursal.inventario) {
+                <div>
 
                     <h3 class="text-center mb-3">Bodegas</h3>
                     <div class="row">
 
-                        <div class="col-sm-6 col-md-4 col-lg-3" *ngFor=" let inventario of sucursal.inventarios">
+                        @for (inventario of sucursal.inventarios; track inventario.id) {
+                        <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="card">
                                 <div class="card-body">
                                     <h4>
                                         {{ inventario.stock | number:'1.0'}} en stock <br>
                                         <small>{{ inventario.nombre_bodega }}</small>
                                     </h4>
-                                    <small *ngIf="inventario.bodega_id == sucursal.bodega_venta_id" class="badge badge-success">Bodega de venta</small>
+                                    @if (inventario.bodega_id == sucursal.bodega_venta_id) {
+                                    <small class="badge badge-success">Bodega de venta</small>
+                                    }
                                 </div>
                                 <div class="card-footer">
                                     <div class="btn-group float-end" role="group">
@@ -53,6 +67,7 @@
                                 </div>
                             </div>
                         </div>
+                        }
 
                         <div class="col-sm-6 col-md-4 col-lg-3">
                             <div class="card" style="min-height: 150px;">
@@ -67,9 +82,13 @@
 
                     </div>
                 </div>
+                }
             </div>
         </div>
     </div>
+    </div>
+    }
+
 
 <!--      <div class="col-md-12">
         <div class="card">
@@ -83,6 +102,7 @@
     </div> -->
 
 </div>
+}
 
 <ng-template #minventario>
   <div class="modal-header">
@@ -97,7 +117,9 @@
             <div class="form-group col-sm-12">
                 <label for="bodega_id">Bodega *:</label>
                 <select name="inventario.bodega_id" [(ngModel)]="inventario.bodega_id" class="form-control form-select">
-                    <option [value]="bodega.id" *ngFor="let bodega of sucursal.bodegas">{{ bodega.nombre }}</option>
+                    @for (bodega of sucursal.bodegas; track bodega.id) {
+                    <option [value]="bodega.id">{{ bodega.nombre }}</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -121,13 +143,17 @@
                 <input type="text" class="form-control" [(ngModel)]="inventario.nota" name="nota" placeholder="Nota">
             </div>
         </div>
-        
+
         <br><br>
         <div class="row">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                    <span>Guardar</span>
+                    }
+                    @if (loading) {
+                    <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -149,17 +175,23 @@
             <div class="form-group col-sm-12">
                 <label for="sucursal_id">Sucursal *:</label>
                 <select [(ngModel)]="sucursal.sucursal_id" (change)="onSucursal($event.target.value)" class="form-control form-select" name="sucursal_id">
-                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                    <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
+                    }
                 </select>
             </div>
         </div>
-        
+
         <br><br>
         <div class="row">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                    <span>Guardar</span>
+                    }
+                    @if (loading) {
+                    <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

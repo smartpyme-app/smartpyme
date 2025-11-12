@@ -12,15 +12,22 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-            <td colspan="10" class="text-center" *ngIf="bancos?.length < 1 && !loading">
-                <span class="badge bg-primary">No hay bancos de pago</span>
-            </td>
-            <td colspan="10" class="text-center" *ngIf="loading">
-                <span class="badge bg-primary">Cargando...</span>
-            </td>
-        </tr>
-        <tr *ngFor="let banco of bancos">
+        @if (bancos?.length < 1 && !loading) {
+            <tr>
+                <td colspan="10" class="text-center">
+                    <span class="badge bg-primary">No hay bancos de pago</span>
+                </td>
+            </tr>
+        }
+        @if (loading) {
+            <tr>
+                <td colspan="10" class="text-center">
+                    <span class="badge bg-primary">Cargando...</span>
+                </td>
+            </tr>
+        }
+        @for (banco of bancos; track banco.nombre) {
+            <tr>
           <td>{{ banco.nombre }}</td>
           <td>
             <div class="form-switch">
@@ -28,6 +35,7 @@
             </div>
           </td>
         </tr>
+        }
       </tbody>
     </table>
 </div>

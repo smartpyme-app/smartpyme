@@ -1,11 +1,18 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-materias-prima',
-  templateUrl: './materias-prima.component.html',
+    selector: 'app-materias-prima',
+    templateUrl: './materias-prima.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 export class MateriasPrimaComponent implements OnInit {
 
@@ -26,7 +33,7 @@ export class MateriasPrimaComponent implements OnInit {
 
     ngOnInit() {
         this.loadAll();
-        if(!this.categorias.lenght){
+        if(!this.categorias.length){
             this.apiService.getAll('categorias/list').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
@@ -85,7 +92,7 @@ export class MateriasPrimaComponent implements OnInit {
     // Filtros
     openFilter(template: TemplateRef<any>) {
         this.filtro.id_categoria = '';
-        if(!this.categorias.lenght){
+        if(!this.categorias.length){
             this.apiService.getAll('categorias').subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });

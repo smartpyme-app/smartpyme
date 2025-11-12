@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FileService } from '@services/file.service';
 
 @Component({
-  selector: 'app-crear-orden-produccion',
-  templateUrl: './crear-orden-produccion.component.html',
+    selector: 'app-crear-orden-produccion',
+    templateUrl: './crear-orden-produccion.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class CrearOrdenProduccionComponent implements OnInit {
   public orden: any = {

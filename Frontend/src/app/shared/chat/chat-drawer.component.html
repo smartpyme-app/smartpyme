@@ -6,47 +6,57 @@
   </div>
   <div class="offcanvas-body">
     <div class="chat-messages" #chatContainer>
-      <div *ngFor="let message of messages" 
-           class="message mb-3" 
-           [ngClass]="{'user-message': message.sender === 'user', 'bot-message': message.sender === 'bot'}">
-        <!-- Avatar para mensajes del bot -->
-        <div *ngIf="message.sender === 'bot'" class="avatar-container">
-          <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
-        </div>
-        <div class="message-content p-3">
-          <div class="mb-0" [innerHTML]="message.text | safeHtml"></div>
-          
-          <!-- Sugerencias -->
-          <div *ngIf="message.suggestions && message.suggestions.length > 0" class="suggestions-container mt-2">
-            <div *ngFor="let suggestion of message.suggestions" 
-                 class="suggestion-chip" 
-                 tooltip="{{ suggestion }}"
-                 (click)="handleSuggestionClick(suggestion)">
-              {{ suggestion }}
-            </div>
+      @for (message of messages; track $index) {
+          <div class="message mb-3" 
+               [ngClass]="{'user-message': message.sender === 'user', 'bot-message': message.sender === 'bot'}">
+              <!-- Avatar para mensajes del bot -->
+              @if (message.sender === 'bot') {
+                  <div class="avatar-container">
+                      <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
+                  </div>
+              }
+              <div class="message-content p-3">
+                  <div class="mb-0" [innerHTML]="message.text | safeHtml"></div>
+                  
+                  <!-- Sugerencias -->
+                  @if (message.suggestions && message.suggestions.length > 0) {
+                      <div class="suggestions-container mt-2">
+                          @for (suggestion of message.suggestions; track suggestion || $index) {
+                              <div class="suggestion-chip" 
+                                   tooltip="{{ suggestion }}"
+                                   (click)="handleSuggestionClick(suggestion)">
+                                  {{ suggestion }}
+                              </div>
+                          }
+                      </div>
+                  }
+              </div>
+              <!-- Avatar para mensajes del usuario (opcional) -->
+              @if (message.sender === 'user') {
+                  <div class="avatar-container user-avatar-container">
+                      <div class="user-avatar">
+                          <i class="fa fa-user"></i>
+                      </div>
+                  </div>
+              }
           </div>
-        </div>
-        <!-- Avatar para mensajes del usuario (opcional) -->
-        <div *ngIf="message.sender === 'user'" class="avatar-container user-avatar-container">
-          <div class="user-avatar">
-            <i class="fa fa-user"></i>
-          </div>
-        </div>
-      </div>
+      }
       
       <!-- Indicador de "pensando..." -->
-      <div *ngIf="isLoading" class="message mb-3 bot-message">
-        <div class="avatar-container">
-          <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
-        </div>
-        <div class="message-content p-3">
-          <div class="thinking-indicator">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
+      @if (isLoading) {
+          <div class="message mb-3 bot-message">
+              <div class="avatar-container">
+                  <img src="/assets/avatares/bot-avatar.png" alt="Bot" class="bot-avatar">
+              </div>
+              <div class="message-content p-3">
+                  <div class="thinking-indicator">
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                      <span class="dot"></span>
+                  </div>
+              </div>
           </div>
-        </div>
-      </div>
+      }
     </div>
   </div>
   

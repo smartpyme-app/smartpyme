@@ -12,7 +12,9 @@
 
 <div class="card">
     <div class="card-header p-2">
-        <span class="text-muted float-start p-2" *ngIf="pagos?.total">{{ pagos?.total + ' registros' }}</span>
+        @if (pagos?.total) {
+          <span class="text-muted float-start p-2">{{ pagos?.total + ' registros' }}</span>
+        }
 
         <form name="form" (ngSubmit)="search()" autocomplete="off">
         <div class="input-group float-end w-50">
@@ -40,17 +42,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="pagos?.total < 1 && !loading">
+                    @if (pagos?.total < 1 && !loading) {
+                      <tr>
+                        <td colspan="8" class="text-center">
                             <span class="badge badge-primary">No tiene pagos pendientes</span>
                         </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
+                      </tr>
+                    }
+                    @if (loading) {
+                      <tr>
+                        <td colspan="8" class="text-center">
                             <span class="badge badge-primary">Cargando...</span>
                         </td>
-                    </tr>
+                      </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor=" let compra of pagos?.data">
-                        
+                    @for (compra of pagos?.data; track compra.id || $index) {
+                      <tr class="animated fadeIn">
                         <td>{{compra.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/{{compra.proveedor_id}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.tipo_documento}} #{{compra.referencia}}</td>
@@ -85,8 +93,8 @@
                                 </a>
                             </div>  
                         </td>
-
-                    </tr>
+                      </tr>
+                    }
                 </tbody>
             </table>
             <!-- <table class="table table-bordered table-hover mb-0">
@@ -129,9 +137,11 @@
             </table> -->
         </div>
     </div>
-    <div class="card-footer" *ngIf="pagos?.last_page > 1">
+    @if (pagos?.last_page > 1) {
+      <div class="card-footer">
         <div class="d-flex justify-content-center">
             <app-pagination [items]="pagos" (setPagination)="setPagination($event)"></app-pagination>
         </div>
-    </div>
+      </div>
+    }
 </div>

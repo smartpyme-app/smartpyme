@@ -7,7 +7,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ModalModule } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
-import { FocusModule } from 'angular2-focus';
 import { PipesModule } from '@pipes/pipes.module';
 import { SharedModule } from '@shared/shared.module';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -36,9 +35,7 @@ import { CotizacionComponent } from '../cotizaciones/cotizacion/cotizacion.compo
     TooltipModule.forRoot(),
     PopoverModule.forRoot(),
     ModalModule.forRoot(),
-    FocusModule.forRoot()
-  ],
-  declarations: [
+    // Componentes standalone
     FacturacionComponent,
     FacturacionConsignaComponent,
     TiendaVentaBuscadorComponent,

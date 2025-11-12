@@ -1,15 +1,23 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
+import { ThreedsModalComponent } from './modal/threeds-modal.component';
 
 @Component({
-  selector: 'app-pago',
-  templateUrl: './pago.component.html'
+    selector: 'app-pago',
+    templateUrl: './pago.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent, ThreedsModalComponent],
+    
 })
 export class PagoComponent implements OnInit {
     public user: any = {};

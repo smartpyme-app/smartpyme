@@ -1,5 +1,10 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -9,8 +14,11 @@ import { ApiService } from '@services/api.service';
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-paquete',
-  templateUrl: './paquete.component.html'
+    selector: 'app-paquete',
+    templateUrl: './paquete.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent],
+    
 })
 export class PaqueteComponent implements OnInit {
 

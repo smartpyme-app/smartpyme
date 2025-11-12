@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
@@ -32,9 +36,12 @@ interface ItemDistribucion {
 }
 
 @Component({
-  selector: 'app-retaceo',
-  templateUrl: './retaceo.component.html',
-  styleUrls: ['./retaceo.component.css'],
+    selector: 'app-retaceo',
+    templateUrl: './retaceo.component.html',
+    styleUrls: ['./retaceo.component.css'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    
 })
 export class RetaceoComponent implements OnInit {
   public retaceo: any = {};

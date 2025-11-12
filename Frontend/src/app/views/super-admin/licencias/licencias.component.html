@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="licencias?.total">
-                Mostrando {{ licencias?.to }} de {{ licencias?.total + ' registros' }}
-            </span>
+            @if (licencias?.total) {
+                <span class="text-muted">
+                    Mostrando {{ licencias?.to }} de {{ licencias?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -48,44 +50,50 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="5" class="text-center" *ngIf="licencias?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene licencias registradas</span>
-                        </td>
-                        <td colspan="5" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
+                        @if (licencias?.total < 1 && !loading) {
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">No tiene licencias registradas</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="5" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
 
-                    <tr class="animated fadeIn" *ngFor=" let licencia of licencias?.data">
-                        
-                        <td>{{licencia.id }}</td>
-                        <td>{{licencia.nombre_empresa }}</td>
-                        <td>{{licencia.num_licencias }}</td>
-                        <td>{{licencia.num_empresas }}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/admin/licencia/{{licencia.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a (click)="delete(licencia.id)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-trash"></i> Eliminar
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-
-                    </tr>
+                    @for (licencia of licencias?.data; track licencia.id) {
+                        <tr class="animated fadeIn">
+                            <td>{{licencia.id }}</td>
+                            <td>{{licencia.nombre_empresa }}</td>
+                            <td>{{licencia.num_licencias }}</td>
+                            <td>{{licencia.num_empresas }}</td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a routerLink="/admin/licencia/{{licencia.id}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        <a (click)="delete(licencia.id)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="licencias?.last_page > 1">
-            <app-pagination [items]="licencias" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (licencias?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="licencias" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -118,8 +126,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -131,8 +143,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="licencia.id">Editar </span>
-            <span *ngIf="!licencia.id">Crear </span>
+            @if (licencia.id) {
+                <span>Editar </span>
+            }
+            @if (!licencia.id) {
+                <span>Crear </span>
+            }
             licencia
         </h2>
     </div>
@@ -149,9 +165,11 @@
             <div class="form-group col-md-12">
                 <label for="id_empresa">Empresa:</label>
                 <ng-select [(ngModel)]="licencia.id_empresa" class="form-select p-0" name="id_empresa">
-                    <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                        {{ empresa.nombre }}
-                    </ng-option>
+                    @for (empresa of empresas; track empresa.id) {
+                        <ng-option [value]="empresa.id">
+                            {{ empresa.nombre }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
             <div class="form-group col-md-12">
@@ -162,8 +180,12 @@
 
         <div class="d-grid mt-5">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

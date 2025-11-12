@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="ventas?.total">
-                Mostrando {{ ventas?.to }} de {{ ventas?.total + ' registros' }}
-            </span>
+            @if (ventas?.total) {
+                <span class="text-muted">
+                    Mostrando {{ ventas?.to }} de {{ ventas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -44,9 +46,11 @@
             </select>
             <ng-select name="id_sucursal" (change)="filtrarVentas()" [(ngModel)]="filtros.id_sucursal" class="form-select p-0 border-0 bg-default w-auto">
                 <ng-option value="">Sucursal</ng-option>
-                <ng-option *ngFor="let sucursal of sucursales" [value]="sucursal.id">
-                    {{sucursal.nombre}}
-                </ng-option>
+                @for (sucursal of sucursales; track sucursal.id) {
+                    <ng-option [value]="sucursal.id">
+                        {{sucursal.nombre}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -66,19 +70,26 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="ventas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene ventas recurrentes</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (ventas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene ventas recurrentes</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor=" let venta of ventas?.data">
+                    @for (venta of ventas?.data; track venta.id) {
+                        <tr>
                         
                         <td>{{venta.fecha | date:'dd/MM/yyyy'}}</td>
-                        <td>{{venta.nombre_cliente | truncate:30 }}<a *ngIf="venta.id_cliente && venta.id_cliente != 1"  class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a></td>
+                        <td>{{venta.nombre_cliente | truncate:30 }}@if (venta.id_cliente && venta.id_cliente != 1) {<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/editar/{{venta.id_cliente}}"><i class="fa fa-edit"></i></a>}</td>
                         <td>{{venta.nombre_documento}} #{{venta.correlativo}}</td>
                         <!-- <td>{{venta.forma_pago}}</td> -->
                         <!-- <td>{{venta.fecha_pago | date:'dd/MM/yyyy'}}</td> -->
@@ -98,13 +109,16 @@
                         </td>
 
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="ventas?.last_page > 1">
-            <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (ventas && ventas.last_page && ventas.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="ventas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -127,14 +141,22 @@
         <div class="row">
             <div class="d-grid mt-4">
                 <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar los detalles de ventas</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    @if (!saving) {
+                        <span>Descargar los detalles de ventas</span>
+                    }
+                    @if (saving) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
             <div class="d-grid mt-4">
                 <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Descargar las ventas</span>
-                    <span *ngIf="saving">Descargando...</span>
+                    @if (!saving) {
+                        <span>Descargar las ventas</span>
+                    }
+                    @if (saving) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -156,13 +178,17 @@
             <div class="form-group col-md-6">
                 <label for="forma_pago">Método de pago:</label>
                 <select name="forma_pago" [(ngModel)]="venta.forma_pago" class="form-select">
-                    <option [value]="forma.nombre" *ngFor="let forma of formaPagos">{{ forma.nombre }}</option>
+                    @for (forma of formaPagos; track forma.id) {
+                        <option [value]="forma.nombre">{{ forma.nombre }}</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6">
                 <label for="id_documento">Documento:</label>
                 <select name="id_documento" [(ngModel)]="venta.id_documento" class="form-select">
-                    <option [value]="documento.id" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+                    @for (documento of documentos; track documento.id) {
+                        <option [value]="documento.id">{{ documento.nombre }}</option>
+                    }
                 </select>
             </div>
             <div class="form-group col-md-6">
@@ -171,8 +197,12 @@
             </div>
             <div class="d-grid mt-4">
                 <button [disabled]="saving" class="btn btn-primary btn-block">
-                    <span *ngIf="!saving">Guardar</span>
-                    <span *ngIf="saving">Guardando...</span>
+                    @if (!saving) {
+                        <span>Guardar</span>
+                    }
+                    @if (saving) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -213,45 +243,55 @@
                 <label for="filtros.forma_pago">Forma de pago:</label>
                 <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
                     <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [ngValue]="formaPago.nombre">
-                        {{ formaPago.nombre }}
-                    </option>
+                    @for (formaPago of formaPagos; track formaPago.id) {
+                        <option [ngValue]="formaPago.nombre">
+                            {{ formaPago.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_documento">Documento:</label>
                 <select [(ngModel)]="filtros.id_documento" class="form-control form-select" name="filtros.id_documento">
                     <option value="">Todos</option>
-                    <option *ngFor="let documento of documentos" [ngValue]="documento.id">
-                        {{ documento.nombre }}
-                    </option>
+                    @for (documento of documentos; track documento.id) {
+                        <option [ngValue]="documento.id">
+                            {{ documento.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_canal">Canal:</label>
                 <select [(ngModel)]="filtros.id_canal" class="form-control form-select" name="filtros.id_canal">
                     <option value="">Todos</option>
-                    <option *ngFor="let canal of canales" [ngValue]="canal.id">
-                        {{ canal.nombre }}
-                    </option>
+                    @for (canal of canales; track canal.id) {
+                        <option [ngValue]="canal.id">
+                            {{ canal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.sucursal">Sucursal:</label>
                 <select [(ngModel)]="filtros.id_sucursal" class="form-control form-select" name="filtros.id_sucursal">
                     <option value="">Todos</option>
-                    <option *ngFor="let sucursal of sucursales" [ngValue]="sucursal.id">
-                        {{ sucursal.nombre }}
-                    </option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [ngValue]="sucursal.id">
+                            {{ sucursal.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
                 <label for="filtros.id_cliente">Cliente:</label>
                 <ng-select name="id_cliente" [(ngModel)]="filtros.id_cliente" class="form-select p-0">
                     <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let cliente of clientes" [value]="cliente.id">
-                        {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
-                    </ng-option>
+                    @for (cliente of clientes; track cliente.id) {
+                        <ng-option [value]="cliente.id">
+                            {{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
             
@@ -259,8 +299,12 @@
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

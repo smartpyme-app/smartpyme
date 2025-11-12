@@ -18,47 +18,57 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="11" class="text-center" *ngIf="dash?.fletes?.length < 1 && !loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">No tiene fletes registrados</span>
-                        </td>
-                        <td colspan="11" class="text-center" *ngIf="loading">
-                            <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let flete of dash?.fletes">
-                        <td class="d-none d-md-table-cell">{{ flete.id }}</td>
-                        <td class="d-none d-md-table-cell">{{ flete.fecha  | date:'dd/MM/yyyy' }}</td>
-                        <td>{{ flete.nombre_cliente | truncate:20 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{flete.cliente_id}}"><i class="fa fa-edit"></i></a></td>
-                        <td class="d-none d-md-table-cell">{{ flete.nombre_motorista | truncate:20 }}<a class="float-end d-none"  tooltip="Ver información del motorista" routerLink="/motorista/{{flete.motorista_id}}"><i class="fa fa-edit"></i></a></td>
-                        <td class="d-none d-md-table-cell">
-                            <span class="badge" [ngClass]="{ 'badge-warning' : flete.estado == 'Pendiente', 'badge-success' : flete.estado == 'Pagado' }">{{ flete.estado }}</span>
-                        </td>
-                        <td class="d-none d-md-table-cell">{{flete.tipo}}</td>
-                        <td class="d-none d-md-table-cell">{{flete.nombre_cabezal}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.cabezal_id}}"><i class="fa fa-edit"></i></a></td>
-                        <td class="d-none d-md-table-cell">{{flete.nombre_remolque}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.remolque_id}}"><i class="fa fa-edit"></i></a></td>
-                        <td class="text-right">{{ flete.total  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-right">
-                            <div role="group" class="btn-group">
-                                <div class="dropdown d-none d-md-inline-block">
-                                  <a class="btn btn-default" href="#" role="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa fa-print"></i>
-                                  </a>
-                                  <ul class="dropdown-menu">
-                                    <li><a type="button" class="dropdown-item click" (click)="imprimirOrdenDeCarga(flete)">Orden de carga</a></li>
-                                    <li><a type="button" class="dropdown-item click" (click)="imprimirCartaDePorte(flete)">Carta de porte</a></li>
-                                    <li><a type="button" class="dropdown-item click" (click)="imprimirManifiestoDeCarga(flete)">Manifiesto de carga</a></li>
-                                  </ul>
+                    @if (dash?.fletes?.length < 1 && !loading) {
+                        <tr>
+                            <td colspan="11" class="text-center">
+                                <span class="badge mb-2 mb-xl-0 badge-primary">No tiene fletes registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="11" class="text-center">
+                                <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (flete of dash?.fletes; track flete.id) {
+                        <tr>
+                            <td class="d-none d-md-table-cell">{{ flete.id }}</td>
+                            <td class="d-none d-md-table-cell">{{ flete.fecha  | date:'dd/MM/yyyy' }}</td>
+                            <td>{{ flete.nombre_cliente | truncate:20 }}<a class="float-end d-none"  tooltip="Ver información del cliente" routerLink="/cliente/{{flete.cliente_id}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="d-none d-md-table-cell">{{ flete.nombre_motorista | truncate:20 }}<a class="float-end d-none"  tooltip="Ver información del motorista" routerLink="/motorista/{{flete.motorista_id}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="d-none d-md-table-cell">
+                                <span class="badge" [ngClass]="{ 'badge-warning' : flete.estado == 'Pendiente', 'badge-success' : flete.estado == 'Pagado' }">{{ flete.estado }}</span>
+                            </td>
+                            <td class="d-none d-md-table-cell">{{flete.tipo}}</td>
+                            <td class="d-none d-md-table-cell">{{flete.nombre_cabezal}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.cabezal_id}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="d-none d-md-table-cell">{{flete.nombre_remolque}}<a class="float-end d-none"  tooltip="Ver información del flota" routerLink="/flota/{{flete.remolque_id}}"><i class="fa fa-edit"></i></a></td>
+                            <td class="text-right">{{ flete.total  | currency:'USD':'symbol':'1.2' }}</td>
+                            <td class="text-right">
+                                <div role="group" class="btn-group">
+                                    <div class="dropdown d-none d-md-inline-block">
+                                      <a class="btn btn-default" href="#" role="button" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa fa-print"></i>
+                                      </a>
+                                      <ul class="dropdown-menu">
+                                        <li><a type="button" class="dropdown-item click" (click)="imprimirOrdenDeCarga(flete)">Orden de carga</a></li>
+                                        <li><a type="button" class="dropdown-item click" (click)="imprimirCartaDePorte(flete)">Carta de porte</a></li>
+                                        <li><a type="button" class="dropdown-item click" (click)="imprimirManifiestoDeCarga(flete)">Manifiesto de carga</a></li>
+                                      </ul>
+                                    </div>
+                                    @if (flete.estado == 'Pendiente') {
+                                        <a tooltip="Facturar" class="btn btn-default" routerLink="/facturacion" [queryParams]="{ flete: flete.id }">
+                                            <i class="fa fa-money-bill"></i>
+                                        </a>
+                                    }
+                                    <a tooltip="Ver y editar" class="btn btn-default" routerLink="/flete/{{ flete.id }}" >
+                                        <i class="fa fa-arrow-right"></i>
+                                    </a>
                                 </div>
-                                <a *ngIf="flete.estado == 'Pendiente'" tooltip="Facturar" class="btn btn-default" routerLink="/facturacion" [queryParams]="{ flete: flete.id }">
-                                    <i class="fa fa-money-bill"></i>
-                                </a>
-                                <a tooltip="Ver y editar" class="btn btn-default" routerLink="/flete/{{ flete.id }}" >
-                                    <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>

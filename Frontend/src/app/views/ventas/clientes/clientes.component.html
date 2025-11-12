@@ -1,21 +1,25 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Clientes</h2>
-    <button *ngIf="apiService.canCreateTest('ventas.clientes.crear')" routerLink="/cliente/crear" tooltip="Crear cliente (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cliente</button>
+    @if (apiService.canCreateTest('ventas.clientes.crear')) {
+        <button routerLink="/cliente/crear" tooltip="Crear cliente (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cliente</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="clientes?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ clientes?.total + ' registros' }}
-            </span>
+            @if (clientes?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ clientes?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -63,15 +67,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="clientes?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene clientes registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let cliente of clientes?.data">
+                    @if (clientes?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene clientes registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (cliente of clientes?.data; track cliente.id) {
+                        <tr>
                         <td>{{ cliente.tipo == 'Empresa' ? cliente.nombre_empresa : cliente.nombre_completo | truncate:30 }}</td>
                         <td>{{ cliente.correo }}</td>
                         <td>{{ cliente.telefono }}</td>
@@ -93,29 +104,38 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEditTest('ventas.clientes.editar')" routerLink="/cliente/editar/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
+                                    @if (apiService.canEditTest('ventas.clientes.editar')) {
+                                        <a routerLink="/cliente/editar/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                    }
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="cliente.enable && apiService.canEditTest('ventas.clientes.editar')" (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-ban"></i> Deshabilitar
-                                    </a>
-                                    <a *ngIf="!cliente.enable && apiService.canEditTest('ventas.clientes.editar')" (click)="setActivo(cliente, true)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-check"></i> Habilitar
-                                    </a>
+                                    @if (cliente.enable && apiService.canEditTest('ventas.clientes.editar')) {
+                                        <a (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-ban"></i> Deshabilitar
+                                        </a>
+                                    }
+                                    @if (!cliente.enable && apiService.canEditTest('ventas.clientes.editar')) {
+                                        <a (click)="setActivo(cliente, true)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-check"></i> Habilitar
+                                        </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="clientes?.last_page > 1">
-            <app-pagination [items]="clientes" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (clientes && clientes.last_page && clientes.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="clientes" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -167,8 +187,12 @@
         <br><br>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

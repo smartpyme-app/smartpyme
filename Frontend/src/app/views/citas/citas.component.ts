@@ -1,5 +1,10 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -7,10 +12,14 @@ import { CalendarioComponent } from './calendario/calendario.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 @Component({
-  selector: 'app-citas',
-  templateUrl: './citas.component.html'
+    selector: 'app-citas',
+    templateUrl: './citas.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, CalendarioComponent, NgSelectModule, PopoverModule, TooltipModule],
+    
 })
 
 export class CitasComponent implements OnInit {

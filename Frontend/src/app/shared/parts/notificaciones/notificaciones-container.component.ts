@@ -1,12 +1,16 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
-  selector: 'app-notificaciones-container',
-  templateUrl: './notificaciones-container.component.html'
+    selector: 'app-notificaciones-container',
+    templateUrl: './notificaciones-container.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule]
 })
 export class NotificacionesContainerComponent implements OnInit, OnDestroy {
 

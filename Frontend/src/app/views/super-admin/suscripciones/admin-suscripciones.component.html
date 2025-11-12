@@ -6,16 +6,18 @@
 <section class="bg-white p-4 rounded mb-3">
   <div class="row">
     <div class="col-md-6 mb-3">
-      <span class="text-muted d-flex align-items-center gap-2" *ngIf="suscripciones?.total">
-        Mostrando
-        <select name="paginate" class="form-select w-auto" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.paginate">
-          <option value="10">10</option>
-          <option value="25">25</option>
-          <option value="50">50</option>
-          <option value="100">100</option>
-        </select>
-        {{ suscripciones?.total + " registros" }}
-      </span>
+      @if (suscripciones?.total) {
+        <span class="text-muted d-flex align-items-center gap-2">
+          Mostrando
+          <select name="paginate" class="form-select w-auto" (change)="filtrarSuscripciones()" [(ngModel)]="filtros.paginate">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          {{ suscripciones?.total + " registros" }}
+        </span>
+      }
     </div>
     <div class="col-md-6 mb-3">
       <div class="d-flex gap-2">
@@ -131,30 +133,40 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td
-              colspan="8"
-              class="text-center"
-              *ngIf="suscripciones?.total < 1 && !loading"
-            >
-              <span class="badge bg-primary"
-                >No hay suscripciones registradas</span
+          @if (suscripciones?.total < 1 && !loading) {
+            <tr>
+              <td
+                colspan="8"
+                class="text-center"
               >
-            </td>
-            <td colspan="8" class="text-center" *ngIf="loading">
-              <span class="badge bg-primary">Cargando...</span>
-            </td>
-          </tr>
+                <span class="badge bg-primary"
+                  >No hay suscripciones registradas</span
+                >
+              </td>
+            </tr>
+          }
+          @if (loading) {
+            <tr>
+              <td colspan="8" class="text-center">
+                <span class="badge bg-primary">Cargando...</span>
+              </td>
+            </tr>
+          }
 
-          <tr *ngFor="let empresa of suscripciones?.data">
+          @for (empresa of suscripciones?.data; track empresa.id) {
+            <tr>
             <td>{{ empresa.nombre }}</td>
             <td>
-              <span *ngIf="!empresa.suscripcion" class="text-muted">{{
-                empresa.plan
-              }}</span>
-              <span *ngIf="empresa.suscripcion">{{
-                empresa.suscripcion.plan.nombre
-              }}</span>
+              @if (!empresa.suscripcion) {
+                <span class="text-muted">{{
+                  empresa.plan
+                }}</span>
+              }
+              @if (empresa.suscripcion) {
+                <span>{{
+                  empresa.suscripcion.plan.nombre
+                }}</span>
+              }
             </td>
             <td>
               <span class="text-muted">{{ empresa?.tipo_plan }}</span>
@@ -163,78 +175,94 @@
               <span class="text-muted">{{ empresa?.metodo_pago ?? "-" }}</span>
             </td>
             <td>
-              <span *ngIf="empresa.suscripcion">{{
-                empresa.suscripcion.monto | currency
-              }}</span>
-              <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+              @if (empresa.suscripcion) {
+                <span>{{
+                  empresa.suscripcion.monto | currency
+                }}</span>
+              }
+              @if (!empresa.suscripcion) {
+                <span class="text-muted">-</span>
+              }
             </td>
             <td class="text-center">
-              <span
-                *ngIf="empresa.suscripcion"
-                class="badge py-2 text-center"
-                style="font-size: 0.8rem"
-                [ngClass]="{
-                  'bg-success':
-                    empresa.suscripcion?.estado.toLowerCase() == 'activo',
-                  'bg-danger':
-                    empresa.suscripcion?.estado.toLowerCase() == 'cancelado' || empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
-                  'bg-warning':
-                    empresa.suscripcion?.estado.toLowerCase() == 'vencido',
-                  'bg-info':
-                    empresa.suscripcion?.estado.toLowerCase() == 'en prueba',
-                  'bg-dark':
-                    empresa.suscripcion?.estado.toLowerCase() == 'inactivo',
-                  'bg-secondary':
-                    empresa.suscripcion?.estado.toLowerCase() == 'pendiente'
-                }"
-              >
-                {{ empresa.suscripcion.estado }}
-              </span>
-              <span
-                *ngIf="!empresa.suscripcion"
-                class="badge py-2 bg-secondary"
-                style="font-size: 0.8rem"
-              >
-                Sin suscripción
-              </span>
+              @if (empresa.suscripcion) {
+                <span
+                  class="badge py-2 text-center"
+                  style="font-size: 0.8rem"
+                  [ngClass]="{
+                    'bg-success':
+                      empresa.suscripcion?.estado.toLowerCase() == 'activo',
+                    'bg-danger':
+                      empresa.suscripcion?.estado.toLowerCase() == 'cancelado' || empresa.suscripcion?.estado.toLowerCase() == 'suspendido',
+                    'bg-warning':
+                      empresa.suscripcion?.estado.toLowerCase() == 'vencido',
+                    'bg-info':
+                      empresa.suscripcion?.estado.toLowerCase() == 'en prueba',
+                    'bg-dark':
+                      empresa.suscripcion?.estado.toLowerCase() == 'inactivo',
+                    'bg-secondary':
+                      empresa.suscripcion?.estado.toLowerCase() == 'pendiente'
+                  }"
+                >
+                  {{ empresa.suscripcion.estado }}
+                </span>
+              }
+              @if (!empresa.suscripcion) {
+                <span
+                  class="badge py-2 bg-secondary"
+                  style="font-size: 0.8rem"
+                >
+                  Sin suscripción
+                </span>
+              }
             </td>
             <td class="text-center">
-              <span
-                *ngIf="empresa.suscripcion?.estado_ultimo_pago"
-                class="badge py-2"
-                [ngClass]="{
-                  'bg-success':
-                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
-                    'completado',
-                  'bg-secondary':
-                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
-                    'pendiente',
-                  'bg-danger':
-                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
-                      'rechazada' ||
-                    empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
-                      'fallido'
-                }"
-              >
-                {{ empresa.suscripcion.estado_ultimo_pago }}
-              </span>
-              <span
-                *ngIf="!empresa.suscripcion?.estado_ultimo_pago"
-                class="text-muted"
-                >-</span
-              >
+              @if (empresa.suscripcion?.estado_ultimo_pago) {
+                <span
+                  class="badge py-2"
+                  [ngClass]="{
+                    'bg-success':
+                      empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                      'completado',
+                    'bg-secondary':
+                      empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                      'pendiente',
+                    'bg-danger':
+                      empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                        'rechazada' ||
+                      empresa.suscripcion.estado_ultimo_pago.toLowerCase() ===
+                        'fallido'
+                  }"
+                >
+                  {{ empresa.suscripcion.estado_ultimo_pago }}
+                </span>
+              }
+              @if (!empresa.suscripcion?.estado_ultimo_pago) {
+                <span
+                  class="text-muted"
+                  >-</span
+                >
+              }
             </td>
             <td>
-              <span *ngIf="empresa.suscripcion">{{
-                empresa.suscripcion.fecha_ultimo_pago | date : "dd/MM/yyyy"
-              }}</span>
-              <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+              @if (empresa.suscripcion) {
+                <span>{{
+                  empresa.suscripcion.fecha_ultimo_pago | date : "dd/MM/yyyy"
+                }}</span>
+              }
+              @if (!empresa.suscripcion) {
+                <span class="text-muted">-</span>
+              }
             </td>
             <td>
-              <span *ngIf="empresa.suscripcion">{{
-                empresa.suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
-              }}</span>
-              <span *ngIf="!empresa.suscripcion" class="text-muted">-</span>
+              @if (empresa.suscripcion) {
+                <span>{{
+                  empresa.suscripcion.fecha_proximo_pago | date : "dd/MM/yyyy"
+                }}</span>
+              }
+              @if (!empresa.suscripcion) {
+                <span class="text-muted">-</span>
+              }
             </td>
             <td class="text-center">
               <span
@@ -250,75 +278,84 @@
                   <a routerLink="/admin/empresa/{{empresa.id}}" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-edit"></i> Editar
                   </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="openDetalles(mdetalles, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
-                  </a>
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="openEditar(meditar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-edit"></i>Editar suscripcion
-                  </a>
-                  <a
-                    *ngIf="
-                      empresa.suscripcion &&
-                      empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
-                      empresa.suscripcion.estado.toLowerCase() != 'suspendido'
-                    "
-                    (click)="openCancelar(mcancelar, empresa.suscripcion)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
-                  </a>
-                  <a
-                    *ngIf="!empresa.suscripcion"
-                    (click)="openCrearSuscripcion(mcrear, empresa)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-plus me-2"></i>Crear suscripción
-                  </a>
-                  <a
-                    *ngIf="
-                      empresa.suscripcion?.estado.toLowerCase() != 'suspendido'
-                    "
-                    (click)="suspenderSistema(empresa)"
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-ban me-2"></i>Suspender sistema
-                  </a>
+                  @if (empresa.suscripcion) {
+                    <a
+                      (click)="openDetalles(mdetalles, empresa.suscripcion)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                    </a>
+                  }
+                  @if (empresa.suscripcion) {
+                    <a
+                      (click)="openEditar(meditar, empresa.suscripcion)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-edit"></i>Editar suscripcion
+                    </a>
+                  }
+                  @if (
+                    empresa.suscripcion &&
+                    empresa.suscripcion.estado.toLowerCase() != 'cancelado' &&
+                    empresa.suscripcion.estado.toLowerCase() != 'suspendido'
+                  ) {
+                    <a
+                      (click)="openCancelar(mcancelar, empresa.suscripcion)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban"></i>Cancelar suscripción
+                    </a>
+                  }
+                  @if (!empresa.suscripcion) {
+                    <a
+                      (click)="openCrearSuscripcion(mcrear, empresa)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-plus me-2"></i>Crear suscripción
+                    </a>
+                  }
+                  @if (
+                    empresa.suscripcion?.estado.toLowerCase() != 'suspendido'
+                  ) {
+                    <a
+                      (click)="suspenderSistema(empresa)"
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-ban me-2"></i>Suspender sistema
+                    </a>
+                  }
 
-                  <a
-                    *ngIf="empresa.suscripcion"
-                    (click)="
-                      openHistorialPagos(
-                        mhistorialPagos,
-                        empresa.suscripcion,
-                        empresa
-                      )
-                    "
-                    class="list-group-item list-group-item-action border-0 click"
-                  >
-                    <i class="fa fa-fw fa-history me-2"></i>Historial de pagos
-                  </a>
+                  @if (empresa.suscripcion) {
+                    <a
+                      (click)="
+                        openHistorialPagos(
+                          mhistorialPagos,
+                          empresa.suscripcion,
+                          empresa
+                        )
+                      "
+                      class="list-group-item list-group-item-action border-0 click"
+                    >
+                      <i class="fa fa-fw fa-history me-2"></i>Historial de pagos
+                    </a>
+                  }
                 </div>
               </ng-template>
             </td>
-          </tr>
+            </tr>
+          }
         </tbody>
       </table>
     </div>
 
-    <div class="col-12" *ngIf="suscripciones?.last_page > 1">
-      <app-pagination
-        [items]="suscripciones"
-        (setPagination)="setPagination($event)"
-      ></app-pagination>
-    </div>
+    @if (suscripciones?.last_page > 1) {
+      <div class="col-12">
+        <app-pagination
+          [items]="suscripciones"
+          (setPagination)="setPagination($event)"
+        ></app-pagination>
+      </div>
+    }
   </div>
 </section>
 
@@ -359,12 +396,14 @@
           {{ suscripcion?.fin_periodo_prueba | date : "dd/MM/yyyy" }}
         </p>
       </div>
-      <div class="col-12" *ngIf="suscripcion?.motivo_cancelacion">
-        <p>
-          <strong>Motivo Cancelación:</strong>
-          {{ suscripcion?.motivo_cancelacion }}
-        </p>
-      </div>
+      @if (suscripcion?.motivo_cancelacion) {
+        <div class="col-12">
+          <p>
+            <strong>Motivo Cancelación:</strong>
+            {{ suscripcion?.motivo_cancelacion }}
+          </p>
+        </div>
+      }
     </div>
   </div>
 </ng-template>
@@ -393,9 +432,11 @@
             (change)="selectPlanEdit($event.target.value)"
           >
             <option value="">Seleccione un plan</option>
-            <option *ngFor="let plan of planes" [value]="plan.id">
-              {{ plan.nombre }}
-            </option>
+            @for (plan of planes; track plan.id) {
+              <option [value]="plan.id">
+                {{ plan.nombre }}
+              </option>
+            }
           </select>
         </div>
 
@@ -427,9 +468,11 @@
             required
           >
             <option value="">Seleccione un usuario</option>
-            <option *ngFor="let user of users" [value]="user.id">
-              {{ user.name }}
-            </option>
+            @for (user of users; track user.id) {
+              <option [value]="user.id">
+                {{ user.name }}
+              </option>
+            }
           </select>
           <small class="text-muted">
             Seleccione el usuario administrador para esta suscripción
@@ -520,19 +563,20 @@
           ></textarea>
         </div>
 
-        <div
-          class="form-group col-12 mb-3"
-          *ngIf="suscripcion.estado === 'Cancelado'"
-        >
-          <label class="form-label">Motivo Cancelación:</label>
-          <textarea
-            class="form-control"
-            [(ngModel)]="suscripcion.motivo_cancelacion"
-            name="motivo_cancelacion"
-            rows="3"
-            required
-          ></textarea>
-        </div>
+        @if (suscripcion.estado === 'Cancelado') {
+          <div
+            class="form-group col-12 mb-3"
+          >
+            <label class="form-label">Motivo Cancelación:</label>
+            <textarea
+              class="form-control"
+              [(ngModel)]="suscripcion.motivo_cancelacion"
+              name="motivo_cancelacion"
+              rows="3"
+              required
+            ></textarea>
+          </div>
+        }
 
         <div class="d-grid mt-4">
           <button
@@ -541,11 +585,15 @@
             [disabled]="saving || !suscripcionForm.form.valid"
           >
             <i class="fas fa-save me-2"></i>
-            <span *ngIf="!saving">Guardar Cambios</span>
-            <span *ngIf="saving">
-              <i class="fas fa-spinner fa-spin me-2"></i>
-              Guardando...
-            </span>
+            @if (!saving) {
+              <span>Guardar Cambios</span>
+            }
+            @if (saving) {
+              <span>
+                <i class="fas fa-spinner fa-spin me-2"></i>
+                Guardando...
+              </span>
+            }
           </button>
         </div>
       </div>
@@ -577,9 +625,11 @@
             (change)="selectPlan($event.target.value)"
           >
             <option value="">Seleccione un plan</option>
-            <option *ngFor="let plan of planes" [value]="plan.id">
-              {{ plan.nombre }}
-            </option>
+            @for (plan of planes; track plan.id) {
+              <option [value]="plan.id">
+                {{ plan.nombre }}
+              </option>
+            }
           </select>
         </div>
 
@@ -642,9 +692,11 @@
             required
           >
             <option value="">Seleccione un usuario</option>
-            <option *ngFor="let user of users" [value]="user.id">
-              {{ user.name }}
-            </option>
+            @for (user of users; track user.id) {
+              <option [value]="user.id">
+                {{ user.name }}
+              </option>
+            }
           </select>
           <small class="text-muted">
             Seleccione el usuario administrador para esta suscripción
@@ -703,9 +755,11 @@
             name="nit"
             [class.bg-light]="nuevaSuscripcion.nit"
           />
-          <small class="text-muted" *ngIf="nuevaSuscripcion.nit">
-            NIT de la empresa
-          </small>
+          @if (nuevaSuscripcion.nit) {
+            <small class="text-muted">
+              NIT de la empresa
+            </small>
+          }
         </div>
 
         <div class="form-group col-md-12 mb-3">
@@ -717,9 +771,11 @@
             name="nombre_factura"
             [class.bg-light]="nuevaSuscripcion.nombre_factura"
           />
-          <small class="text-muted" *ngIf="nuevaSuscripcion.nombre_factura">
-            Nombre de la empresa
-          </small>
+          @if (nuevaSuscripcion.nombre_factura) {
+            <small class="text-muted">
+              Nombre de la empresa
+            </small>
+          }
         </div>
 
         <div class="form-group col-md-12 mb-3">
@@ -731,9 +787,11 @@
             rows="2"
             [class.bg-light]="nuevaSuscripcion.direccion_factura"
           ></textarea>
-          <small class="text-muted" *ngIf="nuevaSuscripcion.direccion_factura">
-            Dirección registrada de la empresa
-          </small>
+          @if (nuevaSuscripcion.direccion_factura) {
+            <small class="text-muted">
+              Dirección registrada de la empresa
+            </small>
+          }
         </div>
 
         <div class="d-grid mt-4">
@@ -743,11 +801,15 @@
             [disabled]="saving || !suscripcionForm.form.valid"
           >
             <i class="fas fa-save me-2"></i>
-            <span *ngIf="!saving">Crear Suscripción</span>
-            <span *ngIf="saving">
-              <i class="fas fa-spinner fa-spin me-2"></i>
-              Creando...
-            </span>
+            @if (!saving) {
+              <span>Crear Suscripción</span>
+            }
+            @if (saving) {
+              <span>
+                <i class="fas fa-spinner fa-spin me-2"></i>
+                Creando...
+              </span>
+            }
           </button>
         </div>
       </div>
@@ -786,11 +848,15 @@
           [disabled]="!cancelForm.form.valid || saving"
         >
           <i class="fas fa-ban me-2"></i>
-          <span *ngIf="!saving">Confirmar Cancelación</span>
-          <span *ngIf="saving">
-            <i class="fas fa-spinner fa-spin me-2"></i>
-            Procesando...
-          </span>
+          @if (!saving) {
+            <span>Confirmar Cancelación</span>
+          }
+          @if (saving) {
+            <span>
+              <i class="fas fa-spinner fa-spin me-2"></i>
+              Procesando...
+            </span>
+          }
         </button>
         <button
           type="button"
@@ -919,9 +985,11 @@
                 <label for="filtros.forma_pago">Método de pago:</label>
                 <select [(ngModel)]="filtros.forma_pago" class="form-control form-select" name="filtros.forma_pago">
                     <option value="">Todos</option>
-                    <option *ngFor="let formaPago of formaPagos" [value]="formaPago.nombre">
+                    @for (formaPago of formaPagos; track formaPago.id) {
+                      <option [value]="formaPago.nombre">
                         {{ formaPago.nombre }}
-                    </option>
+                      </option>
+                    }
                     <option value="Multiple">Multiple</option>
                 </select>
             </div> -->
@@ -929,8 +997,12 @@
 
       <div class="d-grid mt-3">
         <button type="submit" [disabled]="loading" class="btn btn-primary">
-          <span *ngIf="!loading">Filtrar</span>
-          <span *ngIf="loading">Filtrando...</span>
+          @if (!loading) {
+            <span>Filtrar</span>
+          }
+          @if (loading) {
+            <span>Filtrando...</span>
+          }
         </button>
       </div>
     </form>
@@ -986,40 +1058,41 @@
         </ul>
 
         <!-- Contenido de tabs -->
-        <div [ngSwitch]="tabActivo">
-          <!-- Tab N1co -->
-          <div *ngSwitchCase="'n1co'" class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Orden</th>
-                  <th>Monto</th>
-                  <th>Estado</th>
-                  <th>Autorización</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngIf="loadingHistorial">
-                  <td colspan="5" class="text-center">
-                    <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
-                  </td>
-                </tr>
-                <tr
-                  *ngIf="
+        @switch (tabActivo) {
+          @case ('n1co') {
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Orden</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th>Autorización</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (loadingHistorial) {
+                    <tr>
+                      <td colspan="5" class="text-center">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
+                      </td>
+                    </tr>
+                  }
+                  @if (
                     !loadingHistorial && getPagosFiltrados('n1co').length === 0
-                  "
-                >
-                  <td colspan="5" class="text-center">
-                    No hay registros de pagos con N1co
-                  </td>
-                </tr>
-                <ng-container
-                  *ngIf="
+                  ) {
+                    <tr>
+                      <td colspan="5" class="text-center">
+                        No hay registros de pagos con N1co
+                      </td>
+                    </tr>
+                  }
+                  @if (
                     !loadingHistorial && getPagosFiltrados('n1co').length > 0
-                  "
-                >
-                  <tr *ngFor="let pago of getPagosFiltrados('n1co')">
+                  ) {
+                    @for (pago of getPagosFiltrados('n1co'); track pago.id) {
+                      <tr>
                     <td>
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
                     </td>
@@ -1045,63 +1118,68 @@
                     <td>
                       <small class="text-muted">{{
                         pago.codigo_autorizacion || "-"
-                      }}</small>
-                    </td>
+                      }}                      </small>
+                      </td>
+                    </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @case ('transferencia') {
+            <div class="table-responsive">
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Comprobante</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
-                </ng-container>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Tab Transferencia -->
-          <div *ngSwitchCase="'transferencia'" class="table-responsive">
-            <table class="table table-striped table-hover">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Monto</th>
-                  <th>Comprobante</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngIf="loadingHistorial">
-                  <td colspan="5" class="text-center">
-                    <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
-                  </td>
-                </tr>
-                <tr
-                  *ngIf="
+                </thead>
+                <tbody>
+                  @if (loadingHistorial) {
+                    <tr>
+                      <td colspan="5" class="text-center">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Cargando...
+                      </td>
+                    </tr>
+                  }
+                  @if (
                     !loadingHistorial &&
                     getPagosFiltrados('transferencia').length === 0
-                  "
-                >
-                  <td colspan="5" class="text-center">
-                    No hay registros de pagos por transferencia
-                  </td>
-                </tr>
-                <ng-container
-                  *ngIf="
+                  ) {
+                    <tr>
+                      <td colspan="5" class="text-center">
+                        No hay registros de pagos por transferencia
+                      </td>
+                    </tr>
+                  }
+                  @if (
                     !loadingHistorial &&
                     getPagosFiltrados('transferencia').length > 0
-                  "
-                >
-                  <tr *ngFor="let pago of getPagosFiltrados('transferencia')">
+                  ) {
+                    @for (pago of getPagosFiltrados('transferencia'); track pago.id) {
+                      <tr>
                     <td>
                       {{ pago.fecha_transaccion | date : "dd/MM/yyyy HH:mm" }}
                     </td>
                     <td>{{ pago.monto | currency : "USD" }}</td>
                     <td>
-                      <a
-                        *ngIf="pago.comprobante_url"
-                        [href]="pago.comprobante_url"
-                        target="_blank"
-                        class="btn btn-sm btn-link"
-                      >
-                        <i class="fas fa-eye me-1"></i>Ver comprobante
-                      </a>
-                      <span *ngIf="!pago.comprobante_url">-</span>
+                      @if (pago.comprobante_url) {
+                        <a
+                          [href]="pago.comprobante_url"
+                          target="_blank"
+                          class="btn btn-sm btn-link"
+                        >
+                          <i class="fas fa-eye me-1"></i>Ver comprobante
+                        </a>
+                      }
+                      @if (!pago.comprobante_url) {
+                        <span>-</span>
+                      }
                     </td>
                     <td>
                       <span
@@ -1120,27 +1198,31 @@
                       </span>
                     </td>
                     <td>
-                      <button
-                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
-                        class="btn btn-sm btn-success me-1"
-                        (click)="aprobarTransferencia(pago)"
-                      >
-                        <i class="fas fa-check me-1"></i>Aprobar
-                      </button>
-                      <button
-                        *ngIf="pago.estado.toLowerCase() === 'pendiente'"
-                        class="btn btn-sm btn-danger"
-                        (click)="rechazarTransferencia(pago)"
-                      >
-                        <i class="fas fa-times me-1"></i>Rechazar
-                      </button>
+                      @if (pago.estado.toLowerCase() === 'pendiente') {
+                        <button
+                          class="btn btn-sm btn-success me-1"
+                          (click)="aprobarTransferencia(pago)"
+                        >
+                          <i class="fas fa-check me-1"></i>Aprobar
+                        </button>
+                      }
+                      @if (pago.estado.toLowerCase() === 'pendiente') {
+                        <button
+                          class="btn btn-sm btn-danger"
+                          (click)="rechazarTransferencia(pago)"
+                        >
+                          <i class="fas fa-times me-1"></i>Rechazar
+                        </button>
+                      }
                     </td>
                   </tr>
-                </ng-container>
+                  }
+                }
               </tbody>
             </table>
           </div>
-        </div>
+        }
+      }
       </div>
     </div>
   </div>

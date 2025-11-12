@@ -6,9 +6,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="dashboards?.total">
-                Mostrando {{ dashboards?.to }} de {{ dashboards?.total + ' registros' }}
-            </span>
+            @if (dashboards?.total) {
+                <span class="text-muted">
+                    Mostrando {{ dashboards?.to }} de {{ dashboards?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -39,9 +41,11 @@
             </select>
             <ng-select name="id_empresa" (change)="filtrarDashboards()" [(ngModel)]="filtros.id_empresa" class="form-select p-0 border-0 bg-default">
                 <ng-option value="">Empresa</ng-option>
-                <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                    {{empresa.nombre}}
-                </ng-option>
+                @for (empresa of empresas; track empresa.id) {
+                    <ng-option [value]="empresa.id">
+                        {{empresa.nombre}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -59,40 +63,46 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="10" class="text-center" *ngIf="dashboards?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene dashboards registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
+                        @if (dashboards?.total < 1 && !loading) {
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene dashboards registradas</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
 
-                    <tr class="animated fadeIn" *ngFor=" let dashboard of dashboards?.data">
-                        
-                        <td>{{dashboard.id }}</td>
-                        <td>{{dashboard.titulo }}</td>
-                        <td>{{dashboard.tipo }}</td>
-                        <td>{{dashboard.nombre_empresa }}</td>
-                        <td class="d-flex gap-2 justify-content-center">
-                            <a class="btn btn-default" (click)="delete(dashboard.id)" data-toggle="tooltip" title="Eliminar">
-                                <i class="fa fa-trash"></i>
-                            </a>
-                            <a class="btn btn-default" (click)="openModal(mdashboard, dashboard)" data-toggle="tooltip" title="Ver">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
-                            <a class="btn btn-default" routerLink="/admin/dashboard/{{dashboard.id}}" data-toggle="tooltip" title="Ver datos">
-                                <i class="fa fa-chart-pie"></i>
-                            </a>
-                        </td>
-
-                    </tr>
+                    @for (dashboard of dashboards?.data; track dashboard.id) {
+                        <tr class="animated fadeIn">
+                            <td>{{dashboard.id }}</td>
+                            <td>{{dashboard.titulo }}</td>
+                            <td>{{dashboard.tipo }}</td>
+                            <td>{{dashboard.nombre_empresa }}</td>
+                            <td class="d-flex gap-2 justify-content-center">
+                                <a class="btn btn-default" (click)="delete(dashboard.id)" data-toggle="tooltip" title="Eliminar">
+                                    <i class="fa fa-trash"></i>
+                                </a>
+                                <a class="btn btn-default" (click)="openModal(mdashboard, dashboard)" data-toggle="tooltip" title="Ver">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                                <a class="btn btn-default" routerLink="/admin/dashboard/{{dashboard.id}}" data-toggle="tooltip" title="Ver datos">
+                                    <i class="fa fa-chart-pie"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="dashboards?.last_page > 1">
-            <app-pagination [items]="dashboards" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (dashboards?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="dashboards" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -101,8 +111,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="dashboard.id">Editar </span>
-            <span *ngIf="!dashboard.id">Crear </span>
+            @if (dashboard.id) {
+                <span>Editar </span>
+            }
+            @if (!dashboard.id) {
+                <span>Crear </span>
+            }
             dashboard
         </h2>
     </div>
@@ -132,9 +146,11 @@
             <div class="form-group col-md-6">
                 <label for="id_empresa">Empresa:</label>
                 <ng-select [(ngModel)]="dashboard.id_empresa" class="form-select p-0" name="id_empresa">
-                    <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                        {{ empresa.nombre }}
-                    </ng-option>
+                    @for (empresa of empresas; track empresa.id) {
+                        <ng-option [value]="empresa.id">
+                            {{ empresa.nombre }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
 
@@ -151,8 +167,12 @@
 
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

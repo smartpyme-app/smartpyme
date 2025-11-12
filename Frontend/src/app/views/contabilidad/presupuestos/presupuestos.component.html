@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Presupuestos</h2>
-    <button *ngIf="apiService.canCreateTest('finanzas.presupuestos.crear')" routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
+    @if (apiService.canCreateTest('finanzas.presupuestos.crear')) {
+        <button routerLink="/presupuesto/crear" tooltip="Crear presupuesto (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir presupuesto</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="presupuestos?.total">
-                Mostrando {{ presupuestos?.to }} de {{ presupuestos?.total + ' registros' }}
-            </span>
+            @if (presupuestos?.total) {
+                <span class="text-muted">
+                    Mostrando {{ presupuestos?.to }} de {{ presupuestos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -51,57 +55,75 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="presupuestos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene presupuestos registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (presupuestos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene presupuestos registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr *ngFor=" let presupuesto of presupuestos?.data">
-                        
-                        <td>{{presupuesto.titulo }}</td>
-                        <td>{{presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
-                        <td>{{presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</td>
-                        <td class="text-right">{{presupuesto.ingresos | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">{{presupuesto.egresos | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">{{presupuesto.utilidad | currency:'USD':'symbol':'1.2'}}</td>
-                        <td class="text-right">
-                            <span class="badge bg-success" *ngIf="presupuesto.enable == 1">Activo</span>
-                            <span class="badge bg-danger" *ngIf="presupuesto.enable == 0">Anulado</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="d-flex flex-column align-items-start">
-                                    <a *ngIf="apiService.canEditTest('finanzas.presupuestos.editar')" routerLink="/presupuesto/editar/{{presupuesto.id}}" class="btn">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a routerLink="/presupuesto/detalles/{{presupuesto.id}}" class="btn">
-                                        <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
-                                    </a>
-                                    <a *ngIf="!presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')" (click)="setAnulacion(presupuesto, true)" class="btn">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
-                                    <a *ngIf="presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')" (click)="setAnulacion(presupuesto, false)" class="btn text-danger">
-                                        <i class="fa fa-fw fa-ban"></i> Anular
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
-
-                    </tr>
+                    @for (presupuesto of presupuestos?.data; track presupuesto.id) {
+                        <tr>
+                            <td>{{presupuesto.titulo }}</td>
+                            <td>{{presupuesto.fecha_inicio | date:'dd/MM/yyyy'}}</td>
+                            <td>{{presupuesto.fecha_fin | date:'dd/MM/yyyy'}}</td>
+                            <td class="text-right">{{presupuesto.ingresos | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{presupuesto.egresos | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">{{presupuesto.utilidad | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-right">
+                                @if (presupuesto.enable == 1) {
+                                    <span class="badge bg-success">Activo</span>
+                                }
+                                @if (presupuesto.enable == 0) {
+                                    <span class="badge bg-danger">Anulado</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="d-flex flex-column align-items-start">
+                                        @if (apiService.canEditTest('finanzas.presupuestos.editar')) {
+                                            <a routerLink="/presupuesto/editar/{{presupuesto.id}}" class="btn">
+                                                <i class="fa fa-fw fa-edit"></i> Editar
+                                            </a>
+                                        }
+                                        <a routerLink="/presupuesto/detalles/{{presupuesto.id}}" class="btn">
+                                            <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
+                                        </a>
+                                        @if (!presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')) {
+                                            <a (click)="setAnulacion(presupuesto, true)" class="btn">
+                                                <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                            </a>
+                                        }
+                                        @if (presupuesto.enable && apiService.canEditTest('finanzas.presupuestos.editar')) {
+                                            <a (click)="setAnulacion(presupuesto, false)" class="btn text-danger">
+                                                <i class="fa fa-fw fa-ban"></i> Anular
+                                            </a>
+                                        }
+                                    </div>
+                                </ng-template>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="presupuestos?.last_page > 1">
-            <app-pagination [items]="presupuestos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (presupuestos?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="presupuestos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -133,21 +155,29 @@
                     <option value="0">Anulados</option>
                 </select>
             </div>
-            <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-6">
-                <label for="id_proyecto">Proyecto:</label>
-                <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
-                    <ng-option value="">Todos</ng-option>
-                    <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-                        {{ proyecto.nombre }}
-                    </ng-option>
-                </ng-select>
-            </div>
+            @if (apiService.auth_user().empresa.modulo_proyectos) {
+                <div class="form-group col-md-6">
+                    <label for="id_proyecto">Proyecto:</label>
+                    <ng-select [(ngModel)]="filtros.id_proyecto" class="form-select p-0" name="id_proyecto">
+                        <ng-option value="">Todos</ng-option>
+                        @for (proyecto of proyectos; track proyecto.id) {
+                            <ng-option [value]="proyecto.id">
+                                {{ proyecto.nombre }}
+                            </ng-option>
+                        }
+                    </ng-select>
+                </div>
+            }
         </div>
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

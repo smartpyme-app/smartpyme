@@ -1,21 +1,25 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Proveedores</h2>
-    <button *ngIf="apiService.canCreateTest('compras.proveedores.crear')" routerLink="/proveedor/crear" tooltip="Crear proveedor (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proveedor</button>
+    @if (apiService.canCreateTest('compras.proveedores.crear')) {
+        <button routerLink="/proveedor/crear" tooltip="Crear proveedor (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir proveedor</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="proveedores?.total">
-                Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarProveedores()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ proveedores?.total + ' registros' }}
-            </span>
+            @if (proveedores?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando 
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarProveedores()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ proveedores?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -62,15 +66,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="proveedores?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene proveedores registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let proveedor of proveedores?.data">
+                    @if (proveedores?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene proveedores registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (proveedor of proveedores?.data; track proveedor.id) {
+                        <tr>
                         <td>{{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo | truncate:30 }}</td>
                         <td>{{ proveedor.correo }}</td>
                         <td>{{ proveedor.telefono }}</td>
@@ -89,29 +100,38 @@
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="list-group border-0">
-                                    <a *ngIf="apiService.canEditTest('compras.proveedores.editar')" routerLink="/proveedor/editar/{{proveedor.id}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
+                                    @if (apiService.canEditTest('compras.proveedores.editar')) {
+                                        <a routerLink="/proveedor/editar/{{proveedor.id}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                    }
                                     <a routerLink="/proveedor/detalles/{{proveedor.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    <a *ngIf="proveedor.enable && apiService.canEditTest('compras.proveedores.editar')" (click)="setActivo(proveedor, false)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-ban"></i> Deshabilitar
-                                    </a>
-                                    <a *ngIf="!proveedor.enable && apiService.canEditTest('compras.proveedores.editar')" (click)="setActivo(proveedor, true)" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-check"></i> Habilitar
-                                    </a>
+                                    @if (proveedor.enable && apiService.canEditTest('compras.proveedores.editar')) {
+                                        <a (click)="setActivo(proveedor, false)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-ban"></i> Deshabilitar
+                                        </a>
+                                    }
+                                    @if (!proveedor.enable && apiService.canEditTest('compras.proveedores.editar')) {
+                                        <a (click)="setActivo(proveedor, true)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-check"></i> Habilitar
+                                        </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="proveedores?.last_page > 1">
-            <app-pagination [items]="proveedores" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (proveedores && proveedores.last_page && proveedores.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="proveedores" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -143,9 +163,11 @@
                 <label for="filtros.usuario">Empleado:</label>
                 <select [(ngModel)]="filtros.usuario_id" class="form-control" name="filtros.usuario_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let usuario of usuarios" [ngValue]="usuario.id">
-                        {{ usuario.name }}
-                    </option>
+                    @for (usuario of usuarios; track usuario.id) {
+                        <option [ngValue]="usuario.id">
+                            {{ usuario.name }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -185,8 +207,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>

@@ -1,4 +1,7 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
@@ -6,15 +9,35 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { VentaDetallesComponent } from './detalles/venta-detalles.component';
+import { MetodosDePagoComponent } from './metodos-de-pago/metodos-de-pago.component';
+import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/buscador-clientes.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { FilterPipe } from '@pipes/filter.pipe';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
-import { co } from '@fullcalendar/core/internal-common';
 
 @Component({
-  selector: 'app-facturacion',
-  templateUrl: './facturacion.component.html',
-  providers: [SumPipe],
+    selector: 'app-facturacion',
+    templateUrl: './facturacion.component.html',
+    standalone: true,
+    imports: [
+        CommonModule, 
+        RouterModule, 
+        FormsModule,
+        NgSelectModule,
+        FilterPipe,
+        VentaDetallesComponent,
+        MetodosDePagoComponent,
+        CrearClienteComponent,
+        BuscadorClientesComponent,
+        CrearProyectoComponent
+    ],
+    providers: [SumPipe],
+    
 })
 export class FacturacionComponent implements OnInit {
   public venta: any = {};

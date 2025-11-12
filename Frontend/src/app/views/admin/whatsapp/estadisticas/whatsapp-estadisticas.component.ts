@@ -1,12 +1,18 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { interval, Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-whatsapp-estadisticas',
-  templateUrl: './whatsapp-estadisticas.component.html',
-  styleUrls: ['./whatsapp-estadisticas.component.scss']
+    selector: 'app-whatsapp-estadisticas',
+    templateUrl: './whatsapp-estadisticas.component.html',
+    styleUrls: ['./whatsapp-estadisticas.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
 

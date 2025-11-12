@@ -95,24 +95,32 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="10" class="text-center" *ngIf="dash?.licencia?.empresas?.length < 1 && !loading">
-                                    <span class="badge bg-primary">No tiene ventas registradas</span>
-                                </td>
-                                <td colspan="10" class="text-center" *ngIf="loading">
-                                    <span class="badge bg-primary">Cargando...</span>
-                                </td>
-                            </tr>
+                            @if (dash?.licencia?.empresas?.length < 1 && !loading) {
+                                <tr>
+                                    <td colspan="10" class="text-center">
+                                        <span class="badge bg-primary">No tiene ventas registradas</span>
+                                    </td>
+                                </tr>
+                            }
+                            @if (loading) {
+                                <tr>
+                                    <td colspan="10" class="text-center">
+                                        <span class="badge bg-primary">Cargando...</span>
+                                    </td>
+                                </tr>
+                            }
 
-                            <tr *ngFor=" let empresa of dash?.licencia?.empresas">
-                                <td>{{ empresa.nombre_empresa }}</td>
-                                <td>{{ empresa.empresa.plan }}</td>
-                                <td>{{ empresa.ultimo_login | date:'dd/mm/yyyy' }}</td>
-                                <td colspan="text-end">{{ empresa.total_accesos | number }}</td>
-                                <td colspan="text-end">{{ empresa.total_ventas | number }}</td>
-                                <td colspan="text-end">{{ empresa.total_gastos | number }}</td>
-                                <td colspan="text-end">{{ empresa.total_compras | number }}</td>
-                            </tr>
+                            @for (empresa of dash?.licencia?.empresas; track empresa.nombre_empresa) {
+                                <tr>
+                                    <td>{{ empresa.nombre_empresa }}</td>
+                                    <td>{{ empresa.empresa.plan }}</td>
+                                    <td>{{ empresa.ultimo_login | date:'dd/mm/yyyy' }}</td>
+                                    <td colspan="text-end">{{ empresa.total_accesos | number }}</td>
+                                    <td colspan="text-end">{{ empresa.total_ventas | number }}</td>
+                                    <td colspan="text-end">{{ empresa.total_gastos | number }}</td>
+                                    <td colspan="text-end">{{ empresa.total_compras | number }}</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>

@@ -1,4 +1,7 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { SwUpdate } from '@angular/service-worker';
@@ -6,21 +9,24 @@ import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
 import { ChatService } from '@services/chat/chat.service';
 
-import {
-    IStepOption,
-    TourAnchorNgxBootstrapDirective,
-    TourNgxBootstrapModule,
-    TourService
-} from 'ngx-ui-tour-ngx-bootstrap';
+// Tour deshabilitado temporalmente por incompatibilidad con Angular 20
+// import {
+//     IStepOption,
+//     TourAnchorNgxBootstrapDirective,
+//     TourNgxBootstrapModule,
+//     TourService
+// } from 'ngx-ui-tour-ngx-bootstrap';
 
 
 @Component({
     selector: 'app-root',
-    templateUrl: './app.component.html'
+    templateUrl: './app.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule]
 })
 export class AppComponent implements OnInit {
     public usuario: any = {};
-    public tourSteps: IStepOption[] = [];
+    // public tourSteps: IStepOption[] = [];
 
     @ViewChild('mtour') tourTemplate!: TemplateRef<any>;
     @ViewChild('mtourend') tourEndTemplate!: TemplateRef<any>;
@@ -28,15 +34,17 @@ export class AppComponent implements OnInit {
     modalRefEndTour!: BsModalRef;
 
     constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
-        private tourService: TourService, private modalService: BsModalService, private chatService: ChatService,
+        /* private tourService: TourService, */ private modalService: BsModalService, private chatService: ChatService,
         private constantsService: ConstantsService,
     ) {
 
         if (this.updates.isEnabled) {
-            this.updates.available.subscribe(event => {
-                // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
-                  this.updates.activateUpdate().then(() => document.location.reload());
-                // }
+            this.updates.versionUpdates.subscribe((event: any) => {
+                if (event.type === 'VERSION_READY') {
+                    // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
+                      this.updates.activateUpdate().then(() => document.location.reload());
+                    // }
+                }
             });
         }
     }
@@ -48,8 +56,10 @@ export class AppComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         
         // Cargar constantes si no están disponibles
-        this.loadConstantsIfNeeded();
+        // this.loadConstantsIfNeeded();
         
+        // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
+        /* 
         this.tourSteps = [
             {
                 anchorId: 'tour.resumen',
@@ -132,9 +142,12 @@ export class AppComponent implements OnInit {
                 }
             }, 1000);
         }
+        */
 
     }
 
+    // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
+    /*
     starTour(){
         if(this.modalRefStarTour){
             this.modalRefStarTour.hide();
@@ -149,6 +162,7 @@ export class AppComponent implements OnInit {
             localStorage.setItem('sp_tour_iniciado', 'false');
         });
     }
+    */
 
     omitirTour(){
         this.saveTour();
@@ -168,7 +182,7 @@ export class AppComponent implements OnInit {
     private loadConstantsIfNeeded() {
         const constants = localStorage.getItem('SP_constants');
         if (!constants) {
-            console.log('Cargando constantes...');
+            // console.log('Cargando constantes...');
             this.constantsService.loadConstants().subscribe(
                 (constants) => {
                     console.log('Constantes cargadas en app component:', constants);
@@ -178,7 +192,7 @@ export class AppComponent implements OnInit {
                 }
             );
         } else {
-            console.log('Constantes ya disponibles en localStorage');
+            // console.log('Constantes ya disponibles en localStorage');
         }
     }
 

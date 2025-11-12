@@ -1,13 +1,28 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { CollapseModule } from 'ngx-bootstrap/collapse';
+import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-sidebar',
-  templateUrl: './sidebar.component.html'
+    selector: 'app-sidebar',
+    templateUrl: './sidebar.component.html',
+    standalone: true,
+    imports: [
+        CommonModule, 
+        FormsModule, 
+        RouterModule, 
+        ReactiveFormsModule,
+        CollapseModule,
+        TooltipModule
+    ],
+    
 })
 
 export class SidebarComponent implements OnInit {
@@ -35,7 +50,11 @@ export class SidebarComponent implements OnInit {
 
     searchControl = new FormControl();
 
-    constructor(public apiService: ApiService, public alertService: AlertService) {}
+    constructor(
+        public apiService: ApiService,
+        public alertService: AlertService,
+        private router: Router
+    ) {}
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {
@@ -103,7 +122,6 @@ export class SidebarComponent implements OnInit {
             switchMap((query: any) => this.apiService.read('buscador/', query))
           )
           .subscribe((results: any[]) => {
-            console.log(results);
             this.items = Array.isArray(results) ? results : [];
             this.loading = false;
           });

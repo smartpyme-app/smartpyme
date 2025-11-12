@@ -2,9 +2,11 @@
   <h3 (click)="loadAll()">{{ gasto.id ? 'Editar ' : 'Crear ' }} Gasto</h3>
 
   <div class="d-flex align-items-center float-end gap-3">
-    <button class="btn btn-primary me-2" *ngIf="!gasto.id" (click)="openJsonImport(jsonImportTemplate)">
-      <i class="fa fa-file-import"></i> Importar JSON
-    </button>
+    @if (!gasto.id) {
+      <button class="btn btn-primary me-2" (click)="openJsonImport(jsonImportTemplate)">
+        <i class="fa fa-file-import"></i> Importar JSON
+      </button>
+    }
 
     <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
   </div>
@@ -26,16 +28,20 @@
       <div class="form-group col-md-4 col-lg-3">
         <label for="id_usuario">Usuario:</label>
         <select name="id_usuario" [(ngModel)]="gasto.id_usuario" class="form-select">
-          <option [value]="usuario.id" *ngFor="let usuario of usuarios">
-            {{ usuario.name }}
-          </option>
+          @for (usuario of usuarios; track usuario.id) {
+            <option [value]="usuario.id">
+              {{ usuario.name }}
+            </option>
+          }
         </select>
       </div>
       <div class="form-group col-md-4 col-lg-3">
         <label for="tipo_documento">Documento</label>
         <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento"
                 class="form-select">
-          <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+          @for (documento of documentos; track documento.nombre || $index) {
+            <option [value]="documento.nombre">{{ documento.nombre }}</option>
+          }
         </select>
       </div>
       <div class="form-group col-md-4 col-lg-3">
@@ -51,9 +57,11 @@
       <div class="form-group col-md-4 col-lg-3">
         <label for="id_sucursal">Sucursal:</label>
         <select name="id_sucursal" [(ngModel)]="gasto.id_sucursal" class="form-select">
-          <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">
-            {{ sucursal.nombre }}
-          </option>
+          @for (sucursal of sucursales; track sucursal.id) {
+            <option [value]="sucursal.id">
+              {{ sucursal.nombre }}
+            </option>
+          }
         </select>
       </div>
       <div class="form-group col-md-4 col-lg-3">
@@ -61,9 +69,11 @@
         <div class="input-group flex-nowrap">
           <ng-select name="id_proveedor" [(ngModel)]="gasto.id_proveedor" class="form-select p-0">
             <ng-option value="">Seleccione aquí</ng-option>
-            <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
-              {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
-            </ng-option>
+            @for (proveedor of proveedores; track proveedor.id) {
+              <ng-option [value]="proveedor.id">
+                {{ proveedor.tipo == 'Empresa' ? proveedor.nombre_empresa : proveedor.nombre_completo }}
+              </ng-option>
+            }
           </ng-select>
           <app-crear-proveedor (update)="setProveedor($event)"></app-crear-proveedor>
         </div>
@@ -73,9 +83,11 @@
         <div class="input-group flex-nowrap">
           <ng-select name="id_categoria" [(ngModel)]="gasto.id_categoria" class="form-select p-0">
             <ng-option value="">Seleccione aquí</ng-option>
-            <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-              {{ categoria.nombre }}
-            </ng-option>
+            @for (categoria of categorias; track categoria.id) {
+              <ng-option [value]="categoria.id">
+                {{ categoria.nombre }}
+              </ng-option>
+            }
           </ng-select>
           <!--                  <select name="tipo" [(ngModel)]="gasto.tipo" class="form-select">-->
           <!--                    <option value="">Seleccione aquí</option>-->
@@ -108,10 +120,12 @@
             id="id_departamento"
             (change)="onDepartamentoChangeGasto()">
             <option value="">Seleccione departamento</option>
-            <option *ngFor="let departamento of departamentos" [value]="departamento.id"
-                    [selected]="gasto.id_departamento == departamento.id">
-              {{ departamento.nombre }}
-            </option>
+            @for (departamento of departamentos; track departamento.id) {
+              <option [value]="departamento.id"
+                      [selected]="gasto.id_departamento == departamento.id">
+                {{ departamento.nombre }}
+              </option>
+            }
           </select>
           <app-crear-departamento [id_departamento]="gasto.id_departamento"
                                   (update)="setDepartamento($event)"></app-crear-departamento>
@@ -129,10 +143,12 @@
             [disabled]="!gasto.id_departamento || loadingAreas">
             <option value="">{{ !gasto.id_departamento ? 'Primero seleccione departamento' : 'Seleccione área' }}
             </option>
-            <option *ngFor="let area of areasDisponibles" [value]="area.id"
-                    [selected]="gasto.id_area_empresa == area.id">
-              {{ area.nombre }}
-            </option>
+            @for (area of areasDisponibles; track area.id) {
+              <option [value]="area.id"
+                      [selected]="gasto.id_area_empresa == area.id">
+                {{ area.nombre }}
+              </option>
+            }
           </select>
           <app-crear-area-empresa
             [id_area]="gasto.id_area_empresa"
@@ -140,13 +156,17 @@
             (update)="setArea($event)">
           </app-crear-area-empresa>
         </div>
-        <small class="text-muted" *ngIf="loadingAreas">Cargando áreas...</small>
+        @if (loadingAreas) {
+          <small class="text-muted">Cargando áreas...</small>
+        }
       </div>
       <div class="form-group col-md-4 col-lg-3">
         <label for="tipo_documento">Documento</label>
         <select name="tipo_documento" (change)="selectTipoDocumento()" [(ngModel)]="gasto.tipo_documento"
                 class="form-select">
-          <option [value]="documento.nombre" *ngFor="let documento of documentos">{{ documento.nombre }}</option>
+          @for (documento of documentos; track documento.nombre || $index) {
+            <option [value]="documento.nombre">{{ documento.nombre }}</option>
+          }
         </select>
       </div>
       <div class="form-group col-md-4 col-lg-3">
@@ -154,28 +174,34 @@
         <input type="text" class="form-control" name="referencia" [(ngModel)]="gasto.referencia"
                placeholder="Escriba aquí"/>
       </div>
-      <div class="form-group col-md-4 col-lg-3" *ngIf="isColumnEnabled('columna_proyecto')">
-        <label for="num_identificacion">Número identificación:</label>
-        <input
-          type="text"
-          [(ngModel)]="gasto.num_identificacion"
-          name="num_identificacion"
-          class="form-control"
-          id="num_identificacion"
-          placeholder="Número de identificación">
-      </div>
-      <div *ngIf="apiService.auth_user().empresa.modulo_proyectos" class="form-group col-md-12 col-lg-3">
-        <label for="">Proyecto</label>
-        <div class="input-group flex-nowrap">
-          <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="gasto.id_proyecto"
-                     class="form-select p-0">
-            <ng-option *ngFor="let proyecto of proyectos" [value]="proyecto.id">
-              {{ proyecto.nombre }}
-            </ng-option>
-          </ng-select>
-          <app-crear-proyecto [id_proyecto]="gasto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+      @if (isColumnEnabled('columna_proyecto')) {
+        <div class="form-group col-md-4 col-lg-3">
+          <label for="num_identificacion">Número identificación:</label>
+          <input
+            type="text"
+            [(ngModel)]="gasto.num_identificacion"
+            name="num_identificacion"
+            class="form-control"
+            id="num_identificacion"
+            placeholder="Número de identificación">
         </div>
-      </div>
+      }
+      @if (apiService.auth_user().empresa.modulo_proyectos) {
+        <div class="form-group col-md-12 col-lg-3">
+          <label for="">Proyecto</label>
+          <div class="input-group flex-nowrap">
+            <ng-select name="id_proyecto" placeholder="Seleccione aquí" [(ngModel)]="gasto.id_proyecto"
+                       class="form-select p-0">
+              @for (proyecto of proyectos; track proyecto.id) {
+                <ng-option [value]="proyecto.id">
+                  {{ proyecto.nombre }}
+                </ng-option>
+              }
+            </ng-select>
+            <app-crear-proyecto [id_proyecto]="gasto.id_proyecto" (update)="setProyecto($event)"></app-crear-proyecto>
+          </div>
+        </div>
+      }
     </div>
   </div>
 
@@ -190,7 +216,9 @@
       <div class="form-group col-md-4 col-lg-3">
         <label for="forma_pago">Forma de pago:</label>
         <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select" id="forma_pago">
-          <option value="{{ forma.nombre }}" *ngFor="let forma of formaspago">{{ forma.nombre }}</option>
+          @for (forma of formaspago; track forma.nombre || $index) {
+            <option value="{{ forma.nombre }}">{{ forma.nombre }}</option>
+          }
         </select>
       </div>
       <div class="form-group col-md-3 col-lg-2">
@@ -245,13 +273,15 @@
             id="es_retaceo">
         </div>
       </div>
-      <div class="form-group col-md-12" *ngIf="gasto.es_retaceo">
-        <div class="alert alert-info py-2 px-3 mt-2 mb-0">
-          <i class="fa fa-info-circle me-2"></i>
-          <small>Los gastos marcados como "para retaceo" aparecerán automáticamente en la selección de gastos al crear
-            un retaceo.</small>
+      @if (gasto.es_retaceo) {
+        <div class="form-group col-md-12">
+          <div class="alert alert-info py-2 px-3 mt-2 mb-0">
+            <i class="fa fa-info-circle me-2"></i>
+            <small>Los gastos marcados como "para retaceo" aparecerán automáticamente en la selección de gastos al crear
+              un retaceo.</small>
+          </div>
         </div>
-      </div>
+      }
     </div>
 
   </div>
@@ -265,38 +295,43 @@
       </div>
     </div>
 
-    <div class="row" *ngIf="opAvanzadas">
-      <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="opAvanzadas">
-        <div class="form-switch bg-light-info rounded">
-          <label for="impuesto">IVA ({{ apiService.auth_user().empresa.iva }}%)</label>
-          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()"
-                 [(ngModel)]="gasto.impuesto" name="impuesto">
-          <label for="impuesto">IVA (13%)</label>
-          <input class="form-check-input float-end" (change)="setImpuesto('iva')" type="checkbox" role="switch"
-                 [(ngModel)]="gasto.impuesto" name="impuesto">
+    @if (opAvanzadas) {
+      <div class="row">
+        @if (opAvanzadas) {
+          <div class="form-group col-md-4 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="impuesto">IVA ({{ apiService.auth_user().empresa.iva }}%)</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setTotal()"
+                     [(ngModel)]="gasto.impuesto" name="impuesto">
+              <label for="impuesto">IVA (13%)</label>
+              <input class="form-check-input float-end" (change)="setImpuesto('iva')" type="checkbox" role="switch"
+                     [(ngModel)]="gasto.impuesto" name="impuesto">
+            </div>
+          </div>
+        }
+        <div class="form-group col-md-3 col-lg-3 without-label">
+          <div class="form-switch bg-light-info rounded">
+            <label for="impuesto">Renta (10%)</label>
+            <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('renta')"
+                   [(ngModel)]="gasto.renta" name="renta">
+          </div>
         </div>
-      </div>
-      <div class="form-group col-md-3 col-lg-3 without-label ">
-        <div class="form-switch bg-light-info rounded">
-          <label for="impuesto">Renta (10%)</label>
-          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('renta')"
-                 [(ngModel)]="gasto.renta" name="renta">
+        <div class="form-group col-md-3 col-lg-3 without-label">
+          <div class="form-switch bg-light-info rounded">
+            <label for="percepcion">Percepción (1%)</label>
+            <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('percepcion')"
+                   [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
+          </div>
         </div>
-      </div>
-      <div class="form-group col-md-3 col-lg-3 without-label">
-        <div class="form-switch bg-light-info rounded">
-          <label for="percepcion">Percepción (1%)</label>
-          <input class="form-check-input float-end" type="checkbox" role="switch" (change)="setImpuesto('percepcion')"
-                 [(ngModel)]="gasto.percepcion" name="gasto.percepcion">
-        </div>
-      </div>
-      <div class="form-group col-md-4 col-lg-3 without-label " *ngIf="opAvanzadas">
-        <div class="form-switch bg-light-info rounded">
-          <label for="recurrente">Recurrente</label>
-          <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente"
-                 name="recurrente">
-        </div>
-      </div>
+        @if (opAvanzadas) {
+          <div class="form-group col-md-4 col-lg-3 without-label">
+            <div class="form-switch bg-light-info rounded">
+              <label for="recurrente">Recurrente</label>
+              <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="gasto.recurrente"
+                     name="recurrente">
+            </div>
+          </div>
+        }
       <div class="form-group col-md-4 col-lg-3 without-label">
         <div class="form-switch bg-light-info rounded">
           <label for="switch_otros_impuestos">Otros impuestos</label>
@@ -310,44 +345,56 @@
         </div>
       </div>
 
-      <div class="form-group col-md-8 col-lg-8" *ngIf="mostrar_otros_impuestos">
-        <label for="">Selecciona los impuestos aplicables</label>
-        <div class="input-group flex-nowrap">
-          <ng-select
-            name="otros_impuestos"
-            placeholder="Seleccione impuestos"
-            [(ngModel)]="gasto.otros_impuestos"
-            [multiple]="true"
-            (change)="onImpuestosChange()"
-            class="form-select p-0">
-            <ng-option *ngFor="let impuesto of impuestos" [value]="impuesto.id">
-              {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
-            </ng-option>
-          </ng-select>
-          <app-crear-impuesto (update)="setImpuesto($event)"></app-crear-impuesto>
-        </div>
+        @if (mostrar_otros_impuestos) {
+          <div class="form-group col-md-8 col-lg-8">
+            <label for="">Selecciona los impuestos aplicables</label>
+            <div class="input-group flex-nowrap">
+              <ng-select
+                name="otros_impuestos"
+                placeholder="Seleccione impuestos"
+                [(ngModel)]="gasto.otros_impuestos"
+                [multiple]="true"
+                (change)="onImpuestosChange()"
+                class="form-select p-0">
+                @for (impuesto of impuestos; track impuesto.id) {
+                  <ng-option [value]="impuesto.id">
+                    {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                  </ng-option>
+                }
+              </ng-select>
+              <app-crear-impuesto (update)="setImpuesto($event)"></app-crear-impuesto>
+            </div>
 
-        <!-- Lista de impuestos seleccionados -->
-        <div class="mt-2 mb-3" *ngIf="impuestos_seleccionados.length > 0">
-          <div class="d-flex flex-wrap gap-2">
-                        <span *ngFor="let impuesto of impuestos_seleccionados" class="badge bg-light-info text-info">
-                            {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
-                        </span>
+            <!-- Lista de impuestos seleccionados -->
+            @if (impuestos_seleccionados.length > 0) {
+              <div class="mt-2 mb-3">
+                <div class="d-flex flex-wrap gap-2">
+                  @for (impuesto of impuestos_seleccionados; track impuesto.id || $index) {
+                    <span class="badge bg-light-info text-info">
+                      {{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)
+                    </span>
+                  }
+                </div>
+              </div>
+            }
           </div>
-        </div>
-      </div>
-      <div class="row" *ngIf="gasto.impuestos_valores && gasto.impuestos_valores.length > 0">
-        <div class="form-group col-md-4 col-lg-4" *ngFor="let impuestoValor of gasto.impuestos_valores">
-          <label for="">{{ impuestoValor.nombre }}:</label>
-          <input
-            type='number'
-            step="0.01"
-            class="form-control"
-            [name]="'impuesto_'+impuestoValor.id_impuesto"
-            [(ngModel)]="impuestoValor.valor"
-            (change)="onImpuestoValorChange()"/>
-        </div>
-      </div>
+        }
+        @if (gasto.impuestos_valores && gasto.impuestos_valores.length > 0) {
+          <div class="row">
+            @for (impuestoValor of gasto.impuestos_valores; track impuestoValor.id_impuesto || $index) {
+              <div class="form-group col-md-4 col-lg-4">
+                <label for="">{{ impuestoValor.nombre }}:</label>
+                <input
+                  type='number'
+                  step="0.01"
+                  class="form-control"
+                  [name]="'impuesto_'+impuestoValor.id_impuesto"
+                  [(ngModel)]="impuestoValor.valor"
+                  (change)="onImpuestoValorChange()"/>
+              </div>
+            }
+          </div>
+        }
       <div class="form-group col-6 col-lg-2">
         <label for="tipo_operacion">Tipo de operación:</label>
         <select name="tipo_operacion" class="form-select" [(ngModel)]="gasto.tipo_operacion">
@@ -407,11 +454,12 @@
                  [(ngModel)]="gasto.otros_impuestos"/>
         </div>
       </div>
-      <div class="form-group col-md-12">
-        <label for="">Observaciones:</label>
-        <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí"/>
+        <div class="form-group col-md-12">
+          <label for="">Observaciones:</label>
+          <input type="text" class="form-control" name="nota" [(ngModel)]="gasto.nota" placeholder="Escriba aquí"/>
+        </div>
       </div>
-    </div>
+    }
 
     <div class="row mt-2">
       <h6>Detalles contable</h6>
@@ -465,8 +513,12 @@
   <div class="bg-white rounded p-3 mb-3">
     <div class="form-group col-sm-12 pt-2 pb-4">
       <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F8" tooltip="Procesar (F8)">
-        <span *ngIf="!saving">Procesar gasto  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
-        <span *ngIf="saving">Procesando...</span>
+        @if (!saving) {
+          <span>Procesar gasto  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+        }
+        @if (saving) {
+          <span>Procesando...</span>
+        }
       </button>
     </div>
   </div>
@@ -489,8 +541,12 @@
     <div class="d-grid">
       <button type="button" [disabled]="processingJson || !jsonContent.trim()" class="btn btn-primary"
               (click)="processJsonData()">
-        <span *ngIf="!processingJson">Procesar</span>
-        <span *ngIf="processingJson">Procesando...</span>
+        @if (!processingJson) {
+          <span>Procesar</span>
+        }
+        @if (processingJson) {
+          <span>Procesando...</span>
+        }
       </button>
     </div>
   </div>

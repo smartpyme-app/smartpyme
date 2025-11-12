@@ -1,13 +1,21 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { DatosComponent } from './datos/datos.component';
+import { TopsComponent } from './tops/tops.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-admin-dash',
-  templateUrl: './admin-dash.component.html'
+    selector: 'app-admin-dash',
+    templateUrl: './admin-dash.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, DatosComponent, TopsComponent],
+    
 })
 export class AdminDashComponent implements OnInit {
 

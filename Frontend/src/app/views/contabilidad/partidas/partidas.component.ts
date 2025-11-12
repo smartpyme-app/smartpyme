@@ -1,5 +1,9 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -8,9 +12,12 @@ import * as moment from 'moment';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-partidas',
-  templateUrl: './partidas.component.html',
-  styleUrls: ['./partidas.component.scss']
+    selector: 'app-partidas',
+    templateUrl: './partidas.component.html',
+    styleUrls: ['./partidas.component.scss'],
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
+    
 })
 export class PartidasComponent implements OnInit {
   public partidas: any = [];
@@ -175,7 +182,6 @@ export class PartidasComponent implements OnInit {
   public filtrarPartidas() {
     this.loading = true;
 
-    console.log('Filtros enviados al backend:', this.filtros);
     this.guardarFiltros();
 
     this.apiService.getAll('partidas', this.filtros).subscribe(

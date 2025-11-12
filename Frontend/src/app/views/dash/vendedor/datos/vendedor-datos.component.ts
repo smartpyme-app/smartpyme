@@ -1,11 +1,17 @@
 import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
 @Component({
-  selector: 'app-vendedor-datos',
-  templateUrl: './vendedor-datos.component.html'
+    selector: 'app-vendedor-datos',
+    templateUrl: './vendedor-datos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class VendedorDatosComponent implements OnInit {
 

@@ -1,5 +1,10 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { TagInputModule } from 'ngx-chips';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -7,8 +12,11 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-proveedor',
-  templateUrl: './proveedor.component.html'
+    selector: 'app-proveedor',
+    templateUrl: './proveedor.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
+    
 })
 export class ProveedorComponent implements OnInit {
 

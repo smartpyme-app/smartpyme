@@ -1,5 +1,9 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { CrearProductoComponent } from '@shared/modals/crear-producto/crear-producto.component';
 
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -10,8 +14,11 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-compra-producto',
-  templateUrl: './compra-producto.component.html'
+    selector: 'app-compra-producto',
+    templateUrl: './compra-producto.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent],
+    
 })
 export class CompraProductoComponent implements OnInit {
 

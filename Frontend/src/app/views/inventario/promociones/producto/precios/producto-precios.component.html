@@ -1,6 +1,6 @@
 <div class="box-body table-responsive no-padding min-heigth">
   <div class="box-body animated fadeIn" (click)="loadAll()">
-      <div *ngIf="datasets.length">
+      @if (datasets.length) {
           <div style="position: relative; height:200px; width: 100%;">
               <canvas baseChart
                       [datasets]="datasets"
@@ -10,8 +10,8 @@
                       [chartType]="type">
               </canvas>
           </div>
-      </div>
-      <div *ngIf="!datasets.length">
+      }
+      @if (!datasets.length) {
           <div style="position: relative; height:200px; width: 100%;">
               <div class="text-muted text-center thumbler">
                 <i class="fa fa-pie-chart fa-5x"></i>
@@ -19,7 +19,7 @@
                 Sin datos
               </div>
           </div>
-      </div>
+      }
   </div>
 
 </div>

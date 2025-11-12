@@ -2,7 +2,8 @@ import { Directive, Input, TemplateRef, ViewContainerRef, OnInit } from '@angula
 import { ApiService } from '../services/api.service';  // Ajusta la ruta según tu estructura
 
 @Directive({
-    selector: '[hasPermission]'
+    selector: '[hasPermission]',
+    standalone: true
 })
 export class HasPermissionDirective implements OnInit {
     @Input('hasPermission') permission: string = '';

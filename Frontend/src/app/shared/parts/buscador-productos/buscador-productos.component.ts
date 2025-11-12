@@ -1,4 +1,7 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
@@ -7,8 +10,10 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
 @Component({
-  selector: 'app-buscador-productos',
-  templateUrl: './buscador-productos.component.html'
+    selector: 'app-buscador-productos',
+    templateUrl: './buscador-productos.component.html',
+    standalone: true,
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule]
 })
 export class BuscadorProductosComponent implements OnInit {
 

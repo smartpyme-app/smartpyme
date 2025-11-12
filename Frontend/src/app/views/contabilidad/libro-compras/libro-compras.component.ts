@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SumPipe } from '@pipes/sum.pipe';
 
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-libro-compras',
-  templateUrl: './libro-compras.component.html',
+    selector: 'app-libro-compras',
+    templateUrl: './libro-compras.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe],
+    
 })
 
 export class LibroComprasComponent implements OnInit {

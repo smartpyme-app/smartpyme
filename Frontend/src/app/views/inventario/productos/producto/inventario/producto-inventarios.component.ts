@@ -1,13 +1,20 @@
 import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-producto-inventarios',
-  templateUrl: './producto-inventarios.component.html'
+    selector: 'app-producto-inventarios',
+    templateUrl: './producto-inventarios.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe],
+    
 })
 export class ProductoInventariosComponent implements OnInit {
 

@@ -2,40 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '@layout/layout.component';
 import { CitasGuard } from '@guards/citas.guard';
-import { AdminGuard } from '@guards/admin.guard';
-
-import { ProductosComponent } from '@views/inventario/productos/productos.component';
-import { ProductoComponent } from '@views/inventario/productos/producto/producto.component';
-import { PromocionesComponent } from '@views/inventario/promociones/promociones.component';
-import { ProductoComboComponent } from './productos/producto/combo/producto-combo.component';
-
-import { ProductosConsignasComponent } from '@views/inventario/consignas/productos-consignas.component';
-
-import { MateriasPrimaComponent } from '@views/inventario/materias-prima/materias-prima.component';
-import { MateriaPrimaComponent } from '@views/inventario/materias-prima/materia-prima/materia-prima.component';
-import { KardexComponent } from '@views/inventario/kardex/kardex.component';
-import { TrasladosComponent } from '@views/inventario/traslados/traslados.component';
-import { TrasladoComponent } from '@views/inventario/traslados/traslado/traslado.component';
-import { AjustesComponent } from '@views/inventario/ajustes/ajustes.component';
-import { AjusteComponent } from '@views/inventario/ajustes/ajuste/ajuste.component';
-import { CategoriasComponent } from '@views/inventario/categorias/categorias.component';
-
-import { ServiciosComponent } from '@views/inventario/servicios/servicios.component';
-import { BodegaComponent } from '@views/inventario/bodegas/bodega/bodega.component';
-import { BodegasComponent } from '@views/inventario/bodegas/bodegas.component';
-import { TrasladoMasivoComponent } from '@views/inventario/productos/producto/traslado/traslado-masivo.component';
-import { AjusteMasivoComponent } from '@views/inventario/productos/producto/ajuste/ajuste-masivo.component';
-
-import { VerProductoComponent } from './productos/producto/ver-producto/ver-producto.component';
-import { CustomFieldsComponent } from '@views/inventario/custom-fields/custom-fields.component';
 import { PermissionGuard } from '@guards/permission.guard';
-// Nuevos componentes de entradas y salidas
-import { InventarioEntradasComponent } from '@views/inventario/entradas/inventario-entradas.component';
-import { InventarioSalidasComponent } from '@views/inventario/salidas/inventario-salidas.component';
-import { InventarioEntradaComponent } from '@views/inventario/entradas/entrada/inventario-entrada.component';
-import { InventarioSalidaComponent } from '@views/inventario/salidas/salida/inventario-salida.component';
-import { EntradaDetalleComponent } from '@views/inventario/entradas/entrada-detalle/entrada-detalle.component';
-import { SalidaDetalleComponent } from '@views/inventario/salidas/salida-detalle/salida-detalle.component';
 
 const routes: Routes = [
   {
@@ -45,165 +12,189 @@ const routes: Routes = [
     children: [
       {
         path: 'productos',
-        component: ProductosComponent,
+        loadComponent: () => import('@views/inventario/productos/productos.component').then(m => m.ProductosComponent),
         title: 'Productos',
         canActivate: [PermissionGuard],
         data: { permission: 'productos.ver' },
       },
       {
         path: 'producto-combos',
-        component: ProductosComponent,
+        loadComponent: () => import('@views/inventario/productos/productos.component').then(m => m.ProductosComponent),
         title: 'Compuesto',
       },
       {
         path: 'producto/crear',
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.crear' },
         title: 'Producto',
       },
       {
         path: 'producto/ver/:id',
-        component: VerProductoComponent,
+        loadComponent: () => import('./productos/producto/ver-producto/ver-producto.component').then(m => m.VerProductoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.ver' },
         title: 'Producto',
       },
       {
         path: 'producto/editar/:id',
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.editar' },
         title: 'Producto',
       },
       {
         path: 'producto/combo/crear',
-        component: ProductoComboComponent,
+        loadComponent: () => import('./productos/producto/combo/producto-combo.component').then(m => m.ProductoComboComponent),
         title: 'Producto combo',
       },
 
 
       {
         path: 'consignas',
-        component: ProductosConsignasComponent,
+        loadComponent: () => import('@views/inventario/consignas/productos-consignas.component').then(m => m.ProductosConsignasComponent),
         title: 'Productos en consigna',
       },
-
       {
         path: 'materias-primas',
-        component: MateriasPrimaComponent,
+        loadComponent: () => import('@views/inventario/materias-prima/materias-prima.component').then(m => m.MateriasPrimaComponent),
         title: 'Materias primas',
       },
       {
         path: 'materia-primas',
-        component: MateriasPrimaComponent,
+        loadComponent: () => import('@views/inventario/materias-prima/materias-prima.component').then(m => m.MateriasPrimaComponent),
         title: 'Materias primas',
       },
       {
         path: 'materia-prima/crear',
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         title: 'Materia prima',
       },
       {
         path: 'materia-prima/editar/:id',
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         title: 'Materia prima',
       },
-
       {
         path: 'producto/:id',
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.ver' },
         title: 'Producto',
       },
-      { path: 'kardex/:id', component: KardexComponent },
-      { path: 'promociones', component: PromocionesComponent },
-
-      { path: 'traslados', component: TrasladosComponent, title: 'Traslados' },
-      { path: 'traslado/:id', component: TrasladoComponent, title: 'Traslado' },
-
-      {
-        path: 'categorias',
-        component: CategoriasComponent,
-        title: 'Categorias',
+      { 
+        path: 'kardex/:id', 
+        loadComponent: () => import('@views/inventario/kardex/kardex.component').then(m => m.KardexComponent) 
+      },
+      { 
+        path: 'promociones', 
+        loadComponent: () => import('@views/inventario/promociones/promociones.component').then(m => m.PromocionesComponent) 
       },
 
-      { path: 'ajustes', component: AjustesComponent, title: 'Ajustes' },
-      { path: 'ajuste/crear', component: AjusteMasivoComponent, title: 'Ajuste masivo' },
-      { path: 'ajuste/:id', component: AjusteComponent, title: 'Ajuste' },
-
-      { path: 'bodegas', component: BodegasComponent },
-      { path: 'bodega/:id', component: BodegaComponent },
-      { path: 'traslado-masivo/crear', component: TrasladoMasivoComponent, title: 'Traslado masivo' },
+      { 
+        path: 'traslados', 
+        loadComponent: () => import('@views/inventario/traslados/traslados.component').then(m => m.TrasladosComponent), 
+        title: 'Traslados' 
+      },
+      { 
+        path: 'traslado/:id', 
+        loadComponent: () => import('@views/inventario/traslados/traslado/traslado.component').then(m => m.TrasladoComponent), 
+        title: 'Traslado' 
+      },
+      {
+        path: 'categorias',
+        loadComponent: () => import('@views/inventario/categorias/categorias.component').then(m => m.CategoriasComponent),
+        title: 'Categorias',
+      },
+      { 
+        path: 'ajustes', 
+        loadComponent: () => import('@views/inventario/ajustes/ajustes.component').then(m => m.AjustesComponent), 
+        title: 'Ajustes' 
+      },
+      { 
+        path: 'ajuste/crear', 
+        loadComponent: () => import('@views/inventario/productos/producto/ajuste/ajuste-masivo.component').then(m => m.AjusteMasivoComponent), 
+        title: 'Ajuste masivo' 
+      },
+      { 
+        path: 'ajuste/:id', 
+        loadComponent: () => import('@views/inventario/ajustes/ajuste/ajuste.component').then(m => m.AjusteComponent), 
+        title: 'Ajuste' 
+      },
+      { 
+        path: 'traslado-masivo/crear', 
+        loadComponent: () => import('@views/inventario/productos/producto/traslado/traslado-masivo.component').then(m => m.TrasladoMasivoComponent), 
+        title: 'Traslado masivo' 
+      },
 
       {
         path: 'servicios',
         canActivate: [CitasGuard],
-        component: ServiciosComponent,
+        loadComponent: () => import('@views/inventario/servicios/servicios.component').then(m => m.ServiciosComponent),
         title: 'Servicios',
       },
       {
         path: 'servicio/crear',
         canActivate: [CitasGuard],
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         title: 'Servicio',
       },
       {
         path: 'servicio/editar/:id',
         canActivate: [CitasGuard],
-        component: ProductoComponent,
+        loadComponent: () => import('@views/inventario/productos/producto/producto.component').then(m => m.ProductoComponent),
         title: 'Servicio',
       },
-        // Nuevas rutas para entradas y salidas
-      { path: 'entradas',
-        component: InventarioEntradasComponent,
+      // Nuevas rutas para entradas y salidas
+      { 
+        path: 'entradas',
+        loadComponent: () => import('@views/inventario/entradas/inventario-entradas.component').then(m => m.InventarioEntradasComponent),
         title: 'Entradas de Inventario'
       },
-
-      { path: 'entrada/:id',
-        component: InventarioEntradaComponent,
+      { 
+        path: 'entrada/:id',
+        loadComponent: () => import('@views/inventario/entradas/entrada/inventario-entrada.component').then(m => m.InventarioEntradaComponent),
         title: 'Entrada de Inventario'
       },
-
-      { path: 'entrada/detalle/:id',
-        component: EntradaDetalleComponent,
+      { 
+        path: 'entrada/detalle/:id',
+        loadComponent: () => import('@views/inventario/entradas/entrada-detalle/entrada-detalle.component').then(m => m.EntradaDetalleComponent),
         title: 'Detalle de entrada'
       },
-
-      { path: 'salidas',
-        component: InventarioSalidasComponent,
+      { 
+        path: 'salidas',
+        loadComponent: () => import('@views/inventario/salidas/inventario-salidas.component').then(m => m.InventarioSalidasComponent),
         title: 'Salidas de Inventario'
       },
-
-      { path: 'salida/:id',
-        component: InventarioSalidaComponent,
+      { 
+        path: 'salida/:id',
+        loadComponent: () => import('@views/inventario/salidas/salida/inventario-salida.component').then(m => m.InventarioSalidaComponent),
         title: 'Salida de Inventario'
       },
-
-      { path: 'salida/detalle/:id',
-        component: SalidaDetalleComponent,
+      { 
+        path: 'salida/detalle/:id',
+        loadComponent: () => import('@views/inventario/salidas/salida-detalle/salida-detalle.component').then(m => m.SalidaDetalleComponent),
         title: 'Detalle de salida'
       },
 
 
       {
         path: 'bodegas',
-        component: BodegasComponent,
+        loadComponent: () => import('@views/inventario/bodegas/bodegas.component').then(m => m.BodegasComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.bodegas.ver' },
         title: 'Bodegas',
       },
       {
         path: 'bodega/:id',
-        component: BodegaComponent,
+        loadComponent: () => import('@views/inventario/bodegas/bodega/bodega.component').then(m => m.BodegaComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.bodegas.ver' },
         title: 'Bodega',
       },
       {
         path: 'custom-fields',
-        component: CustomFieldsComponent,
+        loadComponent: () => import('@views/inventario/custom-fields/custom-fields.component').then(m => m.CustomFieldsComponent),
         canActivate: [PermissionGuard],
         data: { permission: 'productos.campos_personalizados.ver' },
         title: 'Campos personalizados',

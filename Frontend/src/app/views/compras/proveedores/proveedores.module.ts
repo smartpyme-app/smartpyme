@@ -2,7 +2,6 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TagInputModule } from 'ngx-chips';
@@ -28,11 +27,9 @@ import { CuentasPagarComponent } from './cuentas-pagar/cuentas-pagar.component';
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
     PopoverModule.forRoot(),
-    FocusModule.forRoot(),
-    TooltipModule.forRoot()
-  ],
-  declarations: [
-  	ProveedoresComponent,
+    TooltipModule.forRoot(),
+    // Componentes standalone
+    ProveedoresComponent,
     ProveedorComponent,
     ProveedorDetallesComponent,
     ProveedorComprasComponent,

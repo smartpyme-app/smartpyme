@@ -20,43 +20,53 @@
             </thead>
             <tbody class="align-top">
                 <!-- if no h ay ningun producto -->
-                <tr *ngIf="partida?.detalles?.length < 1">
-                    <td colspan="5" class="text-center">
-                        <p *ngIf="!loading" class="text-muted my-3"> Agregue partidas </p>
-                        <p *ngIf="loading" class="text-muted my-3"> Cargando... </p>
-                    </td>
-                </tr>
+                @if (partida?.detalles?.length < 1) {
+                    <tr>
+                        <td colspan="5" class="text-center">
+                            @if (!loading) {
+                                <p class="text-muted my-3"> Agregue partidas </p>
+                            }
+                            @if (loading) {
+                                <p class="text-muted my-3"> Cargando... </p>
+                            }
+                        </td>
+                    </tr>
+                }
 
-                <tr *ngFor="let detalle of partida?.detalles; let i = index">
-                    <!-- detalle de vendedor  -->
-                    <td>
-                        <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
-                            <ng-option value="">Seleccione aquí</ng-option>
-                            <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
-                                <div class="d-flex align-items-center">
-                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
-                                </div>
-                            </ng-option>
-                        </ng-select>
-                    </td>
-                    <td>
-                        <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
-                    </td>
-                    <td>
-                        <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">
-                    </td>
-                    <td>
-                        <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" [disabled]="partida.estado === 'Cerrada'">
-                    </td>
-                    <td>
-                      <div class="d-flex gap-2 justify-content-center">
-                        <button type="button" class="btn btn-light" (click)="delete(detalle)" [disabled]="partida.estado === 'Cerrada'">
-                          <img src="/assets/icons/trash.png" class="icon">
-                        </button>
-                      </div>
-                    </td>
-                </tr>
+                @for (detalle of partida?.detalles; track detalle.id || $index) {
+                    <tr>
+                        <!-- detalle de vendedor  -->
+                        <td>
+                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
+                                <ng-option value="">Seleccione aquí</ng-option>
+                                @for (cuenta of catalogo; track cuenta.id) {
+                                    <ng-option [value]="cuenta.id">
+                                        <div class="d-flex align-items-center">
+                                            <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                            <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                        </div>
+                                    </ng-option>
+                                }
+                            </ng-select>
+                        </td>
+                        <td>
+                            <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">
+                        </td>
+                        <td>
+                            <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" [disabled]="partida.estado === 'Cerrada'">
+                        </td>
+                        <td>
+                          <div class="d-flex gap-2 justify-content-center">
+                            <button type="button" class="btn btn-light" (click)="delete(detalle)" [disabled]="partida.estado === 'Cerrada'">
+                              <img src="/assets/icons/trash.png" class="icon">
+                            </button>
+                          </div>
+                        </td>
+                    </tr>
+                }
             </tbody>
             <tfoot class="mt-3">
                 <tr><th colspan="4"><br></th></tr>
@@ -90,12 +100,14 @@
                 <label for="detalle.id_cuenta">Cuenta del catálogo:</label>
                 <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
                     <ng-option value="">Seleccione aquí</ng-option>
-                    <ng-option *ngFor="let cuenta of catalogo" [value]="cuenta.id">
-                        <div class="d-flex align-items-center">
-                            <span class="col-4">{{ cuenta.codigo }} </span>
-                            <span class="col-8"> - {{ cuenta.nombre }}</span>
-                        </div>
-                    </ng-option>
+                    @for (cuenta of catalogo; track cuenta.id) {
+                        <ng-option [value]="cuenta.id">
+                            <div class="d-flex align-items-center">
+                                <span class="col-4">{{ cuenta.codigo }} </span>
+                                <span class="col-8"> - {{ cuenta.nombre }}</span>
+                            </div>
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
 
@@ -116,8 +128,12 @@
 
             <div class="d-grid mt-4">
                 <button [disabled]="loading || partida.estado === 'Cerrada'" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Agregar</span>
-                    <span *ngIf="loading">Agregando...</span>
+                    @if (!loading) {
+                        <span>Agregar</span>
+                    }
+                    @if (loading) {
+                        <span>Agregando...</span>
+                    }
                 </button>
             </div>
         </div>

@@ -2,7 +2,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { PaywallLayoutComponent } from './layout/paywall-layout.component';
-import { PaywallComponent } from './components/paywall.component';
 
 const routes: Routes = [
   {
@@ -11,7 +10,7 @@ const routes: Routes = [
     children: [
       { 
         path: '',
-        component: PaywallComponent,
+        loadComponent: () => import('./components/paywall.component').then(m => m.PaywallComponent),
         title: 'Renovar Suscripción'
       }
     ]

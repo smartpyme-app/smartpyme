@@ -4,8 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '@shared/shared.module';
-import { TourNgxBootstrapModule } from 'ngx-ui-tour-ngx-bootstrap';
-import { FocusModule } from 'angular2-focus';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { HeaderComponent } from './header/header.component';
@@ -32,26 +30,25 @@ import { PerfilComponent } from './header/perfil/perfil.component';
     RouterModule,
     SharedModule,
     ReactiveFormsModule,
-    TourNgxBootstrapModule,
     TooltipModule.forRoot(),
     CollapseModule.forRoot(),
-    FocusModule.forRoot(),
-    // NotifierModule.withConfig({position: {horizontal:{ position:'middle' } }, theme: 'material'}),
-  ],
-  declarations: [
-    FooterComponent,
+    // Componentes standalone
+    LayoutComponent,
     HeaderComponent,
     AdminHeaderComponent,
+    FooterComponent,
     SidebarComponent,
     SidebarAdminComponent,
     SidebarOrganizacionesComponent,
     SidebarVentasComponent,
     SidebarServiciosComponent,
-    LayoutComponent,
     PerfilComponent,
     ThemeComponent,
     SpeedDialComponent,
     ChatDrawerComponent
+  ],
+  declarations: [
+    // Todos los componentes son standalone, se importan arriba
   ],
   exports: [
     FooterComponent,

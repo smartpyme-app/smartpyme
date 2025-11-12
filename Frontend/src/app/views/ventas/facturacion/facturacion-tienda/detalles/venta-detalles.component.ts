@@ -1,5 +1,12 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { TiendaVentaBuscadorComponent } from '../buscador/tienda-venta-buscador.component';
+import { TiendaVentaProductoComponent } from '../productos/tienda-venta-producto.component';
+import { TiendaVentaPaquetesComponent } from '../paquetes/tienda-venta-paquetes.component';
+import { TiendaVentaCitasComponent } from '../citas/tienda-venta-citas.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -7,8 +14,19 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-venta-detalles',
-  templateUrl: './venta-detalles.component.html'
+    selector: 'app-venta-detalles',
+    templateUrl: './venta-detalles.component.html',
+    standalone: true,
+    imports: [
+        CommonModule, 
+        RouterModule, 
+        FormsModule,
+        TiendaVentaBuscadorComponent,
+        TiendaVentaProductoComponent,
+        TiendaVentaPaquetesComponent,
+        TiendaVentaCitasComponent
+    ],
+    
 })
 export class VentaDetallesComponent implements OnInit {
 

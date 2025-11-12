@@ -1,21 +1,8 @@
 import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { Routes, RouterModule, NoPreloading } from '@angular/router';
 
 import { AuthGuard } from './guards/auth.guard';
-import { AdminGuard } from './guards/admin.guard';
-import { SuperAdminGuard } from './guards/super-admin.guard';
 import { SubscriptionGuard } from './guards/SuscriptionGuard.guard';
-
-import { NotFoundComponent }    from './shared/404/not-found.component';
-import { LoginComponent }    from './auth/login/login.component';
-import { RegisterComponent }    from './auth/register/register.component';
-import { PagoComponent }    from './auth/register/pago/pago.component';
-import { PaymentSuccessComponent }    from './auth/register/pago/payment-success.component';
-import { PaymentSuccessPaywallComponent }    from './layout/paywall/components/payment-success/payment-success.component';
-import { LockComponent }    from './auth/lock/lock.component';
-import { ForgetComponent }    from './auth/forget/forget.component';
-import { QuicklinkStrategy } from 'ngx-quicklink';
-import { SupervisorLimitadoGuard } from './guards/supervisor-limitado.guard';
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -23,14 +10,41 @@ export const GUARD_TYPES = {
   SUPER_ADMIN: 'superAdmin',
 } as const;
 
-const routes: Routes = [
-    { path: 'login', component: LoginComponent, title: 'Inicio de sesión' },
-    { path: 'registro', component: RegisterComponent, title: 'Registro' },
-    { path: 'pago', component: PagoComponent, title: 'Pago' },
-    { path: 'pago-exitoso', component: PaymentSuccessComponent, title: 'Pago exitoso' },
-    { path: 'pago-exitoso-paywall', component: PaymentSuccessPaywallComponent, title: 'Pago exitoso' },
-    { path: 'restablecer-cuenta', component: ForgetComponent, title: 'Restablecer contraseña' },
-    { path: 'lock', component: LockComponent },
+export const routes: Routes = [
+    { 
+      path: 'login', 
+      loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent), 
+      title: 'Inicio de sesión' 
+    },
+    { 
+      path: 'registro', 
+      loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent), 
+      title: 'Registro' 
+    },
+    { 
+      path: 'pago', 
+      loadComponent: () => import('./auth/register/pago/pago.component').then(m => m.PagoComponent), 
+      title: 'Pago' 
+    },
+    { 
+      path: 'pago-exitoso', 
+      loadComponent: () => import('./auth/register/pago/payment-success.component').then(m => m.PaymentSuccessComponent), 
+      title: 'Pago exitoso' 
+    },
+    { 
+      path: 'pago-exitoso-paywall', 
+      loadComponent: () => import('./layout/paywall/components/payment-success/payment-success.component').then(m => m.PaymentSuccessPaywallComponent), 
+      title: 'Pago exitoso' 
+    },
+    { 
+      path: 'restablecer-cuenta', 
+      loadComponent: () => import('./auth/forget/forget.component').then(m => m.ForgetComponent), 
+      title: 'Restablecer contraseña' 
+    },
+    { 
+      path: 'lock', 
+      loadComponent: () => import('./auth/lock/lock.component').then(m => m.LockComponent) 
+    },
 
     // Paywall (sin SubscriptionGuard para permitir acceso)
     {
@@ -110,12 +124,14 @@ const routes: Routes = [
   // Not Found
   {
     path: '**',
-    component: NotFoundComponent,
+    loadComponent: () => import('./shared/404/not-found.component').then(m => m.NotFoundComponent),
   },
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, {
+    preloadingStrategy: NoPreloading
+  })],
   exports: [RouterModule],
 })
 export class AppRoutingModule {}

@@ -13,18 +13,25 @@
                 </tr>
             </thead>
             <tbody>
+                @if (loading) {
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="loading">
+                    <td colspan="6" class="text-center">
                         <span class="label label-info">Cargando</span>
                     </td>
                 </tr>
+                }
 
-                <tr class="animated fadeIn" *ngFor=" let promocion of producto?.promociones">
+                @for (promocion of producto?.promociones; track promocion.id) {
+                <tr class="animated fadeIn">
                     <td class="text-center">{{promocion.inicio | date:'dd '}} al {{promocion.fin | date:'dd MMM '}}</td>
                     <td class="text-center">
                         <span class="badge badge-pop" [ngClass]="{'badge-danger' : !promocion?.activa, 'badge-success' : promocion?.activa}" [popover]="popTemplate" [outsideClick]="true">
-                            <span *ngIf="promocion.activa">Si</span>
-                            <span *ngIf="!promocion.activa">No</span>
+                            @if (promocion.activa) {
+                            <span>Si</span>
+                            }
+                            @if (!promocion.activa) {
+                            <span>No</span>
+                            }
                         </span>
                     </td>
                     <td class="text-center">{{ producto.precio | currency:'USD':'symbol':'1.2' }}</td>
@@ -38,13 +45,16 @@
                         </div>
                     </td>
                 </tr>
-                <tr *ngIf="!loading">
+                }
+                @if (!loading) {
+                <tr>
                     <td colspan="8" class="text-center">
                         <a class="btn btn-link" (click)="openModal(mPromocion, {})" tooltip="Agregar promoción">
                             Agregar promoción
                         </a>
                     </td>
-                </tr> 
+                </tr>
+                }
             </tbody>
         </table>
     </div>
@@ -80,8 +90,12 @@
         <div class="row">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block" [disabled]="!promocion.precio || !promocion.inicio || !promocion.fin">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                    <span>Guardar</span>
+                    }
+                    @if (loading) {
+                    <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

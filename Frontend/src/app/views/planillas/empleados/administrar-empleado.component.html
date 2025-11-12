@@ -18,28 +18,33 @@
           <i class="fa fa-user me-2"></i>Información Empleado
         </a>
       </li>
-      <li class="nav-item" *ngIf="empleado.id">
-        <a
-          class="nav-link cursor-pointer"
-          [class.active]="activeTab === 'historiales'"
-          (click)="setActiveTab('historiales')"
-        >
-          <i class="fa fa-history me-2"></i>Historiales
-        </a>
-      </li>
-      <li class="nav-item" *ngIf="empleado.id">
-        <a
-          class="nav-link cursor-pointer"
-          [class.active]="activeTab === 'documentos'"
-          (click)="setActiveTab('documentos')"
-        >
-          <i class="fa fa-file me-2"></i>Documentos
-        </a>
-      </li>
+      @if (empleado.id) {
+        <li class="nav-item">
+          <a
+            class="nav-link cursor-pointer"
+            [class.active]="activeTab === 'historiales'"
+            (click)="setActiveTab('historiales')"
+          >
+            <i class="fa fa-history me-2"></i>Historiales
+          </a>
+        </li>
+      }
+      @if (empleado.id) {
+        <li class="nav-item">
+          <a
+            class="nav-link cursor-pointer"
+            [class.active]="activeTab === 'documentos'"
+            (click)="setActiveTab('documentos')"
+          >
+            <i class="fa fa-file me-2"></i>Documentos
+          </a>
+        </li>
+      }
     </ul>
 
     <!-- Contenido de la pestaña Información -->
-    <div *ngIf="activeTab === 'informacion'">
+    @if (activeTab === 'informacion') {
+      <div>
       <form name="form" (ngSubmit)="onSubmit()">
         <!-- Tu formulario existente -->
         <div class="row">
@@ -145,12 +150,13 @@
                         required
                       >
                         <option value="">Seleccione...</option>
-                        <option
-                          *ngFor="let departamento of departamentos"
-                          [value]="departamento.id"
-                        >
-                          {{ departamento.nombre }}
-                        </option>
+                        @for (departamento of departamentos; track departamento.id) {
+                          <option
+                            [value]="departamento.id"
+                          >
+                            {{ departamento.nombre }}
+                          </option>
+                        }
                       </select>
                       <button
                         class="btn btn-default"
@@ -173,12 +179,13 @@
                         required
                       >
                         <option value="">Seleccione...</option>
-                        <option
-                          *ngFor="let cargo of cargosFiltrados"
-                          [value]="cargo.id"
-                        >
-                          {{ cargo.nombre }}
-                        </option>
+                        @for (cargo of cargosFiltrados; track cargo.id) {
+                          <option
+                            [value]="cargo.id"
+                          >
+                            {{ cargo.nombre }}
+                          </option>
+                        }
                       </select>
                       <button
                         class="btn btn-default"
@@ -190,9 +197,11 @@
                         <i class="fa fa-plus"></i>
                       </button>
                     </div>
-                    <small class="text-muted" *ngIf="!empleado.id_departamento">
-                      Seleccione un departamento primero
-                    </small>
+                    @if (!empleado.id_departamento) {
+                      <small class="text-muted">
+                        Seleccione un departamento primero
+                      </small>
+                    }
                   </div>
 
                   <!-- Salario y Fechas -->
@@ -242,9 +251,11 @@
                       required
                     >
                       <option value="">Seleccione...</option>
-                      <option *ngFor="let tipo of tiposJornada" [value]="tipo.id">
-                        {{ tipo.nombre }}
-                      </option>
+                      @for (tipo of tiposJornada; track tipo.id) {
+                        <option [value]="tipo.id">
+                          {{ tipo.nombre }}
+                        </option>
+                      }
                     </select>
                   </div>
 
@@ -258,12 +269,13 @@
                       required
                     >
                       <option value="">Seleccione...</option>
-                      <option
-                        *ngFor="let tipo of tiposContrato"
-                        [value]="tipo.id"
-                      >
-                        {{ tipo.nombre }}
-                      </option>
+                      @for (tipo of tiposContrato; track tipo.id) {
+                        <option
+                          [value]="tipo.id"
+                        >
+                          {{ tipo.nombre }}
+                        </option>
+                      }
                     </select>
                   </div>
 
@@ -277,9 +289,11 @@
                       required
                     >
                       <option value="">Seleccione...</option>
-                      <option *ngFor="let estado of estadosEmpleado" [value]="estado.id">
-                        {{ estado.nombre }}
-                      </option>
+                      @for (estado of estadosEmpleado; track estado.id) {
+                        <option [value]="estado.id">
+                          {{ estado.nombre }}
+                        </option>
+                      }
                     </select>
                   </div>
 
@@ -431,14 +445,18 @@
                       "
                       class="btn btn-primary btn-lg"
                     >
-                      <span *ngIf="!saving">
-                        <i class="fa fa-save"></i>
-                        {{ empleado.id ? "Actualizar" : "Guardar" }} Empleado
-                      </span>
-                      <span *ngIf="saving">
-                        <i class="fa fa-spinner fa-spin"></i>
-                        {{ empleado.id ? "Actualizando..." : "Guardando..." }}
-                      </span>
+                      @if (!saving) {
+                        <span>
+                          <i class="fa fa-save"></i>
+                          {{ empleado.id ? "Actualizar" : "Guardar" }} Empleado
+                        </span>
+                      }
+                      @if (saving) {
+                        <span>
+                          <i class="fa fa-spinner fa-spin"></i>
+                          {{ empleado.id ? "Actualizando..." : "Guardando..." }}
+                        </span>
+                      }
                     </button>
                   </div>
                 </div>
@@ -447,13 +465,14 @@
           </div>
         </div>
       </form>
-    </div>
+      </div>
+    }
 
     <!-- Contenido de la pestaña Historiales -->
-    <div
-      *ngIf="activeTab === 'historiales'"
-      class="animate__animated animate__fadeIn"
-    >
+    @if (activeTab === 'historiales') {
+      <div
+        class="animate__animated animate__fadeIn"
+      >
       <!-- Historial de Contratos -->
       <div class="mb-4">
         <h5 class="mb-3">Historial de Contratos</h5>
@@ -471,7 +490,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let contrato of historialContratos">
+              @for (contrato of historialContratos; track contrato.id) {
+                <tr>
                 <td>{{ contrato.fecha_inicio | date : "dd/MM/yyyy" }}</td>
                 <td>
                   {{
@@ -495,17 +515,19 @@
                   </span>
                 </td>
                 <td class="text-center">
-                  <button
-                    *ngIf="contrato.documento_empleado"
-                    class="btn btn-sm btn-link"
-                    (click)="
-                      descargarDocumento(contrato.documento_empleado?.id, true)
-                    "
-                  >
-                    <i class="fa fa-download"></i> Descargar
-                  </button>
+                  @if (contrato.documento_empleado) {
+                    <button
+                      class="btn btn-sm btn-link"
+                      (click)="
+                        descargarDocumento(contrato.documento_empleado?.id, true)
+                      "
+                    >
+                      <i class="fa fa-download"></i> Descargar
+                    </button>
+                  }
                 </td>
-              </tr>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
@@ -526,7 +548,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let baja of historialBajas">
+              @for (baja of historialBajas; track baja.id) {
+                <tr>
                 <td>{{ baja.fecha_baja | date : "dd/MM/yyyy" }}</td>
                 <td>{{ getNombreTipoBaja(baja.tipo_baja) }}</td>
                 <td>{{ baja.motivo }}</td>
@@ -542,26 +565,29 @@
                   </span>
                 </td>
                 <td>
-                  <button
-                    *ngIf="baja.documento_respaldo"
-                    class="btn btn-sm btn-link"
-                    (click)="descargarDocumento(baja.documento_respaldo)"
-                  >
-                    <i class="fa fa-download"></i> Descargar
-                  </button>
+                  @if (baja.documento_respaldo) {
+                    <button
+                      class="btn btn-sm btn-link"
+                      (click)="descargarDocumento(baja.documento_respaldo)"
+                    >
+                      <i class="fa fa-download"></i> Descargar
+                    </button>
+                  }
                 </td>
-              </tr>
+                </tr>
+              }
             </tbody>
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    }
 
     <!-- Contenido de la pestaña Documentos -->
-    <div
-      *ngIf="activeTab === 'documentos'"
-      class="animate__animated animate__fadeIn"
-    >
+    @if (activeTab === 'documentos') {
+      <div
+        class="animate__animated animate__fadeIn"
+      >
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0">Documentos del Empleado</h5>
         <button
@@ -605,34 +631,40 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngIf="loading">
-              <td colspan="5" class="text-center">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Cargando...</span>
-                </div>
-              </td>
-            </tr>
-            <tr
-              *ngIf="
-                !loading &&
-                (!documentosFiltrados || documentosFiltrados.length === 0)
-              "
-            >
-              <td colspan="5" class="text-center">
-                No hay documentos registrados
-              </td>
-            </tr>
-            <tr *ngFor="let doc of documentosFiltrados">
+            @if (loading) {
+              <tr>
+                <td colspan="5" class="text-center">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                  </div>
+                </td>
+              </tr>
+            }
+            @if (
+              !loading &&
+              (!documentosFiltrados || documentosFiltrados.length === 0)
+            ) {
+              <tr>
+                <td colspan="5" class="text-center">
+                  No hay documentos registrados
+                </td>
+              </tr>
+            }
+            @for (doc of documentosFiltrados; track doc.id) {
+              <tr>
               <td>{{ getTipoDocumento(doc.tipo_documento) }}</td>
               <td>{{ doc.fecha_documento | date : "dd/MM/yyyy" }}</td>
               <td>
-                <span
-                  *ngIf="doc.fecha_vencimiento"
-                  [class.text-danger]="isDocumentoVencido(doc)"
-                >
-                  {{ doc.fecha_vencimiento | date : "dd/MM/yyyy" }}
-                </span>
-                <span *ngIf="!doc.fecha_vencimiento">-</span>
+                @if (doc.fecha_vencimiento) {
+                  <span
+                    [class.text-danger]="isDocumentoVencido(doc)"
+                  >
+                    {{ doc.fecha_vencimiento | date : "dd/MM/yyyy" }}
+                  </span>
+                }
+                @if (!doc.fecha_vencimiento) {
+                  <span>-</span>
+                }
               </td>
               <td>{{ doc.nombre_archivo }}</td>
               <td>
@@ -648,23 +680,26 @@
                   </button> -->
                 </div>
               </td>
-            </tr>
+              </tr>
+            }
           </tbody>
         </table>
       </div>
 
       <!-- Paginación -->
-      <div
-        class="d-flex justify-content-center mt-3"
-        *ngIf="documentos?.last_page > 1"
-      >
-        <app-pagination
-          [items]="documentos"
-          (setPagination)="onPageChange($event.page)"
+      @if (documentos?.last_page > 1) {
+        <div
+          class="d-flex justify-content-center mt-3"
         >
-        </app-pagination>
+          <app-pagination
+            [items]="documentos"
+            (setPagination)="onPageChange($event.page)"
+          >
+          </app-pagination>
+        </div>
+      }
       </div>
-    </div>
+    }
   </div>
 </div>
 
@@ -709,8 +744,12 @@
             [disabled]="saving"
             class="btn btn-primary w-100"
           >
-            <span *ngIf="!saving">Guardar departamento</span>
-            <span *ngIf="saving">Guardando...</span>
+            @if (!saving) {
+              <span>Guardar departamento</span>
+            }
+            @if (saving) {
+              <span>Guardando...</span>
+            }
           </button>
         </div>
       </div>
@@ -744,14 +783,18 @@
           required
         >
           <option [ngValue]="null">Seleccione un departamento</option>
-          <option *ngFor="let dept of departamentos" [ngValue]="dept.id">
-            {{ dept.nombre }}
-          </option>
+          @for (dept of departamentos; track dept.id) {
+            <option [ngValue]="dept.id">
+              {{ dept.nombre }}
+            </option>
+          }
         </select>
-          <small class="text-muted d-block mt-1" *ngIf="cargo.id_departamento">
-            El cargo será asignado al departamento:
-            <strong>{{ getNombreDepartamento(cargo.id_departamento) }}</strong>
-          </small>
+          @if (cargo.id_departamento) {
+            <small class="text-muted d-block mt-1">
+              El cargo será asignado al departamento:
+              <strong>{{ getNombreDepartamento(cargo.id_departamento) }}</strong>
+            </small>
+          }
         </div>
 
         <div class="form-group col-12 mb-3">
@@ -803,8 +846,12 @@
               class="fa"
               [ngClass]="{ 'fa-save': !saving, 'fa-spinner fa-spin': saving }"
             ></i>
-            <span *ngIf="!saving"> Guardar cargo</span>
-            <span *ngIf="saving"> Guardando...</span>
+            @if (!saving) {
+              <span> Guardar cargo</span>
+            }
+            @if (saving) {
+              <span> Guardando...</span>
+            }
           </button>
         </div>
       </div>
@@ -882,10 +929,14 @@
 
       <div class="d-grid">
         <button type="submit" class="btn btn-primary" [disabled]="saving">
-          <span *ngIf="!saving">Guardar Documento</span>
-          <span *ngIf="saving"
-            ><i class="fa fa-spinner fa-spin me-2"></i>Guardando...</span
-          >
+          @if (!saving) {
+            <span>Guardar Documento</span>
+          }
+          @if (saving) {
+            <span
+              ><i class="fa fa-spinner fa-spin me-2"></i>Guardando...</span
+            >
+          }
         </button>
       </div>
     </form>

@@ -27,14 +27,22 @@
             <form autocomplete="off" class="buscador">
                 <input id="proveedor" type="text" name="proveedor.nombre" class="form-control" placeholder="Nombre" [(ngModel)]="proveedor.nombre" focus="true" id="example" (blur)="clear()">
                 <ul class="list-group info">
-                  <a href="javascript:void(0);" class="list-group-item text-primary" *ngIf="searching"> Buscando... </a>
-                  <a href="javascript:void(0);" class="list-group-item text-warning" *ngIf="!searching && proveedores?.data?.length == 0"> Ningun registro encontrado </a>
+                    @if (searching) {
+                        <a href="javascript:void(0);" class="list-group-item text-primary"> Buscando... </a>
+                    }
+                    @if (!searching && proveedores?.data?.length == 0) {
+                        <a href="javascript:void(0);" class="list-group-item text-warning"> Ningun registro encontrado </a>
+                    }
                 </ul>
-                <ul class="list-group opciones" *ngIf="proveedores?.total > 0">
-                  <a href="javascript:void(0);" class="list-group-item" (click)="selectProveedor(proveedor)" *ngFor=" let proveedor of proveedores?.data">
-                    {{proveedor.nombre}} - <small>{{proveedor.registro}}</small>
-                  </a>
-                </ul>
+                @if (proveedores?.total > 0) {
+                    <ul class="list-group opciones">
+                        @for (proveedor of proveedores?.data; track proveedor.id) {
+                            <a href="javascript:void(0);" class="list-group-item" (click)="selectProveedor(proveedor)">
+                                {{proveedor.nombre}} - <small>{{proveedor.registro}}</small>
+                            </a>
+                        }
+                    </ul>
+                }
             </form>
         </div>
 

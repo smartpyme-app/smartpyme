@@ -1,14 +1,18 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bancos</h2>
-    <button *ngIf="apiService.canCreateTest('finanzas.cheques.crear')" routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
+    @if (apiService.canCreateTest('finanzas.cheques.crear')) {
+        <button routerLink="/bancos/cheque/crear" tooltip="Crear cheque (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir cheque</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="cheques?.total">
-                Mostrando {{ cheques?.to }} de {{ cheques?.total + ' registros' }}
-            </span>
+            @if (cheques?.total) {
+                <span class="text-muted">
+                    Mostrando {{ cheques?.to }} de {{ cheques?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -40,9 +44,11 @@
             </select>
             <select name="id_cuenta" (change)="filtrarCheques()" [(ngModel)]="filtros.id_cuenta" class="form-select bg-default w-auto">
                 <option value="">Cuenta</option>
-                <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
-                    {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
-                </option>
+                @for (cuenta of cuentas; track cuenta.id) {
+                    <option [value]="cuenta.id">
+                        {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
+                    </option>
+                }
             </select>
         </div>
     </div>
@@ -63,15 +69,22 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="9" class="text-center" *ngIf="cheques?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene cheques registrados</span>
-                        </td>
-                        <td colspan="9" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let cheque of cheques?.data">
+                    @if (cheques?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <span class="badge bg-primary">No tiene cheques registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="9" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (cheque of cheques?.data; track cheque.id) {
+                        <tr>
                         <td>{{cheque.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{cheque.nombre_usuario}}</td>
                         <td>{{cheque.nombre_cuenta}}</td>
@@ -91,18 +104,26 @@
                                     <a routerLink="/bancos/cheque/{{cheque.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
                                     </a>
-                                    <a *ngIf="cheque.estado == 'Pendiente' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Aprobar
-                                    </a>
-                                    <a *ngIf="cheque.estado != 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Anular
-                                    </a>
-                                    <a *ngIf="cheque.id_referencia" routerLink="/{{cheque.ruta_referencia}}/{{cheque.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
-                                    </a>
-                                    <a *ngIf="cheque.estado == 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')" (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-check"></i> Revertir anulación
-                                    </a>
+                                    @if (cheque.estado == 'Pendiente' && apiService.canEditTest('finanzas.cheques.editar')) {
+                                        <a (click)="setEstado(cheque, 'Aprobado')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-check"></i> Aprobar
+                                        </a>
+                                    }
+                                    @if (cheque.estado != 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')) {
+                                        <a (click)="setEstado(cheque, 'Anulado')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-ban"></i> Anular
+                                        </a>
+                                    }
+                                    @if (cheque.id_referencia) {
+                                        <a routerLink="/{{cheque.ruta_referencia}}/{{cheque.id_referencia}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa-regular fa-fw fa-file-lines"></i> Ir a la transacción
+                                        </a>
+                                    }
+                                    @if (cheque.estado == 'Anulado' && apiService.canEditTest('finanzas.cheques.editar')) {
+                                        <a (click)="setEstado(cheque, 'Pagada')" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-check"></i> Revertir anulación
+                                        </a>
+                                    }
                                     <a (click)="imprimir(cheque)" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-print"></i> Imprimir
                                     </a>
@@ -110,13 +131,16 @@
                             </ng-template>
                         </td>
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="cheques?.last_page > 1">
-            <app-pagination [items]="cheques" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (cheques && cheques.last_page && cheques.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="cheques" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -153,17 +177,23 @@
                 <label for="filtros.id_cuenta">Cuenta:</label>
                 <select name="id_cuenta" [(ngModel)]="filtros.id_cuenta" class="form-control form-select">
                     <option value="">Todos</option>
-                    <option [value]="cuenta.id" *ngFor="let cuenta of cuentas">
-                        {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
-                    </option>
+                    @for (cuenta of cuentas; track cuenta.id) {
+                        <option [value]="cuenta.id">
+                            {{ cuenta.nombre_banco }}: {{ cuenta.numero }}
+                        </option>
+                    }
                 </select>
             </div>
         </div>
         
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>

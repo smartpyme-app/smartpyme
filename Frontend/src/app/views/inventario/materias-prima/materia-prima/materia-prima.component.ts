@@ -1,14 +1,24 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
+import { MateriaPrimaInformacionComponent } from './informacion/materia-prima-informacion.component';
+import { ProductoInventariosComponent } from '@views/inventario/productos/producto/inventario/producto-inventarios.component';
+import { ProductoComposicionComponent } from '@views/inventario/productos/producto/composicion/producto-composicion.component';
+import { ProductoAjustesComponent } from '@views/inventario/productos/producto/historial/ajustes/producto-ajustes.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 @Component({
-  selector: 'app-materia-prima',
-  templateUrl: './materia-prima.component.html'
+    selector: 'app-materia-prima',
+    templateUrl: './materia-prima.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, MateriaPrimaInformacionComponent, ProductoInventariosComponent, ProductoComposicionComponent, ProductoAjustesComponent],
+    
 })
 export class MateriaPrimaComponent implements OnInit {
 

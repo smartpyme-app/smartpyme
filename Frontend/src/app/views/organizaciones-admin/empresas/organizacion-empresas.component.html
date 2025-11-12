@@ -9,9 +9,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted" *ngIf="empresas?.total">
-                Mostrando {{ empresas?.to }} de {{ empresas?.total + ' registros' }}
-            </span>
+            @if (empresas?.total) {
+                <span class="text-muted">
+                    Mostrando {{ empresas?.to }} de {{ empresas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -49,44 +51,56 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="10" class="text-center" *ngIf="empresas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene empresas registradas</span>
-                        </td>
-                        <td colspan="10" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
+                    @if (empresas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">No tiene empresas registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="10" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
 
-                    <tr class="animated fadeIn" *ngFor=" let empresa of empresas?.data">
-                        
-                        <td>{{empresa.id }}</td>
-                        <td>{{empresa.nombre_empresa }}</td>
-                        <td>{{empresa.created_at | date:'dd/MM/yyyy' }}</td>
-                        <td class="text-center">
-                            <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
-                                <i class="fa fa-ellipsis-vertical fa-fw"></i>
-                            </span>
-                            <ng-template #accionesTemplate>
-                                <div class="list-group border-0">
-                                    <a routerLink="/organizacion/empresa/{{empresa.id_empresa}}" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-edit"></i> Editar
-                                    </a>
-                                    <a *ngIf="empresa.activo != 'Cancelado'" (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
-                                        <i class="fa fa-fw fa-ban"></i> Cancelar
-                                    </a>
-                                </div>
-                            </ng-template>
-                        </td>
+                    @for (empresa of empresas?.data; track empresa.id) {
+                        <tr class="animated fadeIn">
+                            
+                            <td>{{empresa.id }}</td>
+                            <td>{{empresa.nombre_empresa }}</td>
+                            <td>{{empresa.created_at | date:'dd/MM/yyyy' }}</td>
+                            <td class="text-center">
+                                <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
+                                    <i class="fa fa-ellipsis-vertical fa-fw"></i>
+                                </span>
+                                <ng-template #accionesTemplate>
+                                    <div class="list-group border-0">
+                                        <a routerLink="/organizacion/empresa/{{empresa.id_empresa}}" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fa fa-fw fa-edit"></i> Editar
+                                        </a>
+                                        @if (empresa.activo != 'Cancelado') {
+                                            <a (click)="setEstado(empresa, 'Cancelado')" class="list-group-item list-group-item-action border-0 click">
+                                                <i class="fa fa-fw fa-ban"></i> Cancelar
+                                            </a>
+                                        }
+                                    </div>
+                                </ng-template>
+                            </td>
 
-                    </tr>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="empresas?.last_page > 1">
-            <app-pagination [items]="empresas" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (empresas?.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="empresas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -137,8 +151,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -160,17 +178,23 @@
             <div class="form-group col-md-12">
                 <label for="id_empresa">Empresa:</label>
                 <ng-select [(ngModel)]="empresa.id_empresa" class="form-select p-0" name="id_empresa">
-                    <ng-option *ngFor="let empresa of empresasList" [value]="empresa.id">
-                        {{ empresa.nombre }}
-                    </ng-option>
+                    @for (empresa of empresasList; track empresa.id) {
+                        <ng-option [value]="empresa.id">
+                            {{ empresa.nombre }}
+                        </ng-option>
+                    }
                 </ng-select>
             </div>
         </div>
 
         <div class="d-grid mt-5">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Añadir</span>
-                <span *ngIf="saving">Añadiendo...</span>
+                @if (!saving) {
+                    <span>Añadir</span>
+                }
+                @if (saving) {
+                    <span>Añadiendo...</span>
+                }
             </button>
         </div>
     </form>

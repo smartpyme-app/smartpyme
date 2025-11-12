@@ -1,15 +1,20 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgChartsModule } from 'ng2-charts';
+import { LineChart } from 'chartist';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 
-declare var Chartist: any;
-
 @Component({
-  selector: 'app-datos',
-  templateUrl: './datos.component.html'
+    selector: 'app-datos',
+    templateUrl: './datos.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule],
+    
 })
 export class DatosComponent implements OnInit {
 
@@ -88,27 +93,27 @@ export class DatosComponent implements OnInit {
     ngOnChanges(){
 
         if (this.dash?.totales_ventas) {
-            new Chartist.Line('#chart-ventas', {
+            new LineChart('#chart-ventas', {
                 labels:[this.dash?.totales_ventas.map(function(a:any) {return a.time})],
                 series: [this.dash?.totales_ventas.map(function(a:any) {return a.total})]
             }, this.option);
         }
-        
+
         if (this.dash?.totales_salidas) {
-            new Chartist.Line('#chart-salidas', {
+            new LineChart('#chart-salidas', {
                 labels:[this.dash?.totales_salidas.map(function(a:any) {return a.time})],
                 series: [this.dash?.totales_salidas.map(function(a:any) {return a.total})]
             }, this.option);
         }
 
         if (this.dash?.totales_transacciones) {
-            new Chartist.Line('#chart-transacciones', {
+            new LineChart('#chart-transacciones', {
                 labels:[this.dash?.totales_transacciones.map(function(a:any) {return a.time})],
                 series: [this.dash?.totales_transacciones.map(function(a:any) {return a.total})]
             }, this.option);
         }
         if (this.dash?.totales_balance) {
-            new Chartist.Line('#chart-balance', {
+            new LineChart('#chart-balance', {
                 labels:[this.dash?.totales_balance.map(function(a:any) {return a.time})],
                 series: [this.dash?.totales_balance.map(function(a:any) {return a.total})]
             }, this.option);

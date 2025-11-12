@@ -1,14 +1,26 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
+import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
+import { CrearAreaEmpresaComponent } from '@shared/modals/crear-area-empresa/crear-area-empresa.component';
+import { CrearImpuestoComponent } from '@shared/modals/crear-impuesto/crear-impuesto.component';
+import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-empresa/crear-departamento-empresa.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
 import * as moment from 'moment';
 
 @Component({
-  selector: 'app-gasto',
-  templateUrl: './gasto.component.html',
+    selector: 'app-gasto',
+    templateUrl: './gasto.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent],
+    
 })
 export class GastoComponent implements OnInit {
   public gasto: any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0};

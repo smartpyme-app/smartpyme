@@ -1,103 +1,118 @@
-<div class="container p-4" *ngIf="!loading && authorization">
-    <div class="modal-content shadow-sm border ">
-      <div class="modal-header p-3">
-        <h4 class="modal-title">
-          <i class="fa fa-shield-alt me-2"></i>
-          Solicitud de Autorización
-        </h4>
-      </div>
-      
-      <div class="modal-body p-4">
-
-        <form (ngSubmit)="processAuthorization()">
-          <div class="row">
-            <!-- Información principal -->
-            <div class="form-group col-12">
-              <h5>{{authorization.authorization_type.display_name}}</h5>
-              <p class="text-muted">{{authorization.description}}</p>
+@if (!loading && authorization) {
+    <div class="container p-4">
+        <div class="modal-content shadow-sm border ">
+            <div class="modal-header p-3">
+                <h4 class="modal-title">
+                    <i class="fa fa-shield-alt me-2"></i>
+                    Solicitud de Autorización
+                </h4>
             </div>
-  
-            <!-- Detalles de la solicitud -->
-            <div class="form-group col-sm-6">
-              <label>Solicitado por:</label>
-              <input type="text" class="form-control" [value]="authorization.requester.name" readonly>
-            </div>
-  
-            <div class="form-group col-sm-6">
-              <label>Expira:</label>
-              <input type="text" class="form-control" [value]="authorization.expires_at | date:'dd/MM/yyyy HH:mm'" readonly>
-            </div>
-  
-            <div class="form-group col-sm-6">
-              <label>Código de Solicitud:</label>
-              <input type="text" class="form-control" [value]="authorization.code" readonly>
-            </div>
-  
-            <div class="form-group col-sm-6">
-              <label>Estado:</label>
-              <span class="badge fs-6 px-3 py-2 ms-2" 
-                    [ngClass]="authorization.status === 'pending' ? 'bg-warning' : 'bg-secondary'">
-                    {{authorizationService.getStatusText(authorization.status)}}
-              </span>
-            </div>
-  
-            <!-- Sección de aprobación/rechazo -->
-            <div *ngIf="authorization.status === 'pending'" class="col-12 mt-4">
-              <hr>
-              <h6 class="mb-3">Aprobar/Rechazar Autorización</h6>
-              
-              <div class="form-group col-12">
-                <label>Tu código de autorización: <span class="text-danger">*</span></label>
-                <input type="password" 
-                       class="form-control" 
-                       [(ngModel)]="authCode" 
-                       name="authCode"
-                       placeholder="Ingrese su código personal"
-                       required>
-              </div>
-  
-              <div class="form-group col-12 mt-3">
-                <label>Notas (opcional):</label>
-                <textarea class="form-control" 
-                         rows="3" 
-                         [(ngModel)]="notes"
-                         name="notes"
-                         placeholder="Agregue comentarios adicionales"></textarea>
-              </div>
-            </div>
-          </div>
-  
-          <!-- Botones de acción -->
-          <div *ngIf="authorization.status === 'pending'" class="d-flex gap-2 mt-4">
-            <button type="button" 
-                  class="btn btn-default font-weight-bold" 
-                  (click)="approve()"
-                  [disabled]="!authCode || processing">
-              <img src="/assets/icons/check.png" class="icon me-2">
-              <span *ngIf="!processing">Aprobar</span>
-              <span *ngIf="processing">Procesando...</span>
-            </button>
             
-            <button type="button" 
-                    class="btn btn-danger font-weight-bold" 
-                    (click)="reject()"
-                    [disabled]="!authCode || processing">
-              <i class="fa fa-times me-2"></i>
-              <span *ngIf="!processing">Rechazar</span>
-              <span *ngIf="processing">Procesando...</span>
-            </button>
-          </div>
-        </form>
-      </div>
+            <div class="modal-body p-4">
+                <form (ngSubmit)="processAuthorization()">
+                    <div class="row">
+                        <!-- Información principal -->
+                        <div class="form-group col-12">
+                            <h5>{{authorization.authorization_type.display_name}}</h5>
+                            <p class="text-muted">{{authorization.description}}</p>
+                        </div>
+      
+                        <!-- Detalles de la solicitud -->
+                        <div class="form-group col-sm-6">
+                            <label>Solicitado por:</label>
+                            <input type="text" class="form-control" [value]="authorization.requester.name" readonly>
+                        </div>
+      
+                        <div class="form-group col-sm-6">
+                            <label>Expira:</label>
+                            <input type="text" class="form-control" [value]="authorization.expires_at | date:'dd/MM/yyyy HH:mm'" readonly>
+                        </div>
+      
+                        <div class="form-group col-sm-6">
+                            <label>Código de Solicitud:</label>
+                            <input type="text" class="form-control" [value]="authorization.code" readonly>
+                        </div>
+      
+                        <div class="form-group col-sm-6">
+                            <label>Estado:</label>
+                            <span class="badge fs-6 px-3 py-2 ms-2" 
+                                  [ngClass]="authorization.status === 'pending' ? 'bg-warning' : 'bg-secondary'">
+                                  {{authorizationService.getStatusText(authorization.status)}}
+                            </span>
+                        </div>
+      
+                        <!-- Sección de aprobación/rechazo -->
+                        @if (authorization.status === 'pending') {
+                            <div class="col-12 mt-4">
+                                <hr>
+                                <h6 class="mb-3">Aprobar/Rechazar Autorización</h6>
+                                
+                                <div class="form-group col-12">
+                                    <label>Tu código de autorización: <span class="text-danger">*</span></label>
+                                    <input type="password" 
+                                           class="form-control" 
+                                           [(ngModel)]="authCode" 
+                                           name="authCode"
+                                           placeholder="Ingrese su código personal"
+                                           required>
+                                </div>
+      
+                                <div class="form-group col-12 mt-3">
+                                    <label>Notas (opcional):</label>
+                                    <textarea class="form-control" 
+                                             rows="3" 
+                                             [(ngModel)]="notes"
+                                             name="notes"
+                                             placeholder="Agregue comentarios adicionales"></textarea>
+                                </div>
+                            </div>
+                        }
+                    </div>
+      
+                    <!-- Botones de acción -->
+                    @if (authorization.status === 'pending') {
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="button" 
+                                    class="btn btn-default font-weight-bold" 
+                                    (click)="approve()"
+                                    [disabled]="!authCode || processing">
+                                <img src="/assets/icons/check.png" class="icon me-2">
+                                @if (!processing) {
+                                    <span>Aprobar</span>
+                                }
+                                @if (processing) {
+                                    <span>Procesando...</span>
+                                }
+                            </button>
+                            
+                            <button type="button" 
+                                    class="btn btn-danger font-weight-bold" 
+                                    (click)="reject()"
+                                    [disabled]="!authCode || processing">
+                                <i class="fa fa-times me-2"></i>
+                                @if (!processing) {
+                                    <span>Rechazar</span>
+                                }
+                                @if (processing) {
+                                    <span>Procesando...</span>
+                                }
+                            </button>
+                        </div>
+                    }
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
+}
   
-  <!-- Loading state -->
-  <div class="container py-4" *ngIf="loading">
-    <div class="text-center">
-      <div class="spinner-border" role="status">
-        <span class="visually-hidden">Cargando...</span>
-      </div>
-      <p class="mt-2">Cargando autorización...</p>
+<!-- Loading state -->
+@if (loading) {
+    <div class="container py-4">
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando autorización...</p>
+        </div>
     </div>
-  </div>
+}

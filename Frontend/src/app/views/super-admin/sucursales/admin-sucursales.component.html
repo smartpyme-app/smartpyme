@@ -1,22 +1,30 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Sucursales</h2>
-    <button *ngIf="apiService.canCreateTest('administracion.sucursales.crear')" (click)="openModal(msucursal, {})"  tooltip="Crear sucursal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir sucursal</button>
+    @if (apiService.canCreateTest('administracion.sucursales.crear')) {
+        <button (click)="openModal(msucursal, {})"  tooltip="Crear sucursal (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir sucursal</button>
+    }
 </section>
 <!-- <div>
-    <p class="alert bg-primary text-muted border-0" *ngIf="!loading && (sucursales_activas < apiService.auth_user().empresa.sucursal_limit)">
-        Con tu plan actual, <b>tienes espacio para {{ apiService.auth_user().empresa.sucursal_limit - sucursales_activas }} sucursales más</b>.
-    </p>
-    <p class="alert bg-primary text-muted border-0" *ngIf="!loading && (sucursales_activas >= apiService.auth_user().empresa.sucursal_limit)">
-        Haz alcanzado el límite de sucursales permitidos ({{apiService.auth_user().empresa.sucursal_limit}}) en tu plan.
-    </p>
+    @if (!loading && (sucursales_activas < apiService.auth_user().empresa.sucursal_limit)) {
+        <p class="alert bg-primary text-muted border-0">
+            Con tu plan actual, <b>tienes espacio para {{ apiService.auth_user().empresa.sucursal_limit - sucursales_activas }} sucursales más</b>.
+        </p>
+    }
+    @if (!loading && (sucursales_activas >= apiService.auth_user().empresa.sucursal_limit)) {
+        <p class="alert bg-primary text-muted border-0">
+            Haz alcanzado el límite de sucursales permitidos ({{apiService.auth_user().empresa.sucursal_limit}}) en tu plan.
+        </p>
+    }
 </div> -->
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="sucursales?.total">
-                Mostrando {{ sucursales?.to }} de {{ sucursales?.total + ' registros' }}
-            </span>
+            @if (sucursales?.total) {
+                <span class="text-muted">
+                    Mostrando {{ sucursales?.to }} de {{ sucursales?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -56,40 +64,52 @@
                         <th>Teléfono</th>
                         <!-- <th>Municipio</th> -->
                         <th>Estado</th>
-                        <th *ngIf="apiService.canEditTest('administracion.sucursales.editar')" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        @if (apiService.canEditTest('administracion.sucursales.editar')) {
+                            <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan="8" class="text-center" *ngIf="sucursales?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene sucursales registradas</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
+                        @if (sucursales?.total < 1 && !loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene sucursales registradas</span>
+                            </td>
+                        }
+                        @if (loading) {
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        }
                     </tr>
-                    <tr *ngFor=" let sucursal of sucursales.data">
-                        <!-- <td>{{ sucursal.id }}</td> -->
-                        <td>{{ sucursal.nombre }}</td>
-                        <td>{{ sucursal.telefono }}</td>
-                        <!-- <td>{{ sucursal.municipio }}</td> -->
-                        <td>
-                            <select name="activo" class="form-select w-auto border-0" (change)="setEstado(sucursal)" [(ngModel)]="sucursal.activo" [ngClass]="{'bg-light-danger' : sucursal?.activo == '0', 'bg-light-success' : sucursal?.activo == '1'}">
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                        </td>
-                        <td *ngIf="apiService.canEditTest('administracion.sucursales.editar')" class="text-center">
-                            <div class="btn-group" role="group">
-    <!--                             <a *ngIf="sucursal.id != 1" class="btn btn-default" (click)="delete(sucursal.id)" data-toggle="tooltip" title="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a> -->
-                                <a class="btn btn-default" (click)="openModal(msucursal, sucursal)"  data-toggle="tooltip" title="Ver">
-                                    <i class="fa fa-pencil-alt"></i>
-                                </a>
-                            </div>  
-                        </td>
-                    </tr>
+                    @for (sucursal of sucursales.data; track sucursal.id) {
+                        <tr>
+                            <!-- <td>{{ sucursal.id }}</td> -->
+                            <td>{{ sucursal.nombre }}</td>
+                            <td>{{ sucursal.telefono }}</td>
+                            <!-- <td>{{ sucursal.municipio }}</td> -->
+                            <td>
+                                <select name="activo" class="form-select w-auto border-0" (change)="setEstado(sucursal)" [(ngModel)]="sucursal.activo" [ngClass]="{'bg-light-danger' : sucursal?.activo == '0', 'bg-light-success' : sucursal?.activo == '1'}">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
+                            </td>
+                            @if (apiService.canEditTest('administracion.sucursales.editar')) {
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+        <!--                             @if (sucursal.id != 1) {
+                                        <a class="btn btn-default" (click)="delete(sucursal.id)" data-toggle="tooltip" title="Eliminar">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    } -->
+                                        <a class="btn btn-default" (click)="openModal(msucursal, sucursal)"  data-toggle="tooltip" title="Ver">
+                                            <i class="fa fa-pencil-alt"></i>
+                                        </a>
+                                    </div>  
+                                </td>
+                            }
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
@@ -100,8 +120,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="sucursal.id">Editar </span>
-            <span *ngIf="!sucursal.id">Crear </span>
+            @if (sucursal.id) {
+                <span>Editar </span>
+            }
+            @if (!sucursal.id) {
+                <span>Crear </span>
+            }
             sucursal
         </h2>
     </div>
@@ -145,8 +169,12 @@
         
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

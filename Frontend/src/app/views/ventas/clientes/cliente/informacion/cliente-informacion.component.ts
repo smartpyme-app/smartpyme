@@ -1,5 +1,10 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { TagInputModule } from 'ngx-chips';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -8,8 +13,11 @@ import { ApiService } from '@services/api.service';
 import Swal from 'sweetalert2';
 
 @Component({
-  selector: 'app-cliente-informacion',
-  templateUrl: './cliente-informacion.component.html',
+    selector: 'app-cliente-informacion',
+    templateUrl: './cliente-informacion.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
+    
 })
 export class ClienteInformacionComponent implements OnInit {
   public cliente: any = {

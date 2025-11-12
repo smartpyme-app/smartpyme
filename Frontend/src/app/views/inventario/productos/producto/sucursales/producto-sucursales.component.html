@@ -9,17 +9,21 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let sucursal of sucursales">
+                @for (sucursal of sucursales; track sucursal.id) {
+                <tr>
                     <td>{{ sucursal.nombre }}</td>
                     <td class="text-center">
                         <input type="checkbox" class="form-check" style="margin: auto !important;" (change)="onSubmit(sucursal)" [(ngModel)]="sucursal.activo" name="activo">
                     </td>
-                </tr>          
+                </tr>
+                }
+                @if (loading) {
                 <tr>
-                    <td colspan="2" class="text-center" *ngIf="loading">
+                    <td colspan="2" class="text-center">
                         <span class="badge badge-primary">Cargando...</span>
                     </td>
                 </tr>
+                }
             </tbody>
         </table>
 

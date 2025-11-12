@@ -1,14 +1,20 @@
 import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal/bs-modal-ref.service';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
 
 @Component({
-  selector: 'app-materia-prima-informacion',
-  templateUrl: './materia-prima-informacion.component.html'
+    selector: 'app-materia-prima-informacion',
+    templateUrl: './materia-prima-informacion.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class MateriaPrimaInformacionComponent implements OnInit {
 

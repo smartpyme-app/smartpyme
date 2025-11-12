@@ -1,6 +1,8 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Bodegas</h2>
-    <button *ngIf="apiService.canCreateTest('productos.bodegas.crear')" (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
+    @if (apiService.canCreateTest('productos.bodegas.crear')) {
+        <button (click)="openModal(mbodega, {})"  tooltip="Crear bodega (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir bodega</button>
+    }
 </section>
 <!-- <div>
     <p class="alert bg-primary text-muted border-0" *ngIf="!loading && (bodegas_activas < apiService.auth_user().empresa.bodega_limit)">
@@ -14,9 +16,11 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            <span class="text-muted" *ngIf="bodegas?.total">
-                Mostrando {{ bodegas?.to }} de {{ bodegas?.total + ' registros' }}
-            </span>
+            @if (bodegas?.total) {
+                <span class="text-muted">
+                    Mostrando {{ bodegas?.to }} de {{ bodegas?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col">
@@ -54,19 +58,28 @@
                         <th>Nombre</th>
                         <th>Sucursal</th>
                         <th>Estado</th>
-                        <th *ngIf="apiService.canEditTest('productos.bodegas.editar')" width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        @if (apiService.canEditTest('productos.bodegas.editar')) {
+                            <th width="100px" class="text-center"><i class="fa fa-cog"></i></th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="bodegas?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene bodegas registradas</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let bodega of bodegas.data">
+                    @if (bodegas?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene bodegas registradas</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (bodega of bodegas.data; track bodega.id) {
+                        <tr>
                         <td>{{ bodega.nombre }}</td>
                         <td>{{ bodega.nombre_sucursal }}</td>
                         <td>
@@ -75,20 +88,31 @@
                                 <option value="0">Inactivo</option>
                             </select>
                         </td>
-                        <td *ngIf="apiService.canEditTest('productos.bodegas.editar')" class="text-center">
-                            <div class="btn-group" role="group">
-    <!--                             <a *ngIf="bodega.id != 1" class="btn btn-default" (click)="delete(bodega.id)" data-toggle="tooltip" title="Eliminar">
-                                    <i class="fa fa-trash"></i>
-                                </a> -->
-                                <a class="btn btn-default" (click)="openModal(mbodega, bodega)"  data-toggle="tooltip" title="Ver">
-                                    <i class="fa fa-pencil-alt"></i>
-                                </a>
-                            </div>
-                        </td>
+                        @if (apiService.canEditTest('productos.bodegas.editar')) {
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+        <!--                             @if (bodega.id != 1) {
+                                        <a class="btn btn-default" (click)="delete(bodega.id)" data-toggle="tooltip" title="Eliminar">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    } -->
+                                    <a class="btn btn-default" (click)="openModal(mbodega, bodega)"  data-toggle="tooltip" title="Ver">
+                                        <i class="fa fa-pencil-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        }
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
+
+        @if (bodegas && bodegas.last_page && bodegas.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="bodegas" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -96,8 +120,12 @@
   <div class="modal-header">
     <div class="modal-title">
         <h2 class="text-center">
-            <span *ngIf="bodega.id">Editar </span>
-            <span *ngIf="!bodega.id">Crear </span>
+            @if (bodega.id) {
+                <span>Editar </span>
+            }
+            @if (!bodega.id) {
+                <span>Crear </span>
+            }
             bodega
         </h2>
     </div>
@@ -114,7 +142,9 @@
             <div class="form-group col-md-12">
                 <label for="id_sucursal">Sucursal:</label>
                 <select [(ngModel)]="bodega.id_sucursal" class="form-control form-select" name="id_sucursal">
-                    <option [value]="sucursal.id" *ngFor="let sucursal of sucursales">{{ sucursal.nombre }}</option>
+                    @for (sucursal of sucursales; track sucursal.id) {
+                        <option [value]="sucursal.id">{{ sucursal.nombre }}</option>
+                    }
                 </select>
             </div>
             <!-- <div class="form-group col-lg-12">
@@ -131,8 +161,12 @@
 
         <div class="d-grid mt-4">
             <button type="submit" [disabled]="saving" class="btn btn-primary btn-block">
-                <span *ngIf="!saving">Guardar</span>
-                <span *ngIf="saving">Guardando...</span>
+                @if (!saving) {
+                    <span>Guardar</span>
+                }
+                @if (saving) {
+                    <span>Guardando...</span>
+                }
             </button>
         </div>
     </form>

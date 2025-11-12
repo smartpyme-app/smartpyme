@@ -1,6 +1,8 @@
 <h3 class="modal-title text-center no-print">Estado de cuenta</h3>
 <div class="row col-xs-12 no-print" style="height: 45px;">
-    <span class="label label-default" *ngIf="compras?.total">Compras: {{compras?.total}}</span>
+    @if (compras?.total) {
+      <span class="label label-default">Compras: {{compras?.total}}</span>
+    }
     <div class="input-group-btn" style="position: absolute;right: 255px;top: 0px;">
         <form (ngSubmit)="onFiltrar()" class="form-inline">        
             <select class="form-control" name="filtro.estado" [(ngModel)]="filtro.estado">
@@ -31,17 +33,23 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td colspan="8" class="text-center" *ngIf="compras?.total < 1 && !loading">
+            @if (compras?.total < 1 && !loading) {
+              <tr>
+                <td colspan="8" class="text-center">
                     <span class="label label-info">No tiene compras registradas</span>
                 </td>
-                <td colspan="8" class="text-center" *ngIf="loading">
+              </tr>
+            }
+            @if (loading) {
+              <tr>
+                <td colspan="8" class="text-center">
                     <span class="label label-info">Cargando...</span>
                 </td>
-            </tr>
+              </tr>
+            }
 
-            <tr class="animated fadeIn" *ngFor=" let compra of compras?.data">
-                
+            @for (compra of compras?.data; track compra.id || $index) {
+              <tr class="animated fadeIn">
                 <td class="text-center">{{compra.id}}</td>
                 <td class="hidden-xs">{{compra.created_at | date:'dd-MM-yyyy' }}</td>
                 <td class="hidden-xs">{{compra.created_at | date:'HH:mm' }}</td>
@@ -67,15 +75,17 @@
                         </a>
                     </div>  
                 </td>
-
-            </tr>
+              </tr>
+            }
         </tbody>
         <tfoot>
-            <tr *ngIf="compras?.last_page > 1">
+            @if (compras?.last_page > 1) {
+              <tr>
                 <td colspan="8" class="text-center">
                     <app-pagination [items]="compras" (setPagination)="setPagination($event)"></app-pagination>
                 </td>
-            </tr>
+              </tr>
+            }
         </tfoot>
         
     </table>

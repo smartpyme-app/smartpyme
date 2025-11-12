@@ -1,25 +1,30 @@
 <button class="tcla-F5 d-none" (click)="loadAll()"></button>
-<div class="row" *ngIf="loading">
-    <div class="col-12 text-muted text-center thumbler">
-      Cargando...
+@if (loading) {
+    <div class="row">
+        <div class="col-12 text-muted text-center thumbler">
+          Cargando...
+        </div>
     </div>
-</div>
+}
 
 
-<div class="row" class="text-center" *ngIf="ordenes?.total < 1 && !loading">
-    <div class="col-md-12 px-0">
-        <div class="card">
-            <div class="card-body">
-                <div class="h-100 p-5">
-                  <i class="fa fa-clipboard-check fa-3x mb-3 text-muted"></i>
-                  <p>No tiene ordenes pendiente.</p>
+@if (ordenes?.total < 1 && !loading) {
+    <div class="row text-center">
+        <div class="col-md-12 px-0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="h-100 p-5">
+                      <i class="fa fa-clipboard-check fa-3x mb-3 text-muted"></i>
+                      <p>No tiene ordenes pendiente.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+}
 
-<div class="row" *ngIf="ordenes?.total > 0">
+@if (ordenes?.total > 0) {
+<div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header p-2">
@@ -53,44 +58,52 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colspan="8" class="text-center" *ngIf="ordenes?.total < 1 && !loading">
-                                    <span class="badge mb-2 mb-xl-0 badge-primary">No tiene ordenes registrados</span>
-                                </td>
-                                <td colspan="8" class="text-center" *ngIf="loading">
-                                    <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
-                                </td>
-                            </tr>
-                            <tr *ngFor=" let orden of ordenes?.data | filter:filterBy:buscador">
-                                <td class="d-none d-md-table-cell">{{ orden.id }}</td>
-                                <td class="d-none d-md-table-cell">{{ orden.fecha  | date:'dd/MM/yyyy' }}</td>
-                                <td>{{ orden.nombre_usuario }}</td>
-                                <td>{{ orden.nombre_cliente }}</td>
-                                <td class="text-center d-none d-md-table-cell">
-                                    <span class="badge" [ngClass]="{ 
-                                        'badge-warning' : orden.estado == 'En Proceso', 
-                                        'badge-success' : orden.estado == 'Facturada', 
-                                        'badge-dark' : orden.estado == 'Cancelada'}">
-                                        {{ orden.estado }}
-                                    </span>
-                                </td>
-                                <td class="text-center d-none d-md-table-cell">{{ orden.total  | currency:'USD':'symbol':'2.2' }}</td>
-                                <td class="text-center">
-                                    <div role="group" class="btn-group">
-                                        <a tooltip="Pre imprimir ticket" class="btn btn-default" (click)="imprimirDoc(orden)">
-                                            <i class="fa fa-print"></i>
-                                        </a>
-                                        <a tooltip="Facturar" class="btn btn-default" routerLink="/facturacion" [queryParams]="{ venta_id: orden.id }">
-                                            <i class="fa fa-cash-register"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
+                            @if (ordenes?.total < 1 && !loading) {
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <span class="badge mb-2 mb-xl-0 badge-primary">No tiene ordenes registrados</span>
+                                    </td>
+                                </tr>
+                            }
+                            @if (loading) {
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <span class="badge mb-2 mb-xl-0 badge-primary">Cargando...</span>
+                                    </td>
+                                </tr>
+                            }
+                            @for (orden of ordenes?.data | filter:filterBy:buscador; track orden.id) {
+                                <tr>
+                                    <td class="d-none d-md-table-cell">{{ orden.id }}</td>
+                                    <td class="d-none d-md-table-cell">{{ orden.fecha  | date:'dd/MM/yyyy' }}</td>
+                                    <td>{{ orden.nombre_usuario }}</td>
+                                    <td>{{ orden.nombre_cliente }}</td>
+                                    <td class="text-center d-none d-md-table-cell">
+                                        <span class="badge" [ngClass]="{ 
+                                            'badge-warning' : orden.estado == 'En Proceso', 
+                                            'badge-success' : orden.estado == 'Facturada', 
+                                            'badge-dark' : orden.estado == 'Cancelada'}">
+                                            {{ orden.estado }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center d-none d-md-table-cell">{{ orden.total  | currency:'USD':'symbol':'2.2' }}</td>
+                                    <td class="text-center">
+                                        <div role="group" class="btn-group">
+                                            <a tooltip="Pre imprimir ticket" class="btn btn-default" (click)="imprimirDoc(orden)">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                            <a tooltip="Facturar" class="btn btn-default" routerLink="/facturacion" [queryParams]="{ venta_id: orden.id }">
+                                                <i class="fa fa-cash-register"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-
 </div>
+}

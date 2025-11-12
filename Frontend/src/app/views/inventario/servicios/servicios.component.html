@@ -1,22 +1,26 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Servicios</h2>
     <!-- <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.auth_user().tipo == 'Citas'" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button> -->
-    <button *ngIf="apiService.canCreateTest('servicios.crear') ||  apiService.validateRole('usuario_citas', true)" routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+    @if (apiService.canCreateTest('servicios.crear') || apiService.validateRole('usuario_citas', true)) {
+        <button routerLink="/servicio/crear" [queryParams]="{ tipo:'Servicio' }" tooltip="Crear servicio (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir servicio</button>
+    }
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="servicios?.total">
-                Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="filtrarServicios()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                 de {{ servicios?.total + ' registros' }}
-            </span>
+            @if (servicios?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarServicios()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                     de {{ servicios?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3">
@@ -45,9 +49,11 @@
             </select>
             <ng-select name="id_categoria" (change)="filtrarServicios()" [(ngModel)]="filtros.id_categoria" class="form-select p-0 border-0 bg-default" style="width: 150px;">
                 <ng-option value="">Categoria</ng-option>
-                <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                    {{categoria.nombre}}
-                </ng-option>
+                @for (categoria of categorias; track categoria.id) {
+                    <ng-option [value]="categoria.id">
+                        {{categoria.nombre}}
+                    </ng-option>
+                }
             </ng-select>
         </div>
     </div>
@@ -61,19 +67,28 @@
                         <th class="d-none d-md-table-cell">Categoria</th>
                         <th class="text-right">Precio sin IVA</th>
                         <th class="text-right">Precio con IVA</th>
-                        <th class="text-center" *ngIf="apiService.canEditTest('servicios.editar')">Más</th>
+                        @if (apiService.canEditTest('servicios.editar')) {
+                            <th class="text-center">Más</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="servicios?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene servicios registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let servicio of servicios?.data">
+                    @if (servicios?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene servicios registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (servicio of servicios?.data; track servicio.id) {
+                        <tr>
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ servicio.img }}" class="rounded-circle" width="50px">
                             {{ servicio.nombre }}
@@ -85,21 +100,26 @@
                             </select>
                         </td>
                         <td class="d-none d-md-table-cell">{{ servicio.nombre_categoria }}</td>
-                        <td class="text-right">{{ (servicio.precio_sin_iva || servicio.precio)  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-right">{{ servicio.precio_con_iva || ((servicio.precio_sin_iva || servicio.precio) * 1) + ((servicio.precio_sin_iva || servicio.precio) * (apiService.auth_user().empresa.iva / 100))  | currency:'USD':'symbol':'1.2' }}</td>
-                        <td class="text-center" *ngIf="apiService.canEdit() && !apiService.isSupervisorLimitado()">
-                            <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
-                                <i class="fa fa-pencil-alt"></i>
-                            </a>
-                        </td>
+                          <td class="text-right">{{ (servicio.precio_sin_iva || servicio.precio)  | currency:'USD':'symbol':'1.2' }}</td>
+                          <td class="text-right">{{ servicio.precio_con_iva || ((servicio.precio_sin_iva || servicio.precio) * 1) + ((servicio.precio_sin_iva || servicio.precio) * (apiService.auth_user().empresa.iva / 100))  | currency:'USD':'symbol':'1.2' }}</td>
+                        @if (apiService.canEditTest('servicios.editar')) {
+                            <td class="text-center">
+                                <a class="btn btn-default" routerLink="/servicio/editar/{{servicio.id}}" tooltip="Ver y editar">
+                                    <i class="fa fa-pencil-alt"></i>
+                                </a>
+                            </td>
+                        }
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="servicios?.last_page > 1">
-            <app-pagination [items]="servicios" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (servicios && servicios.last_page && servicios.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="servicios" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -120,9 +140,11 @@
                 <label for="filtros.categoria_id">Categoria:</label>
                 <select [(ngModel)]="filtros.categoria_id" class="form-control" name="filtros.categoria_id">
                     <option value="">Todos</option>
-                    <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
-                        {{ categoria.nombre }}
-                    </option>
+                    @for (categoria of categorias; track categoria.id) {
+                        <option [ngValue]="categoria.id">
+                            {{ categoria.nombre }}
+                        </option>
+                    }
                 </select>
             </div>
             <div class="form-group col-sm-6">
@@ -147,8 +169,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
-                    <span *ngIf="!loading">Filtrar</span>
-                    <span *ngIf="loading">Filtrando...</span>
+                    @if (!loading) {
+                        <span>Filtrar</span>
+                    }
+                    @if (loading) {
+                        <span>Filtrando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -178,8 +204,12 @@
         <div class="row text-center">
             <div class="col-xs-12">
                 <button type="submit" class="btn btn-primary btn-block tcla-F4" [disabled]="loading || !servicio.precio">
-                    <span *ngIf="!loading">Guardar <small>(F4)</small></span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar <small>(F4)</small></span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
         </div>

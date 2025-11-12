@@ -1,8 +1,14 @@
 import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-alerts-hacienda',
-  templateUrl: './alerts-hacienda.component.html',
+    selector: 'app-alerts-hacienda',
+    templateUrl: './alerts-hacienda.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class AlertsHaciendaComponent {
   @Input() errores: string[] | any = [];

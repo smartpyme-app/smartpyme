@@ -2,9 +2,11 @@
     <h6 class="my-3 font-weight-bold" (click)="loadAll()">
         Empresas
 
-        <a *ngIf="licencia.num_licencias > licencia.num_empresas" class="btn btn-default float-end" (click)="openModal(mempresa, {})" tooltip="Agregar empresa">
-            <i class="fa fa-plus"></i> Agregar empresa
-        </a>
+        @if (licencia.num_licencias > licencia.num_empresas) {
+            <a class="btn btn-default float-end" (click)="openModal(mempresa, {})" tooltip="Agregar empresa">
+                <i class="fa fa-plus"></i> Agregar empresa
+            </a>
+        }
     </h6>
     <div class="table-responsive">
         <table class="table table-borderless table-hover">
@@ -20,25 +22,31 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="loading">
-                        <span class="badge bg-primary">Cargando...</span>
-                    </td>
+                    @if (loading) {
+                        <td colspan="6" class="text-center">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    }
                 </tr>
                 <tr>
-                    <td colspan="6" class="text-center" *ngIf="!loading && licencia?.empresas.length == 0">
-                        <span class="badge bg-primary">No tiene empresas agregados</span>
-                    </td>
+                    @if (!loading && licencia?.empresas.length == 0) {
+                        <td colspan="6" class="text-center">
+                            <span class="badge bg-primary">No tiene empresas agregados</span>
+                        </td>
+                    }
                 </tr>        
-                <tr *ngFor=" let empresa of licencia.empresas">
-                    <td>{{ empresa?.nombre_empresa }}</td>
-                    <td>{{ empresa?.empresa?.correo }}</td>
-                    <td>{{ empresa?.empresa?.telefono }}</td>
-                    <td>{{ empresa?.empresa?.dui }}</td>
-                    <td>{{ empresa?.empresa?.ncr }}</td>
-                    <td class="text-center">
-                        <a (click)="delete(empresa)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
-                    </td>
-                </tr>
+                @for (empresa of licencia.empresas; track empresa.id || $index) {
+                    <tr>
+                        <td>{{ empresa?.nombre_empresa }}</td>
+                        <td>{{ empresa?.empresa?.correo }}</td>
+                        <td>{{ empresa?.empresa?.telefono }}</td>
+                        <td>{{ empresa?.empresa?.dui }}</td>
+                        <td>{{ empresa?.empresa?.ncr }}</td>
+                        <td class="text-center">
+                            <a (click)="delete(empresa)" class="btn btn-light" tooltip="Eliminar"><i class="fa fa-trash"></i></a>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
 
@@ -60,17 +68,23 @@
                 <div class="input-group">
                     <ng-select name="id_empresa" [(ngModel)]="empresa.id_empresa" class="form-select p-0">
                         <ng-option value="">Seleccione aquí</ng-option>
-                        <ng-option *ngFor="let empresa of empresas" [value]="empresa.id">
-                            {{ empresa.nombre }}
-                        </ng-option>
+                        @for (empresa of empresas; track empresa.id) {
+                            <ng-option [value]="empresa.id">
+                                {{ empresa.nombre }}
+                            </ng-option>
+                        }
                     </ng-select>
                 </div>
             </div>
         </div>
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary">
-                <span *ngIf="!saving">Agregar</span>
-                <span *ngIf="saving">Agregando...</span>
+                @if (!saving) {
+                    <span>Agregar</span>
+                }
+                @if (saving) {
+                    <span>Agregando...</span>
+                }
             </button>
         </div>
     </form>

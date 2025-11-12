@@ -1,4 +1,7 @@
 import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 
@@ -6,8 +9,11 @@ import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 import { fromEvent, timer } from 'rxjs';
 
 @Component({
-  selector: 'app-buscador-proveedores',
-  templateUrl: './buscador-proveedores.component.html'
+    selector: 'app-buscador-proveedores',
+    templateUrl: './buscador-proveedores.component.html',
+    standalone: true,
+    imports: [CommonModule, RouterModule, FormsModule],
+    
 })
 export class BuscadorProveedoresComponent implements OnInit {
 

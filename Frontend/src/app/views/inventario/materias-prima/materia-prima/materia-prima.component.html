@@ -12,13 +12,16 @@
 
 <div class="card mb-5">
     <div class="card-body">
-        <div class="row" *ngIf="loading">
-            <div class="text-muted text-center thumbler">
-              Cargando...
+        @if (loading) {
+            <div class="row">
+                <div class="text-muted text-center thumbler">
+                  Cargando...
+                </div>
             </div>
-        </div>
+        }
 
-        <div class="row" *ngIf="!loading">   
+        @if (!loading) {
+            <div class="row">   
             <h3 class="text-center mb-2">{{ producto.nombre }}</h3>
             <div class="col-md-12">
                 <tabset type="pills" [justified]="true">
@@ -70,7 +73,7 @@
                     </tab>
                 </tabset>
             </div>
-
-        </div>
+            </div>
+        }
     </div>
 </div>

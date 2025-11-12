@@ -1,27 +1,33 @@
 <section class="d-flex justify-content-between bg-white p-2 p-md-4 rounded mb-3">
   <h2 class="page-heading">Inventario</h2>
   <div>
-    <button *ngIf="apiService.canCreateTest('productos.compuestos.crear')" routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
-      style="margin-right: 10px;"><img src="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
-    <button *ngIf="apiService.canCreateTest('productos.crear')" routerLink="/producto/crear" tooltip="Crear producto (F4)"
-      class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
-      producto</button>
+    @if (apiService.canCreateTest('productos.compuestos.crear')) {
+        <button routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
+            style="margin-right: 10px;"><img src="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
+    }
+    @if (apiService.canCreateTest('productos.crear')) {
+        <button routerLink="/producto/crear" tooltip="Crear producto (F4)"
+            class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
+            producto</button>
+    }
   </div>
 </section>
 
 <section class="bg-white p-2 p-md-4 rounded mb-3">
     <div class="row">
         <div class="col-md-6 mb-3">
-            <span class="text-muted d-flex align-items-center gap-2" *ngIf="productos?.total">
-                Mostrando
-                <select name="paginate" class="form-select w-auto" (change)="filtrarProductos()" [(ngModel)]="filtros.paginate">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                de {{ productos?.total + ' registros' }}
-            </span>
+            @if (productos?.total) {
+                <span class="text-muted d-flex align-items-center gap-2">
+                    Mostrando
+                    <select name="paginate" class="form-select w-auto" (change)="filtrarProductos()" [(ngModel)]="filtros.paginate">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    de {{ productos?.total + ' registros' }}
+                </span>
+            }
         </div>
 
         <div class="col-md-6 mb-3" tourAnchor="tour.toolbar" id="tour.toolbar">
@@ -49,32 +55,41 @@
         <div class="d-flex gap-2 flex-wrap">
             <button class="tcla-F3 btn" tooltip="Actualizar (F5)" routerLinkActive="btn-primary" (click)="loadAll()"
                 routerLink="/productos">Todos</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Ajustes</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Traslados</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Consignas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Entradas</button>
-            <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas"
-                    *ngIf="!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)">Otras Salidas</button>
+            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/ajustes">Ajustes</button>
+            }
+            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/traslados">Traslados</button>
+            }
+            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/consignas">Consignas</button>
+            }
+            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/entradas">Otras Entradas</button>
+            }
+            @if (!(apiService.auth_user().tipo === 'Supervisor' && apiService.auth_user().id_empresa === 324)) {
+                <button class="btn" routerLinkActive="btn-primary" routerLink="/salidas">Otras Salidas</button>
+            }
         </div>
         <div class="ms-auto d-flex gap-2">
             <ng-select name="id_categoria" (change)="filtrarProductos()" [(ngModel)]="filtros.id_categoria"
                 class="form-select p-0 border-0 bg-default select-width">
                 <ng-option value="">Categoria</ng-option>
-                <ng-option *ngFor="let categoria of categorias" [value]="categoria.id">
-                    {{categoria.nombre}}
-                </ng-option>
+                @for (categoria of categorias; track categoria.id) {
+                    <ng-option [value]="categoria.id">
+                        {{categoria.nombre}}
+                    </ng-option>
+                }
             </ng-select>
-            <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                class="form-select bg-default select-width"
-                [class.border-primary]="isShopifyActive() && filtros.id_bodega">
-                <option value="" [disabled]="isShopifyActive()">Bodega</option>
-                <option *ngFor="let bodega of bodegas" [value]="bodega.id">
-                    {{bodega.nombre}}
-                </option>
+          <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
+                  class="form-select bg-default select-width"
+                  [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+            <option value="" [disabled]="isShopifyActive()">Bodega</option>
+                @for (bodega of bodegas; track bodega.id) {
+                    <option [value]="bodega.id">
+                        {{bodega.nombre}}
+                    </option>
+                }
             </select>
         </div>
     </div>
@@ -103,31 +118,39 @@
                         <th (click)="setOrden('stock')"
                             [ngClass]="{'sorted-asc': filtros.orden == 'stock' && filtros.direccion == 'asc', 'sorted-desc': filtros.orden == 'stock' && filtros.direccion == 'desc'}"
                             class="click text-center">Stock</th>
-                        <th class="text-center" *ngIf="!apiService.isSupervisorLimitado()">Más</th>
+                        @if (!apiService.isSupervisorLimitado()) {
+                            <th class="text-center">Más</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td colspan="8" class="text-center" *ngIf="productos?.total < 1 && !loading">
-                            <span class="badge bg-primary">No tiene productos registrados</span>
-                        </td>
-                        <td colspan="8" class="text-center" *ngIf="loading">
-                            <span class="badge bg-primary">Cargando...</span>
-                        </td>
-                    </tr>
-                    <tr *ngFor=" let producto of productos?.data">
+                    @if (productos?.total < 1 && !loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">No tiene productos registrados</span>
+                            </td>
+                        </tr>
+                    }
+                    @if (loading) {
+                        <tr>
+                            <td colspan="8" class="text-center">
+                                <span class="badge bg-primary">Cargando...</span>
+                            </td>
+                        </tr>
+                    }
+                    @for (producto of productos?.data; track producto.id) {
+                        <tr>
                         <!-- <td>
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle"
                                 width="50px">
-                            <span *ngIf="isShopifyActive() && producto.nombre_variante; else nombreNormal">
-                                {{ producto.nombre }} ({{ producto.nombre_variante }})
-                            </span>
-                            <ng-template #nombreNormal>
-                                {{ producto.nombre }}
-                            </ng-template>
+                            @if (isShopifyActive() && producto.nombre_variante) {
+                                <span>{{ producto.nombre }} ({{ producto.nombre_variante }})</span>
+                            } @else {
+                                <span>{{ producto.nombre }}</span>
+                            }
                         </td>
                         <td class="d-none d-lg-table-cell">
                             <select name="enable" class="form-select w-auto border-0" (change)="setEstado(producto)"
@@ -143,20 +166,23 @@
                         <td class="text-right">{{ (producto.precio * 1) + (producto.precio *
                             (apiService.auth_user().empresa.iva / 100) ) | currency:'USD':'symbol':'1.2' }}</td>
                         <td class="text-center">
-                            <div class="click" tooltip="Realizar ajuste de stock" *ngIf="filtros.id_bodega"
-                                (click)="openModalAjuste(majuste, producto)">
-                                {{ producto.inventarios | sum:'stock' }}
-                            </div>
-                            <div *ngIf="!filtros.id_bodega">
-                                <span *ngIf="producto?.inventarios?.length > 0"
-                                    style="display: block; height: 40px; line-height: 40px;" class="click"
-                                    placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                            @if (filtros.id_bodega) {
+                                <div class="click" tooltip="Realizar ajuste de stock"
+                                    (click)="openModalAjuste(majuste, producto)">
                                     {{ producto.inventarios | sum:'stock' }}
-                                </span>
-                                <span *ngIf="producto?.inventarios?.length == 0">
-                                    Sin control
-                                </span>
-                                <ng-template #popTemplate>
+                                </div>
+                            } @else {
+                                <div>
+                                    @if (producto?.inventarios?.length > 0) {
+                                        <span style="display: block; height: 40px; line-height: 40px;" class="click"
+                                            placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
+                                            {{ producto.inventarios | sum:'stock' }}
+                                        </span>
+                                    }
+                                    @if (producto?.inventarios?.length == 0) {
+                                        <span>Sin control</span>
+                                    }
+                                    <ng-template #popTemplate>
                                     <table class="table table-borderless">
                                         <thead>
                                             <tr>
@@ -166,11 +192,13 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr *ngFor="let inventario of producto?.inventarios">
-                                                <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
-                                                <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
-                                                <td class="text-right">{{ inventario.stock }}</td>
-                                            </tr>
+                                            @for (inventario of producto?.inventarios; track inventario.id ?? (inventario.id_bodega + '_' + inventario.id_producto)) {
+                                                <tr>
+                                                    <td class="text-nowrap">{{ inventario.nombre_bodega}}</td>
+                                                    <td class="text-nowrap">{{ inventario.nombre_sucursal}}</td>
+                                                    <td class="text-right">{{ inventario.stock }}</td>
+                                                </tr>
+                                            }
                                         </tbody>
                                         <tfoot>
                                             <tr>
@@ -179,18 +207,22 @@
                                             </tr>
                                         </tfoot>
                                     </table>
-                                </ng-template>
-                            </div>
+                                    </ng-template>
+                                </div>
+                            }
                         </td>
-                        <td class="text-center" *ngIf="!apiService.isSupervisorLimitado()">
+                        @if (!apiService.isSupervisorLimitado()) {
+                            <td class="text-center">
                             <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
                             </span>
                             <ng-template #accionesTemplate>
                                 <div class="d-flex flex-column">
-                                    <button *ngIf="apiService.canEditTest('productos.editar')" type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
-                                        <img  src="/assets/icons/edit.png" class="icon me-2">Editar
-                                    </button>
+                                    @if (apiService.canEditTest('productos.editar')) {
+                                        <button type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
+                                            <img  src="/assets/icons/edit.png" class="icon me-2">Editar
+                                        </button>
+                                    }
                                     <button type="button" routerLink="/kardex/{{producto.id}}"
                                         class="btn text-start border-0">
                                         <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
@@ -207,15 +239,19 @@
                                     </button> -->
                                 </div>
                             </ng-template>
-                        </td>
+                            </td>
+                        }
                     </tr>
+                    }
                 </tbody>
             </table>
         </div>
 
-        <div class="col-12" *ngIf="productos?.last_page > 1">
-            <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
-        </div>
+        @if (productos && productos.last_page && productos.last_page > 1) {
+            <div class="col-12">
+                <app-pagination [items]="productos" (setPagination)="setPagination($event)"></app-pagination>
+            </div>
+        }
     </div>
 </section>
 
@@ -231,75 +267,85 @@
         <form autocomplete="off" (ngSubmit)="filtrarProductos()">
             <div class="row">
 
-                <div class="form-group col-sm-6">
-                    <label for="filtros.estado">Estado:</label>
-                    <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
-                        <option value="">Todos</option>
-                        <option value="1">Activos</option>
-                        <option value="0">Inactivos</option>
-                    </select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.id_categoria">Categoria:</label>
-                    <select [(ngModel)]="filtros.id_categoria" class="form-control form-select"
-                        name="filtros.id_categoria">
-                        <option value="">Todos</option>
-                        <option *ngFor="let categoria of categorias" [value]="categoria.id">
+            <div class="form-group col-sm-6">
+                <label for="filtros.estado">Estado:</label>
+                <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
+                    <option value="">Todos</option>
+                    <option value="1">Activos</option>
+                    <option value="0">Inactivos</option>
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_categoria">Categoria:</label>
+                <select [(ngModel)]="filtros.id_categoria" class="form-control form-select" name="filtros.id_categoria">
+                    <option value="">Todos</option>
+                    @for (categoria of categorias; track categoria.id) {
+                        <option [value]="categoria.id">
                             {{ categoria.nombre }}
                         </option>
-                    </select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.id_proveedor">Proveedor:</label>
-                    <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
-                        <ng-option value="">Todos</ng-option>
-                        <ng-option *ngFor="let proveedor of proveedores" [value]="proveedor.id">
+                    }
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_proveedor">Proveedor:</label>
+                <ng-select name="id_proveedor" [(ngModel)]="filtros.id_proveedor" class="form-select p-0">
+                    <ng-option value="">Todos</ng-option>
+                    @for (proveedor of proveedores; track proveedor.id) {
+                        <ng-option [value]="proveedor.id">
                             {{ proveedor.nombre_empresa ?? proveedor.nombre }}
                         </ng-option>
-                    </ng-select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.id_proveedor">Bodega:</label>
-                    <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                        class="form-select"
-                        [class.border-primary]="isShopifyActive() && filtros.id_bodega">
-                        <option value="" [disabled]="isShopifyActive()">Todas</option>
-                        <option *ngFor="let bodega of bodegas" [value]="bodega.id">
+                    }
+                </ng-select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.id_proveedor">Bodega:</label>
+                <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega" class="form-select">
+                    <option value="">Todas</option>
+                    @for (bodega of bodegas; track bodega.id) {
+                        <option [value]="bodega.id">
                             {{bodega.nombre}}
                         </option>
-                    </select>
-                </div>
-                <div class="form-group col-sm-6">
-                    <label for="filtros.marca">Marca:</label>
-                    <ng-select name="marca" placeholder="Todas" [(ngModel)]="filtros.marca"
-                        (ngModelChange)="filtrarProductos()" class="form-select p-0">
-                        <ng-option value="">Todas</ng-option>
-                        <ng-option *ngFor="let marca of marcas" [value]="marca.id">
+                    }
+                </select>
+            </div>
+            <div class="form-group col-sm-6">
+                <label for="filtros.marca">Marca:</label>
+                <ng-select name="marca"
+                        placeholder="Todas"
+                        [(ngModel)]="filtros.marca"
+                        (ngModelChange)="filtrarProductos()"
+                        class="form-select p-0">
+                    <ng-option value="">Todas</ng-option>
+                    @for (marca of marcas; track marca.id) {
+                        <ng-option [value]="marca.id">
                             {{ marca.nombre }}
                         </ng-option>
-                    </ng-select>
+                    }
+                </ng-select>
+            </div>
+            <div class="form-group col-md-12 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="sin_stock">Con stock bajo</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="filtros.sin_stock" name="sin_stock">
                 </div>
-                <div class="form-group col-md-12 without-label">
-                    <div class="form-switch bg-light-info rounded">
-                        <label for="sin_stock">Con stock bajo</label>
-                        <input class="form-check-input float-end" type="checkbox" role="switch"
-                            [(ngModel)]="filtros.sin_stock" name="sin_stock">
-                    </div>
+            </div>
+            <div class="form-group col-md-12 without-label">
+                <div class="form-switch bg-light-info rounded">
+                  <label for="compuestos">Productos compuestos</label>
+                  <input class="form-check-input float-end" type="checkbox" role="switch" [(ngModel)]="filtros.compuestos" name="compuestos">
                 </div>
-                <div class="form-group col-md-12 without-label">
-                    <div class="form-switch bg-light-info rounded">
-                        <label for="compuestos">Productos compuestos</label>
-                        <input class="form-check-input float-end" type="checkbox" role="switch"
-                            [(ngModel)]="filtros.compuestos" name="compuestos">
-                    </div>
-                </div>
+            </div>
 
         </div>
 
         <div class="d-grid mt-3">
             <button type="submit" [disabled]="loading" class="btn btn-primary">
-                <span *ngIf="!loading">Filtrar</span>
-                <span *ngIf="loading">Filtrando...</span>
+                @if (!loading) {
+                    <span>Filtrar</span>
+                }
+                @if (loading) {
+                    <span>Filtrando...</span>
+                }
             </button>
         </div>
     </form>
@@ -324,11 +370,12 @@
                 <input type="text" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');" class="form-control text-center" [(ngModel)]="ajuste.stock_real" (change)="calAjuste()" (keyup)="calAjuste()" name="stock_real" focus="true">
             </div>
 
-            <div class="form-groumdcol-xs-12" *ngIf="ajuste.stock_real">
-                <label for="ajuste">Se realizá un ajuste de:</label>
-                <p *ngIf="ajuste.stock_real"> {{ ajuste.ajuste }}</p>
-                <p *ngIf="!ajuste.stock_real"> 0</p>
-            </div>
+            @if (ajuste.stock_real) {
+                <div class="form-groumdcol-xs-12">
+                    <label for="ajuste">Se realizá un ajuste de:</label>
+                    <p>{{ ajuste.ajuste }}</p>
+                </div>
+            }
 
                 <div class="form-group col-md-12">
                     <label for="concepto">Nota del ajuste:</label>
@@ -338,8 +385,12 @@
             </div>
             <div class="d-grid mt-3">
                 <button type="submit" class="btn btn-primary btn-block" [disabled]="loading || !ajuste.stock_real">
-                    <span *ngIf="!loading">Guardar</span>
-                    <span *ngIf="loading">Guardando...</span>
+                    @if (!loading) {
+                        <span>Guardar</span>
+                    }
+                    @if (loading) {
+                        <span>Guardando...</span>
+                    }
                 </button>
             </div>
 
@@ -361,8 +412,12 @@
                 <label>Descargar detalle de productos:</label>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="descargar()"
                     class="btn btn-primary">
-                    <span *ngIf="!downloading">Descargar productos</span>
-                    <span *ngIf="downloading">Descargando...</span>
+                    @if (!downloading) {
+                        <span>Descargar productos</span>
+                    }
+                    @if (downloading) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
             <div class="d-grid my-4">
@@ -373,16 +428,24 @@
                 <label>Descargar Kardex:</label>
                 <button [disabled]="loading || !productos?.data?.length"
                         tooltip="Descargar kardex de productos mostrados" (click)="openDescargarKardex(mdescargarKardex)" class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar kardex ({{ productos?.data?.length || 0 }})</span>
-                    <span *ngIf="loading">Descargando...</span>
+                    @if (!loading) {
+                        <span>Descargar kardex ({{ productos?.data?.length || 0 }})</span>
+                    }
+                    @if (loading) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
             <div class="d-grid my-4">
                 <label>Descargar Kardex Masivamente:</label>
                 <button [disabled]="loading"
                         tooltip="Descargar kardex completo por correo electrónico" (click)="openDescargarKardexMasivo(mdescargarKardexMasivo)" class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar Kardex Masivamente</span>
-                    <span *ngIf="loading">Procesando...</span>
+                    @if (!loading) {
+                        <span>Descargar Kardex Masivamente</span>
+                    }
+                    @if (loading) {
+                        <span>Procesando...</span>
+                    }
                 </button>
             </div>
         </div>
@@ -416,8 +479,12 @@
 
             <div class="d-grid mt-3">
                 <button type="submit" [disabled]="loading || !filtrosKardex.fecha_inicio || !filtrosKardex.fecha_fin" class="btn btn-primary">
-                    <span *ngIf="!loading">Descargar Kardex</span>
-                    <span *ngIf="loading">Descargando...</span>
+                    @if (!loading) {
+                        <span>Descargar Kardex</span>
+                    }
+                    @if (loading) {
+                        <span>Descargando...</span>
+                    }
                 </button>
             </div>
         </form>
@@ -461,12 +528,16 @@
                 <button type="submit"
                         [disabled]="loading || !emailKardex"
                         class="btn btn-primary">
-                    <span *ngIf="!loading">
-                        <i class="fa fa-envelope me-2"></i>Solicitar Kardex Completo
-                    </span>
-                    <span *ngIf="loading">
-                        <i class="fa fa-spinner fa-spin me-2"></i>Procesando solicitud...
-                    </span>
+                    @if (!loading) {
+                        <span>
+                            <i class="fa fa-envelope me-2"></i>Solicitar Kardex Completo
+                        </span>
+                    }
+                    @if (loading) {
+                        <span>
+                            <i class="fa fa-spinner fa-spin me-2"></i>Procesando solicitud...
+                        </span>
+                    }
                 </button>
             </div>
         </form>
