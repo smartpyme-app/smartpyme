@@ -182,7 +182,6 @@ export class PartidasComponent implements OnInit {
   public filtrarPartidas() {
     this.loading = true;
 
-    console.log('Filtros enviados al backend:', this.filtros);
     this.guardarFiltros();
 
     this.apiService.getAll('partidas', this.filtros).subscribe(

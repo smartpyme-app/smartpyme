@@ -57,7 +57,7 @@
                       <div class="form-group col-md-6 col-lg-4">
                         <label for="departamento">Departamento:</label>
                         <ng-select [(ngModel)]="empresa.cod_departamento" (change)="setDepartamento()" class="form-select p-0" name="empresa.departamento">
-                          @for (departamento of departamentos; track departamento.cod) {
+                          @for (departamento of departamentos; track $index) {
                             <ng-option [value]="departamento.cod">
                               {{ departamento.nombre }}
                             </ng-option>
@@ -68,7 +68,7 @@
                       <div class="form-group col-md-6 col-lg-4">
                         <label for="distrito">Distrito:</label>
                         <ng-select  [(ngModel)]="empresa.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="empresa.cod_distrito">
-                          @for (distrito of distritos | filter:'cod_departamento':empresa.cod_departamento; track distrito.cod) {
+                          @for (distrito of distritos | filter:'cod_departamento':empresa.cod_departamento; track $index) {
                             <ng-option [value]="distrito.cod">
                               {{ distrito.nombre }}
                             </ng-option>
@@ -79,7 +79,7 @@
                       <div class="form-group col-md-6 col-lg-4">
                         <label for="municipio">Municipio:</label>
                         <ng-select [(ngModel)]="empresa.cod_municipio" (change)="setMunicipio()" class="form-select p-0" name="empresa.municipio">
-                          @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track municipio.cod) {
+                          @for (municipio of municipios | filter:'nombre_departamento':empresa.departamento; track $index) {
                             <ng-option [value]="municipio.cod">
                               {{ municipio.nombre }}
                             </ng-option>
@@ -154,7 +154,7 @@
                         <label for="actividad_economica">Actividad económica:</label>
                         @if (apiService.auth_user().empresa.pais == 'El Salvador') {
                           <ng-select [(ngModel)]="empresa.cod_actividad_economica" (change)="setGiro()" class="form-select p-0" name="empresa.cod_actividad_economica">
-                            @for (actividad_economica of actividad_economicas; track actividad_economica.cod) {
+                            @for (actividad_economica of actividad_economicas; track $index) {
                               <ng-option [value]="actividad_economica.cod">
                                 {{ actividad_economica.nombre }}
                               </ng-option>
