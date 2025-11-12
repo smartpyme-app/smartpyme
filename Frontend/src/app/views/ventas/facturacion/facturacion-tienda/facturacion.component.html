@@ -364,6 +364,9 @@
                         <option [value]="banco.nombre">{{ banco.nombre }}</option>
                     }
                 </select>
+              <div class="text-danger mt-1" style="font-size: 11px;" *ngIf="mensajeErrorBanco">
+                {{ mensajeErrorBanco }}
+              </div>
             </div>
         }
         @if (venta.cotizacion != 1) {
@@ -516,7 +519,7 @@
                         <div class="row text-center">
                             <h4 class="col-md-6">Total: <span class="badge badge-primary">{{ venta.total |
                                     currency:'USD':'symbol':'1.2' }}</span></h4>
-                            <h4 class="col-md-6">Vuelto: 
+                            <h4 class="col-md-6">Vuelto:
                                 @if (venta.recibido) {
                                     <span class="badge badge-info">{{
                                         venta.recibido - venta.total | currency:'USD':'symbol':'1.2' }}</span>

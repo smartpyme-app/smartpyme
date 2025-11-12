@@ -36,38 +36,38 @@ class GenerarKardexMasivoCommand extends Command
     {
         $email = $this->argument('email');
         $idEmpresa = $this->argument('id_empresa');
-        
+
         try {
             $this->info("Iniciando generación de kardex masivo para empresa: {$idEmpresa}");
-            
+
             // Configuración optimizada para Hostinger
             $config = config('hostinger.kardex_masivo', []);
             ini_set('memory_limit', $config['memory_limit'] ?? '256M');
             ini_set('max_execution_time', $config['timeout'] ?? 120);
-            
+
             // Verificar que la empresa tenga productos
             $productosCount = Producto::where('id_empresa', $idEmpresa)
                 ->where('tipo', 'Producto')
                 ->count();
-                
+
             if ($productosCount == 0) {
                 $this->error("No se encontraron productos para la empresa: {$idEmpresa}");
                 return 1;
             }
-            
+
             $this->info("Se encontraron {$productosCount} productos para procesar");
-            
+
             // Generar archivo CSV en lugar de Excel para mejor rendimiento
             $fileName = 'kardex_completo_' . $idEmpresa . '_' . date('Ymd_His') . '.csv';
             $filePath = storage_path('app/temp/' . $fileName);
-            
+
             // Crear directorio si no existe
             if (!file_exists(dirname($filePath))) {
                 mkdir(dirname($filePath), 0755, true);
             }
-            
+
             $file = fopen($filePath, 'w');
-            
+
             // Escribir encabezados
             $headers = [
                 'Fecha',
@@ -84,40 +84,40 @@ class GenerarKardexMasivoCommand extends Command
                 'Referencia'
             ];
             fputcsv($file, $headers);
-            
+
             // Procesar en chunks para evitar problemas de memoria
             // Chunks muy pequeños para Hostinger
             $chunkSize = $config['chunk_size'] ?? 50;
             $offset = 0;
             $totalProcessed = 0;
-            
+
             do {
                 $this->info("Procesando chunk desde {$offset}...");
-                
+
                 // Obtener IDs de productos
                 $productoIds = Producto::where('id_empresa', $idEmpresa)
                     ->where('tipo', 'Producto')
                     ->offset($offset)
                     ->limit($chunkSize)
                     ->pluck('id');
-                
+
                 if ($productoIds->isEmpty()) {
                     break;
                 }
-                
+
                 // Obtener movimientos de kardex para estos productos
                 $kardexMovements = Kardex::whereIn('id_producto', $productoIds)
-                    ->with(['producto.categoria', 'inventario.sucursal', 'usuario'])
+                    ->with(['producto.categoria', 'producto.empresa', 'inventario.sucursal', 'usuario'])
                     ->orderBy('fecha', 'desc')
                     ->orderBy('id', 'desc')
                     ->get();
-                
+
                 // Escribir datos al archivo
                 foreach ($kardexMovements as $kardex) {
                     // Obtener la sucursal directamente desde la relación inventario (que apunta a Bodega)
                     $sucursalNombre = '';
                     try {
-                        if(isset($kardex->inventario) && isset($kardex->inventario->sucursal)) {
+                        if (isset($kardex->inventario) && isset($kardex->inventario->sucursal)) {
                             $sucursalNombre = $kardex->inventario->sucursal->nombre;
                         } else {
                             $sucursalNombre = 'SIN SUCURSAL';
@@ -125,10 +125,16 @@ class GenerarKardexMasivoCommand extends Command
                     } catch (\Exception $e) {
                         $sucursalNombre = 'ERROR: ' . $e->getMessage();
                     }
-                    
+
+                    // Obtener el nombre completo del producto (nombre + nombre_variante si aplica)
+                    $nombreProducto = $kardex->producto->nombre ?? '';
+                    if ($kardex->producto && $kardex->producto->empresa && $kardex->producto->empresa->shopify_store_url && $kardex->producto->nombre_variante) {
+                        $nombreProducto = $kardex->producto->nombre . ' ' . $kardex->producto->nombre_variante;
+                    }
+
                     $row = [
                         $kardex->fecha ? \Carbon\Carbon::parse($kardex->fecha)->format('d/m/Y H:i:s') : '',
-                        $kardex->producto->nombre ?? '',
+                        $nombreProducto,
                         $kardex->producto->codigo ?? '',
                         $kardex->inventario->nombre ?? '',
                         $sucursalNombre,
@@ -145,48 +151,46 @@ class GenerarKardexMasivoCommand extends Command
                     fputcsv($file, $row);
                     $totalProcessed++;
                 }
-                
+
                 $offset += $chunkSize;
-                
+
                 // Limpiar memoria
                 unset($kardexMovements);
                 gc_collect_cycles();
-                
+
                 // Pequeña pausa para Hostinger
                 $sleepTime = ($config['sleep_between_chunks'] ?? 0.1) * 1000000;
                 usleep($sleepTime);
-                
             } while (true);
-            
+
             fclose($file);
-            
+
             $this->info("Archivo generado: {$filePath}");
             $this->info("Total de registros procesados: {$totalProcessed}");
-            
+
             // Enviar por correo
             Mail::to($email)->send(new KardexMasivoMail($filePath, $fileName));
-            
+
             $this->info("Correo enviado exitosamente a: {$email}");
-            
+
             // Limpiar archivo temporal
             unlink($filePath);
-            
+
             return 0;
-            
         } catch (\Exception $e) {
             $this->error("Error al generar kardex masivo: " . $e->getMessage());
-            
+
             // Enviar correo de error
             try {
                 Mail::to($email)->send(new KardexMasivoErrorMail($e->getMessage()));
             } catch (\Exception $mailError) {
                 $this->error("Error al enviar correo de error: " . $mailError->getMessage());
             }
-            
+
             return 1;
         }
     }
-    
+
     private function getTipoMovimiento($tipo)
     {
         $tipos = [

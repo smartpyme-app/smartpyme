@@ -167,7 +167,7 @@
                     <ng-option value="" selected>Seleccionar producto</ng-option>
                     @for (producto of productos; track producto.id) {
                         <ng-option [value]="producto.id">
-                            {{producto.nombre}}
+                          {{getNombreCompleto(producto)}}
                         </ng-option>
                     }
                 </ng-select>
@@ -265,7 +265,7 @@
                     <ng-option value="" selected>Todos</ng-option>
                     @for (producto of productos; track producto.id) {
                         <ng-option [value]="producto.id">
-                            {{producto.nombre}}
+                          {{getNombreCompleto(producto)}}
                         </ng-option>
                     }
                 </ng-select>

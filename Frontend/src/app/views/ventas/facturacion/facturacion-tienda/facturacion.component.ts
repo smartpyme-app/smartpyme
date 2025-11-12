@@ -76,6 +76,7 @@ export class FacturacionComponent implements OnInit {
   public customField: boolean = false;
   public tieneAccesoPropina: boolean = false;
   public mensajeValidacionFecha: string = '';
+  public mensajeErrorBanco: string = '';
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
@@ -827,7 +828,7 @@ export class FacturacionComponent implements OnInit {
                 this.venta.retencion = 1;
                 this.sumTotal();
             }
-            
+
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
         }
@@ -874,9 +875,9 @@ export class FacturacionComponent implements OnInit {
         const hoy = moment();
         const fechaSeleccionada = moment(fechaPago);
         const diasDiferencia = fechaSeleccionada.diff(hoy, 'days');
-        
+
         let diasMaximos = 30; // Por defecto 30 días (clasificación C)
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -891,7 +892,7 @@ export class FacturacionComponent implements OnInit {
                 diasMaximos = 30;
                 break;
         }
-        
+
         return diasDiferencia <= diasMaximos;
     }
 
@@ -905,7 +906,7 @@ export class FacturacionComponent implements OnInit {
 
         let diasMaximos = 30;
         let clasificacion = 'C';
-        
+
         switch (this.venta.cliente.clasificacion.toUpperCase()) {
             case 'A':
                 diasMaximos = 90;
@@ -920,7 +921,7 @@ export class FacturacionComponent implements OnInit {
                 clasificacion = 'C';
                 break;
         }
-        
+
         return `Clientes de clasificación ${clasificacion} no puede exceder ${diasMaximos} días.`;
     }
 
@@ -929,15 +930,15 @@ export class FacturacionComponent implements OnInit {
      */
     public validarFechaPago() {
         this.mensajeValidacionFecha = ''; // Limpiar mensaje anterior
-        
+
         if (this.venta.credito && this.venta.fecha_pago) {
             if (!this.validarFechaPagoPorClasificacion(this.venta.fecha_pago)) {
                 this.mensajeValidacionFecha = this.obtenerMensajeValidacionFecha();
-                
+
                 // Revertir a la fecha anterior o establecer una fecha válida
                 const hoy = moment();
                 let diasMaximos = 30;
-                
+
                 if (this.venta.cliente?.clasificacion) {
                     switch (this.venta.cliente.clasificacion.toUpperCase()) {
                         case 'A':
@@ -951,7 +952,7 @@ export class FacturacionComponent implements OnInit {
                             break;
                     }
                 }
-                
+
                 // Establecer la fecha máxima permitida
                 this.venta.fecha_pago = hoy.add(diasMaximos, 'days').format('YYYY-MM-DD');
             }
@@ -979,6 +980,13 @@ export class FacturacionComponent implements OnInit {
                 item.total = null;
             });
         }
+
+        // Limpiar banco y mensaje de error al cambiar método de pago
+        if (!this.requiereBanco()) {
+            this.venta.detalle_banco = '';
+            this.mensajeErrorBanco = '';
+        }
+        console.log(this.venta);
     }
 
     public setDocumento(id_documento: any) {
@@ -1030,6 +1038,15 @@ export class FacturacionComponent implements OnInit {
     }
 
   public onFacturar() {
+    // Validar que si el método de pago requiere banco, este esté seleccionado
+    this.mensajeErrorBanco = '';
+
+    if (this.venta.cotizacion != 1 && this.requiereBanco() && !this.venta.detalle_banco) {
+      this.mensajeErrorBanco = 'Debe seleccionar un banco para este método de pago.';
+      this.alertService.error('Debe seleccionar un banco para este método de pago.');
+      return;
+    }
+
     if (
       this.venta.cobrar_impuestos &&
       (!this.venta.impuestos || this.venta.impuestos.length === 0)
@@ -1060,6 +1077,15 @@ export class FacturacionComponent implements OnInit {
         this.onSubmit();
       }
     });
+  }
+
+  /**
+   * Verifica si el método de pago requiere selección de banco
+   */
+  public requiereBanco(): boolean {
+    return this.venta.forma_pago &&
+           this.venta.forma_pago !== 'Efectivo' &&
+           this.venta.forma_pago !== 'Wompi';
   }
 
   // Guardar venta

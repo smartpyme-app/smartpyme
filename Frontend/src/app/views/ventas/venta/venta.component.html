@@ -76,6 +76,10 @@
                     <label class="fw-medium">Origen</label>
                     <p><span class="badge bg-info">Shopify</span> {{ venta.referencia_shopify }}</p>
                 </div>
+              <div class="form-group col-lg-4">
+                <label class="fw-medium">Canal de venta</label>
+                <p><span class="badge bg-info">Shopify</span> {{ venta.nombre_canal }}</p>
+              </div>
             }
         </div>
     </div>
@@ -132,7 +136,7 @@
                         <th>Detalle</th>
                         <th width="100">Cantidad</th>
                         @for (field of customFields?.data; track field.id) {
-                            <th 
+                            <th
                                 width="100"
                                 [hidden]="!hasCustomField(field.id)">
                                 {{field.name}}

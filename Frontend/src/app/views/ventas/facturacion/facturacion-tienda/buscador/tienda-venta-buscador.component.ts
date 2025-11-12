@@ -34,6 +34,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     public filtros:any = {};
     public buscador:any = '';
     public loading:boolean = false;
+    private tieneShopify: boolean = false;
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -41,7 +42,9 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     ) { }
 
     ngOnInit() {
-
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.searchControl.valueChanges
           .pipe(
@@ -132,7 +135,7 @@ export class TiendaVentaBuscadorComponent implements OnInit {
     selectProducto(producto:any){
         this.detalle = Object.assign({}, producto);
         this.detalle.id_producto    = producto.id;
-        this.detalle.descripcion    = producto.nombre;
+        this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         this.detalle.precio         = parseFloat(producto.precio);
         this.detalle.precios        = producto.precios;
@@ -190,6 +193,16 @@ export class TiendaVentaBuscadorComponent implements OnInit {
         if(this.modalRef){
             this.modalRef.hide();
         }
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 
 }

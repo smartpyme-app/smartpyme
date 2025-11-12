@@ -20,7 +20,7 @@ class Detalle extends Model {
         'total',
         'id_devolucion_venta',
     );
-    protected $appends = ['nombre_producto', 'medida'];
+    protected $appends = ['nombre_producto', 'medida', 'codigo', 'marca'];
 
     public function getNombreProductoAttribute(){
         if ($this->descripcion) {
@@ -32,6 +32,14 @@ class Detalle extends Model {
 
     public function getMedidaAttribute(){
         return $this->producto()->pluck('medida')->first();
+    }
+
+    public function getCodigoAttribute(){
+        return $this->producto()->pluck('codigo')->first();
+    }
+
+    public function getMarcaAttribute(){
+        return $this->producto()->pluck('marca')->first();
     }
 
     public function producto(){

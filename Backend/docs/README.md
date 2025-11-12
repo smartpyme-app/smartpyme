@@ -53,6 +53,11 @@ docs/
 - `GET /api/external/v1/inventory/{id}` - Producto específico
 - `GET /api/external/v1/inventory/summary` - Resumen de inventario
 
+### Devoluciones
+- `GET /api/external/v1/returns` - Listar devoluciones
+- `GET /api/external/v1/returns/{id}` - Devolución específica
+- `GET /api/external/v1/returns/summary` - Resumen de devoluciones
+
 ## 🔐 Autenticación
 
 ```bash

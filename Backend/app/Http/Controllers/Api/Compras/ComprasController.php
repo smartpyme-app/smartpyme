@@ -106,8 +106,12 @@ class ComprasController extends Controller
                 $col = in_array($request->orden, $permitidas) ? $request->orden : 'id';
                 $q->orderBy($col, $dir);
             })
+            ->withSum(['abonos' => function ($query) {
+                $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
-            ->paginate($request->paginate ?: 15);
+            ->paginate($request->paginate);
 
         foreach ($compras as $compra) {
             $compra->saldo = $compra->saldo;
@@ -383,17 +387,18 @@ class ComprasController extends Controller
                 $this->chequesService->crear($compra, $compra->nombre_proveedor, 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
             }
 
-            // Incrementar el correlarivo de orden de compra
-            if ($request->estado == 'Pre-compra') {
-                $documento = Documento::where('nombre', $compra->tipo_documento)->first();
-                $documento->increment('correlativo');
-            }
+        // Incrementar el correlarivo de orden de compra
+        if (!$request->id && $request->tipo_documento == 'Orden de compra') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
+            $documento->increment('correlativo');
+        }
 
-            // Incrementar el correlarivo de Sujeto excluido
-            if ($request->tipo_documento == 'Sujeto excluido') {
-                $documento = Documento::where('nombre', $compra->tipo_documento)->first();
-                $documento->increment('correlativo');
-            }
+
+        // Incrementar el correlarivo de Sujeto excluido
+        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
+            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
+            $documento->increment('correlativo');
+        }
 
             DB::commit();
             return Response()->json($compra, 200);

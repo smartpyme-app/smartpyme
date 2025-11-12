@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\External\SalesController;
 use App\Http\Controllers\Api\External\InventoryController;
 use App\Http\Controllers\Api\External\SystemController;
+use App\Http\Controllers\Api\External\ReturnsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,5 +35,12 @@ Route::prefix('external/v1')->middleware(['external.api'])->group(function () {
         Route::get('/', [InventoryController::class, 'index'])->name('external.inventory.index');
         Route::get('/summary', [InventoryController::class, 'summary'])->name('external.inventory.summary');
         Route::get('/{id}', [InventoryController::class, 'show'])->name('external.inventory.show');
+    });
+    
+    // Rutas de devoluciones
+    Route::prefix('returns')->group(function () {
+        Route::get('/', [ReturnsController::class, 'index'])->name('external.returns.index');
+        Route::get('/summary', [ReturnsController::class, 'summary'])->name('external.returns.summary');
+        Route::get('/{id}', [ReturnsController::class, 'show'])->name('external.returns.show');
     });
 });

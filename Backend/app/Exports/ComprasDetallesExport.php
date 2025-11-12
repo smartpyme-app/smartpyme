@@ -49,46 +49,60 @@ class ComprasDetallesExport implements FromCollection, WithHeadings, WithMapping
     {
         $request = $this->request;
         
-        $detalles = Detalle::whereHas('compra', function($query) use ($request) {
-                            $query->when($request->buscador, function($query) use ($request){
-                                return $query->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                                        ->orwhere('estado', 'like', '%'.$request->buscador.'%')
-                                        ->orwhere('observaciones', 'like', '%'.$request->buscador.'%')
-                                        ->orwhere('forma_pago', 'like', '%'.$request->buscador.'%');
-                            })
-                            ->when($request->inicio, function($query) use ($request){
-                                return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
-                            })
-                            ->when($request->recurrente !== null, function($q) use ($request){
-                                $q->where('recurrente', !!$request->recurrente);
-                            })
-                            ->when($request->id_proyecto, function($q) use ($request){
-                                $q->where('id_proyecto', $request->id_proyecto);
-                            })
-                            ->when($request->num_identificacion, function($q) use ($request){
-                                $q->where('num_identificacion', $request->num_identificacion);
-                            })
-                            ->when($request->id_sucursal, function($query) use ($request){
-                                return $query->where('id_sucursal', $request->id_sucursal);
-                            })
-                            ->when($request->id_usuario, function($query) use ($request){
-                                return $query->where('id_usuario', $request->id_usuario);
-                            })
-                            ->when($request->id_proveedor, function($query) use ($request){
-                                return $query->where('id_proveedor', $request->id_proveedor);
-                            })
-                            ->when($request->forma_pago, function($query) use ($request){
-                                return $query->where('forma_pago', $request->forma_pago);
-                            })
-                            ->when($request->estado, function($query) use ($request){
-                                return $query->where('estado', $request->estado);
-                            })
-                            ->when($request->metodo_pago, function($query) use ($request){
-                                return $query->where('metodo_pago', $request->metodo_pago);
-                            })
-                            ->where('cotizacion', 0)
-                            ->orderBy($request->orden, $request->direccion)
-                            ->orderBy('id', 'desc');
+        $detalles = Detalle::whereHas('compra', function ($query) use ($request) {
+                            $query->when($request->inicio, function ($query) use ($request) {
+                                    return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
+                                })
+                                ->when($request->recurrente !== null, function ($q) use ($request) {
+                                    $q->where('recurrente', !!$request->recurrente);
+                                })
+                                ->when($request->num_identificacion, function ($q) use ($request) {
+                                    $q->where('num_identificacion', $request->num_identificacion);
+                                })
+                                ->when($request->id_sucursal, function ($query) use ($request) {
+                                    return $query->where('id_sucursal', $request->id_sucursal);
+                                })
+                                ->when($request->id_bodega, function ($query) use ($request) {
+                                    return $query->where('id_bodega', $request->id_bodega);
+                                })
+                                ->when($request->id_usuario, function ($query) use ($request) {
+                                    return $query->where('id_usuario', $request->id_usuario);
+                                })
+                                ->when($request->id_proveedor, function ($query) use ($request) {
+                                    return $query->where('id_proveedor', $request->id_proveedor);
+                                })
+                                ->when($request->forma_pago, function ($query) use ($request) {
+                                    return $query->where('forma_pago', $request->forma_pago);
+                                })
+                                ->when($request->estado, function ($query) use ($request) {
+                                    return $query->where('estado', $request->estado);
+                                })
+                                ->when($request->metodo_pago, function ($query) use ($request) {
+                                    return $query->where('metodo_pago', $request->metodo_pago);
+                                })
+                                ->when($request->id_proyecto, function ($query) use ($request) {
+                                    return $query->where('id_proyecto', $request->id_proyecto);
+                                })
+                                ->when($request->dte && $request->dte == 0, function ($query) {
+                                    return $query->whereNull('sello_mh');
+                                })
+                                ->when($request->dte && $request->dte == 1, function ($query) {
+                                    return $query->whereNotNull('sello_mh');
+                                })
+                                ->where('cotizacion', 0)
+                                ->when($request->buscador, function ($query) use ($request) {
+                                    return $query->whereHas('proveedor', function ($q) use ($request) {
+                                                $q->where('nombre', 'like', '%' . $request->buscador . '%')
+                                                    ->orWhere('nombre_empresa', 'like', '%' . $request->buscador . '%')
+                                                    ->orWhere('ncr', 'like', '%' . $request->buscador . '%')
+                                                    ->orWhere('nit', 'like', '%' . $request->buscador . '%');
+                                            })->orWhere('referencia', 'like', '%' . $request->buscador . '%')
+                                            ->orWhere('estado', 'like', '%' . $request->buscador . '%')
+                                            ->orWhere('observaciones', 'like', '%' . $request->buscador . '%')
+                                            ->orWhere('forma_pago', 'like', '%' . $request->buscador . '%');
+                                })
+                                ->orderBy($request->orden, $request->direccion)
+                                ->orderBy('id', 'desc');
                         })->get();
 
         return $detalles;

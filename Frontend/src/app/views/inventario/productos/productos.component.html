@@ -81,9 +81,10 @@
                     </ng-option>
                 }
             </ng-select>
-            <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
-                class="form-select bg-default select-width">
-                <option value="">Bodega</option>
+          <select name="id_bodega" (change)="filtrarProductos()" [(ngModel)]="filtros.id_bodega"
+                  class="form-select bg-default select-width"
+                  [class.border-primary]="isShopifyActive() && filtros.id_bodega">
+            <option value="" [disabled]="isShopifyActive()">Bodega</option>
                 @for (bodega of bodegas; track bodega.id) {
                     <option [value]="bodega.id">
                         {{bodega.nombre}}

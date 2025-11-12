@@ -48,6 +48,7 @@ export class TrasladoMasivoComponent implements OnInit {
     
     public productosMap: Map<number, any> = new Map();
     public bodegasMap: Map<string, string> = new Map();
+    private tieneShopify: boolean = false;
     
     // Control para el buscador
     searchControl = new FormControl();
@@ -62,6 +63,10 @@ export class TrasladoMasivoComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
+        
         this.loadData();
         
         // Configurar el buscador con debounce
@@ -240,7 +245,7 @@ export class TrasladoMasivoComponent implements OnInit {
         // Crear objeto de producto para el traslado
         const productoTraslado = {
             id: producto.id,
-            nombre: producto.nombre,
+            nombre: this.getNombreCompleto(producto),
             nombre_categoria: producto.nombre_categoria,
             img: producto.img,
             stock_origen: stockOrigen,
@@ -470,9 +475,19 @@ export class TrasladoMasivoComponent implements OnInit {
                 }
             },
             error => {
-                this.alertService.error(error);
-                this.saving = false;
-            }
-        );
+            this.alertService.error(error);
+            this.saving = false;
+        }
+    );
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 }

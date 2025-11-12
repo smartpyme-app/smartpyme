@@ -251,6 +251,11 @@
         cols="30" rows="1"></textarea>
     </div>
     </div>
+
+    <div class="form-group col-lg-12" *ngIf="apiService.auth_user().empresa.shopify_store_url">
+      <label for="descripcion_completa">Descripción completa <small class="text-muted">(Shopify)</small></label>
+      <textarea class="form-control" [(ngModel)]="producto.descripcion_completa" name="descripcion_completa" placeholder="Descripción completa del producto que se sincronizará con Shopify..." cols="30" rows="5"></textarea>
+    </div>
     <!--
         <h6 class="my-3 font-weight-bold w-100">Descripción</h6>
 

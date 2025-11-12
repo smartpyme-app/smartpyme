@@ -94,13 +94,13 @@
                         <tr>
                             <th>N°</th>
                             <th>Fecha</th>
-                            <th>Correlativo</th>
+                            <th>Correlativo Inicial</th>
+                            <th>Correlativo Final</th>
                             <th class="text-end">Ventas Exentas</th>
-                            <th class="text-end">Ventas Gravadas</th>
-                            <th class="text-end">Ventas No Sujetas</th>
+                            <th class="text-end">Ventas Internas Gravadas</th>
                             <th class="text-end">Exportaciones</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-end">Venta a Cuenta de Terceros</th>
+                            <th class="text-end">Total de Ventas Diarias Propias</th>
+                            <th class="text-end">Ventas a Cuenta de Terceros</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -122,24 +122,23 @@
                           <tr class="animated fadeIn">
                             <td>{{ i+1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
-                            <td>{{iva.correlativo}}</td>
+                            <td>{{iva.correlativo_inicial}}</td>
+                            <td>{{iva.correlativo_final}}</td>
                             <td class="text-end">{{iva.ventas_exentas | currency:'USD':'symbol':'1.2' }}</td>
-                            <td class="text-end">{{iva.ventas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.no_sujeta | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_internas_gravadas | currency:'USD':'symbol':'1.2'}}</td>
                             <td class="text-end">{{iva.exportaciones | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.total | currency:'USD':'symbol':'1.2'}}</td>
-                            <td class="text-end">{{iva.cuenta_a_terceros | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.total_ventas_diarias_propias | currency:'USD':'symbol':'1.2'}}</td>
+                            <td class="text-end">{{iva.ventas_a_cuenta_de_terceros | currency:'USD':'symbol':'1.2'}}</td>
 
                           </tr>
                         }
                         <tr>
-                            <td colspan="3" class="text-center"><b>Total</b></td>
+                            <td colspan="4" class="text-center"><b>Total</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'ventas_exentas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'ventas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'no_sujeta' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_internas_gravadas' | currency:'USD':'symbol':'1.2' }}</b></td>
                             <td class="text-end"><b>{{ ivas | sum:'exportaciones' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'total' | currency:'USD':'symbol':'1.2' }}</b></td>
-                            <td class="text-end"><b>{{ ivas | sum:'cuenta_a_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'total_ventas_diarias_propias' | currency:'USD':'symbol':'1.2' }}</b></td>
+                            <td class="text-end"><b>{{ ivas | sum:'ventas_a_cuenta_de_terceros' | currency:'USD':'symbol':'1.2' }}</b></td>
                         </tr>
                     </tbody>
                 </table>

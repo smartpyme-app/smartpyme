@@ -108,14 +108,14 @@
                         <tr [ngClass]="{'table-light': producto.seleccionado}">
                             <td (click)="toggleSeleccion(producto)" style="cursor: pointer">
                                 <div class="form-check" (click)="$event.stopPropagation()">
-                                    <input type="checkbox" class="form-check-input" 
-                                           [(ngModel)]="producto.seleccionado" 
+                                    <input type="checkbox" class="form-check-input"
+                                           [(ngModel)]="producto.seleccionado"
                                            (ngModelChange)="actualizarSeleccionados()">
                                 </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px"> 
+                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px">
                                     <span>{{ producto.nombre }}</span>
                                 </div>
                             </td>
@@ -125,18 +125,18 @@
                                 <span class="badge bg-light text-dark">{{ producto.stock_actual }}</span>
                             </td>
                             <td>
-                                <input 
-                                    type="number" 
-                                    class="form-control text-center" 
-                                    [(ngModel)]="producto.stock_nuevo" 
+                                <input
+                                    type="number"
+                                    class="form-control text-center"
+                                    [(ngModel)]="producto.stock_nuevo"
                                     (input)="calcularDiferencia(producto)"
                                     min="0"
                                     step="1"
                                     [disabled]="!producto.seleccionado">
                             </td>
                             <td class="text-center">
-                                <span 
-                                    class="badge" 
+                                <span
+                                    class="badge"
                                     [ngClass]="{'bg-success': producto.diferencia > 0, 'bg-danger': producto.diferencia < 0, 'bg-secondary': producto.diferencia == 0}">
                                     {{ producto.diferencia > 0 ? '+' + producto.diferencia : producto.diferencia }}
                                 </span>
@@ -164,10 +164,10 @@
     <div class="modal-body">
         <div class="mb-3">
             <label for="detalle" class="form-label">Descripción del ajuste:</label>
-            <input type="text" class="form-control" [(ngModel)]="ajusteMasivo.detalle" 
+            <input type="text" class="form-control" [(ngModel)]="ajusteMasivo.detalle"
                 placeholder="Ej: Ajuste masivo de inventario" required>
         </div>
-        
+
         <div class="alert alert-info">
             <p class="mb-1"><strong>Resumen de cambios:</strong></p>
             <p class="mb-1">Productos seleccionados: {{ seleccionados.length }}</p>
@@ -224,7 +224,7 @@
         <form #importForm="ngForm">
             <div class="mb-3">
                 <label for="detalle_import" class="form-label">Descripción del ajuste:</label>
-                <input type="text" id="detalle_import" class="form-control" ngModel name="detalle" 
+                <input type="text" id="detalle_import" class="form-control" ngModel name="detalle"
                     placeholder="Ej: Ajuste masivo de inventario" required>
             </div>
             <div class="mb-3">
@@ -245,7 +245,7 @@
                 <small class="text-muted">Solo se aceptan archivos Excel (.xlsx, .xls) o CSV.</small>
             </div>
         </form>
-        
+
         <div class="alert alert-info mt-3">
             <h6 class="mb-2"><i class="fa fa-info-circle"></i> Instrucciones:</h6>
             <ol class="mb-0 ps-3">
@@ -258,7 +258,7 @@
     </div>
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
-        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving" 
+        <button type="button" class="btn btn-primary" [disabled]="!importForm.valid || saving"
         (click)="importarAjustes(fileInput, importForm.value.detalle)">
             @if (!saving) {
                 <span>Importar Ajustes</span>

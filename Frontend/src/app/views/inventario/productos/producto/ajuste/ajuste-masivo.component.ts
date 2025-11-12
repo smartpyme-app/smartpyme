@@ -31,6 +31,7 @@ export class AjusteMasivoComponent implements OnInit {
     
     public productosMap: Map<number, any> = new Map();
     public bodegaSeleccionada: any = null;
+    private tieneShopify: boolean = false;
 
     modalRef!: BsModalRef;
 
@@ -42,6 +43,10 @@ export class AjusteMasivoComponent implements OnInit {
     ) {}
 
     ngOnInit() {
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
+
        // this.initFilters();
         this.loadAll();
 
@@ -121,7 +126,17 @@ export class AjusteMasivoComponent implements OnInit {
 
     public getNombreProducto(idProducto: number): string {
         const producto = this.productosMap.get(idProducto);
-        return producto ? producto.nombre : 'Producto no encontrado';
+        return producto ? this.getNombreCompleto(producto) : 'Producto no encontrado';
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 
     public getDiferenciaClass(diferencia: number): string {

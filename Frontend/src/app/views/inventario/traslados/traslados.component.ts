@@ -33,6 +33,7 @@ export class TrasladosComponent implements OnInit {
     public producto:any = {};
     public bodegaDe:any = {};
     public bodegaPara:any = {};
+    private tieneShopify: boolean = false;
 
     modalRef!: BsModalRef;
 
@@ -41,6 +42,9 @@ export class TrasladosComponent implements OnInit {
     ){}
 
     ngOnInit() {
+        // Cachear verificación de Shopify una sola vez
+        const empresa = this.apiService.auth_user()?.empresa;
+        this.tieneShopify = !!empresa?.shopify_store_url;
 
         this.route.queryParams.subscribe(params => {
             this.filtros = {
@@ -212,6 +216,16 @@ export class TrasladosComponent implements OnInit {
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
+    }
+
+    /**
+     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
+     */
+    getNombreCompleto(producto: any): string {
+        if (this.tieneShopify && producto.nombre_variante) {
+            return `${producto.nombre} ${producto.nombre_variante}`;
+        }
+        return producto.nombre;
     }
 
 }

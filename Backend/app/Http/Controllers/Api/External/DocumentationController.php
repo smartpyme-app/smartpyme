@@ -70,6 +70,10 @@ class DocumentationController extends Controller
                 [
                     "name" => "Inventario",
                     "description" => "Endpoints para consultar información de inventario"
+                ],
+                [
+                    "name" => "Devoluciones",
+                    "description" => "Endpoints para consultar información de devoluciones de ventas"
                 ]
             ],
             "paths" => [
@@ -535,6 +539,223 @@ class DocumentationController extends Controller
                         "responses" => [
                             "200" => [
                                 "description" => "Resumen de inventario obtenido exitosamente"
+                            ]
+                        ]
+                    ]
+                ],
+                "/returns" => [
+                    "get" => [
+                        "tags" => ["Devoluciones"],
+                        "summary" => "Listar devoluciones de ventas",
+                        "description" => "Obtiene una lista paginada de devoluciones con filtros opcionales",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "parameters" => [
+                            [
+                                "name" => "fecha_inicio",
+                                "in" => "query",
+                                "description" => "Fecha de inicio (YYYY-MM-DD)",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "string",
+                                    "format" => "date",
+                                    "example" => "2024-01-01"
+                                ]
+                            ],
+                            [
+                                "name" => "fecha_fin",
+                                "in" => "query",
+                                "description" => "Fecha de fin (YYYY-MM-DD)",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "string",
+                                    "format" => "date",
+                                    "example" => "2024-12-31"
+                                ]
+                            ],
+                            [
+                                "name" => "id_venta",
+                                "in" => "query",
+                                "description" => "ID de la venta original",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "integer",
+                                    "example" => 123
+                                ]
+                            ],
+                            [
+                                "name" => "page",
+                                "in" => "query",
+                                "description" => "Número de página",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "integer",
+                                    "minimum" => 1,
+                                    "default" => 1,
+                                    "example" => 1
+                                ]
+                            ],
+                            [
+                                "name" => "per_page",
+                                "in" => "query",
+                                "description" => "Registros por página",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "integer",
+                                    "minimum" => 1,
+                                    "maximum" => 200,
+                                    "default" => 100,
+                                    "example" => 100
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Lista de devoluciones obtenida exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => [
+                                                    "type" => "array",
+                                                    "items" => [
+                                                        "type" => "object",
+                                                        "properties" => [
+                                                            "id" => ["type" => "integer", "example" => 789],
+                                                            "fecha" => ["type" => "string", "format" => "date", "example" => "2024-10-21"],
+                                                            "correlativo" => ["type" => "string", "example" => "DEV-001234"],
+                                                            "total" => ["type" => "number", "example" => 149.50],
+                                                            "id_venta" => ["type" => "integer", "example" => 12345],
+                                                            "nombre_cliente" => ["type" => "string", "example" => "Juan Pérez"]
+                                                        ]
+                                                    ]
+                                                ],
+                                                "pagination" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "current_page" => ["type" => "integer", "example" => 1],
+                                                        "per_page" => ["type" => "integer", "example" => 100],
+                                                        "total" => ["type" => "integer", "example" => 25]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                "/returns/{id}" => [
+                    "get" => [
+                        "tags" => ["Devoluciones"],
+                        "summary" => "Obtener devolución específica",
+                        "description" => "Obtiene los detalles completos de una devolución específica",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "parameters" => [
+                            [
+                                "name" => "id",
+                                "in" => "path",
+                                "description" => "ID de la devolución",
+                                "required" => true,
+                                "schema" => [
+                                    "type" => "integer",
+                                    "example" => 789
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Devolución obtenida exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "id" => ["type" => "integer", "example" => 789],
+                                                        "fecha" => ["type" => "string", "format" => "date", "example" => "2024-10-21"],
+                                                        "total" => ["type" => "number", "example" => 149.50],
+                                                        "observaciones" => ["type" => "string", "example" => "Producto defectuoso"],
+                                                        "detalles" => [
+                                                            "type" => "array",
+                                                            "items" => [
+                                                                "type" => "object",
+                                                                "properties" => [
+                                                                    "nombre_producto" => ["type" => "string", "example" => "Laptop Dell"],
+                                                                    "codigo_producto" => ["type" => "string", "example" => "LAP-DELL-001"],
+                                                                    "marca_producto" => ["type" => "string", "example" => "Dell"],
+                                                                    "cantidad" => ["type" => "number", "example" => 1.0],
+                                                                    "precio" => ["type" => "number", "example" => 750.00],
+                                                                    "total" => ["type" => "number", "example" => 700.00]
+                                                                ]
+                                                            ]
+                                                        ]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                "/returns/summary" => [
+                    "get" => [
+                        "tags" => ["Devoluciones"],
+                        "summary" => "Resumen de devoluciones",
+                        "description" => "Obtiene un resumen estadístico de las devoluciones",
+                        "security" => [["ApiKeyAuth" => []]],
+                        "parameters" => [
+                            [
+                                "name" => "fecha_inicio",
+                                "in" => "query",
+                                "description" => "Fecha de inicio (YYYY-MM-DD)",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "string",
+                                    "format" => "date",
+                                    "example" => "2024-01-01"
+                                ]
+                            ],
+                            [
+                                "name" => "fecha_fin",
+                                "in" => "query",
+                                "description" => "Fecha de fin (YYYY-MM-DD)",
+                                "required" => false,
+                                "schema" => [
+                                    "type" => "string",
+                                    "format" => "date",
+                                    "example" => "2024-12-31"
+                                ]
+                            ]
+                        ],
+                        "responses" => [
+                            "200" => [
+                                "description" => "Resumen de devoluciones obtenido exitosamente",
+                                "content" => [
+                                    "application/json" => [
+                                        "schema" => [
+                                            "type" => "object",
+                                            "properties" => [
+                                                "success" => ["type" => "boolean", "example" => true],
+                                                "data" => [
+                                                    "type" => "object",
+                                                    "properties" => [
+                                                        "total_devoluciones" => ["type" => "integer", "example" => 25],
+                                                        "total_monto" => ["type" => "number", "example" => 5250.75],
+                                                        "promedio_devolucion" => ["type" => "number", "example" => 210.03]
+                                                    ]
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
                             ]
                         ]
                     ]
