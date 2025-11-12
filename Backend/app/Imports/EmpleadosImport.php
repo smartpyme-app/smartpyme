@@ -31,8 +31,8 @@ class EmpleadosImport implements ToCollection, WithHeadingRow
             DB::beginTransaction();
 
             foreach ($rows as $row) {
-                // Saltar fila si está vacía
-                if ($this->isEmptyRow($row)) {
+                // Saltar fila si está vacía o es una fila de totales/encabezados
+                if ($this->isEmptyRow($row) || $this->isTotalRow($row) || !$this->tieneDatosValidos($row)) {
                     continue;
                 }
 
@@ -72,6 +72,16 @@ class EmpleadosImport implements ToCollection, WithHeadingRow
         $nombreCompleto = $this->obtenerNombreCompleto($row);
         $codigoEmpleado = $this->obtenerValorColumna($row, ['codigo', 'codigo_empleado', 'codigo empleado'], null);
 
+        // Validar que tenga al menos nombre completo o código válido
+        if (empty($nombreCompleto) || strlen(trim($nombreCompleto)) < 3) {
+            if (empty($codigoEmpleado)) {
+                Log::warning('Fila ignorada: sin nombre completo ni código válido', [
+                    'row' => $row->toArray()
+                ]);
+                return; // Saltar esta fila
+            }
+        }
+
         // Buscar empleado existente
         $empleado = $this->buscarEmpleado($nombreCompleto, $codigoEmpleado);
 
@@ -80,9 +90,17 @@ class EmpleadosImport implements ToCollection, WithHeadingRow
             $this->actualizarEmpleado($empleado, $row);
             $this->empleadosActualizados++;
         } else {
-            // Crear nuevo empleado
-            $this->crearEmpleadoDesdeExcel($row, $nombreCompleto, $codigoEmpleado);
-            $this->empleadosCreados++;
+            // Crear nuevo empleado solo si tiene datos válidos
+            if ($this->tieneDatosMinimosParaCrear($row, $nombreCompleto, $codigoEmpleado)) {
+                $this->crearEmpleadoDesdeExcel($row, $nombreCompleto, $codigoEmpleado);
+                $this->empleadosCreados++;
+            } else {
+                Log::warning('Fila ignorada: datos insuficientes para crear empleado', [
+                    'nombre' => $nombreCompleto,
+                    'codigo' => $codigoEmpleado,
+                    'row' => $row->toArray()
+                ]);
+            }
         }
     }
 
@@ -397,6 +415,86 @@ class EmpleadosImport implements ToCollection, WithHeadingRow
             return !empty(trim((string)$value));
         });
         return empty($filtered);
+    }
+
+    protected function isTotalRow($row)
+    {
+        $nombreCompleto = $this->obtenerNombreCompleto($row);
+        $codigo = $this->obtenerValorColumna($row, ['codigo', 'codigo_empleado', 'codigo empleado'], '');
+        
+        // Detectar filas de totales
+        $nombreUpper = strtoupper(trim($nombreCompleto));
+        $codigoUpper = strtoupper(trim($codigo));
+        
+        if ($nombreUpper === 'TOTAL' || 
+            $nombreUpper === 'TOTALES' || 
+            $codigoUpper === 'TOTAL' ||
+            $codigoUpper === 'TOTALES') {
+            return true;
+        }
+        
+        return false;
+    }
+
+    protected function tieneDatosValidos($row)
+    {
+        $nombreCompleto = $this->obtenerNombreCompleto($row);
+        $codigoEmpleado = $this->obtenerValorColumna($row, ['codigo', 'codigo_empleado', 'codigo empleado'], null);
+        
+        // Debe tener al menos nombre completo válido (mínimo 3 caracteres)
+        $tieneNombre = !empty($nombreCompleto) && strlen(trim($nombreCompleto)) >= 3;
+        
+        // Validar que el nombre no sea solo espacios
+        if ($tieneNombre) {
+            $nombreSinEspacios = preg_replace('/\s+/', '', $nombreCompleto);
+            if (strlen($nombreSinEspacios) < 3) {
+                $tieneNombre = false;
+            }
+        }
+        
+        // Si no tiene nombre válido, verificar código
+        if (!$tieneNombre) {
+            if (empty($codigoEmpleado) || strlen(trim($codigoEmpleado)) < 2) {
+                return false;
+            }
+            
+            // Si el código es solo numérico y corto (01, 02, etc.), es probablemente una fila vacía
+            $codigoLimpio = preg_replace('/[^0-9A-Za-z]/', '', $codigoEmpleado);
+            if (is_numeric($codigoLimpio) && strlen($codigoLimpio) <= 2) {
+                // Verificar si tiene otros datos importantes
+                $dui = $this->obtenerValorColumna($row, ['documento_de_identidad', 'documento identidad', 'dui'], null);
+                $email = $this->obtenerValorColumna($row, ['correo', 'email'], null);
+                $salario = $this->obtenerValorColumna($row, ['salario_base', 'salario base'], null);
+                
+                // Si no tiene DUI, email ni salario, probablemente es una fila vacía
+                if (empty($dui) && empty($email) && (empty($salario) || $salario == 0)) {
+                    return false;
+                }
+            }
+        }
+        
+        return $tieneNombre || !empty($codigoEmpleado);
+    }
+
+    protected function tieneDatosMinimosParaCrear($row, $nombreCompleto, $codigoEmpleado)
+    {
+        // Validar que tenga nombre completo válido
+        if (empty($nombreCompleto) || strlen(trim($nombreCompleto)) < 3) {
+            // Si no tiene nombre, debe tener código válido y al menos DUI o algún dato adicional
+            if (empty($codigoEmpleado) || strlen(trim($codigoEmpleado)) < 2) {
+                return false;
+            }
+            
+            // Verificar que tenga al menos un dato adicional (DUI, email, etc.)
+            $dui = $this->obtenerValorColumna($row, ['documento_de_identidad', 'documento identidad', 'dui'], null);
+            $email = $this->obtenerValorColumna($row, ['correo', 'email'], null);
+            
+            if (empty($dui) && empty($email)) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     protected function limpiarMonto($monto)
