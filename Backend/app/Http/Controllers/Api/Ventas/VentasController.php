@@ -445,13 +445,13 @@ class VentasController extends Controller
             ], 403);
         }
 
-        $request->validate([
+        // Validación condicional: id_canal solo es requerido cuando NO es cotización
+        $rules = [
             'fecha'             => 'required',
             'estado'            => 'required|max:255',
             'correlativo'       => 'required|numeric',
             // 'correlativo'       => 'required|numeric|unique:ventas,correlativo,'.$request->id.',id,id_sucursal,'.$request->id_sucursal.',id_documento,'.$request->id_documento,
             'id_documento'      => 'required|max:255',
-            'id_canal'          => 'required|max:255',
             'id_cliente'        => 'required_if:estado,"Pendiente"',
             'detalles'          => 'required',
             'fecha_expiracion'  => 'required_if:cotizacion,1',
@@ -466,22 +466,122 @@ class VentasController extends Controller
             'id_usuario'        => 'required|numeric',
             'id_bodega'         => 'required|numeric',
             'id_sucursal'       => 'required|numeric',
-        ], [
+        ];
+
+        // id_canal solo es requerido cuando NO es cotización
+        if (!$request->cotizacion || $request->cotizacion != 1) {
+            $rules['id_canal'] = 'required|max:255';
+        }
+
+        $request->validate($rules, [
             'detalles.required' => 'Tiene que agregar productos',
             'id_cliente.required_if' => 'El cliente es requerido para los creditos y la facturación.',
             'fecha_expiracion.required_if' => 'La fecha de expiracion es obligatorio cuando es cotización.',
+            'id_canal.required' => 'El campo id canal es obligatorio.',
         ]);
 
         DB::beginTransaction();
 
         try {
 
+            // Si es cotización, guardar en cotizacion_ventas
+            if ($request->cotizacion == 1) {
+                if ($request->id)
+                    $cotizacion = CotizacionVenta::findOrFail($request->id);
+                else
+                    $cotizacion = new CotizacionVenta;
+                
+                // Preparar datos para cotización
+                $data = $request->all();
+                // Mapear campos que pueden tener nombres diferentes
+                $data['aplicar_retencion'] = $request->retencion ?? false;
+                
+                // Asegurar que id_empresa esté establecido
+                if (!isset($data['id_empresa'])) {
+                    $data['id_empresa'] = Auth::user()->id_empresa;
+                }
+                
+                // Excluir campos que no aplican a cotizaciones
+                unset($data['id_canal']);
+                unset($data['cotizacion']); // No se guarda este campo en cotizacion_ventas
+                
+                $cotizacion->fill($data);
 
+                // Manejar correlativo si hay documento
+                if ($request->id_documento) {
+                    $documento = Documento::where('id', $request->id_documento)
+                                ->lockForUpdate()
+                                ->firstOrFail();
+                    $cotizacion->correlativo = $documento->correlativo;
+                    $documento->increment('correlativo');
+                }
+
+                $cotizacion->save();
+
+                // Guardamos los detalles en detalles_cotizacion_ventas
+                foreach ($request->detalles as $det) {
+                    if (isset($det['id']))
+                        $detalle = CotizacionVentaDetalle::findOrFail($det['id']);
+                    else
+                        $detalle = new CotizacionVentaDetalle;
+                    
+                    // Mapear campos del detalle
+                    $detalleData = [
+                        'id_cotizacion_venta' => $cotizacion->id,
+                        'id_producto' => $det['id_producto'],
+                        'cantidad' => $det['cantidad'],
+                        'precio' => $det['precio'],
+                        'total' => $det['total'],
+                        'total_costo' => $det['total_costo'] ?? 0,
+                        'descuento' => $det['descuento'] ?? 0,
+                        'no_sujeta' => $det['no_sujeta'] ?? 0,
+                        'exenta' => $det['exenta'] ?? 0,
+                        'cuenta_a_terceros' => $det['cuenta_a_terceros'] ?? 0,
+                        'subtotal' => $det['subtotal'] ?? $det['total'],
+                        'gravada' => $det['gravada'] ?? 0,
+                        'iva' => $det['iva'] ?? 0,
+                        'descripcion' => $det['descripcion'] ?? $det['nombre_producto'] ?? '',
+                        'costo' => $det['costo'] ?? $det['total_costo'] ?? 0,
+                    ];
+                    
+                    if (isset($det['id_vendedor'])) {
+                        $detalleData['id_vendedor'] = $det['id_vendedor'];
+                    }
+
+                    $detalle->fill($detalleData);
+                    $detalle->save();
+
+                    // Guardar custom fields si existen
+                    if (isset($det['custom_fields']) && is_array($det['custom_fields'])) {
+                        foreach ($det['custom_fields'] as $customField) {
+                            if (isset($customField['custom_field']['id'])) {
+                                ProductCustomField::updateOrCreate(
+                                    [
+                                        'cotizacion_venta_detalle_id' => $detalle->id,
+                                        'custom_field_id' => $customField['custom_field']['id']
+                                    ],
+                                    [
+                                        'custom_field_value_id' => $customField['custom_field_value']['id'] ?? null,
+                                        'valor' => $customField['valor'] ?? null
+                                    ]
+                                );
+                            }
+                        }
+                    }
+                }
+
+                DB::commit();
+                return Response()->json($cotizacion, 200);
+            }
+
+            // Si NO es cotización, guardar en ventas (flujo original)
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
             else
                 $venta = new Venta;
-            $venta->fill($request->all());
+            
+            $data = $request->all();
+            $venta->fill($data);
 
                 $documento = Documento::where('id', $request->id_documento)
                             ->lockForUpdate()
