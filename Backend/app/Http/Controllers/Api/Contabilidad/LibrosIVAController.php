@@ -213,6 +213,10 @@ class LibrosIVAController extends Controller
 
     public function consumidoresLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+            return $alerta;
+        }
+
         $consumidores = new LibroConsumidoresExport();
         $consumidores->filter($request);
 
@@ -390,6 +394,10 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $contribuyentes = new LibroContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -453,6 +461,10 @@ class LibrosIVAController extends Controller
 
     public function anuladosLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $anulados = new LibroAnuladosExport();
         $anulados->filter($request);
 
@@ -665,6 +677,10 @@ class LibrosIVAController extends Controller
 
     public function comprasLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $compras = new LibroComprasExport();
         $compras->filter($request);
 
@@ -775,6 +791,10 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosLibroExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $compras = new LibroSujetosExcluidosExport();
         $compras->filter($request);
 
@@ -849,6 +869,10 @@ class LibrosIVAController extends Controller
     
     public function libroRetencion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $retencion = new LibroRetencion1Export();
         $retencion->filter($request);
 
@@ -858,6 +882,10 @@ class LibrosIVAController extends Controller
 
     public function libroPercepcion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $percepcion = new LibroPercepcion1Export();
         $percepcion->filter($request);
 
