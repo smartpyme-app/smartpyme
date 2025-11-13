@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -18,25 +19,34 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class PresupuestosComponent implements OnInit {
+export class PresupuestosComponent extends BasePaginatedComponent implements OnInit {
 
-    public presupuestos:any = [];
+    public presupuestos: PaginatedResponse<any> = {} as PaginatedResponse;
     public presupuesto:any = {};
     public buscador:any = '';
-    public loading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
     public proyectos:any = [];
     public usuario:any = {};
     public sucursales:any = [];
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.presupuestos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.presupuestos = data;
+    }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
@@ -90,13 +100,7 @@ export class PresupuestosComponent implements OnInit {
         }
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.presupuestos.path + '?page='+ event.page, this.filtros).subscribe(presupuestos => { 
-            this.presupuestos = presupuestos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openFilter(template: TemplateRef<any>) {
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){

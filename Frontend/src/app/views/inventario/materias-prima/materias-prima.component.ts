@@ -6,6 +6,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-materias-prima',
@@ -14,11 +15,10 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class MateriasPrimaComponent implements OnInit {
+export class MateriasPrimaComponent extends BasePaginatedComponent implements OnInit {
 
-    public productos:any = [];
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
-    public loading:boolean = false;
     
     public filtro:any = {};
     public producto:any = {};
@@ -27,9 +27,19 @@ export class MateriasPrimaComponent implements OnInit {
     public categorias:any = [];
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -81,13 +91,7 @@ export class MateriasPrimaComponent implements OnInit {
         window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
     openFilter(template: TemplateRef<any>) {

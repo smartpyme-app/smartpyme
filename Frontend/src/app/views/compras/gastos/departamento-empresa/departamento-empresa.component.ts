@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-departamento-empresa',
@@ -19,28 +20,37 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     
 })
 
-export class DepartamentoEmpresaComponent implements OnInit {
+export class DepartamentoEmpresaComponent extends BasePaginatedComponent implements OnInit {
 
-    public departamentos: any = [];
+    public departamentos: PaginatedResponse<any> = {} as PaginatedResponse;
     public departamento: any = {};
-    public loading: boolean = false;
     public saving: boolean = false;
     public downloading: boolean = false;
 
     public sucursales: any = [];
     public areas: any = [];
-    public filtros: any = {};
+    public override filtros: any = {};
 
     modalRef!: BsModalRef;
 
     @ViewChild('mdepartamento') modalTemplate!: TemplateRef<any>;
 
     constructor(
-        public apiService: ApiService, 
-        private alertService: AlertService,
+        apiService: ApiService, 
+        alertService: AlertService,
         private modalService: BsModalService,
         private router: Router
-    ) {}
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.departamentos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.departamentos = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -182,16 +192,7 @@ export class DepartamentoEmpresaComponent implements OnInit {
         }
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.departamentos.path + '?page=' + event.page, this.filtros).subscribe(departamentos => { 
-            this.departamentos = departamentos;
-            this.loading = false;
-        }, error => {
-            this.alertService.error(error); 
-            this.loading = false;
-        });
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public descargar() {
         this.downloading = true;

@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-ordenes-produccion',
@@ -16,24 +17,33 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class OrdenesProduccionComponent implements OnInit {
-  public ordenes: any = [];
+export class OrdenesProduccionComponent extends BasePaginatedComponent implements OnInit {
+  public ordenes: PaginatedResponse<any> = {} as PaginatedResponse;
   public orden: any = {}
-  public loading: boolean = false;
   public downloading: boolean = false;
 
   public clientes: any = [];
   public usuarios: any = [];
   public asesores: any = [];
-  public filtros: any = {};
+  public override filtros: any = {};
   
   modalRef!: BsModalRef;
 
   constructor(
-    public apiService: ApiService, 
-    private alertService: AlertService,
+    apiService: ApiService, 
+    alertService: AlertService,
     private modalService: BsModalService
-  ) { }
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.ordenes;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.ordenes = data;
+  }
 
   ngOnInit() {
     this.loadAll();
@@ -118,16 +128,7 @@ export class OrdenesProduccionComponent implements OnInit {
     );
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService.paginate(this.ordenes.path + '?page=' + event.page, this.filtros).subscribe(ordenes => {
-      this.ordenes = ordenes;
-      this.loading = false;
-    }, error => { 
-      this.alertService.error(error); 
-      this.loading = false; 
-    });
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public imprimir(orden: any) {
     window.open(this.apiService.baseUrl + '/api/orden-produccion/imprimir/' + orden.id + '?token=' + this.apiService.auth_token());

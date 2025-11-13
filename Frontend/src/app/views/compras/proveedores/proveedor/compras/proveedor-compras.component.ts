@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
@@ -14,17 +15,26 @@ import { ApiService } from '../../../../../services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ProveedorComprasComponent implements OnInit {
+export class ProveedorComprasComponent extends BasePaginatedComponent implements OnInit {
 
 		public proveedor:any = {};
 		public proveedores:any = [];
-		public compras:any = [];
+		public compras: PaginatedResponse<any> = {} as PaginatedResponse;
         public id:any;
 		public token:string = '';
         public filtro:any = {};
 
-		public loading:boolean = false;
-	    constructor(private apiService: ApiService, private alertService: AlertService,  private route: ActivatedRoute, private router: Router){ }
+	    constructor(apiService: ApiService, alertService: AlertService,  private route: ActivatedRoute, private router: Router){
+            super(apiService, alertService);
+        }
+
+        protected getPaginatedData(): PaginatedResponse | null {
+            return this.compras;
+        }
+
+        protected setPaginatedData(data: PaginatedResponse): void {
+            this.compras = data;
+        }
 
 		ngOnInit() {
 			this.token = this.apiService.auth_token();
@@ -73,13 +83,7 @@ export class ProveedorComprasComponent implements OnInit {
             }, error => {this.alertService.error(error); });
         }
 
-	    public setPagination(event:any):void{
-	        this.loading = true;
-	        this.apiService.paginate(this.proveedores.path + '?page='+ event.page).subscribe(proveedores => { 
-	            this.proveedores = proveedores;
-	            this.loading = false;
-	        }, error => {this.alertService.error(error); this.loading = false;});
-	    }
+	    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
 }

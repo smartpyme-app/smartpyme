@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-area-empresa',
@@ -16,12 +17,11 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class AreaEmpresaComponent implements OnInit {
+export class AreaEmpresaComponent extends BasePaginatedComponent implements OnInit {
 
-    public areas: any = [];
+    public areas: PaginatedResponse<any> = {} as PaginatedResponse;
     public area: any = {};
     public departamento: any = {};
-    public loading: boolean = false;
     public saving: boolean = false;
     public savingDepartamento: boolean = false;
     public downloading: boolean = false;
@@ -31,17 +31,27 @@ export class AreaEmpresaComponent implements OnInit {
 
     public sucursales: any = [];
     public departamentos: any = [];
-    public filtros: any = {};
+    public override filtros: any = {};
 
     modalRef!: BsModalRef;
     modalRefDepartamento!: BsModalRef;
 
     constructor(
-        public apiService: ApiService, 
-        private alertService: AlertService,
+        apiService: ApiService, 
+        alertService: AlertService,
         private modalService: BsModalService,
         private route: ActivatedRoute // Agregar ActivatedRoute
-    ) {}
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.areas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.areas = data;
+    }
 
     ngOnInit() {
         // Leer parámetros de la URL
@@ -219,16 +229,7 @@ export class AreaEmpresaComponent implements OnInit {
         }
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.areas.path + '?page=' + event.page, this.filtros).subscribe(areas => { 
-            this.areas = areas;
-            this.loading = false;
-        }, error => {
-            this.alertService.error(error); 
-            this.loading = false;
-        });
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public descargar() {
         this.downloading = true;

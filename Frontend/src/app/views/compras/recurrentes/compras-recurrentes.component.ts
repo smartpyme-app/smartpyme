@@ -8,6 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 declare var $:any;
 
@@ -19,9 +20,9 @@ declare var $:any;
 
 })
 
-export class ComprasRecurrentesComponent implements OnInit {
+export class ComprasRecurrentesComponent extends BasePaginatedComponent implements OnInit {
 
-    public compras:any = [];
+    public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public compra:any = {};
     public formaPagos:any = [];
     public documentos:any = [];
@@ -29,17 +30,26 @@ export class ComprasRecurrentesComponent implements OnInit {
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
 
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.compras;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.compras = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -168,13 +178,7 @@ export class ComprasRecurrentesComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public descargar(){
         this.downloading = true;

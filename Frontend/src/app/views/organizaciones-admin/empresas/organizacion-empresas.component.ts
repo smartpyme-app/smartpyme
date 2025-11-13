@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -16,20 +17,29 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class OrganizacionEmpresasComponent implements OnInit {
+export class OrganizacionEmpresasComponent extends BasePaginatedComponent implements OnInit {
 
-    public empresas:any = [];
+    public empresas: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresasList:any = [];
     public empresa:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.empresas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.empresas = data;
+    }
 
     ngOnInit() {
 
@@ -92,7 +102,7 @@ export class OrganizacionEmpresasComponent implements OnInit {
         this.apiService.store('licencia/empresa', this.empresa).subscribe(empresa => {
             this.loadAll();
             this.saving = false;
-            if(!this.empresas.id){
+            if(!this.empresa.id){
                 this.alertService.success('Empresa agregada', 'La empresa fue añadida exitosamente.');
             }else{
                 this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
@@ -103,13 +113,7 @@ export class OrganizacionEmpresasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.empresas.path + '?page='+ event.page, this.filtros).subscribe(empresas => { 
-            this.empresas = empresas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     openModal(template: TemplateRef<any>, empresa:any) {

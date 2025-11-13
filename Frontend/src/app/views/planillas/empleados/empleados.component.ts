@@ -11,6 +11,7 @@ import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { VerHistorialButtonComponent } from './shared/ver-historial-button.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-empleados',
@@ -19,15 +20,14 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent],
 
 })
-export class EmpleadosComponent implements OnInit {
-  public empleados: any = [];
+export class EmpleadosComponent extends BasePaginatedComponent implements OnInit {
+  public empleados: PaginatedResponse<any> = {} as PaginatedResponse;
   public empleado: any = {};
-  public loading: boolean = false;
   public saving: boolean = false;
 
   public departamentos: any = [];
   public cargos: any = [];
-  public filtros: any = {};
+  public override filtros: any = {};
 
   public datosImportacion = {
     archivo: null as File | null,
@@ -42,10 +42,20 @@ export class EmpleadosComponent implements OnInit {
   
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
+    apiService: ApiService,
+    alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.empleados;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.empleados = data;
+  }
 
   ngOnInit() {
     this.loadEmpleados();
@@ -150,21 +160,7 @@ export class EmpleadosComponent implements OnInit {
     this.loadEmpleados();
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.empleados.path + '?page=' + event.page, this.filtros)
-      .subscribe({
-        next: (empleados) => {
-          this.empleados = empleados;
-          this.loading = false;
-        },
-        error: (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        },
-      });
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openFilter(template: TemplateRef<any>) {
     this.modalRef = this.modalService.show(template);

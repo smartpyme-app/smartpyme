@@ -14,6 +14,7 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 import { of } from 'rxjs';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-ajustes',
@@ -22,15 +23,12 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class AjustesComponent implements OnInit {
+export class AjustesComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
 	public ajustes:any = [];
     public ajuste:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
-
-    public filtros:any = {};
     public productos:any = [];
     public bodegas:any = [];
     public usuarios:any = [];
@@ -42,9 +40,10 @@ export class AjustesComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){
+        super(apiService, alertService);
         this.productosInput$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
@@ -53,6 +52,10 @@ export class AjustesComponent implements OnInit {
             this.productos = productos;
             this.loadingProductos = false;
         });
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarAjustes();
     }
 
     ngOnInit() {
@@ -142,11 +145,7 @@ export class AjustesComponent implements OnInit {
         this.filtrarAjustes();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarAjustes();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public setEstado(ajuste:any){
         this.ajuste = ajuste;

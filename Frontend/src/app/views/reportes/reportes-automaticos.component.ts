@@ -6,6 +6,7 @@ import {
   PipeTransform
 } from '@angular/core';
 import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
@@ -31,18 +32,17 @@ export class ReplacePipe implements PipeTransform {
     imports: [CommonModule, FormsModule],
     
 })
-export class ReportesAutomaticosComponent implements OnInit {
-  public configuraciones: any = [];
+export class ReportesAutomaticosComponent extends BasePaginatedComponent implements OnInit {
+  public configuraciones: PaginatedResponse<any> = {} as PaginatedResponse;
   public configuracionActual: ConfiguracionReporte = crearConfiguracionDefault();
   public configuracionEliminar: ConfiguracionReporte = crearConfiguracionDefault();
   public configReporteActual: ConfiguracionReporte | null = null;
-  public filtros: any = {
+  public override filtros: any = {
     buscador: '',
     paginate: 10,
     orden: 'created_at',
     direccion: 'desc'
   };
-  public loading: boolean = false;
   public saving: boolean = false;
   public enviandoPrueba: boolean = false;
   public eliminando: boolean = false;
@@ -98,10 +98,20 @@ export class ReportesAutomaticosComponent implements OnInit {
   modalRefEliminar!: BsModalRef;
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
+    apiService: ApiService,
+    alertService: AlertService,
     private modalService: BsModalService
-  ) { }
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.configuraciones;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.configuraciones = data;
+  }
 
   ngOnInit() {
     this.loadAll();
@@ -167,21 +177,10 @@ export class ReportesAutomaticosComponent implements OnInit {
     this.loadAll();
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.configuraciones.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        (configuraciones) => {
-          this.configuraciones = configuraciones;
-          this.loading = false;
-          this.actualizarTiposReporteActivos();
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
+  // setPagination() ahora se hereda de BasePaginatedComponent
+  
+  protected override onPaginateSuccess(response: PaginatedResponse): void {
+    this.actualizarTiposReporteActivos();
   }
 
   public formatHora(hora: string): string {

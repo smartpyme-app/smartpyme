@@ -8,6 +8,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-productos-consignas',
@@ -16,23 +17,32 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent],
     
 })
-export class ProductosConsignasComponent implements OnInit {
+export class ProductosConsignasComponent extends BasePaginatedComponent implements OnInit {
 
-    public productos:any = [];
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
-    public loading:boolean = false;
     public downloading:boolean = false;
     
-    public filtros:any = {};
+    public override filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -81,13 +91,7 @@ export class ProductosConsignasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public onFiltrar(){
         this.loading = true;

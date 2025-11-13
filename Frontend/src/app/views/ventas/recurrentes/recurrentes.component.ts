@@ -8,6 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -18,11 +19,10 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     
 })
 
-export class RecurrentesComponent implements OnInit {
+export class RecurrentesComponent extends BasePaginatedComponent implements OnInit {
 
-    public ventas:any = [];
+    public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public venta:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
 
@@ -33,14 +33,27 @@ export class RecurrentesComponent implements OnInit {
     public formaPagos:any = [];
     public documentos:any = [];
     public canales:any = [];
-    public filtros:any = {};
     public filtrado:boolean = false;
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        private modalService: BsModalService
+    ){
+        super(apiService, alertService);
+    }
+
+    // Método requerido por BasePaginatedComponent: retorna la referencia
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.ventas;
+    }
+
+    // Método requerido por BasePaginatedComponent: REASIGNA la propiedad (esto es crítico)
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.ventas = data;
+    }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
@@ -142,13 +155,7 @@ export class RecurrentesComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public reemprimir(venta:any){
         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');

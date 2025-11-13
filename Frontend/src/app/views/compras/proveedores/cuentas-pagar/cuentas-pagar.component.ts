@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
@@ -14,13 +15,22 @@ import { ApiService } from '../../../../services/api.service';
     
 })
 
-export class CuentasPagarComponent implements OnInit {
+export class CuentasPagarComponent extends BasePaginatedComponent implements OnInit {
 
-	public pagos:any = [];
+	public pagos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
-    public loading:boolean = false;
 
-    constructor(private apiService: ApiService, private alertService: AlertService){ }
+    constructor(apiService: ApiService, alertService: AlertService){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.pagos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.pagos = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -42,12 +52,6 @@ export class CuentasPagarComponent implements OnInit {
         }
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.pagos.path + '?page='+ event.page).subscribe(pagos => { 
-            this.pagos = pagos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 }

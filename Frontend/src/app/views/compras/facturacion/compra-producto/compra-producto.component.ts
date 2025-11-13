@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { CrearProductoComponent } from '@shared/modals/crear-producto/crear-producto.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -20,7 +21,7 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent],
     
 })
-export class CompraProductoComponent implements OnInit {
+export class CompraProductoComponent extends BasePaginatedComponent implements OnInit {
 
     @Input() compra: any = {};
     @Output() productoSelect = new EventEmitter();
@@ -28,21 +29,30 @@ export class CompraProductoComponent implements OnInit {
     modalCreateProductRef?: BsModalRef;
     searchControl = new FormControl();
 
-    public productos:any = [];
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public categorias:any = [];
     public sucursales:any = [];
     public detalle:any = {};
-    public filtros:any = {};
+    public override filtros:any = {};
     public buscador:any = '';
-    public loading:boolean = false;
     public search:any = '';
     private tieneShopify: boolean = false;
 
     constructor(
-        private apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe,
 
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
+    }
 
     ngOnInit() {
         this.alertService.modal = false;
@@ -59,7 +69,7 @@ export class CompraProductoComponent implements OnInit {
                   this.apiService.getAll(`productos/buscar/${encodeURIComponent(query)}`).pipe(
                     catchError(error => {
                       console.error('Error en la búsqueda:', error);
-                      this.productos = []; // Limpiar resultados en caso de error.
+                      this.productos = {} as PaginatedResponse; // Limpiar resultados en caso de error.
                       this.loading = false; // Asegurar que el estado de carga se actualice.
                       return of([]); // Retornar un observable vacío para que el flujo continúe.
                     })
@@ -67,7 +77,25 @@ export class CompraProductoComponent implements OnInit {
                 )
               )
               .subscribe((results: any[]) => {
-                this.productos = Array.isArray(results) ? results : [];
+                // Si results es un array, lo convertimos a PaginatedResponse
+                if (Array.isArray(results)) {
+                    this.productos = {
+                        data: results,
+                        current_page: 1,
+                        last_page: 1,
+                        per_page: results.length,
+                        total: results.length,
+                        from: 1,
+                        to: results.length,
+                        path: '',
+                        first_page_url: '',
+                        last_page_url: '',
+                        next_page_url: null,
+                        prev_page_url: null
+                    } as PaginatedResponse;
+                } else {
+                    this.productos = results || {} as PaginatedResponse;
+                }
                 this.loading = false;
 
                 if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) {
@@ -108,13 +136,7 @@ export class CompraProductoComponent implements OnInit {
         this.filtrarProductos();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => {
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     public openModal(template: TemplateRef<any>) {
@@ -212,7 +234,7 @@ export class CompraProductoComponent implements OnInit {
 
     onSubmit(){
         console.log(this.detalle);
-        this.productos = [];
+        this.productos = {} as PaginatedResponse;
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){

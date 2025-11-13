@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -17,25 +18,34 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class EmpresasUsuariosComponent implements OnInit {
+export class EmpresasUsuariosComponent extends BasePaginatedComponent implements OnInit {
 
     public usuario:any = {};
     public sucursales:any = [];
     public sucursalesList:any = [];
     public empresas:any = [];
-    public usuarios:any = [];
+    public usuarios: PaginatedResponse<any> = {} as PaginatedResponse;
     public paginacion = [];
-    public loading:boolean = false;
     public saving:boolean = false;
     public filtrado:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
     public roles:any = [];
 
     modalRef?: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.usuarios;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.usuarios = data;
+    }
 
 	ngOnInit() {
         this.filtros.id_empresa = '';
@@ -92,13 +102,7 @@ export class EmpresasUsuariosComponent implements OnInit {
         console.log(this.sucursales);
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.usuarios.path + '?page='+ event.page, this.filtros).subscribe(usuarios => { 
-            this.usuarios = usuarios;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
     
     public mostrarPassword(){
         this.showpassword = !this.showpassword;

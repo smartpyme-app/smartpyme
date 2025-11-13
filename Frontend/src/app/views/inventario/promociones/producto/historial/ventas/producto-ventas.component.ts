@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
 import { CommonModule } from '@angular/common';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 declare var $:any;
 
@@ -12,12 +13,11 @@ declare var $:any;
   templateUrl: './producto-ventas.component.html'
 })
 
-export class ProductoVentasComponent implements OnInit {
+export class ProductoVentasComponent extends BasePaginatedComponent implements OnInit {
 
     public producto_id?:number;
-    public ventas:any = [];
+    public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
-    public loading:boolean = false;
 
     public proveedores:any = [];
     public filtro:any = {};
@@ -25,9 +25,19 @@ export class ProductoVentasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService,  private route: ActivatedRoute, private router: Router,
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.ventas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.ventas = data;
+    }
 
     ngOnInit() {
         this.producto_id = +this.route.snapshot.paramMap.get('id')!;
@@ -81,13 +91,7 @@ export class ProductoVentasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
 

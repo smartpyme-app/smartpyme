@@ -9,6 +9,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-proveedores',
@@ -17,20 +18,29 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
     
 })
-export class ProveedoresComponent implements OnInit {
+export class ProveedoresComponent extends BasePaginatedComponent implements OnInit {
 
-    public proveedores:any = [];
+    public proveedores: PaginatedResponse<any> = {} as PaginatedResponse;
     public proveedor:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
 
-    public filtros:any = {};
+    public override filtros:any = {};
     public producto:any = {};
     public categorias:any = [];
     modalRef!: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.proveedores;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.proveedores = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -94,22 +104,18 @@ export class ProveedoresComponent implements OnInit {
     public delete(cliente:any){
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('cliente/', cliente.id) .subscribe(data => {
-                for (let i = 0; i < this.proveedores.length; i++) { 
-                    if (this.proveedores.data[i].id == data.id )
-                        this.proveedores.data.splice(i, 1);
+                if (this.proveedores.data) {
+                    for (let i = 0; i < this.proveedores.data.length; i++) { 
+                        if (this.proveedores.data[i].id == data.id )
+                            this.proveedores.data.splice(i, 1);
+                    }
                 }
             }, error => {this.alertService.error(error); });
                    
         }
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.proveedores.path + '?page='+ event.page).subscribe(proveedores => { 
-            this.proveedores = proveedores;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     openModal(template: TemplateRef<any>) {
         this.alertService.modal = true;

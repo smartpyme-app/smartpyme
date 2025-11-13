@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-clientes',
@@ -18,20 +19,29 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule],
 
 })
-export class ClientesComponent implements OnInit {
+export class ClientesComponent extends BasePaginatedComponent implements OnInit {
 
-    public clientes:any = [];
+    public clientes: PaginatedResponse<any> = {} as PaginatedResponse;
     public cliente:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
 
-    public filtros:any = {};
+    public override filtros:any = {};
     public producto:any = {};
     public categorias:any = [];
     modalRef!: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.clientes;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.clientes = data;
+    }
 
     ngOnInit() {
 
@@ -106,13 +116,7 @@ export class ClientesComponent implements OnInit {
         }
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.clientes.path + '?page='+ event.page).subscribe(clientes => { 
-            this.clientes = clientes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     openModal(template: TemplateRef<any>) {
         this.alertService.modal = true;

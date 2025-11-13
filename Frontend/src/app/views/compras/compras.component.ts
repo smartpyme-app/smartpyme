@@ -12,6 +12,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 declare var $:any;
 
@@ -23,7 +24,7 @@ declare var $:any;
 
 })
 
-export class ComprasComponent implements OnInit {
+export class ComprasComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public compras:any = [];
     public compra:any = {};
@@ -34,7 +35,6 @@ export class ComprasComponent implements OnInit {
     public proyectos:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public loading:boolean = false;
     public saving:boolean = false;
     public sending:boolean = false;
     public downloadingDetalles:boolean = false;
@@ -51,14 +51,17 @@ export class ComprasComponent implements OnInit {
     public numeros_ids:any = [];
     public downloadingRentabilidad:boolean = false;
 
-
-    public filtros:any = {};
-
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarCompras();
+    }
 
     ngOnInit() {
 
@@ -240,11 +243,7 @@ export class ComprasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarCompras();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);

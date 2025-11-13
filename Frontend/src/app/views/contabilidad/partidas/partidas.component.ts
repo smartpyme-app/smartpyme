@@ -7,6 +7,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -19,12 +20,10 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
     
 })
-export class PartidasComponent implements OnInit {
-  public partidas: any = [];
+export class PartidasComponent extends BasePaginatedComponent implements OnInit {
+  public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
   public partida: any = {};
-  public loading: boolean = false;
   public saving: boolean = false;
-  public filtros: any = {};
   public reporte = {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -59,12 +58,27 @@ export class PartidasComponent implements OnInit {
   private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
+    apiService: ApiService,
+    alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.partidas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.partidas = data as any; // Cast a any para mantener propiedades adicionales
+  }
+
+  protected override onPaginateSuccess(response: PaginatedResponse): void {
+    // Actualizar totales al paginar
+    this.totalesGenerales = (response as any).totales_generales || this.totalesGenerales;
+  }
 
   ngOnInit() {
     this.apiService.getAll('catalogo/list').subscribe(
@@ -261,25 +275,7 @@ export class PartidasComponent implements OnInit {
     );
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.partidas.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        (partidas) => {
-          this.partidas = partidas;
-
-          // NUEVO: Actualizar totales al paginar
-          this.totalesGenerales = partidas.totales_generales || this.totalesGenerales;
-
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public delete(partida: any) {
     Swal.fire({

@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -21,22 +22,31 @@ import Swal from 'sweetalert2';
 
 })
 
-export class ProyectosComponent implements OnInit {
+export class ProyectosComponent extends BasePaginatedComponent implements OnInit {
 
-    public proyectos:any = [];
+    public proyectos: PaginatedResponse<any> = {} as PaginatedResponse;
     public sucursales:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public proyecto:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.proyectos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.proyectos = data;
+    }
 
     ngOnInit() {
         this.apiService.getAll('clientes/list').subscribe(clientes => { 
@@ -115,13 +125,7 @@ export class ProyectosComponent implements OnInit {
         this.onSubmit();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.proyectos.path + '?page='+ event.page, this.filtros).subscribe(proyectos => { 
-            this.proyectos = proyectos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public delete(proyecto:any){
 

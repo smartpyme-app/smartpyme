@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import Swal from 'sweetalert2';
 
@@ -21,25 +22,34 @@ import Swal from 'sweetalert2';
 
 })
 
-export class DevolucionesComprasComponent implements OnInit {
+export class DevolucionesComprasComponent extends BasePaginatedComponent implements OnInit {
 
-    public compras:any = [];
+    public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public compra:any = {};
     public id_compra:any = null;
-    public loading:boolean = false;
     public downloading:boolean = false;
 
     public proveedores:any = [];
     public usuarios:any = [];
     public comprasList:any = [];
     public sucursales:any = [];
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.compras;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.compras = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -124,13 +134,7 @@ export class DevolucionesComprasComponent implements OnInit {
         this.filtrarCompras();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
 

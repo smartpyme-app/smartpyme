@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import { formatDate } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -16,27 +17,36 @@ import { CommonModule } from '@angular/common';
     imports: [CommonModule, FormsModule, PaginationComponent],
     
 })
-export class AdminPagosComponent implements OnInit {
+export class AdminPagosComponent extends BasePaginatedComponent implements OnInit {
 
-    public pagos:any = [];
+    public pagos: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresas:any = [];
     public planes:any = [];
     public pago:any = {};
-    public loading = false;
     public saving = false;
-    public filtros:any = {};
+    public override filtros:any = {};
     public maxDate: string = '';
 
     modalRef!: BsModalRef;
     selectedFile: File | null = null;
 
     constructor( 
-        public apiService: ApiService, 
-        private alertService: AlertService,
+        apiService: ApiService, 
+        alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router,
         private modalService: BsModalService
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.pagos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.pagos = data;
+    }
 
     ngOnInit() {
         this.filtros.estado = '';
@@ -115,13 +125,7 @@ export class AdminPagosComponent implements OnInit {
         this.selectedFile = null;
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.pagos.path + '?page='+ event.page).subscribe(pagos => { 
-            this.pagos = pagos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     public onPlanSelected(planId: string) {
