@@ -35,6 +35,14 @@
   
       <div class="col-md-6 mb-3">
         <div class="d-flex gap-2">
+          <button
+            *ngIf="apiService.canCreate()"
+            (click)="openModal(mimportar)"
+            class="btn btn-default"
+            tooltip="Importar empleados desde archivo de Excel"
+          >
+            <img src="/assets/icons/upload.png" class="icon" />
+          </button>
           <form
             class="d-flex input-group"
             name="form"
@@ -49,6 +57,7 @@
               [(ngModel)]="filtros.buscador"
             />
           </form>
+          
           <button
             tooltip="Filtrar"
             (click)="openFilter(mfilter)"
@@ -252,6 +261,66 @@
             <span *ngIf="!loading">Filtrar</span>
             <span *ngIf="loading">Filtrando...</span>
           </button>
+        </div>
+      </form>
+    </div>
+  </ng-template>
+  
+  <!-- Modal para importar empleados -->
+  <ng-template #mimportar>
+    <div class="modal-header">
+      <h4 class="modal-title">Importar Empleados</h4>
+      <button
+        type="button"
+        class="btn-close"
+        (click)="modalRef.hide()"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="modal-body">
+      <app-notificaciones-container></app-notificaciones-container>
+      <form (ngSubmit)="importarEmpleados()" enctype="multipart/form-data">
+        <div class="row">
+          <!-- Archivo Excel -->
+          <div class="col-12 mb-3">
+            <label class="form-label">Archivo Excel</label>
+            <input
+              type="file"
+              class="form-control"
+              (change)="onFileSelectedImport($event)"
+              accept=".xlsx,.xls"
+              required
+            />
+            <small class="text-muted">
+              Formatos permitidos: Excel (.xlsx, .xls)<br />
+              <a href="javascript:void(0)" (click)="descargarPlantilla()">
+                <i class="fa fa-download"></i> Descargar plantilla de ejemplo
+              </a>
+            </small>
+          </div>
+
+          <div class="col-12">
+            <div class="alert alert-info">
+              <i class="fa fa-info-circle me-2"></i>
+              <strong>Nota:</strong> Puedes usar la misma plantilla de planillas para importar empleados.
+              El sistema leerá automáticamente los datos del empleado e ignorará las columnas de planilla.
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button
+              type="submit"
+              class="btn btn-primary w-100"
+              [disabled]="!datosImportacion.archivo || procesandoImportacion"
+            >
+              <span *ngIf="!procesandoImportacion">
+                <i class="fa fa-upload"></i> Importar Empleados
+              </span>
+              <span *ngIf="procesandoImportacion">
+                <i class="fa fa-spinner fa-spin"></i> Procesando...
+              </span>
+            </button>
+          </div>
         </div>
       </form>
     </div>

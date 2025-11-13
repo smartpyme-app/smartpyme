@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Imports\EmpleadosImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class EmpleadosController extends Controller
 {
@@ -675,6 +677,39 @@ class EmpleadosController extends Controller
             DB::rollback();
             Log::error('Error al subir documento: ' . $e->getMessage());
             return response()->json(['error' => 'Error al subir el documento: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function importar(Request $request)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls',
+        ]);
+
+        try {
+            $importData = [
+                'empresa_id' => auth()->user()->id_empresa,
+                'sucursal_id' => auth()->user()->id_sucursal,
+            ];
+
+            $import = new EmpleadosImport($importData);
+            Excel::import($import, $request->file('archivo'));
+
+            return response()->json([
+                'message' => 'Empleados importados exitosamente',
+                'type' => 'success',
+                'data' => [
+                    'creados' => $import->getEmpleadosCreados(),
+                    'actualizados' => $import->getEmpleadosActualizados(),
+                    'errores' => $import->getErrores(),
+                    'total_errores' => count($import->getErrores())
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error importando empleados: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al importar los empleados: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
