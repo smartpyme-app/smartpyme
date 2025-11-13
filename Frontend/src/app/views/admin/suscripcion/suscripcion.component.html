@@ -408,7 +408,7 @@
                   <option value="" disabled selected>
                     Seleccione un país
                   </option>
-                  @for (pais of paises; track pais.cod) {
+                  @for (pais of paises; track $index) {
                     <option [value]="pais.cod">{{ pais.nombre }}</option>
                   }
                 </select>
@@ -714,7 +714,7 @@
                   #countryCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona país</option>
-                  @for (pais of paises; track pais.cod) {
+                  @for (pais of paises; track $index) {
                     <option [value]="pais.cod">{{ pais.nombre }}</option>
                   }
                 </select>

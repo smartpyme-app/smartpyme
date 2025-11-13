@@ -122,7 +122,7 @@
                             </td>
                           </tr>
                         }
-                        @for (iva of ivas; track iva.num_documento || $index; let i = $index) {
+                        @for (iva of ivas; track $index; let i = $index) {
                           <tr [tooltip]="!iva.nit_nrc ? 'Faltan datos del proveedor' : ''" [ngClass]="{ 'table-danger': !iva.nit_nrc }">
                             <td>{{ i + 1 }}</td>
                             <td>{{iva.fecha | date:'dd/MM/yyyy'}}</td>
