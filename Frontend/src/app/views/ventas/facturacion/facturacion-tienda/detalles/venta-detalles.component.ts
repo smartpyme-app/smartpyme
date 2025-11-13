@@ -48,7 +48,9 @@ export class VentaDetallesComponent implements OnInit {
             detalle.cantidad = 0;
         }
         if(detalle.descuento_porcentaje){
-            detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
+            detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+        }else if(detalle.descuento_monto){
+            detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
         }else{
             detalle.descuento = 0;
         }

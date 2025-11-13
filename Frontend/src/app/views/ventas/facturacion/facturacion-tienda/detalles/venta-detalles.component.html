@@ -87,9 +87,27 @@
                         </select>
                     </td>
                     <td style="width: 150px;">
-                        <div class="input-group">
-                            <span class="input-group-text">%</span>
-                            <input type="number" [(ngModel)]="detalle.descuento_porcentaje" (change)="updateTotal(detalle)" class="form-control" name="descuento_porcentaje">
+                        <div *ngIf="detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en porcentaje" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = false; detalle.descuento = 0; detalle.descuento_monto = 0; updateTotal(detalle)">$</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_monto" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_monto">
+                            </div>
+                        </div>
+                        <div *ngIf="!detalle.descuento_is_monto">
+                            <div class="input-group">
+                                <span tooltip="Cambiar a descuento en monto" tooltipPosition="top" class="input-group-text click" style="cursor: pointer;" (click)="detalle.descuento_is_monto = true; detalle.descuento = 0; detalle.descuento_porcentaje = 0; updateTotal(detalle)">%</span>
+                                <input 
+                                    type="number" 
+                                    [(ngModel)]="detalle.descuento_porcentaje" 
+                                    (change)="updateTotal(detalle)"
+                                    class="form-control" 
+                                    name="descuento_porcentaje">
+                            </div>
                         </div>
                     </td>
                     <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
