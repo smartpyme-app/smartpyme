@@ -32,6 +32,12 @@ class FuncionalidadesSeeder extends Seeder
                 'descripcion' => 'Permite cobrar propina en las ventas del módulo de facturación',
                 'orden' => 3
             ],
+            [
+                'nombre' => 'Contabilidad',
+                'slug' => 'contabilidad',
+                'descripcion' => 'Acceso al módulo de contabilidad',
+                'orden' => 4
+            ],
             //,
             //Se pueden agregar mas funcionalidades con el mismo formato
         ];

@@ -4,6 +4,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { CollapseModule } from 'ngx-bootstrap/collapse';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
@@ -47,13 +48,15 @@ export class SidebarComponent implements OnInit {
     public notificaciones: any = [];
     public authUser: any = {};
     public modules: any = [];
+    public contabilidadHabilitada: boolean = false;
 
     searchControl = new FormControl();
 
     constructor(
         public apiService: ApiService,
         public alertService: AlertService,
-        private router: Router
+        private router: Router,
+        private funcionalidadesService: FuncionalidadesService
     ) {}
 
     ngOnInit() {
@@ -129,6 +132,19 @@ export class SidebarComponent implements OnInit {
         this.loadNotificaciones();
         this.loadModules();
         this.usuarioLogueado();
+        this.verificarAccesoContabilidad();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad').subscribe({
+            next: (acceso) => {
+                this.contabilidadHabilitada = acceso;
+            },
+            error: (error) => {
+                console.error('Error al verificar acceso a contabilidad:', error);
+                this.contabilidadHabilitada = false;
+            }
+        });
     }
 
 
