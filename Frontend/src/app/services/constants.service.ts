@@ -21,7 +21,7 @@ export class ConstantsService {
   loadConstants(): Observable<any> {
     return this.http.get(`${this.apiUrl}constants`).pipe(
       tap((constants) => {
-        console.log('Constants loaded from API:', constants);
+        // console.log('Constants loaded from API:', constants);
         this.constantsSubject.next(constants);
         this.saveConstantsToLocalStorage(constants);
       })
