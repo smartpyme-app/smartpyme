@@ -44,23 +44,23 @@ class PlanillasController extends Controller
             ->where('id_empresa', auth()->user()->id_empresa)
             ->where('id_sucursal', auth()->user()->id_sucursal);
 
-        if ($request->has('anio') && $request->anio !== null) {
+        if ($request->filled('anio')) {
             $query->where('anio', $request->anio);
         }
 
-        if ($request->has('mes') && $request->mes !== null) {
+        if ($request->filled('mes')) {
             $query->where('mes', $request->mes);
         }
 
-        if ($request->has('estado') && $request->estado !== null) {
+        if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
 
-        if ($request->has('tipo_planilla') && $request->tipo_planilla !== null) {
+        if ($request->filled('tipo_planilla')) {
             $query->where('tipo_planilla', $request->tipo_planilla);
         }
 
-        if ($request->has('buscador')) {
+        if ($request->filled('buscador')) {
             $busqueda = $request->buscador;
             $query->whereHas('detalles.empleado', function ($q) use ($busqueda) {
                 $q->where('nombres', 'LIKE', "%$busqueda%")
