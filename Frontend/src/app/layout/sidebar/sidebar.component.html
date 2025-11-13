@@ -221,7 +221,7 @@
                   </div>
               </li>
           }
-            @if (apiService.hasPermission('contabilidad.ver')) {
+            @if (contabilidadHabilitada && apiService.hasPermission('contabilidad.ver')) {
                 <li class="mb-1">
                     <button (click)="toggleContabilidad()" tooltip="Contabilidad" [adaptivePosition]="false" placement="right" class="btn btn-toggle d-inline-flex align-items-center rounded border-0 py-1" [attr.aria-expanded]="!contabilidadIsCollapsed" aria-controls="collapseBasic">
                         <img src="/assets/icons/edit.png" class="icon me-2">Contabilidad
