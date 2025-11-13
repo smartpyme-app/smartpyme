@@ -59,8 +59,8 @@ class LibrosIVAController extends Controller
 
         if ($ventasPendientes) {
             return response()->json([
-                'message' => 'Existen ventas pendientes de emitirse para el período seleccionado.',
-            ], 409);
+                'message' => 'Existen ventas pendientes de emitirse para el período seleccionado, por favor complete las ventas pendientes emitiendo los documentos.',
+            ], 500);
         }
 
         return null;
