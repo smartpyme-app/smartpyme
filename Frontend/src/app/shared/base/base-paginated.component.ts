@@ -24,6 +24,7 @@ export type { PaginatedResponse };
  * }
  * ```
  */
+
 export abstract class BasePaginatedComponent {
   public loading: boolean = false;
   public filtros: any = {};
