@@ -29,9 +29,42 @@ use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 
 class LibrosIVAController extends Controller
 {
+    private function validarVentasPendientes(Request $request, ?array $documentos = null): ?JsonResponse
+    {
+        if (!$request->filled('inicio') || !$request->filled('fin')) {
+            return null;
+        }
+
+        $ventasPendientes = Venta::query()
+            ->where('estado', '!=', 'Anulada')
+            ->where('cotizacion', 0)
+            ->whereBetween('fecha', [$request->inicio, $request->fin])
+            ->when($request->id_sucursal, function ($query) use ($request) {
+                return $query->where('id_sucursal', $request->id_sucursal);
+            })
+            ->when(!empty($documentos), function ($query) use ($documentos) {
+                $query->whereHas('documento', function ($subQuery) use ($documentos) {
+                    $subQuery->whereIn('nombre', $documentos);
+                });
+            })
+            ->where(function ($query) {
+                $query->whereNull('sello_mh')
+                    ->orWhere('sello_mh', '');
+            })
+            ->exists();
+
+        if ($ventasPendientes) {
+            return response()->json([
+                'message' => 'Existen ventas pendientes de emitirse para el período seleccionado.',
+            ], 409);
+        }
+
+        return null;
+    }
 
     public function consumidores(Request $request)
     {
@@ -86,22 +119,31 @@ class LibrosIVAController extends Controller
                     return trim((string) $venta->correlativo);
                 };
 
+                // Primero identificar exportaciones (sin importar el IVA)
+                $exportaciones = $ventasDia->sum(function ($venta) {
+                    $documentoNombre = optional($venta->documento)->nombre;
+                    return $documentoNombre === 'Factura de exportación'
+                        ? (float) $venta->total
+                        : 0;
+                });
+
+                // Luego clasificar las ventas restantes (excluyendo exportaciones)
                 $ventasExentas = $ventasDia->sum(function ($venta) {
+                    $documentoNombre = optional($venta->documento)->nombre;
+                    // Excluir exportaciones
+                    if ($documentoNombre === 'Factura de exportación') {
+                        return 0;
+                    }
                     return $venta->iva == 0 ? (float) $venta->total : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
-                    if ($venta->documento && $venta->documento->nombre === 'Factura de exportación') {
+                    $documentoNombre = optional($venta->documento)->nombre;
+                    // Excluir exportaciones
+                    if ($documentoNombre === 'Factura de exportación') {
                         return 0;
                     }
-
                     return $venta->iva > 0 ? (float) $venta->total : 0;
-                });
-
-                $exportaciones = $ventasDia->sum(function ($venta) {
-                    return $venta->documento && $venta->documento->nombre === 'Factura de exportación'
-                        ? (float) $venta->total
-                        : 0;
                 });
 
                 $ventasTerceros = $ventasDia->sum(function ($venta) {
@@ -179,6 +221,10 @@ class LibrosIVAController extends Controller
 
     public function consumidoresAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
+            return $alerta;
+        }
+
         $consumidores = new AnexoConsumidoresExport();
         $consumidores->filter($request);
 
@@ -352,6 +398,10 @@ class LibrosIVAController extends Controller
 
     public function contribuyentesAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
+            return $alerta;
+        }
+
         $contribuyentes = new AnexoContribuyentesExport();
         $contribuyentes->filter($request);
 
@@ -411,6 +461,10 @@ class LibrosIVAController extends Controller
 
     public function anuladosAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $anulados = new AnexoAnuladosExport();
         $anulados->filter($request);
 
@@ -619,6 +673,10 @@ class LibrosIVAController extends Controller
 
     public function comprasAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $compras = new AnexoComprasExport();
         $compras->filter($request);
 
@@ -725,6 +783,10 @@ class LibrosIVAController extends Controller
 
     public function comprasSujetosExcluidosAnexoExport(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $compras = new AnexoSujetosExcluidosExport();
         $compras->filter($request);
 
@@ -804,6 +866,10 @@ class LibrosIVAController extends Controller
 
     public function anexoRetencion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $retencion = new AnexoRetencion1Export();
         $retencion->filter($request);
 
@@ -812,6 +878,10 @@ class LibrosIVAController extends Controller
 
     public function anexoPercepcion1Export(Request $request)
     {
+        if ($alerta = $this->validarVentasPendientes($request)) {
+            return $alerta;
+        }
+
         $percepcion = new AnexoPercepcion1Export();
         $percepcion->filter($request);
 

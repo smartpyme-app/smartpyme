@@ -226,7 +226,7 @@ class MHFactura extends Model
                   "tributos" => $tributos,
                   "subTotal" => floatval(number_format($this->venta->sub_total + $this->venta->iva, 2, '.', '')),
                   "ivaRete1" => floatval(number_format($this->venta->iva_retenido, 2, '.', '')),
-                  "reteRenta" => 0,
+                  "reteRenta" => floatval(number_format($this->venta->renta_retenida ?? 0, 2, '.', '')),
                   "montoTotalOperacion" => floatval(number_format($this->venta->total - $this->venta->cuenta_a_terceros + $this->venta->iva_retenido, 2, '.', '')),
                   "totalNoGravado" => floatval(number_format($this->venta->cuenta_a_terceros, 2, '.', '')),
                   "totalPagar" => floatval(number_format($this->venta->total, 2, '.', '')),
@@ -319,7 +319,7 @@ class MHFactura extends Model
 
             if ($this->venta->iva > 0) {
                 // Agregar IVA
-                    $detalle->precio = round($detalle->precio * 1.13, 2);
+                    $detalle->precio = round($detalle->precio * 1.13, 4);
                     $detalle->descuento = round($detalle->descuento * 1.13, 2);
                     $detalle->iva = ($detalle->total * 0.13);
                     $detalle->gravada = ($detalle->cantidad * $detalle->precio) - $detalle->descuento;
@@ -341,7 +341,7 @@ class MHFactura extends Model
                     "codTributo" => $detalle->codTributo,
                     "uniMedida" => $detalle->cod_medida,
                     "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                    "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
                     "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                     "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                     "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
@@ -381,7 +381,7 @@ class MHFactura extends Model
                     "codTributo" => $detalle->codTributo,
                     "uniMedida" => $detalle->cod_medida,
                     "descripcion" => $detalle->nombre_producto,
-                    "precioUni" => floatval(number_format($detalle->precio,2, '.', '')),
+                    "precioUni" => floatval(number_format($detalle->precio,4, '.', '')),
                     "montoDescu" => floatval(number_format($detalle->descuento,2, '.', '')),
                     "ventaNoSuj" => floatval(number_format($detalle->no_sujeta,2, '.', '')),
                     "ventaExenta" => floatval(number_format($detalle->exenta,2, '.', '')),
