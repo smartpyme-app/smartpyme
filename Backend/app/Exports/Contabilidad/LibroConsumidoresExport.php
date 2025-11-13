@@ -11,16 +11,63 @@ use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Auth;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Admin\Empresa;
 
-class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
-{
-    public $request;
-    private $index = 1;
+    class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadings, WithEvents
+    {
+        public $request;
+        private $index = 1;
 
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica habilitada
+     */
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    /**
+     * Filtra ventas según si tienen facturación electrónica o no
+     */
+    private function filtrarVentasPorFacturacionElectronica($ventas)
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            // Con facturación electrónica: solo ventas con sello_mh
+            $ventasSinSello = $ventas->filter(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+
+            if ($ventasSinSello->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin sello al exportar libro consumidores', [
+                    'ventas' => $ventasSinSello->pluck('id'),
+                ]);
+            }
+
+            return $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+        } else {
+            // Sin facturación electrónica: todas las ventas
+            return $ventas;
+        }
+    }
+
+    /**
+     * Obtiene el código de generación o correlativo según facturación electrónica
+     */
+    private function obtenerCodigoGeneracion($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+            return $venta->dte['identificacion']['codigoGeneracion'];
+        }
+        return trim((string) $venta->correlativo);
     }
 
     public function registerEvents(): array
@@ -71,17 +118,10 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
                         ->where('cotizacion', 0)
                         ->get();
 
-        $ventasSinSello = $ventas->filter(function ($venta) {
-            return empty($venta->sello_mh);
-        });
+        // Filtrar ventas según facturación electrónica
+        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
 
-        if ($ventasSinSello->isNotEmpty()) {
-            Log::warning('Se excluyeron ventas sin sello al exportar libro consumidores', [
-                'ventas' => $ventasSinSello->pluck('id'),
-            ]);
-        }
-
-        $filas = $this->generarFilas($ventas);
+        $filas = $this->generarFilas($ventasFiltradas);
 
         return $filas;
         
@@ -119,11 +159,7 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
 
     protected function generarFilas($ventas)
     {
-        $ventasConSello = $ventas->reject(function ($venta) {
-            return empty($venta->sello_mh);
-        });
-
-        $filas = $ventasConSello
+        $filas = $ventas
             ->groupBy(function ($venta) {
                 return Carbon::parse($venta->fecha)->format('Y-m-d');
             })
@@ -133,18 +169,8 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
                 });
 
                 $ventasOrdenadasPorCodigo = $ventasDia->sortBy(function ($venta) {
-                    return $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])
-                        ? $venta->dte['identificacion']['codigoGeneracion']
-                        : trim((string) $venta->correlativo);
+                    return $this->obtenerCodigoGeneracion($venta);
                 });
-
-                $obtenerCodigoGeneracion = function ($venta) {
-                    if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
-                        return $venta->dte['identificacion']['codigoGeneracion'];
-                    }
-
-                    return trim((string) $venta->correlativo);
-                };
 
                 // Primero identificar exportaciones (sin importar el IVA)
                 $exportaciones = $ventasDia->sum(function ($venta) {
@@ -187,8 +213,8 @@ class LibroConsumidoresExport implements FromCollection, WithMapping, WithHeadin
 
                 return [
                     'fecha' => $fecha,
-                    'correlativo_inicial' => $primeraVenta ? $obtenerCodigoGeneracion($primeraVenta) : null,
-                    'correlativo_final' => $ultimaVenta ? $obtenerCodigoGeneracion($ultimaVenta) : null,
+                    'correlativo_inicial' => $primeraVenta ? $this->obtenerCodigoGeneracion($primeraVenta) : null,
+                    'correlativo_final' => $ultimaVenta ? $this->obtenerCodigoGeneracion($ultimaVenta) : null,
                     'ventas_exentas' => round($ventasExentas, 2),
                     'ventas_internas_gravadas' => round($ventasGravadas, 2),
                     'exportaciones' => round($exportaciones, 2),

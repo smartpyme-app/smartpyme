@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
+use App\Models\Admin\Empresa;
 
 class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -18,6 +19,68 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica habilitada
+     */
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    /**
+     * Obtiene la clase de documento (DTE o Impreso)
+     */
+    private function obtenerClaseDocumento($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
+            return '4'; // DTE
+        }
+        return '1'; // Impreso
+    }
+
+    /**
+     * Obtiene el código de generación o correlativo según facturación electrónica
+     */
+    private function obtenerCodigoGeneracion($venta): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            // Para devoluciones
+            if (isset($venta->codigo_generacion) && $venta->codigo_generacion) {
+                return str_replace('-', '', $venta->codigo_generacion);
+            }
+            // Para ventas
+            if ($venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+                return str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']);
+            }
+            // Para devoluciones con DTE
+            $dte = $venta->dte ?? [];
+            if (isset($dte['identificacion']['codigoGeneracion'])) {
+                return str_replace('-', '', $dte['identificacion']['codigoGeneracion']);
+            }
+        }
+        return trim((string) $venta->correlativo);
+    }
+
+    /**
+     * Obtiene la clase de documento para devoluciones también
+     */
+    private function obtenerClaseDocumentoGeneral($item): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            // Verificar si es devolución o venta con sello
+            if (isset($item->sello_mh) && $item->sello_mh) {
+                return '4'; // DTE
+            }
+            // Para devoluciones con DTE
+            $dte = $item->dte ?? [];
+            if (!empty($dte)) {
+                return '4'; // DTE
+            }
+        }
+        return '1'; // Impreso
     }
 
     public function collection()
@@ -81,14 +144,47 @@ class AnexoContribuyentesExport implements FromCollection, WithMapping, WithCust
                 $venta->exenta = $venta->sub_total;
             }
 
+            // Obtener número de control y sello según facturación electrónica
+            $numeroControl = '';
+            $sello = '';
+            if ($this->tieneFacturacionElectronica()) {
+                // Para devoluciones
+                if (isset($venta->numero_control) && $venta->numero_control) {
+                    $numeroControl = str_replace('-', '', $venta->numero_control);
+                }
+                // Para ventas
+                if ($venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
+                    $numeroControl = str_replace('-', '', $venta->dte['identificacion']['numeroControl']);
+                }
+                // Para devoluciones con DTE
+                $dte = $venta->dte ?? [];
+                if (isset($dte['identificacion']['numeroControl'])) {
+                    $numeroControl = str_replace('-', '', $dte['identificacion']['numeroControl']);
+                }
+                
+                // Obtener sello
+                if (isset($venta->dte['sello'])) {
+                    $sello = $venta->dte['sello'];
+                } elseif (isset($venta->sello_mh) && $venta->sello_mh) {
+                    $sello = $venta->sello_mh;
+                }
+            }
+
+            // Según guía de Hacienda:
+            // Para documentos IMPRESOS (sin FE): F = correlativo, G = correlativo
+            // Para documentos DTE (con FE): F = código generación, G = vacío
+            $tieneFE = $this->tieneFacturacionElectronica() && ($venta->sello_mh || !empty($venta->dte ?? []));
+            $correlativo = trim($venta->correlativo);
+            $codigoDoc = $this->obtenerCodigoGeneracion($venta);
+            
             $fields = [
                 \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha sin ceros a la izquierda
-                $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso
+                $this->obtenerClaseDocumentoGeneral($venta), //B Clase DTE o Impreso
                 $tipo, //C Tipo
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['numeroControl'] ?? '') : '', //D Num Resolución
-                $venta->sello_mh ?? '', //E Num Serie
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion'] ?? '') : trim($venta->correlativo), //F Num Documento
-                $venta->sello_mh ? '' : trim($venta->correlativo), //G Número Control Interno
+                $numeroControl, //D Num Resolución (vacío si impreso)
+                $sello, //E Num Serie (vacío si impreso)
+                $codigoDoc, //F Num Documento (código generación si DTE, correlativo si impreso)
+                $tieneFE ? '' : $correlativo, //G Número Control Interno (vacío si DTE, correlativo si impreso)
                 $cliente->ncr ?? $cliente->nit, //H NIT/NRC
                 isset($venta->dte['receptor']) ? $venta->dte['receptor']['nombre'] : $venta->nombre_cliente, //I Nombre
                 number_format($venta->exenta, 2, '.', ''), //J Exentas (formato numérico con 2 decimales)
