@@ -727,7 +727,80 @@ class PlanillasImport implements ToCollection, WithHeadingRow, WithEvents
     protected function limpiarMonto($monto)
     {
         if (empty($monto)) return 0;
-        return (float) preg_replace('/[^0-9.]/', '', $monto);
+        
+        // Guardar valor original para logging
+        $montoOriginal = $monto;
+        
+        // Convertir a string si no lo es
+        $monto = (string) $monto;
+        
+        // Eliminar espacios y caracteres de moneda comunes
+        $monto = trim($monto);
+        $monto = str_replace(['$', '€', '£', ' ', "\t", "\n", "\r"], '', $monto);
+        
+        // Si está vacío después de limpiar, retornar 0
+        if (empty($monto)) return 0;
+        
+        // Detectar si tiene coma y punto para determinar formato
+        $tieneComa = strpos($monto, ',') !== false;
+        $tienePunto = strpos($monto, '.') !== false;
+        
+        if ($tieneComa && $tienePunto) {
+            // Tiene ambos: determinar cuál es separador de miles y cuál decimal
+            $posComa = strpos($monto, ',');
+            $posPunto = strpos($monto, '.');
+            
+            if ($posComa < $posPunto) {
+                // Formato: 4,000.80 (coma para miles, punto para decimales)
+                $monto = str_replace(',', '', $monto);
+            } else {
+                // Formato: 4.000,80 (punto para miles, coma para decimales)
+                $monto = str_replace('.', '', $monto);
+                $monto = str_replace(',', '.', $monto);
+            }
+        } elseif ($tieneComa) {
+            // Solo tiene coma: verificar si es separador de miles o decimal
+            // Si tiene más de 3 dígitos después de la coma, probablemente es decimal
+            $partes = explode(',', $monto);
+            if (count($partes) == 2 && strlen($partes[1]) <= 2) {
+                // Probablemente es decimal (ej: 408,80)
+                $monto = str_replace(',', '.', $monto);
+            } else {
+                // Probablemente es separador de miles (ej: 4,000)
+                $monto = str_replace(',', '', $monto);
+            }
+        } elseif ($tienePunto) {
+            // Solo tiene punto: verificar si es separador de miles o decimal
+            $partes = explode('.', $monto);
+            if (count($partes) == 2 && strlen($partes[1]) <= 2) {
+                // Probablemente es decimal (ej: 408.80)
+                // Ya está bien, no hacer nada
+            } else {
+                // Probablemente es separador de miles (ej: 4.000)
+                $monto = str_replace('.', '', $monto);
+            }
+        }
+        
+        // Eliminar cualquier carácter que no sea número o punto
+        $monto = preg_replace('/[^0-9.]/', '', $monto);
+        
+        // Si está vacío después de limpiar, retornar 0
+        if (empty($monto)) return 0;
+        
+        // Convertir a float y validar
+        $resultado = (float) $monto;
+        
+        // Validar que sea un número válido y positivo
+        if (!is_numeric($resultado) || $resultado < 0) {
+            Log::warning('Valor de monto inválido después de limpiar', [
+                'monto_original' => $montoOriginal,
+                'monto_limpio' => $monto,
+                'resultado' => $resultado
+            ]);
+            return 0;
+        }
+        
+        return $resultado;
     }
 
     protected function isEmptyRow($row)
