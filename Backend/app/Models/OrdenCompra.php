@@ -30,7 +30,7 @@ class OrdenCompra extends Model
         "cobrar_impuestos",
         "cobrar_percepcion",
     );
-    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', "total_orden_compra"];
+    protected $appends = ['nombre_proveedor', 'nombre_usuario', 'nombre_sucursal', "total_orden_compra", "total", "sub_total", "iva", "percepcion"];
     protected static function boot()
     {
         parent::boot();
@@ -107,5 +107,47 @@ class OrdenCompra extends Model
     public function getTotalOrdenCompraAttribute()
     {
         return $this->detalles()->sum('total');
+    }
+
+    public function getSubTotalAttribute()
+    {
+        // Calcular subtotal sumando todos los totales de los detalles
+        // El total de cada detalle ya incluye los descuentos aplicados
+        $subtotal = $this->detalles()->sum('total');
+        
+        return round($subtotal, 2);
+    }
+
+    public function getIvaAttribute()
+    {
+        // Calcular IVA (13% por defecto en El Salvador)
+        // Si la orden tiene cobrar_impuestos, calcular el IVA
+        if ($this->cobrar_impuestos) {
+            $subtotal = $this->sub_total;
+            $iva = $subtotal * 0.13; // 13% de IVA
+            return round($iva, 2);
+        }
+        return 0;
+    }
+
+    public function getTotalAttribute()
+    {
+        // Total = subtotal + IVA + percepción (si aplica)
+        $subtotal = $this->sub_total;
+        $iva = $this->iva;
+        $percepcion = $this->percepcion ?? 0;
+        
+        return round($subtotal + $iva + $percepcion, 2);
+    }
+
+    public function getPercepcionAttribute()
+    {
+        // Calcular percepción (1% si aplica)
+        if ($this->cobrar_percepcion) {
+            $subtotal = $this->sub_total;
+            $percepcion = $subtotal * 0.01; // 1% de percepción
+            return round($percepcion, 2);
+        }
+        return 0;
     }
 }
