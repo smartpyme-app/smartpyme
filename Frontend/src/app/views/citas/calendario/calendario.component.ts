@@ -12,6 +12,7 @@ import rrulePlugin from '@fullcalendar/rrule'
 
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { CrearEventoComponent } from '@shared/modals/crear-evento/crear-evento.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -27,7 +28,7 @@ registerLocaleData(localeEs);
     selector: 'app-calendario',
     templateUrl: './calendario.component.html',
     standalone: true,
-    imports: [CommonModule, FullCalendarModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, FullCalendarModule, FormsModule, NgSelectModule, CrearEventoComponent],
     providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }],
     
 })
@@ -275,39 +276,96 @@ export class CalendarioComponent implements OnInit {
     this.evento.id_empresa = this.apiService.auth_user().id_empresa;
     this.evento.id_usuario = this.apiService.auth_user().id;
     this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
-    this.evento.inicio = moment(arg.dateStr + ' ' + moment().format('HH:mm')).format('YYYY-MM-DD HH:mm:ss');
+    
+    // Formatear la fecha correctamente para datetime-local (YYYY-MM-DDTHH:mm)
+    const fechaClick = moment(arg.dateStr);
+    const horaActual = moment().format('HH:mm');
+    // Formato para el input datetime-local
+    this.evento.inicio = fechaClick.format('YYYY-MM-DD') + 'T' + horaActual;
     this.setTime();
+    
     this.alertService.modal = true;
-    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg' });
+    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg', backdrop: 'static' });
   }
 
 
   handleEventClick(arg: any) {
-    this.evento = arg.event.extendedProps.data;
-    this.alertService.modal = true;
-    this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg p-2' });
+    // Obtener el evento completo desde extendedProps.data
+    const eventoData = arg.event.extendedProps?.data;
+    
+    if (eventoData) {
+      // Si el evento tiene un ID, cargarlo completo desde el backend para asegurar que tenga todos los datos
+      if (eventoData.id) {
+        this.apiService.read('evento/', eventoData.id).subscribe((eventoCompleto: any) => {
+          this.evento = eventoCompleto;
+          // Asegurar que los productos estén inicializados
+          if (!this.evento.productos) {
+            this.evento.productos = [];
+          }
+          this.alertService.modal = true;
+          this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg', backdrop: 'static' });
+        }, error => {
+          // Si falla la carga, usar los datos del evento del calendario
+          this.evento = eventoData;
+          if (!this.evento.productos) {
+            this.evento.productos = [];
+          }
+          this.alertService.modal = true;
+          this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg', backdrop: 'static' });
+        });
+      } else {
+        // Si no tiene ID, usar los datos directamente
+        this.evento = eventoData;
+        if (!this.evento.productos) {
+          this.evento.productos = [];
+        }
+        this.alertService.modal = true;
+        this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg', backdrop: 'static' });
+      }
+    } else {
+      // Si no hay datos en extendedProps, intentar obtenerlos del evento directamente
+      this.evento = {
+        id: arg.event.id,
+        descripcion: arg.event.title,
+        inicio: arg.event.startStr,
+        fin: arg.event.endStr,
+        productos: []
+      };
+      this.alertService.modal = true;
+      this.modalRef = this.modalService.show(this.meventoTemplate, { class: 'modal-lg', backdrop: 'static' });
+    }
   }
 
   setTime() {
+    if (!this.evento.inicio) {
+      return;
+    }
+    
     let fecha = moment(this.evento.inicio);
 
     if (this.evento.duracion == '15 minutos') {
-      this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(15, 'minutes').format('YYYY-MM-DD HH:mm:ss');
     }
     if (this.evento.duracion == '30 minutos') {
-      this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');
     }
     if (this.evento.duracion == '1 hora') {
-      this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(1, 'hour').format('YYYY-MM-DD HH:mm:ss');
     }
     if (this.evento.duracion == '2 horas') {
-      this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(2, 'hours').format('YYYY-MM-DD HH:mm:ss');
     }
     if (this.evento.duracion == '3 horas') {
-      this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(3, 'hours').format('YYYY-MM-DD HH:mm:ss');
     }
     if (this.evento.duracion == '5 horas') {
-      this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm');
+      this.evento.fin = fecha.clone().add(5, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    }
+    if (this.evento.duracion == '8 horas') {
+      this.evento.fin = fecha.clone().add(8, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    }
+    if (this.evento.duracion == '12 horas') {
+      this.evento.fin = fecha.clone().add(12, 'hours').format('YYYY-MM-DD HH:mm:ss');
     }
   }
 
@@ -328,9 +386,22 @@ export class CalendarioComponent implements OnInit {
       }
       this.loadAll();
       this.saving = false;
-      this.modalRef.hide();
+      if (this.modalRef) {
+        this.modalRef.hide();
+      }
       this.alertService.modal = false;
     }, error => { this.alertService.error(error); this.saving = false; });
+  }
+
+  onEventoUpdate() {
+    // Actualizar calendario y emitir evento para que el componente padre también se actualice
+    this.loadAll();
+    this.update.emit();
+    // Cerrar el modal si está abierto
+    if (this.modalRef) {
+      this.modalRef.hide();
+      this.alertService.modal = false;
+    }
   }
   setNowSelection() {
     this.selectedPeriodType = "day";

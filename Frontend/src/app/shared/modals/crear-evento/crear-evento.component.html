@@ -23,13 +23,13 @@
       </label>
       <ng-select name="id_usuario"
                  [(ngModel)]="evento.id_usuario"
-                 class="form-select p-0"
-                 [disabled]="isCitas()">
-        @for (usuario of usuarios; track usuario.id) {
-          <ng-option [value]="usuario.id">
-            {{ usuario.name }}
-          </ng-option>
-        }
+                 [items]="usuarios"
+                 bindValue="id"
+                 bindLabel="name"
+                 placeholder="Seleccione un encargado"
+                 [disabled]="isCitas()"
+                 [clearable]="false"
+                 class="form-select">
       </ng-select>
     </div>
     
@@ -133,7 +133,7 @@
   <div class="row">
     <h5 class="col-6">Productos y servicios</h5>
     <div class="form-group col-md-6">
-      <small class="text-muted mb-2 d-block">El producto se agregará automáticamente al seleccionarlo</small>
+      <small class="text-muted mb-2 d-block">El producto o servicio se agregará automáticamente al seleccionarlo</small>
       <div class="d-flex">
         <app-select-search
           name="id_producto"
@@ -142,7 +142,7 @@
           displayProperty="nombre"
           valueProperty="id"
           [searchFunction]="searchProductos"
-          placeholder="Seleccione un producto"
+          placeholder="Seleccione un producto o servicio"
           cssClass="form-select p-0"
           (selectionChange)="onProductoChange($event)">
         </app-select-search>
