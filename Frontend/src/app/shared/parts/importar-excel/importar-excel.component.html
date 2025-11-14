@@ -1,4 +1,4 @@
-@if (tipo == 'button') {
+@if (tipo == 'button' || !tipo || tipo == '') {
   <button (click)="openModal(importar)" class="btn btn-default tcla-F4" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">
     <img src="/assets/icons/upload.png" class="icon">
   </button>
@@ -6,6 +6,71 @@
 
 @if (tipo == 'text') {
   <a role="button" class="btn-link" (click)="openModal(importar)" tooltip="Importar {{ this.nombre.replace('-', ' ') }} desde Excel">Importar {{ this.nombre.replace('-', ' ') }}</a>
+}
+
+@if (tipo == 'inline' || tipo == 'form') {
+  <!-- Formulario inline para usar dentro de modales -->
+  <div class="import-form-inline">
+    <app-notificaciones-container></app-notificaciones-container>
+    
+    <form #form="ngForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+      <!-- Información y plantilla -->
+      <div class="alert alert-info mb-4">
+        <div class="d-flex align-items-start">
+          <i class="fa fa-info-circle me-2 mt-1"></i>
+          <div>
+            <h6 class="alert-heading mb-2">Instrucciones para importar</h6>
+            <p class="mb-2">
+              Seleccionar un archivo de Excel con el listado de sus {{ this.nombre.replace('-', ' ') }}, debe tener la misma estructura de la plantilla que se comparte a continuación. <br>
+            </p>
+            <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadTemplate()">
+              <i class="fa fa-download me-1"></i>
+              Descargar plantilla Excel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector de archivo -->
+      <div class="mb-4">
+        <label class="form-label fw-bold">
+          <i class="fa fa-file-excel me-2"></i>
+          Seleccionar archivo Excel
+        </label>
+        <input
+          type="file"
+          class="form-control"
+          name="file"
+          (change)="setFile($event)"
+          accept=".xlsx,.xls,.csv"
+          required>
+        <div class="form-text">
+          Formatos soportados: .xlsx, .xls, .csv (Máximo 10MB)
+        </div>
+      </div>
+
+      <!-- Botón de importar -->
+      <div class="d-grid">
+        <button
+          type="submit"
+          class="btn btn-primary btn-block"
+          [disabled]="!form.form.valid || loading">
+          @if (!loading) {
+            <span>
+              <i class="fa fa-upload me-2"></i>
+              Importar
+            </span>
+          }
+          @if (loading) {
+            <span>
+              <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+              Procesando archivo...
+            </span>
+          }
+        </button>
+      </div>
+    </form>
+  </div>
 }
 
 <ng-template #importar>

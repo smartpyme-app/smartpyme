@@ -102,7 +102,7 @@
     <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;"
       aria-label="Close"></button>
   </div>
-  <div class="modal-body">
-    <app-crear-evento [evento]="evento" (update)="loadAll()"></app-crear-evento>
+  <div class="modal-body px-5 py-4">
+    <app-crear-evento [evento]="evento" (update)="onEventoUpdate()"></app-crear-evento>
   </div>
 </ng-template>

@@ -9,19 +9,21 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-proveedores',
     templateUrl: './proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
-    
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent],
+
 })
 export class ProveedoresComponent extends BasePaginatedComponent implements OnInit {
 
     public proveedores: PaginatedResponse<any> = {} as PaginatedResponse;
     public proveedor:any = {};
+    public override loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
 
@@ -64,7 +66,7 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
 
     public filtrarProveedores(){
         this.loading = true;
-        this.apiService.getAll('proveedores', this.filtros).subscribe(proveedores => { 
+        this.apiService.getAll('proveedores', this.filtros).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -105,13 +107,13 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('cliente/', cliente.id) .subscribe(data => {
                 if (this.proveedores.data) {
-                    for (let i = 0; i < this.proveedores.data.length; i++) { 
+                    for (let i = 0; i < this.proveedores.data.length; i++) {
                         if (this.proveedores.data[i].id == data.id )
                             this.proveedores.data.splice(i, 1);
                     }
                 }
             }, error => {this.alertService.error(error); });
-                   
+
         }
     }
 

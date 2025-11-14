@@ -27,13 +27,14 @@ class CotizacionesController extends Controller
     public function index(Request $request)
     {
 
-        $cotizaciones = OrdenCompra::when($request->buscador, function ($query) use ($request) {
-            return $query
-                // ->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
-                ->orwhere('estado', 'like', '%' . $request->buscador . '%')
-                ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
-                ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
-        })
+        $cotizaciones = OrdenCompra::with('detalles')
+            ->when($request->buscador, function ($query) use ($request) {
+                return $query
+                    // ->orwhere('correlativo', 'like', '%'.$request->buscador.'%')
+                    ->orwhere('estado', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('observaciones', 'like', '%' . $request->buscador . '%')
+                    ->orwhere('forma_pago', 'like', '%' . $request->buscador . '%');
+            })
             ->when($request->inicio, function ($query) use ($request) {
                 return $query->whereBetween('fecha', [$request->inicio, $request->fin]);
             })
@@ -64,9 +65,9 @@ class CotizacionesController extends Controller
             ->when($request->tipo_documento, function ($query) use ($request) {
                 return $query->where('tipo_documento', $request->tipo_documento);
             })
-            ->orderBy($request->orden, $request->direccion)
+            ->orderBy($request->orden ?? 'fecha', $request->direccion ?? 'desc')
             ->orderBy('id', 'desc')
-            ->paginate($request->paginate);
+            ->paginate($request->paginate ?? 10);
 
         return Response()->json($cotizaciones, 200);
     }
@@ -132,15 +133,47 @@ class CotizacionesController extends Controller
             $total = $this->calcularTotalOrden($request);
             $authType = $this->determinarTipoAutorizacion($total);
 
+            // Verificar si el usuario está excluido de autorización por rol
             if ($authType) {
-                Log::info("Orden de compra requiere autorización - Total: $" . $total . " - Tipo: " . $authType);
+                $authTypeModel = \App\Models\Authorization\AuthorizationType::where('name', $authType)->first();
+                
+                if ($authTypeModel && $authTypeModel->conditions) {
+                    $excludeRoles = $authTypeModel->conditions['exclude_roles'] ?? [];
+                    $user = Auth::user();
+                    
+                    // Cargar roles del usuario si no están cargados
+                    if (!$user->relationLoaded('roles')) {
+                        $user->load('roles');
+                    }
+                    
+                    // Verificar si el usuario tiene algún rol excluido
+                    $userRoles = $user->roles->pluck('name')->toArray();
+                    $isExcluded = !empty(array_intersect($userRoles, $excludeRoles));
+                    
+                    if ($isExcluded) {
+                        Log::info("Usuario excluido de autorización por rol - Usuario: " . $user->id . " - Roles: " . implode(', ', $userRoles));
+                        // Usuario excluido, continuar sin requerir autorización
+                    } else {
+                        Log::info("Orden de compra requiere autorización - Total: $" . $total . " - Tipo: " . $authType . " - Usuario: " . $user->id . " - Roles: " . implode(', ', $userRoles));
 
-                return response()->json([
-                    'ok' => false,
-                    'requires_authorization' => true,
-                    'authorization_type' => $authType,
-                    'message' => "Esta orden de compra de $" . number_format($total, 2) . " requiere autorización"
-                ], 403);
+                        return response()->json([
+                            'ok' => false,
+                            'requires_authorization' => true,
+                            'authorization_type' => $authType,
+                            'message' => "Esta orden de compra de $" . number_format($total, 2) . " requiere autorización"
+                        ], 403);
+                    }
+                } else {
+                    // Si no hay condiciones definidas, requerir autorización
+                    Log::info("Orden de compra requiere autorización - Total: $" . $total . " - Tipo: " . $authType);
+
+                    return response()->json([
+                        'ok' => false,
+                        'requires_authorization' => true,
+                        'authorization_type' => $authType,
+                        'message' => "Esta orden de compra de $" . number_format($total, 2) . " requiere autorización"
+                    ], 403);
+                }
             }
         }
 
@@ -269,7 +302,14 @@ class CotizacionesController extends Controller
 
     public function generarDoc($id)
     {
-        $compra = OrdenCompra::where('id', $id)->with('detalles', 'proveedor')->firstOrFail();
+        $compra = OrdenCompra::where('id', $id)
+            ->with(['detalles.producto', 'proveedor', 'empresa.currency'])
+            ->firstOrFail();
+
+        // Asegurar que los detalles estén cargados para que los accessors funcionen
+        if (!$compra->relationLoaded('detalles')) {
+            $compra->load('detalles.producto');
+        }
 
         $pdf = PDF::loadView('reportes.facturacion.orden-de-compra', compact('compra'));
         $pdf->setPaper('US Letter', 'portrait');

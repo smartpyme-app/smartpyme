@@ -1,15 +1,17 @@
 <div class="d-flex justify-content-end mb-3">
     <div class="col-lg-6 d-flex gap-2">
-        <form class="d-flex input-group buscador" name="form" autocomplete="off">
-            <div class="input-group">
-                <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
-                <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
-            </div>
-            @if (searchControl.value?.length > 0) {
-              <ul class="list-group opciones">
-                @for (producto of productos; track producto.id || $index) {
-                  <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)">
-                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px">
+        <div class="position-relative" style="flex: 1;">
+            <form class="d-flex input-group buscador" name="form" autocomplete="off">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-rigth-0"><i class="fa fa-search"></i></span>
+                    <input id="search" [formControl]="searchControl" type="search" name="buscador" class="form-control" placeholder="Buscar por nombre o código">
+                </div>
+            </form>
+            @if (searchControl.value?.length > 0 && productos.data?.length > 0) {
+              <ul class="list-group opciones" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto; background-color: #fff; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                @for (producto of productos.data; track producto.id || $index) {
+                  <a href="javascript:void(0);" class="list-group-item d-flex gap-2" style="cursor: pointer;" (click)="selectProducto(producto)">
+                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px" onerror="this.src='{{ apiService.baseUrl }}/img/default.png'">
                     <p class="mb-0">
                       {{ getNombreCompleto(producto) }} <br>
                         <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
@@ -18,7 +20,7 @@
                 }
               </ul>
             }
-        </form>
+        </div>
 
         <button tooltip="Consultad de productos (F6)" (click)="openModal(inventario)" class="btn btn-default tcla-F6">
             <i class="fa fa-search"></i>

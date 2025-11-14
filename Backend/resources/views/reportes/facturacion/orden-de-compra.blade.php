@@ -96,7 +96,9 @@
                 <td>
                     <p class="text-right">Orden de compra #{{ $compra->referencia }}</p>
                     <p class="text-right">Fecha: {{ \Carbon\Carbon::parse($compra->fecha)->format('d/m/Y') }}</p>
-                    <p class="text-right">Válido hasta: {{ \Carbon\Carbon::parse($compra->fecha_expiracion)->format('d/m/Y') }}</p>
+                    @if(isset($compra->fecha_expiracion) && $compra->fecha_expiracion)
+                        <p class="text-right">Válido hasta: {{ \Carbon\Carbon::parse($compra->fecha_expiracion)->format('d/m/Y') }}</p>
+                    @endif
                 </td>
             </tr>
             @if ($compra->nombre_proyecto)
@@ -128,17 +130,18 @@
             @foreach($compra->detalles as $detalle)
             <tr>
                 <td class="border-bottom"> {{ $detalle->nombre_producto  }}</td>
-                <td class="border-bottom"> {{ $detalle->codigo }}</td>
+                <td class="border-bottom"> {{ $detalle->producto->codigo ?? ($detalle->codigo ?? 'N/A') }}</td>
                 <td class="border-bottom text-right"> {{ number_format($detalle->cantidad, 0) }}</td>
-                <td class="border-bottom text-right"> {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->costo , 2) }}</td>
-                <td class="border-bottom text-right"> {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->total, 2) }}</th>
+                <td class="border-bottom text-right"> {{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->costo , 2) }}</td>
+                <td class="border-bottom text-right"> {{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->total, 2) }}</td>
             </tr>
             @if ($detalle->descuento > 0)
             <tr>
                 <td>DESCUENTOS</td>
                 <td></td>
                 <td></td>
-                <td class="text-right">- {{ $compra->empresa->currency->currency_symbol }} {{ number_format($detalle->descuento, 2) }} </th>
+                <td class="text-right">- {{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($detalle->descuento, 2) }}</td>
+                <td></td>
             </tr>
             @endif
             @endforeach
@@ -147,29 +150,29 @@
             <tr>
                 <td colspan="2"></td>
                 <td class="text-right">Sumas</td>
-                <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->sub_total, 2) }}</td>
+                <td class="text-right">{{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($compra->sub_total, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2"></td>
                 <td class="text-right">IVA</td>
-                <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->iva, 2) }}</td>
+                <td class="text-right">{{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($compra->iva, 2) }}</td>
             </tr>
             <tr>
                 <td colspan="2"></td>
                 <td class="text-right">Subtotal</td>
-                <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
+                <td class="text-right">{{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($compra->sub_total + $compra->iva, 2) }}</td>
             </tr>
             @if ($compra->percepcion)
             <tr>
                 <td colspan="2"></td>
                 <td class="text-right">Percepción (1%)</td>
-                <td class="text-right">{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->percepcion, 2) }}</td>
+                <td class="text-right">{{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($compra->percepcion, 2) }}</td>
             </tr>
             @endif
             <tr>
                 <td colspan="2"></td>
                 <td class="text-right"><b>Total</b></td>
-                <td class="text-right"><b>{{ $compra->empresa->currency->currency_symbol }} {{ number_format($compra->total, 2) }}</b></td>
+                <td class="text-right"><b>{{ $compra->empresa->currency->currency_symbol ?? '$' }} {{ number_format($compra->total, 2) }}</b></td>
             </tr>
         </tfoot>
     </table>

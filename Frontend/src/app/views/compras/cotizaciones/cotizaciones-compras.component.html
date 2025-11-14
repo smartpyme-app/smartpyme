@@ -1,10 +1,8 @@
 <section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
   <h2 class="page-heading">Órdenes de compra</h2>
-  @if (apiService.canEditTest('compras.ordenes_compra.crear')) {
-    <button routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }"
-      tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de
-      compra</button>
-  }
+  <button routerLink="/orden-de-compra/crear" [queryParams]="{ cotizacion:1 }"
+    tooltip="Crear orden de compra (F4)" class="btn btn-default tcla-F4"><i class="fa fa-plus"></i> Añadir orden de
+    compra</button>
 </section>
 
 <section class="bg-white p-4 rounded mb-3">
@@ -94,16 +92,14 @@
                         <td>{{compra.nombre_proveedor | truncate:30 }}<a class="float-end d-none"  tooltip="Ver información del proveedor" routerLink="/proveedor/editar/{{compra.id_proveedor}}"><i class="fa fa-edit"></i></a></td>
                         <td>{{compra.referencia ?? '-'}}</td>
                         <td>
-                          <select name="enable" class="form-select w-auto border-0" (ngModelChange)="setEstado(compra)"
-                                  [(ngModel)]="compra.estado"
-                                  disabled="compra.estado == 'Pendiente Autorización'"
-                                  [ngClass]="{'bg-light-warning' : compra?.estado == 'Pendiente' || compra?.estado == 'Pendiente Autorización', 'bg-light-danger' : compra?.estado == 'Anulada', 'bg-light-success' : compra?.estado == 'Aceptada' || compra?.estado == 'Aprobada'}">
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Aceptada">Aceptada</option>
-                            <option value="Anulada">Anulada</option>
-                            <option value="Aprobada">Aprobada</option>
-                            <option value="Pendiente Autorización">Pendiente Autorización</option>
-                          </select>
+                          <span class="badge py-2 text-dark" style="font-size: 0.8rem;" 
+                                [ngClass]="{
+                                  'bg-light-warning' : compra?.estado == 'Pendiente' || compra?.estado == 'Pendiente Autorización',
+                                  'bg-light-danger' : compra?.estado == 'Anulada', 
+                                  'bg-light-success' : compra?.estado == 'Aceptada' || compra?.estado == 'Aprobada'
+                                }">
+                            {{ compra.estado }}
+                          </span>
                         </td>
                         <td class="text-right">{{compra.total | currency:'USD':'symbol':'1.2'}}</td>
                         <td class="text-center">

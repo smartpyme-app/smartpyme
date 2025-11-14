@@ -23,5 +23,7 @@ use App\Http\Controllers\Api\Compras\ComprasController;
     Route::post('/proveedores-empresas/importar',          [ProveedoresController::class, 'importEmpresas']);
     Route::get('/proveedores-personas/exportar',    [ProveedoresController::class, 'exportPersonas']);
     Route::get('/proveedores-empresas/exportar',    [ProveedoresController::class, 'exportEmpresas']);
+    Route::get('/proveedores-personas/plantilla',    [ProveedoresController::class, 'downloadPlantillaPersonas']);
+    Route::get('/proveedores-empresas/plantilla',    [ProveedoresController::class, 'downloadPlantillaEmpresas']);
 
 ?>

@@ -15,6 +15,7 @@ use App\Exports\CotizacionesExport;
 use App\Models\CotizacionVenta;
 use App\Models\Ventas\Clientes\Cliente;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Constants\CotizacionConstants;
 
@@ -140,7 +141,10 @@ class CotizacionesController extends Controller
         else
             $orden = new Cotizacion;
 
-        $orden->fill($request->all());
+        // Excluir id_canal al guardar cotizaciones ya que no aplica
+        $data = $request->all();
+        unset($data['id_canal']);
+        $orden->fill($data);
         $orden->save();
 
         return Response()->json($orden, 200);
@@ -178,7 +182,10 @@ class CotizacionesController extends Controller
         else
             $orden = new Cotizacion;
 
-        $orden->fill($request->all());
+        // Excluir id_canal al guardar cotizaciones ya que no aplica
+        $data = $request->all();
+        unset($data['id_canal']);
+        $orden->fill($data);
         $orden->save();
 
 

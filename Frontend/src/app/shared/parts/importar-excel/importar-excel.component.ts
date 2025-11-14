@@ -5,6 +5,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 interface ImportResponse {
     success: boolean;
@@ -27,7 +28,7 @@ interface ValidationError {
     selector: 'app-importar-excel',
     templateUrl: './importar-excel.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule]
+    imports: [CommonModule, FormsModule, NotificacionesContainerComponent]
 })
 export class ImportarExcelComponent implements OnInit {
 
@@ -111,9 +112,11 @@ export class ImportarExcelComponent implements OnInit {
                     // Manejo específico para importación de clientes
                     if (this.nombre.toLowerCase().includes('clientes')) {
                         if (data && typeof data === 'object' && data.message) {
-                            // Cerrar el modal primero para mostrar la alerta fuera
-                            this.modalRef.hide();
-                            this.alertService.modal = false;
+                            // Cerrar el modal primero para mostrar la alerta fuera (solo si existe)
+                            if (this.modalRef) {
+                                this.modalRef.hide();
+                                this.alertService.modal = false;
+                            }
 
                             // Mostrar mensaje con detalles de procesados y fallidos
                             let mensaje = data.message;
@@ -140,13 +143,21 @@ export class ImportarExcelComponent implements OnInit {
                 // Solo cerrar modal y recargar si no es importación de clientes con mensaje detallado
                 if (!(this.nombre.toLowerCase().includes('clientes') && data && typeof data === 'object' && data.message)) {
                     setTimeout(() => {
-                        this.modalRef.hide();
+                        // Solo cerrar modal si existe (modo button/text)
+                        if (this.modalRef) {
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
+                        }
                         this.loadAll.emit();
-                        this.alertService.modal = false;
                     }, 1000);
                 } else {
                     // Para clientes con mensaje detallado, solo recargar datos
                     setTimeout(() => {
+                        // Solo cerrar modal si existe (modo button/text)
+                        if (this.modalRef) {
+                            this.modalRef.hide();
+                            this.alertService.modal = false;
+                        }
                         this.loadAll.emit();
                     }, 500);
                 }

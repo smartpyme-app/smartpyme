@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 import { SelectSearchComponent } from '@shared/parts/select-search/select-search.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -21,7 +22,7 @@ import { map, catchError } from 'rxjs/operators';
     selector: 'app-crear-evento',
     templateUrl: './crear-evento.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent],
+    imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent, NgSelectModule],
     
 })
 export class CrearEventoComponent implements OnInit, OnChanges {
@@ -96,6 +97,14 @@ export class CrearEventoComponent implements OnInit, OnChanges {
     if (changes['evento'] && changes['evento'].currentValue) {
       const evento = changes['evento'].currentValue;
       console.log('Evento recibido en ngOnChanges:', evento);
+      
+      // Convertir fechas del formato backend (YYYY-MM-DD HH:mm:ss) a datetime-local (YYYY-MM-DDTHH:mm)
+      if (evento.inicio && evento.inicio.includes(' ') && !evento.inicio.includes('T')) {
+        evento.inicio = evento.inicio.replace(' ', 'T').substring(0, 16);
+      }
+      if (evento.fin && evento.fin.includes(' ') && !evento.fin.includes('T')) {
+        evento.fin = evento.fin.replace(' ', 'T').substring(0, 16);
+      }
       
       // Debug productos
       if (evento.productos && evento.productos.length > 0) {
@@ -208,7 +217,25 @@ export class CrearEventoComponent implements OnInit, OnChanges {
 
   public onSubmit() {
     this.saving = true;
-    this.apiService.store('evento', this.evento).subscribe(evento => {
+    
+    // Preparar el evento para enviar, convirtiendo fechas de datetime-local a formato backend
+    const eventoParaEnviar = { ...this.evento };
+    
+    // Convertir inicio de datetime-local (YYYY-MM-DDTHH:mm) a formato backend (YYYY-MM-DD HH:mm:ss)
+    if (eventoParaEnviar.inicio) {
+      if (eventoParaEnviar.inicio.includes('T')) {
+        eventoParaEnviar.inicio = eventoParaEnviar.inicio.replace('T', ' ') + ':00';
+      }
+    }
+    
+    // Convertir fin de datetime-local a formato backend
+    if (eventoParaEnviar.fin) {
+      if (eventoParaEnviar.fin.includes('T')) {
+        eventoParaEnviar.fin = eventoParaEnviar.fin.replace('T', ' ') + ':00';
+      }
+    }
+    
+    this.apiService.store('evento', eventoParaEnviar).subscribe(evento => {
       if (!this.evento.id) {
         this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
       } else {
@@ -358,13 +385,17 @@ export class CrearEventoComponent implements OnInit, OnChanges {
     return `${producto.nombre} - ${producto.precio}`;
   };
 
-  // Búsqueda de productos en servidor
+  // Búsqueda de productos y servicios en servidor
   searchProductos = (term: string): Observable<any[]> => {
     if (!term || term.length < 2) {
       return of([]);
     }
     
-    return this.apiService.getAll(`productos/search?q=${encodeURIComponent(term)}&limit=15`)
+    // Buscar tanto productos como servicios
+    const tipos = ['Producto', 'Servicio'];
+    const tiposParam = tipos.map(t => `tipos[]=${encodeURIComponent(t)}`).join('&');
+    
+    return this.apiService.getAll(`productos/search?q=${encodeURIComponent(term)}&limit=15&${tiposParam}`)
       .pipe(
         map((response: any) => Array.isArray(response) ? response : (response.data || [])),
         catchError(() => of([]))

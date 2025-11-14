@@ -15,6 +15,9 @@ use App\Imports\ClientesEmpresas;
 use App\Exports\ClientesPersonasExport;
 use App\Exports\ClientesEmpresasExport;
 use App\Exports\ClientesExtranjerosExport;
+use App\Exports\ClientesPersonasPlantillaExport;
+use App\Exports\ClientesEmpresasPlantillaExport;
+use App\Exports\ClientesExtranjerosPlantillaExport;
 use App\Imports\ClientesExtranjeros;
 use App\Models\Ventas\Clientes\ContactoCliente;
 use Maatwebsite\Excel\Facades\Excel;
@@ -502,6 +505,27 @@ class ClientesController extends Controller
         $clientes->filter($request);
 
         return Excel::download($clientes, 'clientes-extranjeros.xlsx');
+    }
+
+    public function downloadPlantillaPersonas()
+    {
+        $export = new ClientesPersonasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_clientes-personas.xlsx');
+    }
+
+    public function downloadPlantillaEmpresas()
+    {
+        $export = new ClientesEmpresasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_clientes-empresas.xlsx');
+    }
+
+    public function downloadPlantillaExtranjeros()
+    {
+        $export = new ClientesExtranjerosPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_clientes-extranjeros.xlsx');
     }
 
 

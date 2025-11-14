@@ -11,6 +11,8 @@ use App\Imports\ProveedoresPersonas;
 use App\Imports\ProveedoresEmpresas;
 use App\Exports\ProveedoresPersonasExport;
 use App\Exports\ProveedoresEmpresasExport;
+use App\Exports\ProveedoresPersonasPlantillaExport;
+use App\Exports\ProveedoresEmpresasPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProveedoresController extends Controller
@@ -198,6 +200,20 @@ class ProveedoresController extends Controller
       $proveedores->filter($request);
 
       return Excel::download($proveedores, 'proveedores-empresas.xlsx');
+    }
+
+    public function downloadPlantillaPersonas()
+    {
+        $export = new ProveedoresPersonasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_proveedores-personas.xlsx');
+    }
+
+    public function downloadPlantillaEmpresas()
+    {
+        $export = new ProveedoresEmpresasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_proveedores-empresas.xlsx');
     }
 
 

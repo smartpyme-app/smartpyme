@@ -11,6 +11,7 @@ import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { SumPipe }     from '@pipes/sum.pipe';
+import { FilterPipe }  from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 
@@ -18,7 +19,7 @@ import { AlertService } from '@services/alert.service';
     selector: 'app-compra-producto',
     templateUrl: './compra-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent, SumPipe, FilterPipe],
     
 })
 export class CompraProductoComponent extends BasePaginatedComponent implements OnInit {

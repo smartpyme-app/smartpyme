@@ -152,7 +152,7 @@
     </div>
   </div>
   <div class="modal-body px-5 py-4">
-    <app-crear-evento [evento]="evento" (update)="loadAll(); updateCalendar();"></app-crear-evento>
+    <app-crear-evento [evento]="evento" (update)="onEventoUpdate()"></app-crear-evento>
   </div>
 </ng-template>
 

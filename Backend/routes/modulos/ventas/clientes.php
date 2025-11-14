@@ -42,5 +42,8 @@ use Illuminate\Support\Facades\Route;
     Route::get('/clientes-personas/exportar',    [ClientesController::class, 'exportPersonas']);
     Route::get('/clientes-empresas/exportar',    [ClientesController::class, 'exportEmpresas']);
     Route::get('/clientes-extranjeros/exportar',    [ClientesController::class, 'exportExtranjeros']);
+    Route::get('/clientes-personas/plantilla',    [ClientesController::class, 'downloadPlantillaPersonas']);
+    Route::get('/clientes-empresas/plantilla',    [ClientesController::class, 'downloadPlantillaEmpresas']);
+    Route::get('/clientes-extranjeros/plantilla',    [ClientesController::class, 'downloadPlantillaExtranjeros']);
 
 ?>
