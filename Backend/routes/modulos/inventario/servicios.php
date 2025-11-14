@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Inventario\ServiciosController;
 
     Route::post('/servicios/importar',          [ServiciosController::class, 'import']);
     Route::get('/servicios/exportar',          [ServiciosController::class, 'export']);
+    Route::get('/servicios/plantilla',          [ServiciosController::class, 'downloadPlantilla']);
 
 
 ?>

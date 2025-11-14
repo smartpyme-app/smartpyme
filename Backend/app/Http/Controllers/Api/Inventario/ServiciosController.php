@@ -10,6 +10,7 @@ use App\Models\Inventario\Producto as Servicio;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Exports\ServiciosExport;
+use App\Exports\ServiciosPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\Servicios;
 
@@ -221,6 +222,13 @@ class ServiciosController extends Controller
         $servicios->filter($request);
 
         return Excel::download($servicios, 'servicios.xlsx');
+    }
+
+    public function downloadPlantilla()
+    {
+        $export = new ServiciosPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_servicios.xlsx');
     }
 
 }

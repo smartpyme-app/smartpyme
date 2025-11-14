@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Ventas;
 
 use App\Http\Controllers\Controller;
 use App\Imports\VentasExcelImport;
+use App\Exports\VentasPlantillaExport;
 use App\Models\Admin\Documento;
 use App\Models\Inventario\Inventario;
 use App\Models\Ventas\Detalle;
@@ -65,5 +66,12 @@ class VentasImportController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al importar: ' . $e->getMessage()], 400);
         }
+    }
+
+    public function downloadPlantilla()
+    {
+        $export = new VentasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_ventas.xlsx');
     }
 }

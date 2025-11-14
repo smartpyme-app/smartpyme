@@ -7,6 +7,7 @@ use App\Imports\CatalogoImport;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Imports\Catalogo;
+use App\Exports\CatalogoCuentasPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class CuentasController extends Controller
@@ -219,5 +220,12 @@ class CuentasController extends Controller
                 'errores_adicionales' => method_exists($import, 'getErrores') ? $import->getErrores() : []
             ], 400);
         }
+    }
+
+    public function downloadPlantilla()
+    {
+        $export = new CatalogoCuentasPlantillaExport();
+        // Generar plantilla vacía con solo los encabezados
+        return Excel::download($export, 'plantilla_catalogo-cuentas.xlsx');
     }
 }

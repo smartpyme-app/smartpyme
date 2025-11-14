@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
     Route::delete('/catalogo/cuenta/{id}',      [CuentasController::class, 'delete']);
 
     Route::post('/catalogo-cuentas/importar',   [CuentasController::class, 'importCuentas']);
+    Route::get('/catalogo-cuentas/plantilla',   [CuentasController::class, 'downloadPlantilla']);
 
 
 ?>
