@@ -100,9 +100,6 @@
                             @if (apiService.hasPermission('ventas.canales_venta.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/canales']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/tv.png" class="icon me-2">Canales de venta</a></li>
                             }
-                            @if (apiService.hasPermission('ventas.formas_pago.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/formas-de-pago']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/coins.png" class="icon me-2">Métodos de pago</a></li>
-                            }
                             @if (usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                             }

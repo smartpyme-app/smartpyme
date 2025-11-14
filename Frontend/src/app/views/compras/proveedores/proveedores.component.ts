@@ -9,12 +9,13 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 
 @Component({
     selector: 'app-proveedores',
     templateUrl: './proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent],
     
 })
 export class ProveedoresComponent implements OnInit {
