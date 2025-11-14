@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-admin-planes',
@@ -16,22 +17,23 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class AdminPlanesComponent implements OnInit {
+export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
 
     public planes:any = [];
     public productos:any = [];
     public plan:any = {};
-    public loading = false;
-    public saving = false;
+    public override loading = false;
+    public override saving = false;
     public filtros:any = {};
 
-    modalRef!: BsModalRef;
-
   	constructor( 
-  	    public apiService: ApiService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-  	) { }
+  	    public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+  	    private route: ActivatedRoute, private router: Router
+  	) {
+        super(modalManager, alertService);
+    }
 
   	ngOnInit() {
         this.filtros.estado = '';
@@ -52,7 +54,7 @@ export class AdminPlanesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    openModal(template: TemplateRef<any>, plan:any) {
+    public override openModal(template: TemplateRef<any>, plan:any) {
         this.plan = plan;
         if(!this.plan.id){
             this.plan.activo = 1;
@@ -64,13 +66,7 @@ export class AdminPlanesComponent implements OnInit {
             }, error => {this.alertService.error(error);});
         }
 
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
-    }
-
-    closeModal(){
-        this.modalRef.hide();
-        this.alertService.modal = false;
+        super.openModal(template);
     }
 
     public delete(id:number) {
@@ -97,8 +93,9 @@ export class AdminPlanesComponent implements OnInit {
                 }
               this.plan = {};
               this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
+            if (this.modalRef) {
+                this.closeModal();
+            }
           },error => {this.alertService.error(error); this.saving = false; });
       }
 

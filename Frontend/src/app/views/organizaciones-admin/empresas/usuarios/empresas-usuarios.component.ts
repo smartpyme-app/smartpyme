@@ -3,12 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
-
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-empresas-usuarios',
@@ -18,7 +17,7 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class EmpresasUsuariosComponent extends BasePaginatedComponent implements OnInit {
+export class EmpresasUsuariosComponent extends BasePaginatedModalComponent implements OnInit {
 
     public usuario:any = {};
     public sucursales:any = [];
@@ -26,17 +25,18 @@ export class EmpresasUsuariosComponent extends BasePaginatedComponent implements
     public empresas:any = [];
     public usuarios: PaginatedResponse<any> = {} as PaginatedResponse;
     public paginacion = [];
-    public saving:boolean = false;
     public filtrado:boolean = false;
     public override filtros:any = {};
     public showpassword:boolean = false;
     public showpassword2:boolean = false;
     public roles:any = [];
 
-    modalRef?: BsModalRef;
-
-    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
-        super(apiService, alertService);
+    constructor( 
+        apiService:ApiService, 
+        alertService:AlertService, 
+        modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -85,7 +85,7 @@ export class EmpresasUsuariosComponent extends BasePaginatedComponent implements
     }
 
 
-    openModal(template: TemplateRef<any>, usuario:any) {
+    override openModal(template: TemplateRef<any>, usuario:any) {
         this.usuario = usuario;
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
@@ -93,7 +93,7 @@ export class EmpresasUsuariosComponent extends BasePaginatedComponent implements
             this.setSucursales();
         }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openLargeModal(template);
     }
 
     setSucursales(){
@@ -123,7 +123,7 @@ export class EmpresasUsuariosComponent extends BasePaginatedComponent implements
             }else{
                 this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
             }
-            this.modalRef?.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.saving = false; });
 
     }
@@ -156,7 +156,7 @@ export class EmpresasUsuariosComponent extends BasePaginatedComponent implements
         this.apiService.store('admin-usuarios/filtrar', this.filtros).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;;
-            this.modalRef?.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

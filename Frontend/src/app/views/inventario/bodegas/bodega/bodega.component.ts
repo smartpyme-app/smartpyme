@@ -3,13 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-bodega',
@@ -18,7 +17,7 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class BodegaComponent extends BasePaginatedComponent implements OnInit {
+export class BodegaComponent extends BasePaginatedModalComponent implements OnInit {
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public producto:any = {};
@@ -30,14 +29,14 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
     public categorias:any =[];
     public buscador:any = '';
 
-    modalRef!: BsModalRef;
-
     constructor( 
-        apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private route: ActivatedRoute,
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private route: ActivatedRoute,
         private router: Router,
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -62,9 +61,9 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    openModal(template: TemplateRef<any>, producto:any) {
+    override openModal(template: TemplateRef<any>, producto:any) {
         this.producto = producto;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     public onSubmit() {
@@ -73,7 +72,7 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
         this.apiService.store('inventario', this.producto).subscribe(producto => {
             this.loading = false;
             this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error._body); this.loading = false; });
 
 
@@ -99,7 +98,7 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
             this.ajuste.producto_id = bodega.producto_id;
             this.ajuste.bodega_id = bodega.bodega_id;
             this.ajuste.stock_inicial = bodega.stock;
-            this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+            this.openModal(template, null);
         }
         
         public onSubmitAjuste() {
@@ -111,7 +110,7 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
                 this.producto.stock = ajuste.stock_final;
                 this.loading = false;
                 this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
-                this.modalRef.hide();
+                this.closeModal();
             }, error => {this.alertService.error(error._body); this.loading = false; });
 
 
@@ -129,7 +128,7 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
                     this.categorias = categorias;
                 }, error => {this.alertService.error(error); });
             }
-            this.modalRef = this.modalService.show(template);
+            this.openModal(template, null);
         }
 
         public onFiltrar(){
@@ -141,7 +140,7 @@ export class BodegaComponent extends BasePaginatedComponent implements OnInit {
             this.apiService.store('bodega/productos/filtrar', this.filtro).subscribe(productos => { 
                 this.productos = productos;
                 this.loading = false; this.filtrado = true;
-                this.modalRef.hide();
+                this.closeModal();
             }, error => {this.alertService.error(error); this.loading = false;});
 
         }

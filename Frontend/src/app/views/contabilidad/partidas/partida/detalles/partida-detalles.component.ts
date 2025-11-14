@@ -2,11 +2,12 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -17,7 +18,7 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class PartidaDetallesComponent implements OnInit {
+export class PartidaDetallesComponent extends BaseModalComponent implements OnInit {
 
     @Input() partida: any = {};
     public detalle:any = {};
@@ -25,15 +26,17 @@ export class PartidaDetallesComponent implements OnInit {
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
-    modalRef!: BsModalRef;
 
     public buscador:string = '';
-    public loading:boolean = false;
+    public override loading:boolean = false;
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
@@ -62,10 +65,10 @@ export class PartidaDetallesComponent implements OnInit {
         this.update.emit(this.partida);
     }
 
-    public openModal(template: TemplateRef<any>, detalle:any){
+    public override openModal(template: TemplateRef<any>, detalle:any){
         this.detalle = detalle;
         console.log(this.detalle);
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
@@ -75,7 +78,7 @@ export class PartidaDetallesComponent implements OnInit {
         this.update.emit(this.partida);
         this.detalle = {};
 
-        if (this.modalRef) { this.modalRef.hide() }
+        if (this.modalRef) { this.closeModal(); }
     }
 
     // Eliminar detalle

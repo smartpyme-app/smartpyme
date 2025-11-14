@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-area-empresa',
@@ -15,28 +15,28 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearAreaEmpresaComponent implements OnInit {
+export class CrearAreaEmpresaComponent extends BaseModalComponent implements OnInit {
 
     public area: any = {};
     public departamentos: any = [];
     @Input() id_area: any = null;
     @Input() id_departamento_preselected: any = null;
     @Output() update = new EventEmitter();
-    public loading = false;
-    public saving = false;
-
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     constructor( 
-        private apiService: ApiService, 
-        private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
 
         if(!this.departamentos.length){
             this.loading = true;
@@ -75,8 +75,7 @@ export class CrearAreaEmpresaComponent implements OnInit {
             }
         }
         
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public setDepartamento(departamento: any) {
@@ -88,9 +87,8 @@ export class CrearAreaEmpresaComponent implements OnInit {
         this.saving = true;
         this.apiService.store('area-empresa', this.area).subscribe(area => {
             this.update.emit(area);
-            this.modalRef?.hide();
+            this.closeModal();
             this.saving = false;
-            this.alertService.modal = false;
             if(!this.id_area) {
                 this.alertService.success('Área creada', 'El área ha sido agregada exitosamente.');
             } else {

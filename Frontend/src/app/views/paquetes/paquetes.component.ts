@@ -2,13 +2,13 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -21,7 +21,7 @@ import Swal from 'sweetalert2';
     
 })
 
-export class PaquetesComponent extends BasePaginatedComponent implements OnInit {
+export class PaquetesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
     public sucursales:any = [];
@@ -30,15 +30,14 @@ export class PaquetesComponent extends BasePaginatedComponent implements OnInit 
     public usuarios:any = [];
     public paquete:any = {};
     public downloading:boolean = false;
-    public saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -113,18 +112,16 @@ export class PaquetesComponent extends BasePaginatedComponent implements OnInit 
             this.paquetes = paquetes;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
-    public openModal(template: TemplateRef<any>, paquete:any) {
+    override openModal(template: TemplateRef<any>, paquete:any) {
         this.paquete = paquete;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        super.openLargeModal(template);
     }
-
 
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
@@ -133,8 +130,7 @@ export class PaquetesComponent extends BasePaginatedComponent implements OnInit 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        super.openLargeModal(template);
     }
 
 
@@ -197,9 +193,8 @@ export class PaquetesComponent extends BasePaginatedComponent implements OnInit 
             }
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
-            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

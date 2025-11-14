@@ -2,10 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 
 @Component({
@@ -16,21 +17,23 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class FormasDePagoComponent implements OnInit {
+export class FormasDePagoComponent extends BaseModalComponent implements OnInit {
 
     public formas_pago:any = [];
     public forma_pago:any = {};
     public empresa:any = {};
     public bancos:any = [];
-    public loading:boolean = false;
-    public saving:boolean = false;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     public wompiActivo:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.empresa = this.apiService.auth_user().empresa;
@@ -60,14 +63,16 @@ export class FormasDePagoComponent implements OnInit {
         this.apiService.store('forma-de-pago', this.forma_pago).subscribe(forma_pago => {
             this.alertService.success('Formas de pago actualizadas', 'Las formas de pago fueron actualizadas exitosamente.');
             this.saving = false;
-            this.modalRef.hide();
+            if (this.modalRef) {
+                this.closeModal();
+            }
             this.loadAll();
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 
-    public openModal(template: TemplateRef<any>, forma_pago:any){
-        this.forma_pago = forma_pago;
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>, forma_pago?: any){
+        this.forma_pago = forma_pago || {};
+        super.openModal(template);
     }
 
     public onSubmitWompi(){

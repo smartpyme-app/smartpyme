@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-producto-sucursales',
@@ -15,7 +16,7 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule],
     
 })
-export class ProductoSucursalesComponent implements OnInit {
+export class ProductoSucursalesComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
     public sucursales: any = [];
@@ -23,14 +24,16 @@ export class ProductoSucursalesComponent implements OnInit {
     public sucursalSelected: any = {};
     public ajuste:any = {};
     public buscador:string = '';
-    public loading:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();

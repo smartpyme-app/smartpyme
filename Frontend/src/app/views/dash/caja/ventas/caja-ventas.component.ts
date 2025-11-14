@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-caja-ventas',
@@ -16,11 +16,11 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class CajaVentasComponent extends BasePaginatedComponent implements OnInit {
+export class CajaVentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public venta:any = {};
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public sending:boolean = false;
 
     public clientes:any = [];
@@ -33,12 +33,13 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
     public override filtros:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        protected override apiService: ApiService,
+        public mhService: MHService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -92,7 +93,7 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             this.ventas = ventas;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); });
     }
@@ -148,7 +149,7 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
     
     public openFilter(template: TemplateRef<any>) {
@@ -168,11 +169,11 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             this.canales = canales;
         }, error => {this.alertService.error(error); });
         
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargarVentas(){
@@ -219,7 +220,7 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             this.venta = {};
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.alertService.success('Venta guardado', 'La venta fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -228,15 +229,14 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
 
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     // DTE
 
     openDTE(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         if(!this.venta.dte){
             this.emitirDTE();
         }
@@ -268,7 +268,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
-                this.modalRef?.hide();
+                if (this.modalRef) {
+                    this.closeModal();
+                }
             },5000);
         },error => {this.alertService.error(error); this.sending = false; });
     }

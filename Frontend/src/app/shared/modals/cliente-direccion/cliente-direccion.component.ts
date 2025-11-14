@@ -2,10 +2,11 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { ModalManagerService } from '../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-cliente-direccion',
@@ -14,19 +15,20 @@ import { AlertService } from '../../../services/alert.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ClienteDireccionComponent implements OnInit {
+export class ClienteDireccionComponent extends BaseModalComponent implements OnInit {
 
   public direccion: any = {};
   public countries: any = [];
-  public loading = false;
+  public override loading = false;
   @Output() direccionSelect = new EventEmitter();
 
-    modalRef?: BsModalRef;
-
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.apiService.getAll('countries').subscribe(countries => {
@@ -34,8 +36,8 @@ export class ClienteDireccionComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    override openModal(template: TemplateRef<any>) {
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
 
@@ -44,7 +46,7 @@ export class ClienteDireccionComponent implements OnInit {
         this.apiService.store('cliente/direccion', this.direccion).subscribe(direccion => { 
             this.direccionSelect.emit({direccion: this.direccion});
             this.loading = false;
-            this.modalRef?.hide()
+            this.closeModal()
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

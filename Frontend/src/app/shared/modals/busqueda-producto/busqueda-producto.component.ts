@@ -2,10 +2,11 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { ModalManagerService } from '../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-busqueda-producto',
@@ -13,31 +14,32 @@ import { AlertService } from '../../../services/alert.service';
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule]
 })
-export class BusquedaProductoComponent implements OnInit {
+export class BusquedaProductoComponent extends BaseModalComponent implements OnInit {
 
     public detalle: any = {};
     public productos: any = [];
-    public loading = false;
+    public override loading = false;
     public buscador:any = '';
     @Output() productoSelect = new EventEmitter();
 
-    modalRef?: BsModalRef;
-
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.loading = true;
         this.apiService.getAll('productos/list').subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
 
@@ -67,7 +69,7 @@ export class BusquedaProductoComponent implements OnInit {
         this.productoSelect.emit(this.detalle);
         this.productos.data = [];
         this.buscador = '';
-        this.modalRef?.hide();
+        this.closeModal();
     }
 
 }

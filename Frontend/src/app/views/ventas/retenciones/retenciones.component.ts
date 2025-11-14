@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
@@ -19,21 +20,23 @@ import Swal from 'sweetalert2';
     
 })
 
-export class RetencionesComponent implements OnInit {
+export class RetencionesComponent extends BaseModalComponent implements OnInit {
 
     public retenciones:any = [];
     public retencion:any = {};
     public catalogo:any = [];
-    public loading:boolean = false;
-    public saving:boolean = false;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -48,7 +51,7 @@ export class RetencionesComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, retencion:any) {
+    public override openModal(template: TemplateRef<any>, retencion:any) {
         this.retencion = retencion;
         if (!this.retencion.id) {
             this.retencion.id_empresa = this.apiService.auth_user().id_empresa;
@@ -57,7 +60,7 @@ export class RetencionesComponent implements OnInit {
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(retencion:any){
@@ -75,7 +78,9 @@ export class RetencionesComponent implements OnInit {
                 this.alertService.success('Impuesto guardado', 'El retencion fue guardado exitosamente.');
             }
             this.saving = false;
-            this.modalRef.hide();
+            if (this.modalRef) {
+                this.closeModal();
+            }
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

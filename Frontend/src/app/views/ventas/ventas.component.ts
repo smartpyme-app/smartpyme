@@ -2,18 +2,18 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -23,10 +23,10 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule],
 
 })
-export class VentasComponent extends BasePaginatedComponent implements OnInit {
+export class VentasComponent extends BasePaginatedModalComponent implements OnInit {
   public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
   public venta: any = {};
-  public saving: boolean = false;
+  public override saving: boolean = false;
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
@@ -58,19 +58,18 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
     id_empresa: this.apiService.auth_user().empresa.id,
   };
 
-  modalRef!: BsModalRef;
-  modalRefDescargar!: BsModalRef;
-  modalRefAcumulado!: BsModalRef;
-  modalRefPorMarca!: BsModalRef;
+  public modalRefDescargar!: any; // BsModalRef
+  public modalRefAcumulado!: any; // BsModalRef
+  public modalRefPorMarca!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
 
   constructor(
-    apiService: ApiService,
+    protected override apiService: ApiService,
     private mhService: MHService,
-    alertService: AlertService,
-    private modalService: BsModalService
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -115,16 +114,19 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
   }
 
   public abrirModalFiltrosAcumulado(template: TemplateRef<any>) {
-    this.modalRefAcumulado = this.modalService.show(template, {
+    this.modalRefAcumulado = this.modalManager.openModal(template, {
       class: 'modal-lg',
     });
   }
 
   public abrirModalFiltrosPorMarca(template: TemplateRef<any>) {
-    this.modalRefDescargar.hide();
+    if (this.modalRefDescargar) {
+      this.modalManager.closeModal(this.modalRefDescargar);
+      this.modalRefDescargar = undefined;
+    }
 
     setTimeout(() => {
-      this.modalRefPorMarca = this.modalService.show(template, {
+      this.modalRefPorMarca = this.modalManager.openModal(template, {
         class: 'modal-md',
       });
     }, 100);
@@ -186,7 +188,7 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
         this.ventas = ventas;
         this.loading = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
       },
       (error) => {
@@ -306,7 +308,7 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
       );
     }
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public openFilter(template: TemplateRef<any>) {
@@ -378,14 +380,14 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
         }
       );
     }
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   // public openDescargar(template: TemplateRef<any>) {
-  //   this.modalRef = this.modalService.show(template);
+  //   this.openModal(template);
   // }
   public openDescargar(template: TemplateRef<any>) {
-    this.modalRefDescargar = this.modalService.show(template);
+    this.modalRefDescargar = this.modalManager.openModal(template);
   }
 
   public descargarVentas() {
@@ -437,10 +439,12 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
 
         // Cerrar ambos modales
         if (this.modalRefAcumulado) {
-          this.modalRefAcumulado.hide();
+          this.modalManager.closeModal(this.modalRefAcumulado);
+          this.modalRefAcumulado = undefined;
         }
         if (this.modalRefDescargar) {
-          this.modalRefDescargar.hide();
+          this.modalManager.closeModal(this.modalRefDescargar);
+          this.modalRefDescargar = undefined;
         }
 
         this.downloadingVentas = false;
@@ -512,7 +516,7 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
             this.venta = {};
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -532,8 +536,7 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
 
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 
@@ -541,8 +544,7 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
 
     openDTE(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         if(!this.venta.dte){
             this.emitirDTE();
         }
@@ -588,7 +590,9 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
-                this.modalRef?.hide();
+                if (this.modalRef) {
+                    this.closeModal();
+                }
             },5000);
         },error => {this.alertService.error(error); this.sending = false; });
     }
@@ -680,7 +684,9 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
                             this.enviarDTE(this.venta);
                         }
                         setTimeout(()=>{
-                            this.modalRef?.hide();
+                            if (this.modalRef) {
+                                this.closeModal();
+                            }
                         },500);
                         this.consulting = false;
                     },error => {this.alertService.error(error);});

@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
 import { firstValueFrom } from 'rxjs';
 import { NgForm } from '@angular/forms';
@@ -24,12 +25,12 @@ import { Estado } from '../../../models/estado.interface';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class SuscripcionComponent implements OnInit {
+export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   
   public suscripcion: any = {};
   public usuario: any = {};
-  public loading = false;
-  public saving = false;
+  public override loading = false;
+  public override saving = false;
   public showUpdateForm = false;
   public showPaymentForm = false;
   public updatePaymentMethod = false;
@@ -67,17 +68,17 @@ export class SuscripcionComponent implements OnInit {
     motivo_cancelacion: '',
   };
 
-  modalRef?: BsModalRef;
-
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
-    private modalService: BsModalService,
     private sanitizer: DomSanitizer,
     private n1coPaymentService: N1coPaymentService
-  ) {}
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
     this.loadAll();
@@ -178,7 +179,7 @@ export class SuscripcionComponent implements OnInit {
         await this.refreshUserData();
 
         this.alertService.success('Éxito', 'Suscripción pagada exitosamente');
-        this.modalRef?.hide();
+        this.closeModal();
         this.loadAll();
 
         window.location.reload();
@@ -236,7 +237,7 @@ export class SuscripcionComponent implements OnInit {
       id_empresa: usuario.id_empresa,
       motivo_cancelacion: '',
     };
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public onCancelar() {
@@ -252,7 +253,7 @@ export class SuscripcionComponent implements OnInit {
         (response) => {
           this.saving = false;
           if (response.success) {
-            this.modalRef!.hide();
+            this.closeModal();
             this.alertService.success(
               'Suscripción cancelada',
               `Tu suscripción ha sido cancelada exitosamente. Podrás seguir utilizando el sistema hasta ${response.fecha_desactivacion}.`
@@ -327,7 +328,7 @@ export class SuscripcionComponent implements OnInit {
         await this.refreshUserData();
         this.alertService.success('Éxito', 'Suscripción creada exitosamente');
         this.showUpdateForm = false;
-        this.modalRef?.hide();
+        this.closeModal();
         this.loadAll();
         window.location.reload();
       }
@@ -421,7 +422,7 @@ export class SuscripcionComponent implements OnInit {
         await this.refreshUserData();
         this.alertService.success('Éxito', 'Suscripción creada exitosamente');
         this.showUpdateForm = false;
-        this.modalRef?.hide();
+        this.closeModal();
         this.loadAll();
 
         window.location.reload();
@@ -473,7 +474,7 @@ export class SuscripcionComponent implements OnInit {
           'Método de pago actualizado exitosamente'
         );
         this.showUpdateForm = false;
-        this.modalRef?.hide();
+        this.closeModal();
         this.loadAll();
 
         window.location.reload();
@@ -558,9 +559,8 @@ export class SuscripcionComponent implements OnInit {
     );
   }
 
-  openModal(template: TemplateRef<any>) {
-    this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, {
+  override openModal(template: TemplateRef<any>) {
+    super.openModal(template, {
       class: 'modal-md',
       backdrop: 'static',
     });

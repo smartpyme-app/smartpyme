@@ -1,10 +1,10 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
+import { ModalManagerService } from '../../../../../../services/modal-manager.service';
 import { CommonModule } from '@angular/common';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 declare var $:any;
 
@@ -13,7 +13,7 @@ declare var $:any;
   templateUrl: './producto-ventas.component.html'
 })
 
-export class ProductoVentasComponent extends BasePaginatedComponent implements OnInit {
+export class ProductoVentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public producto_id?:number;
     public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -23,12 +23,14 @@ export class ProductoVentasComponent extends BasePaginatedComponent implements O
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService,  private route: ActivatedRoute, private router: Router,
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -108,7 +110,7 @@ export class ProductoVentasComponent extends BasePaginatedComponent implements O
                 this.proveedores = proveedores;
             }, error => {this.alertService.error(error); });
         }
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     onFiltrar(){
@@ -116,7 +118,7 @@ export class ProductoVentasComponent extends BasePaginatedComponent implements O
         this.apiService.store('ventas/filtrar', this.filtro).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

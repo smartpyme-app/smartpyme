@@ -1,17 +1,19 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { Subscription } from 'rxjs';
+import { distinctUntilChanged, skip, debounceTime } from 'rxjs/operators';
 
 @Component({
     selector: 'app-traslados',
@@ -20,11 +22,10 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class TrasladosComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class TrasladosComponent extends BaseFilteredPaginatedModalComponent implements OnInit, OnDestroy {
 
     public traslados:any = [];
     public traslado:any = {};
-    public saving:boolean = false;
     public downloading:boolean = false;
     public productos:any = [];
     public sucursales:any = [];
@@ -32,13 +33,18 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
     public bodegaDe:any = {};
     public bodegaPara:any = {};
     private tieneShopify: boolean = false;
+    private queryParamsSubscription?: Subscription;
+    private isNavigating: boolean = false;
+    private isLoadingProductos: boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -50,25 +56,80 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
         const empresa = this.apiService.auth_user()?.empresa;
         this.tieneShopify = !!empresa?.shopify_store_url;
 
-        this.route.queryParams.subscribe(params => {
-            this.filtros = {
-                search: params['search'] || '',
-                id_bodega_de: +params['id_bodega_de'] || '',
-                id_bodega_para: +params['id_bodega_para'] || '',
-                id_sucursal: +params['id_sucursal'] || '',
-                estado: params['estado'] || '',
-                orden: params['orden'] || 'id',
-                direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
-            };
+        // Inicializar filtros desde query params
+        const params = this.route.snapshot.queryParams;
+        this.filtros = {
+            search: params['search'] || '',
+            id_bodega_de: +params['id_bodega_de'] || '',
+            id_bodega_para: +params['id_bodega_para'] || '',
+            id_sucursal: +params['id_sucursal'] || '',
+            estado: params['estado'] || '',
+            orden: params['orden'] || 'id',
+            direccion: params['direccion'] || 'desc',
+            paginate: params['paginate'] || 10,
+            page: params['page'] || 1,
+        };
 
-            this.filtrarTraslados();
-        });
+        // Cargar datos iniciales
+        this.filtrarTrasladosSinNavegar();
+
+        // Suscribirse a cambios en query params, pero solo cuando NO estamos navegando nosotros mismos
+        this.queryParamsSubscription = this.route.queryParams
+            .pipe(
+                skip(1), // Saltar la primera emisión (valores iniciales)
+                debounceTime(300), // Esperar 300ms antes de procesar cambios
+                distinctUntilChanged((prev, curr) => {
+                    // Comparar solo los valores relevantes
+                    return JSON.stringify({
+                        search: prev['search'] || '',
+                        id_bodega_de: +prev['id_bodega_de'] || '',
+                        id_bodega_para: +prev['id_bodega_para'] || '',
+                        id_sucursal: +prev['id_sucursal'] || '',
+                        estado: prev['estado'] || '',
+                        orden: prev['orden'] || 'id',
+                        direccion: prev['direccion'] || 'desc',
+                        paginate: prev['paginate'] || 10,
+                        page: prev['page'] || 1,
+                    }) === JSON.stringify({
+                        search: curr['search'] || '',
+                        id_bodega_de: +curr['id_bodega_de'] || '',
+                        id_bodega_para: +curr['id_bodega_para'] || '',
+                        id_sucursal: +curr['id_sucursal'] || '',
+                        estado: curr['estado'] || '',
+                        orden: curr['orden'] || 'id',
+                        direccion: curr['direccion'] || 'desc',
+                        paginate: curr['paginate'] || 10,
+                        page: curr['page'] || 1,
+                    });
+                })
+            )
+            .subscribe(params => {
+                if (!this.isNavigating) {
+                    this.filtros = {
+                        search: params['search'] || '',
+                        id_bodega_de: +params['id_bodega_de'] || '',
+                        id_bodega_para: +params['id_bodega_para'] || '',
+                        id_sucursal: +params['id_sucursal'] || '',
+                        estado: params['estado'] || '',
+                        orden: params['orden'] || 'id',
+                        direccion: params['direccion'] || 'desc',
+                        paginate: params['paginate'] || 10,
+                        page: params['page'] || 1,
+                    };
+                    this.filtrarTrasladosSinNavegar();
+                }
+                this.isNavigating = false;
+            });
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
+    }
+
+    ngOnDestroy() {
+        if (this.queryParamsSubscription) {
+            this.queryParamsSubscription.unsubscribe();
+        }
     }
 
     public loadAll() {
@@ -89,16 +150,28 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
     }
 
     public filtrarTraslados(){
+        // Cerrar el modal si está abierto
+        if(this.modalRef){
+            this.closeModal();
+        }
+        this.isNavigating = true;
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
             queryParamsHandling: 'merge', // mantiene otros params si hay
         });
+        // Resetear la bandera después de un pequeño delay
+        setTimeout(() => {
+            this.isNavigating = false;
+        }, 100);
+    }
+
+    private filtrarTrasladosSinNavegar(){
         this.loading = true;
         this.apiService.getAll('traslados', this.filtros).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+        }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setOrden(columna: string) {
@@ -147,7 +220,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
         this.bodegaPara = this.producto?.inventarios.find((item:any) => item.id_bodega == this.traslado.id_bodega);
     }
 
-    public openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.traslado.id_producto = '';
         this.traslado.id_bodega = '';
         this.traslado.id_bodega_de = '';
@@ -161,15 +234,32 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
                 this.productos = productos;
             }, error => {this.alertService.error(error);});
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop:'static'});
+        super.openLargeModal(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('productos/list').subscribe(productos => { 
-            this.productos = productos;
-        }, error => {this.alertService.error(error); });
-        this.modalRef = this.modalService.show(template);
+        // Solo cargar productos si no están cargados y no se está cargando ya
+        if(!this.productos.length && !this.isLoadingProductos){
+            this.isLoadingProductos = true;
+            this.apiService.getAll('productos/list').subscribe({
+                next: (productos) => { 
+                    this.productos = productos;
+                    this.isLoadingProductos = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.isLoadingProductos = false;
+                }
+            });
+        }
+        // Marcar que estamos navegando para evitar que el subscribe procese cambios
+        this.isNavigating = true;
+        // Usar openModal directamente sin pasar por el override que resetea campos
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        // Resetear la bandera después de un pequeño delay para permitir que el modal se abra
+        setTimeout(() => {
+            this.isNavigating = false;
+        }, 100);
     }
 
     public onSubmit() {
@@ -178,7 +268,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
         this.apiService.store('traslado', this.traslado).subscribe(traslado => { 
             this.traslado = {};
             this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
-            this.modalRef.hide();
+            this.closeModal();
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
@@ -189,7 +279,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedComponent implement
         this.apiService.delete('traslado/', id).subscribe(traslado => { 
             this.traslado = {};
             this.alertService.success('Traslado cancelado', 'El traslado fue cancelado exitosamente.');
-            this.modalRef.hide();
+            this.closeModal();
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});

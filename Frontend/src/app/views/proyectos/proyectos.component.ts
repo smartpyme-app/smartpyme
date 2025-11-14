@@ -2,14 +2,14 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -22,22 +22,21 @@ import Swal from 'sweetalert2';
 
 })
 
-export class ProyectosComponent extends BasePaginatedComponent implements OnInit {
+export class ProyectosComponent extends BasePaginatedModalComponent implements OnInit {
 
     public proyectos: PaginatedResponse<any> = {} as PaginatedResponse;
     public sucursales:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public proyecto:any = {};
-    public saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -92,25 +91,22 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
             this.proyectos = proyectos;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
-    public openModal(template: TemplateRef<any>, proyecto:any) {
+    override openModal(template: TemplateRef<any>, proyecto:any) {
         this.proyecto = proyecto;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        super.openLargeModal(template);
     }
-
 
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        super.openLargeModal(template);
     }
 
 
@@ -162,10 +158,9 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
             }
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.proyecto = {};
-            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

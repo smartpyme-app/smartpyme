@@ -2,15 +2,15 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import Swal from 'sweetalert2';
 
 
@@ -22,7 +22,7 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CotizacionesComprasComponent extends BasePaginatedComponent implements OnInit {
+export class CotizacionesComprasComponent extends BasePaginatedModalComponent implements OnInit {
 
   public compras: PaginatedResponse<any> = {} as PaginatedResponse;
   public compra: any = {};
@@ -35,13 +35,14 @@ export class CotizacionesComprasComponent extends BasePaginatedComponent impleme
   public override filtros: any = {};
   public filtrado: boolean = false;
 
-  modalRef!: BsModalRef;
   comprasOriginal: any;
 
-  constructor(apiService: ApiService, alertService: AlertService,
-    private modalService: BsModalService
+  constructor(
+    apiService: ApiService, 
+    alertService: AlertService,
+    modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -95,9 +96,7 @@ export class CotizacionesComprasComponent extends BasePaginatedComponent impleme
       this.loading = false;
 
       this.comprasOriginal = Object.assign({}, compras);
-      if (this.modalRef) {
-        this.modalRef.hide();
-      }
+      this.closeModal();
     }, error => { this.alertService.error(error); });
   }
 
@@ -159,14 +158,14 @@ export class CotizacionesComprasComponent extends BasePaginatedComponent impleme
       this.documentos = documentos;
     }, error => { this.alertService.error(error); });
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public onSubmit() {
     this.loading = true;
     this.apiService.store('orden-de-compra', this.compra).subscribe(compra => {
       this.compra = {};
-      this.modalRef.hide();
+      this.closeModal();
       this.loading = false;
       this.alertService.success('Orden de compra guardada', 'La orden de compra fue guardada exitosamente.');
     }, error => { this.alertService.error(error); this.loading = false; });
@@ -182,7 +181,7 @@ export class CotizacionesComprasComponent extends BasePaginatedComponent impleme
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public imprimir(compra: any) {

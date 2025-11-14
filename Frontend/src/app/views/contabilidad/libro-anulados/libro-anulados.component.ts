@@ -2,9 +2,10 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
 
@@ -16,20 +17,22 @@ import * as moment from 'moment';
     
 })
 
-export class LibroAnuladosComponent implements OnInit {
+export class LibroAnuladosComponent extends BaseModalComponent implements OnInit {
 
     public ivas:any[] = [];
     public years:any[] = [];
     public sucursales:any[] = [];
-    public loading:boolean = false;
+    public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
-    modalRef!: BsModalRef;
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {   
         const currentYear = new Date().getFullYear(); // Obtener el año actual
@@ -74,8 +77,8 @@ export class LibroAnuladosComponent implements OnInit {
         return this.ivas.some((item:any) => !item.nit_nrc);
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>, config?: any) {
+        super.openModal(template, config);
     }
 
     public descargarLibro(){

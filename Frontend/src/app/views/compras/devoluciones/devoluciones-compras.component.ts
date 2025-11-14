@@ -2,15 +2,15 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -22,7 +22,7 @@ import Swal from 'sweetalert2';
 
 })
 
-export class DevolucionesComprasComponent extends BasePaginatedComponent implements OnInit {
+export class DevolucionesComprasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public compra:any = {};
@@ -35,12 +35,12 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
     public sucursales:any = [];
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -77,9 +77,7 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
         this.apiService.getAll('devoluciones/compras', this.filtros).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            this.closeModal();
         }, error => {this.alertService.error(error); });
     }
 
@@ -150,17 +148,17 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
         }, error => {this.alertService.error(error); });
         
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.id_compra = null;
         this.loading = true;
         this.apiService.getAll('compras/sin-devolucion').subscribe(compras => { 
             this.comprasList = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); });
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     public descargar(){

@@ -3,16 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-gastos',
@@ -22,11 +22,11 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     
 })
 
-export class GastosComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class GastosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public gastos:any = [];
     public gasto:any = {};
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public sending:boolean = false;
     public downloading:boolean = false;
 
@@ -38,12 +38,15 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
     public areas:any = [];
     public numeros_ids:any = [];
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        public mhService: MHService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -122,9 +125,7 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
         this.apiService.getAll('gastos', this.filtros).subscribe(gastos => {
             this.gastos = gastos;
             this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            this.closeModal();
         }, error => {this.alertService.error(error); });
     }
 
@@ -224,12 +225,12 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
              }, error => {this.alertService.error(error); });
          }
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     openDTE(template: TemplateRef<any>, gasto:any){
         this.gasto = gasto;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         this.alertService.modal = true;
         if(!this.gasto.dte){
             this.emitirDTE();
@@ -265,7 +266,7 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
-                this.modalRef?.hide();
+                this.closeModal();
             },5000);
         },error => {this.alertService.error(error); this.sending = false; });
     }

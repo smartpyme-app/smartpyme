@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
 import { EncryptService } from '@services/encryption/encrypt.service';
 
@@ -18,7 +18,7 @@ import { EncryptService } from '@services/encryption/encrypt.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class UsuariosComponent implements OnInit {
+export class UsuariosComponent extends BaseModalComponent implements OnInit {
 
   @ViewChild('mrol', { static: false }) roleModalTemplate!: TemplateRef<any>;
 
@@ -28,8 +28,8 @@ export class UsuariosComponent implements OnInit {
   public roles:any = [];
   public usuario: any = {};
   public paginacion = [];
-  public loading: boolean = false;
-  public saving: boolean = false;
+  public override loading: boolean = false;
+  public override saving: boolean = false;
   public filtrado: boolean = false;
   public usuarios_activos: any = 0;
   public filtros: any = {};
@@ -57,11 +57,14 @@ export class UsuariosComponent implements OnInit {
     is_global: false
   };
 
-  modalRef?: BsModalRef;
-
-    constructor( public apiService:ApiService, public alertService:AlertService,
-        private modalService: BsModalService,
-        public encryptService: EncryptService ){}
+    constructor(
+        public apiService:ApiService,
+        protected override alertService:AlertService,
+        protected override modalManager: ModalManagerService,
+        public encryptService: EncryptService
+    ) {
+        super(modalManager, alertService);
+    }
 
   ngOnInit() {
     this.filtros.id_sucursal = '';
@@ -147,19 +150,17 @@ export class UsuariosComponent implements OnInit {
 
 
 
-    openModal(template: TemplateRef<any>, usuario:any) {
-        this.alertService.modal = true;
+    override openModal(template: TemplateRef<any>, usuario:any) {
         this.usuario = usuario;
         if (!this.usuario.id) {
             this.usuario.rol_id = 2;
             this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     openRoleModal() {
-        this.alertService.modal = true;
         this.role = {
             name: '',
             permissions: [],
@@ -169,10 +170,7 @@ export class UsuariosComponent implements OnInit {
         // Cargar módulos cada vez que se abre el modal
         this.cargarModulos();
 
-        this.modalRef = this.modalService.show(this.roleModalTemplate, {
-            class: 'modal-lg',
-            backdrop: 'static'
-        });
+        super.openModal(this.roleModalTemplate, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public mostrarPassword(){
@@ -194,8 +192,7 @@ export class UsuariosComponent implements OnInit {
           'Usuario guardado',
           'El usuario fue guardado exitosamente.'
         );
-        this.modalRef?.hide();
-        this.alertService.modal = false;
+        this.closeModal();
       },
       (error) => {
         this.alertService.error(error);
@@ -366,9 +363,8 @@ public changePhoneNumber(event: any) {
     return this.apiService.verifyRoleAdmin();
   }
 
-  closeModal() {
-    this.modalRef?.hide();
-    this.alertService.modal = false;
+  override closeModal() {
+    super.closeModal();
     this.role = {
       name: '',
       permissions: [],

@@ -2,9 +2,8 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -12,6 +11,7 @@ import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 import * as moment from 'moment';
 
@@ -22,11 +22,10 @@ import * as moment from 'moment';
     imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
     
 })
-export class TiendaVentaCitasComponent extends BasePaginatedComponent implements OnInit {
+export class TiendaVentaCitasComponent extends BasePaginatedModalComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
-    modalRef!: BsModalRef;
 
     public citas: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
@@ -34,13 +33,14 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
     public detalles:any = [];
     public override filtros:any = {};
     public buscador:any = '';
-    public saving:boolean = false;
 
     constructor( 
-        apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private sumPipe:SumPipe
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -55,13 +55,13 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
 
     }
 
-    public openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.apiService.getAll('clientes/list').subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
         this.citas = {} as PaginatedResponse;
         this.loadAll();
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });        
+        super.openModal(template, { class: 'modal-xl', backdrop: 'static' });        
     }
 
     public loadAll() {
@@ -181,7 +181,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
         this.citas = {} as PaginatedResponse;
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 
@@ -191,7 +191,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
         }
 
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 

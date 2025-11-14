@@ -18,7 +18,7 @@ declare var $:any;
     
 })
 
-export class ProductoComprasComponent extends BasePaginatedComponent implements OnInit {
+export class ProductoComprasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public producto_id?:number;
     public compras: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -28,12 +28,14 @@ export class ProductoComprasComponent extends BasePaginatedComponent implements 
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService,  private route: ActivatedRoute, private router: Router,
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -113,7 +115,7 @@ export class ProductoComprasComponent extends BasePaginatedComponent implements 
                 this.proveedores = proveedores;
             }, error => {this.alertService.error(error); });
         }
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     onFiltrar(){
@@ -121,7 +123,7 @@ export class ProductoComprasComponent extends BasePaginatedComponent implements 
         this.apiService.store('compras/filtrar', this.filtro).subscribe(compras => { 
             this.compras = compras;
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }

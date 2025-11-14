@@ -2,10 +2,11 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { ModalManagerService } from '../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-busqueda-cliente',
@@ -13,24 +14,25 @@ import { AlertService } from '../../../services/alert.service';
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule]
 })
-export class BusquedaClienteComponent implements OnInit {
+export class BusquedaClienteComponent extends BaseModalComponent implements OnInit {
 
   public cliente: any = {};
-  public loading = false;
+  public override loading = false;
   @Output() clienteSelect = new EventEmitter();
 
-	modalRef?: BsModalRef;
-
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService
-	) { }
+	    private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+	) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-	  openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+	  override openModal(template: TemplateRef<any>) {
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
 
@@ -39,7 +41,7 @@ export class BusquedaClienteComponent implements OnInit {
         this.apiService.store('cliente', this.cliente).subscribe(cliente => { 
             this.clienteSelect.emit({item: cliente});
             this.loading = false;
-            this.modalRef?.hide()
+            this.closeModal()
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

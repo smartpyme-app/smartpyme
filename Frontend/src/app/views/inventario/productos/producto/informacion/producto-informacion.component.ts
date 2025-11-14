@@ -7,11 +7,11 @@ import {
 } from '@angular/core';
 
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -29,9 +29,8 @@ import { finalize } from 'rxjs/operators';
     changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
-export class ProductoInformacionComponent implements OnInit {
+export class ProductoInformacionComponent extends BaseModalComponent implements OnInit {
   @ViewChild('modalAtributo') modalAtributo!: TemplateRef<any>;
-  modalRef?: BsModalRef;
   @Input() producto: any = {};
   public categorias: any = [];
   public subcategorias: any = [];
@@ -41,7 +40,7 @@ export class ProductoInformacionComponent implements OnInit {
   public categoria: any = {};
   public bodegas: any = [];
   public medidas: any = [];
-  public loading = false;
+  public override loading = false;
   public guardar = false;
   public variants: Array<{ nombre: string; cantidad: number }> = [];
   public tallas: any = [];
@@ -54,13 +53,14 @@ export class ProductoInformacionComponent implements OnInit {
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private modalService: BsModalService,
     private zone: NgZone
   ) {
+    super(modalManager, alertService);
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
   }
@@ -389,7 +389,7 @@ export class ProductoInformacionComponent implements OnInit {
       valor: '',
       // id_empresa: this.usuario.id_empresa,
     };
-    this.modalRef = this.modalService.show(this.modalAtributo, {
+    this.openModal(this.modalAtributo, {
       class: 'modal-sm',
     });
   }
@@ -429,7 +429,7 @@ export class ProductoInformacionComponent implements OnInit {
           `El ${this.tipoAtributoActual} fue agregado exitosamente.`
         );
 
-        this.modalRef?.hide();
+        this.closeModal();
         this.guardandoAtributo = false;
         this.cdr.detectChanges();
       },

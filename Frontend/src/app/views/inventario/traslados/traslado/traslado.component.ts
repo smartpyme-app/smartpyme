@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-traslado',
@@ -16,7 +17,7 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class TrasladoComponent implements OnInit {
+export class TrasladoComponent extends BaseModalComponent implements OnInit {
 
 	public traslado: any = {};
 	public detalle: any = {};
@@ -27,15 +28,14 @@ export class TrasladoComponent implements OnInit {
 	public bodegaDe:any = {};
 	public bodegaPara:any = {};
 
-    public loading = false;
-    public saving = false;
-    modalRef!: BsModalRef;
-
 	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router,
-	    private modalService: BsModalService
+	    public apiService: ApiService, 
+	    protected override alertService: AlertService,
+	    protected override modalManager: ModalManagerService,
+	    private route: ActivatedRoute, 
+	    private router: Router
     ) { 
+        super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -74,14 +74,13 @@ export class TrasladoComponent implements OnInit {
 	}
 
 
-	openModal(template: TemplateRef<any>) {
-		this.alertService.modal = true;
+	override openModal(template: TemplateRef<any>) {
 		if(!this.productos.length){
 		    this.apiService.getAll('productos/list').subscribe(productos => {
 		        this.productos = productos;
 		    }, error => {this.alertService.error(error);});
 		}
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     selectProducto(){
@@ -108,7 +107,7 @@ export class TrasladoComponent implements OnInit {
 		this.producto = {};
 		this.detalle = {};
         this.alertService.modal = false;
-        this.modalRef.hide();
+        this.closeModal();
 	}
 
 	public onSubmit() {
@@ -121,7 +120,7 @@ export class TrasladoComponent implements OnInit {
 
     openModalDetalle(template: TemplateRef<any>, detalle:any) {
         this.detalle = detalle;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public editDetalle() {
@@ -133,7 +132,7 @@ export class TrasladoComponent implements OnInit {
     		}, error => {this.alertService.error(error); this.saving = false; });
         }
         this.alertService.modal = false;
-        this.modalRef.hide();
+        this.closeModal();
 	}
 
 	public onGenerar(){
@@ -181,7 +180,7 @@ export class TrasladoComponent implements OnInit {
 		       this.loading = false;
 			}, error => {this.alertService.error(error);this.loading = false;});
 
-	        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
+	        super.openLargeModal(template);
 	    }
 
 	    eliminarProducto(producto:any){
@@ -196,7 +195,7 @@ export class TrasladoComponent implements OnInit {
 	    	if(this.productos.length > 0) {
 	    		this.traslado.detalles = this.productos;
 	    		this.alertService.modal = false;
-	    		this.modalRef.hide();
+	    		this.closeModal();
 	    	}
 	    }
 

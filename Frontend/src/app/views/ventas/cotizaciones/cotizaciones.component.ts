@@ -2,15 +2,15 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -21,7 +21,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
 
 })
 
-export class CotizacionesComponent extends BasePaginatedComponent implements OnInit {
+export class CotizacionesComponent extends BasePaginatedModalComponent implements OnInit {
 
   public ventas: any = [];
   public venta: any = {};
@@ -37,12 +37,12 @@ export class CotizacionesComponent extends BasePaginatedComponent implements OnI
   public override filtros: any = {};
   public filtrado: boolean = false;
 
-  modalRef!: BsModalRef;
-
-  constructor(apiService: ApiService, alertService: AlertService,
-    private modalService: BsModalService
+  constructor(
+    protected override apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -96,7 +96,9 @@ export class CotizacionesComponent extends BasePaginatedComponent implements OnI
     this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
       this.ventas = this.normalizeVentas(ventas);
       this.loading = false;
-      if (this.modalRef) this.modalRef.hide();
+      if (this.modalRef) {
+        this.closeModal();
+      }
     }, error => { this.alertService.error(error); this.loading = false; });
   }
 
@@ -160,14 +162,16 @@ public setEstado(cotizacion: any) {
       this.documentos = documentos;
     }, error => { this.alertService.error(error); });
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public onSubmit() {
     this.loading = true;
     this.apiService.store('cotizacion', this.venta).subscribe(venta => {
       this.venta = {};
-      this.modalRef.hide();
+      if (this.modalRef) {
+        this.closeModal();
+      }
       this.loading = false;
       this.alertService.success('Cotización guardado', 'La cotización fue guardado exitosamente.');
     }, error => { this.alertService.error(error); this.loading = false; });
@@ -193,7 +197,7 @@ public setEstado(cotizacion: any) {
       }, error => { this.alertService.error(error); });
     }
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public imprimir(venta: any) {

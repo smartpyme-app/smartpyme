@@ -1,10 +1,11 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 
 interface ImportResponse {
@@ -30,35 +31,34 @@ interface ValidationError {
     standalone: true,
     imports: [CommonModule, FormsModule, NotificacionesContainerComponent]
 })
-export class ImportarExcelComponent implements OnInit {
+export class ImportarExcelComponent extends BaseModalComponent implements OnInit {
 
     @Input() tipo: string = 'button';
     @Input() nombre: string = '';
     @Output() loadAll = new EventEmitter();
 
-    public loading: boolean = false;
+    public override loading: boolean = false;
     public file: any = {};
     public importResult: any = null;
     public showResults: boolean = false;
     public validationErrors: ValidationError[] = [];
     public businessErrors: string[] = [];
 
-    modalRef!: BsModalRef;
-
     constructor(
         private apiService: ApiService,
-        public alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.resetState();
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.resetState();
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+        super.openModal(template, { class: 'modal-md' });
     }
 
     setFile(event: any) {
@@ -114,8 +114,7 @@ export class ImportarExcelComponent implements OnInit {
                         if (data && typeof data === 'object' && data.message) {
                             // Cerrar el modal primero para mostrar la alerta fuera (solo si existe)
                             if (this.modalRef) {
-                                this.modalRef.hide();
-                                this.alertService.modal = false;
+                                this.closeModal();
                             }
 
                             // Mostrar mensaje con detalles de procesados y fallidos
@@ -145,8 +144,7 @@ export class ImportarExcelComponent implements OnInit {
                     setTimeout(() => {
                         // Solo cerrar modal si existe (modo button/text)
                         if (this.modalRef) {
-                            this.modalRef.hide();
-                            this.alertService.modal = false;
+                            this.closeModal();
                         }
                         this.loadAll.emit();
                     }, 1000);
@@ -155,8 +153,7 @@ export class ImportarExcelComponent implements OnInit {
                     setTimeout(() => {
                         // Solo cerrar modal si existe (modo button/text)
                         if (this.modalRef) {
-                            this.modalRef.hide();
-                            this.alertService.modal = false;
+                            this.closeModal();
                         }
                         this.loadAll.emit();
                     }, 500);
@@ -185,9 +182,8 @@ export class ImportarExcelComponent implements OnInit {
     this.businessErrors = [];
   }
 
-    public closeModal() {
-        this.modalRef.hide();
-        this.alertService.modal = false;
+    public override closeModal() {
+        super.closeModal();
         this.resetState();
     }
 

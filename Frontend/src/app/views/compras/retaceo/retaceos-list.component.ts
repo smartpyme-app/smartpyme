@@ -2,7 +2,6 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { Router } from '@angular/router';
@@ -10,6 +9,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -19,25 +20,24 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class RetaceosListComponent implements OnInit {
+export class RetaceosListComponent extends BaseModalComponent implements OnInit {
 
   public retaceos: any = [];
-  public loading = false;
+  public override loading = false;
 
   public filtros: any = {};
-  public modalRef!: BsModalRef;
   public clientes: any = [];
   public usuarios: any = [];
   public sucursales: any = [];
 
-
-
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
-    private router: Router,
-    private modalService: BsModalService
-  ) { }
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
+    private router: Router
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
     this.loadAll();
@@ -86,9 +86,7 @@ export class RetaceosListComponent implements OnInit {
     this.apiService.getAll('retaceos', this.filtros).subscribe(response => {
       this.retaceos = response
       this.loading = false;
-      if(this.modalRef){
-        this.modalRef.hide();
-    }
+      this.closeModal();
     }, error => {
       this.alertService.error(error);
       this.loading = false;
@@ -139,7 +137,7 @@ export class RetaceosListComponent implements OnInit {
         this.sucursales = sucursales;
       }, error => {this.alertService.error(error); });
     }
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public limpiarFiltros() {
