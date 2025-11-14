@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -18,25 +19,34 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
     
 })
-export class TiendaVentaPaquetesComponent implements OnInit {
+export class TiendaVentaPaquetesComponent extends BasePaginatedComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
 
-    public paquetes:any = [];
+    public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
     public detalle:any = {};
     public detalles:any = [];
     public servicio:any = {};
-    public filtros:any = {};
+    public override filtros:any = {};
     public buscador:any = '';
-    public loading:boolean = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.paquetes;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.paquetes = data;
+    }
 
     ngOnInit() {
 
@@ -106,13 +116,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
         this.filtrarPaquetes();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.paquetes.path + '?page='+ event.page, this.filtros).subscribe(paquetes => { 
-            this.paquetes = paquetes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     selectProducto(paquete:any){
@@ -197,7 +201,7 @@ export class TiendaVentaPaquetesComponent implements OnInit {
     }
 
     onSubmit(){
-        this.paquetes = [];
+        this.paquetes = {} as PaginatedResponse;
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
             this.modalRef.hide();

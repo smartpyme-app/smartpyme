@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-licencias',
@@ -16,20 +17,29 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class LicenciasComponent implements OnInit {
+export class LicenciasComponent extends BasePaginatedComponent implements OnInit {
 
-    public licencias:any = [];
+    public licencias: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresas:any = [];
     public licencia:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.licencias;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.licencias = data;
+    }
 
     ngOnInit() {
         this.apiService.getAll('empresas/list').subscribe(empresas => { 
@@ -94,7 +104,7 @@ export class LicenciasComponent implements OnInit {
         this.apiService.store('licencia', this.licencia).subscribe(licencia => {
             this.loadAll();
             this.saving = false;
-            if(!this.licencias.id){
+            if(!this.licencia.id){
                 this.alertService.success('Licencia creada', 'La licencia fue añadida exitosamente.');
             }else{
                 this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
@@ -105,13 +115,7 @@ export class LicenciasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.licencias.path + '?page='+ event.page, this.filtros).subscribe(licencias => { 
-            this.licencias = licencias;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     openModal(template: TemplateRef<any>, licencia:any) {

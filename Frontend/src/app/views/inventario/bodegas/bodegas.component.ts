@@ -8,6 +8,7 @@ import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-bodegas',
@@ -16,22 +17,26 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
 
 })
-export class BodegasComponent implements OnInit {
+export class BodegasComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public bodegas:any = [];
     public sucursales:any = [];
     public bodega:any = {};
-    public loading = false;
     public saving = false;
-    public filtros:any = {};
 
     modalRef!: BsModalRef;
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.loadAll();
+    }
 
     ngOnInit() {
         this.filtros.estado = '';
@@ -52,11 +57,7 @@ export class BodegasComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.loadAll();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     openModal(template: TemplateRef<any>, bodega:any) {
         this.bodega = bodega;

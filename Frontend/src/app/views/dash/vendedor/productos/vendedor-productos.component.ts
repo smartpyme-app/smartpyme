@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-vendedor-productos',
@@ -13,21 +14,30 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class VendedorProductosComponent implements OnInit {
+export class VendedorProductosComponent extends BasePaginatedComponent implements OnInit {
 
-    public productos:any = [];
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public usuario:any = {};
-    public loading:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
     public producto:any = {};
     public sucursales:any = [];
     public categorias:any = [];
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
+    }
 
     ngOnInit() {
 
@@ -94,13 +104,7 @@ export class VendedorProductosComponent implements OnInit {
         this.filtrarProductos();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public onSubmit() {
         this.loading = true;

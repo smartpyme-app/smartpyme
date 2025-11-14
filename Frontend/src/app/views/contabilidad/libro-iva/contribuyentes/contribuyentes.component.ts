@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 import * as moment from 'moment';
 
@@ -13,7 +14,7 @@ import * as moment from 'moment';
     selector: 'app-contribuyentes',
     templateUrl: './contribuyentes.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, TruncatePipe],
     
 })
 

@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 declare var $:any;
 
@@ -18,9 +19,9 @@ declare var $:any;
     
 })
 
-export class GastosRecurrentesComponent implements OnInit {
+export class GastosRecurrentesComponent extends BasePaginatedComponent implements OnInit {
 
-    public gastos:any = [];
+    public gastos: PaginatedResponse<any> = {} as PaginatedResponse;
     public gasto:any = {};
     public formaPagos:any = [];
     public documentos:any = [];
@@ -28,16 +29,25 @@ export class GastosRecurrentesComponent implements OnInit {
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public loading:boolean = false;
     public saving:boolean = false;
 
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.gastos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.gastos = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -166,13 +176,7 @@ export class GastosRecurrentesComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.gastos.path + '?page='+ event.page, this.filtros).subscribe(gastos => { 
-            this.gastos = gastos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
         this.modalRef = this.modalService.show(template);

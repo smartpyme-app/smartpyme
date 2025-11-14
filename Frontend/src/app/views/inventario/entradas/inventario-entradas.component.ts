@@ -10,6 +10,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -19,20 +20,24 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class InventarioEntradasComponent implements OnInit {
+export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public entradas:any = [];
     public entrada:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
 
     public usuarios:any = [];
-    public filtros:any = {};
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService, 
+    constructor(apiService: ApiService, alertService: AlertService, 
         private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){ }
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrar();
+    }
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -154,10 +159,7 @@ export class InventarioEntradasComponent implements OnInit {
         });
     }
 
-    public setPagination(event:any):void{
-        this.filtros.page = event.page;
-        this.filtrar();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     // Filtros
     openFilter(template: TemplateRef<any>) {

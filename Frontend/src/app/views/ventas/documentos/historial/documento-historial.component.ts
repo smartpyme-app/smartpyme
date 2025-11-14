@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-documento-historial',
@@ -15,12 +16,11 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class DocumentoHistorialComponent implements OnInit {
-    public documentos: any = [];
-    public loading: boolean = false;
+export class DocumentoHistorialComponent extends BasePaginatedComponent implements OnInit {
+    public documentos: PaginatedResponse<any> = {} as PaginatedResponse;
     public documento:any = {};
     public nombre: string = '';
-    public filtros: any = {
+    public override filtros: any = {
         paginate: 10,
         orden: 'created_at',
         direccion: 'desc'
@@ -32,10 +32,20 @@ export class DocumentoHistorialComponent implements OnInit {
     constructor(
         private route: ActivatedRoute,
         private router: Router,
-        private alertService: AlertService,
-        public apiService: ApiService,
+        alertService: AlertService,
+        apiService: ApiService,
         private modalService: BsModalService
-    ) {}
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.documentos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.documentos = data;
+    }
 
     ngOnInit() {
 
@@ -75,19 +85,7 @@ export class DocumentoHistorialComponent implements OnInit {
         this.cargarDocumentos();
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.documentos.path + '?page=' + event.page).subscribe(
-            documentos => {
-                this.documentos = documentos;
-                this.loading = false;
-            },
-            error => {
-                this.alertService.error(error);
-                this.loading = false;
-            }
-        );
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openModal(template: TemplateRef<any>, documento:any) {
         this.documento = documento;

@@ -2,6 +2,7 @@ import { Component, OnInit, Input, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -17,20 +18,29 @@ import { TruncatePipe } from '../../../pipes/truncate.pipe';
     
 })
 
-export class NotificacionesComponent implements OnInit {
+export class NotificacionesComponent extends BasePaginatedComponent implements OnInit {
 
     public notificacion:any = {};
     public cajas:any = [];
     public departamentos:any = [];
     public sucursales:any = [];
-    public notificaciones:any = [];
+    public notificaciones: PaginatedResponse<any> = {} as PaginatedResponse;
     public paginacion = [];
-    public loading:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef?: BsModalRef;
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
+    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.notificaciones;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.notificaciones = data;
+    }
 
 	ngOnInit() {
         this.loadAll();
@@ -95,13 +105,7 @@ export class NotificacionesComponent implements OnInit {
         }
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.notificaciones.path + '?page='+ event.page, this.filtros).subscribe(notificaciones => { 
-            this.notificaciones = notificaciones;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
 

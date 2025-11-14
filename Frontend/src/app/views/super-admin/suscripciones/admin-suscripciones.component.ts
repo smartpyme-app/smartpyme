@@ -9,6 +9,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 interface Plan {
   id: number;
@@ -33,14 +34,13 @@ interface OrdenPago {
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class AdminSuscripcionesComponent implements OnInit {
-  public suscripciones: any = [];
+export class AdminSuscripcionesComponent extends BasePaginatedComponent implements OnInit {
+  public suscripciones: PaginatedResponse<any> = {} as PaginatedResponse;
   public suscripcion: any = {};
   public usuario: any = {};
   public empresa: any = {};
   public users: any[] = [];
-  public filtros: any = {};
-  public loading: boolean = false;
+  public override filtros: any = {};
   public saving: boolean = false;
   public nuevaSuscripcion: any = {};
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
@@ -76,10 +76,20 @@ export class AdminSuscripcionesComponent implements OnInit {
   modalRef!: BsModalRef;
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
+    apiService: ApiService,
+    alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.suscripciones;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.suscripciones = data;
+  }
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
@@ -116,21 +126,7 @@ export class AdminSuscripcionesComponent implements OnInit {
     );
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.suscripciones.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        (suscripciones) => {
-          this.suscripciones = suscripciones;
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openDetalles(template: TemplateRef<any>, suscripcion: any) {
     this.suscripcion = suscripcion;

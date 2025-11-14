@@ -10,6 +10,7 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import Swal from 'sweetalert2';
 
 
@@ -21,26 +22,35 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CotizacionesComprasComponent implements OnInit {
+export class CotizacionesComprasComponent extends BasePaginatedComponent implements OnInit {
 
-  public compras: any = [];
+  public compras: PaginatedResponse<any> = {} as PaginatedResponse;
   public compra: any = {};
-  public loading: boolean = false;
   public downloading: boolean = false;
 
   public proveedores: any = [];
   public usuarios: any = [];
   public sucursales: any = [];
   public documentos: any = [];
-  public filtros: any = {};
+  public override filtros: any = {};
   public filtrado: boolean = false;
 
   modalRef!: BsModalRef;
   comprasOriginal: any;
 
-  constructor(public apiService: ApiService, private alertService: AlertService,
+  constructor(apiService: ApiService, alertService: AlertService,
     private modalService: BsModalService
-  ) { }
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.compras;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.compras = data;
+  }
 
   ngOnInit() {
 
@@ -134,13 +144,7 @@ export class CotizacionesComprasComponent implements OnInit {
 
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService.paginate(this.compras.path + '?page=' + event.page, this.filtros).subscribe(compras => {
-      this.compras = compras;
-      this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public reemprimir(compra: any) {
     window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + compra.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');

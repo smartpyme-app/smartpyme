@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -20,7 +21,7 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent],
     
 })
-export class TiendaVentaProductoComponent implements OnInit {
+export class TiendaVentaProductoComponent extends BasePaginatedComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
@@ -28,19 +29,28 @@ export class TiendaVentaProductoComponent implements OnInit {
     searchControl = new FormControl();
 
     public productos:any = [];
-    public productosData:any = [];
+    public productosData: PaginatedResponse<any> = {} as PaginatedResponse;
     public categorias:any = [];
     public sucursales:any = [];
     public detalle:any = {};
     public detalles:any = [];
-    public filtros:any = {};
+    public override filtros:any = {};
     public buscador:any = '';
-    public loading:boolean = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productosData;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productosData = data;
+    }
 
     ngOnInit() {
 
@@ -102,13 +112,7 @@ export class TiendaVentaProductoComponent implements OnInit {
         this.filtrarProductos();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productosData.path + '?page='+ event.page, this.filtros).subscribe(productosData => { 
-            this.productosData = productosData;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     selectProducto(producto:any){

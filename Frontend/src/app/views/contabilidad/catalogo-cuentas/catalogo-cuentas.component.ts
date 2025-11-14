@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -19,22 +20,31 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CatalogoCuentasComponent implements OnInit {
+export class CatalogoCuentasComponent extends BasePaginatedComponent implements OnInit {
 
-    public cuentas:any = [];
+    public cuentas: PaginatedResponse<any> = {} as PaginatedResponse;
     public sucursales:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public cuenta:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.cuentas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.cuentas = data;
+    }
 
     ngOnInit() {
 
@@ -94,13 +104,7 @@ export class CatalogoCuentasComponent implements OnInit {
         this.onSubmit();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => {
-            this.cuentas = cuentas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public delete(cuenta:any){
 

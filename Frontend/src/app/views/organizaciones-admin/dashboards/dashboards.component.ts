@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -16,20 +17,29 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class DashboardsComponent implements OnInit {
+export class DashboardsComponent extends BasePaginatedComponent implements OnInit {
 
-    public dashboards:any = [];
+    public dashboards: PaginatedResponse<any> = {} as PaginatedResponse;
     public dashboard:any = {};
     public empresas:any = [];
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.dashboards;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.dashboards = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -82,13 +92,7 @@ export class DashboardsComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.dashboards.path + '?page='+ event.page, this.filtros).subscribe(dashboards => { 
-            this.dashboards = dashboards;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
 
     openModal(template: TemplateRef<any>, dashboard:any) {

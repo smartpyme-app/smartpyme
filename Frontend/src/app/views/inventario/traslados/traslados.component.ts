@@ -11,6 +11,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-traslados',
@@ -19,15 +20,12 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class TrasladosComponent implements OnInit {
+export class TrasladosComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public traslados:any = [];
     public traslado:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
-
-    public filtros:any = {};
     public productos:any = [];
     public sucursales:any = [];
     public producto:any = {};
@@ -37,9 +35,15 @@ export class TrasladosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarTraslados();
+    }
 
     ngOnInit() {
         // Cachear verificación de Shopify una sola vez
@@ -114,11 +118,7 @@ export class TrasladosComponent implements OnInit {
         this.filtrarTraslados();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarTraslados();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public setEstado(traslado:any, estado:any){
         this.traslado = traslado;

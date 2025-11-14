@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -21,25 +22,34 @@ import * as moment from 'moment';
     imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
     
 })
-export class TiendaVentaCitasComponent implements OnInit {
+export class TiendaVentaCitasComponent extends BasePaginatedComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
     modalRef!: BsModalRef;
 
-    public citas:any = [];
+    public citas: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
     public detalle:any = {};
     public detalles:any = [];
-    public filtros:any = {};
+    public override filtros:any = {};
     public buscador:any = '';
-    public loading:boolean = false;
     public saving:boolean = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private sumPipe:SumPipe
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.citas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.citas = data;
+    }
 
     ngOnInit() {
 
@@ -49,7 +59,7 @@ export class TiendaVentaCitasComponent implements OnInit {
         this.apiService.getAll('clientes/list').subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
-        this.citas = [];
+        this.citas = {} as PaginatedResponse;
         this.loadAll();
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });        
     }
@@ -103,13 +113,7 @@ export class TiendaVentaCitasComponent implements OnInit {
         this.filtrarCitas();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.citas.path + '?page='+ event.page, this.filtros).subscribe(citas => { 
-            this.citas = citas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     onCheckPaquete(cita:any){
         console.log(cita);
@@ -174,7 +178,7 @@ export class TiendaVentaCitasComponent implements OnInit {
     }
 
     onSubmit(){
-        this.citas = [];
+        this.citas = {} as PaginatedResponse;
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
             this.modalRef.hide();

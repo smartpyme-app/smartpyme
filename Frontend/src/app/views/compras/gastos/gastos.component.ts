@@ -12,6 +12,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-gastos',
@@ -21,11 +22,10 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     
 })
 
-export class GastosComponent implements OnInit {
+export class GastosComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public gastos:any = [];
     public gasto:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public sending:boolean = false;
     public downloading:boolean = false;
@@ -36,14 +36,19 @@ export class GastosComponent implements OnInit {
     public sucursales:any = [];
     public proveedores:any = [];
     public areas:any = [];
-    public filtros:any = {};
     public numeros_ids:any = [];
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
+    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarGastos();
+    }
 
     ngOnInit() {
         this.route.queryParams.subscribe(params => {
@@ -172,11 +177,7 @@ export class GastosComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarGastos();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
 
     public descargar(){
