@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-categorias',
@@ -15,20 +16,24 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class CategoriasComponent implements OnInit {
+export class CategoriasComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public categorias: any = {};
     public categoria: any = {};
     public sucursales: any = [];
     public catalogo: any = [];
-    public filtros: any = {};
-    public loading: boolean = false;
 
     modalRef?: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarCategorias();
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -62,11 +67,7 @@ export class CategoriasComponent implements OnInit {
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarCategorias();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public openModal(template: TemplateRef<any>, categoria: any) {
         this.categoria = categoria;

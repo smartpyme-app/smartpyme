@@ -21,7 +21,7 @@
                   <!-- Sugerencias -->
                   @if (message.suggestions && message.suggestions.length > 0) {
                       <div class="suggestions-container mt-2">
-                          @for (suggestion of message.suggestions; track suggestion || $index) {
+                          @for (suggestion of message.suggestions; track $index) {
                               <div class="suggestion-chip" 
                                    tooltip="{{ suggestion }}"
                                    (click)="handleSuggestionClick(suggestion)">

@@ -659,7 +659,7 @@ export class ApiService {
     this.constantsService.loadConstants().subscribe(
       (constants) => {
         localStorage.setItem('SP_constants', JSON.stringify(constants));
-        console.log('Constantes cargadas exitosamente:', constants);
+        // console.log('Constantes cargadas exitosamente:', constants);
       },
       (error) => {
         console.error('Error cargando constantes:', error);

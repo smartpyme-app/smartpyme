@@ -11,6 +11,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import Swal from 'sweetalert2';
 
@@ -22,11 +23,10 @@ import Swal from 'sweetalert2';
     
 })
 
-export class DevolucionesVentasComponent implements OnInit {
+export class DevolucionesVentasComponent extends BasePaginatedComponent implements OnInit {
 
-    public ventas: any = [];
+    public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public id_venta: any = null;
-    public loading: boolean = false;
     public saving: boolean = false;
     public sending: boolean = false;
     public downloading: boolean = false;
@@ -37,7 +37,7 @@ export class DevolucionesVentasComponent implements OnInit {
     public ventasList: any = [];
     public sucursales: any = [];
     public venta: any = {};
-    public filtros: any = {};
+    public override filtros: any = {};
     public devolucionEditar: any = {};
     public documentos: any = [];
     public modalAbierto: boolean = false;
@@ -45,9 +45,19 @@ export class DevolucionesVentasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private mhService: MHService,
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.ventas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.ventas = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -136,13 +146,7 @@ export class DevolucionesVentasComponent implements OnInit {
         this.filtrarVentas();
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page=' + event.page, this.filtros).subscribe(ventas => {
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => { this.alertService.error(error); this.loading = false; });
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
 

@@ -14,6 +14,7 @@ import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-productos',
@@ -22,12 +23,10 @@ import { SumPipe } from '@pipes/sum.pipe';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule],
 
 })
-export class ProductosComponent implements OnInit {
+export class ProductosComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public productos: any = [];
-    public loading: boolean = false;
     public downloading: boolean = false;
-    public filtros: any = {};
     public producto: any = {};
     public bodegas: any = [];
     public categorias: any = [];
@@ -43,9 +42,15 @@ export class ProductosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ) { }
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarProductos();
+    }
 
     ngOnInit() {
         // Verificar si Shopify está activo y obtener la bodega del usuario
@@ -190,11 +195,7 @@ export class ProductosComponent implements OnInit {
         this.filtrarProductos();
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarProductos();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public onSubmit() {
         this.loading = true;

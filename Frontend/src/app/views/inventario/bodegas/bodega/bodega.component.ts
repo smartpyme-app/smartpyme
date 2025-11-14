@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService } from 'ngx-bootstrap/modal';
 import { BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -17,9 +18,9 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class BodegaComponent implements OnInit {
+export class BodegaComponent extends BasePaginatedComponent implements OnInit {
 
-    public productos:any = [];
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public producto:any = {};
     public ajuste:any = {};
     public id:any;
@@ -28,16 +29,24 @@ export class BodegaComponent implements OnInit {
     public filtrado:boolean = false;
     public categorias:any =[];
     public buscador:any = '';
-    public loading:boolean = false;
 
     modalRef!: BsModalRef;
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
+        apiService: ApiService, alertService: AlertService,
         private modalService: BsModalService, private route: ActivatedRoute,
         private router: Router,
     ) {
+        super(apiService, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
     }
 
     ngOnInit() {
@@ -108,13 +117,7 @@ export class BodegaComponent implements OnInit {
 
         }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page).subscribe(productos => { 
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
         public openFilter(template: TemplateRef<any>) {

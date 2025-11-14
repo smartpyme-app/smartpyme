@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -16,20 +17,29 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class ClienteVentasComponent implements OnInit {
+export class ClienteVentasComponent extends BasePaginatedComponent implements OnInit {
 
     public id:any;
-	public ventas:any= [];
-	public loading:boolean = false;
+	public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
 
     public filtro:any = {};
 
 	modalRef!: BsModalRef;
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
+    constructor(apiService: ApiService, alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
     	private modalService: BsModalService
-    ){ }
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.ventas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.ventas = data;
+    }
 
 	ngOnInit() {
         this.loadAll();
@@ -62,13 +72,7 @@ export class ClienteVentasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     onFiltrar(){
         this.filtro.id = this.id;

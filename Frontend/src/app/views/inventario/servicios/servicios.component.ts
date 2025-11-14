@@ -9,6 +9,7 @@ import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-ex
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
 
 @Component({
     selector: 'app-servicios',
@@ -17,23 +18,26 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent],
 
 })
-export class ServiciosComponent implements OnInit {
+export class ServiciosComponent extends BaseFilteredPaginatedComponent implements OnInit {
 
     public servicios:any = [];
     public buscador:any = '';
-    public loading:boolean = false;
     public downloading:boolean = false;
-    
-    public filtros:any = {};
     public servicio:any = {};
     public sucursales:any = [];
     public filtrado:boolean = false;
     public categorias:any = [];
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService, private router: Router, private route: ActivatedRoute
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected aplicarFiltros(): void {
+        this.filtrarServicios();
+    }
 
     ngOnInit() {
 
@@ -103,11 +107,7 @@ export class ServiciosComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.filtros.page = event.page;
-        this.filtrarServicios();
-    }
+    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     openModalPrecio(template: TemplateRef<any>, servicio:any) {
         // if(this.apiService.auth_user().tipo == 'Administrador') {

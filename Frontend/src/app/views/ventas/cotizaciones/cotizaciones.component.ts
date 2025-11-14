@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -20,11 +21,10 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 
 })
 
-export class CotizacionesComponent implements OnInit {
+export class CotizacionesComponent extends BasePaginatedComponent implements OnInit {
 
   public ventas: any = [];
   public venta: any = {};
-  public loading: boolean = false;
   public downloading: boolean = false;
 
   public clientes: any = [];
@@ -34,14 +34,24 @@ export class CotizacionesComponent implements OnInit {
   public formaPagos: any = [];
   public sucursales: any = [];
   public documentos: any = [];
-  public filtros: any = {};
+  public override filtros: any = {};
   public filtrado: boolean = false;
 
   modalRef!: BsModalRef;
 
-  constructor(public apiService: ApiService, private alertService: AlertService,
+  constructor(apiService: ApiService, alertService: AlertService,
     private modalService: BsModalService
-  ) { }
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.ventas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.ventas = this.normalizeVentas(data);
+  }
 
   ngOnInit() {
 
@@ -135,13 +145,7 @@ public setEstado(cotizacion: any) {
   }
 
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService.paginate(this.ventas.path + '?page=' + event.page, this.filtros).subscribe(ventas => {
-      this.ventas = this.normalizeVentas(ventas);
-      this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public reemprimir(venta: any) {
     window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');

@@ -6,9 +6,9 @@
 <section class="bg-white p-4 rounded mb-3">
     <div class="row mb-3">
         <div class="col">
-            @if (productos?.length) {
+            @if (productos?.data?.length) {
                 <span class="text-muted">
-                    Mostrando {{ productos?.length + ' registros' }}
+                    Mostrando {{ productos?.data?.length + ' registros' }}
                 </span>
             }
         </div>
@@ -62,7 +62,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (productos?.length < 1 && !loading) {
+                    @if (productos?.data?.length < 1 && !loading) {
                         <tr>
                             <td colspan="8" class="text-center">
                                 <span class="badge bg-primary">No tiene productos en consigna</span>
@@ -76,7 +76,7 @@
                             </td>
                         </tr>
                     }
-                    @for (producto of productos | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria; track producto.id) {
+                    @for (producto of productos?.data | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria; track producto.id) {
                         <tr>
                         <td>
                             <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">

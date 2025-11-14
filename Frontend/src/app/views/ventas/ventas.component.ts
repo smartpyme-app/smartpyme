@@ -13,6 +13,7 @@ import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-ex
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -22,10 +23,9 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule],
 
 })
-export class VentasComponent implements OnInit {
-  public ventas: any = [];
+export class VentasComponent extends BasePaginatedComponent implements OnInit {
+  public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
   public venta: any = {};
-  public loading: boolean = false;
   public saving: boolean = false;
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
@@ -39,7 +39,7 @@ export class VentasComponent implements OnInit {
   public documentos: any = [];
   public canales: any = [];
   public proyectos: any = [];
-  public filtros: any = {};
+  public override filtros: any = {};
   public filtrado: boolean = false;
   public consulting: boolean = false;
   public categorias: any[] = [];
@@ -65,11 +65,21 @@ export class VentasComponent implements OnInit {
   downloadingPorMarca: boolean = false;
 
   constructor(
-    public apiService: ApiService,
+    apiService: ApiService,
     private mhService: MHService,
-    private alertService: AlertService,
+    alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) {
+    super(apiService, alertService);
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.ventas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.ventas = data;
+  }
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
@@ -219,21 +229,7 @@ export class VentasComponent implements OnInit {
     }
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.ventas.path + '?page=' + event.page, this.filtros)
-      .subscribe(
-        (ventas) => {
-          this.ventas = ventas;
-          this.loading = false;
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public reemprimir(venta: any) {
     window.open(

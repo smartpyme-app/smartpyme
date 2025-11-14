@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -20,20 +21,29 @@ import Swal from 'sweetalert2';
     
 })
 
-export class TransaccionesComponent implements OnInit {
+export class TransaccionesComponent extends BasePaginatedComponent implements OnInit {
 
-    public transacciones:any = [];
+    public transacciones: PaginatedResponse<any> = {} as PaginatedResponse;
     public transaccion:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
     public downloading:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.transacciones;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.transacciones = data;
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -103,13 +113,7 @@ export class TransaccionesComponent implements OnInit {
         });
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.transacciones.path + '?page='+ event.page, this.filtros).subscribe(transacciones => { 
-            this.transacciones = transacciones;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public verDocumento(transaccion:any){
         var ventana = window.open(this.apiService.baseUrl + "/img/" + transaccion.url_referencia + "?token=" + this.apiService.auth_token(), "_new", "toolbar=yes, scrollbars=yes, resizable=yes, left=100, width=900, height=900");

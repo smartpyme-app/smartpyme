@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 declare var $:any;
 
@@ -17,12 +18,11 @@ declare var $:any;
     
 })
 
-export class ProductoComprasComponent implements OnInit {
+export class ProductoComprasComponent extends BasePaginatedComponent implements OnInit {
 
     public producto_id?:number;
-    public compras:any = [];
+    public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
-    public loading:boolean = false;
 
     public proveedores:any = [];
     public filtro:any = {};
@@ -30,9 +30,19 @@ export class ProductoComprasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService,  private route: ActivatedRoute, private router: Router,
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.compras;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.compras = data;
+    }
 
     ngOnInit() {
         this.producto_id = +this.route.snapshot.paramMap.get('id')!;
@@ -86,13 +96,7 @@ export class ProductoComprasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     // Filtros
 

@@ -11,6 +11,7 @@ import { ApiService } from '@services/api.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -23,22 +24,31 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CuentasComponent implements OnInit {
+export class CuentasComponent extends BasePaginatedComponent implements OnInit {
 
-    public cuentas:any = [];
+    public cuentas: PaginatedResponse<any> = {} as PaginatedResponse;
     public sucursales:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public cuenta:any = {};
-    public loading:boolean = false;
     public saving:boolean = false;
-    public filtros:any = {};
+    public override filtros:any = {};
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.cuentas;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.cuentas = data;
+    }
 
     ngOnInit() {
         this.apiService.getAll('clientes/list').subscribe(clientes => { 
@@ -106,13 +116,7 @@ export class CuentasComponent implements OnInit {
         this.onSubmit();
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.cuentas.path + '?page='+ event.page, this.filtros).subscribe(cuentas => { 
-            this.cuentas = cuentas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public delete(cuenta:any){
 

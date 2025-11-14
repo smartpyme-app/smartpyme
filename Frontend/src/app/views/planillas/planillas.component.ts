@@ -9,6 +9,7 @@ import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,10 +19,9 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class PlanillasComponent implements OnInit {
-  public planillas: any = [];
+export class PlanillasComponent extends BasePaginatedComponent implements OnInit {
+  public planillas: PaginatedResponse<any> = {} as PaginatedResponse;
   public planilla: any = {};
-  public loading: boolean = false;
   public saving: boolean = false;
   public procesando: boolean = false;
   public planillaEdit: any = {};
@@ -29,7 +29,7 @@ export class PlanillasComponent implements OnInit {
 
   public editando: boolean = false;
 
-  public filtros: any = {
+  public override filtros: any = {
     anio: '',
     mes: '',
     tipo_planilla: '',
@@ -64,11 +64,20 @@ export class PlanillasComponent implements OnInit {
   @ViewChild('mNuevaPlanilla') mNuevaPlanilla!: TemplateRef<any>;
 
   constructor(
-    public apiService: ApiService,
-    private alertService: AlertService,
+    apiService: ApiService,
+    alertService: AlertService,
     private modalService: BsModalService
   ) {
+    super(apiService, alertService);
     this.generarPeriodos();
+  }
+
+  protected getPaginatedData(): PaginatedResponse | null {
+    return this.planillas;
+  }
+
+  protected setPaginatedData(data: PaginatedResponse): void {
+    this.planillas = data;
   }
 
   ngOnInit() {
@@ -144,21 +153,7 @@ export class PlanillasComponent implements OnInit {
     this.filtrarPlanillas();
   }
 
-  public setPagination(event: any): void {
-    this.loading = true;
-    this.apiService
-      .paginate(this.planillas.path + '?page=' + event.page, this.filtros)
-      .subscribe({
-        next: (planillas) => {
-          this.planillas = planillas;
-          this.loading = false;
-        },
-        error: (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        },
-      });
-  }
+  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openFilter(template: TemplateRef<any>) {
     this.modalRef = this.modalService.show(template);

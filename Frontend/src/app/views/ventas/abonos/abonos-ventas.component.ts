@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 
 @Component({
@@ -20,25 +21,34 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
     
 })
 
-export class AbonosVentasComponent implements OnInit {
+export class AbonosVentasComponent extends BasePaginatedComponent implements OnInit {
 
-    public abonos:any = [];
+    public abonos: PaginatedResponse<any> = {} as PaginatedResponse;
     public abono:any = {};
-    public loading:boolean = false;
     public downloading:boolean = false;
 
     public clientes:any = [];
     public usuarios:any = [];
     public formaPagos:any = [];
     public documentos:any = [];
-    public filtros:any = {};
+    public override filtros:any = {};
     public filtrado:boolean = false;
 
     modalRef!: BsModalRef;
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
+    constructor(apiService: ApiService, alertService: AlertService,
                 private modalService: BsModalService
-    ){}
+    ){
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.abonos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.abonos = data;
+    }
 
     ngOnInit() {
 
@@ -101,13 +111,7 @@ export class AbonosVentasComponent implements OnInit {
 
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public imprimir(abono:any){
         window.open(this.apiService.baseUrl + '/api/venta/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token());

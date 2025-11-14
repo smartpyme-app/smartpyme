@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { SumPipe } from '@pipes/sum.pipe';
+import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 
 @Component({
     selector: 'app-ajuste-masivo',
@@ -14,13 +15,11 @@ import { SumPipe } from '@pipes/sum.pipe';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class AjusteMasivoComponent implements OnInit {
+export class AjusteMasivoComponent extends BasePaginatedComponent implements OnInit {
 
-    public productos: any = [];
-    public loading: boolean = false;
+    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public downloading: boolean = false;
     public saving: boolean = false;
-    public filtros: any = {};
     public bodegas: any = [];
     public categorias: any = [];
     public seleccionados: any[] = [];
@@ -36,11 +35,26 @@ export class AjusteMasivoComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(
-        public apiService: ApiService, 
-        private alertService: AlertService,
+        apiService: ApiService, 
+        alertService: AlertService,
         private modalService: BsModalService,
         private sumPipe: SumPipe
-    ) {}
+    ) {
+        super(apiService, alertService);
+    }
+
+    protected getPaginatedData(): PaginatedResponse | null {
+        return this.productos;
+    }
+
+    protected setPaginatedData(data: PaginatedResponse): void {
+        this.productos = data;
+    }
+
+    protected override onPaginateSuccess(response: PaginatedResponse): void {
+        // Procesar productos recibidos después de paginar
+        this.procesarProductosRecibidos();
+    }
 
     ngOnInit() {
         // Cachear verificación de Shopify una sola vez
@@ -290,14 +304,7 @@ export class AjusteMasivoComponent implements OnInit {
         );
     }
 
-    public setPagination(event: any): void {
-        this.loading = true;
-        this.apiService.paginate(this.productos.path + '?page='+ event.page, this.filtros).subscribe(productos => { 
-            this.productos = productos;
-            this.procesarProductosRecibidos();
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
+    // setPagination() ahora se hereda de BasePaginatedComponent
 
     private procesarProductosRecibidos() {
         this.seleccionados = [];
