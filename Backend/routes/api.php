@@ -58,6 +58,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
 	require base_path('routes/modulos/compras/detalles.php');
 	require base_path('routes/modulos/compras/devoluciones.php');
 	require base_path('routes/modulos/compras/gastos.php');
+	require base_path('routes/modulos/compras/gastos-abonos.php');
 	require base_path('routes/modulos/compras/proveedores.php');
 	require base_path('routes/modulos/compras/abonos.php');
 	require base_path('routes/modulos/compras/ordenes-de-compras.php');

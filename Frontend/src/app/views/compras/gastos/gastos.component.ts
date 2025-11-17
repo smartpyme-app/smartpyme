@@ -308,4 +308,9 @@ export class GastosComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
+    public openAbono(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
+    }
+
 }

@@ -78,7 +78,8 @@ class GastosController extends Controller
     public function read($id)
     {
 
-        $gasto = Gasto::findOrFail($id);
+        $gasto = Gasto::where('id', $id)->with('abonos')->first();
+        $gasto->saldo = $gasto->saldo;
         return Response()->json($gasto, 200);
     }
 

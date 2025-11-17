@@ -31,6 +31,7 @@ import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.comp
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
+import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
 import { CrearEventoComponent } from './modals/crear-evento/crear-evento.component';
 import { CrearProyectoComponent } from './modals/crear-proyecto/crear-proyecto.component';
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
@@ -92,6 +93,7 @@ import { SelectSearchComponent } from './parts/select-search/select-search.compo
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     CrearEventoComponent,
     CrearProyectoComponent,
     CrearImpuestoComponent,
@@ -127,6 +129,7 @@ import { SelectSearchComponent } from './parts/select-search/select-search.compo
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     CrearEventoComponent,
     CrearImpuestoComponent,
     CrearProyectoComponent,
