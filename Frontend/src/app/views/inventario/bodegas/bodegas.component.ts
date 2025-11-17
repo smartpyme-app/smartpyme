@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-bodegas',
@@ -17,21 +17,20 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
 
 })
-export class BodegasComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class BodegasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public bodegas:any = [];
     public sucursales:any = [];
     public bodega:any = {};
-    public saving = false;
-
-    modalRef!: BsModalRef;
 
     constructor( 
-        apiService: ApiService, alertService: AlertService,
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -59,7 +58,7 @@ export class BodegasComponent extends BaseFilteredPaginatedComponent implements 
 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
-    openModal(template: TemplateRef<any>, bodega:any) {
+    override openModal(template: TemplateRef<any>, bodega:any) {
         this.bodega = bodega;
         if(!this.bodega.id){
             this.bodega.id_sucursal = this.apiService.auth_user().id_sucursal;
@@ -71,13 +70,7 @@ export class BodegasComponent extends BaseFilteredPaginatedComponent implements 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false; });
 
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
-    }
-
-    closeModal(){
-        this.modalRef.hide();
-        this.alertService.modal = false;
+        super.openModal(template);
     }
 
     public delete(id:number) {
@@ -112,8 +105,7 @@ export class BodegasComponent extends BaseFilteredPaginatedComponent implements 
               }
               this.bodega = {};
               this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
+              this.closeModal();
           },error => {this.alertService.error(error); this.saving = false; });
       }
 

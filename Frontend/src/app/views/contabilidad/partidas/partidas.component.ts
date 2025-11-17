@@ -2,12 +2,12 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -20,10 +20,10 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
     
 })
-export class PartidasComponent extends BasePaginatedComponent implements OnInit {
+export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
   public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
   public partida: any = {};
-  public saving: boolean = false;
+  public override saving: boolean = false;
   public reporte = {
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -52,19 +52,17 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
     total_registros_filtrados: 0
   };
 
-  modalRef!: BsModalRef;
-
   // NUEVO: Clave para persistir filtros
   private readonly FILTROS_STORAGE_KEY = 'partidas_filtros_v1';
 
   constructor(
-    apiService: ApiService,
-    alertService: AlertService,
-    private modalService: BsModalService,
+    protected override apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private router: Router,
     private route: ActivatedRoute
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -211,7 +209,7 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
 
         this.loading = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
       },
       (error) => {
@@ -221,9 +219,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
     );
   }
 
-  public openModal(template: TemplateRef<any>, partida: any) {
+  public override openModal(template: TemplateRef<any>, partida: any) {
     this.partida = partida;
-    this.modalRef = this.modalService.show(template, {
+    super.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static',
     });
@@ -231,7 +229,7 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
 
   public openFilter(template: TemplateRef<any>) {
     // Configuración específica para el modal de reportes
-    this.modalRef = this.modalService.show(template, {
+    this.openModal(template, {
       class: 'modal-xl',
       backdrop: 'static' as 'static',
       keyboard: false
@@ -242,8 +240,7 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
    * NUEVO: Modal para reordenar correlativos
    */
   public openReordenarModal(template: TemplateRef<any>) {
-    this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template, {
+    this.openModal(template, {
       class: 'modal-md',
       backdrop: 'static',
     });
@@ -322,9 +319,8 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
         }
         this.saving = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
-        this.alertService.modal = false;
       },
       (error) => {
         this.alertService.error(error);
@@ -347,7 +343,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
           `Se reordenaron ${response.partidas_reordenadas} partidas exitosamente`
         );
         this.filtrarPartidas(); // Refrescar listado
-        this.modalRef?.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
       },
       error: (error) => {
         this.saving = false;
@@ -571,7 +569,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
               `Se reordenaron ${response.partidas_reordenadas} partidas de toda la empresa`
             );
             this.filtrarPartidas();
-            this.modalRef?.hide();
+            if (this.modalRef) {
+              this.closeModal();
+            }
           },
           error: (error) => {
             this.saving = false;

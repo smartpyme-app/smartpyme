@@ -2,11 +2,12 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 
@@ -19,19 +20,21 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 
 })
 
-export class CanalesComponent implements OnInit {
+export class CanalesComponent extends BaseModalComponent implements OnInit {
 
     public canales:any = [];
     public canal:any = {};
-    public loading:boolean = false;
+    public override loading:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -46,14 +49,13 @@ export class CanalesComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, canal:any) {
+    public override openModal(template: TemplateRef<any>, canal:any) {
         this.canal = canal;
         if (!this.canal.id) {
             this.canal.id_empresa = this.apiService.auth_user().id_empresa;
             this.canal.enable = true;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(canal:any){
@@ -75,9 +77,8 @@ export class CanalesComponent implements OnInit {
                     this.canales.push(canal);
                 }
                 
-                this.alertService.modal = false;
                 if (this.modalRef) {
-                    this.modalRef.hide();
+                    this.closeModal();
                 }
                 
                 setTimeout(() => {

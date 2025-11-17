@@ -6,11 +6,12 @@ import {
   PipeTransform
 } from '@angular/core';
 import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import Swal from 'sweetalert2';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,7 +33,7 @@ export class ReplacePipe implements PipeTransform {
     imports: [CommonModule, FormsModule],
     
 })
-export class ReportesAutomaticosComponent extends BasePaginatedComponent implements OnInit {
+export class ReportesAutomaticosComponent extends BasePaginatedModalComponent implements OnInit {
   public configuraciones: PaginatedResponse<any> = {} as PaginatedResponse;
   public configuracionActual: ConfiguracionReporte = crearConfiguracionDefault();
   public configuracionEliminar: ConfiguracionReporte = crearConfiguracionDefault();
@@ -43,7 +44,6 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
     orden: 'created_at',
     direccion: 'desc'
   };
-  public saving: boolean = false;
   public enviandoPrueba: boolean = false;
   public eliminando: boolean = false;
   public emailInput: string = '';
@@ -93,16 +93,15 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
     'detalle-ventas-vendedor',
   ];
 
-  modalRef!: BsModalRef;
   modalRefPrueba!: BsModalRef;
   modalRefEliminar!: BsModalRef;
 
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    private modalService: BsModalService
+    modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -217,14 +216,10 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
       this.configuracionActual.sucursales = this.sucursales.map((s) => s.id);
     }
 
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static'
-    });
+    super.openLargeModal(template);
   }
 
-
-  openModal(template: TemplateRef<any>, configuracion: any) {
+  override openModal(template: TemplateRef<any>, configuracion: any) {
     if (!configuracion || configuracion === null) {
       this.configuracionActual = crearConfiguracionDefault();
     } else {
@@ -271,10 +266,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
       }
     }
 
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static'
-    });
+    super.openLargeModal(template);
   }
 
   public guardarConfiguracion() {
@@ -363,7 +355,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
                 (response) => {
                   this.saving = false;
                   this.loadAll();
-                  this.modalRef?.hide();
+                  this.closeModal();
                   this.alertService.success(
                     this.configuracionActual.id
                       ? 'Configuración actualizada'
@@ -500,7 +492,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
     this.configuracionEliminar = config;
     this.emailPrueba = '';
 
-    this.modalRefPrueba = this.modalService.show(template, {
+    this.modalRefPrueba = this.modalManager.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static'
     });
@@ -544,7 +536,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
   public eliminarConfiguracion(template: TemplateRef<any>, config: any) {
     this.configuracionEliminar = config;
 
-    this.modalRefEliminar = this.modalService.show(template, {
+    this.modalRefEliminar = this.modalManager.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static'
     });
@@ -681,7 +673,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
       this.seleccionarPeriodo('mes');
 
-      this.modalRefFechas = this.modalService.show(template, {
+      this.modalRefFechas = this.modalManager.openModal(template, {
         class: 'modal-lg',
         backdrop: 'static'
       });

@@ -2,10 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { SumPipe } from '@pipes/sum.pipe';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -18,12 +19,12 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
     
 })
-export class TrasladoMasivoComponent implements OnInit {
+export class TrasladoMasivoComponent extends BaseModalComponent implements OnInit {
     public productos: any = [];
     public resultadosBusqueda: any[] = [];
-    public loading: boolean = false;
+    public override loading: boolean = false;
     public downloading: boolean = false;
-    public saving: boolean = false;
+    public override saving: boolean = false;
     public filtros: any = {
         id_bodega_origen: '',
         id_bodega_destino: '',
@@ -53,14 +54,14 @@ export class TrasladoMasivoComponent implements OnInit {
     // Control para el buscador
     searchControl = new FormControl();
 
-    modalRef!: BsModalRef;
-
     constructor(
         public apiService: ApiService, 
-        private alertService: AlertService,
-        private modalService: BsModalService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
         private sumPipe: SumPipe
-    ) {}
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         // Cachear verificación de Shopify una sola vez
@@ -343,7 +344,7 @@ export class TrasladoMasivoComponent implements OnInit {
         }
 
         this.trasladoInventario.productos = this.productosParaTraslado;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public realizarTraslado() {
@@ -368,7 +369,7 @@ export class TrasladoMasivoComponent implements OnInit {
         this.apiService.store('productos/traslado-masivo', datos).subscribe(
             respuesta => {
                 this.alertService.success('Traslado realizado exitosamente', 'Se han trasladado ' + respuesta.trasladados + ' productos.');
-                this.modalRef.hide();
+                this.closeModal();
                 this.saving = false;
                 
                 // Limpiar productos seleccionados
@@ -432,7 +433,7 @@ export class TrasladoMasivoComponent implements OnInit {
             return;
         }
         
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     public importarTraslado(fileInput: HTMLInputElement, detalle: string) {
@@ -458,7 +459,7 @@ export class TrasladoMasivoComponent implements OnInit {
         this.apiService.upload('productos/traslado-masivo/importar', formData).subscribe(
             (respuesta: any) => {
                 this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
-                this.modalRef.hide();
+                this.closeModal();
                 this.saving = false;
                 this.seleccionados = [];
                 this.productosParaTraslado = [];

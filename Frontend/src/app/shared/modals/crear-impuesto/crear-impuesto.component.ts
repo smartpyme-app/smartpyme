@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-impuesto',
@@ -15,27 +15,27 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearImpuestoComponent implements OnInit {
+export class CrearImpuestoComponent extends BaseModalComponent implements OnInit {
 
     public impuesto: any = {};
     @Input() id_impuesto:any = null;
     @Output() update = new EventEmitter();
-    public loading = false;
-    public saving = false;
-
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     constructor( 
-        private apiService: ApiService, 
-        public alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         if(this.id_impuesto){
             this.apiService.read('impuesto/', this.id_impuesto).subscribe(impuesto => {
                 this.impuesto = impuesto;
@@ -50,17 +50,15 @@ export class CrearImpuestoComponent implements OnInit {
             this.impuesto.id_usuario = this.apiService.auth_user().id;
             this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public onSubmit() {
         this.saving = true;
         this.apiService.store('impuesto', this.impuesto).subscribe(impuesto => {
             this.update.emit(impuesto);
-            this.modalRef?.hide();
+            this.closeModal();
             this.saving = false;
-            this.alertService.modal = false;
             this.alertService.success('Impuesto guardado', 'El impuesto fue guardado exitosamente.');
         }, error => {
             this.alertService.error(error); 

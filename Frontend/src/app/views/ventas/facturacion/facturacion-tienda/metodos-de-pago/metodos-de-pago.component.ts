@@ -2,11 +2,12 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-metodos-de-pago',
@@ -15,24 +16,27 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class MetodosDePagoComponent implements OnInit {
+export class MetodosDePagoComponent extends BaseModalComponent implements OnInit {
 
     @Input() venta: any = {};
     @Input() formaPagos: any = [];
     @Output() update = new EventEmitter();
     public aplicarCambios: boolean = false;
-    modalRef!: BsModalRef;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
-    ) { }
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    public override openModal(template: TemplateRef<any>) {
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public sumTotal(){
@@ -48,7 +52,9 @@ export class MetodosDePagoComponent implements OnInit {
 
     public onSubmit(){
         this.update.emit();
-        this.modalRef.hide();
+        if (this.modalRef) {
+            this.closeModal();
+        }
     }
 
 }

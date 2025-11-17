@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-proveedor',
@@ -15,7 +15,7 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearProveedorComponent implements OnInit {
+export class CrearProveedorComponent extends BaseModalComponent implements OnInit {
 
     public proveedor: any = {};
     @Input() id_proveedor:any = null;
@@ -25,21 +25,22 @@ export class CrearProveedorComponent implements OnInit {
     public distritos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
-    public loading = false;
-    public saving = false;
-
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
         this.departamentos = JSON.parse(localStorage.getItem('departamentos')!);
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
@@ -57,8 +58,7 @@ export class CrearProveedorComponent implements OnInit {
             this.proveedor.id_usuario = this.apiService.auth_user().id;
             this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
     setGiro(){
@@ -112,9 +112,8 @@ export class CrearProveedorComponent implements OnInit {
         this.saving = true;
         this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
             this.update.emit(proveedor);
-            this.modalRef?.hide();
+            this.closeModal();
             this.saving = false;
-            this.alertService.modal = false;
             this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
     }

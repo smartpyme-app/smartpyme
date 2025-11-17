@@ -2,8 +2,7 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -11,6 +10,7 @@ import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-tienda-venta-paquetes',
@@ -19,11 +19,10 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
     
 })
-export class TiendaVentaPaquetesComponent extends BasePaginatedComponent implements OnInit {
+export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
-    modalRef!: BsModalRef;
 
     public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
     public clientes:any = [];
@@ -34,10 +33,12 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
     public buscador:any = '';
 
     constructor( 
-        apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private sumPipe:SumPipe
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -52,19 +53,19 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
 
     }
 
-    public openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.apiService.getAll('paquetes/pendientes/clientes').subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
         this.loadAll();
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
         
         this.apiService.getAll('servicios', {buscador: 'Servicio de importación de paquetería'}).subscribe(productos => { 
             if(productos.data[0]){
                 this.servicio = productos.data[0];
             }else{
                 alert('No se encontro un servicio para facturar paquetes, debe ingresar a servicios y agregarlo con el nombre: "Servicio de importación de paquetería"');
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -204,7 +205,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
         this.paquetes = {} as PaginatedResponse;
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 
@@ -214,7 +215,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
         }
 
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 

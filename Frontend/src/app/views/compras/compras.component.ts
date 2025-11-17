@@ -3,16 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 declare var $:any;
 
@@ -24,7 +24,7 @@ declare var $:any;
 
 })
 
-export class ComprasComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class ComprasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public compras:any = [];
     public compra:any = {};
@@ -35,12 +35,12 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     public proyectos:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public sending:boolean = false;
     public downloadingDetalles:boolean = false;
     public downloadingCompras:boolean = false;
-    public modalRefAcumulado!: BsModalRef;
-    public modalRefRentabilidad!: BsModalRef;
+    public modalRefAcumulado: any;
+    public modalRefRentabilidad: any;
     public filtrosRentabilidad:any = {
         inicio: '',
         fin: '',
@@ -51,12 +51,15 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     public numeros_ids:any = [];
     public downloadingRentabilidad:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        public mhService: MHService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -132,7 +135,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             this.compras = compras;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); });
     }
@@ -204,7 +207,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             }, error => {this.alertService.error(error); });
         }
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 
@@ -223,7 +226,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             this.compra = {};
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -246,7 +249,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargarCompras(){
@@ -286,7 +289,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     public openAbono(template: TemplateRef<any>, compra:any){
         this.compra = compra;
         this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -319,12 +322,12 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             }, error => {this.alertService.error(error); });
         }
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     openDTE(template: TemplateRef<any>, compra:any){
         this.compra = compra;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         this.alertService.modal = true;
         if(!this.compra.dte){
             this.emitirDTE();
@@ -360,7 +363,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
-                this.modalRef?.hide();
+                this.closeModal();
             },5000);
         },error => {this.alertService.error(error); this.sending = false; });
     }
@@ -418,7 +421,7 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
-        this.modalRefRentabilidad = this.modalService.show(template, {
+        this.modalRefRentabilidad = this.modalManager.openModal(template, {
           class: 'modal-lg',
         });
       }
@@ -442,12 +445,10 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
 
-        // Cerrar ambos modales
+        // Cerrar modal de rentabilidad
         if (this.modalRefRentabilidad) {
-          this.modalRefRentabilidad.hide();
-        }
-        if (this.modalRefRentabilidad) {
-          this.modalRefRentabilidad.hide();
+          this.modalManager.closeModal(this.modalRefRentabilidad);
+          this.modalRefRentabilidad = undefined;
         }
 
         this.downloadingRentabilidad = false;

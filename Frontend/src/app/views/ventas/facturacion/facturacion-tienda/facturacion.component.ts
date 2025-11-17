@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './metodos-de-pago/metodos-de-pago.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
@@ -39,7 +40,7 @@ import * as moment from 'moment';
     providers: [SumPipe],
     
 })
-export class FacturacionComponent implements OnInit {
+export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
@@ -58,8 +59,8 @@ export class FacturacionComponent implements OnInit {
   public editar = false;
   public canales: any = [];
   public supervisor: any = {};
-  public loading = false;
-  public saving = false;
+  public override loading = false;
+  public override saving = false;
   public sending = false;
   public emiting = false;
   public duplicarventa = false;
@@ -78,8 +79,7 @@ export class FacturacionComponent implements OnInit {
   public mensajeValidacionFecha: string = '';
   public mensajeErrorBanco: string = '';
 
-  modalRef!: BsModalRef;
-  modalCredito!: BsModalRef;
+  public modalCredito!: any; // BsModalRef
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -90,13 +90,14 @@ export class FacturacionComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     public mhService: MHService,
-    private alertService: AlertService,
-    private modalService: BsModalService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
     private funcionalidadesService: FuncionalidadesService
   ) {
+    super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
     };
@@ -1031,7 +1032,7 @@ export class FacturacionComponent implements OnInit {
 
     // Facturar
     public openModalFacturar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template, {
+        this.openModal(template, {
             class: 'modal-md',
             backdrop: 'static',
         });
@@ -1169,7 +1170,7 @@ export class FacturacionComponent implements OnInit {
         }
 
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
         this.saving = false;
       },
@@ -1183,7 +1184,7 @@ export class FacturacionComponent implements OnInit {
   //Limpiar
 
   public limpiar() {
-    this.modalRef = this.modalService.show(this.supervisorTemplate, {
+    this.openModal(this.supervisorTemplate, {
       class: 'modal-xs',
     });
   }
@@ -1192,7 +1193,9 @@ export class FacturacionComponent implements OnInit {
     this.loading = true;
     this.apiService.store('usuario-validar', this.supervisor).subscribe(
       (supervisor) => {
-        this.modalRef.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
         this.cargarDatosIniciales();
         this.loading = false;
         this.supervisor = {};

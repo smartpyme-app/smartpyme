@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
 
@@ -19,7 +20,7 @@ import * as moment from 'moment';
     
 })
 
-export class FacturacionConsignaComponent implements OnInit {
+export class FacturacionConsignaComponent extends BaseModalComponent implements OnInit {
 
     public venta: any= {};
     public usuarios:any = [];
@@ -30,16 +31,18 @@ export class FacturacionConsignaComponent implements OnInit {
     public bancos:any = [];
     public canales:any = [];
     public supervisor:any = {};
-    public loading = false;
+    public override loading = false;
     public imprimir:boolean = false;
     
-    modalRef!: BsModalRef;
-    
 	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
+	    public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe,
+        private route: ActivatedRoute,
+        private router: Router,
 	) {
+        super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -157,7 +160,7 @@ export class FacturacionConsignaComponent implements OnInit {
     // Facturar
 
         public openModalFacturar(template: TemplateRef<any>) {
-            this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop:'static'});
+            this.openModal(template, {class: 'modal-md', backdrop:'static'});
         }
 
         public onFacturar(){

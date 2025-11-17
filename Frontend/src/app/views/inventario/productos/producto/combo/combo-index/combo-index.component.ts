@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BsModalService } from 'ngx-bootstrap/modal';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -15,16 +16,20 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ComboIndexComponent implements OnInit {
+export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   combos: any = [];
   downloading = false;
   usuarios: any = [];
-  modalRef: any;
   filtros: any = {};
   bodegas: any = [];
-  loading = false;
 
-  constructor(public apiService: ApiService, public alertService: AlertService, private modalService: BsModalService) { }
+  constructor(
+    public apiService: ApiService, 
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
+  ) {
+    super(modalManager, alertService);
+  }
   descargar() { }
 
   openFilter(template: TemplateRef<any>) {
@@ -34,7 +39,7 @@ export class ComboIndexComponent implements OnInit {
     this.apiService.getAll('usuarios/list').subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
 
 
   }

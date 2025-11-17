@@ -1,11 +1,12 @@
 import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -14,26 +15,26 @@ import Swal from 'sweetalert2';
     selector: 'app-conciliaciones',
     templateUrl: './conciliaciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule],
     
 })
 
-export class ConciliacionesComponent extends BasePaginatedComponent implements OnInit {
+export class ConciliacionesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public conciliaciones: PaginatedResponse<any> = {} as PaginatedResponse;
     public conciliacion:any = {};
     public cuentas:any = [];
     public usuarios:any = [];
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public downloading:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -83,16 +84,15 @@ export class ConciliacionesComponent extends BasePaginatedComponent implements O
             this.conciliaciones = conciliaciones;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
-    public openModal(template: TemplateRef<any>, conciliacion:any) {
+    public override openModal(template: TemplateRef<any>, conciliacion:any) {
         this.conciliacion = conciliacion;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
@@ -106,8 +106,7 @@ export class ConciliacionesComponent extends BasePaginatedComponent implements O
         this.filtros.inicio = this.apiService.date();
         this.filtros.fin    = this.apiService.date();
 
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        this.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
@@ -154,9 +153,8 @@ export class ConciliacionesComponent extends BasePaginatedComponent implements O
             }
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
-            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

@@ -2,12 +2,12 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { CompraProductoComponent } from '../compra-producto/compra-producto.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, CompraProductoComponent],
     
 })
-export class CompraDetallesComponent implements OnInit {
+export class CompraDetallesComponent extends BaseModalComponent implements OnInit {
 
   @Input() compra: any = {};
   @Input() isOrdenCompra: boolean = false;
@@ -28,18 +28,20 @@ export class CompraDetallesComponent implements OnInit {
   @Output() update = new EventEmitter();
   @Output() OndeletedItem = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
-  modalRef!: BsModalRef;
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
 
   public buscador: string = '';
-  public loading: boolean = false;
+  public override loading: boolean = false;
 
   constructor(
-    public apiService: ApiService, private alertService: AlertService,
-    private modalService: BsModalService
-  ) { }
+    public apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
 
@@ -47,7 +49,7 @@ export class CompraDetallesComponent implements OnInit {
 
   openModalEdit(template: TemplateRef<any>, detalle: any) {
     this.detalle = detalle;
-    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    this.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
   public updateTotal(detalle: any) {
@@ -62,13 +64,13 @@ export class CompraDetallesComponent implements OnInit {
 
   public modalSupervisor(detalle: any) {
     this.detalle = detalle;
-    this.modalRef = this.modalService.show(this.supervisorTemplate, { class: 'modal-xs' });
+    this.openModal(this.supervisorTemplate, { class: 'modal-xs' });
   }
 
   public supervisorCheck() {
     this.loading = true;
     this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
-      this.modalRef.hide();
+      this.closeModal();
       this.delete(this.detalle);
       this.loading = false;
       this.supervisor = {};
@@ -97,7 +99,7 @@ export class CompraDetallesComponent implements OnInit {
     this.update.emit(this.compra);
     console.log(this.compra);
     this.detalle = {};
-    if (this.modalRef) { this.modalRef.hide() }
+    if (this.modalRef) { this.closeModal(); }
 
   }
 

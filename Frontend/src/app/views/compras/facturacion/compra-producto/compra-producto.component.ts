@@ -2,9 +2,8 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { CrearProductoComponent } from '@shared/modals/crear-producto/crear-producto.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { of } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -14,6 +13,7 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { FilterPipe }  from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-compra-producto',
@@ -22,12 +22,11 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent, SumPipe, FilterPipe],
     
 })
-export class CompraProductoComponent extends BasePaginatedComponent implements OnInit {
+export class CompraProductoComponent extends BasePaginatedModalComponent implements OnInit {
 
     @Input() compra: any = {};
     @Output() productoSelect = new EventEmitter();
-    modalRef!: BsModalRef;
-    modalCreateProductRef?: BsModalRef;
+    modalCreateProductRef?: any; // BsModalRef
     searchControl = new FormControl();
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -40,11 +39,13 @@ export class CompraProductoComponent extends BasePaginatedComponent implements O
     private tieneShopify: boolean = false;
 
     constructor(
-        apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe,
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe,
 
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -140,7 +141,7 @@ export class CompraProductoComponent extends BasePaginatedComponent implements O
     // setPagination() ahora se hereda de BasePaginatedComponent
 
 
-    public openModal(template: TemplateRef<any>) {
+    public override openModal(template: TemplateRef<any>, config?: any) {
         this.filtros.id_sucursal = this.compra.id_sucursal;
         this.filtros.id_categoria = '';
         this.filtros.buscador = '';
@@ -165,15 +166,14 @@ export class CompraProductoComponent extends BasePaginatedComponent implements O
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        super.openModal(template, config || { class: 'modal-xl', backdrop: 'static' });
     }
 
     crearProducto(template: TemplateRef<any>) {
-        this.modalCreateProductRef = this.modalService.show(template, {
+        this.modalCreateProductRef = this.modalManager.openModal(template, {
             class: 'modal-lg',
             backdrop: 'static',
-            keyboard: false,
-            ignoreBackdropClick: true
+            keyboard: false
         });
     }
 
@@ -239,7 +239,7 @@ export class CompraProductoComponent extends BasePaginatedComponent implements O
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 

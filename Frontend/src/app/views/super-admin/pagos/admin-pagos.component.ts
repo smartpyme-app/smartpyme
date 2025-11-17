@@ -1,13 +1,13 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 import { formatDate } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -17,27 +17,25 @@ import { CommonModule } from '@angular/common';
     imports: [CommonModule, FormsModule, PaginationComponent],
     
 })
-export class AdminPagosComponent extends BasePaginatedComponent implements OnInit {
+export class AdminPagosComponent extends BasePaginatedModalComponent implements OnInit {
 
     public pagos: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresas:any = [];
     public planes:any = [];
     public pago:any = {};
-    public saving = false;
     public override filtros:any = {};
     public maxDate: string = '';
 
-    modalRef!: BsModalRef;
     selectedFile: File | null = null;
 
     constructor( 
         apiService: ApiService, 
         alertService: AlertService,
+        modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router,
-        private modalService: BsModalService
+        private router: Router
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -91,9 +89,9 @@ export class AdminPagosComponent extends BasePaginatedComponent implements OnIni
         );
     }
 
-    public openModal(template: TemplateRef<any>, pago: any = {}) {
-            this.loadEmpresas();
-            this.loadPlanes();
+    override openModal(template: TemplateRef<any>, pago: any = {}) {
+        this.loadEmpresas();
+        this.loadPlanes();
 
         this.resetForm();
         if (pago && pago.id) {
@@ -106,13 +104,11 @@ export class AdminPagosComponent extends BasePaginatedComponent implements OnIni
                 this.pago.fecha_proximo_pago = formatDate(this.pago.fecha_proximo_pago, 'yyyy-MM-dd', 'en');
             }
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+        super.openLargeModal(template);
     }
 
-    closeModal(){
-        this.modalRef.hide();
-        this.alertService.modal = false;
+    override closeModal(){
+        super.closeModal();
         this.resetForm();
     }
 
@@ -186,8 +182,7 @@ export class AdminPagosComponent extends BasePaginatedComponent implements OnIni
           this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
             this.pago.venta = venta;
             this.saving = false;
-          this.modalRef.hide();
-          this.alertService.modal = false;
+          this.closeModal();
         },error => {this.alertService.error(error); this.saving = false; });
   }
 

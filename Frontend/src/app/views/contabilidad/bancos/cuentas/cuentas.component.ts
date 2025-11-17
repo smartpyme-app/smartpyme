@@ -2,12 +2,12 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -20,19 +20,19 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CuentasComponent extends BasePaginatedComponent implements OnInit {
+export class CuentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public cuentas: PaginatedResponse<any> = {} as PaginatedResponse;
     public cuenta:any = {};
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -76,22 +76,20 @@ export class CuentasComponent extends BasePaginatedComponent implements OnInit {
             this.cuentas = cuentas;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
-    public openModal(template: TemplateRef<any>, cuenta:any) {
+    public override openModal(template: TemplateRef<any>, cuenta:any) {
         this.cuenta = cuenta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
 
     public openFilter(template: TemplateRef<any>) {
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        this.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
 
@@ -141,9 +139,8 @@ export class CuentasComponent extends BasePaginatedComponent implements OnInit {
             }
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
-            this.alertService.modal = false;
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

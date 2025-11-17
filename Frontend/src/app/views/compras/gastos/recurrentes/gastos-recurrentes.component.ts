@@ -2,12 +2,12 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 declare var $:any;
 
@@ -19,7 +19,7 @@ declare var $:any;
     
 })
 
-export class GastosRecurrentesComponent extends BasePaginatedComponent implements OnInit {
+export class GastosRecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public gastos: PaginatedResponse<any> = {} as PaginatedResponse;
     public gasto:any = {};
@@ -29,16 +29,16 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public saving:boolean = false;
+    public override saving:boolean = false;
 
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -79,9 +79,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
         this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            this.closeModal();
         }, error => {this.alertService.error(error); });
     }
 
@@ -150,7 +148,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 
@@ -169,7 +167,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
             this.gasto = {};
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.alertService.success('Venta guardado', 'La gasto fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -179,7 +177,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
     // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargarGastos(){
@@ -214,7 +212,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
 
     public openAbono(template: TemplateRef<any>, gasto:any){
         this.gasto = gasto;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -226,7 +224,7 @@ export class GastosRecurrentesComponent extends BasePaginatedComponent implement
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 }

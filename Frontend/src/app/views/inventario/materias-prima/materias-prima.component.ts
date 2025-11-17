@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-materias-prima',
@@ -15,7 +15,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class MateriasPrimaComponent extends BasePaginatedComponent implements OnInit {
+export class MateriasPrimaComponent extends BasePaginatedModalComponent implements OnInit {
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
@@ -25,12 +25,13 @@ export class MateriasPrimaComponent extends BasePaginatedComponent implements On
     public sucursales:any = [];
     public filtrado:boolean = false;
     public categorias:any = [];
-    modalRef!: BsModalRef;
 
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -101,7 +102,7 @@ export class MateriasPrimaComponent extends BasePaginatedComponent implements On
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
         }
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     onFiltrar(){
@@ -109,7 +110,7 @@ export class MateriasPrimaComponent extends BasePaginatedComponent implements On
         this.apiService.store('materias-primas/filtrar', this.filtro).subscribe(productos => { 
             this.productos = productos;
             this.loading = false; this.filtrado = true;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
@@ -117,7 +118,7 @@ export class MateriasPrimaComponent extends BasePaginatedComponent implements On
     openModalPrecio(template: TemplateRef<any>, producto:any) {
         if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.producto = producto;
-            this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+            this.openModal(template, {class: 'modal-sm'});
         }
 
         // if(this.apiService.auth_user().tipo == 'Administrador') {
@@ -134,7 +135,7 @@ export class MateriasPrimaComponent extends BasePaginatedComponent implements On
             this.producto= {};
             this.alertService.success('Materia prima actualizada', 'La materia prima fue guardada exitosamente.');
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false;
         });
     }

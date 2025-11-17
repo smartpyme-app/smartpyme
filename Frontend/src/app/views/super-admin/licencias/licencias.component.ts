@@ -2,12 +2,12 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-licencias',
@@ -17,20 +17,19 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class LicenciasComponent extends BasePaginatedComponent implements OnInit {
+export class LicenciasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public licencias: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresas:any = [];
     public licencia:any = {};
-    public saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -109,22 +108,20 @@ export class LicenciasComponent extends BasePaginatedComponent implements OnInit
             }else{
                 this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
             }
-            this.modalRef?.hide();
-            this.alertService.modal = false;
+            this.closeModal();
         },error => {this.alertService.error(error); this.saving = false; });
 
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent
+    // openModal() ahora se hereda de BasePaginatedModalComponent
 
-
-    openModal(template: TemplateRef<any>, licencia:any) {
+    override openModal(template: TemplateRef<any>, licencia:any) {
         this.licencia = licencia;
         if (!this.licencia.id) {
             // this.licencia.industria = '';
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
 

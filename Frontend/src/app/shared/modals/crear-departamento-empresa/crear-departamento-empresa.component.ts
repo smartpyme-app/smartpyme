@@ -3,11 +3,11 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@a
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-departamento',
@@ -16,26 +16,26 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearDepartamentoComponent implements OnInit {
+export class CrearDepartamentoComponent extends BaseModalComponent implements OnInit {
 
     public departamento: any = {};
     @Input() id_departamento: any = null;
     @Output() update = new EventEmitter();
-    public loading = false;
-    public saving = false;
-
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     constructor( 
-        private apiService: ApiService, 
-        private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         if(this.id_departamento){
             this.loading = true;
             this.departamento.activo = 1;
@@ -52,17 +52,15 @@ export class CrearDepartamentoComponent implements OnInit {
             this.departamento.id_empresa = this.apiService.auth_user().id_empresa;
         }
         
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public onSubmit() {
         this.saving = true;
         this.apiService.store('departamentosEmpresa', this.departamento).subscribe(departamento => {
             this.update.emit(departamento);
-            this.modalRef?.hide();
+            this.closeModal();
             this.saving = false;
-            this.alertService.modal = false;
             if(!this.id_departamento) {
                 this.alertService.success('Departamento creado', 'El departamento ha sido agregado exitosamente.');
             } else {

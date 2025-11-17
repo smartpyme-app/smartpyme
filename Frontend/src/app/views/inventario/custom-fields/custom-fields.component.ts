@@ -2,12 +2,13 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 interface CustomFieldValue {
@@ -34,7 +35,7 @@ interface CustomField {
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
 
 })
-export class CustomFieldsComponent implements OnInit {
+export class CustomFieldsComponent extends BaseModalComponent implements OnInit {
     public customFields: any = {
         data: [],
         total: 0
@@ -62,15 +63,15 @@ export class CustomFieldsComponent implements OnInit {
         page: 1
     };
 
-    public loading = false;
     public newValue = '';
-    modalRef?: BsModalRef;
 
     constructor(
         public apiService: ApiService,
-        private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -113,7 +114,7 @@ export class CustomFieldsComponent implements OnInit {
         this.filtrarCampos();
     }
 
-    async openModal(template: TemplateRef<any>, field: Partial<CustomField> = {}) {
+    override async openModal(template: TemplateRef<any>, field: Partial<CustomField> = {}) {
         if (!field.id) {
             // Nuevo campo
             this.field = {
@@ -153,7 +154,7 @@ export class CustomFieldsComponent implements OnInit {
             }
         }
     
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+        super.openLargeModal(template);
     }
 
     addValue(value: string) {
@@ -273,7 +274,7 @@ export class CustomFieldsComponent implements OnInit {
                     this.field.id ? 'Campo actualizado exitosamente' : 'Campo creado exitosamente'
                 );
                 this.loadAll();
-                this.modalRef?.hide();
+                this.closeModal();
             },
             error: (error) => this.alertService.error(error),
             complete: () => this.loading = false

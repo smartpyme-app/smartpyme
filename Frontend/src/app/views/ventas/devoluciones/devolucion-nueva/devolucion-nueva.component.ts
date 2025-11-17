@@ -3,10 +3,11 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
 
 @Component({
@@ -18,20 +19,26 @@ import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-de
     
 })
 
-export class DevolucionVentaNuevaComponent implements OnInit {
+export class DevolucionVentaNuevaComponent extends BaseModalComponent implements OnInit {
 
     public venta: any= {};
     public devolucion: any= {};
     public detalle: any = {};
     public documentos:any = [];
     public supervisor:any = {};
-    public loading:boolean = false;
-    public saving:boolean = false;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     public imprimir:boolean = true;
     
-    modalRef!: BsModalRef;
-    
-	constructor(public apiService: ApiService, private alertService: AlertService, private modalService: BsModalService, private sumPipe:SumPipe, private route: ActivatedRoute, private router: Router){
+	constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe,
+        private route: ActivatedRoute,
+        private router: Router
+    ){
+        super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -177,7 +184,7 @@ export class DevolucionVentaNuevaComponent implements OnInit {
 
     // Devolución
         openModalDevolucion(template: TemplateRef<any>) {
-            this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+            this.openModal(template, {class: 'modal-sm'});
             this.devolucion.tipo = 'Cambio de producto';
         }
 

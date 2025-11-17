@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-admin-sucursales',
@@ -15,21 +16,22 @@ import { ApiService } from '@services/api.service';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class AdminSucursalesComponent implements OnInit {
+export class AdminSucursalesComponent extends BaseModalComponent implements OnInit {
 
     public sucursales:any = [];
     public sucursal:any = {};
-    public loading = false;
+    public override loading = false;
     public sucursales_activas:any = 0;
     public filtros:any = {};
 
-    modalRef!: BsModalRef;
-
   	constructor( 
-  	    public apiService: ApiService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-  	) { }
+  	    public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+  	    private route: ActivatedRoute, private router: Router
+  	) {
+        super(modalManager, alertService);
+    }
 
   	ngOnInit() {
         this.filtros.estado = '';
@@ -51,19 +53,13 @@ export class AdminSucursalesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    openModal(template: TemplateRef<any>, sucursal:any) {
+    public override openModal(template: TemplateRef<any>, sucursal:any) {
         this.sucursal = sucursal;
         if(!this.sucursal.id){
             // this.sucursal.id_empresa = this.apiService.auth_user().id_empresa;
             this.sucursal.activo = 1;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
-    }
-
-    closeModal(){
-        this.modalRef.hide();
-        this.alertService.modal = false;
+        super.openModal(template);
     }
 
     public delete(id:number) {
@@ -105,8 +101,9 @@ export class AdminSucursalesComponent implements OnInit {
               this.contarActivos();
               this.sucursal = {};
               this.loading = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
+            if (this.modalRef) {
+                this.closeModal();
+            }
           },error => {this.alertService.error(error); this.loading = false; });
       }
 

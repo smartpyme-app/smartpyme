@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { ModalManagerService } from '../../../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../../../../shared/base/base-modal.component';
 
 @Component({
     selector: 'app-producto-composicion',
@@ -15,26 +16,28 @@ import { ApiService } from '../../../../../services/api.service';
     imports: [CommonModule, RouterModule],
     
 })
-export class ProductoComposicionComponent implements OnInit {
+export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
 	public composicion: any = {};
     public productos:any = [];
-	public loading:boolean = false;
     public buscador:string = '';
 
-	modalRef!: BsModalRef;
-
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+    	private route: ActivatedRoute, 
+    	private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {}
 
     openModal(template: TemplateRef<any>, compuesto:any) {
         this.composicion = compuesto;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     selectProducto(value:any){
@@ -65,7 +68,7 @@ export class ProductoComposicionComponent implements OnInit {
             }
             this.composicion = {};
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false;});
 
     }
