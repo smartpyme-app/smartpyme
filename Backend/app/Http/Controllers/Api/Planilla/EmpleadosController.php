@@ -431,35 +431,48 @@ class EmpleadosController extends Controller
                 $nuevoSalario / $factorAjuste : $nuevoSalario;
             $detalle->salario_devengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
             
-            // Recalcular ISSS y AFP
-            $baseISSSEmpleado = min($detalle->salario_devengado, 1000);
-            $detalle->isss_empleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $detalle->isss_patronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-            $detalle->afp_empleado = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-            $detalle->afp_patronal = $detalle->salario_devengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (antes de calcular deducciones)
+            $detalle->total_ingresos = round($detalle->salario_devengado +
+                $detalle->monto_horas_extra +
+                $detalle->comisiones +
+                $detalle->bonificaciones +
+                $detalle->otros_ingresos, 2);
             
+            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
             $empleado = $detalle->empleado;
             $tipoContrato = $empleado ? $empleado->tipo_contrato : null;
+            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
             
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+            if ($esServiciosProfesionales) {
+                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+                $detalle->isss_empleado = 0;
+                $detalle->isss_patronal = 0;
+                $detalle->afp_empleado = 0;
+                $detalle->afp_patronal = 0;
+            } else {
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (usar total_ingresos)
+                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+            }
+            
+            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (usar total_ingresos)
             $salarioGravado = RentaHelper::calcularSalarioGravado(
-                $detalle->salario_devengado,
+                $detalle->total_ingresos,
                 $detalle->isss_empleado,
                 $detalle->afp_empleado,
                 $planilla->tipo_planilla,
                 $tipoContrato
             );
             
-            $detalle->renta = RentaHelper::calcularRetencionRenta(
+            $detalle->renta = round(RentaHelper::calcularRetencionRenta(
                 $salarioGravado,
                 $planilla->tipo_planilla,
                 $tipoContrato
-            );
-            
-            $detalle->total_ingresos = $detalle->salario_devengado +
-                $detalle->monto_horas_extra +
-                $detalle->comisiones +
-                $detalle->bonificaciones +
-                $detalle->otros_ingresos;
+            ), 2);
                 
             $detalle->total_descuentos = $detalle->isss_empleado +
                 $detalle->afp_empleado +

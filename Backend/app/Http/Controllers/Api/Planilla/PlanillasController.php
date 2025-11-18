@@ -752,11 +752,15 @@ class PlanillasController extends Controller
             $detalle->renta = 0;
 
         } else {
-            // EL SALVADOR (aunque tenga configuración)
-            Log::info('🇸🇻 Usando campos fijos El Salvador', [
-                'pais' => $pais
+            // EL SALVADOR - Usar valores del servicio (que ya maneja servicios profesionales)
+            Log::info('🇸🇻 Usando valores del servicio para El Salvador', [
+                'pais' => $pais,
+                'isss_empleado' => $resultados['isss_empleado'] ?? 0,
+                'afp_empleado' => $resultados['afp_empleado'] ?? 0,
+                'renta' => $resultados['renta'] ?? 0
             ]);
 
+            // El servicio ya calculó correctamente según tipo de contrato (incluyendo servicios profesionales)
             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
@@ -2023,17 +2027,39 @@ class PlanillasController extends Controller
             // Calcular salario devengado proporcional
             $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
 
-            // Calcular deducciones de seguridad social
-            $isssEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-            $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
+            $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
 
-            // Calcular aportes patronales
-            $isssPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-            $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+            if ($esServiciosProfesionales) {
+                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+                $isssEmpleado = 0;
+                $isssPatronal = 0;
+                $afpEmpleado = 0;
+                $afpPatronal = 0;
+            } else {
+                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+                $baseISSSEmpleado = min($salarioDevengado, 1000);
+                $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+                $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+                $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+                $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+            }
 
-            // Calcular renta usando las nuevas tablas
-            $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $planilla->tipo_planilla);
-            $renta = $calculoRenta['retencion_renta'];
+            // Calcular renta usando las nuevas tablas (con tipo de contrato)
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $salarioDevengado,
+                $isssEmpleado,
+                $afpEmpleado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
+            $renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $planilla->tipo_planilla,
+                $tipoContrato
+            );
 
             // Inicializar otros valores
             $horasExtra = 0;
@@ -2478,16 +2504,39 @@ class PlanillasController extends Controller
         $diasLaborados = $diasReferencia;
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
 
-        // Usar tus métodos actuales exactos
-        $baseISSSEmpleado = min($salarioDevengado, 1000);
-        $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
-        $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
-        $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
-        $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+        // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
+        $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
 
-        // Calcular renta usando RentaHelper actual
-        $calculoRenta = $this->calcularRenta($salarioDevengado, $isssEmpleado, $afpEmpleado, $tipoPlanilla);
-        $renta = $calculoRenta['retencion_renta'];
+        // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+        if ($esServiciosProfesionales) {
+            // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            $isssEmpleado = 0;
+            $isssPatronal = 0;
+            $afpEmpleado = 0;
+            $afpPatronal = 0;
+        } else {
+            // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
+            $baseISSSEmpleado = min($salarioDevengado, 1000);
+            $isssEmpleado = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO;
+            $isssPatronal = $baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO;
+            $afpEmpleado = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_EMPLEADO;
+            $afpPatronal = $salarioDevengado * PlanillaConstants::DESCUENTO_AFP_PATRONO;
+        }
+
+        // Calcular renta usando RentaHelper actual (con tipo de contrato)
+        $salarioGravado = RentaHelper::calcularSalarioGravado(
+            $salarioDevengado,
+            $isssEmpleado,
+            $afpEmpleado,
+            $tipoPlanilla,
+            $tipoContrato
+        );
+        $renta = RentaHelper::calcularRetencionRenta(
+            $salarioGravado,
+            $tipoPlanilla,
+            $tipoContrato
+        );
 
         $totalIngresos = $salarioDevengado;
         $totalDescuentos = $isssEmpleado + $afpEmpleado + $renta;
