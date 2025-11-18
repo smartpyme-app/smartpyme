@@ -11,6 +11,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
@@ -57,7 +58,8 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private sharedDataService: SharedDataService
     ){
         super(apiService, alertService, modalManager);
     }
@@ -91,11 +93,16 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
         });
 
         this.getNumsIds();
-        this.apiService.getAll('proveedores/list')
+        this.sharedDataService.getProveedores()
             .pipe(this.untilDestroyed())
-            .subscribe(proveedores => {
-                this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (proveedores) => {
+                    this.proveedores = proveedores;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
     public loadAll() {
@@ -194,33 +201,53 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
         this.compra = compra;
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list')
+            this.sharedDataService.getProyectos()
                 .pipe(this.untilDestroyed())
-                .subscribe(proyectos => {
-                    this.proyectos = proyectos;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (proyectos) => {
+                        this.proyectos = proyectos;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
-        this.apiService.getAll('documentos/list')
+        this.sharedDataService.getDocumentos()
             .pipe(this.untilDestroyed())
-            .subscribe(documentos => {
-                this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+            .subscribe({
+                next: (documentos) => {
+                    this.documentos = documentos;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list')
+            this.sharedDataService.getFormasDePago()
                 .pipe(this.untilDestroyed())
-                .subscribe(formaPagos => {
-                    this.formaPagos = formaPagos;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (formaPagos) => {
+                        this.formaPagos = formaPagos;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list')
+            this.sharedDataService.getUsuarios()
                 .pipe(this.untilDestroyed())
-                .subscribe(usuarios => {
-                    this.usuarios = usuarios;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (usuarios) => {
+                        this.usuarios = usuarios;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         this.openModal(template);
@@ -320,42 +347,67 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
 
     public openFilter(template: TemplateRef<any>) {
 
-        this.apiService.getAll('documentos/list')
+        this.sharedDataService.getDocumentos()
             .pipe(this.untilDestroyed())
-            .subscribe(documentos => {
-                this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+            .subscribe({
+                next: (documentos) => {
+                    this.documentos = documentos;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list')
+            this.sharedDataService.getFormasDePago()
                 .pipe(this.untilDestroyed())
-                .subscribe(formaPagos => {
-                    this.formaPagos = formaPagos;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (formaPagos) => {
+                        this.formaPagos = formaPagos;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         if(!this.sucursales.length){
-            this.apiService.getAll('sucursales/list')
+            this.sharedDataService.getSucursales()
                 .pipe(this.untilDestroyed())
-                .subscribe(sucursales => {
-                    this.sucursales = sucursales;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (sucursales) => {
+                        this.sucursales = sucursales;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list')
+            this.sharedDataService.getUsuarios()
                 .pipe(this.untilDestroyed())
-                .subscribe(usuarios => {
-                    this.usuarios = usuarios;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (usuarios) => {
+                        this.usuarios = usuarios;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list')
+            this.sharedDataService.getProyectos()
                 .pipe(this.untilDestroyed())
-                .subscribe(proyectos => {
-                    this.proyectos = proyectos;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (proyectos) => {
+                        this.proyectos = proyectos;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
         }
 
         this.openModal(template);
@@ -463,11 +515,16 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
 
 
     public abrirModalFiltrosRentabilidad(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list')
+        this.sharedDataService.getSucursales()
             .pipe(this.untilDestroyed())
-            .subscribe(sucursales => {
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (sucursales) => {
+                    this.sucursales = sucursales;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
         this.modalRefRentabilidad = this.modalManager.openModal(template, {
           class: 'modal-lg',

@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { VentaDetallesComponent } from './detalles/venta-detalles.component';
 import { MetodosDePagoComponent } from './metodos-de-pago/metodos-de-pago.component';
@@ -98,7 +99,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private sharedDataService: SharedDataService
   ) {
     super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -166,18 +168,15 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(
-      (usuarios) => {
+    // Cargar todos los usuarios usando SharedDataService (como en compras)
+    this.sharedDataService.getUsuarios().pipe(this.untilDestroyed()).subscribe({
+      next: (usuarios) => {
         this.usuarios = usuarios;
-
-        if (this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false) || this.apiService.validateRole('usuario_supervisor', false)) {
-          this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
-        }
       },
-      (error) => {
+      error: (error) => {
         this.alertService.error(error);
       }
-    );
+    });
 
     this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
