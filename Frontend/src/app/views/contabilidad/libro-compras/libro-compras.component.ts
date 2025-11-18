@@ -2,10 +2,12 @@ import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+    
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import * as moment from 'moment';
@@ -18,23 +20,25 @@ import * as moment from 'moment';
     
 })
 
-export class LibroComprasComponent implements OnInit {
+export class LibroComprasComponent extends BaseModalComponent implements OnInit {
 
     public ivas:any[] = [];
     public years:any[] = [];
     public sucursales:any[] = [];
-    public loading:boolean = false;
+    public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         const currentYear = new Date().getFullYear(); // Obtener el año actual
@@ -83,8 +87,25 @@ export class LibroComprasComponent implements OnInit {
         return this.ivas.some((item:any) => !item.nit_nrc);
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>, config?: any) {
+        super.openModal(template, config);
+    }
+
+    private manejarErrorDescarga(error: any): void {
+        // Si el error viene como Blob (JSON convertido a Blob), leerlo y mostrar el mensaje
+        if (error.error instanceof Blob) {
+            error.error.text().then((text: string) => {
+                try {
+                    const errorJson = JSON.parse(text);
+                    this.alertService.error({ status: error.status || 409, error: { message: errorJson.message } });
+                } catch (e) {
+                    this.alertService.error({ status: error.status || 409, error: { message: text } });
+                }
+            });
+        } else {
+            this.alertService.error(error);
+        }
+        this.downloading = false;
     }
 
     public descargarLibro(){
@@ -102,7 +123,7 @@ export class LibroComprasComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -121,7 +142,7 @@ export class LibroComprasComponent implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -141,8 +162,7 @@ export class LibroComprasComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 
@@ -162,8 +182,7 @@ export class LibroComprasComponent implements OnInit {
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 

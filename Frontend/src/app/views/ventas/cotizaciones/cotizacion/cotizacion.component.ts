@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { VentaDetallesComponent } from '../../facturacion/facturacion-tienda/detalles/venta-detalles.component';
@@ -16,6 +15,8 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -39,7 +40,7 @@ import * as moment from 'moment';
     providers: [SumPipe],
     
 })
-export class CotizacionComponent implements OnInit {
+export class CotizacionComponent extends BaseModalComponent implements OnInit {
   public venta: any = {};
   public evento: any = {};
   public detalle: any = {};
@@ -57,8 +58,8 @@ export class CotizacionComponent implements OnInit {
   public editar = false;
   public canales: any = [];
   public supervisor: any = {};
-  public loading = false;
-  public saving = false;
+  public override loading = false;
+  public override saving = false;
   public sending = false;
   public emiting = false;
   public duplicarventa = false;
@@ -74,8 +75,7 @@ export class CotizacionComponent implements OnInit {
   };
   public customField: boolean = false;
 
-  modalRef!: BsModalRef;
-  modalCredito!: BsModalRef;
+  public modalCredito!: any; // BsModalRef
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
@@ -88,12 +88,13 @@ export class CotizacionComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     public mhService: MHService,
-    private alertService: AlertService,
-    private modalService: BsModalService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router
   ) {
+    super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
       return false;
     };
@@ -896,7 +897,7 @@ if (
   // Facturar
 
   public openModalFacturar(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template, {
+    this.openModal(template, {
       class: 'modal-md',
       backdrop: 'static',
     });
@@ -1026,7 +1027,7 @@ if (
         }
 
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
         this.saving = false;
       },
@@ -1040,7 +1041,7 @@ if (
   //Limpiar
 
   public limpiar() {
-    this.modalRef = this.modalService.show(this.supervisorTemplate, {
+    this.openModal(this.supervisorTemplate, {
       class: 'modal-xs',
     });
   }
@@ -1049,7 +1050,9 @@ if (
     this.loading = true;
     this.apiService.store('usuario-validar', this.supervisor).pipe(this.untilDestroyed()).subscribe(
       (supervisor) => {
-        this.modalRef.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
         this.cargarDatosIniciales();
         this.loading = false;
         this.supervisor = {};

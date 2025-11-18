@@ -2,11 +2,12 @@ import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -20,26 +21,28 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     
 })
 
-export class DocumentosComponent implements OnInit {
+export class DocumentosComponent extends BaseModalComponent implements OnInit {
 
     public documentos:any = [];
     public documento:any = {};
     public sucursales:any = [];
-    public loading:boolean = false;
+    public override loading:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
     public nuevaResolucion:boolean = false;
     public change:boolean = false;
 
-    modalRef!: BsModalRef;
-
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
 
@@ -57,32 +60,44 @@ export class DocumentosComponent implements OnInit {
             }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, documento:any, nuevaResolucion:boolean) {
-        this.documento = documento;
-      
-        this.nuevaResolucion = nuevaResolucion;
-        if (!this.documento.id) {
-            this.documento.id_empresa = this.apiService.auth_user().id_empresa;
-            this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.documento.activo = true;
-            this.documento.correlativo = 1;
-        }
-        this.apiService.getAll('sucursales/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(sucursales => {
+    public override openModal(template: TemplateRef<any>, documento?: any, nuevaResolucion?: boolean): void;
+    public override openModal(template: TemplateRef<any>, config?: any): void;
+    public override openModal(template: TemplateRef<any>, documentoOrConfig?: any, nuevaResolucion?: boolean): void {
+        // Si el segundo parámetro es un objeto con propiedades de documento o es undefined/null
+        // y el tercer parámetro es un boolean, entonces es la firma personalizada
+        const isCustomSignature = nuevaResolucion !== undefined || 
+            (documentoOrConfig && typeof documentoOrConfig === 'object' && !documentoOrConfig.class && !documentoOrConfig.size && !documentoOrConfig.backdrop);
+        
+        if (isCustomSignature) {
+            const documento = documentoOrConfig || {};
+            this.documento = documento;
+            this.nuevaResolucion = nuevaResolucion || false;
+            
+            if (!this.documento.id) {
+                this.documento.id_empresa = this.apiService.auth_user().id_empresa;
+                this.documento.id_sucursal = this.apiService.auth_user().id_sucursal;
+                this.documento.activo = true;
+                this.documento.correlativo = 1;
+            }
+            this.apiService.getAll('sucursales/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error);});
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
-    
-        if (nuevaResolucion) {
-            this.documento.correlativo = '';
-            this.documento.rangos = '';
-            this.documento.numero_autorizacion = '';
-            this.documento.resolucion = '';
-            this.documento.fecha = '';
-            this.documento.activo = true;
-            this.documento.nota = '';
+            super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        
+            if (nuevaResolucion) {
+                this.documento.correlativo = '';
+                this.documento.rangos = '';
+                this.documento.numero_autorizacion = '';
+                this.documento.resolucion = '';
+                this.documento.fecha = '';
+                this.documento.activo = true;
+                this.documento.nota = '';
+            }
+        } else {
+            // Es la firma base, solo pasar la config
+            super.openModal(template, documentoOrConfig);
         }
     }
 
@@ -106,9 +121,8 @@ export class DocumentosComponent implements OnInit {
             }
             this.loading = false;
             this.loadAll();
-            this.alertService.modal = false;
             if (this.modalRef) {
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }

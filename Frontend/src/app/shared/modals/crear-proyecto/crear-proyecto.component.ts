@@ -2,14 +2,14 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearClienteComponent } from '../crear-cliente/crear-cliente.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-proyecto',
@@ -18,29 +18,30 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent],
     
 })
-export class CrearProyectoComponent implements OnInit {
+export class CrearProyectoComponent extends BaseModalComponent implements OnInit {
 
     public proyecto: any = {};
     public clientes: any = [];
     @Input() id_proyecto:any = null;
     @Output() update = new EventEmitter();
-    public loading = false;
-    public saving = false;
-
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         if(!this.clientes.length){
             this.apiService.getAll('clientes/list')
                 .pipe(this.untilDestroyed())
@@ -64,8 +65,7 @@ export class CrearProyectoComponent implements OnInit {
             this.proyecto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.proyecto.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public setTipo(tipo:any){
@@ -78,9 +78,8 @@ export class CrearProyectoComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(proyecto => {
             this.update.emit(proyecto);
-            this.modalRef?.hide();
+            this.closeModal();
             this.saving = false;
-            this.alertService.modal = false;
             this.alertService.success('proyecto creado', 'El proyecto ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
     }

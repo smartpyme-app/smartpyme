@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-licencia-empresas',
@@ -17,22 +18,25 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class LicenciaEmpresasComponent implements OnInit {
+export class LicenciaEmpresasComponent extends BaseModalComponent implements OnInit {
 
     @Input() licencia: any = {};
     public empresas: any = [];
     public empresa: any = {};
     public buscador:string = '';
-    public loading:boolean = false;
-    public saving:boolean = false;
-    modalRef!: BsModalRef;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -47,11 +51,10 @@ export class LicenciaEmpresasComponent implements OnInit {
     }
 
 
-    openModal(template: TemplateRef<any>, empresa:any) {
+    public override openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;
         this.empresa.id_empresa = '';
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     // empresa
@@ -71,8 +74,9 @@ export class LicenciaEmpresasComponent implements OnInit {
                 this.licencia.empresas.push(empresa);
             this.empresa = {};
             this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
+            if (this.modalRef) {
+                this.closeModal();
+            }
             this.alertService.success('Empresa agregado', 'El empresa fue agregado exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
     }

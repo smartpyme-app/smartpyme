@@ -2,12 +2,13 @@ import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { ModalManagerService } from '../../../services/modal-manager.service';
 import { FilterPipe }     from '../../../pipes/filter.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseModalComponent } from '../../../shared/base/base-modal.component';
 
 import * as moment from 'moment';
 
@@ -19,7 +20,7 @@ import * as moment from 'moment';
     providers: [FilterPipe],
     
 })
-export class PromocionesComponent implements OnInit {
+export class PromocionesComponent extends BaseModalComponent implements OnInit {
 
     public productos:any = [];
     public promociones:any = [];
@@ -30,19 +31,22 @@ export class PromocionesComponent implements OnInit {
     public subcategoria:any = {};
     public promocion:any = {};
     public filtro:any = {};
-    public loading:boolean = false;
     
     public producto:any = {};
     public sucursales:any = [];
     public filtrado:boolean = false;
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService, private filterPipe:FilterPipe
-    ){}
+    constructor(
+        public apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private filterPipe:FilterPipe
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -108,7 +112,7 @@ export class PromocionesComponent implements OnInit {
         this.promocion.tipo_descuento = 'Porcentaje';
         this.promocion.descuento = 0;
 
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        this.openModal(template, {class: 'modal-md'});
     }
 
     public openModalPromocion(template: TemplateRef<any>, promocion:any) {
@@ -121,7 +125,7 @@ export class PromocionesComponent implements OnInit {
             this.promocion.fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
         }
 
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        this.openModal(template, {class: 'modal-sm'});
     }
 
     public loadProductos() {
@@ -160,7 +164,7 @@ export class PromocionesComponent implements OnInit {
             this.alertService.success('Promoción guardada', 'La promoción fue guardad exitosamente.');
 
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false;
         });
     }
@@ -183,7 +187,7 @@ export class PromocionesComponent implements OnInit {
                 if (this.promocionesFiltradas.length == i + 1) {
                     this.alertService.success('Promociones agregadas', (i + 1) + " promociones configuradas");
                     this.loading = false;
-                    this.modalRef.hide();
+                    this.closeModal();
                     this.loadAll();
                 }
             },error => {this.alertService.error(error); this.loading = false;});

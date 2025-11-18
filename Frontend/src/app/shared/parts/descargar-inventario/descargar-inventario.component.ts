@@ -1,10 +1,11 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-descargar-inventario',
@@ -12,20 +13,22 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     standalone: true,
     imports: [CommonModule, FormsModule]
 })
-export class DescargarInventarioComponent implements OnInit {
+export class DescargarInventarioComponent extends BaseModalComponent implements OnInit {
 
 	public filtros:any = [];
     public bodegas:any = [];
     public downloading:boolean = false;
-    modalRef!: BsModalRef;
 
 	private destroyRef = inject(DestroyRef);
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {
         this.filtros.id_empresa = this.apiService.auth_user().id_empresa;
@@ -40,9 +43,8 @@ export class DescargarInventarioComponent implements OnInit {
         
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>) {
+        super.openModal(template);
     }
 
     public descargar(){

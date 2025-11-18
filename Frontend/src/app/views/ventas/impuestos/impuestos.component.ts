@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -22,24 +23,26 @@ import Swal from 'sweetalert2';
     
 })
 
-export class ImpuestosComponent implements OnInit {
+export class ImpuestosComponent extends BaseModalComponent implements OnInit {
 
     public impuestos:any = [];
     public impuesto:any = {};
     public catalogo:any = [];
-    public loading:boolean = false;
-    public saving:boolean = false;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -56,7 +59,7 @@ export class ImpuestosComponent implements OnInit {
             }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, impuesto:any) {
+    public override openModal(template: TemplateRef<any>, impuesto:any) {
         this.impuesto = impuesto;
         if (!this.impuesto.id) {
             this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
@@ -67,7 +70,7 @@ export class ImpuestosComponent implements OnInit {
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
             }, error => {this.alertService.error(error);});
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(impuesto:any){
@@ -87,7 +90,9 @@ export class ImpuestosComponent implements OnInit {
                 this.alertService.success('Impuesto guardado', 'El impuesto fue guardado exitosamente.');
             }
             this.saving = false;
-            this.modalRef.hide();
+            if (this.modalRef) {
+                this.closeModal();
+            }
         }, error => {this.alertService.error(error); this.saving = false;});
     }
 

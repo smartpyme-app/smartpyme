@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -17,20 +17,19 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class DashboardsComponent extends BasePaginatedComponent implements OnInit {
+export class DashboardsComponent extends BasePaginatedModalComponent implements OnInit {
 
     public dashboards: PaginatedResponse<any> = {} as PaginatedResponse;
     public dashboard:any = {};
     public empresas:any = [];
-    public saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -99,14 +98,17 @@ export class DashboardsComponent extends BasePaginatedComponent implements OnIni
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent
+    // openModal() ahora se hereda de BasePaginatedModalComponent
 
-
-    openModal(template: TemplateRef<any>, dashboard:any) {
-        this.dashboard = dashboard;
+    override openModal(template: TemplateRef<any>, dashboard?: any) {
+        this.dashboard = dashboard || {};
         if (!this.dashboard.id) {
             // this.dashboard.tipo = 'Administrador';
         }
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, {
+            size: 'lg',
+            backdrop: 'static'
+        });
     }
 
     public onSubmit() {
@@ -121,7 +123,7 @@ export class DashboardsComponent extends BasePaginatedComponent implements OnIni
             }else{
                 this.alertService.success('Dashboard guardado', 'La dashboard fue guardado exitosamente.');
             }
-            this.modalRef?.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.saving = false; });
 
     }

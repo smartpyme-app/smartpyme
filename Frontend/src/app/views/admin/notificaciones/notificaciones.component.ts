@@ -2,12 +2,11 @@ import { Component, OnInit, Input, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
-
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { ModalManagerService } from '../../../services/modal-manager.service';
 import { TruncatePipe } from '../../../pipes/truncate.pipe';
 
 @Component({
@@ -18,7 +17,7 @@ import { TruncatePipe } from '../../../pipes/truncate.pipe';
     
 })
 
-export class NotificacionesComponent extends BasePaginatedComponent implements OnInit {
+export class NotificacionesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public notificacion:any = {};
     public cajas:any = [];
@@ -28,10 +27,12 @@ export class NotificacionesComponent extends BasePaginatedComponent implements O
     public paginacion = [];
     public override filtros:any = {};
 
-    modalRef?: BsModalRef;
-
-    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
-        super(apiService, alertService);
+    constructor(
+        protected override apiService:ApiService,
+        protected override alertService:AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -66,17 +67,17 @@ export class NotificacionesComponent extends BasePaginatedComponent implements O
             this.notificaciones = notificaciones;
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); });
     }
 
-    openModal(template: TemplateRef<any>, notificacion:any) {
+    override openModal(template: TemplateRef<any>, notificacion:any) {
         this.notificacion = notificacion;
         this.notificacion.leido = true;
         this.setEstado(this.notificacion);
 
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
     
 

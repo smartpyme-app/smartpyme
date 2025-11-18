@@ -2,10 +2,11 @@ import { Component, OnInit, TemplateRef, Input, ViewChild, Output, EventEmitter,
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-subcategorias',
@@ -15,9 +16,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     
 })
 
-export class SubCategoriasComponent implements OnInit {
-
-    public loading:boolean = false;
+export class SubCategoriasComponent extends BaseModalComponent implements OnInit {
 
     @Input() subcategorias:any = [];
     @Input() categoria:any = {};
@@ -25,8 +24,6 @@ export class SubCategoriasComponent implements OnInit {
     public subcategoria:any = {};
     public categorias:any = [];
     public cambio:any = {};
-
-    modalRef?: BsModalRef;
 
     // Img Upload
     public file?:File;
@@ -39,9 +36,13 @@ export class SubCategoriasComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         // this.loadAll(this.categoria_id);
@@ -59,9 +60,9 @@ export class SubCategoriasComponent implements OnInit {
     }
 
 
-    openModal(template: TemplateRef<any>, subcategoria:any) {
+    override openModal(template: TemplateRef<any>, subcategoria:any) {
         this.subcategoria = subcategoria;
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-sm', backdrop: 'static'});
     }
 
     slug(){
@@ -91,7 +92,7 @@ export class SubCategoriasComponent implements OnInit {
                 this.categoria.subcategorias.push(subcategoria);
             }
             this.loading = false;
-            this.modalRef?.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -148,7 +149,7 @@ export class SubCategoriasComponent implements OnInit {
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
         }
-        this.modalRef = this.modalService.show(this.categoriasTemplate);
+        super.openModal(this.categoriasTemplate);
 
     }
 
@@ -161,7 +162,7 @@ export class SubCategoriasComponent implements OnInit {
             this.subcategoria.total_productos = 0;
             this.update.emit();
             this.loading = false;
-            this.modalRef?.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 

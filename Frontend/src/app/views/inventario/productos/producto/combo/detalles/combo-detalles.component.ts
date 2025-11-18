@@ -2,13 +2,13 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild,
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { BuscadorProductoComponent } from '../buscador-producto/buscador-producto.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, BuscadorProductoComponent],
     
 })
-export class ComboDetallesComponent implements OnInit {
+export class ComboDetallesComponent extends BaseModalComponent implements OnInit {
 
   @Input() producto: any = {};
   public detalle: any = {};
@@ -29,28 +29,28 @@ export class ComboDetallesComponent implements OnInit {
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
 
-  modalRef!: BsModalRef;
-
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
 
   public buscador: string = '';
-  public loading: boolean = false;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
-    private modalService: BsModalService
-  ) { }
+    private apiService: ApiService, 
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
   }
 
   openModalEdit(template: TemplateRef<any>, detalle: any) {
     this.detalle = detalle;
-    this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    super.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
   public updateTotal(detalle: any) {
@@ -63,7 +63,7 @@ export class ComboDetallesComponent implements OnInit {
 
   public modalSupervisor(detalle: any) {
     this.detalle = detalle;
-    this.modalRef = this.modalService.show(this.supervisorTemplate, { class: 'modal-xs' });
+    this.openModal(this.supervisorTemplate, { class: 'modal-xs' });
   }
 
   public supervisorCheck() {
@@ -71,7 +71,7 @@ export class ComboDetallesComponent implements OnInit {
     this.apiService.store('usuario-validar', this.supervisor)
       .pipe(this.untilDestroyed())
       .subscribe(supervisor => {
-      this.modalRef.hide();
+      this.closeModal();
       this.delete(this.detalle);
       this.loading = false;
       this.supervisor = {};
@@ -99,7 +99,7 @@ export class ComboDetallesComponent implements OnInit {
 
     this.update.emit(this.producto);
     this.detalle = {};
-    if (this.modalRef) { this.modalRef.hide() }
+    this.closeModal();
 
   }
 

@@ -4,12 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SumPipe }     from '@pipes/sum.pipe';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PartidaDetallesComponent } from './detalles/partida-detalles.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
 
@@ -21,23 +22,27 @@ import * as moment from 'moment';
     providers: [SumPipe],
     
 })
-export class PartidaComponent implements OnInit {
+export class PartidaComponent extends BaseModalComponent implements OnInit {
 
     public partida:any = {};
     public catalogos:any = [];
     public proveedor: any = {};
     public cliente: any = {};
-    public loading = false;
-    public saving = false;
-    modalRef?: BsModalRef;
+    public override loading = false;
+    public override saving = false;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor( 
-      private apiService: ApiService, private alertService: AlertService, private sumPipe:SumPipe,
-      private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-  ) { }
+      private apiService: ApiService,
+      protected override alertService: AlertService,
+      protected override modalManager: ModalManagerService,
+      private sumPipe:SumPipe,
+      private route: ActivatedRoute, private router: Router
+  ) {
+      super(modalManager, alertService);
+  }
 
   ngOnInit() {
         this.loadAll();
@@ -106,8 +111,7 @@ export class PartidaComponent implements OnInit {
             this.proveedor.id_usuario = this.apiService.auth_user().id;
             this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
         
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public setTipo(tipo:any){
@@ -120,9 +124,10 @@ export class PartidaComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(proveedor => {
             // this.update.emit(proveedor);
-            this.modalRef?.hide();
+            if (this.modalRef) {
+                this.closeModal();
+            }
             this.saving = false;
-            this.alertService.modal = false;
             this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
     }
@@ -133,13 +138,11 @@ export class PartidaComponent implements OnInit {
             this.cliente.id_usuario = this.apiService.auth_user().id;
             this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        this.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
-    openModal(template: TemplateRef<any>) {
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+    public override openModal(template: TemplateRef<any>, config?: any) {
+        super.openModal(template, config || { class: 'modal-md', backdrop: 'static' });
     }
 
     public setTipoCliente(tipo:any){
@@ -152,9 +155,10 @@ export class PartidaComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(cliente => {
             // this.update.emit(cliente);
-            this.modalRef?.hide();
+            if (this.modalRef) {
+                this.closeModal();
+            }
             this.saving = false;
-            this.alertService.modal = false;
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
     }
@@ -173,7 +177,9 @@ export class PartidaComponent implements OnInit {
                 this.alertService.info('No hay registros', 'No se encontraron transacciones.')
             }else{
                 this.sumTotal();
-                this.modalRef?.hide();
+                if (this.modalRef) {
+                    this.closeModal();
+                }
             }
 
             this.saving = false;

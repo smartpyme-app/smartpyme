@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import * as moment from 'moment';
 
 declare var $:any;
@@ -18,28 +19,30 @@ declare var $:any;
     imports: [CommonModule, RouterModule],
     
 })
-export class ProductoPromocionesComponent implements OnInit {
+export class ProductoPromocionesComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
 	public promocion: any = {};
-	public loading:boolean = false;
-
-	modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+    	private route: ActivatedRoute, 
+    	private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {
         // this.loadAll();
     }
 
     // Promociones
-    openModal(template: TemplateRef<any>, promocion:any) {
+    override openModal(template: TemplateRef<any>, promocion:any) {
         this.promocion = promocion;
         if (!this.promocion.id) {
             this.promocion.inicio = moment().startOf('day').format('YYYY-MM-DDTHH:mm');
@@ -48,7 +51,7 @@ export class ProductoPromocionesComponent implements OnInit {
             this.promocion.inicio = moment(this.promocion.inicio).format('YYYY-MM-DDTHH:mm');
             this.promocion.fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
         }
-        this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        super.openModal(template, {class: 'modal-sm'});
     }
 
     onSubmit(){
@@ -62,7 +65,7 @@ export class ProductoPromocionesComponent implements OnInit {
             }
             this.promocion = {};
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false;});
     }
 

@@ -7,6 +7,8 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-modules',
@@ -15,9 +17,8 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ModulesComponent implements OnInit {
+export class ModulesComponent extends BaseModalComponent implements OnInit {
   public modules: any = {};
-  public loading: boolean = false;
   public filtros = {
     buscador: '',
     paginate: 10,
@@ -35,19 +36,17 @@ export class ModulesComponent implements OnInit {
     submodules: [],
     custom_permissions: []
 };
-@ViewChild('moduleModal') moduleModal!: TemplateRef<any>;  // Agregar esta línea
-
-
-  modalRef!: BsModalRef;
-
+@ViewChild('moduleModal') moduleModal!: TemplateRef<any>;
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
-    private modalService: BsModalService
-  ) { }
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
     this.loadModules();
@@ -106,7 +105,7 @@ export class ModulesComponent implements OnInit {
     }
   }
 
-  openModal(template: TemplateRef<any>, module: any = null) {
+  override openModal(template: TemplateRef<any>, module: any = null) {
     if (module) {
       this.module = {...module};
     } else {
@@ -117,13 +116,7 @@ export class ModulesComponent implements OnInit {
         status: true
       };
     }
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
-    this.alertService.modal = true;
-  }
-
-  closeModal() {
-    this.modalRef.hide();
-    this.alertService.modal = false;
+    super.openLargeModal(template);
   }
 
   saveModule() {

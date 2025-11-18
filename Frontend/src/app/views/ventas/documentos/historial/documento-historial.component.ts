@@ -5,9 +5,9 @@ import { RouterModule } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-documento-historial',
@@ -16,7 +16,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class DocumentoHistorialComponent extends BasePaginatedComponent implements OnInit {
+export class DocumentoHistorialComponent extends BasePaginatedModalComponent implements OnInit {
     public documentos: PaginatedResponse<any> = {} as PaginatedResponse;
     public documento:any = {};
     public nombre: string = '';
@@ -27,16 +27,14 @@ export class DocumentoHistorialComponent extends BasePaginatedComponent implemen
     };
     public sucursales: any = [];
 
-    modalRef!: BsModalRef;
-
     constructor(
         private route: ActivatedRoute,
         private router: Router,
         alertService: AlertService,
         apiService: ApiService,
-        private modalService: BsModalService
+        modalManager: ModalManagerService
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected override getPaginatedData(): PaginatedResponse | null {
@@ -87,7 +85,7 @@ export class DocumentoHistorialComponent extends BasePaginatedComponent implemen
 
     // setPagination() ahora se hereda de BasePaginatedComponent
 
-    public openModal(template: TemplateRef<any>, documento:any) {
+    override openModal(template: TemplateRef<any>, documento:any) {
         this.documento = documento;
         console.log('documento', this.documento);
 
@@ -95,7 +93,7 @@ export class DocumentoHistorialComponent extends BasePaginatedComponent implemen
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
         
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     

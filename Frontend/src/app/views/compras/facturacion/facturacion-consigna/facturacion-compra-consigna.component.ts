@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -23,7 +24,7 @@ import * as moment from 'moment';
     
 })
 
-export class FacturacionCompraConsignaComponent implements OnInit {
+export class FacturacionCompraConsignaComponent extends BaseModalComponent implements OnInit {
 
     public compra: any= {};
     public usuarios:any = [];
@@ -34,29 +35,30 @@ export class FacturacionCompraConsignaComponent implements OnInit {
     public bancos:any = [];
     public canales:any = [];
     public supervisor:any = {};
-    public loading = false;
+    public override loading = false;
     public imprimir:boolean = false;
     
     // Propiedades para agregar productos/servicios
     public productos: any[] = [];
     public servicios: any[] = [];
-    public productosModal!: BsModalRef;
+    public productosModal!: any; // BsModalRef
     public searchTerm: string = '';
     public searchResults: any[] = [];
     public searchLoading: boolean = false;
     public searchProductos$ = new Subject<string>();
     public detalle: any = {};
-    
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService, private sumPipe:SumPipe,
+	    public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router,
 	) {
+        super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         
         // Configurar búsqueda dinámica de productos
@@ -181,7 +183,7 @@ export class FacturacionCompraConsignaComponent implements OnInit {
         this.detalle = {};
         this.searchResults = [];
         this.searchTerm = '';
-        this.productosModal = this.modalService.show(template, { class: 'modal-lg' });
+        this.productosModal = this.modalManager.openModal(template, { class: 'modal-lg' });
     }
 
     public onSearchProducts(term: string) {
@@ -201,7 +203,8 @@ export class FacturacionCompraConsignaComponent implements OnInit {
             img: producto.img || 'default-product.png',
             tipo: producto.tipo
         };
-        this.productosModal.hide();
+        this.modalManager.closeModal(this.productosModal);
+        this.productosModal = undefined;
         this.addDetalle();
     }
 
@@ -230,7 +233,7 @@ export class FacturacionCompraConsignaComponent implements OnInit {
     // Facturar
 
         public openModalFacturar(template: TemplateRef<any>) {
-            this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop:'static'});
+            this.openModal(template, {class: 'modal-md', backdrop:'static'});
         }
 
         public onFacturar(){

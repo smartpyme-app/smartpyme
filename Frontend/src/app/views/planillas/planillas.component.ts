@@ -2,14 +2,15 @@ import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import {BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
+import {BsModalRef} from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -19,10 +20,9 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class PlanillasComponent extends BasePaginatedComponent implements OnInit {
+export class PlanillasComponent extends BasePaginatedModalComponent implements OnInit {
   public planillas: PaginatedResponse<any> = {} as PaginatedResponse;
   public planilla: any = {};
-  public saving: boolean = false;
   public procesando: boolean = false;
   public planillaEdit: any = {};
   public modoDuplicacion: boolean = false;
@@ -59,16 +59,15 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
 
   public usuario: any = {};
   public periodos: any[] = [];
-  modalRef!: BsModalRef;
 
   @ViewChild('mNuevaPlanilla') mNuevaPlanilla!: TemplateRef<any>;
 
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    private modalService: BsModalService
+    modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
     this.generarPeriodos();
   }
 
@@ -140,7 +139,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
   public filtrarPlanillas() {
     this.loadPlanillas();
     if (this.modalRef) {
-      this.modalRef.hide();
+      this.closeModal();
     }
   }
 
@@ -158,7 +157,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
   // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openFilter(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
   public openNuevaPlanilla(
@@ -174,7 +173,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
       planillaTemplate: planillaParaDuplicar ? planillaParaDuplicar.id : null,
     };
 
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
   public generarPlanilla() {
@@ -194,7 +193,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
       next: (response) => {
         this.alertService.success('Exito', 'Planilla generada exitosamente');
         this.loadPlanillas();
-        this.modalRef.hide();
+        this.closeModal();
         this.saving = false;
       },
       error: (error) => {
@@ -516,9 +515,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
       fecha_fin: this.formatearFecha(planilla.fecha_fin),
     };
 
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-    });
+    super.openLargeModal(template);
   }
 
   private formatearFecha(fecha: string): string {
@@ -552,7 +549,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
             'Planilla actualizada exitosamente'
           );
           this.loadPlanillas();
-          this.modalRef.hide();
+          this.closeModal();
           this.saving = false;
         },
         error: (error) => {
@@ -589,8 +586,8 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
     this.apiService.download('planillas/generar');
   }
 
-  openModal(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template);
+  override openModal(template: TemplateRef<any>) {
+    super.openModal(template);
   }
 
   onFileSelected(event: any) {
@@ -692,7 +689,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
           'Éxito',
           'Planillas importadas correctamente'
         );
-        this.modalRef.hide();
+        this.closeModal();
         this.loadPlanillas(); // Recargar la lista de planillas
         this.procesandoImportacion = false;
       },
@@ -721,7 +718,7 @@ export class PlanillasComponent extends BasePaginatedComponent implements OnInit
           link.download = `planillas_${new Date().getTime()}.xlsx`;
           link.click();
           window.URL.revokeObjectURL(url);
-          this.modalRef.hide();
+          this.closeModal();
           this.procesandoExportacion = false;
         },
         (error) => {

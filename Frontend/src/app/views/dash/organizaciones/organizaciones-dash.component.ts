@@ -2,10 +2,11 @@ import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
 
@@ -16,23 +17,25 @@ import * as moment from 'moment';
     imports: [CommonModule, RouterModule],
     
 })
-export class OrganizacionesDashComponent implements OnInit {
+export class OrganizacionesDashComponent extends BaseModalComponent implements OnInit {
 
     public dash:any = {};
     public sucursales:any[] = [];
     public filtro:any = {};
     public saludo:string = '';
     public usuario:any = {};
-    public loading:boolean = false;
-    modalRef!: BsModalRef;
+    public override loading:boolean = false;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService
-    ) { }
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
 
     ngOnInit() {
@@ -64,8 +67,8 @@ export class OrganizacionesDashComponent implements OnInit {
         this.onFiltrar();
     }
 
-    public openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    public override openModal(template: TemplateRef<any>, config?: any) {
+        super.openModal(template, config);
     } 
     
     public onFiltrar(){     
@@ -77,7 +80,7 @@ export class OrganizacionesDashComponent implements OnInit {
             console.log(this.dash);
             this.loading = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {this.alertService.error(error); this.loading = false;});
 

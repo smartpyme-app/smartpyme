@@ -38,6 +38,7 @@
     <div class="d-flex mb-3">
         <div class="col d-flex gap-2">
             <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)"  (click)="loadAll()">Todos</button>
+            <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/abonos">Abonos</button>
             <button class="btn " routerLinkActive="btn-primary" [routerLinkActiveOptions]="{exact: true}" routerLink="/gastos/recurrentes">Recurrentes</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
@@ -124,7 +125,7 @@
                         <td>{{gasto.tipo_documento}} #{{gasto.referencia}}</td>
                         <td>{{gasto.forma_pago}}</td>
                         <td>
-                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado' || gasto.estado == 'Anulada', 'bg-warning' : gasto.estado == 'Pendiente', 
+                            <span class="badge py-2 position-relative" style="font-size: 0.8rem;" [ngClass]="{'bg-danger' : gasto.estado == 'Cancelado' || gasto.estado == 'Anulada', 'bg-warning' : gasto.estado == 'Pendiente',
                             'bg-success' : gasto.estado == 'Confirmado', 'bg-info' : gasto.estado == 'Pagado'}">
                                 {{ gasto.estado }}
                                 @if (apiService.auth_user().empresa.facturacion_electronica && gasto.sello_mh) {
@@ -155,9 +156,9 @@
                                     <a routerLink="/gasto/detalles/{{gasto.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
-                                    @if (gasto.estado == 'Pendiente' && apiService.canEditTest('gastos.editar')) {
-                                        <a (click)="gasto.estado = 'Confirmado'; setEstado(gasto);" class="list-group-item list-group-item-action border-0 click">
-                                            <i class="fas fa-fw fa-credit-card"></i> Pagar
+                                    @if (gasto.estado == 'Pendiente' && apiService.canEdit()) {
+                                        <a (click)="openAbono(mabono, gasto)" class="list-group-item list-group-item-action border-0 click">
+                                            <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar gasto
                                         </a>
                                     }
                                     @if (apiService.canEditTest('gastos.editar')) {
@@ -393,4 +394,14 @@
 
         </div>
   </div>
+</ng-template>
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h5 class="modal-title mb-0">Recibo de pago </h5>
+        <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="filtrarGastos()"></app-crear-abono-gasto>
+    </div>
 </ng-template>

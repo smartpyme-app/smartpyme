@@ -5,11 +5,11 @@ import { RouterModule } from '@angular/router';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 import { fromEvent, timer } from 'rxjs';
 
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-compra-producto',
@@ -18,10 +18,9 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CompraProductoComponent implements OnInit {
+export class CompraProductoComponent extends BaseModalComponent implements OnInit {
 
 	@Output() productoSelect = new EventEmitter();
-	modalRef?: BsModalRef;
 
 	public productos:any = [];
     public producto: any = {};
@@ -32,21 +31,24 @@ export class CompraProductoComponent implements OnInit {
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService
-	) { }
+	    private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+	) {
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {
 	}
 
-	openModal(template: TemplateRef<any>) {
+	override openModal(template: TemplateRef<any>) {
         this.detalle = {};
 
         this.detalle.tipo = 'Gravada';
         this.detalle.descuento = 0;
         this.detalle.otros = 0;
 
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg'})
+        super.openModal(template, {class: 'modal-lg'});
         const input = document.getElementById('example')!;
         const example = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
         const debouncedInput = example.pipe(debounceTime(500));
@@ -65,7 +67,7 @@ export class CompraProductoComponent implements OnInit {
         }else if (!this.producto.nombre  || this.producto.nombre.length < 1 ){ this.searching = false; this.producto = {}; this.productos.total = 0; }
     }
 
-    selectProducto(producto){
+    selectProducto(producto: any){
         this.producto = producto;
     	this.detalle.producto_id = producto.id;
         this.detalle.categoria_id = producto.categoria_id;
@@ -90,7 +92,7 @@ export class CompraProductoComponent implements OnInit {
 
     agregarDetalle(){
         this.productoSelect.emit({detalle: this.detalle});
-        this.modalRef?.hide();
+        this.closeModal();
 	}
 
     clear(){

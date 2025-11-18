@@ -6,7 +6,8 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
@@ -26,11 +27,11 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class AdministrarEmpleadoComponent implements OnInit {
+export class AdministrarEmpleadoComponent extends BaseModalComponent implements OnInit {
   private eventListener: any;
   public empleado: any = {};
-  public loading = false;
-  public saving = false;
+  public override loading = false;
+  public override saving = false;
   public departamentos: any = [];
   public cargos: any = [];
   public paises: any = [];
@@ -73,20 +74,19 @@ export class AdministrarEmpleadoComponent implements OnInit {
     pagina: 1
   };
 
-  modalRef!: BsModalRef;
-
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
-    private modalService: BsModalService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
     private changeDetectorRef: ChangeDetectorRef,
     
   ) {
+    super(modalManager, alertService);
     this.eventListener = () => {
       this.setActiveTab('historiales');
     };
@@ -196,7 +196,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
       fecha_vencimiento: null,
     };
     this.archivoSeleccionado = null;
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public onFileSelected(event: any) {
@@ -237,7 +237,9 @@ export class AdministrarEmpleadoComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.alertService.success('Exito','Documento guardado exitosamente');
-          this.modalRef?.hide();
+          if (this.modalRef) {
+            this.closeModal();
+          }
           // Recargar documentos
           this.loadDocumentos();
           this.saving = false;
@@ -412,10 +414,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
     };
   }
 
-  public openModal(template: TemplateRef<any>) {
+  public override openModal(template: TemplateRef<any>, config?: any) {
     this.departamento = {};
     this.cargo = {};
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template, config);
   }
 
   public openModalCargo(template: TemplateRef<any>) {
@@ -434,7 +436,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
       activo: true,
     };
 
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   public getNombreTipoContrato(id: number): string {
@@ -457,7 +459,9 @@ export class AdministrarEmpleadoComponent implements OnInit {
 
         this.onDepartamentoChange(response.id);
 
-        this.modalRef?.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
         this.saving = false;
       },
       (error) => {
@@ -493,7 +497,9 @@ export class AdministrarEmpleadoComponent implements OnInit {
           }, 100);
         });
         
-        this.modalRef?.hide();
+        if (this.modalRef) {
+          this.closeModal();
+        }
         this.saving = false;
       },
       (error) => {
@@ -708,20 +714,38 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.empleado.id_empresa = this.id_empresa;
     this.empleado.id_sucursal = this.id_sucursal;
 
-    this.apiService.store('empleados', this.empleado).pipe(this.untilDestroyed()).subscribe(
-      (response) => {
-        const mensaje = this.empleado.id
-          ? 'Empleado actualizado exitosamente'
-          : 'Empleado creado exitosamente';
+    // Determinar si es actualización o creación
+    const esActualizacion = !!this.empleado.id;
 
-        this.alertService.success('Éxito', mensaje);
-        this.router.navigate(['/planilla/empleados']);
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+    if (esActualizacion) {
+      // Usar el endpoint update para actualizar
+      this.apiService.update('empleados', this.empleado.id, this.empleado)
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (response) => {
+            this.alertService.success('Éxito', 'Empleado actualizado exitosamente');
+            this.router.navigate(['/planilla/empleados']);
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.saving = false;
+          }
+        );
+    } else {
+      // Usar el endpoint store para crear
+      this.apiService.store('empleados', this.empleado)
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (response) => {
+            this.alertService.success('Éxito', 'Empleado creado exitosamente');
+            this.router.navigate(['/planilla/empleados']);
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.saving = false;
+          }
+        );
+    }
   }
 
   public verificarSiExiste() {

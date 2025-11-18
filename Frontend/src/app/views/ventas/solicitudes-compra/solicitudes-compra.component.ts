@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -17,7 +17,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class SolicitudesCompraComponent extends BasePaginatedComponent implements OnInit {
+export class SolicitudesCompraComponent extends BasePaginatedModalComponent implements OnInit {
 
     public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public compra:any = {};
@@ -30,12 +30,12 @@ export class SolicitudesCompraComponent extends BasePaginatedComponent implement
     public override filtros:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -92,7 +92,7 @@ export class SolicitudesCompraComponent extends BasePaginatedComponent implement
                 this.compras = compras;
                 this.loading = false;
                 if(this.modalRef){
-                    this.modalRef.hide();
+                    this.closeModal();
                 }
             }, error => {this.alertService.error(error); });
     }
@@ -137,7 +137,7 @@ export class SolicitudesCompraComponent extends BasePaginatedComponent implement
                 this.documentos = documentos;
             }, error => {this.alertService.error(error);});
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public onSubmit() {
@@ -146,7 +146,9 @@ export class SolicitudesCompraComponent extends BasePaginatedComponent implement
             .pipe(this.untilDestroyed())
             .subscribe(compra => {
                 this.compra = {};
-                this.modalRef.hide();
+                if (this.modalRef) {
+                    this.closeModal();
+                }
                 this.loading = false;
                 this.alertService.success('Solicitud de compra guardada', 'La solicitud de compra fue guardada exitosamente.');
             },error => {this.alertService.error(error); this.loading = false; });
@@ -166,7 +168,7 @@ export class SolicitudesCompraComponent extends BasePaginatedComponent implement
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public imprimir(compra:any){

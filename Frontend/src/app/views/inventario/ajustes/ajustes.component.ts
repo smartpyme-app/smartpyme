@@ -3,18 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-ajustes',
@@ -23,11 +23,10 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
 
 })
-export class AjustesComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class AjustesComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
 	public ajustes:any = [];
     public ajuste:any = {};
-    public saving:boolean = false;
     public downloading:boolean = false;
     public productos:any = [];
     public bodegas:any = [];
@@ -38,12 +37,14 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
     public productosInput$ = new Subject<string>();
     public loadingProductos: boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
         this.productosInput$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
@@ -201,7 +202,7 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
         this.ajuste.ajuste =  this.ajuste.stock_real - this.ajuste.stock_actual;
     }
 
-    public openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.ajuste = {
             id_producto: '',
             id_bodega: '',
@@ -212,8 +213,7 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
         this.productos = [];
         this.producto = {};
 
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -227,7 +227,7 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public onSubmit() {
@@ -237,7 +237,7 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
             .subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
-            this.modalRef.hide();
+            this.closeModal();
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});
@@ -250,7 +250,7 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
             .subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
-            this.modalRef.hide();
+            this.closeModal();
             this.loadAll();
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false;});

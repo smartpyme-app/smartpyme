@@ -2,13 +2,13 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 declare var $:any;
 
@@ -20,7 +20,7 @@ declare var $:any;
 
 })
 
-export class ComprasRecurrentesComponent extends BasePaginatedComponent implements OnInit {
+export class ComprasRecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public compras: PaginatedResponse<any> = {} as PaginatedResponse;
     public compra:any = {};
@@ -30,17 +30,17 @@ export class ComprasRecurrentesComponent extends BasePaginatedComponent implemen
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public downloading:boolean = false;
 
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -85,9 +85,7 @@ export class ComprasRecurrentesComponent extends BasePaginatedComponent implemen
             .subscribe(compras => { 
                 this.compras = compras;
                 this.loading = false;
-                if(this.modalRef){
-                    this.modalRef.hide();
-                }
+                this.closeModal();
             }, error => {this.alertService.error(error); });
     }
 
@@ -164,7 +162,7 @@ export class ComprasRecurrentesComponent extends BasePaginatedComponent implemen
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 
@@ -228,7 +226,7 @@ export class ComprasRecurrentesComponent extends BasePaginatedComponent implemen
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
 }

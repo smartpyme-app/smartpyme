@@ -360,7 +360,7 @@ class MHDTEController extends Controller
             $registro = Venta::findOrFail($id);
         }
 
-        if ($tipo == '05') {
+        if ($tipo == '05' || $tipo == '06') {
             $registro = DevolucionVenta::findOrFail($id);
         }
 
@@ -394,7 +394,7 @@ class MHDTEController extends Controller
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }
 
-        if ($request->tipo_dte == '05') {
+        if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
             $registro = DevolucionVenta::with('cliente')->where('id', $request->id)->firstOrFail();
             $correo = $registro->cliente ? $registro->cliente->correo : null;
         }

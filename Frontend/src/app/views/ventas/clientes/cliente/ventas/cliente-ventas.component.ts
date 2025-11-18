@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-cliente-ventas',
@@ -18,22 +18,24 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class ClienteVentasComponent extends BasePaginatedComponent implements OnInit {
+export class ClienteVentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public id:any;
 	public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
 
     public filtro:any = {};
 
-	modalRef!: BsModalRef;
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
+    protected override destroyRef = inject(DestroyRef);
+    protected override untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(apiService: ApiService, alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,  
+    	private route: ActivatedRoute, 
+        private router: Router,
+    	modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -63,7 +65,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
 
                 	        
         if(isNaN(this.id)){
-            this.ventas = [];
+            this.ventas = {} as PaginatedResponse;
         }
         else{
             this.loading = true;
@@ -102,8 +104,8 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
         }, error => {this.alertService.error(error); });
     }
 
-    openModal(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+    override openModal(template: TemplateRef<any>) {
+        super.openModal(template);
     }
 
     public cobrarTodo(){
@@ -135,7 +137,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
             }
         }
         this.loadAll();
-        this.modalRef.hide();
+        this.closeModal();
     }
 
 

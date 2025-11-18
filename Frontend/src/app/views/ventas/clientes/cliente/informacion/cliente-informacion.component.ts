@@ -6,11 +6,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TagInputModule } from 'ngx-chips';
 
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -20,12 +20,12 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
     
 })
-export class ClienteInformacionComponent implements OnInit {
+export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
   public cliente: any = {
     contactos: [], // Inicializar el array de contactos
   };
-  public loading = false;
-  public saving = false;
+  public override loading = false;
+  public override saving = false;
   public paises: any = [];
   public departamentos: any = [];
   public distritos: any = [];
@@ -38,17 +38,18 @@ export class ClienteInformacionComponent implements OnInit {
   public tipoAnterior = '';
   public catalogo:any = [];
 
-  modalRef?: BsModalRef;
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
-    private router: Router,
-    private modalService: BsModalService
-  ) {}
+    private router: Router
+  ) {
+    super(modalManager, alertService);
+  }
 
     ngOnInit() {
         this.loadAll();
@@ -222,7 +223,7 @@ export class ClienteInformacionComponent implements OnInit {
   //   });
   // }
 
-  openModal(template: TemplateRef<any>, contacto: any) {
+  public override openModal(template: TemplateRef<any>, contacto?: any) {
 
     if (!contacto || contacto === null) {
 
@@ -232,7 +233,7 @@ export class ClienteInformacionComponent implements OnInit {
       this.contacto = { ...contacto };
     }
 
-    this.modalRef = this.modalService.show(template, {
+    super.openModal(template, {
       class: 'modal-lg',
       backdrop: 'static',
     });
@@ -241,10 +242,7 @@ export class ClienteInformacionComponent implements OnInit {
 
   agregarContacto(template: TemplateRef<any>) {
     this.contacto = {};
-    this.modalRef = this.modalService.show(template, {
-      class: 'modal-lg',
-      backdrop: 'static',
-    });
+    this.openModal(template, null);
   }
 
   submit(event: Event) {
@@ -308,7 +306,7 @@ export class ClienteInformacionComponent implements OnInit {
           this.contacto = {};
           this.loading_contacto = false;
           if (this.modalRef) {
-            this.modalRef.hide();
+            this.closeModal();
           }
         },
         error: (error) => {
@@ -329,7 +327,7 @@ export class ClienteInformacionComponent implements OnInit {
 
       this.contacto = {};
       if (this.modalRef) {
-        this.modalRef.hide();
+        this.closeModal();
       }
 
       this.alertService.success(

@@ -2,11 +2,12 @@ import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -18,24 +19,24 @@ import Swal from 'sweetalert2';
     
 })
 
-export class GastosCategoriasComponent implements OnInit {
+export class GastosCategoriasComponent extends BaseModalComponent implements OnInit {
 
     public categorias:any = [];
     public categoria:any = {};
     public catalogo:any = [];
-    public loading:boolean = false;
-    public saving:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        public apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -52,7 +53,7 @@ export class GastosCategoriasComponent implements OnInit {
         }, error => {this.alertService.error(error); });
     }
 
-    public openModal(template: TemplateRef<any>, categoria:any) {
+    override openModal(template: TemplateRef<any>, categoria:any) {
         this.categoria = categoria;
         if (!this.categoria.id) {
             this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
@@ -63,7 +64,7 @@ export class GastosCategoriasComponent implements OnInit {
           .subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public setEstado(categoria:any){
@@ -83,7 +84,7 @@ export class GastosCategoriasComponent implements OnInit {
                 this.alertService.success('Categoria guardado', 'El categoria fue guardado exitosamente.');
             }
             this.saving = false;
-            this.modalRef.hide();
+            this.closeModal();
             this.loadAll();
         }, error => {this.alertService.error(error); this.saving = false;});
     }

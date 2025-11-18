@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-categorias',
@@ -16,19 +16,19 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     
 })
 
-export class CategoriasComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class CategoriasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public categorias: any = {};
     public categoria: any = {};
     public sucursales: any = [];
     public catalogo: any = [];
 
-    modalRef?: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -75,14 +75,16 @@ export class CategoriasComponent extends BaseFilteredPaginatedComponent implemen
 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
-    public openModal(template: TemplateRef<any>, categoria: any) {
-        this.categoria = categoria;
+    override openModal(template: TemplateRef<any>, categoria?: any) {
+        this.categoria = categoria || {};
         if (!this.categoria.id) {
             this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
             this.categoria.enable = true;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, {
+            class: 'modal-lg',
+            backdrop: 'static'
+        });
     }
 
     public setEstado(categoria: any) {
@@ -100,10 +102,9 @@ export class CategoriasComponent extends BaseFilteredPaginatedComponent implemen
             }else{
                 this.alertService.success('Categoria guardada', 'La categoria fue guardada exitosamente.');
             }
-            this.alertService.modal = false;
             this.filtrarCategorias();
             this.loading = false;
-            this.modalRef?.hide();
+            this.closeModal();
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 

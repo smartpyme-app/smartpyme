@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
@@ -21,27 +22,30 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     
 })
 
-export class CrearEmpresaComponent implements OnInit {
+export class CrearEmpresaComponent extends BaseModalComponent implements OnInit {
 
     public empresa:any = {};
     public clientes:any = [];
     public documentos:any = [];
-    public loading:boolean = false;
-    public saving:boolean = false;
+    public override loading:boolean = false;
+    public override saving:boolean = false;
     public licencia:boolean = false;
     public filtros:any = {};
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
 
-    modalRef!: BsModalRef;
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-    ) { }
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, private router: Router
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -217,7 +221,7 @@ export class CrearEmpresaComponent implements OnInit {
     }
 
 
-    openModal(template: TemplateRef<any>, empresa:any) {
+    public override openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;
         if (!this.empresa.id) {
             this.empresa.industria = '';
@@ -231,7 +235,7 @@ export class CrearEmpresaComponent implements OnInit {
             this.empresa.editar_precio_venta = 1;
             this.empresa.numero_lineas_impresion = 6;
         }
-        this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
 

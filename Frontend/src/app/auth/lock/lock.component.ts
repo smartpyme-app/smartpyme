@@ -1,12 +1,12 @@
 import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
-import { Router, ActivatedRoute } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { AlertService } from '../../services/alert.service';
 import { ApiService } from '../../services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '../../services/modal-manager.service';
+import { BaseModalComponent } from '../../shared/base/base-modal.component';
 
 declare let $:any;
 
@@ -17,21 +17,25 @@ declare let $:any;
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class LockComponent implements OnInit {
+export class LockComponent extends BaseModalComponent implements OnInit {
 
     public usuarios: any = [];
     public usuario: any = {};
     public filtro: any = {};
     public user: any = {};
-    public loading = false;
     public saludo:string = '';
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( private apiService: ApiService, private router: Router, private alertService: AlertService, private modalService: BsModalService) { }
+    constructor( 
+        private apiService: ApiService, 
+        private router: Router, 
+        protected override alertService: AlertService, 
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.saludo = this.apiService.saludar();
@@ -53,9 +57,9 @@ export class LockComponent implements OnInit {
             });
     }
 
-    openModal(template: TemplateRef<any>, user:any) {
+    override openModal(template: TemplateRef<any>, user:any) {
         this.user = user;
-        this.modalRef = this.modalService.show(template, { class: 'modal-sm' });
+        super.openModal(template, { size: 'sm' });
     }
 
     onSubmit() {
@@ -69,7 +73,7 @@ export class LockComponent implements OnInit {
                 next: (data) => {
                     this.router.navigate(['/']);
                     this.loading = false;
-                    this.modalRef.hide();
+                    this.closeModal();
                 },
                 error: (error) => {
                     $('.modal').addClass("animated shake");

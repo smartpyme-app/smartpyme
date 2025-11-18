@@ -2,10 +2,9 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@an
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
@@ -13,6 +12,7 @@ import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-tienda-venta-producto',
@@ -21,11 +21,10 @@ import { AlertService } from '@services/alert.service';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent],
     
 })
-export class TiendaVentaProductoComponent extends BasePaginatedComponent implements OnInit {
+export class TiendaVentaProductoComponent extends BasePaginatedModalComponent implements OnInit {
 
     @Input() venta: any = {};
     @Output() productoSelect = new EventEmitter();
-    modalRef!: BsModalRef;
     searchControl = new FormControl();
 
     public productos:any = [];
@@ -38,10 +37,12 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
     public buscador:any = '';
 
     constructor( 
-        apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private sumPipe:SumPipe
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected override getPaginatedData(): PaginatedResponse | null {
@@ -71,14 +72,14 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
               });
     }
 
-    public openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
 
         this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
         this.loadAll();
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
     public loadAll() {
@@ -191,7 +192,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
         this.searchControl.setValue('');
         this.productoSelect.emit(this.detalle);
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 
@@ -202,7 +203,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
 
         this.searchControl.setValue('');
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 

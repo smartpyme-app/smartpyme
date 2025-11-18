@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-producto-proveedores',
@@ -16,23 +17,25 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ProductoProveedoresComponent implements OnInit {
+export class ProductoProveedoresComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
     public proveedores: any = [];
     public proveedor: any = {};
     public buscador:string = '';
-    public loading:boolean = false;
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -47,10 +50,10 @@ export class ProductoProveedoresComponent implements OnInit {
     }
 
 
-    openModal(template: TemplateRef<any>, proveedor:any) {
+    override openModal(template: TemplateRef<any>, proveedor:any) {
         this.proveedor = proveedor;
         this.proveedor.id_proveedor = '';
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     // proveedor
@@ -70,7 +73,7 @@ export class ProductoProveedoresComponent implements OnInit {
                 this.producto.proveedores.push(proveedor);
             this.proveedor = {};
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
             this.alertService.success('Proveedor agregado', 'El proveedor fue agregado exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }

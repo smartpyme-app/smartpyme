@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/buscador-productos.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-inventario-salida',
@@ -17,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent],
     
 })
-export class InventarioSalidaComponent implements OnInit {
+export class InventarioSalidaComponent extends BaseModalComponent implements OnInit {
 
 	public salida: any = {};
 	public detalle: any = {};
@@ -26,18 +27,17 @@ export class InventarioSalidaComponent implements OnInit {
     public bodegas: any = [];
 	public producto: any = {};
 
-    public loading = false;
-    public saving = false;
-    modalRef!: BsModalRef;
-
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router,
-	    private modalService: BsModalService
+	    public apiService: ApiService, 
+	    protected override alertService: AlertService,
+	    protected override modalManager: ModalManagerService,
+	    private route: ActivatedRoute, 
+	    private router: Router
     ) { 
+        super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 
@@ -102,7 +102,7 @@ export class InventarioSalidaComponent implements OnInit {
 
     openModalDetalle(template: TemplateRef<any>, detalle:any) {
         this.detalle = detalle;
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     public editDetalle() {
@@ -113,7 +113,7 @@ export class InventarioSalidaComponent implements OnInit {
     			this.loading = false;
     		}, error => {this.alertService.error(error); this.loading = false; });
         }
-        this.modalRef.hide();
+        this.closeModal();
 	}
 
 

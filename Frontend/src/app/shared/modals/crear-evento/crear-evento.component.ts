@@ -2,8 +2,6 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild,
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService } from 'ngx-bootstrap/modal';
-import { BsModalRef } from 'ngx-bootstrap/modal';
 import { SelectSearchComponent } from '@shared/parts/select-search/select-search.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
@@ -12,6 +10,8 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 import * as moment from 'moment';
 import { CrearProductoComponent } from '../crear-producto/crear-producto.component';
@@ -26,7 +26,7 @@ import { map, catchError } from 'rxjs/operators';
     imports: [CommonModule, RouterModule, FormsModule, SelectSearchComponent, NotificacionesContainerComponent, CrearClienteComponent, NgSelectModule],
     
 })
-export class CrearEventoComponent implements OnInit, OnChanges {
+export class CrearEventoComponent extends BaseModalComponent implements OnInit, OnChanges {
 
   @Input() evento: any = {};
   public productos: any = [];
@@ -36,25 +36,27 @@ export class CrearEventoComponent implements OnInit, OnChanges {
   public detalle: any = {};
   public productoSeleccionado: any = undefined;
   @Output() update = new EventEmitter();
-  public loading = false;
-  public saving: boolean = false;
+  public override loading = false;
+  public override saving: boolean = false;
   public sucursales: any = [];
-  modalRef?: BsModalRef;
   @ViewChild("createProductModal") createProductModal!: any;
   @ViewChild("eventosEnConflictoModal") eventosEnConflictoModal!: any;
   @ViewChild("conflictedEventModal") conflictedEventModal!: any;
   conflictedEvent: any;
-  modalCreateProductRef?: BsModalRef;
+  modalCreateProductRef: any;
   conflictEvents: any = [];
-  eventosConflictoModalRef?: BsModalRef;
+  eventosConflictoModalRef: any;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
-    private modalService: BsModalService
-  ) { }
+    private apiService: ApiService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
 
@@ -260,7 +262,7 @@ export class CrearEventoComponent implements OnInit, OnChanges {
       }
       this.update.emit();
       this.saving = false;
-      this.modalRef?.hide();
+      this.closeModal();
     }, error => {
       if (error.error.errorType == "event_conflict") {
         this.conflictEvents = error.error.conflicts;
@@ -273,8 +275,10 @@ export class CrearEventoComponent implements OnInit, OnChanges {
 
   ObSubmitConflicted() {
     this.onSubmit();
-    this.eventosConflictoModalRef?.hide();
-
+    if (this.eventosConflictoModalRef) {
+      this.modalManager.closeModal(this.eventosConflictoModalRef);
+      this.eventosConflictoModalRef = undefined;
+    }
   }
   public agregarDetalle() {
 
@@ -325,18 +329,16 @@ export class CrearEventoComponent implements OnInit, OnChanges {
     });
   }
   crearProducto() {
-    this.modalCreateProductRef = this.modalService.show(this.createProductModal, { backdrop: 'static' });
+    this.modalCreateProductRef = this.modalManager.openModal(this.createProductModal, { backdrop: 'static' });
   }
   onProductoCreated(producto: any) {
     this.productos.unshift(producto);
     this.productoSeleccionado = producto;
     this.agregarDetalle();
   }
-  public openModal(template: TemplateRef<any>, evento: any) {
+  public openModalConflicto(template: TemplateRef<any>, evento: any) {
     this.conflictedEvent = evento;
-
-    this.alertService.modal = true;
-    this.eventosConflictoModalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
+    this.eventosConflictoModalRef = this.modalManager.openModal(template, { class: 'modal-lg', backdrop: 'static' });
   }
 
   public delete(evento: any) {

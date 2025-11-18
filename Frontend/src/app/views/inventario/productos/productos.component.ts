@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -13,8 +12,9 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { DescargarInventarioComponent } from '@shared/parts/descargar-inventario/descargar-inventario.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { SumPipe } from '@pipes/sum.pipe';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-productos',
@@ -23,7 +23,7 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule],
 
 })
-export class ProductosComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class ProductosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public productos: any = [];
     public downloading: boolean = false;
@@ -40,12 +40,14 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
     };
     public emailKardex: string = '';
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -169,9 +171,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
             .subscribe(productos => {
                 this.productos = productos;
                 this.loading = false;
-                if (this.modalRef) {
-                    this.modalRef.hide();
-                }
+                this.closeModal();
             }, error => { this.alertService.error(error); this.loading = false; });
     }
 
@@ -219,12 +219,12 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
             this.producto = {};
             this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargar() {
@@ -253,7 +253,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
                 this.proveedores = proveedores;
             }, error => { this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
     public openModalAjuste(template: TemplateRef<any>, producto: any) {
@@ -263,8 +263,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
         //console.log(this.filtros);
         //console.log(this.producto);
         this.ajuste.stock_actual = this.inventario.stock;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
 
     public calAjuste() {
@@ -282,7 +281,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
             .pipe(this.untilDestroyed())
             .subscribe(ajuste => {
             this.filtrarProductos();
-            this.modalRef.hide();
+            this.closeModal();
             this.alertService.modal = false;
             this.loading = false;
         }, error => { this.alertService.error(error); this.loading = false; });
@@ -322,7 +321,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
     public openDescargarKardex(template: TemplateRef<any>) {
         // Cerrar el modal actual (modal de descarga)
         if (this.modalRef) {
-            this.modalRef.hide();
+            this.closeModal();
         }
 
         // Resetear filtros de kardex
@@ -332,7 +331,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
         };
 
         // Abrir el modal de kardex
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargarKardexConFiltros() {
@@ -366,7 +365,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 this.loading = false;
-                this.modalRef.hide();
+                this.closeModal();
             }, (error) => {
                 this.alertService.error(error);
                 this.loading = false;
@@ -376,14 +375,14 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
     public openDescargarKardexMasivo(template: TemplateRef<any>) {
         // Cerrar el modal actual (modal de descarga)
         if (this.modalRef) {
-            this.modalRef.hide();
+            this.closeModal();
         }
 
         // Resetear email
         this.emailKardex = '';
 
         // Abrir el modal de kardex masivo
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public solicitarKardexMasivo() {
@@ -405,7 +404,7 @@ export class ProductosComponent extends BaseFilteredPaginatedComponent implement
             .subscribe((response: any) => {
             this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         }, (error) => {
             this.alertService.error(error);
             this.loading = false;

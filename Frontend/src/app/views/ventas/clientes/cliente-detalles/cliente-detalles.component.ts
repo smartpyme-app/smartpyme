@@ -5,11 +5,11 @@ import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-cliente-detalles',
@@ -18,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
     
 })
-export class ClienteDetallesComponent implements OnInit {
+export class ClienteDetallesComponent extends BaseModalComponent implements OnInit {
 
     public cliente: any = {};
     public camposPorTipoCliente: any = {
@@ -38,7 +38,7 @@ export class ClienteDetallesComponent implements OnInit {
             ,'tipo_persona'
         ]
     };
-    public loading = false;
+    public override loading = false;
     public contacto: any = {};
     public tipoDocumento: any = {
         '13': 'DUI',
@@ -47,14 +47,17 @@ export class ClienteDetallesComponent implements OnInit {
         '02': 'Carnet de residente',
         '37': 'Otro'
     };
-    modalRef?: BsModalRef;
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-    ) { }
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, private router: Router
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loadAll();
@@ -81,9 +84,9 @@ export class ClienteDetallesComponent implements OnInit {
     /**Abre el modal para ver los contactos adicionales
      * @param template - TemplateRef del modal
      * @param contacto - Contacto a mostrar*/
-    openModal(template: TemplateRef<any>, contacto: any) {
+    public override openModal(template: TemplateRef<any>, contacto: any) {
         this.contacto = contacto;
-        this.modalRef = this.modalService.show(template, {
+        super.openModal(template, {
             class: 'modal-lg',
             backdrop: 'static',
         });

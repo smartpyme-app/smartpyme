@@ -2,7 +2,6 @@ import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { TruncatePipe } from '@pipes/truncate.pipe';
@@ -10,7 +9,8 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-departamento-empresa',
@@ -20,28 +20,26 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class DepartamentoEmpresaComponent extends BasePaginatedComponent implements OnInit {
+export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent implements OnInit {
 
     public departamentos: PaginatedResponse<any> = {} as PaginatedResponse;
     public departamento: any = {};
-    public saving: boolean = false;
+    public override saving: boolean = false;
     public downloading: boolean = false;
 
     public sucursales: any = [];
     public areas: any = [];
     public override filtros: any = {};
 
-    modalRef!: BsModalRef;
-
     @ViewChild('mdepartamento') modalTemplate!: TemplateRef<any>;
 
     constructor(
-        apiService: ApiService, 
-        alertService: AlertService,
-        private modalService: BsModalService,
+        protected override apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
         private router: Router
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -94,7 +92,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedComponent impleme
             this.departamentos = departamentos;
             this.loading = false;
             if (this.modalRef) {
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {
             this.alertService.error(error); 
@@ -138,7 +136,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedComponent impleme
 
     public editDepartamento(template: TemplateRef<any>, departamento: any) {
         this.departamento = { ...departamento }; // Crear una copia del departamento
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public verAreas(departamento: any) {
@@ -174,7 +172,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedComponent impleme
           .subscribe(response => { 
             this.saving = false;
             this.alertService.success('Departamento guardado', `El departamento fue ${action} exitosamente.`);
-            this.modalRef.hide();
+            this.closeModal();
             this.filtrarDepartamento();
             this.resetDepartamento();
         }, error => {
@@ -225,13 +223,13 @@ export class DepartamentoEmpresaComponent extends BasePaginatedComponent impleme
 
     public openFilter(template: TemplateRef<any>) {
         this.loadSucursales();
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
-    public openModal(template: TemplateRef<any>) {
+    public override openModal(template: TemplateRef<any>, config?: any) {
         this.loadSucursales();
         this.resetDepartamento();
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template, config);
     }
 
     public onSucursalChange() {

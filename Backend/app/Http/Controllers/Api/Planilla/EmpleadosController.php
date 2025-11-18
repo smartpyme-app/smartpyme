@@ -15,6 +15,7 @@ use App\Models\Planilla\Planilla;
 use App\Models\Planilla\PlanillaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -195,6 +196,189 @@ class EmpleadosController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        // Obtener empleado existente
+        $empleado = Empleado::findOrFail($id);
+        
+        // Validar que el empleado pertenezca a la empresa y sucursal del usuario
+        if ($empleado->id_empresa != auth()->user()->id_empresa || 
+            $empleado->id_sucursal != auth()->user()->id_sucursal) {
+            return response()->json(['error' => 'No tienes permiso para actualizar este empleado'], 403);
+        }
+
+        // Preparar reglas de validación para DUI
+        // Solo validar unicidad si el DUI viene y es diferente al actual
+        $reglasDui = [];
+        if ($request->has('dui') && $request->dui !== null && trim($request->dui) !== '') {
+            $duiActual = trim($empleado->dui ?? '');
+            $duiNuevo = trim($request->dui);
+            
+            if ($duiNuevo !== $duiActual) {
+                // Si el DUI cambió, validar unicidad
+                $reglasDui = [
+                    'sometimes',
+                    'string',
+                    Rule::unique('empleados', 'dui')->ignore($id)
+                ];
+            } else {
+                // Si es el mismo DUI, solo validar formato
+                $reglasDui = ['sometimes', 'string'];
+            }
+        }
+        // Si no viene DUI, no validar
+
+        // Validación con campos opcionales (sometimes)
+        $reglasValidacion = [
+            'nombres' => 'sometimes|string|max:100',
+            'apellidos' => 'sometimes|string|max:100',
+            'nit' => 'nullable|string',
+            'isss' => 'nullable|string',
+            'afp' => 'nullable|string',
+            'fecha_nacimiento' => 'sometimes|date',
+            'direccion' => 'nullable|string',
+            'telefono' => 'nullable|string',
+            'email' => 'sometimes|email',
+            'salario_base' => 'sometimes|numeric|min:0',
+            'tipo_contrato' => 'sometimes',
+            'tipo_jornada' => 'sometimes',
+            'fecha_ingreso' => 'sometimes|date',
+            'id_departamento' => 'sometimes|exists:departamentos_empresa,id',
+            'id_cargo' => 'sometimes|exists:cargos_de_empresa,id',
+            'forma_pago' => 'nullable|in:Transferencia,Cheque,Efectivo',
+            'banco' => 'nullable|string|max:100',
+            'tipo_cuenta' => 'nullable|in:Ahorro,Corriente',
+            'numero_cuenta' => 'nullable|string|max:50',
+            'titular_cuenta' => 'nullable|string|max:100',
+            'estado' => 'sometimes',
+            'contacto_emergencia' => 'nullable|array',
+            'contacto_emergencia.nombre' => 'nullable|string',
+            'contacto_emergencia.relacion' => 'nullable|string',
+            'contacto_emergencia.telefono' => 'nullable|string',
+            'contacto_emergencia.direccion' => 'nullable|string'
+        ];
+
+        // Agregar reglas de DUI solo si se definieron
+        if (!empty($reglasDui)) {
+            $reglasValidacion['dui'] = $reglasDui;
+        }
+
+        $request->validate($reglasValidacion);
+
+        try {
+            DB::beginTransaction();
+
+            // Guardar salario anterior para comparar cambios
+            $salarioAnterior = $empleado->salario_base;
+            
+            // Preparar datos para actualizar (solo campos que vienen en el request)
+            $datosActualizar = [];
+            
+            $camposPermitidos = [
+                'nombres', 'apellidos', 'dui', 'nit', 'isss', 'afp',
+                'fecha_nacimiento', 'direccion', 'telefono', 'email',
+                'salario_base', 'tipo_contrato', 'tipo_jornada',
+                'fecha_ingreso', 'id_departamento', 'id_cargo',
+                'forma_pago', 'banco', 'tipo_cuenta', 'numero_cuenta',
+                'titular_cuenta', 'estado'
+            ];
+
+            foreach ($camposPermitidos as $campo) {
+                if ($request->has($campo) && $request->$campo !== null) {
+                    if (in_array($campo, ['tipo_contrato', 'tipo_jornada'])) {
+                        $datosActualizar[$campo] = intval($request->$campo);
+                    } else {
+                        $datosActualizar[$campo] = $request->$campo;
+                    }
+                }
+            }
+
+            // Actualizar empleado
+            $empleado->fill($datosActualizar);
+            $empleado->save();
+
+            // Verificar cambios antes de refrescar
+            $huboCambiosContrato = $empleado->wasChanged(['salario_base', 'tipo_contrato', 'id_cargo']);
+            
+            // Refrescar para obtener valores actualizados
+            $empleado->refresh();
+            
+            // Verificar si hubo cambio en el salario
+            $salarioNuevo = $empleado->salario_base;
+            $salarioCambiado = $salarioAnterior != $salarioNuevo;
+
+            // Crear o actualizar contacto de emergencia si existe
+            if ($request->has('contacto_emergencia') && is_array($request->contacto_emergencia)) {
+                $contactoData = [
+                    'id_empleado' => $empleado->id,
+                    'nombre' => $request->contacto_emergencia['nombre'] ?? '',
+                    'relacion' => $request->contacto_emergencia['relacion'] ?? '',
+                    'telefono' => $request->contacto_emergencia['telefono'] ?? '',
+                    'direccion' => $request->contacto_emergencia['direccion'] ?? '',
+                    'estado' => 1
+                ];
+
+                // Verificar que los campos requeridos tengan valor
+                if (!empty($contactoData['nombre']) && !empty($contactoData['telefono'])) {
+                    ContactoEmergencia::updateOrCreate(
+                        ['id_empleado' => $empleado->id],
+                        $contactoData
+                    );
+                }
+            }
+
+            // Registrar historial de contrato si hay cambios relevantes
+            if ($huboCambiosContrato) {
+                // Usar valores del empleado actualizado o del request
+                $fechaInicio = $request->fecha_ingreso ?? $empleado->fecha_ingreso;
+                $tipoContrato = $request->tipo_contrato ?? $empleado->tipo_contrato;
+                $tipoJornada = $request->tipo_jornada ?? $empleado->tipo_jornada;
+                $salario = $salarioNuevo;
+                $idCargo = $request->id_cargo ?? $empleado->id_cargo;
+
+                HistorialContrato::create([
+                    'id_empleado' => $empleado->id,
+                    'fecha_inicio' => $fechaInicio,
+                    'tipo_contrato' => intval($tipoContrato),
+                    'tipo_jornada' => intval($tipoJornada),
+                    'salario' => $salario,
+                    'id_cargo' => $idCargo,
+                    'motivo_cambio' => PlanillaConstants::MOTIVO_CAMBIO_CONTRATO_ACTUALIZACION,
+                    'estado' => PlanillaConstants::ESTADO_ACTIVO
+                ]);
+            }
+
+            // Actualizar planillas si cambió el salario
+            if ($salarioCambiado) {
+                $this->actualizarPlanillasConNuevoSalario($empleado->id, $salarioNuevo);
+            }
+
+            DB::commit();
+            
+            // Cargar relaciones para la respuesta
+            $empleado->load(['departamento', 'cargo', 'contacto_emergencia']);
+            
+            return response()->json([
+                'message' => 'Empleado actualizado exitosamente',
+                'empleado' => $empleado
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'error' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::error('Error al actualizar empleado: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'error' => 'Error al actualizar el empleado',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

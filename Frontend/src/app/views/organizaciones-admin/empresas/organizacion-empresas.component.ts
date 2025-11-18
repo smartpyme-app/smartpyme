@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -17,20 +17,19 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class OrganizacionEmpresasComponent extends BasePaginatedComponent implements OnInit {
+export class OrganizacionEmpresasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public empresas: PaginatedResponse<any> = {} as PaginatedResponse;
     public empresasList:any = [];
     public empresa:any = {};
-    public saving:boolean = false;
     public override filtros:any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -115,8 +114,7 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
             }else{
                 this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
             }
-            this.alertService.modal = false;
-            this.modalRef?.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.saving = false; });
 
     }
@@ -124,7 +122,7 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
     // setPagination() ahora se hereda de BasePaginatedComponent
 
 
-    openModal(template: TemplateRef<any>, empresa:any) {
+    override openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;
 
         this.apiService.getAll('empresas/list')
@@ -136,8 +134,7 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
         if (!this.empresa.id) {
             this.empresa.id_licencia = this.apiService.auth_user().empresa.licencia.id;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-md', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
 
 

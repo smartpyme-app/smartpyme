@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '../../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../../../shared/base/base-modal.component';
 
 @Component({
     selector: 'app-caja-ordenes',
@@ -16,24 +17,25 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule],
     
 })
-export class CajaOrdenesComponent implements OnInit {
+export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
 
     public ordenes:any = [];
     public orden:any = {};
-    public loading:boolean = false;
+    public override loading:boolean = false;
     public filterBy:any[] = ['nombre_usuario', 'nombre_cliente', 'id'];
     public ordenesResfresh:any;
-    
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
-          private apiService: ApiService, private alertService: AlertService,
-          private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ) { }
+          private apiService: ApiService,
+          protected override alertService: AlertService,
+          protected override modalManager: ModalManagerService,
+          private route: ActivatedRoute, private router: Router
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.loading = true;
@@ -61,9 +63,9 @@ export class CajaOrdenesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-    openModal(template: TemplateRef<any>, orden:any) {
+    public override openModal(template: TemplateRef<any>, orden:any) {
         this.orden = orden;
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
 

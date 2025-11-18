@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -29,7 +30,7 @@ import Swal from 'sweetalert2';
     
 })
 
-export class FacturacionCompraComponent implements OnInit {
+export class FacturacionCompraComponent extends BaseModalComponent implements OnInit {
 
     public compra: any= {};
     public detalle: any = {};
@@ -43,8 +44,8 @@ export class FacturacionCompraComponent implements OnInit {
     public impuestos:any = [];
     public bancos:any = [];
     public supervisor:any = {};
-    public loading = false;
-    public saving = false;
+    public override loading = false;
+    public override saving = false;
     public duplicarcompra = false;
     public facturarCotizacion = false;
     public imprimir:boolean = false;
@@ -53,7 +54,7 @@ export class FacturacionCompraComponent implements OnInit {
     public jsonContent: string = '';
     public processingJson: boolean = false;
     public productosNoEncontrados: any[] = [];
-    public modalProductos!: BsModalRef;
+    public modalProductos!: any; // BsModalRef
     public productosEncontrados: any[] = []; // Cache de productos ya encontrados
     public buscandoProductos: boolean = false;
 
@@ -65,14 +66,12 @@ export class FacturacionCompraComponent implements OnInit {
 
     cotizacion: any = {};
     // Propiedades para crear productos nuevos
-    public modalCrearProducto!: BsModalRef;
+    public modalCrearProducto!: any; // BsModalRef
     public nuevoProducto: any = {};
     public creandoProducto: boolean = false;
     public categorias: any[] = [];
 
-
-    modalRef!: BsModalRef;
-    modalCredito!: BsModalRef;
+    modalCredito!: any; // BsModalRef
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -87,10 +86,13 @@ export class FacturacionCompraComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
-        public apiService: ApiService, private alertService: AlertService,
-        private modalService: BsModalService, private sumPipe:SumPipe,
+        public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router,
     ) {
+        super(modalManager, alertService);
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
 
         // Configurar búsqueda dinámica
@@ -422,7 +424,7 @@ export class FacturacionCompraComponent implements OnInit {
     // Facturar
 
         public openModalFacturar(template: TemplateRef<any>) {
-            this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop:'static'});
+            super.openModal(template, {class: 'modal-md', backdrop:'static'});
         }
 
   async onFacturar() {
@@ -573,7 +575,7 @@ export class FacturacionCompraComponent implements OnInit {
     //Limpiar
 
     public limpiar(){
-        this.modalRef = this.modalService.show(this.supervisorTemplate, {class: 'modal-xs'});
+        super.openModal(this.supervisorTemplate, {class: 'modal-xs'});
     }
 
     public supervisorCheck(){
@@ -581,7 +583,7 @@ export class FacturacionCompraComponent implements OnInit {
         this.apiService.store('usuario-validar', this.supervisor)
           .pipe(this.untilDestroyed())
           .subscribe(supervisor => {
-            this.modalRef.hide();
+            this.closeModal();
             this.cargarDatosIniciales();
             this.loading = false;
             this.supervisor = {};
@@ -708,7 +710,7 @@ export class FacturacionCompraComponent implements OnInit {
     }, 0);
   }
 
-  openModal() {
+  openAuthModal() {
     console.log('Abriendo modal, showAuthModal antes:', this.showAuthModal);
     this.showAuthModal = true;
     console.log('Abriendo modal, showAuthModal después:', this.showAuthModal);
@@ -731,7 +733,7 @@ export class FacturacionCompraComponent implements OnInit {
   }
   openJsonImport(template: TemplateRef<any>) {
     this.jsonContent = '';
-    this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
+    super.openModal(template, { class: 'modal-lg' });
   }
 
   /**
@@ -759,7 +761,7 @@ export class FacturacionCompraComponent implements OnInit {
       this.mapJsonToCompra(jsonData);
 
       // Cerrar el modal y mostrar mensaje de éxito
-      this.modalRef?.hide();
+      this.closeModal();
       this.alertService.success(
         'Datos importados',
         'Los datos del JSON han sido importados exitosamente.'
@@ -1089,7 +1091,8 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     // Cerrar modal y recalcular
-    this.modalProductos.hide();
+    this.modalManager.closeModal(this.modalProductos);
+    this.modalProductos = undefined;
     this.productosNoEncontrados = [];
     this.sumTotal();
 
@@ -1097,7 +1100,7 @@ export class FacturacionCompraComponent implements OnInit {
   }
 
   mostrarModalAjusteProductos() {
-    this.modalProductos = this.modalService.show(this.productosAjusteTemplate, {
+    this.modalProductos = this.modalManager.openModal(this.productosAjusteTemplate, {
       class: 'modal-xl', // Modal más grande para mejor visualización
       backdrop: 'static'
     });
@@ -1105,7 +1108,8 @@ export class FacturacionCompraComponent implements OnInit {
 
   // Cancelar ajuste
   cancelarAjusteProductos() {
-    this.modalProductos.hide();
+    this.modalManager.closeModal(this.modalProductos);
+    this.modalProductos = undefined;
     this.productosNoEncontrados = [];
 
     // Limpiar los totales ya que se cancela la importación
@@ -1124,7 +1128,8 @@ export class FacturacionCompraComponent implements OnInit {
 
   // Abrir ajuste manual
   abrirAjusteManual() {
-    this.modalProductos.hide();
+    this.modalManager.closeModal(this.modalProductos);
+    this.modalProductos = undefined;
     this.productosNoEncontrados = [];
 
     // Limpiar los totales ya que se cancela la importación
@@ -1251,7 +1256,7 @@ export class FacturacionCompraComponent implements OnInit {
             this.cargarCategorias();
         }
 
-        this.modalCrearProducto = this.modalService.show(template, { class: 'modal-lg' });
+        this.modalCrearProducto = this.modalManager.openModal(template, { class: 'modal-lg' });
     }
 
     cargarCategorias() {
@@ -1329,7 +1334,8 @@ export class FacturacionCompraComponent implements OnInit {
                 // El producto solo estará disponible para asignar en la consolidación
 
                 // Cerrar el modal
-                this.modalCrearProducto.hide();
+                this.modalManager.closeModal(this.modalCrearProducto);
+                this.modalCrearProducto = undefined;
 
                 // Mostrar mensaje de éxito
                 this.alertService.success('Producto creado', 'El producto ha sido creado exitosamente. Estará disponible para asignar en la consolidación.');

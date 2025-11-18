@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
@@ -15,10 +16,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class RolesPermisosComponent implements OnInit {
+export class RolesPermisosComponent extends BaseModalComponent implements OnInit {
   public roles: any = {};
   public modules: any[] = [];
-  public loading: boolean = false;
+  public override loading: boolean = false;
   public filtros = {
     buscador: '',
     paginate: 10,
@@ -34,19 +35,17 @@ export class RolesPermisosComponent implements OnInit {
     permissions: [],
     is_global: false
   };
-
-  modalRef!: BsModalRef;
-
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
     public apiService: ApiService,
-    public alertService: AlertService,
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
-    private router: Router,
-    private modalService: BsModalService
-  ) {}
+    private router: Router
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
     this.cargarDatos();
@@ -168,7 +167,7 @@ export class RolesPermisosComponent implements OnInit {
         
         this.loading = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
       },
       (error) => {
@@ -203,8 +202,7 @@ export class RolesPermisosComponent implements OnInit {
     this.cargarDatos();
   }
 
-  openModal(template: TemplateRef<any>, role: any) {
-    this.alertService.modal = true;
+  override openModal(template: TemplateRef<any>, role: any) {
     if (role.name) {
       // Modo edición - verificar si puede editar
       if (!role.can_edit) {
@@ -226,7 +224,7 @@ export class RolesPermisosComponent implements OnInit {
         is_global: false
       };
     }
-    this.modalRef = this.modalService.show(template, { 
+    super.openModal(template, { 
       class: 'modal-lg',
       backdrop: 'static' 
     });
@@ -320,9 +318,8 @@ export class RolesPermisosComponent implements OnInit {
     return this.apiService.verifyRoleAdmin() || this.apiService.isAdminRole();
   }
 
-  closeModal() {
-    this.modalRef.hide();
-    this.alertService.modal = false;
+  override closeModal() {
+    super.closeModal();
     this.selectedRole = null;
     this.role = {
       name: '',

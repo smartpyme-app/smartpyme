@@ -3,14 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -21,7 +21,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class AbonosVentasComponent extends BasePaginatedComponent implements OnInit {
+export class AbonosVentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public abonos: PaginatedResponse<any> = {} as PaginatedResponse;
     public abono:any = {};
@@ -34,12 +34,12 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
     public override filtros:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -89,7 +89,7 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
                 this.abonos = abonos;
                 this.loading = false;
                 if(this.modalRef){
-                    this.modalRef.hide();
+                    this.closeModal();
                 }
             }, error => {this.alertService.error(error); });
     }
@@ -134,7 +134,7 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
                 this.documentos = documentos;
             }, error => {this.alertService.error(error);});
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public onSubmit() {
@@ -143,7 +143,9 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
             .pipe(this.untilDestroyed())
             .subscribe(abono => {
                 this.abono = {};
-                this.modalRef.hide();
+                if (this.modalRef) {
+                    this.closeModal();
+                }
                 this.loading = false;
                 this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
             },error => {this.alertService.error(error); this.loading = false; });
@@ -176,7 +178,7 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
                 );
         }
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargar(){

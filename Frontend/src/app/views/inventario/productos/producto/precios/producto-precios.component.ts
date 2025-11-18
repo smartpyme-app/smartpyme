@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 declare var bootstrap: any;
 
@@ -18,23 +19,25 @@ declare var bootstrap: any;
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class ProductoPreciosComponent implements OnInit, AfterViewInit {
+export class ProductoPreciosComponent extends BaseModalComponent implements OnInit, AfterViewInit {
 
     @Input() producto: any = {};
     public precio: any = {};
     public usuarios: any = [];
-    public loading:boolean = false;
     public buscador:string = '';
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, private alertService: AlertService,  
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ){ }
+    constructor(
+        public apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {}
 
@@ -62,7 +65,7 @@ export class ProductoPreciosComponent implements OnInit, AfterViewInit {
         });
     }
 
-    openModal(template: TemplateRef<any>, precio:any) {
+    override openModal(template: TemplateRef<any>, precio:any) {
         this.precio = precio;
         if(!this.precio.id){
             this.precio.clasificacion = null;
@@ -74,7 +77,7 @@ export class ProductoPreciosComponent implements OnInit, AfterViewInit {
             this.loading = false;
         }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     public marcarTodos(){
@@ -116,7 +119,7 @@ export class ProductoPreciosComponent implements OnInit, AfterViewInit {
             }
             this.precio = {};
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
             
             // Reinicializar tooltips después de agregar nuevo precio
             setTimeout(() => {

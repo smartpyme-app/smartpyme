@@ -2,11 +2,12 @@ import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -16,15 +17,15 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearClienteComponent implements OnInit {
+export class CrearClienteComponent extends BaseModalComponent implements OnInit {
 
     public cliente: any = {
         contactos: [], // Inicializar el array de contactos
     };
     @Input() id_cliente:any = null;
     @Output() update = new EventEmitter();
-    public loading = false;
-    public saving = false;
+    public override loading = false;
+    public override saving = false;
     public paises:any = [];
     public departamentos:any = [];
     public municipios:any = [];
@@ -35,17 +36,18 @@ export class CrearClienteComponent implements OnInit {
     public loading_contacto = false;
     public esNuevo = false;
     public tipoAnterior = '';
-
-    modalRef?: BsModalRef;
+    public modalRefContacto: any;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
-        private alertService: AlertService,
-        private modalService: BsModalService
-    ) {}
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+    ) {
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
         this.paises = JSON.parse(localStorage.getItem('paises')!);
@@ -55,7 +57,7 @@ export class CrearClienteComponent implements OnInit {
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         if(this.id_cliente){
             this.esNuevo = false;
             this.loading = true;
@@ -78,8 +80,7 @@ export class CrearClienteComponent implements OnInit {
             this.cliente.id_usuario = this.apiService.auth_user().id;
             this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+        super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
     }
 
     public setTipo(tipo:any){
@@ -102,9 +103,8 @@ export class CrearClienteComponent implements OnInit {
                 this.alertService.success(titulo, mensaje);
 
                 this.update.emit(cliente);
-                this.modalRef?.hide();
+                this.closeModal();
                 this.saving = false;
-                this.alertService.modal = false;
             },
             error: (error) => {
                 this.alertService.error(error);
@@ -180,7 +180,7 @@ export class CrearClienteComponent implements OnInit {
             this.contacto = { ...contacto };
         }
 
-        this.modalRef = this.modalService.show(template, {
+        this.modalRefContacto = this.modalManager.openModal(template, {
             class: 'modal-lg',
             backdrop: 'static',
         });
@@ -188,7 +188,7 @@ export class CrearClienteComponent implements OnInit {
 
     agregarContacto(template: TemplateRef<any>) {
         this.contacto = {};
-        this.modalRef = this.modalService.show(template, {
+        this.modalRefContacto = this.modalManager.openModal(template, {
             class: 'modal-lg',
             backdrop: 'static',
         });
@@ -256,8 +256,9 @@ export class CrearClienteComponent implements OnInit {
 
                     this.contacto = {};
                     this.loading_contacto = false;
-                    if (this.modalRef) {
-                        this.modalRef.hide();
+                    if (this.modalRefContacto) {
+                        this.modalManager.closeModal(this.modalRefContacto);
+                        this.modalRefContacto = undefined;
                     }
                 },
                 error: (error) => {
@@ -277,8 +278,9 @@ export class CrearClienteComponent implements OnInit {
             }
 
             this.contacto = {};
-            if (this.modalRef) {
-                this.modalRef.hide();
+            if (this.modalRefContacto) {
+                this.modalManager.closeModal(this.modalRefContacto);
+                this.modalRefContacto = undefined;
             }
 
             this.alertService.success(

@@ -3,12 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 
 @Component({
@@ -19,11 +19,11 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class RecurrentesComponent extends BasePaginatedComponent implements OnInit {
+export class RecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public venta:any = {};
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public downloading:boolean = false;
 
     public clientes:any = [];
@@ -35,14 +35,12 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
     public canales:any = [];
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
-
     constructor(
-        apiService: ApiService, 
-        alertService: AlertService,
-        private modalService: BsModalService
+        protected override apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     // Método requerido por BasePaginatedComponent: retorna la referencia
@@ -110,7 +108,7 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
                 this.ventas = ventas;
                 this.loading = false;
                 if(this.modalRef){
-                    this.modalRef.hide();
+                    this.closeModal();
                 }
             }, error => {this.alertService.error(error); });
     }
@@ -186,7 +184,7 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
     
     public openFilter(template: TemplateRef<any>) {
@@ -214,11 +212,11 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
                 this.canales = canales;
             }, error => {this.alertService.error(error); });
         
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public openDescargar(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public descargar(){
@@ -290,7 +288,7 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
             this.venta = {};
             this.saving = false;
             if(this.modalRef){
-                this.modalRef.hide();
+                this.closeModal();
             }
             this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.saving = false; });
@@ -299,7 +297,7 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
 
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public limpiarFiltros() {

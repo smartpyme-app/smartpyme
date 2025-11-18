@@ -2,15 +2,15 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -20,19 +20,21 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class InventarioSalidasComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class InventarioSalidasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public salidas:any = [];
     public salida:any = {};
-    public saving:boolean = false;
 
     public usuarios:any = [];
-    modalRef!: BsModalRef;
 
-    constructor(apiService: ApiService, alertService: AlertService, 
-        private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -168,7 +170,7 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedComponent i
                 this.usuarios = usuarios.data;
             }, error => {this.alertService.error(error); });
         }
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     reemprimir(salida:any){

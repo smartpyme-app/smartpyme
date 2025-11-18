@@ -2,13 +2,13 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-productos-consignas',
@@ -17,7 +17,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent],
     
 })
-export class ProductosConsignasComponent extends BasePaginatedComponent implements OnInit {
+export class ProductosConsignasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
@@ -28,12 +28,12 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
     public sucursales:any = [];
     public categorias:any = [];
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -110,14 +110,17 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
           .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
 
-    public openModal(template: TemplateRef<any>, producto:any) {
-        this.producto = producto;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
+    public override openModal(template: TemplateRef<any>, producto?: any) {
+        this.producto = producto || {};
+        super.openModal(template, {
+            class: 'modal-lg',
+            backdrop: 'static'
+        });
     }
 
     public onSubmit() {
@@ -128,7 +131,7 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
             this.producto = {};
             this.alertService.success('Consigna guardada', 'La consigna fue guardado exitosamente.');
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false; });
     }
 

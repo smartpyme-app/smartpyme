@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-producto-composicion',
@@ -17,29 +18,30 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class ProductoComposicionComponent implements OnInit {
+export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
 	public composicion: any = {};
     public productos:any = [];
     public opcion: any = {};
-	public loading:boolean = false;
-    public saving:boolean = false;
     public buscador:string = '';
-
-	modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+    	private route: ActivatedRoute, 
+    	private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {}
 
-    openModal(template: TemplateRef<any>, compuesto:any) {
+    override openModal(template: TemplateRef<any>, compuesto:any) {
         this.apiService.getAll('productos/list')
           .pipe(this.untilDestroyed())
           .subscribe(productos => {
@@ -53,7 +55,7 @@ export class ProductoComposicionComponent implements OnInit {
             this.composicion.id_compuesto = '';
         }
         
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     onSubmit(){
@@ -68,7 +70,7 @@ export class ProductoComposicionComponent implements OnInit {
             }
             this.composicion = {};
             this.saving = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.saving = false;});
 
     }
@@ -97,7 +99,7 @@ export class ProductoComposicionComponent implements OnInit {
                 this.productos = productos;
             }, error => {this.alertService.error(error);});
 
-            this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+            super.openModal(template, {class: 'modal-md'});
         }
 
 

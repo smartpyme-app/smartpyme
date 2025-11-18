@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-crear-ajuste',
@@ -16,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CrearAjusteComponent implements OnInit {
+export class CrearAjusteComponent extends BaseModalComponent implements OnInit {
 
 	@Input() producto: any = {};
 	@Input() inventario: any = {};
@@ -25,17 +26,20 @@ export class CrearAjusteComponent implements OnInit {
 	public productos:any = [];
 	public lugares:any [] = [];
 
- 	public loading = false;
-
-	modalRef!: BsModalRef;
+ 	public override loading = false;
 
 	private destroyRef = inject(DestroyRef);
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-   constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
-    	private modalService: BsModalService
-    ){ }
+   constructor(
+        private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+    	private route: ActivatedRoute,
+        private router: Router
+    ) {
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {
 	}
@@ -46,7 +50,7 @@ export class CrearAjusteComponent implements OnInit {
 	   this.ajuste = {};
 	   this.ajuste.stock_actual = this.inventario.stock;
 	   this.ajuste.id_bodega = this.inventario.id_bodega;
-	   this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+	   this.openModal(template, {class: 'modal-md', backdrop: 'static'});
 	}
 
     public calAjuste(){
@@ -64,7 +68,7 @@ export class CrearAjusteComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(ajuste => {
             this.inventario.stock = ajuste.stock_real;
-            this.modalRef.hide();
+            this.closeModal();
             this.setAjuste.emit(ajuste);
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });

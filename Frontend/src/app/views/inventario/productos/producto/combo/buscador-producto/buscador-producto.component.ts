@@ -2,7 +2,6 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter } from 'rxjs/operators';
@@ -12,6 +11,8 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-buscar-producto',
@@ -20,11 +21,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe],
     
 })
-export class BuscadorProductoComponent implements OnInit {
+export class BuscadorProductoComponent extends BaseModalComponent implements OnInit {
 
   @Input() producto: any = {};
   @Output() productoSelect = new EventEmitter();
-  modalRef!: BsModalRef;
   searchControl = new FormControl();
 
   public productos: any = [];
@@ -33,15 +33,18 @@ export class BuscadorProductoComponent implements OnInit {
   public detalle: any = {};
   public filtros: any = {};
   public buscador: any = '';
-  public loading: boolean = false;
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
-    private modalService: BsModalService, private sumPipe: SumPipe
-  ) { }
+    private apiService: ApiService, 
+    protected override alertService: AlertService,
+    protected override modalManager: ModalManagerService,
+    private sumPipe: SumPipe
+  ) {
+    super(modalManager, alertService);
+  }
 
   ngOnInit() {
     this.searchControl.valueChanges
@@ -68,7 +71,7 @@ export class BuscadorProductoComponent implements OnInit {
   }
 
 
-  public openModal(template: TemplateRef<any>) {
+  public override openModal(template: TemplateRef<any>) {
     // this.filtros.id_sucursal = this.compra.id_sucursal;
     this.filtros.id_categoria = '';
     this.filtros.buscador = '';
@@ -97,7 +100,7 @@ export class BuscadorProductoComponent implements OnInit {
       this.loading = false;
     }, error => { this.alertService.error(error); this.loading = false; });
 
-    this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
+    super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
   }
 
 
@@ -138,9 +141,7 @@ export class BuscadorProductoComponent implements OnInit {
     this.productos = [];
     this.searchControl.setValue('');
     this.productoSelect.emit(this.detalle);
-    if (this.modalRef) {
-      this.modalRef.hide();
-    }
+    this.closeModal();
   }
 
 }

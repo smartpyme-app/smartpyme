@@ -3,30 +3,32 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 
 @Component({
     selector: 'app-gastos',
     templateUrl: './gastos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
-    
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, CrearAbonoGastoComponent],
+
 })
 
-export class GastosComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class GastosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public gastos:any = [];
     public gasto:any = {};
-    public saving:boolean = false;
+    public override saving:boolean = false;
     public sending:boolean = false;
     public downloading:boolean = false;
 
@@ -37,13 +39,18 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
     public proveedores:any = [];
     public areas:any = [];
     public numeros_ids:any = [];
+    public override modalRef!: BsModalRef;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, public mhService: MHService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService,
+        public mhService: MHService,
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router,
+        private route: ActivatedRoute,
+        private modalService: BsModalService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -130,9 +137,7 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
             .subscribe(gastos => {
                 this.gastos = gastos;
                 this.loading = false;
-                if(this.modalRef){
-                    this.modalRef.hide();
-                }
+                this.closeModal();
             }, error => {this.alertService.error(error); });
     }
 
@@ -246,12 +251,12 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
                  }, error => {this.alertService.error(error); });
          }
 
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     openDTE(template: TemplateRef<any>, gasto:any){
         this.gasto = gasto;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         this.alertService.modal = true;
         if(!this.gasto.dte){
             this.emitirDTE();
@@ -289,7 +294,7 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
-                this.modalRef?.hide();
+                this.closeModal();
             },5000);
         },error => {this.alertService.error(error); this.sending = false; });
     }
@@ -359,6 +364,11 @@ export class GastosComponent extends BaseFilteredPaginatedComponent implements O
                 this.numeros_ids = numsIds;
             }, error => {this.alertService.error(error); });
     }
+
+  public openAbono(template: TemplateRef<any>, gasto:any){
+    this.gasto = gasto;
+    this.modalRef = this.modalService.show(template);
+  }
 
   generarPartidaContable(gasto:any){
     this.apiService.store('contabilidad/partida/gasto', gasto)

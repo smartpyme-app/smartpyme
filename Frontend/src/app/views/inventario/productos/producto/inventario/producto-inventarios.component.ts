@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-producto-inventarios',
@@ -17,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, SumPipe],
     
 })
-export class ProductoInventariosComponent implements OnInit {
+export class ProductoInventariosComponent extends BaseModalComponent implements OnInit {
 
     @Input() producto: any = {};
     public bodegas: any = [];
@@ -25,17 +26,19 @@ export class ProductoInventariosComponent implements OnInit {
     public inventario: any = {};
     public sucursalSelected: any = {};
     public buscador:string = '';
-    public loading:boolean = false;
-
-    modalRef!: BsModalRef;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-    ){ }
+    constructor(
+        private apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+        private route: ActivatedRoute, 
+        private router: Router
+    ){
+        super(modalManager, alertService);
+    }
 
     ngOnInit() {
     }
@@ -45,7 +48,7 @@ export class ProductoInventariosComponent implements OnInit {
     }
 
 
-    openModal(template: TemplateRef<any>, inventario:any) {
+    override openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
 
         this.apiService.getAll('bodegas/list')
@@ -63,7 +66,7 @@ export class ProductoInventariosComponent implements OnInit {
         }else{
             this.alertService.success('Inventario guardado', 'El inventario fue guardado exitosamente.');
         }
-        this.modalRef = this.modalService.show(template, {class: 'modal-md'});
+        super.openModal(template, {class: 'modal-md'});
     }
 
     public onSubmit() {
@@ -81,7 +84,7 @@ export class ProductoInventariosComponent implements OnInit {
 
             this.inventario = {};
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         }, error => {
             const errorMessage = error.error?.error || error.error?.message || error.message || 'Error desconocido';
 

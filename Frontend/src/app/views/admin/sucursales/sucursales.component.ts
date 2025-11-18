@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 @Component({
     selector: 'app-sucursales',
@@ -16,25 +17,25 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class SucursalesComponent implements OnInit {
+export class SucursalesComponent extends BaseModalComponent implements OnInit {
 
     public sucursales:any = [];
     public sucursal:any = {};
-    public loading = false;
-    public saving = false;
+    public override loading = false;
+    public override saving = false;
     public sucursales_activas:any = 0;
     public filtros:any = {};
 
-    modalRef!: BsModalRef;
-
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   	constructor( 
-  	    public apiService: ApiService, private alertService: AlertService,
-  	    private route: ActivatedRoute, private router: Router,
-        private modalService: BsModalService
-  	) { }
+  	    public apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
+  	    private route: ActivatedRoute, private router: Router
+  	) {
+        super(modalManager, alertService);
+    }
 
   	ngOnInit() {
         this.filtros.estado = '';
@@ -58,19 +59,13 @@ export class SucursalesComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    openModal(template: TemplateRef<any>, sucursal:any) {
+    override openModal(template: TemplateRef<any>, sucursal:any) {
         this.sucursal = sucursal;
         if(!this.sucursal.id){
             this.sucursal.id_empresa = this.apiService.auth_user().id_empresa;
             this.sucursal.activo = 1;
         }
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template, {class: 'modal-lg'});
-    }
-
-    closeModal(){
-        this.modalRef.hide();
-        this.alertService.modal = false;
+        super.openModal(template, {class: 'modal-lg'});
     }
 
     public delete(id:number) {
@@ -118,8 +113,7 @@ export class SucursalesComponent implements OnInit {
               this.contarActivos();
               this.sucursal = {};
               this.saving = false;
-            this.modalRef.hide();
-            this.alertService.modal = false;
+            this.closeModal();
           },error => {this.alertService.error(error); this.saving = false; });
       }
 

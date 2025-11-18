@@ -2,16 +2,16 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import Swal from 'sweetalert2';
 
@@ -23,11 +23,10 @@ import Swal from 'sweetalert2';
     
 })
 
-export class DevolucionesVentasComponent extends BasePaginatedComponent implements OnInit {
+export class DevolucionesVentasComponent extends BasePaginatedModalComponent implements OnInit {
 
     public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
     public id_venta: any = null;
-    public saving: boolean = false;
     public sending: boolean = false;
     public downloading: boolean = false;
 
@@ -43,12 +42,13 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
     public modalAbierto: boolean = false;
     public modalCerrandose: boolean = false;
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-        private modalService: BsModalService, private mhService: MHService,
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private mhService: MHService
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -94,7 +94,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
                 this.ventas = ventas;
                 this.loading = false;
                 if (this.modalRef) {
-                    this.modalRef.hide();
+                    this.closeModal();
                 }
             }, error => { this.alertService.error(error); });
     }
@@ -186,10 +186,10 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
                 );
         }
 
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
-    openModal(template: TemplateRef<any>) {
+    override openModal(template: TemplateRef<any>) {
         this.id_venta = null;
         this.loading = true;
         this.apiService.getAll('ventas/sin-devolucion')
@@ -198,7 +198,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
                 this.ventasList = ventas;
                 this.loading = false;
             }, error => { this.alertService.error(error); });
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     public imprimir(venta: any) {
@@ -228,8 +228,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
 
     openDTE(template: TemplateRef<any>, venta: any) {
         this.venta = venta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
         if (!this.venta.dte) {
             this.emitirDTE();
         }
@@ -264,7 +263,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(() => {
-                this.modalRef?.hide();
+                this.closeModal();
             }, 5000);
         }, error => { this.alertService.error(error); this.sending = false; });
     }
@@ -357,7 +356,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
                 }, error => {this.alertService.error(error); });
         }
     
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
     }
 
     public actualizarDevolucion() {
@@ -367,7 +366,7 @@ export class DevolucionesVentasComponent extends BasePaginatedComponent implemen
             .pipe(this.untilDestroyed())
             .subscribe(devolucion => {
             
-            this.modalRef?.hide()
+            this.closeModal();
             this.saving = false;
             
             this.filtrarVentas();

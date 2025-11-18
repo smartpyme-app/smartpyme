@@ -2,15 +2,15 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-clientes',
@@ -19,20 +19,22 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule],
 
 })
-export class ClientesComponent extends BasePaginatedComponent implements OnInit {
+export class ClientesComponent extends BasePaginatedModalComponent implements OnInit {
 
     public clientes: PaginatedResponse<any> = {} as PaginatedResponse;
     public cliente:any = {};
-    public saving:boolean = false;
     public downloading:boolean = false;
 
     public override filtros:any = {};
     public producto:any = {};
     public categorias:any = [];
-    modalRef!: BsModalRef;
 
-    constructor( apiService:ApiService, alertService:AlertService, private modalService: BsModalService ){
-        super(apiService, alertService);
+    constructor( 
+        apiService:ApiService, 
+        alertService:AlertService, 
+        modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -61,7 +63,7 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
 
         // Ocultar modal de importación
         if(this.modalRef){
-            this.modalRef.hide();
+            this.closeModal();
         }
     }
 
@@ -123,11 +125,7 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent
-
-    openModal(template: TemplateRef<any>) {
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
-    }
+    // openModal() ahora se hereda de BasePaginatedModalComponent
 
     public descargarPersonas(){
         this.downloading = true;

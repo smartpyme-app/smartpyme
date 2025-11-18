@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-paginated.component';
+import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 
 @Component({
     selector: 'app-servicios',
@@ -18,7 +18,7 @@ import { BaseFilteredPaginatedComponent } from '@shared/base/base-filtered-pagin
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent],
 
 })
-export class ServiciosComponent extends BaseFilteredPaginatedComponent implements OnInit {
+export class ServiciosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
 
     public servicios:any = [];
     public buscador:any = '';
@@ -27,12 +27,15 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
     public sucursales:any = [];
     public filtrado:boolean = false;
     public categorias:any = [];
-    modalRef!: BsModalRef;
 
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
+    constructor(
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+        private router: Router, 
+        private route: ActivatedRoute
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected aplicarFiltros(): void {
@@ -112,11 +115,11 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
     openModalPrecio(template: TemplateRef<any>, servicio:any) {
         // if(this.apiService.auth_user().tipo == 'Administrador') {
         //     this.servicio = servicio;
-        //     this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+        //     this.openModal(template, {class: 'modal-sm'});
         // }
         if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.servicio = servicio;
-            this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
+            this.openModal(template, {class: 'modal-sm'});
         }
 
     }
@@ -134,7 +137,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
             this.servicio= {};
             this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
             this.loading = false;
-            this.modalRef.hide();
+            this.closeModal();
         },error => {this.alertService.error(error); this.loading = false;
         });
     }

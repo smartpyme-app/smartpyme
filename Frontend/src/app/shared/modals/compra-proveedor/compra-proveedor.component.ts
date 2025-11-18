@@ -2,8 +2,6 @@ import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
-import {  } from 'ngx-bootstrap/modal';
 
 import { debounceTime, distinctUntilChanged, map } from 'rxjs/operators';
 import { fromEvent, timer } from 'rxjs';
@@ -11,6 +9,8 @@ import { fromEvent, timer } from 'rxjs';
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '../../../services/modal-manager.service';
+import { BaseModalComponent } from '../../base/base-modal.component';
 
 @Component({
     selector: 'app-compra-proveedor',
@@ -19,32 +19,34 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class CompraProveedorComponent implements OnInit {
+export class CompraProveedorComponent extends BaseModalComponent implements OnInit {
 
 	@Input() proveedor: any = {};
 	@Input() compra: any;
 	@Output() proveedorSelect = new EventEmitter();
     public proveedores: any = [];
     public searching = false;
-	modalRef?: BsModalRef;
 
 	private destroyRef = inject(DestroyRef);
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private modalService: BsModalService
-	) { }
+	    private apiService: ApiService,
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService
+	) {
+        super(modalManager, alertService);
+    }
 
 	ngOnInit() {
 	}
 
-	openModal(template: TemplateRef<any>) {
+	override openModal(template: TemplateRef<any>) {
         if(this.proveedor.id) {
             this.searching = false;
         }
 
-        this.modalRef = this.modalService.show(template);
+        super.openModal(template);
         const input = document.getElementById('example')!;
         const example = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
         const debouncedInput = example.pipe(debounceTime(500));
@@ -67,7 +69,7 @@ export class CompraProveedorComponent implements OnInit {
         this.proveedores = [];
         this.proveedor = proveedor;
 	    this.proveedorSelect.emit({proveedor: this.proveedor});
-	    this.modalRef?.hide()
+	    this.closeModal()
 	}
 
     clear(){

@@ -2,16 +2,16 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { VerHistorialButtonComponent } from './shared/ver-historial-button.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-empleados',
@@ -20,10 +20,9 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent],
 
 })
-export class EmpleadosComponent extends BasePaginatedComponent implements OnInit {
+export class EmpleadosComponent extends BasePaginatedModalComponent implements OnInit {
   public empleados: PaginatedResponse<any> = {} as PaginatedResponse;
   public empleado: any = {};
-  public saving: boolean = false;
 
   public departamentos: any = [];
   public cargos: any = [];
@@ -35,8 +34,6 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
 
   public procesandoImportacion = false;
 
-  modalRef!: BsModalRef;
-
   // Expose enum to template
   ESTADO_EMPLEADO = PlanillaConstants.ESTADOS_EMPLEADO;
   
@@ -44,9 +41,9 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    private modalService: BsModalService
+    modalManager: ModalManagerService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager);
   }
 
   protected getPaginatedData(): PaginatedResponse | null {
@@ -80,7 +77,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
     this.loadCatalogos();
 
     if (this.modalRef) {
-      this.modalRef.hide();
+      this.closeModal();
     }
   }
 
@@ -127,7 +124,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
   public filtrarEmpleados() {
     this.loadEmpleados();
     if (this.modalRef) {
-      this.modalRef.hide();
+      this.closeModal();
     }
   }
 
@@ -171,12 +168,12 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
   // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openFilter(template: TemplateRef<any>) {
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
-  public openModal(template: TemplateRef<any>) {
+  override openModal(template: TemplateRef<any>) {
     this.datosImportacion.archivo = null;
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
   public getEstadoClass(estado: number): string {
@@ -198,7 +195,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
     this.empleado.fecha_fin = new Date().toISOString().split('T')[0];
     // La fecha efectiva de baja puede ser igual a la fecha de notificación inicialmente
     this.empleado.fecha_baja = this.empleado.fecha_fin;
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
   public onFileSelected(event: any) {
@@ -278,7 +275,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
           'Éxito',
           `Empleados importados correctamente. Creados: ${response.data?.creados || 0}, Actualizados: ${response.data?.actualizados || 0}`
         );
-        this.modalRef.hide();
+        this.closeModal();
         this.loadEmpleados(); // Recargar la lista de empleados
         this.procesandoImportacion = false;
         this.datosImportacion.archivo = null;
@@ -300,7 +297,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
 
   public openModalDarAlta(template: TemplateRef<any>, empleado: any) {
     this.empleado = { ...empleado };
-    this.modalRef = this.modalService.show(template);
+    super.openModal(template);
   }
 
   public darBaja() {
@@ -358,7 +355,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
       .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
-          this.modalRef.hide();
+          this.closeModal();
           this.saving = false;
           this.alertService.success(
             'Exito',
@@ -403,7 +400,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
       .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
-          this.modalRef.hide();
+          this.closeModal();
           this.saving = false;
           this.alertService.success(
             'Éxito',

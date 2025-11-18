@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { SumPipe } from '@pipes/sum.pipe';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-ajuste-masivo',
@@ -15,11 +15,11 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class AjusteMasivoComponent extends BasePaginatedComponent implements OnInit {
+export class AjusteMasivoComponent extends BasePaginatedModalComponent implements OnInit {
 
     public productos: PaginatedResponse<any> = {} as PaginatedResponse;
     public downloading: boolean = false;
-    public saving: boolean = false;
+    public override saving: boolean = false;
     public bodegas: any = [];
     public categorias: any = [];
     public seleccionados: any[] = [];
@@ -32,15 +32,13 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
     public bodegaSeleccionada: any = null;
     private tieneShopify: boolean = false;
 
-    modalRef!: BsModalRef;
-
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        private modalService: BsModalService,
+        modalManager: ModalManagerService,
         private sumPipe: SumPipe
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -111,9 +109,7 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
             this.procesarProductosRecibidos();
             this.loading = false;
             
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
+            this.closeModal();
         }, error => {
             this.alertService.error(error); 
             this.loading = false;
@@ -186,7 +182,7 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
         }));
 
 
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public guardarAjusteMasivo() {
@@ -209,7 +205,7 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
           .subscribe(
             respuesta => {
                 this.alertService.success('Ajuste masivo realizado', 'Se han actualizado ' + respuesta.actualizados + ' productos exitosamente.');
-                this.modalRef.hide();
+                this.closeModal();
                 this.saving = false;
                 this.loadAll();
             },
@@ -250,7 +246,7 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
     public openModalImportar(template: TemplateRef<any>) {
         // Inicializar bodega seleccionada
         this.bodegaSeleccionada = this.bodegas.length > 0 ? this.bodegas[0] : null;
-        this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
+        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
     public importarAjustes(fileInput: HTMLInputElement, detalle: string) {
@@ -305,7 +301,7 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
                 }
 
                 this.alertService.success('Importación de ajuste masivo', mensaje);
-                this.modalRef.hide();
+                this.closeModal();
                 this.saving = false;
                 this.loadAll();
             },

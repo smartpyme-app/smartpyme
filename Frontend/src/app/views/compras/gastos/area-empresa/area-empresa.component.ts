@@ -3,11 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 @Component({
     selector: 'app-area-empresa',
@@ -17,12 +17,12 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class AreaEmpresaComponent extends BasePaginatedComponent implements OnInit {
+export class AreaEmpresaComponent extends BasePaginatedModalComponent implements OnInit {
 
     public areas: PaginatedResponse<any> = {} as PaginatedResponse;
     public area: any = {};
     public departamento: any = {};
-    public saving: boolean = false;
+    public override saving: boolean = false;
     public savingDepartamento: boolean = false;
     public downloading: boolean = false;
     public departamentoActual: any = null;
@@ -33,16 +33,15 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
     public departamentos: any = [];
     public override filtros: any = {};
 
-    modalRef!: BsModalRef;
-    modalRefDepartamento!: BsModalRef;
+    modalRefDepartamento!: any; // BsModalRef
 
     constructor(
-        apiService: ApiService, 
-        alertService: AlertService,
-        private modalService: BsModalService,
+        protected override apiService: ApiService, 
+        protected override alertService: AlertService,
+        protected override modalManager: ModalManagerService,
         private route: ActivatedRoute // Agregar ActivatedRoute
     ) {
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager);
     }
 
     protected getPaginatedData(): PaginatedResponse | null {
@@ -141,7 +140,7 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
             this.areas = areas;
             this.loading = false;
             if (this.modalRef) {
-                this.modalRef.hide();
+                this.closeModal();
             }
         }, error => {
             this.alertService.error(error); 
@@ -185,7 +184,7 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
 
     public editArea(template: TemplateRef<any>, area: any) {
         this.area = { ...area }; // Crear una copia del área
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
     public onSubmit() {
@@ -213,7 +212,7 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
           .subscribe(response => { 
             this.saving = false;
             this.alertService.success('Área guardada', `El área fue ${action} exitosamente.`);
-            this.modalRef.hide();
+            this.closeModal();
             this.filtrarArea();
             this.resetArea();
         }, error => {
@@ -265,10 +264,10 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
     public openFilter(template: TemplateRef<any>) {
         this.loadSucursales();
         this.loadDepartamentos();
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template);
     }
 
-    public openModal(template: TemplateRef<any>) {
+    public override openModal(template: TemplateRef<any>, config?: any) {
         this.loadSucursales();
         this.loadDepartamentos().then(() => {
             this.resetArea();
@@ -278,13 +277,13 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
                 this.departamentoOriginal = this.filtros.id_departamento;
             }
             
-            this.modalRef = this.modalService.show(template);
+            super.openModal(template, config);
         });
     }
 
     public openDepartamentoModal(template: TemplateRef<any>) {
         this.resetDepartamento();
-        this.modalRefDepartamento = this.modalService.show(template);
+        this.modalRefDepartamento = this.modalManager.openModal(template);
     }
 
     public onSucursalChange() {
@@ -322,7 +321,8 @@ export class AreaEmpresaComponent extends BasePaginatedComponent implements OnIn
           .subscribe(response => { 
             this.savingDepartamento = false;
             this.alertService.success('Departamento creado', 'El departamento fue creado exitosamente.');
-            this.modalRefDepartamento.hide();
+            this.modalManager.closeModal(this.modalRefDepartamento);
+            this.modalRefDepartamento = undefined;
             
             // Recargar departamentos y seleccionar el nuevo
             this.loadDepartamentos().then(() => {

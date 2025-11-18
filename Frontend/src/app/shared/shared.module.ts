@@ -29,6 +29,7 @@ import { CrearClienteComponent } from './modals/crear-cliente/crear-cliente.comp
 import { CrearAjusteComponent } from './modals/crear-ajuste/crear-ajuste.component';
 import { CrearAbonoVentaComponent } from './modals/crear-abono-venta/crear-abono-venta.component';
 import { CrearAbonoCompraComponent } from './modals/crear-abono-compra/crear-abono-compra.component';
+import { CrearAbonoGastoComponent } from './modals/crear-abono-gasto/crear-abono-gasto.component';
 // CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
 // CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
 import { CrearImpuestoComponent } from './modals/crear-impuesto/crear-impuesto.component';
@@ -88,6 +89,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     // CrearEventoComponent removido - solo se usa en citas, los componentes lo importan directamente
     // CrearProyectoComponent removido - los componentes lo importan directamente cuando lo necesitan
     CrearImpuestoComponent,
@@ -136,6 +138,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     CrearAjusteComponent,
     CrearAbonoVentaComponent,
     CrearAbonoCompraComponent,
+    CrearAbonoGastoComponent,
     // CrearEventoComponent removido
     CrearImpuestoComponent,
     // CrearProyectoComponent removido
