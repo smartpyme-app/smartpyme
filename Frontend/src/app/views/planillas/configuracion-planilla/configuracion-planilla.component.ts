@@ -158,8 +158,11 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     const config = this.configuracion.configuracion;
 
     // Poblar datos generales
+    // Si cod_pais es null, usar 'SV' por defecto
+    const codPais = this.configuracion.cod_pais || 'SV';
+
     this.configuracionForm.patchValue({
-      cod_pais: this.configuracion.cod_pais,
+      cod_pais: codPais,
       configuraciones_generales: config.configuraciones_generales
     });
 

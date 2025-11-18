@@ -210,7 +210,23 @@ export class PlanillaDetalleComponent implements OnInit {
 
 
   get esElSalvador(): boolean {
-    return this.planilla?.empresa?.cod_pais === 'SV';
+    // 1. Verificar código de país de la empresa
+    if (this.planilla?.empresa?.cod_pais === 'SV') {
+      return true;
+    }
+
+    // 2. Verificar pais_configuracion de la configuración de planilla
+    if (this.configPlanilla?.pais_configuracion === 'EL SALVADOR' ||
+        this.configPlanilla?.cod_pais === 'SV') {
+      return true;
+    }
+
+    // 3. Verificar pais_configuracion del primer detalle (fallback)
+    if (this.detalles && this.detalles.length > 0) {
+      return this.detalles[0]?.pais_configuracion === 'SV';
+    }
+
+    return false;
   }
 
   get conceptosEmpleado() {
@@ -286,6 +302,8 @@ export class PlanillaDetalleComponent implements OnInit {
   loadConceptosConfigurados() {
     this.configPlanillaService.obtenerConfiguracion().subscribe({
       next: (config) => {
+        // Guardar la configuración completa para acceder a pais_configuracion
+        this.configPlanilla = config;
         this.conceptosConfigurados = config?.configuracion?.conceptos || null;
         this.cargarConceptosDeduccion();
       },
