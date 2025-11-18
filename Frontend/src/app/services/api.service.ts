@@ -1,14 +1,21 @@
+/**
+ * @deprecated Este servicio está siendo refactorizado.
+ * Por favor, usa los servicios específicos:
+ * - HttpService para llamadas HTTP
+ * - AuthService para autenticación
+ * - PermissionService para permisos y roles
+ * - UtilityService para utilidades
+ * 
+ * Este servicio se mantiene por compatibilidad hacia atrás y delega a los servicios específicos.
+ */
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
-import { map, catchError, retry, timeout } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
+import { HttpService } from '@services/http.service';
+import { AuthService } from '@services/auth.service';
+import { PermissionService } from '@services/permission.service';
+import { UtilityService } from '@services/utility.service';
 import { AlertService } from '@services/alert.service';
-import { ConstantsService } from '@services/constants.service';
 import { environment } from './../../environments/environment';
-import { ChatService } from '@services/chat/chat.service';
-
-import * as moment from 'moment';
-declare let $: any;
 
 export const GUARD_TYPES = {
   ADMIN: 'admin',
@@ -23,711 +30,270 @@ interface UserPermissions {
   revokedPermissions: string[];
   effectivePermissions: string[];
 }
+
 @Injectable()
 export class ApiService {
   public appUrl: string = environment.APP_URL;
   public baseUrl: string = environment.API_URL;
   public apiUrl = this.baseUrl + '/api/';
-  private currentUserPermissions: {
-    rolePermissions: string[];
-    directPermissions: string[];
-    revokedPermissions: string[];
-    effectivePermissions: string[];
-    role: string;
-  } = {
-    rolePermissions: [],
-    directPermissions: [],
-    revokedPermissions: [],
-    effectivePermissions: [],
-    role: '',
-  };
 
-  constructor(private http: HttpClient, private alertService: AlertService, private constantsService: ConstantsService) {}
+  constructor(
+    private httpService: HttpService,
+    private authService: AuthService,
+    private permissionService: PermissionService,
+    private utilityService: UtilityService,
+    private alertService: AlertService
+  ) {}
 
-  getToUrl(url: string) {
-    return this.http.get<any>(url).pipe(retry(0), catchError(this.handleError));
+  // ========== Métodos HTTP (delegados a HttpService) ==========
+  getToUrl(url: string): Observable<any> {
+    return this.httpService.getToUrl(url);
   }
 
-  getAll(url: string, filtros: any = {}) {
-    return this.http
-      .get<any>(this.apiUrl + url, { params: filtros })
-      .pipe(retry(0), catchError(this.handleError));
+  getAll(url: string, filtros: any = {}): Observable<any> {
+    return this.httpService.getAll(url, filtros);
   }
 
-  read(url: string, id: number) {
-    return this.http
-      .get<any>(this.apiUrl + url + id)
-      .pipe(retry(0), catchError(this.handleError));
+  read(url: string, id: number): Observable<any> {
+    return this.httpService.read(url, id);
   }
 
-  filter(url: string, filter: any) {
-    return this.http
-      .get<any>(this.apiUrl + url + filter)
-      .pipe(retry(0), catchError(this.handleError));
+  filter(url: string, filter: any): Observable<any> {
+    return this.httpService.filter(url, filter);
   }
 
-  get(url: string) {
-    return this.http
-      .get<any>(this.apiUrl + url)
-      .pipe(retry(0), catchError(this.handleError));
+  get(url: string): Observable<any> {
+    return this.httpService.get(url);
   }
 
-  store(url: string, model: any) {
-    return this.http
-      .post<any>(this.apiUrl + url, model)
-      .pipe(retry(0), catchError(this.handleError));
+  store(url: string, model: any): Observable<any> {
+    return this.httpService.store(url, model);
   }
 
-  storeWithTimeout(url:string, model:any, timeoutMs: number = 300000) {
-    return this.http.post<any>(this.apiUrl + url, model).pipe(
-      timeout(timeoutMs),
-      retry(0),
-      catchError(this.handleError)
-    );
+  storeWithTimeout(url: string, model: any, timeoutMs: number = 300000): Observable<any> {
+    return this.httpService.storeWithTimeout(url, model, timeoutMs);
   }
 
-  update(url: string, id: number, model: any) {
-    return this.http
-      .put<any>(`${this.apiUrl}${url}/${id}`, model)
-      .pipe(retry(0), catchError(this.handleError));
+  update(url: string, id: number, model: any): Observable<any> {
+    return this.httpService.update(url, id, model);
   }
 
-  delete(url: string, id: number) {
-    return this.http
-      .delete<any>(this.apiUrl + url + id)
-      .pipe(retry(0), catchError(this.handleError));
+  delete(url: string, id: number): Observable<any> {
+    return this.httpService.delete(url, id);
   }
 
-  paginate(url: string, filtros: any = {}) {
-    return this.http
-      .get<any>(url, { params: filtros })
-      .pipe(retry(0), catchError(this.handleError));
+  paginate(url: string, filtros: any = {}): Observable<any> {
+    return this.httpService.paginate(url, filtros);
   }
 
-  upload(url: string, formData: any) {
-    let headers = new HttpHeaders();
-    headers.append('Accept', 'application/json');
-    headers.append(
-      'Authorization',
-      'Bearer ' + JSON.parse(localStorage.getItem('SP_token')!)
-    );
-    let options = { headers };
-    return this.http
-      .post(this.apiUrl + url, formData, options)
-      .pipe(retry(0), catchError(this.handleError));
+  upload(url: string, formData: any): Observable<any> {
+    return this.httpService.upload(url, formData);
   }
 
-  //login(user:any) {return this.http.post<any>(this.apiUrl + 'login', user).pipe(map((response: HttpResponse<any>) => {let data:any = response; if (data.token && data.user) {localStorage.setItem('SP_token', JSON.stringify(data.token)); localStorage.setItem('SP_auth_user', JSON.stringify(data.user)); } })); }
-
-  register(user: any) {
-    return this.http.post<any>(this.apiUrl + 'register', user).pipe(
-      map((response: HttpResponse<any>) => {
-        let data: any = response;
-        if (data) {
-          localStorage.setItem('SP_user_register', JSON.stringify(data));
-        }
-      })
-    );
+  export(url: string, filtros: any): Observable<Blob> {
+    return this.httpService.export(url, filtros);
   }
 
-    export(url:string, filtros: any): Observable<Blob> {
-        return this.http.get(this.apiUrl + url , { responseType: 'blob', params: filtros });
-    }
-
-    exportWithUrl(url: string, filtros: any): Observable<any> {
-        return this.http.get(this.apiUrl + url, { params: filtros });
-    }
-
-    exportAcumulado(url: string, filtros: any): Observable<Blob> {
-        return this.http.post(this.apiUrl + url, filtros, {
-            responseType: 'blob',
-            headers: new HttpHeaders({
-                'Authorization': 'Bearer ' + this.auth_token()
-            }),
-        });
-    }
-
-    exportAcumuladoReportes(url: string, filtros: any): Observable<Blob> {
-        return this.http.post(this.apiUrl + url, filtros, {
-            responseType: 'blob',
-            observe: 'response',
-            headers: new HttpHeaders({
-                'Authorization': 'Bearer ' + this.auth_token()
-            })
-        }).pipe(
-            map(response => {
-                // Devolver el blob con el Content-Type correcto
-                return new Blob([response.body!], {
-                    type: response.headers.get('Content-Type') || 'application/octet-stream'
-                });
-            })
-        );
-    }
-
-  login(user: any) {
-    return this.http.post<any>(this.apiUrl + 'login', user).pipe(
-      map((response: HttpResponse<any>) => {
-        let data: any = response;
-        if (data.token && data.user) {
-          localStorage.setItem('SP_token', JSON.stringify(data.token));
-          localStorage.setItem('SP_auth_user', JSON.stringify(data.user));
-
-          // Cargar permisos después del login
-          this.loadUserPermissions(data.user.id);
-
-          // Cargar constantes usando ConstantsService
-          this.loadConstants();
-        }
-        return data;
-      })
-    );
+  exportWithUrl(url: string, filtros: any): Observable<any> {
+    return this.httpService.exportWithUrl(url, filtros);
   }
 
-  loadUserPermissions(userId: number) {
-    this.getAll(`roles-permissions/user/${userId}`).subscribe(
-      (response: any) => {
-        if (response.ok) {
-          const permissions = {
-            rolePermissions: response.data.rolePermissions || [],
-            directPermissions: response.data.directPermissions || [],
-            revokedPermissions: response.data.revokedPermissions || [],
-            effectivePermissions: response.data.effectivePermissions || [],
-            role: response.data.role || '',
-          };
-
-          localStorage.setItem(
-            'SP_user_permissions',
-            JSON.stringify(permissions)
-          );
-          this.currentUserPermissions = permissions;
-        }
-      }
-    );
+  exportAcumulado(url: string, filtros: any): Observable<Blob> {
+    return this.httpService.exportAcumulado(url, filtros);
   }
 
-
-  logout() {
-        let data:any = {};
-        if (this.autenticated()) {
-            data.usuario_id = this.auth_user().id;
-            this.store('logout', data).subscribe(ivas => {
-            }, error => {this.alertService.error(error); });
-        }
-        localStorage.clear();
-      this.currentUserPermissions = {
-        rolePermissions: [],
-        directPermissions: [],
-        revokedPermissions: [],
-        effectivePermissions: [],
-        role: '',
-      };
-    }
+  exportAcumuladoReportes(url: string, filtros: any): Observable<Blob> {
+    return this.httpService.exportAcumuladoReportes(url, filtros);
+  }
 
   download(url: string): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}${url}`, {
-      responseType: 'blob',
-      headers: new HttpHeaders({
-        Authorization: 'Bearer ' + this.auth_token()
-      })
-    }).pipe(
-      map((response) => {
-        return new Blob([response]);
-      }),
-      catchError((error) => {
-        console.error('Error al descargar el archivo:', error);
-        return throwError(() => error);
-      })
-    );
-  }
-
-  downloadFile(blob: Blob, filename: string) {
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  saludar() {
-    var hours = new Date().getHours();
-    if (hours >= 12 && hours < 18) {
-      return 'Buenas tardes';
-    } else if (hours >= 18) {
-      return 'Buenas noches';
-    } else {
-      return 'Buenos días';
-    }
-  }
-
-  autenticated() {
-    let token = JSON.parse(localStorage.getItem('SP_token')!);
-    if (token) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  auth_user() {
-    return JSON.parse(localStorage.getItem('SP_auth_user')!);
-  }
-  register_user() {
-    return JSON.parse(localStorage.getItem('SP_user_register')!);
-  }
-
-  auth_token() {
-    return JSON.parse(localStorage.getItem('SP_token')!);
-  }
-
-  date(): string {
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1;
-    let d;
-    let m;
-    var yyyy = today.getFullYear();
-    if (dd < 10) {
-      d = '0' + dd;
-    } else {
-      d = dd;
-    }
-    if (mm < 10) {
-      m = '0' + mm;
-    } else {
-      m = mm;
-    }
-    let date: string = yyyy + '-' + m + '-' + d;
-    return date;
-  }
-
-  dataURItoBlob(dataURI: any) {
-    let byteString: any;
-    if (dataURI.split(',')[0].indexOf('base64') >= 0) {
-      byteString = atob(dataURI.split(',')[1]);
-    } else {
-      byteString = unescape(dataURI.split(',')[1]);
-    }
-    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
-    const ia = new Uint8Array(byteString.length);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    return new Blob([ia], { type: mimeString });
-  }
-
-  datetime(): string {
-    let today = new Date();
-    let dd = today.getDate();
-    let mm = today.getMonth() + 1;
-    let hh = today.getHours();
-    let min = today.getMinutes();
-    let sec = today.getSeconds();
-    let d;
-    let m;
-    let h;
-    let se;
-    var yyyy = today.getFullYear();
-    if (dd < 10) {
-      d = '0' + dd;
-    } else {
-      d = dd;
-    }
-    if (mm < 10) {
-      m = '0' + mm;
-    } else {
-      m = mm;
-    }
-    if (sec < 10) {
-      se = '0' + sec;
-    } else {
-      se = sec;
-    }
-    let datetime: string =
-      yyyy + '-' + m + '-' + d + ' ' + hh + ':' + min + ':' + se;
-    return datetime;
-  }
-
-  slug(str: any) {
-    if (str) {
-      str = str.replace(/^\s+|\s+$/g, '');
-      str = str.toLowerCase();
-      var from = 'àáäâèéëêìíïîòóöôùúüûñç·/_,:;';
-      var to = 'aaaaeeeeiiiioooouuuunc------';
-      for (var i = 0, l = from.length; i < l; i++) {
-        str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-      }
-      str = str
-        .replace(/[^a-z0-9 -]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      return str;
-    }
-  }
-
-  toggleTheme() {
-    if (localStorage.getItem('SP_theme') == 'light') {
-      localStorage.setItem('SP_theme', 'dark');
-    } else {
-      localStorage.setItem('SP_theme', 'light');
-    }
-    this.loadTheme();
-  }
-
-  loadTheme() {
-    let theme: any = localStorage.getItem('SP_theme');
-    if (!theme) {
-      localStorage.setItem('SP_theme', 'light');
-    }
-    if (localStorage.getItem('SP_theme') == 'dark') {
-      $('body').attr('data-theme-version', 'dark');
-      $('.icon-theme').removeClass('far');
-      $('.icon-theme').addClass('fas');
-    } else {
-      $('body').attr('data-theme-version', 'light');
-      $('.icon-theme').removeClass('fas');
-      $('.icon-theme').addClass('far');
-    }
-  }
-
-    loadData(){
-
-        this.getAll('formas-de-pago').subscribe(metodospago => {
-            localStorage.setItem('metodospago', JSON.stringify(metodospago));
-        }, error => {this.alertService.error(error);});
-
-        this.getAll('paises').subscribe(paises => {
-            localStorage.setItem('paises', JSON.stringify(paises));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('municipios').subscribe(municipios => {
-            localStorage.setItem('municipios', JSON.stringify(municipios));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('distritos').subscribe(distritos => {
-            localStorage.setItem('distritos', JSON.stringify(distritos));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('departamentos').subscribe(departamentos => {
-            localStorage.setItem('departamentos', JSON.stringify(departamentos));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('actividades_economicas').subscribe(actividad_economicas => {
-            localStorage.setItem('actividad_economicas', JSON.stringify(actividad_economicas));
-        }, error => {this.alertService.error(error); });
-
-        this.getAll('unidades').subscribe(medidas => {
-            localStorage.setItem('unidades_medidas', JSON.stringify(medidas));
-        }, error => {this.alertService.error(error);});
-    }
-
-    isAdmin(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador' || usuario.tipo == 'Contador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-            return true;
-        return false;
-    }
-
-    isAdminCreate(){
-        let usuario = this.auth_user();
-        if(usuario.tipo == 'Administrador')
-            return true;
-        return false;
-    }
-
-  canCreate() {
-    let usuario = this.auth_user();
-    if (
-      usuario.tipo == 'Administrador' ||
-      usuario.tipo == 'Supervisor'
-      || usuario.tipo == 'Supervisor Limitado'
-    )
-      return true;
-    return false;
-  }
-
-  canEdit() {
-    let usuario = this.auth_user();
-    if (usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor')
-      return true;
-    return false;
-  }
-
-  canDelete() {
-    let usuario = this.auth_user();
-    if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor' || usuario.tipo == 'Supervisor Limitado')
-      return true;
-    return false;
-  }
-
-  canChange(){
-    let usuario = this.auth_user();
-    if(usuario.tipo == 'Administrador' || usuario.tipo == 'Supervisor'
-      // || usuario.tipo == 'Supervisor Limitado'
-    )
-      return true;
-    return false;
-  }
-
-  canCreateTest(permission: string): boolean {
-    return this.hasPermission(permission);
-  }
-
-  //   canDelete(permission: string): boolean {
-  //     return this.hasPermission(permission);
-  //   }
-  canEditTest(permission: string): boolean {
-    return this.hasPermission(permission);
-  }
-
-  canDeleteTest(permission: string): boolean {
-    return this.hasPermission(permission);
-  }
-
-  getModules() {
-    return this.http
-      .get<any>(this.apiUrl + 'modules')
-      .pipe(retry(0), catchError(this.handleError));
-  }
-
-  hasPermission(permission: string): boolean {
-    if (this.currentUserPermissions.effectivePermissions.length === 0) {
-      const storedPermissions = localStorage.getItem('SP_user_permissions');
-      if (storedPermissions) {
-        this.currentUserPermissions = JSON.parse(storedPermissions);
-      }
-    }
-
-    const effectivePermissions = Array.isArray(
-      this.currentUserPermissions.effectivePermissions
-    )
-      ? this.currentUserPermissions.effectivePermissions
-      : Object.values(this.currentUserPermissions.effectivePermissions);
-
-    const revokedPermissions = Array.isArray(
-      this.currentUserPermissions.revokedPermissions
-    )
-      ? this.currentUserPermissions.revokedPermissions
-      : Object.values(this.currentUserPermissions.revokedPermissions);
-
-    if (revokedPermissions.includes(permission)) {
-      return false;
-    }
-
-    return effectivePermissions.includes(permission);
-  }
-
-  hasAnyPermission(permissions: string[]): boolean {
-    return permissions.some((permission) => this.hasPermission(permission));
-  }
-  canAccessModule(moduleName: string): boolean {
-    return this.hasPermission(`${moduleName}.acceder`);
-  }
-
-  generateGoogleCalendarLink(event: any): string {
-    const startDate = moment(event.startDate)
-      .utc()
-      .format('YYYYMMDDTHHmmss[Z]');
-    const endDate = moment(event.endDate).utc().format('YYYYMMDDTHHmmss[Z]');
-    const calendarLink = `https://www.google.com/calendar/event?action=TEMPLATE&dates=${startDate}/${endDate}&text=${encodeURIComponent(
-      event.title
-    )}&details=${encodeURIComponent(
-      event.description
-    )}&location=${encodeURIComponent(event.location)}`;
-    return calendarLink;
-  }
-
-  getPosition(): Promise<any> {
-    return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (resp) => {
-          resolve({ lng: resp.coords.longitude, lat: resp.coords.latitude });
-        },
-        (err) => {
-          reject(err);
-        }
-      );
-    });
-  }
-  verifyRoleAdmin() {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role === 'super_admin';
-    }
-    return false;
-  }
-
-  //no es super admin
-  isNotSuperAdmin() {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role !== 'super_admin';
-    }
-    return true;
-  }
-
-  isAdminRole() {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return (
-        role === 'usuario_contador' ||
-        role === 'admin' ||
-        role === 'usuario_supervisor' ||
-        role === 'usuario_citas'
-      );
-    }
-    return false;
-  }
-
-  verifyVentasRole(): boolean {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role === 'usuario_ventas';
-    }
-    return false;
-  }
-
-  verifyCitasRole(): boolean {
-    let user = localStorage.getItem('SP_user_permissions');
-    if (user) {
-      let role = JSON.parse(user).role;
-      return role === 'usuario_citas';
-    }
-    return false;
-  }
-
-  // isAdmin() {
-  //   let usuario = this.auth_user();
-  //   if (
-  //     usuario.tipo == 'Administrador' ||
-  //     usuario.tipo == 'Contador' ||
-  //     usuario.tipo == 'Supervisor'
-  //   )
-  //     return true;
-  //   return false;
-  // }
-
-  validateRole(roleToCheck: string, equals: boolean = true): boolean {
-    const userPermissions = localStorage.getItem('SP_user_permissions');
-    if (!userPermissions) {
-      return false;
-    }
-
-    try {
-      const { role } = JSON.parse(userPermissions);
-      return equals ? role === roleToCheck : role !== roleToCheck;
-    } catch (error) {
-      console.error('Error checking role:', error);
-      return false;
-    }
-  }
-
-    isSupervisorLimitado() {
-      const userPermissions = localStorage.getItem('SP_user_permissions');
-      if (userPermissions) {
-        try {
-          const { role } = JSON.parse(userPermissions);
-          return role === 'usuario_supervisor_limitado' || role === 'supervisor_limitado';
-        } catch (error) {
-          console.error('Error checking supervisor limitado role:', error);
-        }
-      }
-
-      // Fallback al campo tipo para compatibilidad
-      let usuario = this.auth_user();
-      if (usuario && usuario.tipo == 'Supervisor Limitado') return true;
-      return false;
-    }
-
-    isVentasLimitado() {
-        let usuario = this.auth_user();
-        if (usuario.tipo == 'Ventas Limitado') return true;
-        return false;
-    }
-
-    isVentas() {
-        let usuario = this.auth_user();
-        if (usuario.tipo == 'Ventas' || usuario.tipo == 'Ventas Limitado') return true;
-        return false;
-    }
-
-  private loadConstants() {
-    this.constantsService.loadConstants().subscribe(
-      (constants) => {
-        localStorage.setItem('SP_constants', JSON.stringify(constants));
-        // console.log('Constantes cargadas exitosamente:', constants);
-      },
-      (error) => {
-        console.error('Error cargando constantes:', error);
-      }
-    );
-  }
-
-  getConstants() {
-    const constants = localStorage.getItem('SP_constants');
-    return constants ? JSON.parse(constants) : null;
+    return this.httpService.download(url);
   }
 
   generatePayrollSlips(planillaId: number): Observable<Blob> {
-    return this.http
-      .get(`${this.apiUrl}planillas/${planillaId}/boletas`, {
-        responseType: 'blob',
-      })
-      .pipe(
-        map((response) => {
-          return new Blob([response], { type: 'application/pdf' });
-        }),
-        catchError((error) => {
-          console.error('Error downloading payroll slips:', error);
-          return throwError(() => error);
-        })
-      );
+    return this.httpService.generatePayrollSlips(planillaId);
   }
 
   generateIndividualPayrollSlip(detalleId: number): Observable<Blob> {
-    return this.http
-      .get(`${this.apiUrl}planillas/detalles/${detalleId}/boleta`, {
-        responseType: 'blob',
-      })
-      .pipe(
-        map((response) => {
-          return new Blob([response], { type: 'application/pdf' });
-        }),
-        catchError((error) => {
-          console.error('Error downloading payroll slip:', error);
-          return throwError(() => error);
-        })
-      );
+    return this.httpService.generateIndividualPayrollSlip(detalleId);
   }
 
-  private handleError(error: HttpErrorResponse) {
-    return throwError(error);
+  getUserData(userId: number): Observable<any> {
+    return this.httpService.getUserData(userId);
   }
 
-  getUserData(userId: number) {
-    return this.http.get<any>(`${this.apiUrl}me/${userId}`).pipe(
-      map((response: any) => {
-        if (response && response.user) {
-          localStorage.setItem('SP_auth_user', JSON.stringify(response.user));
-          return response.user;
-        }
-        return null;
-      }),
-      catchError(this.handleError)
-    );
+  getActividadesEconomicas(): Observable<any> {
+    return this.httpService.getActividadesEconomicas();
   }
 
-  getActividadesEconomicas() {
-    return this.http.get<any>(`${this.apiUrl}actividades-economicas/excel`).pipe(
-      map((response: any) => {
-        return response;
-      }),
-      catchError(this.handleError)
-    );
+  getModules(): Observable<any> {
+    return this.httpService.getModules();
   }
 
+  // ========== Métodos de Autenticación (delegados a AuthService) ==========
+  login(user: any): Observable<any> {
+    return this.authService.login(user);
+  }
+
+  register(user: any): Observable<any> {
+    return this.authService.register(user);
+  }
+
+  logout(): void {
+    this.authService.logout();
+  }
+
+  autenticated(): boolean {
+    return this.authService.autenticated();
+  }
+
+  auth_user(): any {
+    return this.authService.auth_user();
+  }
+
+  register_user(): any {
+    return this.authService.register_user();
+  }
+
+  auth_token(): string {
+    return this.authService.auth_token();
+  }
+
+  loadUserPermissions(userId: number): void {
+    this.permissionService.loadUserPermissions(userId);
+  }
+
+  // ========== Métodos de Utilidades (delegados a UtilityService) ==========
+  downloadFile(blob: Blob, filename: string): void {
+    this.utilityService.downloadFile(blob, filename);
+  }
+
+  saludar(): string {
+    return this.utilityService.saludar();
+  }
+
+  date(): string {
+    return this.utilityService.date();
+  }
+
+  datetime(): string {
+    return this.utilityService.datetime();
+  }
+
+  dataURItoBlob(dataURI: any): Blob {
+    return this.utilityService.dataURItoBlob(dataURI);
+  }
+
+  slug(str: any): string | undefined {
+    return this.utilityService.slug(str);
+  }
+
+  toggleTheme(): void {
+    this.utilityService.toggleTheme();
+  }
+
+  loadTheme(): void {
+    this.utilityService.loadTheme();
+  }
+
+  generateGoogleCalendarLink(event: any): string {
+    return this.utilityService.generateGoogleCalendarLink(event);
+  }
+
+  getPosition(): Promise<any> {
+    return this.utilityService.getPosition();
+  }
+
+  loadData(): void {
+    this.utilityService.loadData();
+  }
+
+  getConstants(): any {
+    return this.utilityService.getConstants();
+  }
+
+  // ========== Métodos de Permisos (delegados a PermissionService) ==========
+  hasPermission(permission: string): boolean {
+    return this.permissionService.hasPermission(permission);
+  }
+
+  hasAnyPermission(permissions: string[]): boolean {
+    return this.permissionService.hasAnyPermission(permissions);
+  }
+
+  canAccessModule(moduleName: string): boolean {
+    return this.permissionService.canAccessModule(moduleName);
+  }
+
+  isAdmin(): boolean {
+    return this.permissionService.isAdmin();
+  }
+
+  isAdminCreate(): boolean {
+    return this.permissionService.isAdminCreate();
+  }
+
+  canCreate(): boolean {
+    return this.permissionService.canCreate();
+  }
+
+  canEdit(): boolean {
+    return this.permissionService.canEdit();
+  }
+
+  canDelete(): boolean {
+    return this.permissionService.canDelete();
+  }
+
+  canChange(): boolean {
+    return this.permissionService.canChange();
+  }
+
+  canCreateTest(permission: string): boolean {
+    return this.permissionService.canCreateTest(permission);
+  }
+
+  canEditTest(permission: string): boolean {
+    return this.permissionService.canEditTest(permission);
+  }
+
+  canDeleteTest(permission: string): boolean {
+    return this.permissionService.canDeleteTest(permission);
+  }
+
+  verifyRoleAdmin(): boolean {
+    return this.permissionService.verifyRoleAdmin();
+  }
+
+  isNotSuperAdmin(): boolean {
+    return this.permissionService.isNotSuperAdmin();
+  }
+
+  isAdminRole(): boolean {
+    return this.permissionService.isAdminRole();
+  }
+
+  verifyVentasRole(): boolean {
+    return this.permissionService.verifyVentasRole();
+  }
+
+  verifyCitasRole(): boolean {
+    return this.permissionService.verifyCitasRole();
+  }
+
+  validateRole(roleToCheck: string, equals: boolean = true): boolean {
+    return this.permissionService.validateRole(roleToCheck, equals);
+  }
+
+  isSupervisorLimitado(): boolean {
+    return this.permissionService.isSupervisorLimitado();
+  }
+
+  isVentasLimitado(): boolean {
+    return this.permissionService.isVentasLimitado();
+  }
+
+  isVentas(): boolean {
+    return this.permissionService.isVentas();
+  }
 }

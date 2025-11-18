@@ -21,6 +21,10 @@ import { AlertService } from '@services/alert.service';
 import { MHService } from './services/MH.service';
 import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
+import { HttpService } from '@services/http.service';
+import { AuthService } from '@services/auth.service';
+import { PermissionService } from '@services/permission.service';
+import { UtilityService } from '@services/utility.service';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import { SharedModule } from './shared/shared.module';
@@ -57,7 +61,8 @@ import { ServiceWorkerModule } from '@angular/service-worker';
   exports: [],
   providers: [{ provide: HTTP_INTERCEPTORS, useClass: JwtInterceptor, multi: true },
         { provide: HTTP_INTERCEPTORS, useClass: AuthorizationInterceptor, multi: true },
-        AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, AlertService, ApiService,
+        AuthGuard, AdminGuard, CitasGuard, SuperAdminGuard, SubscriptionGuard, RoleGuard, PermissionGuard, UsuariosGuard, 
+        AlertService, ApiService, HttpService, AuthService, PermissionService, UtilityService,
         ConstantsService, MHService, SumPipe, CurrencyPipe, DatePipe, provideEnvironmentNgxMask(), provideHttpClient(withInterceptorsFromDi())] })
 
 export class AppModule { }
