@@ -57,6 +57,7 @@ export class AppComponent implements OnInit {
     
 
     ngOnInit() {
+        this.configurePace();
 
         this.chatService.resetChat();
         this.usuario = this.apiService.auth_user();
@@ -205,6 +206,59 @@ export class AppComponent implements OnInit {
                 });
         } else {
             // console.log('Constantes ya disponibles en localStorage');
+        }
+    }
+
+    private configurePace() {
+        if (typeof (window as any).Pace !== 'undefined') {
+            const Pace = (window as any).Pace;
+            
+            // Configurar opciones de Pace.js para evitar que se quede trabado
+            if (Pace.options) {
+                // Reducir el tiempo mínimo para que complete más rápido
+                Pace.options.minTime = 200;
+                // Reducir el tiempo fantasma (tiempo que espera antes de ocultarse)
+                Pace.options.ghostTime = 50;
+                // No reiniciar en pushState (evita reinicios innecesarios)
+                Pace.options.restartOnPushState = false;
+                // No reiniciar automáticamente en cada request (lo manejamos con el interceptor)
+                Pace.options.restartOnRequestAfter = false;
+                
+                // URLs a ignorar (peticiones que no deben mostrar la barra)
+                if (Pace.options.ajax) {
+                    Pace.options.ajax.ignoreURLs = [
+                        /notificaciones/i,
+                        /chat/i,
+                        /ping/i,
+                        /heartbeat/i,
+                        /websocket/i
+                    ];
+                }
+            }
+
+            // Timeout de seguridad global: si Pace lleva más de 30 segundos activo, forzarlo a detenerse
+            let paceStartTime: number | null = null;
+            
+            Pace.on('start', () => {
+                paceStartTime = Date.now();
+                
+                // Timeout de seguridad
+                setTimeout(() => {
+                    if (Pace.running && paceStartTime && (Date.now() - paceStartTime) > 30000) {
+                        console.warn('Pace.js: timeout de seguridad activado, forzando detención');
+                        Pace.stop();
+                        paceStartTime = null;
+                    }
+                }, 30000);
+            });
+
+            Pace.on('done', () => {
+                paceStartTime = null;
+            });
+
+            Pace.on('hide', () => {
+                paceStartTime = null;
+            });
         }
     }
 
