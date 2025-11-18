@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -37,11 +37,11 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         super(apiService, alertService, modalManager);
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
+    protected override getPaginatedData(): PaginatedResponse | null {
         return this.documentos;
     }
 
-    protected setPaginatedData(data: PaginatedResponse): void {
+    protected override setPaginatedData(data: PaginatedResponse): void {
         this.documentos = data;
     }
 
@@ -61,7 +61,7 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         this.loading = true;
         this.filtros.nombre = this.nombre;
         
-        this.apiService.getAll('documentos/historial', this.filtros).subscribe(
+        this.apiService.getAll('documentos/historial', this.filtros).pipe(this.untilDestroyed()).subscribe(
             documentos => {
                 this.documentos = documentos;
                 this.loading = false;
@@ -89,7 +89,7 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         this.documento = documento;
         console.log('documento', this.documento);
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
         

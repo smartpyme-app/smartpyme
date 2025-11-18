@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../../../../shared/base/base-modal.component';
 
@@ -23,6 +24,9 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     public productos:any = [];
     public buscador:string = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         private apiService: ApiService, 
         protected override alertService: AlertService,
@@ -35,7 +39,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 
 	ngOnInit() {}
 
-    openModal(template: TemplateRef<any>, compuesto:any) {
+    override openModal(template: TemplateRef<any>, compuesto:any) {
         this.composicion = compuesto;
         super.openModal(template, {class: 'modal-md'});
     }
@@ -61,7 +65,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     onSubmit(){
        
         this.loading = true;
-        this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
+        this.apiService.store('producto/composicion', this.composicion).pipe(this.untilDestroyed()).subscribe(composicion => {
             if(!this.composicion.id) {
                 this.composicion.id = composicion.id;
                 this.producto.composiciones.unshift(this.composicion);
@@ -75,7 +79,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 
     deleteComposicion(composicion:any){
         if (confirm('¿Desea eliminar el Registro?')) {        
-            this.apiService.delete('producto/composicion/', composicion.id).subscribe(composicion => {
+            this.apiService.delete('producto/composicion/', composicion.id).pipe(this.untilDestroyed()).subscribe(composicion => {
                 for (var i = 0; i < this.producto.composiciones.length; ++i) {
                     if (this.producto.composiciones[i].id === composicion.id ){
                         this.producto.composiciones.splice(i, 1);

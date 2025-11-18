@@ -38,17 +38,21 @@ export class CuentasPagarComponent extends BasePaginatedComponent implements OnI
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('cuentas-pagar').subscribe(pagos => { 
-            this.pagos = pagos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('cuentas-pagar')
+            .pipe(this.untilDestroyed())
+            .subscribe(pagos => { 
+                this.pagos = pagos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public search(){
         if(this.buscador && this.buscador.length > 2) {
-            this.apiService.read('cuentas-pagar/buscar/', this.buscador).subscribe(pagos => { 
-                this.pagos = pagos;
-            }, error => {this.alertService.error(error); });
+            this.apiService.read('cuentas-pagar/buscar/', this.buscador)
+                .pipe(this.untilDestroyed())
+                .subscribe(pagos => { 
+                    this.pagos = pagos;
+                }, error => {this.alertService.error(error); });
         }
     }
 

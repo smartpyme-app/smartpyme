@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -45,6 +46,10 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
   modalCreateProductRef: any;
   conflictEvents: any = [];
   eventosConflictoModalRef: any;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private apiService: ApiService,
     protected override alertService: AlertService,
@@ -55,11 +60,15 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
 
   ngOnInit() {
 
-    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+    this.apiService.getAll('usuarios/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('clientes/list').subscribe(clientes => {
+    this.apiService.getAll('clientes/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(clientes => {
       this.clientes = clientes;
       // Si estamos editando un evento y tiene un cliente asignado, 
       // asegurarnos de que el cliente esté en la lista para que se muestre correctamente
@@ -70,7 +79,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
           this.clientes.push(this.evento.cliente);
         } else if (!clienteExistente) {
           // Si el cliente no está en la lista, intentar cargarlo individualmente
-          this.apiService.read('clientes/', this.evento.id_cliente).subscribe((cliente: any) => {
+          this.apiService.read('clientes/', this.evento.id_cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe((cliente: any) => {
             if (cliente) {
               this.clientes.push(cliente);
             }
@@ -81,7 +92,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       }
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(sucursales => {
       this.sucursales = sucursales;
     }, error => { this.alertService.error(error); });
 
@@ -132,7 +145,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
           this.clientes.push(evento.cliente);
         } else if (!clienteExistente) {
           // Si el cliente no está en la lista, intentar cargarlo individualmente
-          this.apiService.read('clientes/', evento.id_cliente).subscribe((cliente: any) => {
+          this.apiService.read('clientes/', evento.id_cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe((cliente: any) => {
             if (cliente) {
               this.clientes.push(cliente);
             }
@@ -237,7 +252,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       }
     }
     
-    this.apiService.store('evento', eventoParaEnviar).subscribe(evento => {
+    this.apiService.store('evento', eventoParaEnviar)
+      .pipe(this.untilDestroyed())
+      .subscribe(evento => {
       if (!this.evento.id) {
         this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
       } else {
@@ -298,7 +315,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     productos.forEach((producto: any) => {
       // Si el producto no tiene precio_producto, intentar cargarlo del producto original
       if (!producto.precio_producto) {
-        this.apiService.read('productos/', producto.id_producto).subscribe((productoOriginal: any) => {
+        this.apiService.read('productos/', producto.id_producto)
+          .pipe(this.untilDestroyed())
+          .subscribe((productoOriginal: any) => {
           if (productoOriginal) {
             producto.precio_producto = productoOriginal.precio;
             console.log('Producto actualizado con datos del original:', producto);
@@ -333,7 +352,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('evento/', evento.id).subscribe(data => {
+        this.apiService.delete('evento/', evento.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(data => {
           this.onSubmit();
         }, error => { this.alertService.error(error); });
       } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -346,7 +367,9 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     this.conflictedEvent = evento;
     this.conflictedEvent.tipo = estado;
 
-    this.apiService.store('evento', this.conflictedEvent).subscribe(evento => {
+    this.apiService.store('evento', this.conflictedEvent)
+      .pipe(this.untilDestroyed())
+      .subscribe(evento => {
       this.alertService.success('Cita actualizada', 'La cita fue actualida exitosamente.');
       this.ObSubmitConflicted();
       this.conflictedEvent = null;

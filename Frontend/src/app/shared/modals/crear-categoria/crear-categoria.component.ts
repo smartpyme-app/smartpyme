@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -22,6 +23,9 @@ export class CrearCategoriaComponent extends BaseModalComponent implements OnIni
   
   @Output() update = new EventEmitter();
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private apiService: ApiService,
     protected override alertService: AlertService,
@@ -35,7 +39,9 @@ export class CrearCategoriaComponent extends BaseModalComponent implements OnIni
   }
 
   loadCategorias() {
-    this.apiService.getAll('categorias/list').subscribe(
+    this.apiService.getAll('categorias/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       categorias => {
         // Cuando es subcategoría, solo mostrar categorías principales
         if (this.categoria.subcategoria) {
@@ -70,7 +76,9 @@ export class CrearCategoriaComponent extends BaseModalComponent implements OnIni
   public onSubmit() {
     this.loading = true;
     
-    this.apiService.store('categoria', this.categoria).subscribe(
+    this.apiService.store('categoria', this.categoria)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       categoria => {
         this.update.emit(categoria);
         this.closeModal();

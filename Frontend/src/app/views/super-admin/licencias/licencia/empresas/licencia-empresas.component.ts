@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -25,6 +26,8 @@ export class LicenciaEmpresasComponent extends BaseModalComponent implements OnI
     public buscador:string = '';
     public override loading:boolean = false;
     public override saving:boolean = false;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService,
@@ -41,7 +44,7 @@ export class LicenciaEmpresasComponent extends BaseModalComponent implements OnI
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('empresas/list').subscribe(empresas => {
+        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe(empresas => {
             this.empresas = empresas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -66,7 +69,7 @@ export class LicenciaEmpresasComponent extends BaseModalComponent implements OnI
     public onSubmit() {
         this.saving = true;
         this.empresa.id_licencia = this.licencia.id;
-        this.apiService.store('licencia/empresa', this.empresa).subscribe(empresa => {
+        this.apiService.store('licencia/empresa', this.empresa).pipe(this.untilDestroyed()).subscribe(empresa => {
             if(!this.empresa.id)
                 this.licencia.empresas.push(empresa);
             this.empresa = {};
@@ -80,7 +83,7 @@ export class LicenciaEmpresasComponent extends BaseModalComponent implements OnI
 
     public delete(empresa:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('licencia/empresa/', empresa.id) .subscribe(data => {
+            this.apiService.delete('licencia/empresa/', empresa.id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.licencia.empresas.length; i++) { 
                     if (this.licencia.empresas[i].id == data.id )
                         this.licencia.empresas.splice(i, 1);

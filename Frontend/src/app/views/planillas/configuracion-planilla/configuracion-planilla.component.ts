@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import {
 } from '../../../services/configuracion-planilla.service';
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-configuracion-planilla',
@@ -54,6 +55,9 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   // Resultados de prueba
   resultadoPrueba: any = null;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   // ==========================================
   // CONSTRUCTOR
   // ==========================================
@@ -84,7 +88,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   private cargarDatosIniciales(): void {
     this.loading = true;
     
-  this.configService.obtenerConfiguracion().subscribe({
+  this.configService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
     next: (response: any) => {
       
       this.configuracion = response;
@@ -99,7 +103,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   });
     
     // Cargar tipos de conceptos
-  this.configService.obtenerTiposConceptos().subscribe({
+  this.configService.obtenerTiposConceptos().pipe(this.untilDestroyed()).subscribe({
     next: (response: any) => {
       const data = response.data || response;
       this.tiposConceptos = data.tipos_conceptos;
@@ -111,7 +115,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
   });
   
     // Cargar plantillas de paísea
-    this.configService.obtenerPlantillas().subscribe({
+    this.configService.obtenerPlantillas().pipe(this.untilDestroyed()).subscribe({
       next: (response: any) => {
         // ✅ MANEJAR AMBOS CASOS
         const data = response.data || response;
@@ -258,7 +262,7 @@ export class ConfiguracionPlanillaComponent implements OnInit {
     this.configService.actualizarConfiguracion(
       configuracionFinal, 
       formValue.cod_pais
-    ).subscribe({
+    ).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         this.alertService.success('success','Configuración guardada exitosamente');
         this.cargarDatosIniciales(); // Recargar datos
@@ -419,7 +423,7 @@ guardarConcepto(): void {
       return;
     }
 
-    this.configService.aplicarPlantillaPais(codPais).subscribe({
+    this.configService.aplicarPlantillaPais(codPais).pipe(this.untilDestroyed()).subscribe({
       next: (response: any) => {
         const configuracion = response.data;
         // Aplicar la nueva configuración al formulario
@@ -460,7 +464,7 @@ guardarConcepto(): void {
 
     this.probandoCalculo = true;
     
-    this.configService.probarCalculo(datosEmpleado).subscribe({
+    this.configService.probarCalculo(datosEmpleado).pipe(this.untilDestroyed()).subscribe({
       next: (response: any) => {
         this.resultadoPrueba = response.data;
         this.probandoCalculo = false;
@@ -487,7 +491,7 @@ guardarConcepto(): void {
     const file = event.target.files[0];
     if (!file) return;
 
-    this.configService.importarConfiguracion(file).subscribe({
+    this.configService.importarConfiguracion(file).pipe(this.untilDestroyed()).subscribe({
       next: (configuracion) => {
         // Aplicar configuración importada
         this.configuracionForm.patchValue({
@@ -600,7 +604,7 @@ guardarConcepto(): void {
     this.configService.actualizarConfiguracion(
       configuracionFinal, 
       formValue.cod_pais
-    ).subscribe({
+    ).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         // ✅ NOTIFICACIÓN DISCRETA
         this.alertService.success('success','Cambios guardados automáticamente');
@@ -618,7 +622,7 @@ guardarConcepto(): void {
   }
 
   private cargarConfiguracionSinLoading(): void {
-    this.configService.obtenerConfiguracion().subscribe({
+    this.configService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
       next: (response: any) => {
         this.configuracion = response;
         this.poblarFormulario();

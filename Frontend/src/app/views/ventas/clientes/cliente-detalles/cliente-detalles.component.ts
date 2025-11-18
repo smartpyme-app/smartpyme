@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { TagInputModule } from 'ngx-chips';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -46,6 +47,8 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
         '02': 'Carnet de residente',
         '37': 'Otro'
     };
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService,
@@ -63,10 +66,10 @@ export class ClienteDetallesComponent extends BaseModalComponent implements OnIn
     /**Carga todos los datos del cliente
      * @returns void*/
     public loadAll() {
-        this.route.params.subscribe((params: any) => {
+        this.route.params.pipe(this.untilDestroyed()).subscribe((params: any) => {
             if (params.id) {
                 this.loading = true;
-                this.apiService.read('cliente/', params.id).subscribe(cliente => {
+                this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(cliente => {
                     this.cliente = cliente;
                     this.loading = false;
                 }, error => { this.alertService.error(error); this.loading = false; });

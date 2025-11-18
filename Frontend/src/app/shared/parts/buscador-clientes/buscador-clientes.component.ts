@@ -1,9 +1,10 @@
-import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { fromEvent } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs/operators';
 
@@ -24,6 +25,9 @@ export class BuscadorClientesComponent implements OnInit {
     public searching = false;
     public searchExecuted: boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(private apiService: ApiService, private alertService: AlertService) { }
 
     ngOnInit() {
@@ -35,7 +39,8 @@ export class BuscadorClientesComponent implements OnInit {
             map((event: Event) => (event.target as HTMLInputElement).value.trim()), // Obtiene el valor y elimina espacios en blanco
             debounceTime(800), // Espera 500ms después de la última tecla presionada
             distinctUntilChanged(), // Evita búsquedas repetidas con el mismo valor
-            filter(value => value.length > 2) // Solo permite búsquedas si hay más de 2 caracteres
+            filter(value => value.length > 2), // Solo permite búsquedas si hay más de 2 caracteres
+            this.untilDestroyed()
         ).subscribe(() => this.searchClientes());
     }
 
@@ -43,7 +48,9 @@ export class BuscadorClientesComponent implements OnInit {
     searchClientes() {
         this.searching = true;
         this.searchExecuted = true;
-        this.apiService.read('clientes/buscar/', this.cliente.nombre).subscribe(clientes => {
+        this.apiService.read('clientes/buscar/', this.cliente.nombre)
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => {
             this.clientes = clientes;
             this.searching = false;
         }, error => {

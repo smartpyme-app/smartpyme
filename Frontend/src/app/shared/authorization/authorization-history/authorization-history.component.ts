@@ -1,6 +1,7 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, DestroyRef, inject } from '@angular/core';
 import { AuthorizationService, Authorization } from '@services/Authorization/authorization.service';
 import { CommonModule } from '@angular/common';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
   selector: 'app-authorization-history',
@@ -13,6 +14,9 @@ export class AuthorizationHistoryComponent implements OnInit {
   history: Authorization[] = [];
   loading: boolean = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(private authorizationService: AuthorizationService) { }
 
   ngOnInit(): void {
@@ -24,6 +28,7 @@ export class AuthorizationHistoryComponent implements OnInit {
   loadHistory() {
     this.loading = true;
     this.authorizationService.getAuthorizationHistory(this.modelType, this.modelId)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           if (response.ok) {

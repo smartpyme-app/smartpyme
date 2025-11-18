@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import Swal from 'sweetalert2';
@@ -37,6 +38,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public tipoAnterior = '';
     public modalRefContacto: any;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -57,7 +61,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         if(this.id_cliente){
             this.esNuevo = false;
             this.loading = true;
-            this.apiService.read('cliente/', this.id_cliente).subscribe(cliente => {
+            this.apiService.read('cliente/', this.id_cliente)
+                .pipe(this.untilDestroyed())
+                .subscribe(cliente => {
                 this.cliente = cliente;
                 this.tipoAnterior = cliente.tipo;
                 this.loading = false;
@@ -85,7 +91,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         this.saving = true;
         let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
 
-        this.apiService.store(routeUrl, this.cliente).subscribe({
+        this.apiService.store(routeUrl, this.cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe({
             next: (cliente) => {
                 const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
                 const mensaje = this.esNuevo
@@ -152,7 +160,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
 
     public verificarSiExiste(){
         if(this.cliente.nombre && this.cliente.apellido){
-            this.apiService.getAll('clientes', { nombre: this.cliente.nombre, apellido: this.cliente.apellido, estado: 1, }).subscribe(clientes => {
+            this.apiService.getAll('clientes', { nombre: this.cliente.nombre, apellido: this.cliente.apellido, estado: 1, })
+                .pipe(this.untilDestroyed())
+                .subscribe(clientes => {
                 if(clientes.data[0]){
                     this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
                         'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'
@@ -225,7 +235,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
         if (this.cliente.id) {
             this.loading_contacto = true;
 
-            this.apiService.store('cliente/contacto', nuevoContacto).subscribe({
+            this.apiService.store('cliente/contacto', nuevoContacto)
+                .pipe(this.untilDestroyed())
+                .subscribe({
                 next: (contactoGuardado) => {
                     const index = this.cliente.contactos.findIndex(
                         (c: any) => c.id === contactoGuardado.id
@@ -293,7 +305,9 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
                 if (contacto.id && this.cliente.id) {
                     this.loading = true;
 
-                    this.apiService.delete('cliente/contacto/', contacto.id).subscribe({
+                    this.apiService.delete('cliente/contacto/', contacto.id)
+                        .pipe(this.untilDestroyed())
+                        .subscribe({
                         next: () => {
                             const index = this.cliente.contactos.findIndex(
                                 (c: any) => c.id === contacto.id

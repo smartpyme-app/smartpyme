@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -25,6 +26,9 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
     public override loading = false;
     public override saving = false;
     public filtros:any = {};
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   	constructor( 
   	    public apiService: ApiService,
@@ -48,10 +52,12 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('planes', this.filtros).subscribe(planes => {
-            this.planes = planes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('planes', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(planes => {
+                this.planes = planes;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public override openModal(template: TemplateRef<any>, plan:any) {
@@ -61,9 +67,11 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
         }
 
         if(!this.productos.length){
-            this.apiService.getAll('productos/list').subscribe(productos => {
-                this.productos = productos;
-            }, error => {this.alertService.error(error);});
+            this.apiService.getAll('productos/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(productos => {
+                    this.productos = productos;
+                }, error => {this.alertService.error(error);});
         }
 
         super.openModal(template);
@@ -71,12 +79,14 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('plan/', id) .subscribe(data => {
-                for (let i = 0; i < this.planes.data.length; i++) { 
-                    if (this.planes.data[i].id == data.id )
-                        this.planes.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('plan/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.planes.data.length; i++) { 
+                        if (this.planes.data[i].id == data.id )
+                            this.planes.data.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                
         }
     }
@@ -84,7 +94,9 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
 
     public onSubmit() {
           this.saving = true;
-          this.apiService.store('plan', this.plan).subscribe(plan => {
+          this.apiService.store('plan', this.plan)
+              .pipe(this.untilDestroyed())
+              .subscribe(plan => {
               if (!this.plan.id) {
                     this.planes.data.push(plan);
                     this.alertService.success('Plan guardado', 'El plan fue añadida exitosamente.');

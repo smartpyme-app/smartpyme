@@ -76,7 +76,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
                       return of([]); // Retornar un observable vacío para que el flujo continúe.
                     })
                   )
-                )
+                ),
+                this.untilDestroyed()
               )
               .subscribe((results: any[]) => {
                 // Si results es un array, lo convertimos a PaginatedResponse
@@ -121,10 +122,12 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('productos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(productos => {
+                this.productos = productos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setOrden(columna: string) {
@@ -149,9 +152,11 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 5;
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
-            this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('categorias')
+            .pipe(this.untilDestroyed())
+            .subscribe(categorias => {
+                this.categorias = categorias;
+            }, error => {this.alertService.error(error);});
 
         if (this.filtros.id_categoria == null) {
             this.filtros.id_categoria = '';
@@ -161,10 +166,12 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
         }
 
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
-            this.productos = productos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('productos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(productos => {
+                this.productos = productos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
 
         super.openModal(template, config || { class: 'modal-xl', backdrop: 'static' });
     }

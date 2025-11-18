@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -26,6 +27,9 @@ export class ChequeComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor(
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -33,7 +37,9 @@ export class ChequeComponent implements OnInit {
 
 	ngOnInit() {
         // Cargar cuentas bancarias disponibles
-        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+        this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => {this.alertService.error(error);});
 
@@ -45,7 +51,9 @@ export class ChequeComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('banco/cheque/', id).subscribe(cheque => {
+            this.apiService.read('banco/cheque/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(cheque => {
                 this.cheque = cheque;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -70,7 +78,9 @@ export class ChequeComponent implements OnInit {
 
         this.saving = true;
 
-        this.apiService.store('banco/cheque', this.cheque).subscribe(cheque => {
+        this.apiService.store('banco/cheque', this.cheque)
+          .pipe(this.untilDestroyed())
+          .subscribe(cheque => {
             if (!this.cheque.id) {
                 this.alertService.success('Cheque guardado', 'El cheque fue guardado exitosamente.');
             }else{

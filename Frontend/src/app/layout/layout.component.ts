@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-layout',
@@ -30,7 +31,7 @@ import { AppConstants } from '../constants/app.constants';
     ],
     
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   public usuario: any = {};
   public elem: any;
   public isfullscreen: boolean = false;
@@ -38,6 +39,9 @@ export class LayoutComponent {
   public visibleAlertMessage: boolean = false;
 
   readonly ESTADOS_SUSCRIPCION = AppConstants.ESTADOS_SUSCRIPCION;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -271,26 +275,30 @@ getMensajeSuscripcion(): { mensaje: string; tipo: string } {
   dismissAlert() {
     this.visibleAlertMessage = false;
     
-    this.apiService.getAll('empresa/isvisible-alert').subscribe(
-      (response: any) => {
-        console.log('Alerta desactivada correctamente:', response);
-        
-        if (this.usuario && this.usuario.empresa) {
-          this.usuario.empresa.alerta_suscripcion = false;
-          this.getAlertSuscription();
+    this.apiService.getAll('empresa/isvisible-alert')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response: any) => {
+          console.log('Alerta desactivada correctamente:', response);
+          
+          if (this.usuario && this.usuario.empresa) {
+            this.usuario.empresa.alerta_suscripcion = false;
+            this.getAlertSuscription();
+          }
+        },
+        error: (error) => {
+          console.error('Error al desactivar la alerta:', error);
         }
-      },
-      (error) => {
-        console.error('Error al desactivar la alerta:', error);
-      }
-    );
+      });
   }
 
   getAlertSuscription() {
-      
-    this.apiService.getAll('empresa/get-alert').subscribe((data: any) => {
-      this.visibleAlertMessage = data.alerta_suscripcion;
-
-    });
+    this.apiService.getAll('empresa/get-alert')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (data: any) => {
+          this.visibleAlertMessage = data.alerta_suscripcion;
+        }
+      });
   }
 }

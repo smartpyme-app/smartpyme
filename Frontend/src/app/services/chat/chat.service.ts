@@ -83,6 +83,8 @@ export class ChatService {
   }
 
   verificarAcceso(): void {
+    // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
+    // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
     this.funcionalidadesService
       .verificarAcceso(this.CHAT_FUNCIONALIDAD_SLUG)
       .subscribe({
@@ -204,6 +206,8 @@ export class ChatService {
     this.loadingSubject.next(true);
   
     // Llamada a la API de Bedrock a través de nuestro backend
+    // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
+    // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
     this.callBedrockAPI(text, conversationHistory).subscribe({
       next: (response) => {
         // Procesar el mensaje para gestionar SVGs
@@ -269,6 +273,8 @@ export class ChatService {
       return;
     }
 
+    // Nota: Este servicio es singleton (providedIn: 'root'), así que las suscripciones
+    // no necesitan unsubscribe porque el servicio vive durante toda la aplicación
     this.getConversation(id).subscribe({
       next: (response) => {
         // Convertir los mensajes del formato de la base de datos al formato del chat

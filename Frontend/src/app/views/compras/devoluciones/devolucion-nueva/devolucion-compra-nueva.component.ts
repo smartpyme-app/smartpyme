@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionCompraDetallesComponent } from './detalles/devolucion-compra-detalles.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-devolucion-compra-nueva',
@@ -29,6 +30,8 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
     public override loading = false;
     public override saving = false;
     public imprimir:boolean = true;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -50,7 +53,9 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
         else{
             this.loading = true;
             this.compra.cliente = {};
-            this.apiService.read('compra/', id).subscribe(compra => {
+            this.apiService.read('compra/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(compra => {
                 this.compra = compra;
                 this.devolucion.detalles = compra.detalles;
                 this.devolucion.id_proveedor = compra.id_proveedor;
@@ -81,7 +86,9 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
     }
 
     cargarDocumentos(){
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
 
@@ -158,7 +165,9 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
         public onDevolucion() {
 
             this.saving = true;
-            this.apiService.store('devolucion-compra', this.devolucion).subscribe(devolucion => {
+            this.apiService.store('devolucion-compra', this.devolucion)
+                .pipe(this.untilDestroyed())
+                .subscribe(devolucion => {
                 this.saving = false;
                 if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(devolucion);

@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { BsModalService } from 'ngx-bootstrap/modal';
 // AuthorizationRequestModalComponent se carga dinámicamente para reducir el bundle inicial
 
@@ -62,7 +62,9 @@ export class AuthorizationInterceptor implements HttpInterceptor {
       class: 'modal-lg'
     });
     
-    modalRef.content?.close.subscribe(() => {
+    // Usar take(1) porque solo necesitamos escuchar el evento una vez
+    // El modal se destruye cuando se cierra, así que la suscripción se completa automáticamente
+    modalRef.content?.close.pipe(take(1)).subscribe(() => {
       modalRef.hide();
     });
   }

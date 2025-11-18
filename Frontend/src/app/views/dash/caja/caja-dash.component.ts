@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -33,6 +34,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
 
     public supervisorModalRef!: any; // BsModalRef
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService,
         private router: Router,
@@ -49,7 +53,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('caja').subscribe(caja => {
+        this.apiService.getAll('caja')
+          .pipe(this.untilDestroyed())
+          .subscribe(caja => {
             this.caja = caja;
             if (this.caja.corte == null || this.caja.corte.estado == 'Cerrada'){
                 this.openModal(this.corteTemplate, {});
@@ -71,7 +77,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
 
     public supervisorCheck(){
         this.loading = true;
-        this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+        this.apiService.store('usuario-validar', this.supervisor)
+          .pipe(this.untilDestroyed())
+          .subscribe(supervisor => {
             this.modalManager.closeModal(this.supervisorModalRef);
             this.supervisorModalRef = undefined;
             if(this.tipoAccion == 'X') {
@@ -111,7 +119,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
             this.caja.corte.usuario_id = this.apiService.auth_user().id;
         }
 
-        this.apiService.store('corte', this.caja.corte).subscribe(corte => {
+        this.apiService.store('corte', this.caja.corte)
+          .pipe(this.untilDestroyed())
+          .subscribe(corte => {
             this.caja.corte = corte;
             sessionStorage.setItem('wagro_corte', JSON.stringify(corte));
             this.loading = false;
@@ -128,7 +138,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
         // if (confirm('Confirma que desea cerrar el turno en caja')) { 
             this.caja.corte.supervisor_id = supervisor.id;
             this.caja.corte.cierre = this.apiService.datetime();
-            this.apiService.store('corte', this.caja.corte).subscribe(corte => {
+            this.apiService.store('corte', this.caja.corte)
+              .pipe(this.untilDestroyed())
+              .subscribe(corte => {
                 this.router.navigate(['/login']);
                 this.corteZ();
                 this.alertService.success('Caja cerrada', 'La caja fue cerrada exitosamente.');

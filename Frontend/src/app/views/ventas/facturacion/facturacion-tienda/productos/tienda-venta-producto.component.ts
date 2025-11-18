@@ -45,11 +45,11 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         super(apiService, alertService, modalManager);
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
+    protected override getPaginatedData(): PaginatedResponse | null {
         return this.productosData;
     }
 
-    protected setPaginatedData(data: PaginatedResponse): void {
+    protected override setPaginatedData(data: PaginatedResponse): void {
         this.productosData = data;
     }
 
@@ -59,7 +59,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
               .pipe(
                 debounceTime(500),
                 filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+                switchMap((query: any) => this.apiService.read('productos/buscar/', query)),
+                this.untilDestroyed()
               )
               .subscribe((results: any[]) => {
                 this.productos = Array.isArray(results) ? results : [];
@@ -73,7 +74,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
 
     override openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
@@ -96,7 +97,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

@@ -1,6 +1,7 @@
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { PaginatedResponse } from '../../models/shared/Pagination.interface';
+import { BaseComponent } from './base.component';
 
 // Re-exportar PaginatedResponse para conveniencia (los tipos se eliminan en compilación, sin overhead)
 export type { PaginatedResponse };
@@ -8,6 +9,8 @@ export type { PaginatedResponse };
 /**
  * Clase base abstracta para componentes que implementan paginación.
  * Elimina la duplicación de código del método setPagination() en múltiples componentes.
+ * 
+ * Incluye gestión automática de suscripciones para prevenir memory leaks.
  * 
  * Uso:
  * ```typescript
@@ -25,14 +28,16 @@ export type { PaginatedResponse };
  * ```
  */
 
-export abstract class BasePaginatedComponent {
+export abstract class BasePaginatedComponent extends BaseComponent {
   public loading: boolean = false;
   public filtros: any = {};
 
   constructor(
     protected apiService: ApiService,
     protected alertService: AlertService
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Obtiene la referencia al objeto de datos paginados.
@@ -77,18 +82,20 @@ export abstract class BasePaginatedComponent {
 
     const paginationUrl = `${paginatedData.path}?page=${event.page}`;
     
-    this.apiService.paginate(paginationUrl, this.filtros).subscribe({
-      next: (response) => {
-        this.setPaginatedData(response);
-        this.onPaginateSuccess(response);
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error(`${this.constructor.name}: Error en paginación`, error);
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    });
+    this.apiService.paginate(paginationUrl, this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          this.setPaginatedData(response);
+          this.onPaginateSuccess(response);
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error(`${this.constructor.name}: Error en paginación`, error);
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      });
   }
 
   /**

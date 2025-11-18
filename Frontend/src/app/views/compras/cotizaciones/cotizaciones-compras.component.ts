@@ -57,9 +57,11 @@ export class CotizacionesComprasComponent extends BasePaginatedModalComponent im
 
     this.loadAll();
 
-    this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-      this.proveedores = proveedores;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('proveedores/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(proveedores => {
+            this.proveedores = proveedores;
+        }, error => { this.alertService.error(error); });
   }
 
   public setOrden(columna: string) {
@@ -91,13 +93,14 @@ export class CotizacionesComprasComponent extends BasePaginatedModalComponent im
     if (!this.filtros.id_proveedor) {
       this.filtros.id_proveedor = '';
     }
-    this.apiService.getAll('ordenes-de-compras', this.filtros).subscribe(compras => {
-      this.compras = compras;
-      this.loading = false;
-
-      this.comprasOriginal = Object.assign({}, compras);
-      this.closeModal();
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('ordenes-de-compras', this.filtros)
+        .pipe(this.untilDestroyed())
+        .subscribe(compras => {
+            this.compras = compras;
+            this.loading = false;
+            this.comprasOriginal = Object.assign({}, compras);
+            this.closeModal();
+        }, error => { this.alertService.error(error); });
   }
 
   async setEstado(cotizacion: any) {
@@ -119,25 +122,29 @@ export class CotizacionesComprasComponent extends BasePaginatedModalComponent im
     }
 
 
-    this.apiService.store('orden-de-compra', cotizacion).subscribe(cotizacion => {
-      this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
-    }, error => {
-      this.alertService.error(error);
-      this.compras["data"][Index].estado = error.error.currentState;
+    this.apiService.store('orden-de-compra', cotizacion)
+        .pipe(this.untilDestroyed())
+        .subscribe(cotizacion => {
+            this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
+        }, error => {
+            this.alertService.error(error);
+            this.compras["data"][Index].estado = error.error.currentState;
 
-    });
+        });
   }
 
 
 
   public delete(id: number) {
     if (confirm('¿Desea eliminar el Registro?')) {
-      this.apiService.delete('orden-de-compra/', id).subscribe(data => {
-        for (let i = 0; i < this.compras['data'].length; i++) {
-          if (this.compras['data'][i].id == data.id)
-            this.compras['data'].splice(i, 1);
-        }
-      }, error => { this.alertService.error(error); });
+      this.apiService.delete('orden-de-compra/', id)
+          .pipe(this.untilDestroyed())
+          .subscribe(data => {
+              for (let i = 0; i < this.compras['data'].length; i++) {
+                  if (this.compras['data'][i].id == data.id)
+                      this.compras['data'].splice(i, 1);
+              }
+          }, error => { this.alertService.error(error); });
 
     }
 
@@ -154,32 +161,40 @@ export class CotizacionesComprasComponent extends BasePaginatedModalComponent im
   openModalEdit(template: TemplateRef<any>, compra: any) {
     this.compra = compra;
 
-    this.apiService.getAll('documentos').subscribe(documentos => {
-      this.documentos = documentos;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('documentos')
+        .pipe(this.untilDestroyed())
+        .subscribe(documentos => {
+            this.documentos = documentos;
+        }, error => { this.alertService.error(error); });
 
     this.openModal(template);
   }
 
   public onSubmit() {
     this.loading = true;
-    this.apiService.store('orden-de-compra', this.compra).subscribe(compra => {
-      this.compra = {};
-      this.closeModal();
-      this.loading = false;
-      this.alertService.success('Orden de compra guardada', 'La orden de compra fue guardada exitosamente.');
-    }, error => { this.alertService.error(error); this.loading = false; });
+    this.apiService.store('orden-de-compra', this.compra)
+        .pipe(this.untilDestroyed())
+        .subscribe(compra => {
+            this.compra = {};
+            this.closeModal();
+            this.loading = false;
+            this.alertService.success('Orden de compra guardada', 'La orden de compra fue guardada exitosamente.');
+        }, error => { this.alertService.error(error); this.loading = false; });
 
   }
 
   public openFilter(template: TemplateRef<any>) {
-    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-      this.sucursales = sucursales;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('sucursales/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(sucursales => {
+            this.sucursales = sucursales;
+        }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-      this.usuarios = usuarios;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(usuarios => {
+            this.usuarios = usuarios;
+        }, error => { this.alertService.error(error); });
 
     this.openModal(template);
   }
@@ -190,7 +205,9 @@ export class CotizacionesComprasComponent extends BasePaginatedModalComponent im
 
   public descargar() {
     this.downloading = true;
-    this.apiService.export('ordenes-de-compras/exportar', this.filtros).subscribe((data: Blob) => {
+    this.apiService.export('ordenes-de-compras/exportar', this.filtros)
+        .pipe(this.untilDestroyed())
+        .subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');

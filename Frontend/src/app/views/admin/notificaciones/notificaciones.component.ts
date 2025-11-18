@@ -61,7 +61,9 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
 
     public filtrarNotificaciones(){
         this.loading = true;
-        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
+        this.apiService.getAll('notificaciones', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(notificaciones => { 
             this.notificaciones = notificaciones;
             this.loading = false;
             if(this.modalRef){
@@ -81,7 +83,9 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('notificacion', this.notificacion).subscribe(notificacion => {
+        this.apiService.store('notificacion', this.notificacion)
+            .pipe(this.untilDestroyed())
+            .subscribe(notificacion => {
             this.notificacion = notificacion;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
@@ -89,14 +93,18 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
     }
 
     public setEstado(notificacion:any){
-        this.apiService.store('notificacion', notificacion).subscribe(notificacion => { 
+        this.apiService.store('notificacion', notificacion)
+            .pipe(this.untilDestroyed())
+            .subscribe(notificacion => { 
             // this.alertService.success('Actualizado');
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('notificacion/', id) .subscribe(data => {
+            this.apiService.delete('notificacion/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.notificaciones.data.length; i++) { 
                     if (this.notificaciones.data[i].id == data.id )
                         this.notificaciones.data.splice(i, 1);

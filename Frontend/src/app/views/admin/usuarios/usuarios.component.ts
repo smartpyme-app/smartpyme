@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
 import { EncryptService } from '@services/encryption/encrypt.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -57,6 +58,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
     is_global: false
   };
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService:ApiService,
         protected override alertService:AlertService,
@@ -76,7 +80,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
 
     this.loadAll();
 
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
       },
@@ -85,7 +91,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bodegas/list').subscribe(
+    this.apiService.getAll('bodegas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
       },
@@ -97,7 +105,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
   }
 
   cargarModulos() {
-    this.apiService.getAll('permissions').subscribe(
+    this.apiService.getAll('permissions')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.modules = (response?.modules || []).map((module: any) => ({
           ...module,
@@ -116,7 +126,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
     if(!this.filtros.id_sucursal){
       this.filtros.id_sucursal = '';
     }
-    this.apiService.getAll('usuarios', this.filtros).subscribe(usuarios => {
+    this.apiService.getAll('usuarios', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(usuarios => {
       this.usuarios = usuarios;
       this.usuarios.data.forEach((usuario:any) => {
         if (usuario.roles && usuario.roles.length > 0) {
@@ -131,7 +143,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
       this.loading = false;
     }, error => {this.alertService.error(error); this.loading = false;});
 
-    this.apiService.getAll('roles').subscribe(roles => {
+    this.apiService.getAll('roles')
+      .pipe(this.untilDestroyed())
+      .subscribe(roles => {
       this.roles = roles;
 
       this.roles.forEach((rol:any) => {
@@ -184,7 +198,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
   public onSubmit() {
     this.saving = true;
     this.usuario.telefono = this.usuario.telefono?.e164Number || '';
-    this.apiService.store('usuario', this.usuario).subscribe(
+    this.apiService.store('usuario', this.usuario)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuario) => {
         this.loadAll();
         this.saving = false;
@@ -202,7 +218,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
   }
 
   public setEstado(usuario: any) {
-    this.apiService.store('usuario', usuario).subscribe(
+    this.apiService.store('usuario', usuario)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuario) => {
         if (usuario.enable == '1') {
           this.alertService.success(
@@ -226,7 +244,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
 
   public delete(id: number) {
     if (confirm('¿Desea eliminar el Registro?')) {
-      this.apiService.delete('usuario/', id).subscribe(
+      this.apiService.delete('usuario/', id)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (data) => {
           for (let i = 0; i < this.usuarios.data.length; i++) {
             if (this.usuarios.data[i].id == data.id)
@@ -247,7 +267,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
 
   onFiltrar() {
     this.loading = true;
-    this.apiService.store('usuarios/filtrar', this.filtros).subscribe(
+    this.apiService.store('usuarios/filtrar', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
         this.loading = false;
@@ -345,7 +367,9 @@ public changePhoneNumber(event: any) {
       is_global: this.role.is_global && this.canCreateGlobalRoles()
     };
 
-    this.apiService.store('roles-permissions', roleData).subscribe(
+    this.apiService.store('roles-permissions', roleData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.alertService.success('Rol creado correctamente', 'El rol ha sido creado exitosamente.');
         this.closeModal();

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-abono-compra',
@@ -28,6 +29,9 @@ export class CrearAbonoCompraComponent implements OnInit {
 
 	modalRef!: BsModalRef;
 
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
+
    constructor(private apiService: ApiService, private alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
     	private modalService: BsModalService
@@ -45,7 +49,9 @@ export class CrearAbonoCompraComponent implements OnInit {
         this.abono.id_empresa = this.apiService.auth_user().id_empresa;
         this.abono.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -69,7 +75,9 @@ export class CrearAbonoCompraComponent implements OnInit {
             this.abono.concepto = 'Abono';
         }
 
-        this.apiService.store('compra/abono', this.abono).subscribe(abono => {
+        this.apiService.store('compra/abono', this.abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
             this.alertService.modal = false;
             this.update.emit();
             this.router.navigate(['/compras/abonos']);
@@ -77,7 +85,9 @@ export class CrearAbonoCompraComponent implements OnInit {
 
             //Generar partida contable
             if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                this.apiService.store('contabilidad/partida/cxp', abono).subscribe(abono => {
+                this.apiService.store('contabilidad/partida/cxp', abono)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(abono => {
                 },error => {this.alertService.error(error);});
             }
 

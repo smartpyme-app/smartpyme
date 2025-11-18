@@ -1,9 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
@@ -23,6 +24,9 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   filtros: any = {};
   bodegas: any = [];
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService, 
     protected override alertService: AlertService,
@@ -33,10 +37,14 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   descargar() { }
 
   openFilter(template: TemplateRef<any>) {
-    this.apiService.getAll('combos/list').subscribe(combos => {
+    this.apiService.getAll('combos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(combos => {
       this.combos = combos;
     }, error => { this.alertService.error(error); });
-    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+    this.apiService.getAll('usuarios/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
     this.openModal(template);
@@ -46,7 +54,9 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   ngOnInit() {
     this.loadAll();
 
-    this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+    this.apiService.getAll('bodegas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(bodegas => {
       this.bodegas = bodegas;
     }, error => { this.alertService.error(error); });
 
@@ -67,7 +77,9 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   }
 
   filtrar() {
-    this.apiService.getAll('combos/index', this.filtros).subscribe(combos => {
+    this.apiService.getAll('combos/index', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(combos => {
       this.combos = combos;
       this.loading = false;
     }, error => { this.alertService.error(error); });
@@ -100,7 +112,9 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       return;
     };
 
-    this.apiService.store('combos/changeState', combo).subscribe((res: any) => {
+    this.apiService.store('combos/changeState', combo)
+      .pipe(this.untilDestroyed())
+      .subscribe((res: any) => {
       this.alertService.success("Cambio de estado exitoso", res.message);
       this.loadAll();
     }, error => { this.alertService.error(error); });

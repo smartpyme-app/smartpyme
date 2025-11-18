@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-empleados-ventas',
@@ -23,6 +24,9 @@ export class EmpleadosVentasComponent implements OnInit {
     
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( public apiService:ApiService, private alertService:AlertService, private modalService: BsModalService ){}
 
 	ngOnInit() {
@@ -35,10 +39,12 @@ export class EmpleadosVentasComponent implements OnInit {
 
     public loadAll() {
     	this.loading = true;
-        this.apiService.store('empleados/ventas', this.filtro).subscribe(empleados => { 
-            this.empleados = empleados;
-    		this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('empleados/ventas', this.filtro)
+            .pipe(this.untilDestroyed())
+            .subscribe(empleados => { 
+                this.empleados = empleados;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
 

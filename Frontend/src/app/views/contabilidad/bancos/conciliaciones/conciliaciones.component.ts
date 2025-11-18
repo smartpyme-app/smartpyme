@@ -48,7 +48,9 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+        this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => {this.alertService.error(error);});
     }
@@ -80,7 +82,9 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
 
     public filtrarConciliaciones(){
         this.loading = true;
-        this.apiService.getAll('bancos/conciliaciones', this.filtros).subscribe(conciliaciones => { 
+        this.apiService.getAll('bancos/conciliaciones', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(conciliaciones => { 
             this.conciliaciones = conciliaciones;
             this.loading = false;
             if(this.modalRef){
@@ -99,7 +103,9 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
     public openFilter(template: TemplateRef<any>) {
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(usuarios => { 
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
         }
@@ -128,13 +134,15 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('banco/conciliacion/', conciliacion.id) .subscribe(data => {
+                this.apiService.delete('banco/conciliacion/', conciliacion.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.conciliaciones.data.length; i++) { 
                         if (this.conciliaciones.data[i].id == data.id )
                             this.conciliaciones.data.splice(i, 1);
                     }
                     this.alertService.success('Conciliación eliminada', 'La conciliación fue eliminada exitosamente.');
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -144,7 +152,9 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('banco/conciliacion', this.conciliacion).subscribe(conciliacion => {
+        this.apiService.store('banco/conciliacion', this.conciliacion)
+          .pipe(this.untilDestroyed())
+          .subscribe(conciliacion => {
             if (!this.conciliacion.id) {
                 this.loadAll();
                 this.alertService.success('Conciliación creada', 'La conciliación fue añadida exitosamente.');
@@ -160,7 +170,9 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('bancos/conciliaciones/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('bancos/conciliaciones/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

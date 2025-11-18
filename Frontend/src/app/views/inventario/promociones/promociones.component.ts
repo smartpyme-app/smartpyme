@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef  } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { FilterPipe }     from '../../../pipes/filter.pipe';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { BaseModalComponent } from '../../../shared/base/base-modal.component';
 
 import * as moment from 'moment';
@@ -35,6 +36,9 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
     public sucursales:any = [];
     public filtrado:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService, 
         protected override alertService: AlertService,
@@ -50,7 +54,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
         this.filtro.nombre_producto = '';
         this.filtro.enable = '';
         this.filtro.subcategoria = '';
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
@@ -58,7 +62,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('promociones').subscribe(promociones => { 
+        this.apiService.getAll('promociones').pipe(this.untilDestroyed()).subscribe(promociones => { 
             this.promociones = promociones;
             this.loading = false; this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -75,7 +79,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/promocion/', id) .subscribe(data => {
+            this.apiService.delete('producto/promocion/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.promociones.length; i++) { 
                     if (this.promociones[i].id == data.id )
                         this.promociones.splice(i, 1);
@@ -87,7 +91,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
 
     public deleteAll() {
         if (confirm('¿Desea eliminar totos los registros?')) {
-            this.apiService.getAll('producto/promociones/eliminar') .subscribe(data => {
+            this.apiService.getAll('producto/promociones/eliminar').pipe(this.untilDestroyed()).subscribe(data => {
                 this.loadAll();
             }, error => {this.alertService.error(error); });
         }
@@ -126,7 +130,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
 
     public loadProductos() {
         this.loading = true;
-        this.apiService.getAll('productos/list').subscribe(productos => {
+        this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
             this.promociones = [];
             for (let i = 0; i < productos.length; i++) { 
                 let promocion:any = {};
@@ -155,7 +159,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
     public onSubmit() {
         this.loading = true;
         // Guardamos la caja
-        this.apiService.store('producto/promocion', this.promocion).subscribe(promocion => {
+        this.apiService.store('producto/promocion', this.promocion).pipe(this.untilDestroyed()).subscribe(promocion => {
             this.promocion = promocion;
             this.alertService.success('Promoción guardada', 'La promoción fue guardad exitosamente.');
 
@@ -179,7 +183,7 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
             this.promocionesFiltradas[i].inicio = moment(this.promocion.inicio).format('YYYY-MM-DDTHH:mm');
             this.promocionesFiltradas[i].fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
 
-            this.apiService.store('producto/promocion', this.promocionesFiltradas[i]).subscribe(promocion=> {
+            this.apiService.store('producto/promocion', this.promocionesFiltradas[i]).pipe(this.untilDestroyed()).subscribe(promocion=> {
                 if (this.promocionesFiltradas.length == i + 1) {
                     this.alertService.success('Promociones agregadas', (i + 1) + " promociones configuradas");
                     this.loading = false;

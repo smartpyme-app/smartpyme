@@ -45,7 +45,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
     ngOnInit() {
         this.loadAll();
         if(!this.categorias.length){
-            this.apiService.getAll('categorias/list').subscribe(categorias => { 
+            this.apiService.getAll('categorias/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
         }
@@ -54,9 +56,13 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
     public loadAll() {
         this.filtro.id_categoria = '';
         this.loading = true;
-        this.apiService.getAll('materias-primas').subscribe(productos => { 
+        this.apiService.getAll('materias-primas')
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(sucursales => { 
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); this.loading = false;});
             this.loading = false; this.filtrado = false;
@@ -66,7 +72,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
     public search(){
         if(this.buscador && this.buscador.length > 2) {
             this.loading = true;
-            this.apiService.read('materias-primas/buscar/', this.buscador).subscribe(productos => { 
+            this.apiService.read('materias-primas/buscar/', this.buscador)
+              .pipe(this.untilDestroyed())
+              .subscribe(productos => { 
                 this.productos = productos;
                 this.loading = false; this.filtrado = true;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -77,7 +85,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('materia-prima/', id) .subscribe(data => {
+            this.apiService.delete('materia-prima/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) { 
                     if (this.productos['data'][i].id == data.id )
                         this.productos['data'].splice(i, 1);
@@ -98,7 +108,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
     openFilter(template: TemplateRef<any>) {
         this.filtro.id_categoria = '';
         if(!this.categorias.length){
-            this.apiService.getAll('categorias').subscribe(categorias => { 
+            this.apiService.getAll('categorias')
+              .pipe(this.untilDestroyed())
+              .subscribe(categorias => { 
                 this.categorias = categorias;
             }, error => {this.alertService.error(error); });
         }
@@ -107,7 +119,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('materias-primas/filtrar', this.filtro).subscribe(productos => { 
+        this.apiService.store('materias-primas/filtrar', this.filtro)
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.loading = false; this.filtrado = true;
             this.closeModal();
@@ -131,7 +145,9 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
     public onSubmit() {
         this.loading = true;
         // Guardamos la caja
-        this.apiService.store('producto', this.producto).subscribe(producto=> {
+        this.apiService.store('producto', this.producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto=> {
             this.producto= {};
             this.alertService.success('Materia prima actualizada', 'La materia prima fue guardada exitosamente.');
             this.loading = false;

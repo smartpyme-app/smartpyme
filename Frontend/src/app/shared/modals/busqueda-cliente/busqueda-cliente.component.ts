@@ -1,10 +1,11 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -20,6 +21,8 @@ export class BusquedaClienteComponent extends BaseModalComponent implements OnIn
   public override loading = false;
   @Output() clienteSelect = new EventEmitter();
 
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
 	constructor( 
 	    private apiService: ApiService,
         protected override alertService: AlertService,
@@ -38,7 +41,9 @@ export class BusquedaClienteComponent extends BaseModalComponent implements OnIn
 
     public submit():void{
         this.loading = true;
-        this.apiService.store('cliente', this.cliente).subscribe(cliente => { 
+        this.apiService.store('cliente', this.cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe(cliente => { 
             this.clienteSelect.emit({item: cliente});
             this.loading = false;
             this.closeModal()

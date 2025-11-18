@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -29,6 +30,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     public override loading:boolean = false;
     public override saving:boolean = false;
     public imprimir:boolean = true;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor(
         public apiService: ApiService,
@@ -50,7 +54,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         else{
             this.loading = true;
             this.venta.cliente = {};
-            this.apiService.read('venta/', id).subscribe(venta => {
+            this.apiService.read('venta/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(venta => {
                 this.venta = venta;
                 this.devolucion.detalles = venta.detalles;
                 this.devolucion.id_cliente = venta.id_cliente;
@@ -95,7 +101,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     }
 
     cargarDocumentos(){
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((doc:any) => doc.id_sucursal == this.devolucion.id_sucursal &&
                   doc.nombre === 'Nota de débito' || doc.nombre === 'Nota de crédito'
@@ -191,7 +199,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         public onDevolucion() {
 
             this.saving = true;
-            this.apiService.store('devolucion/venta/facturacion', this.devolucion).subscribe(devolucion => {
+            this.apiService.store('devolucion/venta/facturacion', this.devolucion)
+                .pipe(this.untilDestroyed())
+                .subscribe(devolucion => {
                 this.saving = false;
                 if(devolucion.tipo_documento == 'Factura' || devolucion.tipo_documento == 'Credito Fiscal' || devolucion.tipo_documento == 'Ticket'){
                     this.imprimirDocDevolucion(devolucion);

@@ -52,7 +52,9 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
         this.usuario = this.apiService.auth_user();
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -82,7 +84,9 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
 
     public filtrarPresupuestos(){
         this.loading = true;
-        this.apiService.getAll('presupuestos', this.filtros).subscribe(presupuestos => { 
+        this.apiService.getAll('presupuestos', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(presupuestos => { 
             this.presupuestos = presupuestos;
             this.loading = false;
             if(this.modalRef){
@@ -94,7 +98,9 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
     public setAnulacion(presupuesto:any, estado:any){
         presupuesto.enable = estado;
         if(confirm('Confirma realización la acción?')){
-            this.apiService.store('presupuesto', presupuesto).subscribe(presupuesto => { 
+            this.apiService.store('presupuesto', presupuesto)
+              .pipe(this.untilDestroyed())
+              .subscribe(presupuesto => { 
                 this.alertService.success('Presupuesto actualizado', 'El presupuesto fue actualizado exitosamente.');
             }, error => {this.alertService.error(error); });
         }
@@ -104,7 +110,9 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
 
     public openFilter(template: TemplateRef<any>) {
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => { 
+            this.apiService.getAll('proyectos/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(proyectos => { 
                 this.proyectos = proyectos;
             }, error => {this.alertService.error(error); });
         }

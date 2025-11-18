@@ -38,13 +38,17 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
-            this.catalogo = catalogo;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('catalogo/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(catalogo => {
+                this.catalogo = catalogo;
+            }, error => { this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -60,11 +64,13 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
     public filtrarCategorias() {
         this.loading = true;
 
-        this.apiService.getAll('categorias', this.filtros).subscribe((response: any) => {
-            // El backend devuelve un objeto de paginación de Laravel
-            this.categorias = response;
-            this.loading = false;
-        }, error => { this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('categorias', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((response: any) => {
+                // El backend devuelve un objeto de paginación de Laravel
+                this.categorias = response;
+                this.loading = false;
+            }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
@@ -88,7 +94,9 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
 
     public onSubmit(): void {
         this.loading = true;
-        this.apiService.store('categoria', this.categoria).subscribe(categoria => {
+        this.apiService.store('categoria', this.categoria)
+            .pipe(this.untilDestroyed())
+            .subscribe(categoria => {
             if (!this.categoria.id) {
                 this.alertService.success('Categoria creada', 'La categoria fue añadida exitosamente.');
             }else{
@@ -102,7 +110,9 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
 
     public delete(categoria: any) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('categoria/', categoria.id).subscribe(data => {
+            this.apiService.delete('categoria/', categoria.id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 this.filtrarCategorias();
             }, error => { this.alertService.error(error); });
         }

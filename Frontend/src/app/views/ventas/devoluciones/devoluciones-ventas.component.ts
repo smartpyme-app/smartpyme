@@ -61,9 +61,11 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
-            this.clientes = clientes;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => {
+                this.clientes = clientes;
+            }, error => { this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -86,13 +88,15 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
         if (this.filtros.id_cliente == null) {
             this.filtros.id_cliente = '';
         }
-        this.apiService.getAll('devoluciones/ventas', this.filtros).subscribe(ventas => {
-            this.ventas = ventas;
-            this.loading = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('devoluciones/ventas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(ventas => {
+                this.ventas = ventas;
+                this.loading = false;
+                if (this.modalRef) {
+                    this.closeModal();
+                }
+            }, error => { this.alertService.error(error); });
     }
 
     public setEstado(venta: any, enable: string) {
@@ -117,14 +121,18 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
     }
 
     public onSubmit() {
-        this.apiService.store('devolucion/venta', this.venta).subscribe(venta => {
-            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-        }, error => { this.alertService.error(error); });
+        this.apiService.store('devolucion/venta', this.venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(venta => {
+                this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
+            }, error => { this.alertService.error(error); });
     }
 
     public delete(id: number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('devolucion/venta/', id).subscribe(data => {
+            this.apiService.delete('devolucion/venta/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.ventas['data'].length; i++) {
                     if (this.ventas['data'][i].id == data.id)
                         this.ventas['data'].splice(i, 1);
@@ -152,24 +160,30 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
 
     openFilter(template: TemplateRef<any>) {
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
-            this.clientes = clientes;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => {
+                this.clientes = clientes;
+            }, error => { this.alertService.error(error); });
 
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => {
+                this.usuarios = usuarios;
+            }, error => { this.alertService.error(error); });
 
         if (!this.documentos.length) {
-            this.apiService.getAll('documentos/list-nombre').subscribe(
-                (documentos) => {
-                    this.documentos = documentos;
-                },
-                (error) => {
-                    this.alertService.error(error);
-                }
-            );
+            this.apiService.getAll('documentos/list-nombre')
+                .pipe(this.untilDestroyed())
+                .subscribe(
+                    (documentos) => {
+                        this.documentos = documentos;
+                    },
+                    (error) => {
+                        this.alertService.error(error);
+                    }
+                );
         }
 
         super.openModal(template);
@@ -178,10 +192,12 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
     override openModal(template: TemplateRef<any>) {
         this.id_venta = null;
         this.loading = true;
-        this.apiService.getAll('ventas/sin-devolucion').subscribe(ventas => {
-            this.ventasList = ventas;
-            this.loading = false;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('ventas/sin-devolucion')
+            .pipe(this.untilDestroyed())
+            .subscribe(ventas => {
+                this.ventasList = ventas;
+                this.loading = false;
+            }, error => { this.alertService.error(error); });
         super.openModal(template);
     }
 
@@ -191,7 +207,9 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
 
     public descargar() {
         this.downloading = true;
-        this.apiService.export('devoluciones/ventas/exportar', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('devoluciones/ventas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -239,7 +257,9 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
 
     enviarDTE(venta: any) {
         this.sending = true;
-        this.apiService.store('enviarDTE', venta).subscribe(dte => {
+        this.apiService.store('enviarDTE', venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(() => {
@@ -254,22 +274,30 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
             if (confirm('¿Confirma anular la devolución y el DTE?')) {
                 this.venta = venta;
                 this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
-                    // this.alertService.success('DTE generado.');
-                    this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                this.apiService.store('generarDTEAnulado', this.venta)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(dte => {
+                        // this.alertService.success('DTE generado.');
+                        this.venta.dte_invalidacion = dte;
+                        this.mhService.firmarDTE(dte)
+                            .pipe(this.untilDestroyed())
+                            .subscribe(dteFirmado => {
+                                this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
-                        if (dteFirmado.status == 'ERROR') {
-                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
-                        }
+                                if (dteFirmado.status == 'ERROR') {
+                                    this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
+                                }
 
-                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
-                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                this.venta.dte_invalidacion.sello = dte.selloRecibido;
-                                this.venta.sello_mh = dte.selloRecibido;
-                                this.venta.enable = false;
-                                this.apiService.store('devolucion/venta', this.venta).subscribe(data => {
+                                this.mhService.anularDTE(this.venta, dteFirmado.body)
+                                    .pipe(this.untilDestroyed())
+                                    .subscribe(dte => {
+                                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                            this.venta.dte_invalidacion.sello = dte.selloRecibido;
+                                            this.venta.sello_mh = dte.selloRecibido;
+                                            this.venta.enable = false;
+                                            this.apiService.store('devolucion/venta', this.venta)
+                                                .pipe(this.untilDestroyed())
+                                                .subscribe(data => {
                                     // this.alertService.success('Venta guardada.');
                                 }, error => { this.alertService.error(error); this.saving = false; });
                             }
@@ -314,14 +342,18 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
         };
     
         if (this.documentos.length === 0) {
-            this.apiService.getAll('documentos/list-nombre').subscribe(documentos => {
-                this.documentos = documentos;
-            }, error => { this.alertService.error(error); });
+            this.apiService.getAll('documentos/list-nombre')
+                .pipe(this.untilDestroyed())
+                .subscribe(documentos => {
+                    this.documentos = documentos;
+                }, error => { this.alertService.error(error); });
         }
         if (this.usuarios.length === 0) {
-            this.apiService.getAll('usuarios/list-edit-devolucion').subscribe(usuarios => { 
-                this.usuarios = usuarios; 
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('usuarios/list-edit-devolucion')
+                .pipe(this.untilDestroyed())
+                .subscribe(usuarios => { 
+                    this.usuarios = usuarios; 
+                }, error => {this.alertService.error(error); });
         }
     
         super.openModal(template);
@@ -330,7 +362,9 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
     public actualizarDevolucion() {
         this.saving = true;
 
-        this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar).subscribe(devolucion => {
+        this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar)
+            .pipe(this.untilDestroyed())
+            .subscribe(devolucion => {
             
             this.closeModal();
             this.saving = false;

@@ -57,14 +57,14 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
 
         this.loadAll();
 
-        this.apiService.getAll('empresas/list').subscribe(empresas => { 
+        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe(empresas => { 
             this.empresas = empresas;
         }, error => {this.alertService.error(error); });
     }
 
     public loadAll(){
         this.loading = true;        
-        this.apiService.getAll('admin-usuarios', this.filtros).subscribe(usuarios => { 
+        this.apiService.getAll('admin-usuarios', this.filtros).pipe(this.untilDestroyed()).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.usuarios.data.forEach((usuario:any) => {
                 usuario.rol_name = usuario.roles[0].name;
@@ -73,7 +73,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.apiService.getAll('roles').subscribe(roles => { 
+        this.apiService.getAll('roles').pipe(this.untilDestroyed()).subscribe(roles => { 
             this.roles = roles;
         }, error => {this.alertService.error(error); });
     }
@@ -89,7 +89,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
             this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
         }
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursalesList = sucursales;
             this.setSucursales();
         }, error => {this.alertService.error(error); });
@@ -116,7 +116,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
     public onSubmit() {
         this.saving = true;
         // Guardamos al usuario
-        this.apiService.store('admin-usuario', this.usuario).subscribe(usuario => {
+        this.apiService.store('admin-usuario', this.usuario).pipe(this.untilDestroyed()).subscribe(usuario => {
             this.loadAll();
             this.saving = false;
             if(!this.usuario.id){
@@ -130,7 +130,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
     }
 
     public setEstado(usuario:any){
-        this.apiService.store('admin-usuario', usuario).subscribe(usuario => { 
+        this.apiService.store('admin-usuario', usuario).pipe(this.untilDestroyed()).subscribe(usuario => { 
             if(usuario.enable == 1){
                 this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
             }else{
@@ -141,7 +141,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('admin-usuario/', id) .subscribe(data => {
+            this.apiService.delete('admin-usuario/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.usuarios.data.length; i++) { 
                     if (this.usuarios.data[i].id == data.id )
                         this.usuarios.data.splice(i, 1);
@@ -154,7 +154,7 @@ export class AdminUsuariosComponent extends BasePaginatedModalComponent implemen
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('admin-usuarios/filtrar', this.filtros).subscribe(usuarios => { 
+        this.apiService.store('admin-usuarios/filtrar', this.filtros).pipe(this.untilDestroyed()).subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;;
             this.closeModal();

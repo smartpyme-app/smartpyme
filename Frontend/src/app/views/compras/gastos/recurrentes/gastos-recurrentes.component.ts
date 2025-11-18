@@ -51,7 +51,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
     }
@@ -76,7 +78,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
 
     public filtrarGastos(){
         this.loading = true;
-        this.apiService.getAll('gastos', this.filtros).subscribe(gastos => { 
+        this.apiService.getAll('gastos', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
             this.closeModal();
@@ -116,7 +120,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
         this.gasto = gasto;
         this.gasto.recurrente = false;
         
-        this.apiService.store('gasto', this.gasto).subscribe(gasto => {
+        this.apiService.store('gasto', this.gasto)
+          .pipe(this.untilDestroyed())
+          .subscribe(gasto => {
             this.gasto = {};
             this.loadAll();
             this.alertService.success('Gasto guardada', 'La gasto se marco como no recurrente exitosamente.');
@@ -126,7 +132,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id) .subscribe(data => {
+            this.apiService.delete('gasto/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.gastos['data'].length; i++) { 
                     if (this.gastos['data'][i].id == data.id )
                         this.gastos['data'].splice(i, 1);
@@ -140,11 +148,15 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     public openModalEdit(template: TemplateRef<any>, gasto:any) {
         this.gasto = gasto;
 
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos')
+          .pipe(this.untilDestroyed())
+          .subscribe(documentos => {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago')
+          .pipe(this.untilDestroyed())
+          .subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -154,7 +166,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('gastos/filtrar/' + filtro + '/', txt).subscribe(gastos => { 
+        this.apiService.read('gastos/filtrar/' + filtro + '/', txt)
+          .pipe(this.untilDestroyed())
+          .subscribe(gastos => { 
             this.gastos = gastos;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -163,7 +177,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
 
     public onSubmit() {
         this.saving = true;            
-        this.apiService.store('gasto', this.gasto).subscribe(gasto => {
+        this.apiService.store('gasto', this.gasto)
+          .pipe(this.untilDestroyed())
+          .subscribe(gasto => {
             this.gasto = {};
             this.saving = false;
             if(this.modalRef){
@@ -181,7 +197,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     }
 
     public descargarGastos(){
-        this.apiService.export('gastos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('gastos/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -196,7 +214,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     }
 
     public descargarDetalles(){
-        this.apiService.export('gastos-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('gastos-detalles/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -216,11 +236,15 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+        this.apiService.getAll('usuarios/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(usuarios => { 
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
 

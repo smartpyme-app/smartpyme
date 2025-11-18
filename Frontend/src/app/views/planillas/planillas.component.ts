@@ -122,7 +122,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   public loadPlanillas() {
     this.loading = true;
-    this.apiService.getAll('planillas', this.filtros).subscribe({
+    this.apiService.getAll('planillas', this.filtros)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (planillas) => {
         this.planillas = planillas;
         this.loading = false;
@@ -185,7 +187,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     }
 
     this.saving = true;
-    this.apiService.store('planillas/generate', this.planilla).subscribe({
+    this.apiService.store('planillas/generate', this.planilla)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response) => {
         this.alertService.success('Exito', 'Planilla generada exitosamente');
         this.loadPlanillas();
@@ -215,6 +219,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
         this.apiService
           .store(`planillas/aprobar/${planilla.id}`, {})
+          .pipe(this.untilDestroyed())
           .subscribe({
             next: (response) => {
               this.alertService.success(
@@ -246,7 +251,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     }).then((result) => {
       if (result.isConfirmed) {
         this.procesando = true;
-        this.apiService.store(`planillas/revertir/${planilla.id}`, {}).subscribe({
+        this.apiService.store(`planillas/revertir/${planilla.id}`, {})
+            .pipe(this.untilDestroyed())
+            .subscribe({
           next: (response) => {
             this.alertService.success('Éxito', 'Planilla revertida exitosamente');
             this.loadPlanillas();
@@ -276,7 +283,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         this.procesando = true;
 
         // Llamar al backend para procesar el pago
-        this.apiService.store(`planillas/${planilla.id}/pagar`, {}).subscribe({
+        this.apiService.store(`planillas/${planilla.id}/pagar`, {})
+            .pipe(this.untilDestroyed())
+            .subscribe({
           next: (response) => {
             Swal.fire({
               title: '¡Éxito!',
@@ -361,7 +370,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       if (result.isConfirmed) {
         this.procesando = true;
 
-        this.apiService.delete('planillas/', planilla.id).subscribe({
+        this.apiService.delete('planillas/', planilla.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
           next: (response) => {
             this.alertService.success('Éxito', 'Planilla eliminada exitosamente');
             this.loadPlanillas();
@@ -379,7 +390,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   public generarBoletas(planilla: any) {
     this.procesando = true;
 
-    this.apiService.generatePayrollSlips(planilla.id).subscribe({
+    this.apiService.generatePayrollSlips(planilla.id)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response: Blob) => {
         const filename = `boletas_planilla_${planilla.codigo}.pdf`;
         this.apiService.downloadFile(response, filename);
@@ -407,6 +420,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     this.procesando = true;
     this.apiService
       .store(`planillas/${planilla.id}/enviar-boletas`, {})
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           this.alertService.success('Exito', 'Boletas enviadas exitosamente');
@@ -431,6 +445,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     this.procesando = true;
     this.apiService
       .store(`planillas/${this.planilla.id}/enviar-boletas`, {})
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
           this.alertService.success('Éxito', 'Boletas enviadas exitosamente');
@@ -445,7 +460,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   public exportarExcel(planilla: any) {
     this.procesando = true;
-    this.apiService.download(`planillas/${planilla.id}/excel`).subscribe({
+    this.apiService.download(`planillas/${planilla.id}/excel`)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response) => {
         const blob = new Blob([response], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -469,7 +486,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
   public exportarPDF(planilla: any) {
     this.procesando = true;
-    this.apiService.download(`planillas/${planilla.id}/pdf`).subscribe({
+    this.apiService.download(`planillas/${planilla.id}/pdf`)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response) => {
         const blob = new Blob([response], {type: 'application/pdf'});
         const url = window.URL.createObjectURL(blob);
@@ -522,6 +541,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     this.saving = true;
     this.apiService
       .store(`planillas/update/${this.planillaEdit.id}`, planillaToUpdate)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           this.alertService.success(
@@ -629,7 +649,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   }
 
   descargarPlantilla() {
-    this.apiService.download('planillas/plantilla-importacion').subscribe(
+    this.apiService.download('planillas/plantilla-importacion')
+        .pipe(this.untilDestroyed())
+        .subscribe(
       (response: any) => {
         const blob = new Blob([response], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -659,7 +681,9 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     formData.append('fecha_fin', this.datosImportacion.fecha_fin);
     formData.append('tipo_planilla', this.datosImportacion.tipo_planilla);
 
-    this.apiService.store('planillas/importar', formData).subscribe({
+    this.apiService.store('planillas/importar', formData)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response) => {
         this.alertService.success(
           'Éxito',
@@ -682,6 +706,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
 
     this.apiService
       .exportAcumulado('planillas/exportar', this.filtrosExportar)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response: Blob) => {
           const blob = new Blob([response], {

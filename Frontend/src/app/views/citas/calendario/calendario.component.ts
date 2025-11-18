@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit, DestroyRef, inject } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -16,6 +16,7 @@ import { CrearEventoComponent } from '@shared/modals/crear-evento/crear-evento.c
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 import { registerLocaleData } from '@angular/common';
@@ -52,6 +53,8 @@ export class CalendarioComponent implements OnInit {
   sucursales: any = [];
   usuarioActual: any = {};
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(public apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
@@ -79,16 +82,22 @@ export class CalendarioComponent implements OnInit {
       this.filtros.id_usuario = null;
     }
 
-    this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+    this.apiService.getAll('usuarios/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(usuarios => {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
 
 
-    this.apiService.getAll('clientes/list').subscribe(clientes => {
+    this.apiService.getAll('clientes/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(clientes => {
       this.clientes = clientes;
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(sucursales => {
       this.sucursales = sucursales;
     }, error => { this.alertService.error(error); });
 
@@ -208,7 +217,9 @@ export class CalendarioComponent implements OnInit {
     }
 
     this.loading = true;
-    this.apiService.getAll('eventos/list', filtrosEnvio).subscribe(eventos => {
+    this.apiService.getAll('eventos/list', filtrosEnvio)
+      .pipe(this.untilDestroyed())
+      .subscribe(eventos => {
       this.loading = false;
       if (this.calendarOptions) {
         this.calendarOptions.events = [...eventos];
@@ -296,7 +307,9 @@ export class CalendarioComponent implements OnInit {
     if (eventoData) {
       // Si el evento tiene un ID, cargarlo completo desde el backend para asegurar que tenga todos los datos
       if (eventoData.id) {
-        this.apiService.read('evento/', eventoData.id).subscribe((eventoCompleto: any) => {
+        this.apiService.read('evento/', eventoData.id)
+          .pipe(this.untilDestroyed())
+          .subscribe((eventoCompleto: any) => {
           this.evento = eventoCompleto;
           // Asegurar que los productos estén inicializados
           if (!this.evento.productos) {
@@ -378,7 +391,9 @@ export class CalendarioComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
-    this.apiService.store('evento', this.evento).subscribe(evento => {
+    this.apiService.store('evento', this.evento)
+      .pipe(this.untilDestroyed())
+      .subscribe(evento => {
       if (!this.evento.id) {
         this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
       } else {

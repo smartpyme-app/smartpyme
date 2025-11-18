@@ -38,10 +38,15 @@ export class MHService {
     }
 
     login(){
-        this.auth().subscribe( data => {            
-            localStorage.setItem('SP_token_mh', JSON.stringify(data.body))
-        }, error =>{
-            this.alertService.error(error);
+        // Nota: Este método se llama desde login() del componente y la suscripción se completa rápidamente
+        // No necesita unsubscribe porque el servicio es singleton y la suscripción se completa antes de que el componente se destruya
+        this.auth().subscribe({
+            next: (data) => {
+                localStorage.setItem('SP_token_mh', JSON.stringify(data.body));
+            },
+            error: (error) => {
+                this.alertService.error(error);
+            }
         });
     }
 

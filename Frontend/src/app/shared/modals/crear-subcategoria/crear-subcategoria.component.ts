@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../../shared/base/base-modal.component';
 
@@ -21,6 +22,9 @@ export class CrearSubCategoriaComponent extends BaseModalComponent implements On
     @Input() categoria_id: any;
     @Output() update = new EventEmitter();
     public override loading = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -41,7 +45,9 @@ export class CrearSubCategoriaComponent extends BaseModalComponent implements On
     public onSubmit() {
         this.loading = true;
         this.subcategoria.categoria_id = this.categoria_id;
-        this.apiService.store('subcategoria', this.subcategoria).subscribe(subcategoria => {
+        this.apiService.store('subcategoria', this.subcategoria)
+            .pipe(this.untilDestroyed())
+            .subscribe(subcategoria => {
             this.update.emit(subcategoria);
             this.closeModal();
             this.loading = false;

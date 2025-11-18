@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -32,6 +33,9 @@ export class PaqueteComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -40,20 +44,20 @@ export class PaqueteComponent implements OnInit {
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+        this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
+        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -63,7 +67,7 @@ export class PaqueteComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('paquete/', id).subscribe(paquete => {
+            this.apiService.read('paquete/', id).pipe(this.untilDestroyed()).subscribe(paquete => {
                 this.paquete = paquete;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -91,7 +95,7 @@ export class PaqueteComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
-        this.apiService.store('paquete', this.paquete).subscribe(paquete => {
+        this.apiService.store('paquete', this.paquete).pipe(this.untilDestroyed()).subscribe(paquete => {
             if (!this.paquete.id) {
                 this.alertService.success('Paquete guardado', 'El paquete fue guardado exitosamente.');
             }else{

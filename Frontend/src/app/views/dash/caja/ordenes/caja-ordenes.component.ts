@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../../../shared/base/base-modal.component';
 
@@ -24,6 +25,9 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
     public filterBy:any[] = ['nombre_usuario', 'nombre_cliente', 'id'];
     public ordenesResfresh:any;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
           private apiService: ApiService,
           protected override alertService: AlertService,
@@ -35,7 +39,9 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
 
     ngOnInit() {
         this.loading = true;
-        this.apiService.read('dash/cajero/', this.apiService.auth_user().id).subscribe(ordenes => { 
+        this.apiService.read('dash/cajero/', this.apiService.auth_user().id)
+          .pipe(this.untilDestroyed())
+          .subscribe(ordenes => { 
             this.ordenes = ordenes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -49,7 +55,9 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
 
     public loadAll() {
         // this.loading = true;
-        this.apiService.read('dash/cajero/', this.apiService.auth_user().id).subscribe(ordenes => { 
+        this.apiService.read('dash/cajero/', this.apiService.auth_user().id)
+          .pipe(this.untilDestroyed())
+          .subscribe(ordenes => { 
             this.ordenes = ordenes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -84,7 +92,9 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
     public onSubmit() {
           this.loading = true;
           // Guardamos la orden
-          this.apiService.store('orden', this.orden).subscribe(orden => {
+          this.apiService.store('orden', this.orden)
+            .pipe(this.untilDestroyed())
+            .subscribe(orden => {
                 if (orden.estado == 'Entregada') {
                     this.orden = {};
                 }
@@ -96,7 +106,9 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
     public setEstadoDetalle(detalle:any, estado:string) {
           this.loading = true;
           detalle.estado = estado;
-          this.apiService.store('orden/detalle', detalle).subscribe(detalle => {
+          this.apiService.store('orden/detalle', detalle)
+            .pipe(this.untilDestroyed())
+            .subscribe(detalle => {
                 detalle = detalle;
                 // this.alertService.success("Datos guardados");
                 this.loading = false;

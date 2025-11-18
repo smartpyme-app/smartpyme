@@ -53,9 +53,11 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => { 
+                this.proveedores = proveedores;
+            }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -78,11 +80,13 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     public filtrarCompras(){
         this.loading = true;
-        this.apiService.getAll('compras', this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-            this.closeModal();
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('compras', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => { 
+                this.compras = compras;
+                this.loading = false;
+                this.closeModal();
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -118,22 +122,26 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
         this.compra = compra;
         this.compra.recurrente = false;
         
-        this.apiService.store('marcar-recurrente', this.compra).subscribe(compra => {
-            this.compra = {};
-            this.loadAll();
-            this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
+        this.apiService.store('marcar-recurrente', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => {
+                this.compra = {};
+                this.loadAll();
+                this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
+            },error => {this.alertService.error(error); this.saving = false; });
 
     }
     
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id) .subscribe(data => {
-                for (let i = 0; i < this.compras['data'].length; i++) { 
-                    if (this.compras['data'][i].id == data.id )
-                        this.compras['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('compra/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.compras['data'].length; i++) { 
+                        if (this.compras['data'][i].id == data.id )
+                            this.compras['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -142,13 +150,17 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
     public openModalEdit(template: TemplateRef<any>, compra:any) {
         this.compra = compra;
 
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
 
         this.openModal(template);
     }
@@ -156,16 +168,20 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('compras/filtrar/' + filtro + '/', txt).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.read('compras/filtrar/' + filtro + '/', txt)
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => { 
+                this.compras = compras;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
 
     }
 
     public onSubmit() {
         this.saving = true;            
-        this.apiService.store('compra', this.compra).subscribe(compra => {
+        this.apiService.store('compra', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => {
             this.compra = {};
             this.saving = false;
             if(this.modalRef){
@@ -180,7 +196,9 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('compras/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -196,13 +214,17 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
 
         this.openModal(template);
     }

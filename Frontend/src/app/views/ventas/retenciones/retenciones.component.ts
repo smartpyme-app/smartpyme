@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -30,6 +31,9 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
     public filtro:any = {};
     public filtrado:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -45,10 +49,12 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('retenciones').subscribe(retenciones => { 
-            this.retenciones = retenciones;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('retenciones')
+            .pipe(this.untilDestroyed())
+            .subscribe(retenciones => { 
+                this.retenciones = retenciones;
+                this.loading = false;this.filtrado = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public override openModal(template: TemplateRef<any>, retencion:any) {
@@ -57,9 +63,11 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
             this.retencion.id_empresa = this.apiService.auth_user().id_empresa;
             this.retencion.enable = true;
         }
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
-            this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('catalogo/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(catalogo => {
+                this.catalogo = catalogo;
+            }, error => {this.alertService.error(error);});
         super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -70,7 +78,9 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('retencion', this.retencion).subscribe(retencion => {
+        this.apiService.store('retencion', this.retencion)
+            .pipe(this.untilDestroyed())
+            .subscribe(retencion => {
             if (!this.retencion.id) {
                 this.retenciones.push(retencion);
                 this.alertService.success('Impuesto creado', 'El retencion fue añadido exitosamente.');
@@ -96,12 +106,14 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('retencion/', id) .subscribe(data => {
-                    for (let i = 0; i < this.retenciones.length; i++) { 
-                        if (this.retenciones[i].id == data.id )
-                            this.retenciones.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
+                this.apiService.delete('retencion/', id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(data => {
+                        for (let i = 0; i < this.retenciones.length; i++) { 
+                            if (this.retenciones[i].id == data.id )
+                                this.retenciones.splice(i, 1);
+                        }
+                    }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }

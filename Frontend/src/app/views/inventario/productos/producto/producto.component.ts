@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,6 +13,7 @@ import { ProductoProveedoresComponent } from './proveedores/producto-proveedores
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto',
@@ -27,6 +28,9 @@ export class ProductoComponent implements OnInit {
 	public categorias:any[] = [];
   public loading = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -34,10 +38,14 @@ export class ProductoComponent implements OnInit {
 
 	ngOnInit() {
 	    
-		this.route.params.subscribe((params:any) => {
+		this.route.params
+		  .pipe(this.untilDestroyed())
+		  .subscribe((params:any) => {
 	      	if (params.id) {
 		        this.loading = true;
-		        this.apiService.read('producto/', params.id).subscribe(producto => {
+		        this.apiService.read('producto/', params.id)
+		          .pipe(this.untilDestroyed())
+		          .subscribe(producto => {
 		        this.producto = producto;
                 this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);

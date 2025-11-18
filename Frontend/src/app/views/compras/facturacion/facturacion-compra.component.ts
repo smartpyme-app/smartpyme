@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from './detalles/compra-detalles.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
@@ -81,7 +82,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     @ViewChild('productosAjuste')
     public productosAjusteTemplate!: TemplateRef<any>;
 
-
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -114,7 +116,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                         return of([]);
                     })
                 );
-            })
+            }),
+            this.untilDestroyed()
         ).subscribe(results => {
             this.searchResults = results || [];
             this.searchLoading = false;
@@ -126,46 +129,64 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         this.cargarDatosIniciales();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => {
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+        this.apiService.getAll('usuarios/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-      this.apiService.getAll('banco/cuentas/list').subscribe(bancos => {
+      this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bancos => {
           this.bancos = bancos;
       }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
+        this.apiService.getAll('formas-de-pago/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(formaPagos => {
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('impuestos').subscribe(impuestos => {
+        this.apiService.getAll('impuestos')
+          .pipe(this.untilDestroyed())
+          .subscribe(impuestos => {
             this.impuestos = impuestos;
             this.compra.impuestos = this.impuestos;
             this.sumTotal();
 
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+        this.apiService.getAll('proyectos/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(proyectos => {
             this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public cargarDocumentos(){
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
+        this.apiService.getAll('documentos/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
             if(this.compra.cotizacion == 1){
@@ -228,10 +249,14 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.compra.estado = 'Pendiente';
         }
 
-        this.route.params.subscribe((params:any) => {
+        this.route.params
+          .pipe(this.untilDestroyed())
+          .subscribe((params:any) => {
             if (params.id) {
                 this.loading = true;
-                this.apiService.read('compra/', params.id).subscribe(compra => {
+                this.apiService.read('compra/', params.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(compra => {
                     this.compra = compra;
                     this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                     this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
@@ -244,7 +269,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
             this.duplicarcompra = true;
-            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+            this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
+              .pipe(this.untilDestroyed())
+              .subscribe(compra => {
                 this.compra = compra;
                 this.compra.fecha = this.apiService.date();
                 this.compra.fecha_pago = this.apiService.date();
@@ -266,7 +293,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     // Facturar cotizacion
     if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
       this.facturarCotizacion = true;
-      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!).subscribe(compra => {
+      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
+        .pipe(this.untilDestroyed())
+        .subscribe(compra => {
         this.cotizacion = Object.assign({}, {
           ...compra, cotizacion: 1,
           detalles: compra.detalles.map((_d: any) => {
@@ -487,7 +516,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     console.log('=== COMPRA COMPONENT DEBUG ===');
     console.log('Datos de compra a enviar:', this.compra);
 
-    this.apiService.store('compra/facturacion', this.compra).subscribe(
+    this.apiService.store('compra/facturacion', this.compra)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       compra => {
         this.saving = false;
 
@@ -511,7 +542,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
           // Generar partida contable solo para compras aprobadas
           if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
-            this.apiService.store('contabilidad/partida/compra', compra).subscribe(
+            this.apiService.store('contabilidad/partida/compra', compra)
+              .pipe(this.untilDestroyed())
+              .subscribe(
               compra => {},
               error => { this.alertService.error(error); }
             );
@@ -547,7 +580,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     public supervisorCheck(){
         this.loading = true;
-        this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+        this.apiService.store('usuario-validar', this.supervisor)
+          .pipe(this.untilDestroyed())
+          .subscribe(supervisor => {
             this.closeModal();
             this.cargarDatosIniciales();
             this.loading = false;
@@ -919,7 +954,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     try {
       // Búsqueda por código de proveedor
       if (codigo) {
-        const porCodigo = await this.buscarPorCodigoProveedor(codigo).toPromise();
+        const porCodigo = await this.buscarPorCodigoProveedor(codigo)
+          .pipe(this.untilDestroyed())
+          .toPromise();
         if (porCodigo && porCodigo.length > 0) {
           return porCodigo[0];
         }
@@ -927,7 +964,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
       // Búsqueda por nombre si no se encontró por código
       if (descripcion) {
-        const porNombre = await this.buscarPorNombre(descripcion).toPromise();
+        const porNombre = await this.buscarPorNombre(descripcion)
+          .pipe(this.untilDestroyed())
+          .toPromise();
         if (porNombre && porNombre.length > 0) {
           return porNombre[0];
         }
@@ -960,7 +999,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     for (const item of this.productosNoEncontrados) {
       try {
         // Búsqueda amplia para sugerencias
-        const sugerencias = await this.buscarSugerencias(item.descripcion).toPromise();
+        const sugerencias = await this.buscarSugerencias(item.descripcion)
+          .pipe(this.untilDestroyed())
+          .toPromise();
         item.sugerencias = sugerencias || [];
       } catch (error) {
         console.error('Error cargando sugerencias para:', item.descripcion, error);
@@ -991,7 +1032,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       termino: termino,
       id_empresa: this.apiService.auth_user().id_empresa,
       limite: 20
-    }).toPromise();
+    })
+      .pipe(this.untilDestroyed())
+      .toPromise();
   }
 
   crearDetalleDesdeItem(item: any, producto: any) {
@@ -1217,7 +1260,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     cargarCategorias() {
-        this.apiService.getAll('categorias/list').subscribe(
+        this.apiService.getAll('categorias/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(
             categorias => {
                 this.categorias = categorias;
             },
@@ -1281,7 +1326,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         };
 
         // Crear el producto en el backend usando la ruta correcta
-        this.apiService.store('producto', datosProducto).subscribe(
+        this.apiService.store('producto', datosProducto)
+          .pipe(this.untilDestroyed())
+          .subscribe(
             (productoCreado: any) => {
                 // NO agregar automáticamente al DTE
                 // El producto solo estará disponible para asignar en la consolidación

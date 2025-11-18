@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -26,6 +27,9 @@ export class CrearAjusteComponent extends BaseModalComponent implements OnInit {
 	public lugares:any [] = [];
 
  	public override loading = false;
+
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
    constructor(
         private apiService: ApiService,
@@ -60,7 +64,9 @@ export class CrearAjusteComponent extends BaseModalComponent implements OnInit {
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+        this.apiService.store('ajuste', this.ajuste)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.inventario.stock = ajuste.stock_real;
             this.closeModal();
             this.setAjuste.emit(ajuste);

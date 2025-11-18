@@ -1,9 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { AlertService } from '../../services/alert.service';
 import { ApiService } from '../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../services/modal-manager.service';
 import { BaseModalComponent } from '../../shared/base/base-modal.component';
 
@@ -24,6 +25,9 @@ export class LockComponent extends BaseModalComponent implements OnInit {
     public user: any = {};
     public saludo:string = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, 
         private router: Router, 
@@ -39,10 +43,18 @@ export class LockComponent extends BaseModalComponent implements OnInit {
         this.usuario = this.apiService.auth_user();
         this.filtro.tipo = 'Vendedor';
         this.loading = true;
-        this.apiService.store('usuarios/filtrar', this.filtro).subscribe(usuarios => { 
-            this.usuarios = usuarios;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('usuarios/filtrar', this.filtro)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (usuarios) => {
+                    this.usuarios = usuarios;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     override openModal(template: TemplateRef<any>, user:any) {
@@ -56,16 +68,18 @@ export class LockComponent extends BaseModalComponent implements OnInit {
         this.user.password = this.user.password.toLowerCase();
 
         this.apiService.login(this.user)
-        .subscribe(
-            data => {
-                this.router.navigate(['/']);
-                this.loading = false;
-                this.closeModal();
-            },
-            error => {
-                $('.modal').addClass("animated shake");
-                this.alertService.error('Datos incorrectos');
-                this.loading = false;
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data) => {
+                    this.router.navigate(['/']);
+                    this.loading = false;
+                    this.closeModal();
+                },
+                error: (error) => {
+                    $('.modal').addClass("animated shake");
+                    this.alertService.error('Datos incorrectos');
+                    this.loading = false;
+                }
             });
     }
 

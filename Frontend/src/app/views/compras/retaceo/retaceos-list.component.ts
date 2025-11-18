@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
@@ -29,6 +30,9 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
   public clientes: any = [];
   public usuarios: any = [];
   public sucursales: any = [];
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -83,7 +87,9 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
     localStorage.setItem('retaceosFiltros', JSON.stringify(this.filtros));
     this.loading = true;
 
-    this.apiService.getAll('retaceos', this.filtros).subscribe(response => {
+    this.apiService.getAll('retaceos', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(response => {
       this.retaceos = response
       this.loading = false;
       this.closeModal();
@@ -108,7 +114,9 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
       cancelButtonText: 'Cancelar'
     }).then(result => {
       if (result.isConfirmed) {
-        this.apiService.delete('retaceo/', id).subscribe(() => {
+        this.apiService.delete('retaceo/', id)
+          .pipe(this.untilDestroyed())
+          .subscribe(() => {
           this.alertService.success('Retaceo eliminado correctamente', 'Retaceo eliminado');
           this.cargarRetaceos();
         }, error => {
@@ -123,17 +131,23 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
   }
   openFilter(template: TemplateRef<any>) {
     if(!this.clientes.length){
-      this.apiService.getAll('clientes/list').subscribe(clientes => {
+      this.apiService.getAll('clientes/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(clientes => {
           this.clientes = clientes;
       }, error => {this.alertService.error(error); });
     }
     if(!this.usuarios.length){
-      this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(usuarios => {
           this.usuarios = usuarios;
       }, error => {this.alertService.error(error); });
     }
     if(!this.sucursales.length){
-      this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+      this.apiService.getAll('sucursales/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(sucursales => {
         this.sucursales = sucursales;
       }, error => {this.alertService.error(error); });
     }
@@ -148,6 +162,7 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
     this.loading = true;
 
     this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: retaceo.id })
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.alertService.success(

@@ -45,11 +45,15 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
 
         this.usuario = this.apiService.auth_user();
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias')
+          .pipe(this.untilDestroyed())
+          .subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
         
@@ -68,21 +72,27 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setEstado(producto:any){
-        this.apiService.store('producto', producto).subscribe(producto => { 
+        this.apiService.store('producto', producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto => { 
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id) .subscribe(data => {
+            this.apiService.delete('producto/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) { 
                     if (this.productos['data'][i].id == data.id )
                         this.productos['data'].splice(i, 1);
@@ -108,7 +118,9 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('producto', this.producto).subscribe(producto=> {
+        this.apiService.store('producto', this.producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto=> {
             this.producto = {};
             this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
             this.loading = false;
@@ -117,7 +129,9 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
     }
 
     public descargar(){
-        this.apiService.export('productos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('productos/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

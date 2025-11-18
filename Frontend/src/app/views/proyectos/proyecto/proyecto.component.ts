@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -32,6 +33,8 @@ export class ProyectoComponent implements OnInit {
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
@@ -41,20 +44,20 @@ export class ProyectoComponent implements OnInit {
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+        this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
+        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -64,7 +67,7 @@ export class ProyectoComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('proyecto/', id).subscribe(proyecto => {
+            this.apiService.read('proyecto/', id).pipe(this.untilDestroyed()).subscribe(proyecto => {
                 this.proyecto = proyecto;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -94,7 +97,7 @@ export class ProyectoComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
-        this.apiService.store('proyecto', this.proyecto).subscribe(proyecto => {
+        this.apiService.store('proyecto', this.proyecto).pipe(this.untilDestroyed()).subscribe(proyecto => {
             if (!this.proyecto.id) {
                 this.alertService.success('Paquete guardado', 'El proyecto fue guardado exitosamente.');
             }else{

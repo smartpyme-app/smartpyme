@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -16,12 +17,11 @@ import * as moment from 'moment';
     
 })
 export class ClienteDatosComponent implements OnInit {
-
     public dash:any;
     public loading:boolean = false;
-
     public filtro:any = {};
-    
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( public apiService:ApiService, private alertService:AlertService, private route: ActivatedRoute ){}
 
@@ -37,7 +37,7 @@ export class ClienteDatosComponent implements OnInit {
         this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
 
         this.loading = true;
-        this.apiService.store('cliente/datos', this.filtro).subscribe(dash => { 
+        this.apiService.store('cliente/datos', this.filtro).pipe(this.untilDestroyed()).subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

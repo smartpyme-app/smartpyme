@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-usuario',
@@ -30,6 +31,9 @@ export class UsuarioComponent implements OnInit {
     public preview = false;
     public url_img_preview:string = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router
@@ -50,23 +54,31 @@ export class UsuarioComponent implements OnInit {
 	        this.loadAll(id);
 	    }
 
-	    this.apiService.getAll('cajas').subscribe(cajas => { 
+	    this.apiService.getAll('cajas')
+            .pipe(this.untilDestroyed())
+            .subscribe(cajas => { 
 	        this.cajas = cajas;
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); });
 
-	    this.apiService.getAll('sucursales').subscribe(sucursales => { 
+	    this.apiService.getAll('sucursales')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
 	        this.sucursales = sucursales;
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); });
 
 
-        this.apiService.getAll('empleados/list').subscribe(empleados => { 
+        this.apiService.getAll('empleados/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(empleados => { 
             this.empleados = empleados;
             this.loading = false;
         }, error => {this.alertService.error(error); });
 
-	    this.apiService.getAll('departamentos').subscribe(departamentos => { 
+	    this.apiService.getAll('departamentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(departamentos => { 
 	        this.departamentos = departamentos;
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); });
@@ -76,14 +88,18 @@ export class UsuarioComponent implements OnInit {
 	public loadAll(id:number) {
 	    this.loading = true;
 
-	    this.apiService.read('usuario/', id).subscribe(usuario => { 
+	    this.apiService.read('usuario/', id)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuario => { 
 	        this.usuario = usuario;
 			this.usuario.rol_id = usuario.roles[0].id;
 			this.usuario.rol_name = usuario.roles[0].name;
 	        this.loading = false;
 	    }, error => {this.alertService.error(error); this.loading = false;});
 
-		this.apiService.getAll('roles').subscribe(roles => { 
+		this.apiService.getAll('roles')
+            .pipe(this.untilDestroyed())
+            .subscribe(roles => { 
 	        this.roles = roles;
 
 			this.roles.forEach((rol:any) => {
@@ -114,7 +130,9 @@ export class UsuarioComponent implements OnInit {
 	    }
 
 	    // Guardamos al usuario
-	    this.apiService.store('usuario', formData).subscribe(usuario => {
+	    this.apiService.store('usuario', formData)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuario => {
 	        if (!this.usuario.id) {
 		        this.router.navigate(['/usuarios']);
 	        }

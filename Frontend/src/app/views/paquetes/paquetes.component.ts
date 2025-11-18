@@ -49,9 +49,11 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
     }
 
     ngOnInit() {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => { 
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
 
         this.getGuias();
 
@@ -59,9 +61,11 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
     }
 
     private getGuias() {   
-        this.apiService.getAll('paquetes/list/guias').subscribe(paquetes => { 
-            this.guias = paquetes;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('paquetes/list/guias')
+            .pipe(this.untilDestroyed())
+            .subscribe(paquetes => { 
+                this.guias = paquetes;
+            }, error => {this.alertService.error(error); });
 
     }
 
@@ -108,13 +112,15 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
         if(!this.filtros.num_guia){
             this.filtros.num_guia = '';
         }
-        this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
-            this.paquetes = paquetes;
-            this.loading = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('paquetes', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(paquetes => { 
+                this.paquetes = paquetes;
+                this.loading = false;
+                if(this.modalRef){
+                    this.closeModal();
+                }
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
@@ -124,12 +130,16 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
         super.openLargeModal(template);
     }
 
@@ -152,12 +162,14 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('paquete/', paquete.id) .subscribe(data => {
-                    for (let i = 0; i < this.paquetes.data.length; i++) { 
-                        if (this.paquetes.data[i].id == data.id )
-                            this.paquetes.data.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });4
+                this.apiService.delete('paquete/', paquete.id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(data => {
+                        for (let i = 0; i < this.paquetes.data.length; i++) { 
+                            if (this.paquetes.data[i].id == data.id )
+                                this.paquetes.data.splice(i, 1);
+                        }
+                    }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -167,7 +179,9 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('paquetes/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('paquetes/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -184,7 +198,9 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('paquete', this.paquete).subscribe(paquete => {
+        this.apiService.store('paquete', this.paquete)
+            .pipe(this.untilDestroyed())
+            .subscribe(paquete => {
             if (!this.paquete.id) {
                 this.loadAll();
                 this.alertService.success('Paquete creada', 'El paquete fue añadida exitosamente.');

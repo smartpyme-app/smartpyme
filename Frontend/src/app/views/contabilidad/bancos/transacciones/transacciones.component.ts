@@ -73,7 +73,9 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
 
     public filtrarTransacciones(){
         this.loading = true;
-        this.apiService.getAll('bancos/transacciones', this.filtros).subscribe(transacciones => { 
+        this.apiService.getAll('bancos/transacciones', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(transacciones => { 
             this.transacciones = transacciones;
             this.loading = false;
             if(this.modalRef){
@@ -128,12 +130,14 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('banco/transaccion/', transaccion.id) .subscribe(data => {
+                this.apiService.delete('banco/transaccion/', transaccion.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.transacciones.data.length; i++) { 
                         if (this.transacciones.data[i].id == data.id )
                             this.transacciones.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -143,7 +147,9 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('banco/transaccion', this.transaccion).subscribe(transaccion => {
+        this.apiService.store('banco/transaccion', this.transaccion)
+          .pipe(this.untilDestroyed())
+          .subscribe(transaccion => {
             if (!this.transaccion.id) {
                 this.loadAll();
                 this.alertService.success('Transacción creada', 'El transaccion fue añadida exitosamente.');
@@ -159,7 +165,9 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('bancos/transacciones/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('bancos/transacciones/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -175,7 +183,9 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
     }
 
     generarPartidaContable(transaccion:any){
-        this.apiService.store('contabilidad/partida/transaccion', transaccion).subscribe(transaccion => {
+        this.apiService.store('contabilidad/partida/transaccion', transaccion)
+          .pipe(this.untilDestroyed())
+          .subscribe(transaccion => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }

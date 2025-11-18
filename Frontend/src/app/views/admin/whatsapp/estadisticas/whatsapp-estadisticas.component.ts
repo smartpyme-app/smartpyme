@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
-import { interval, Subscription } from 'rxjs';
+import { interval } from 'rxjs';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-whatsapp-estadisticas',
@@ -22,8 +23,8 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
   public error: string = '';
   public selectedPeriod: number = 30;
 
-
-  private autoRefreshSubscription?: Subscription;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
   public autoRefreshEnabled: boolean = true;
   public refreshInterval: number = 60;
 
@@ -38,9 +39,7 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.autoRefreshSubscription) {
-      this.autoRefreshSubscription.unsubscribe();
-    }
+    // El DestroyRef maneja automáticamente la limpieza
   }
 
   loadInitialData() {
@@ -64,7 +63,9 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
         days: this.selectedPeriod
       };
 
-      this.apiService.getAll('admin/whatsapp/stats', params).subscribe(
+      this.apiService.getAll('admin/whatsapp/stats', params)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (response) => {
           if (response && response.success) {
             this.stats = response.data;
@@ -93,7 +94,9 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
         days: this.selectedPeriod
       };
 
-      this.apiService.getAll('admin/whatsapp/executive-summary', params).subscribe(
+      this.apiService.getAll('admin/whatsapp/executive-summary', params)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (response) => {
           if (response && response.success) {
             this.executiveSummary = response.data;
@@ -113,7 +116,9 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
 
   setupAutoRefresh() {
     if (this.autoRefreshEnabled) {
-      this.autoRefreshSubscription = interval(this.refreshInterval * 1000).subscribe(() => {
+      interval(this.refreshInterval * 1000)
+        .pipe(this.untilDestroyed())
+        .subscribe(() => {
         this.refreshData();
       });
     }
@@ -206,7 +211,9 @@ export class WhatsAppEstadisticasComponent implements OnInit, OnDestroy {
       format: 'excel'
     };
 
-    this.apiService.getAll('admin/whatsapp/stats/export', params).subscribe(
+    this.apiService.getAll('admin/whatsapp/stats/export', params)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
     
         this.alertService.success('Estadísticas exportadas correctamente', 'WhatsApp');

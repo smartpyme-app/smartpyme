@@ -48,9 +48,11 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
   ngOnInit() {
     this.loadAll();
     
-    this.apiService.getAll('clientes/list').subscribe(clientes => {
-      this.clientes = clientes;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('clientes/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(clientes => {
+        this.clientes = clientes;
+      }, error => { this.alertService.error(error); });
   }
 
   public setOrden(columna: string) {
@@ -79,7 +81,9 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
 
   public filtrarOrdenes() {
     this.loading = true;
-    this.apiService.getAll('ordenes-produccion', this.filtros).subscribe(ordenes => {
+    this.apiService.getAll('ordenes-produccion', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(ordenes => {
       this.ordenes = ordenes.data;
       this.loading = false;
       if (this.modalRef) {
@@ -92,7 +96,9 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
   }
 
   public setEstado(orden: any) {
-    this.apiService.store('orden-produccion/cambiar-estado', orden).subscribe(
+    this.apiService.store('orden-produccion/cambiar-estado', orden)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
       }, 
@@ -103,7 +109,9 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
   }
 
   changeStateOrden(ordenId: number, estado: string) {
-    this.apiService.store('orden-produccion/cambiar-estado-orden', { id: ordenId, estado: estado }).subscribe(
+    this.apiService.store('orden-produccion/cambiar-estado-orden', { id: ordenId, estado: estado })
+      .pipe(this.untilDestroyed())
+      .subscribe(
       data => {
         this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
         this.filtrarOrdenes();
@@ -136,9 +144,11 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
 
   public openFilter(template: TemplateRef<any>) {
     if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-        this.asesores = usuarios;
-      }, error => { this.alertService.error(error); });
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(usuarios => {
+          this.asesores = usuarios;
+        }, error => { this.alertService.error(error); });
     }
 
 
@@ -147,7 +157,9 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
 
   public descargar() {
     this.downloading = true;
-    this.apiService.export('ordenes-produccion/exportar', this.filtros).subscribe(
+    this.apiService.export('ordenes-produccion/exportar', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (data: Blob) => {
         const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = window.URL.createObjectURL(blob);
@@ -168,7 +180,9 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
   }
 
   public anular(orden: any) {
-    this.apiService.store('orden-produccion/anular', orden).subscribe(
+    this.apiService.store('orden-produccion/anular', orden)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
         orden.estado = 'anulada';

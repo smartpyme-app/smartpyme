@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-kardex',
@@ -21,6 +22,9 @@ export class KardexComponent implements OnInit {
 	public bodegas:any[] = [];
 	public filtros:any = {};
 	public loading:boolean = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(private apiService: ApiService, private alertService: AlertService,  private route: ActivatedRoute, private router: Router){ }
 
@@ -39,19 +43,23 @@ export class KardexComponent implements OnInit {
             this.loadAll();
         }
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('bodegas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public loadAll() {
 
      	this.loading = true; 
-        this.apiService.getAll('productos/kardex', this.filtros).subscribe(producto => {
-            this.producto = producto;
-     		this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('productos/kardex', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(producto => {
+                this.producto = producto;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
 
     }
 
@@ -61,7 +69,9 @@ export class KardexComponent implements OnInit {
     }
 
     public descargarKardex(){
-        this.apiService.export('productos/kardex/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('productos/kardex/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

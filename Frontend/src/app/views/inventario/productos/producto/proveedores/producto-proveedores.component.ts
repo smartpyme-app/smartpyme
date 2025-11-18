@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -23,6 +24,9 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public proveedor: any = {};
     public buscador:string = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         private apiService: ApiService, 
         protected override alertService: AlertService,
@@ -39,7 +43,7 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -64,7 +68,7 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public onSubmit() {
         this.loading = true;
         this.proveedor.id_producto = this.producto.id;
-        this.apiService.store('producto/proveedor', this.proveedor).subscribe(proveedor => {
+        this.apiService.store('producto/proveedor', this.proveedor).pipe(this.untilDestroyed()).subscribe(proveedor => {
             if(!this.proveedor.id)
                 this.producto.proveedores.push(proveedor);
             this.proveedor = {};
@@ -76,7 +80,7 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
 
     public delete(proveedor:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/proveedor/', proveedor.id) .subscribe(data => {
+            this.apiService.delete('producto/proveedor/', proveedor.id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.producto.proveedores.length; i++) { 
                     if (this.producto.proveedores[i].id == data.id )
                         this.producto.proveedores.splice(i, 1);

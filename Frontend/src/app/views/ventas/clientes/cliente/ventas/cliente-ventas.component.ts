@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
@@ -23,6 +24,9 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
 	public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
 
     public filtro:any = {};
+
+    protected override destroyRef = inject(DestroyRef);
+    protected override untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         apiService: ApiService, 
@@ -61,11 +65,11 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
 
                 	        
         if(isNaN(this.id)){
-            this.ventas = [];
+            this.ventas = {} as PaginatedResponse;
         }
         else{
             this.loading = true;
-            this.apiService.read('cliente/ventas/', this.id).subscribe(ventas => {
+            this.apiService.read('cliente/ventas/', this.id).pipe(this.untilDestroyed()).subscribe(ventas => {
                 this.ventas = ventas;
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
@@ -78,7 +82,7 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
     onFiltrar(){
         this.filtro.id = this.id;
         this.loading = true;
-        this.apiService.store('cliente/ventas/filtrar', this.filtro).subscribe(ventas => { 
+        this.apiService.store('cliente/ventas/filtrar', this.filtro).pipe(this.untilDestroyed()).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -94,7 +98,7 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
 
     public setEstado(venta:any, estado:string){
         venta.estado = estado;
-        this.apiService.store('venta', venta).subscribe(venta => {
+        this.apiService.store('venta', venta).pipe(this.untilDestroyed()).subscribe(venta => {
             this.loadAll();
             this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
@@ -128,7 +132,7 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
         for (var i = 0; i < this.ventas.data.length; ++i) {
             if(this.ventas.data[i].estado == 'Pendiente') {
                 this.ventas.data[i].estado = 'Cobrada';
-                this.apiService.store('venta', this.ventas.data[i]).subscribe(venta => {
+                this.apiService.store('venta', this.ventas.data[i]).pipe(this.untilDestroyed()).subscribe(venta => {
                 }, error => {this.alertService.error(error); });
             }
         }

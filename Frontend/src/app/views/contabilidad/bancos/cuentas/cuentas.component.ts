@@ -72,7 +72,9 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
 
     public filtrarCuentas(){
         this.loading = true;
-        this.apiService.getAll('bancos/cuentas', this.filtros).subscribe(cuentas => { 
+        this.apiService.getAll('bancos/cuentas', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => { 
             this.cuentas = cuentas;
             this.loading = false;
             if(this.modalRef){
@@ -111,12 +113,14 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('cuenta/', cuenta.id) .subscribe(data => {
+                this.apiService.delete('cuenta/', cuenta.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.cuentas.data.length; i++) { 
                         if (this.cuentas.data[i].id == data.id )
                             this.cuentas.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -130,7 +134,9 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('cuenta', this.cuenta).subscribe(cuenta => {
+        this.apiService.store('cuenta', this.cuenta)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuenta => {
             if (!this.cuenta.id) {
                 this.loadAll();
                 this.alertService.success('Cuenta creada', 'El cuenta fue añadida exitosamente.');

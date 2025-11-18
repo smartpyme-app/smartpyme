@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -54,6 +55,9 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
     // Control para el buscador
     searchControl = new FormControl();
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService, 
         protected override alertService: AlertService,
@@ -91,7 +95,8 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                   return of([]);
                 })
               );
-            })
+            }),
+            this.untilDestroyed()
           )
           .subscribe({
             next: (results: any[]) => {
@@ -157,11 +162,11 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             this.filtros = JSON.parse(filtrosGuardados);
         }
         
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(bodegas => { 
             this.bodegas = bodegas;
             
             // Crear un mapa para acceso rápido a nombres de bodegas
@@ -171,7 +176,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+        this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
             if (this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor') {
                 this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
@@ -366,7 +371,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             }))
         };
 
-        this.apiService.store('productos/traslado-masivo', datos).subscribe(
+        this.apiService.store('productos/traslado-masivo', datos).pipe(this.untilDestroyed()).subscribe(
             respuesta => {
                 this.alertService.success('Traslado realizado exitosamente', 'Se han trasladado ' + respuesta.trasladados + ' productos.');
                 this.closeModal();
@@ -407,7 +412,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             formato: 'excel'
         };
         
-        this.apiService.export('productos/exportar-traslado', filtrosExport).subscribe(
+        this.apiService.export('productos/exportar-traslado', filtrosExport).pipe(this.untilDestroyed()).subscribe(
             (data: Blob) => {
                 const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const url = window.URL.createObjectURL(blob);
@@ -456,7 +461,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         formData.append('id_usuario', this.traslado.id_usuario || this.apiService.auth_user().id);
     
         this.saving = true;
-        this.apiService.upload('productos/traslado-masivo/importar', formData).subscribe(
+        this.apiService.upload('productos/traslado-masivo/importar', formData).pipe(this.untilDestroyed()).subscribe(
             (respuesta: any) => {
                 this.alertService.success('Traslado masivo importado', 'Se han trasladado ' + respuesta.trasladados + ' productos exitosamente.');
                 this.closeModal();

@@ -48,7 +48,7 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('producto/ajustes/'+ this.producto_id).subscribe(ajustes => { 
+        this.apiService.getAll('producto/ajustes/'+ this.producto_id).pipe(this.untilDestroyed()).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;this.filtrado = false;
         }, error => {this.alertService.error(error); });
@@ -57,7 +57,7 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
     public search(){
         if(this.buscador && this.buscador.length > 2) {
             this.loading = true;
-            this.apiService.read('ajustes/buscar/', this.buscador).subscribe(ajustes => { 
+            this.apiService.read('ajustes/buscar/', this.buscador).pipe(this.untilDestroyed()).subscribe(ajustes => { 
                 this.ajustes = ajustes;
                 this.loading = false;this.filtrado = true;
             }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
@@ -66,14 +66,14 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
 
     public setEstado(compra:any, estado:string){
         compra.estado = estado;
-        this.apiService.store('compra', compra).subscribe(compra => { 
-            this.alertService.success('Actualizado');
+        this.apiService.store('compra', compra).pipe(this.untilDestroyed()).subscribe(compra => { 
+            this.alertService.success('Actualizado', 'El ajuste fue actualizado exitosamente');
         }, error => {this.alertService.error(error); });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id) .subscribe(data => {
+            this.apiService.delete('compra/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.ajustes['data'].length; i++) { 
                     if (this.ajustes['data'][i].id == data.id )
                         this.ajustes['data'].splice(i, 1);
@@ -86,7 +86,7 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('ajustes/filtrar/' + filtro + '/', txt).subscribe(ajustes => { 
+        this.apiService.read('ajustes/filtrar/' + filtro + '/', txt).pipe(this.untilDestroyed()).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -106,7 +106,7 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
             this.filtro.estado = '';
         }
         if(!this.proveedores.length){
-            this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+            this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => { 
                 this.proveedores = proveedores;
             }, error => {this.alertService.error(error); });
         }
@@ -115,7 +115,7 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('ajustes/filtrar', this.filtro).subscribe(ajustes => { 
+        this.apiService.store('ajustes/filtrar', this.filtro).pipe(this.untilDestroyed()).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false; this.filtrado = true;
             this.closeModal();

@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -23,6 +24,9 @@ export class CrearImpuestoComponent extends BaseModalComponent implements OnInit
     public override loading = false;
     public override saving = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -37,7 +41,9 @@ export class CrearImpuestoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         if(this.id_impuesto){
-            this.apiService.read('impuesto/', this.id_impuesto).subscribe(impuesto => {
+            this.apiService.read('impuesto/', this.id_impuesto)
+                .pipe(this.untilDestroyed())
+                .subscribe(impuesto => {
                 this.impuesto = impuesto;
                 this.loading = false;
             }, error => {
@@ -55,7 +61,9 @@ export class CrearImpuestoComponent extends BaseModalComponent implements OnInit
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('impuesto', this.impuesto).subscribe(impuesto => {
+        this.apiService.store('impuesto', this.impuesto)
+            .pipe(this.untilDestroyed())
+            .subscribe(impuesto => {
             this.update.emit(impuesto);
             this.closeModal();
             this.saving = false;
@@ -71,7 +79,9 @@ export class CrearImpuestoComponent extends BaseModalComponent implements OnInit
             this.apiService.getAll('impuestos', { 
                 nombre: this.impuesto.nombre, 
                 estado: 1, 
-            }).subscribe(impuestos => { 
+            })
+                .pipe(this.untilDestroyed())
+                .subscribe(impuestos => { 
                 if(impuestos.data[0]){
                     this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
                         'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'

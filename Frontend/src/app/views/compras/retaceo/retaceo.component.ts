@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 
@@ -82,6 +83,9 @@ export class RetaceoComponent implements OnInit {
 
   public bodegas: any[] = [];
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -101,7 +105,9 @@ export class RetaceoComponent implements OnInit {
 
   cargarBodegas() {
     this.loading = true;
-    this.apiService.getAll('bodegas/list').subscribe(
+    this.apiService.getAll('bodegas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
         this.loading = false;
@@ -143,7 +149,9 @@ export class RetaceoComponent implements OnInit {
       this.filtros.es_retaceo =false;
     }
     // Cargar compras filtradas por bodega
-    this.apiService.getAll('compras', this.filtros).subscribe(
+    this.apiService.getAll('compras', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (compras) => {
         this.compras = compras.data.filter(
           (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
@@ -157,7 +165,9 @@ export class RetaceoComponent implements OnInit {
     );
 
     // Cargar gastos filtrados por bodega
-    this.apiService.getAll('gastos', this.filtros).subscribe(
+    this.apiService.getAll('gastos', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (gastos) => {
         this.gastos = gastos.data;
         // this.gastos = gastos.data.filter(
@@ -210,7 +220,9 @@ export class RetaceoComponent implements OnInit {
 
   cargarRetaceoExistente(id: number) {
     this.loading = true;
-    this.apiService.read('retaceo/', id).subscribe(
+    this.apiService.read('retaceo/', id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (retaceo) => {
         this.retaceo = retaceo;
 
@@ -275,7 +287,9 @@ export class RetaceoComponent implements OnInit {
     if (!this.retaceo.id_compra) return;
 
     this.loading = true;
-    this.apiService.read('compra/', this.retaceo.id_compra).subscribe(
+    this.apiService.read('compra/', this.retaceo.id_compra)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (compra) => {
         this.detallesCompra = compra.detalles;
 
@@ -412,13 +426,16 @@ export class RetaceoComponent implements OnInit {
       distribucion: this.distribucion,
     };
 
-    this.apiService.store('retaceo', datosRetaceo).subscribe(
+    this.apiService.store('retaceo', datosRetaceo)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.alertService.success('Retaceo aplicado correctamente', 'Retaceo');
         
         if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
             this.apiService.store('contabilidad/partida/retaceo', { id_retaceo: this.retaceo.id })
-          .subscribe(
+              .pipe(this.untilDestroyed())
+              .subscribe(
             (response) => {
               this.retaceo.contabilizado = true;
               this.loading = false;
@@ -745,7 +762,9 @@ export class RetaceoComponent implements OnInit {
       estado: nuevoEstado,
     };
 
-    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
+    this.apiService.store('retaceo/estado', datosActualizacion)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.retaceo.estado = nuevoEstado;
 
@@ -834,7 +853,9 @@ export class RetaceoComponent implements OnInit {
     // Cargar los productos para cada ítem de la distribución
     this.distribucion.forEach((item) => {
       if (item.id_producto) {
-        this.apiService.read('producto/', item.id_producto).subscribe(
+        this.apiService.read('producto/', item.id_producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (producto) => {
             item.producto = producto;
           },

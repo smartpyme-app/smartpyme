@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -52,6 +53,9 @@ export class CierreMesComponent implements OnInit {
   // Datos del catálogo
   public catalogo: any = [];
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -95,7 +99,9 @@ export class CierreMesComponent implements OnInit {
    * Cargar catálogo de cuentas
    */
   private loadCatalogo(): void {
-    this.apiService.getAll('catalogo/cuentas').subscribe(
+    this.apiService.getAll('catalogo/cuentas')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (catalogo: any) => {
         this.catalogo = catalogo;
       },
@@ -142,7 +148,9 @@ export class CierreMesComponent implements OnInit {
   private cargarEstadoPeriodo(): void {
     this.cargandoPeriodo = true;
 
-    this.apiService.getAll(`partidas/estado-periodo?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+    this.apiService.getAll(`partidas/estado-periodo?year=${this.selectedYear}&month=${this.selectedMonth}`)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (estado: any) => {
         this.estadoPeriodo = estado;
         this.cargandoPeriodo = false;
@@ -166,7 +174,9 @@ export class CierreMesComponent implements OnInit {
     this.cargandoValidaciones = true;
 
     // Las validaciones se obtienen de la simulación de cierre
-    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (resultado: any) => {
         if (resultado.validaciones) {
           this.validacionesPrevias = {
@@ -194,7 +204,9 @@ export class CierreMesComponent implements OnInit {
     this.cargandoSimulacion = true;
     this.simulacionActiva = true;
 
-    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+    this.apiService.getAll(`partidas/simular-cierre?year=${this.selectedYear}&month=${this.selectedMonth}`)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (simulacion: any) => {
         this.resultadoSimulacion = simulacion;
         this.mostrandoSimulacion = true;
@@ -227,7 +239,9 @@ export class CierreMesComponent implements OnInit {
     this.cargandoBalance = true;
     this.mostrandoBalance = true;
 
-    this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+    this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (balance: any) => {
         this.balanceComprobacion = balance;
         this.cargandoBalance = false;
@@ -332,13 +346,17 @@ export class CierreMesComponent implements OnInit {
       month: this.selectedMonth
     };
 
-    this.apiService.store('partidas/cerrar', params).subscribe(
+    this.apiService.store('partidas/cerrar', params)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (resultado: any) => {
         this.procesandoCierre = false;
 
         if (resultado.success) {
           // Obtener balance final para mostrar en el mensaje de éxito
-          this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`).subscribe(
+          this.apiService.getAll(`partidas/balance-comprobacion?year=${this.selectedYear}&month=${this.selectedMonth}`)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (balanceFinal: any) => {
               Swal.fire({
                 title: '🎉 Cierre Completado',
@@ -449,7 +467,9 @@ export class CierreMesComponent implements OnInit {
       month: this.selectedMonth
     };
 
-    this.apiService.store('partidas/reabrir', params).subscribe(
+    this.apiService.store('partidas/reabrir', params)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (resultado: any) => {
         this.procesandoCierre = false;
 

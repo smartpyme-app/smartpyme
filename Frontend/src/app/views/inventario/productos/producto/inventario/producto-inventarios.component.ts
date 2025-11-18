@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -25,6 +26,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     public inventario: any = {};
     public sucursalSelected: any = {};
     public buscador:string = '';
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, 
@@ -47,7 +51,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     override openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -66,7 +72,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     public onSubmit() {
         this.loading = true;
 
-        this.apiService.store('inventario', this.inventario).subscribe(inventario => {
+        this.apiService.store('inventario', this.inventario)
+          .pipe(this.untilDestroyed())
+          .subscribe(inventario => {
             if(!this.inventario.id) {
                 this.producto.inventarios.push(inventario);
                 this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
@@ -87,7 +95,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('inventario/', id) .subscribe(data => {
+            this.apiService.delete('inventario/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.producto.inventarios.length; i++) {
                     if (this.producto.inventarios[i].id == data.id )
                         this.producto.inventarios.splice(i, 1);

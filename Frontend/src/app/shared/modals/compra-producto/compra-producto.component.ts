@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { fromEvent, timer } from 'rxjs';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -25,6 +26,9 @@ export class CompraProductoComponent extends BaseModalComponent implements OnIni
     public producto: any = {};
 	public detalle: any = {};
     public searching:boolean = false;
+
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    private apiService: ApiService,
@@ -48,20 +52,22 @@ export class CompraProductoComponent extends BaseModalComponent implements OnIni
         const input = document.getElementById('example')!;
         const example = fromEvent(input, 'keyup').pipe(map(i => (<HTMLTextAreaElement>i.currentTarget).value));
         const debouncedInput = example.pipe(debounceTime(500));
-        const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
+        const subscribe = debouncedInput.pipe(this.untilDestroyed()).subscribe(val => { this.searchProducto(); });
     }
 
 	searchProducto(){
             if(this.producto.nombre && this.producto.nombre.length > 1) {
             this.searching = true;
-            this.apiService.read('productos/buscar/', this.producto.nombre).subscribe(productos => {
+            this.apiService.read('productos/buscar/', this.producto.nombre)
+                .pipe(this.untilDestroyed())
+                .subscribe(productos => {
                this.productos = productos;
                this.searching = false;
             }, error => {this.alertService.error(error);this.searching = false;});
         }else if (!this.producto.nombre  || this.producto.nombre.length < 1 ){ this.searching = false; this.producto = {}; this.productos.total = 0; }
     }
 
-    selectProducto(producto){
+    selectProducto(producto: any){
         this.producto = producto;
     	this.detalle.producto_id = producto.id;
         this.detalle.categoria_id = producto.categoria_id;

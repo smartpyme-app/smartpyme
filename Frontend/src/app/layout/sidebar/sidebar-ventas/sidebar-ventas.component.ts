@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-sidebar-ventas',
@@ -24,6 +25,9 @@ export class SidebarVentasComponent implements OnInit {
     public usuario: any = {};
     public isVisible: boolean = false;
     public modules: any[] = [];
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(private apiService: ApiService) {}
 
@@ -157,9 +161,13 @@ export class SidebarVentasComponent implements OnInit {
     }
 
     loadModules() {
-        this.apiService.getModules().subscribe(modules => {
-            this.modules = modules;
-        });
+        this.apiService.getModules()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (modules) => {
+                    this.modules = modules;
+                }
+            });
     }
 
 }

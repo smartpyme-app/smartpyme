@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { CrearClienteComponent } from '../crear-cliente/crear-cliente.component'
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -26,6 +27,9 @@ export class CrearProyectoComponent extends BaseModalComponent implements OnInit
     public override loading = false;
     public override saving = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -39,14 +43,18 @@ export class CrearProyectoComponent extends BaseModalComponent implements OnInit
 
     override openModal(template: TemplateRef<any>) {
         if(!this.clientes.length){
-            this.apiService.getAll('clientes/list').subscribe(clientes => {
+            this.apiService.getAll('clientes/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(clientes => {
                 this.clientes = clientes;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
         }
 
         if(this.id_proyecto){
-            this.apiService.read('proyecto/', this.id_proyecto).subscribe(proyecto => {
+            this.apiService.read('proyecto/', this.id_proyecto)
+                .pipe(this.untilDestroyed())
+                .subscribe(proyecto => {
             this.proyecto = proyecto;
             this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -66,7 +74,9 @@ export class CrearProyectoComponent extends BaseModalComponent implements OnInit
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('proyecto', this.proyecto).subscribe(proyecto => {
+        this.apiService.store('proyecto', this.proyecto)
+            .pipe(this.untilDestroyed())
+            .subscribe(proyecto => {
             this.update.emit(proyecto);
             this.closeModal();
             this.saving = false;

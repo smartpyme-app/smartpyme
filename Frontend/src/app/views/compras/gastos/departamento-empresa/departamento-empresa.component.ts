@@ -86,7 +86,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
             }
         });
         
-        this.apiService.getAll('departamentosEmpresa', filtrosParaEnviar).subscribe(departamentos => { 
+        this.apiService.getAll('departamentosEmpresa', filtrosParaEnviar)
+          .pipe(this.untilDestroyed())
+          .subscribe(departamentos => { 
             this.departamentos = departamentos;
             this.loading = false;
             if (this.modalRef) {
@@ -117,7 +119,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
             departamento.estado = nuevoEstado;
             this.saving = true;
             
-            this.apiService.store('departamentosEmpresa/changeState/' + departamento.id, departamento).subscribe(response => { 
+            this.apiService.store('departamentosEmpresa/changeState/' + departamento.id, departamento)
+              .pipe(this.untilDestroyed())
+              .subscribe(response => { 
                 this.saving = false;
                 this.alertService.success('Departamento actualizado', `El departamento fue ${estadoTexto} exitosamente.`);
                 this.filtrarDepartamento();
@@ -163,7 +167,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
 
         const urlRoute = this.departamento.id ? 'departamentosEmpresa/update' : 'departamentosEmpresa';
         
-        this.apiService.store(urlRoute, this.departamento).subscribe(response => { 
+        this.apiService.store(urlRoute, this.departamento)
+          .pipe(this.untilDestroyed())
+          .subscribe(response => { 
             this.saving = false;
             this.alertService.success('Departamento guardado', `El departamento fue ${action} exitosamente.`);
             this.closeModal();
@@ -177,7 +183,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
 
     public delete(id: number) {
         if (confirm('¿Está seguro de eliminar este departamento? Esta acción eliminará también todas las áreas asociadas y no se puede deshacer.')) {
-            this.apiService.delete('departamentosEmpresa/', id).subscribe(data => {
+            this.apiService.delete('departamentosEmpresa/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 this.alertService.success('Departamento eliminado', 'El departamento fue eliminado exitosamente.');
                 // Remover el elemento del array local
                 if (this.departamentos && this.departamentos.data) {
@@ -194,7 +202,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
 
     public descargar() {
         this.downloading = true;
-        this.apiService.export('departamentosEmpresa/exportar', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('departamentosEmpresa/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -234,7 +244,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
 
     private loadSucursales() {
         if (!this.sucursales.length) {
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(sucursales => { 
                 this.sucursales = sucursales;
             }, error => {
                 this.alertService.error(error);
@@ -243,7 +255,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
     }
 
     private loadAreas(departamentoId: number) {
-        this.apiService.getAll(`departamentosEmpresa/${departamentoId}/areas`).subscribe(areas => { 
+        this.apiService.getAll(`departamentosEmpresa/${departamentoId}/areas`)
+          .pipe(this.untilDestroyed())
+          .subscribe(areas => { 
             this.areas = areas;
         }, error => {
             this.alertService.error(error);

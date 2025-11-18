@@ -1,11 +1,12 @@
 
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -24,6 +25,9 @@ export class CrearDepartamentoComponent extends BaseModalComponent implements On
     public override loading = false;
     public override saving = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -39,7 +43,9 @@ export class CrearDepartamentoComponent extends BaseModalComponent implements On
         if(this.id_departamento){
             this.loading = true;
             this.departamento.activo = 1;
-            this.apiService.read('departamentosEmpresa/', this.id_departamento).subscribe(departamento => {
+            this.apiService.read('departamentosEmpresa/', this.id_departamento)
+                .pipe(this.untilDestroyed())
+                .subscribe(departamento => {
                 this.departamento = departamento;
                 this.loading = false;
             }, error => {
@@ -57,7 +63,9 @@ export class CrearDepartamentoComponent extends BaseModalComponent implements On
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('departamentosEmpresa', this.departamento).subscribe(departamento => {
+        this.apiService.store('departamentosEmpresa', this.departamento)
+            .pipe(this.untilDestroyed())
+            .subscribe(departamento => {
             this.update.emit(departamento);
             this.closeModal();
             this.saving = false;

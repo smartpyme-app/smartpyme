@@ -55,7 +55,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('bodega/productos/' + this.id).subscribe(productos => { 
+        this.apiService.getAll('bodega/productos/' + this.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -69,7 +71,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
     public onSubmit() {
 
         this.loading = true;
-        this.apiService.store('inventario', this.producto).subscribe(producto => {
+        this.apiService.store('inventario', this.producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto => {
             this.loading = false;
             this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
             this.closeModal();
@@ -80,7 +84,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
 
     public search(){
         if(this.buscador && this.buscador.length > 2) {
-            this.apiService.getAll('bodega/productos/buscar/' + this.id + '/' + this.buscador).subscribe(productos => { 
+            this.apiService.getAll('bodega/productos/buscar/' + this.id + '/' + this.buscador)
+              .pipe(this.untilDestroyed())
+              .subscribe(productos => { 
                 this.productos = productos;
             }, error => {this.alertService.error(error); });
         }
@@ -105,7 +111,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
 
             this.loading = true;
             this.ajuste.usuario_id = this.apiService.auth_user().id;
-            this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+            this.apiService.store('ajuste', this.ajuste)
+              .pipe(this.untilDestroyed())
+              .subscribe(ajuste => {
                 this.ajuste = {};
                 this.producto.stock = ajuste.stock_final;
                 this.loading = false;
@@ -124,7 +132,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
                 this.filtro.categorias_id = [];
             }
             if(!this.categorias.length){
-                this.apiService.getAll('categorias').subscribe(categorias => { 
+                this.apiService.getAll('categorias')
+                  .pipe(this.untilDestroyed())
+                  .subscribe(categorias => { 
                     this.categorias = categorias;
                 }, error => {this.alertService.error(error); });
             }
@@ -137,7 +147,9 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
                 this.filtro.categorias_id = null;
             }
             this.filtro.bodega_id = this.id;
-            this.apiService.store('bodega/productos/filtrar', this.filtro).subscribe(productos => { 
+            this.apiService.store('bodega/productos/filtrar', this.filtro)
+              .pipe(this.untilDestroyed())
+              .subscribe(productos => { 
                 this.productos = productos;
                 this.loading = false; this.filtrado = true;
                 this.closeModal();

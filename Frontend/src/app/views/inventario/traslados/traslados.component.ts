@@ -101,7 +101,8 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
                         paginate: curr['paginate'] || 10,
                         page: curr['page'] || 1,
                     });
-                })
+                }),
+                this.untilDestroyed()
             )
             .subscribe(params => {
                 if (!this.isNavigating) {
@@ -121,7 +122,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
                 this.isNavigating = false;
             });
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -168,7 +169,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
 
     private filtrarTrasladosSinNavegar(){
         this.loading = true;
-        this.apiService.getAll('traslados', this.filtros).subscribe(traslados => { 
+        this.apiService.getAll('traslados', this.filtros).pipe(this.untilDestroyed()).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -230,7 +231,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
         this.traslado.estado = 'Confirmado';
 
         if(!this.productos.length){
-            this.apiService.getAll('productos/list').subscribe(productos => {
+            this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
                 this.productos = productos;
             }, error => {this.alertService.error(error);});
         }
@@ -241,7 +242,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
         // Solo cargar productos si no están cargados y no se está cargando ya
         if(!this.productos.length && !this.isLoadingProductos){
             this.isLoadingProductos = true;
-            this.apiService.getAll('productos/list').subscribe({
+            this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe({
                 next: (productos) => { 
                     this.productos = productos;
                     this.isLoadingProductos = false;
@@ -265,7 +266,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
     public onSubmit() {
         this.saving = true;
         this.traslado.id_usuario = this.apiService.auth_user().id;
-        this.apiService.store('traslado', this.traslado).subscribe(traslado => { 
+        this.apiService.store('traslado', this.traslado).pipe(this.untilDestroyed()).subscribe(traslado => { 
             this.traslado = {};
             this.alertService.success('Traslado realizado', 'El traslado fue añadido exitosamente.');
             this.closeModal();
@@ -276,7 +277,7 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
 
     public delete(id:number) {
         this.saving = true;
-        this.apiService.delete('traslado/', id).subscribe(traslado => { 
+        this.apiService.delete('traslado/', id).pipe(this.untilDestroyed()).subscribe(traslado => { 
             this.traslado = {};
             this.alertService.success('Traslado cancelado', 'El traslado fue cancelado exitosamente.');
             this.closeModal();
@@ -286,14 +287,14 @@ export class TrasladosComponent extends BaseFilteredPaginatedModalComponent impl
     }
 
     generarPartidaContable(traslado:any){
-        this.apiService.store('contabilidad/partida/traslado', traslado).subscribe(traslado => {
+        this.apiService.store('contabilidad/partida/traslado', traslado).pipe(this.untilDestroyed()).subscribe(traslado => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('traslados/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('traslados/exportar', this.filtros).pipe(this.untilDestroyed()).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

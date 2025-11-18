@@ -54,7 +54,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
 
     ngOnInit() {
         // Leer parámetros de la URL
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams
+          .pipe(this.untilDestroyed())
+          .subscribe(params => {
             if (params['id_departamento']) {
                 // Si viene con id_departamento en la URL, configurar filtros
                 this.initializeFiltersWithDepartamento(params['id_departamento']);
@@ -132,7 +134,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
             }
         });
         
-        this.apiService.getAll('area-empresa', filtrosParaEnviar).subscribe(areas => { 
+        this.apiService.getAll('area-empresa', filtrosParaEnviar)
+          .pipe(this.untilDestroyed())
+          .subscribe(areas => { 
             this.areas = areas;
             this.loading = false;
             if (this.modalRef) {
@@ -163,7 +167,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
             area.activo = nuevoEstado;
             this.saving = true;
             
-            this.apiService.store('area-empresa', area).subscribe(response => { 
+            this.apiService.store('area-empresa', area)
+              .pipe(this.untilDestroyed())
+              .subscribe(response => { 
                 this.saving = false;
                 this.alertService.success('Área actualizada', `El área fue ${estadoTexto} exitosamente.`);
                 this.filtrarArea();
@@ -201,7 +207,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
 
         const action = this.area.id ? 'actualizada' : 'creada';
         
-        this.apiService.store('area-empresa', this.area).subscribe(response => { 
+        this.apiService.store('area-empresa', this.area)
+          .pipe(this.untilDestroyed())
+          .subscribe(response => { 
             this.saving = false;
             this.alertService.success('Área guardada', `El área fue ${action} exitosamente.`);
             this.closeModal();
@@ -215,7 +223,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
 
     public delete(id: number) {
         if (confirm('¿Está seguro de eliminar esta área? Esta acción no se puede deshacer.')) {
-            this.apiService.delete('area-empresa/', id).subscribe(data => {
+            this.apiService.delete('area-empresa/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 this.alertService.success('Área eliminada', 'El área fue eliminada exitosamente.');
                 // Remover el elemento del array local
                 if (this.areas && this.areas.data) {
@@ -232,7 +242,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
 
     public descargar() {
         this.downloading = true;
-        this.apiService.export('area-empresa/exportar', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('area-empresa/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -304,7 +316,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
             this.departamento.id_sucursal = this.area.id_sucursal;
         }
         
-        this.apiService.store('departamentosEmpresa', this.departamento).subscribe(response => { 
+        this.apiService.store('departamentosEmpresa', this.departamento)
+          .pipe(this.untilDestroyed())
+          .subscribe(response => { 
             this.savingDepartamento = false;
             this.alertService.success('Departamento creado', 'El departamento fue creado exitosamente.');
             this.modalManager.closeModal(this.modalRefDepartamento);
@@ -324,7 +338,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
 
     private loadSucursales() {
         if (!this.sucursales.length) {
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+            this.apiService.getAll('sucursales/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(sucursales => { 
                 this.sucursales = sucursales;
             }, error => {
                 this.alertService.error(error);
@@ -342,7 +358,9 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
                 params = { id_sucursal: sucursalId };
             }
             
-            this.apiService.getAll('area-empresa/list_departamentos', params).subscribe(departamentos => { 
+            this.apiService.getAll('area-empresa/list_departamentos', params)
+              .pipe(this.untilDestroyed())
+              .subscribe(departamentos => { 
                 this.departamentos = departamentos;
                 resolve(departamentos);
             }, error => {

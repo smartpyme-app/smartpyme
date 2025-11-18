@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-venta',
@@ -34,13 +35,18 @@ export class VentaComponent implements OnInit {
 
     public customFields:any = [];
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
-        this.route.data.subscribe(data => {
-            this.type = data['type']; // 'venta' o 'cotizacion'
-          });
+        this.route.data
+            .pipe(this.untilDestroyed())
+            .subscribe(data => {
+                this.type = data['type']; // 'venta' o 'cotizacion'
+            });
     }
 
     ngOnInit() {
@@ -94,17 +100,19 @@ export class VentaComponent implements OnInit {
 
         // Cargar custom fields si es cotización
         if (this.type === 'cotizacion') {
-            this.apiService.getAll('custom-fields', this.filtros).subscribe(
-                customFields => {
-                    this.customFields = customFields;
-                    // Continuar con la carga de la cotización después de obtener los campos
-                    this.loadCotizacion();
-                },
-                error => {
-                    this.alertService.error(error);
-                    this.loading = false;
-                }
-            );
+            this.apiService.getAll('custom-fields', this.filtros)
+                .pipe(this.untilDestroyed())
+                .subscribe(
+                    customFields => {
+                        this.customFields = customFields;
+                        // Continuar con la carga de la cotización después de obtener los campos
+                        this.loadCotizacion();
+                    },
+                    error => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                );
         } else {
             this.loadCotizacion();
         }
@@ -112,6 +120,7 @@ export class VentaComponent implements OnInit {
 
     private loadCotizacion() {
         this.apiService.read(this.type === 'cotizacion' ? 'cotizacion/' : 'venta/', this.venta.id)
+            .pipe(this.untilDestroyed())
             .subscribe(
                 venta => {
                     this.venta = venta;
@@ -131,16 +140,18 @@ export class VentaComponent implements OnInit {
     }
 
     private loadProyecto() {
-        this.apiService.read('proyecto/', this.venta.id_proyecto).subscribe(
-            proyecto => {
-                this.proyecto = proyecto;
-                this.loading = false;
-            },
-            error => {
-                this.alertService.error(error);
-                this.loading = false;
-            }
-        );
+        this.apiService.read('proyecto/', this.venta.id_proyecto)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                proyecto => {
+                    this.proyecto = proyecto;
+                    this.loading = false;
+                },
+                error => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            );
     }
 
 
@@ -148,10 +159,12 @@ export class VentaComponent implements OnInit {
 
     public setEstado(abono:any){
         this.saving = false;
-        this.apiService.store('venta/abono', abono).subscribe(abono => {
-            this.loadAll();
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+        this.apiService.store('venta/abono', abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
+                this.loadAll();
+                this.saving = false;
+            }, error => {this.alertService.error(error); this.saving = false;});
     }
 
     public imprimirRecibo(abono:any){

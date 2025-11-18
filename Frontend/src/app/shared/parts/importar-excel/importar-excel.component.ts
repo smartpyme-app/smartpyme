@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 interface ImportResponse {
     success: boolean;
@@ -44,6 +45,8 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
     public validationErrors: ValidationError[] = [];
     public businessErrors: string[] = [];
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
     constructor(
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -82,7 +85,9 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
         this.loading = true;
         this.resetState();
 
-        this.apiService.store(this.nombre.toLowerCase() + '/importar', formData).subscribe(
+        this.apiService.store(this.nombre.toLowerCase() + '/importar', formData)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (data: any) => {
             this.loading = false;
 
@@ -189,7 +194,9 @@ export class ImportarExcelComponent extends BaseModalComponent implements OnInit
 
     public downloadTemplate() {
         const url = `${this.nombre.toLowerCase()}/plantilla`;
-        this.apiService.download(url).subscribe(
+        this.apiService.download(url)
+          .pipe(this.untilDestroyed())
+          .subscribe(
             (response: Blob) => {
                 const blob = new Blob([response], {
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

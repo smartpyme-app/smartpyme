@@ -73,7 +73,9 @@ export class CatalogoCuentasComponent extends BasePaginatedModalComponent implem
 
     public filtrarCuentas(){
         this.loading = true;
-        this.apiService.getAll('catalogo/cuentas', this.filtros).subscribe(cuentas => {
+        this.apiService.getAll('catalogo/cuentas', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
             this.loading = false;
             if(this.modalRef){
@@ -90,7 +92,9 @@ export class CatalogoCuentasComponent extends BasePaginatedModalComponent implem
 
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
+        this.apiService.getAll('usuarios/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(usuarios => {
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
         this.openModal(template, {class: 'modal-lg', backdrop: 'static'});
@@ -115,12 +119,14 @@ export class CatalogoCuentasComponent extends BasePaginatedModalComponent implem
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('cuenta/', cuenta.id) .subscribe(data => {
+                this.apiService.delete('cuenta/', cuenta.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.cuentas.data.length; i++) {
                         if (this.cuentas.data[i].id == data.id )
                             this.cuentas.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -130,7 +136,9 @@ export class CatalogoCuentasComponent extends BasePaginatedModalComponent implem
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('cuenta', this.cuenta).subscribe(cuenta => {
+        this.apiService.store('cuenta', this.cuenta)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuenta => {
             if (!this.cuenta.id) {
                 this.loadAll();
                 this.alertService.success('Paquete creada', 'El cuenta fue añadida exitosamente.');

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-materia-prima-informacion',
@@ -22,6 +23,9 @@ export class MateriaPrimaInformacionComponent implements OnInit {
     public categorias:any[] = [];
     public loading = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
@@ -31,7 +35,9 @@ export class MateriaPrimaInformacionComponent implements OnInit {
 
     ngOnInit() {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias')
+          .pipe(this.untilDestroyed())
+          .subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
         
@@ -40,7 +46,9 @@ export class MateriaPrimaInformacionComponent implements OnInit {
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('materia-prima', this.producto).subscribe(producto => {
+        this.apiService.store('materia-prima', this.producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto => {
             this.loading = false;
             if(!this.producto.id) {
                 this.producto = producto;

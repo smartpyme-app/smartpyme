@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -33,6 +34,9 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
   public filtros: any = {};
   public buscador: any = '';
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private apiService: ApiService, 
     protected override alertService: AlertService,
@@ -47,7 +51,8 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
       .pipe(
         debounceTime(500),
         filter((query: string) => query.trim().length > 0),
-        switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+        switchMap((query: any) => this.apiService.read('productos/buscar/', query)),
+        this.untilDestroyed()
       )
       .subscribe((results: any[]) => {
         this.productos = Array.isArray(results) ? results : [];
@@ -74,7 +79,9 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
     this.filtros.direccion = 'asc';
     this.filtros.paginate = 5;
 
-    this.apiService.getAll('categorias').subscribe(categorias => {
+    this.apiService.getAll('categorias')
+      .pipe(this.untilDestroyed())
+      .subscribe(categorias => {
       this.categorias = categorias;
     }, error => { this.alertService.error(error); });
 
@@ -86,7 +93,9 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
     }
 
     this.loading = true;
-    this.apiService.getAll('productos', this.filtros).subscribe(productos => {
+    this.apiService.getAll('productos', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(productos => {
       this.productos = productos;
       this.loading = false;
     }, error => { this.alertService.error(error); this.loading = false; });

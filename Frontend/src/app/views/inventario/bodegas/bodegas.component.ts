@@ -50,10 +50,12 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('bodegas', this.filtros).subscribe(bodegas => {
-            this.bodegas = bodegas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('bodegas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
@@ -66,16 +68,20 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
             this.bodega.activo = 1;
         }
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); this.loading = false; });
 
         super.openModal(template);
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('bodega/', id) .subscribe(data => {
+            this.apiService.delete('bodega/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.bodegas.data.length; i++) { 
                     if (this.bodegas.data[i].id == data.id )
                         this.bodegas.data.splice(i, 1);
@@ -86,7 +92,9 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
     }
 
     public setEstado(bodega:any){
-        this.apiService.store('bodega', bodega).subscribe(bodega => { 
+        this.apiService.store('bodega', bodega)
+            .pipe(this.untilDestroyed())
+            .subscribe(bodega => { 
             if(bodega.activo == '1'){
                 this.alertService.success('Bodega activada', 'La bodega fue activada exitosamente.');
             }else{
@@ -98,7 +106,9 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
     
     public onSubmit() {
           this.saving = true;
-          this.apiService.store('bodega', this.bodega).subscribe(bodega => {
+          this.apiService.store('bodega', this.bodega)
+              .pipe(this.untilDestroyed())
+              .subscribe(bodega => {
               if (!this.bodega.id) {
                     this.bodegas.data.push(bodega);
                     this.alertService.success('Bodega guardada', 'La bodega fue añadida exitosamente.');

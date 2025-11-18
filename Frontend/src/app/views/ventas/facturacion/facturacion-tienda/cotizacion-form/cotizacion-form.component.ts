@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { VentaDetallesComponent } from '../detalles/venta-detalles.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-cotizacion-form',
@@ -32,6 +33,8 @@ export class CotizacionFormComponent implements OnInit {
   impuestos: any = [];
   loading: boolean = false;
   saving: boolean = false;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor') supervisorTemplate!: TemplateRef<any>;
   modalRefInstance!: any;
@@ -74,19 +77,17 @@ export class CotizacionFormComponent implements OnInit {
 
   }
   ngOnInit(): void {
-    Promise.all([
-      this.apiService.getAll('usuarios/list').toPromise().then((_: any) => this.usuarios = _),
-      this.apiService.getAll('sucursales/list').toPromise().then((_: any) => this.sucursales = _),
-      this.apiService.getAll('documentos/list').toPromise().then((_: any) => this.documentos = _),
-      this.apiService.getAll('clientes/list').toPromise().then((_: any) => this.clientes = _),
-      this.apiService.getAll('formas-de-pago/list').toPromise().then((_: any) => this.formaPagos = _),
-      this.apiService.getAll('proyectos/list').toPromise().then((_: any) => this.proyectos = _),
-      this.apiService.getAll('impuestos').toPromise().then((_: any) => { this.venta.impuestos = _; this.impuestos = _ }),
-    ]);
+    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.usuarios = _);
+    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.sucursales = _);
+    this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.documentos = _);
+    this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.clientes = _);
+    this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.formaPagos = _);
+    this.apiService.getAll('proyectos/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.proyectos = _);
+    this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe((_: any) => { this.venta.impuestos = _; this.impuestos = _ });
 
-    this._activeRoute.paramMap.subscribe(params => {
+    this._activeRoute.paramMap.pipe(this.untilDestroyed()).subscribe(params => {
       if (params.has('id')) {
-        this.apiService.read('cotizacionVentas/', +params.get('id')!).subscribe((venta: any) => {
+        this.apiService.read('cotizacionVentas/', +params.get('id')!).pipe(this.untilDestroyed()).subscribe((venta: any) => {
           venta.retencion = venta.aplicar_retencion;
           venta.detalles = venta.detalles.map((_detalle: any) => {
 
@@ -185,7 +186,7 @@ export class CotizacionFormComponent implements OnInit {
 
     this.saving = true;
 
-    this.apiService.store('cotizacionVentas', this.venta).subscribe(venta => {
+    this.apiService.store('cotizacionVentas', this.venta).pipe(this.untilDestroyed()).subscribe(venta => {
       this.saving = false;
       this.router.navigate(['/cotizaciones']);
       this.alertService.success('Cotización creada', 'La cotizacion fue añadida exitosamente.');

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
@@ -10,6 +10,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-sidebar',
@@ -51,6 +52,9 @@ export class SidebarComponent implements OnInit {
     public contabilidadHabilitada: boolean = false;
 
     searchControl = new FormControl();
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -122,7 +126,8 @@ export class SidebarComponent implements OnInit {
           .pipe(
             debounceTime(500),
             filter((query: string) => query.trim().length > 0),
-            switchMap((query: any) => this.apiService.read('buscador/', query))
+            switchMap((query: any) => this.apiService.read('buscador/', query)),
+            this.untilDestroyed()
           )
           .subscribe((results: any[]) => {
             this.items = Array.isArray(results) ? results : [];
@@ -136,15 +141,17 @@ export class SidebarComponent implements OnInit {
     }
 
     verificarAccesoContabilidad() {
-        this.funcionalidadesService.verificarAcceso('contabilidad').subscribe({
-            next: (acceso) => {
-                this.contabilidadHabilitada = acceso;
-            },
-            error: (error) => {
-                console.error('Error al verificar acceso a contabilidad:', error);
-                this.contabilidadHabilitada = false;
-            }
-        });
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
 
@@ -298,18 +305,33 @@ export class SidebarComponent implements OnInit {
 
     public onSubmit(){
         this.loading = true;
-        this.apiService.getAll('buscador', this.filtros).subscribe(items => {
-            this.items = items;
-            this.loading = false;
-        }, error => {this.alertService.error(error);this.loading = false; });
+        this.apiService.getAll('buscador', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (items) => {
+                    this.items = items;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public loadNotificaciones() {
         this.filtros.leido = 0;
         this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => {
-            this.notificaciones = notificaciones;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('notificaciones', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (notificaciones) => {
+                    this.notificaciones = notificaciones;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
     public usuarioLogueado() {
@@ -321,9 +343,13 @@ export class SidebarComponent implements OnInit {
     }
 
     loadModules() {
-        this.apiService.getModules().subscribe(modules => {
-            this.modules = modules;
-        });
+        this.apiService.getModules()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (modules) => {
+                    this.modules = modules;
+                }
+            });
     }
 
 

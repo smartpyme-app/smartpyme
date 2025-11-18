@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, forwardRef, OnInit, OnDestroy, OnChanges, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Subject, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-select-search',
@@ -45,6 +46,9 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
   searchTerm: string = '';
   isLoading = false;
   
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+  
   // Getter para los items procesados que usa ng-select
   get processedItems() {
     return this.filteredItems.map(item => ({
@@ -74,7 +78,8 @@ export class SelectSearchComponent implements ControlValueAccessor, OnInit, OnDe
           // Si no hay término, mostrar todos los items (solo para datos estáticos)
           return of(this.searchFunction ? [] : this.items || []);
         }
-      })
+      }),
+      this.untilDestroyed()
     ).subscribe(results => {
       this.filteredItems = results;
       this.isLoading = false;

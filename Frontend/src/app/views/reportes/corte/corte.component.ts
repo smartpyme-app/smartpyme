@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-corte',
@@ -21,6 +22,9 @@ export class CorteComponent implements OnInit {
     public usuarios:any = [];
     public filtros:any = {};
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, public alertService: AlertService) {}
 
     ngOnInit(){
@@ -35,22 +39,26 @@ export class CorteComponent implements OnInit {
         }
         this.filtros.fecha = this.apiService.date();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-            if(this.filtros.id_sucursal){
-                this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+                if(this.filtros.id_sucursal){
+                    this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
+                }
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-            // if(this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor'){
-            //     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
-            // }
-            if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false) ){
-                this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
-            }
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => {
+                this.usuarios = usuarios;
+                // if(this.apiService.auth_user().tipo != 'Administrador' && this.apiService.auth_user().tipo != 'Supervisor'){
+                //     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
+                // }
+                if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false) ){
+                    this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
+                }
+            }, error => {this.alertService.error(error);});
 
 
         this.filtrar();
@@ -62,9 +70,11 @@ export class CorteComponent implements OnInit {
     }
 
     public filtrar(){
-        this.apiService.getAll('corte', this.filtros).subscribe(indicadores => { 
-            this.indicadores = indicadores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('corte', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(indicadores => { 
+                this.indicadores = indicadores;
+            }, error => {this.alertService.error(error); });
     }
 
     public onUsuarioClear(){

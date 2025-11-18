@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -32,6 +33,9 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
     public nuevaResolucion:boolean = false;
     public change:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -48,10 +52,12 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('documentos').subscribe(documentos => { 
-            this.documentos = documentos;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => { 
+                this.documentos = documentos;
+                this.loading = false;this.filtrado = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public override openModal(template: TemplateRef<any>, documento?: any, nuevaResolucion?: boolean): void;
@@ -73,7 +79,9 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
                 this.documento.activo = true;
                 this.documento.correlativo = 1;
             }
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+            this.apiService.getAll('sucursales/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error);});
             super.openModal(template, {class: 'modal-md', backdrop: 'static'});
@@ -102,7 +110,9 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
     public onSubmit(){
         this.loading = true;
         this.documento.nuevaResolucion = this.nuevaResolucion;
-        this.apiService.store('documento', this.documento).subscribe(documento => {
+        this.apiService.store('documento', this.documento)
+            .pipe(this.untilDestroyed())
+            .subscribe(documento => {
             if (!this.documento.id) {
                 this.documentos.push(documento);
                 this.alertService.success('Documento creado', 'El documento fue añadido exitosamente.');
@@ -120,7 +130,9 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id) .subscribe(data => {
+            this.apiService.delete('gasto/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.documentos.length; i++) { 
                     if (this.documentos[i].id == data.id )
                         this.documentos.splice(i, 1);

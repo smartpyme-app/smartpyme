@@ -4,6 +4,8 @@ import {
   TemplateRef,
   Input,
   ViewChild,
+  DestroyRef,
+  inject,
 } from '@angular/core';
 
 import { Router, ActivatedRoute } from '@angular/router';
@@ -19,6 +21,7 @@ import { RouterModule } from '@angular/router';
 import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { finalize } from 'rxjs/operators';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -51,6 +54,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   nuevoAtributo: any = {};
   guardandoAtributo: boolean = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
@@ -69,7 +75,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.loadAtributes();
     this.usuario = this.apiService.auth_user();
 
-    this.apiService.getAll('categorias/padre').subscribe(
+    this.apiService.getAll('categorias/padre')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (categorias) => {
         this.categorias = categorias;
       },
@@ -78,7 +86,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       }
     );
 
-    this.apiService.getAll('subcategorias').subscribe(
+    this.apiService.getAll('subcategorias')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (subcategorias) => {
         this.subcategorias = subcategorias;
         this.subcategRes = this.subcategorias.filter((cat: any) => {
@@ -92,7 +102,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     this.medidas = JSON.parse(localStorage.getItem('unidades_medidas')!);
 
-    this.apiService.getAll('proveedores/list').subscribe(
+    this.apiService.getAll('proveedores/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (proveedores) => {
         this.proveedores = proveedores;
         this.loading = false;
@@ -119,7 +131,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
   public loadAtributes() {
     // console.log('color1', this.producto.color);
-    this.apiService.getAll('atributos').subscribe(
+    this.apiService.getAll('atributos')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (atributos) => {
         //this.categorias = categorias;
         // console.log('color2', this.producto.color);
@@ -215,6 +229,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     this.cdr.markForCheck();
     this.apiService.store('producto', this.producto)
       .pipe(
+        this.untilDestroyed(),
         finalize(() => {
           // Si tu ApiService corre fuera de Angular, asegúrate de volver a la zona:
           this.zone.run(() => {
@@ -266,6 +281,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     if (this.producto.nombre) {
       this.apiService
         .getAll('productos', { nombre: this.producto.nombre, estado: 1 })
+        .pipe(this.untilDestroyed())
         .subscribe(
           (productos) => {
             if (productos.data[0]) {
@@ -345,7 +361,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   }
 
   private loadCategorias() {
-    this.apiService.getAll('categorias/padre').subscribe(
+    this.apiService.getAll('categorias/padre')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (categorias) => {
         this.categorias = categorias;
 
@@ -361,7 +379,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     );
 
     // Cargar subcategorías
-    this.apiService.getAll('subcategorias').subscribe(
+    this.apiService.getAll('subcategorias')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (subcategorias) => {
         this.subcategorias = subcategorias;
         if (this.producto.id_categoria) {
@@ -399,7 +419,9 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
 
     this.guardandoAtributo = true;
 
-    this.apiService.store('atributos', this.nuevoAtributo).subscribe(
+    this.apiService.store('atributos', this.nuevoAtributo)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
        // this.loadAtributes();
 

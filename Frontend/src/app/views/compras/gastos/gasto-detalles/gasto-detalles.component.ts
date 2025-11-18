@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 
 @Component({
@@ -23,6 +24,9 @@ export class GastoDetallesComponent implements OnInit {
     public loading = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -33,22 +37,23 @@ export class GastoDetallesComponent implements OnInit {
     }
 
     public loadAll(){
-        if(this.modalRef){
-            this.modalRef.hide();
-        }
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('gasto/', params.id).subscribe(gasto => {
-                    this.gasto = gasto;
-                    this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
-                this.gasto = {};
-                this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
-                this.gasto.id_usuario = this.apiService.auth_user().id;
-            }
-        });
+        this.route.params
+            .pipe(this.untilDestroyed())
+            .subscribe((params:any) => {
+                if (params.id) {
+                    this.loading = true;
+                    this.apiService.read('gasto/', params.id)
+                        .pipe(this.untilDestroyed())
+                        .subscribe(gasto => {
+                            this.gasto = gasto;
+                            this.loading = false;
+                        }, error => {this.alertService.error(error); this.loading = false;});
+                }else{
+                    this.gasto = {};
+                    this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
+                    this.gasto.id_usuario = this.apiService.auth_user().id;
+                }
+            });
     }
 
     public openAbono(template: TemplateRef<any>, gasto:any){

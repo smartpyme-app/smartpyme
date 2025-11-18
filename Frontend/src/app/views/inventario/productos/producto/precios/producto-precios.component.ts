@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, AfterViewInit } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, AfterViewInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
@@ -24,6 +25,9 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
     public precio: any = {};
     public usuarios: any = [];
     public buscador:string = '';
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService, 
@@ -66,7 +70,9 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         if(!this.precio.id){
             this.precio.clasificacion = null;
         }
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+        this.apiService.getAll('usuarios/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -101,7 +107,9 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         this.loading = true;
         this.precio.id_producto = this.producto.id;
         this.precio.usuarios = this.usuarios;
-        this.apiService.store('producto/precio', this.precio).subscribe(precio => {
+        this.apiService.store('producto/precio', this.precio)
+          .pipe(this.untilDestroyed())
+          .subscribe(precio => {
             if(!this.precio.id) {
                 this.precio.id = precio.id;
                 this.producto.precios.unshift(precio);
@@ -123,7 +131,9 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
 
     delete(precio:any){
         if (confirm('¿Desea eliminar el Registro?')) {        
-            this.apiService.delete('producto/precio/', precio.id).subscribe(precio => {
+            this.apiService.delete('producto/precio/', precio.id)
+              .pipe(this.untilDestroyed())
+              .subscribe(precio => {
                 for (var i = 0; i < this.producto.precios.length; ++i) {
                     if (this.producto.precios[i].id === precio.id ){
                         this.producto.precios.splice(i, 1);

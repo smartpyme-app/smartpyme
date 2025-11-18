@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-presupuesto',
@@ -24,6 +25,9 @@ export class PresupuestoComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -33,7 +37,9 @@ export class PresupuestoComponent implements OnInit {
     }
 
     ngOnInit() {
-        this.apiService.getAll('proyectos/list').subscribe(proyectos => {
+        this.apiService.getAll('proyectos/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(proyectos => {
             this.proyectos = proyectos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -42,10 +48,14 @@ export class PresupuestoComponent implements OnInit {
 	}
 
 	public loadAll(){
-	    this.route.params.subscribe((params:any) => {
+	    this.route.params
+	      .pipe(this.untilDestroyed())
+	      .subscribe((params:any) => {
 	        if (params.id) {
 	            this.loading = true;
-	            this.apiService.read('presupuesto/', params.id).subscribe(presupuesto => {
+	            this.apiService.read('presupuesto/', params.id)
+	              .pipe(this.untilDestroyed())
+	              .subscribe(presupuesto => {
 		            this.presupuesto = presupuesto;
 	            	this.loading = false;
 	            }, error => {this.alertService.error(error); this.loading = false; });
@@ -59,7 +69,9 @@ export class PresupuestoComponent implements OnInit {
                 // Para proyectos
                 if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
                     this.presupuesto.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
-                    this.apiService.read('proyecto/', this.presupuesto.id_proyecto).subscribe(proyecto => {
+                    this.apiService.read('proyecto/', this.presupuesto.id_proyecto)
+                      .pipe(this.untilDestroyed())
+                      .subscribe(proyecto => {
                         this.loading = false;
                         if(proyecto.cotizacion){
                             this.presupuesto.ingresos = proyecto.cotizacion.total;
@@ -84,7 +96,9 @@ export class PresupuestoComponent implements OnInit {
 
 	public onSubmit() {
         this.saving = true;
-        this.apiService.store('presupuesto', this.presupuesto).subscribe(presupuesto => {
+        this.apiService.store('presupuesto', this.presupuesto)
+          .pipe(this.untilDestroyed())
+          .subscribe(presupuesto => {
             if (!this.presupuesto.id) {
                 this.alertService.success('Presupuesto creado', 'El presupuesto fue añadido exitosamente.');
             }else{

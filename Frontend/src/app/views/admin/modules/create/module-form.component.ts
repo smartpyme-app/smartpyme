@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { NgForm } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-module-form',
@@ -30,6 +31,9 @@ export class ModuleFormComponent implements OnInit {
     custom_permissions: [],
   };
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -47,7 +51,9 @@ export class ModuleFormComponent implements OnInit {
 
   loadModule(id: number) {
     this.loading = true;
-    this.apiService.read('modules/', id).subscribe(
+    this.apiService.read('modules/', id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         // Encontrar permisos personalizados únicos
         const customPermissions = new Map<string, any>();
@@ -163,7 +169,9 @@ export class ModuleFormComponent implements OnInit {
         custom_permissions: this.module.custom_permissions,
       };
 
-      this.apiService.store('modules', moduleData).subscribe(
+      this.apiService.store('modules', moduleData)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         () => {
           this.alertService.success(
             'Módulo creado',
@@ -237,7 +245,9 @@ export class ModuleFormComponent implements OnInit {
       ],
     };
 
-    this.apiService.update('modules', this.module.id, moduleData).subscribe(
+    this.apiService.update('modules', this.module.id, moduleData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       () => {
         this.alertService.success(
           'Módulo actualizado',

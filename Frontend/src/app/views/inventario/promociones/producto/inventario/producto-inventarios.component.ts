@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../../../../shared/base/base-modal.component';
 
@@ -26,6 +27,9 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     public ajuste:any = {};
     public buscador:string = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         private apiService: ApiService, 
         protected override alertService: AlertService,
@@ -42,12 +46,12 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('producto/sucursales/' + this.producto.id).subscribe(sucursales => {
+        this.apiService.getAll('producto/sucursales/' + this.producto.id).pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.producto.sucursales = sucursales;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
 
-        this.apiService.getAll('sucursales').subscribe(sucursales => {
+        this.apiService.getAll('sucursales').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false; });
     }
@@ -81,25 +85,25 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
         this.sucursal = sucursal;
         this.loading = true;
         this.sucursal.producto_id = this.producto.id;
-        this.apiService.store('producto/sucursal', this.sucursal).subscribe(sucursal => {
+        this.apiService.store('producto/sucursal', this.sucursal).pipe(this.untilDestroyed()).subscribe(sucursal => {
             if(!this.sucursal.id)
                 this.producto.sucursales.push(sucursal);
             this.sucursal = {};
             this.producto.bodega_venta_id = sucursal.bodega_venta_id;
             this.loading = false;
             this.closeModal();
-            this.alertService.success("Registro guardado");
+            this.alertService.success("Registro guardado", "El registro fue guardado exitosamente");
         },error => {this.alertService.error(error); this.loading = false; });
     }
 
     public deleteSucursal(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/sucursal/', id) .subscribe(data => {
+            this.apiService.delete('producto/sucursal/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.producto.sucursales.length; i++) { 
                     if (this.producto.sucursales[i].id == data.id )
                         this.producto.sucursales.splice(i, 1);
                 }
-                this.alertService.success("Registro eliminado");
+                this.alertService.success("Registro eliminado", "El registro fue eliminado exitosamente");
             }, error => {this.alertService.error(error); });
                    
         }
@@ -120,7 +124,7 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public agregarInventario() {
         this.loading = true;
-        this.apiService.store('inventario', this.inventario).subscribe(inventario => {
+        this.apiService.store('inventario', this.inventario).pipe(this.untilDestroyed()).subscribe(inventario => {
             if(!this.inventario.id)
                 this.producto.sucursal.inventarios.push(inventario);
             this.inventario = {};
@@ -131,12 +135,12 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('inventario/', id) .subscribe(data => {
+            this.apiService.delete('inventario/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.producto.inventarios.length; i++) { 
                     if (this.producto.sucursal.inventarios[i].id == data.id )
                         this.producto.sucursal.inventarios.splice(i, 1);
                 }
-                this.alertService.success("Registro eliminado");
+                this.alertService.success("Registro eliminado", "El registro fue eliminado exitosamente");
             }, error => {this.alertService.error(error); });
                    
         }

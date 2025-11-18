@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-dashboard',
@@ -20,6 +21,8 @@ export class DashboardComponent implements OnInit {
     public dashboard: any = {};
     public loading = false;
     public htmlContent!: SafeHtml;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -32,7 +35,7 @@ export class DashboardComponent implements OnInit {
         
         this.loading = true;
 
-        this.apiService.read('dashboard/', id).subscribe(dashboard => { 
+        this.apiService.read('dashboard/', id).pipe(this.untilDestroyed()).subscribe(dashboard => { 
             this.dashboard = dashboard;
             this.htmlContent = this.sanitizer.bypassSecurityTrustHtml(this.dashboard.codigo_embed);
 

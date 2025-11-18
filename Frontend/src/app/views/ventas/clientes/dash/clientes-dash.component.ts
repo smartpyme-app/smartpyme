@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-clientes-dash',
@@ -44,7 +45,8 @@ export class ClientesDashComponent implements OnInit {
         ]
     };
 
-
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( private alertService:AlertService, private apiService:ApiService
     ) { }
@@ -58,7 +60,7 @@ export class ClientesDashComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.store('clientes/dash', this.filtro).subscribe(dash => {
+        this.apiService.store('clientes/dash', this.filtro).pipe(this.untilDestroyed()).subscribe(dash => {
             this.dash = dash;
             this.chartData.labels = this.dash?.municipios.map(function(a:any) {return a.municipio});
             this.chartLabels = this.dash?.municipios.map(function(a:any) {return a.municipio});

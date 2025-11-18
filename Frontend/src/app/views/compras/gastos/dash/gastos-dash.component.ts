@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-gastos-dash',
@@ -46,7 +47,8 @@ export class GastosDashComponent implements OnInit {
     };
     public chartType2: ChartType = 'bar';
 
-
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( private alertService:AlertService, private apiService:ApiService
     ) { }
@@ -60,7 +62,9 @@ export class GastosDashComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.store('gastos/dash', this.filtro).subscribe(dash => {
+        this.apiService.store('gastos/dash', this.filtro)
+          .pipe(this.untilDestroyed())
+          .subscribe(dash => {
             this.dash = dash;
             this.chartData.labels = this.dash?.categorias.map(function(a:any) {return a.categoria});
             this.chartData.datasets[0].data = this.dash?.categorias.map(function(a:any) {return a.total});

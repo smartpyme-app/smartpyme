@@ -60,7 +60,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
         const usuario = this.apiService.auth_user();
         const shopifyActivo = !!(empresa?.shopify_store_url);
 
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams
+            .pipe(this.untilDestroyed())
+            .subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 id_bodega: +params['id_bodega'] || '',
@@ -87,17 +89,23 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
 
         if(this.route.snapshot.routeConfig?.path == 'producto-combos') this.verCombos();
 
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
-            this.categorias = categorias;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('categorias/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(categorias => {
+                this.categorias = categorias;
+            }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('bodegas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+            }, error => { this.alertService.error(error); });
 
-        this.apiService.getAll('productos/marca-productos').subscribe(marcas => {
-            this.marcas = marcas;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('productos/marca-productos')
+            .pipe(this.untilDestroyed())
+            .subscribe(marcas => {
+                this.marcas = marcas;
+            }, error => { this.alertService.error(error); });
 
     }
 
@@ -158,22 +166,28 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
             this.filtros.marca = '';
         }
 
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => {
-            this.productos = productos;
-            this.loading = false;
-            this.closeModal();
-        }, error => { this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('productos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(productos => {
+                this.productos = productos;
+                this.loading = false;
+                this.closeModal();
+            }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public setEstado(producto: any) {
-        this.apiService.store('producto', producto).subscribe(producto => {
-            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
-        }, error => { this.alertService.error(error); });
+        this.apiService.store('producto', producto)
+            .pipe(this.untilDestroyed())
+            .subscribe(producto => {
+                this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
+            }, error => { this.alertService.error(error); });
     }
 
     public delete(id: number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id).subscribe(data => {
+            this.apiService.delete('producto/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) {
                     if (this.productos['data'][i].id == data.id)
                         this.productos['data'].splice(i, 1);
@@ -199,7 +213,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('producto', this.producto).subscribe(producto => {
+        this.apiService.store('producto', this.producto)
+            .pipe(this.untilDestroyed())
+            .subscribe(producto => {
             this.producto = {};
             this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
             this.loading = false;
@@ -213,7 +229,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
 
     public descargar() {
         this.downloading = true;
-        this.apiService.export('productos/exportar', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('productos/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -229,9 +247,11 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-        }, error => { this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => {
+                this.proveedores = proveedores;
+            }, error => { this.alertService.error(error); });
 
         this.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
@@ -257,7 +277,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+        this.apiService.store('ajuste', this.ajuste)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.filtrarProductos();
             this.closeModal();
             this.alertService.modal = false;
@@ -277,21 +299,23 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
             fin: undefined // Sin filtro de fecha
         };
 
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'kardex-filtrado.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.loading = false;
-        }, (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-        });
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
+                const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'kardex-filtrado.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.loading = false;
+            }, (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            });
     }
 
     public openDescargarKardex(template: TemplateRef<any>) {
@@ -328,22 +352,24 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
             fin: this.filtrosKardex.fecha_fin
         };
 
-        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'kardex-filtrado.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.loading = false;
-            this.closeModal();
-        }, (error) => {
-            this.alertService.error(error);
-            this.loading = false;
-        });
+        this.apiService.export('productos/kardex/exportar-filtrado', filtrosConProductos)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
+                const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'kardex-filtrado.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                this.loading = false;
+                this.closeModal();
+            }, (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            });
     }
 
     public openDescargarKardexMasivo(template: TemplateRef<any>) {
@@ -373,7 +399,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
             id_empresa: this.apiService.auth_user().id_empresa
         };
 
-        this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud).subscribe((response: any) => {
+        this.apiService.store('productos/kardex/solicitar-masivo', datosSolicitud)
+            .pipe(this.untilDestroyed())
+            .subscribe((response: any) => {
             this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
             this.closeModal();

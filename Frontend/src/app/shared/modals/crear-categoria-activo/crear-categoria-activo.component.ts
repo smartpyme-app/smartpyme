@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 
@@ -20,6 +21,9 @@ export class CrearCategoriaActivoComponent extends BaseModalComponent implements
     public categoria: any = {};
     @Output() update = new EventEmitter();
     public override loading = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -40,7 +44,9 @@ export class CrearCategoriaActivoComponent extends BaseModalComponent implements
     public onSubmit() {
         this.loading = true;
         this.categoria.empresa_id = this.apiService.auth_user().empresa_id;
-        this.apiService.store('activos/categoria', this.categoria).subscribe(categoria => {
+        this.apiService.store('activos/categoria', this.categoria)
+            .pipe(this.untilDestroyed())
+            .subscribe(categoria => {
             this.update.emit(categoria);
             this.closeModal();
             this.loading = false;

@@ -1,9 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { SumPipe } from '@pipes/sum.pipe';
@@ -26,6 +27,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
     public override loading:boolean = false;
     public downloading:boolean = false;
     public filtros:any = {};
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -52,7 +56,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
 
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -61,7 +67,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/consumidores', this.filtros).subscribe(ivas => {
+        this.apiService.getAll('libro-iva/consumidores', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -97,7 +105,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
 
     public descargarLibro(){
         this.downloading = true;
-        this.apiService.export('libro-iva/consumidores/descargar-libro', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('libro-iva/consumidores/descargar-libro', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -114,7 +124,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
 
     public descargarAnexo() {
         this.downloading = true;
-        this.apiService.export('libro-iva/consumidores/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('libro-iva/consumidores/descargar-anexo', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -134,7 +146,9 @@ export class ConsumidorFinalComponent extends BaseModalComponent implements OnIn
         this.downloading = true;
         let typeDTE : string = '01';
         this.filtros.typeDTE = typeDTE;
-        this.apiService.export('libro-iva/consumidores/descargar-dttes', this.filtros).subscribe(
+        this.apiService.export('libro-iva/consumidores/descargar-dttes', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (data: Blob) => {
             // Si es texto plano, es un mensaje de error
             if (data.type === 'text/plain') {

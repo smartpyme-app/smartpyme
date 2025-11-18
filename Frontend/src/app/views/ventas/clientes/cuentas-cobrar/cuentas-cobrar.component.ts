@@ -39,25 +39,31 @@ export class CuentasCobrarComponent extends BasePaginatedComponent implements On
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('cuentas-cobrar').subscribe(cobros => { 
-            this.cobros = cobros;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('cuentas-cobrar')
+            .pipe(this.untilDestroyed())
+            .subscribe(cobros => { 
+                this.cobros = cobros;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public search(){
         if(this.buscador && this.buscador.length > 2) {
-            this.apiService.read('cuentas-cobrar/buscar/', this.buscador).subscribe(cobros => { 
-                this.cobros = cobros;
-            }, error => {this.alertService.error(error); });
+            this.apiService.read('cuentas-cobrar/buscar/', this.buscador)
+                .pipe(this.untilDestroyed())
+                .subscribe(cobros => { 
+                    this.cobros = cobros;
+                }, error => {this.alertService.error(error); });
         }
     }
 
     public setEstado(venta:any, estado:string){
         venta.estado = estado;
-        this.apiService.store('venta', venta).subscribe(venta => { 
-            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('venta', venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(venta => { 
+                this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent

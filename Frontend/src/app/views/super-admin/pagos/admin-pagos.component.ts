@@ -61,32 +61,38 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('pagos', this.filtros).subscribe(pagos => {
-            this.pagos = pagos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.getAll('pagos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(pagos => {
+                this.pagos = pagos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public loadEmpresas() {
-        this.apiService.getAll('empresas/obtenerEmpresas').subscribe(
-            response => {
-                this.empresas = response;
-            },
-            error => {
-                this.alertService.error('Error al cargar empresas: ' + error);
-            }
-        );
+        this.apiService.getAll('empresas/obtenerEmpresas')
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                response => {
+                    this.empresas = response;
+                },
+                error => {
+                    this.alertService.error('Error al cargar empresas: ' + error);
+                }
+            );
     }
 
     public loadPlanes() {
-        this.apiService.getAll('planes/obtenerPlanes').subscribe(
-            response => {
-                this.planes = response;
-            },
-            error => {
-                this.alertService.error('Error al cargar planes: ' + error);
-            }
-        );
+        this.apiService.getAll('planes/obtenerPlanes')
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                response => {
+                    this.planes = response;
+                },
+                error => {
+                    this.alertService.error('Error al cargar planes: ' + error);
+                }
+            );
     }
 
     override openModal(template: TemplateRef<any>, pago: any = {}) {
@@ -142,12 +148,14 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
 
     public delete(id: number) {
         if (confirm('¿Desea eliminar este pago?')) {
-            this.apiService.delete('pago/', id).subscribe(data => {
-                this.loadAll(); // Recargar la lista
-                this.alertService.success('Exito','Pago eliminado exitosamente');
-            }, error => {
-                this.alertService.error(error);
-            });
+            this.apiService.delete('pago/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    this.loadAll(); // Recargar la lista
+                    this.alertService.success('Exito','Pago eliminado exitosamente');
+                }, error => {
+                    this.alertService.error(error);
+                });
         }
     }
 
@@ -157,8 +165,10 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
         // Asegurarse de que las fechas estén en el formato correcto para el backend
         const pagoData = {...this.pago};
         
-        this.apiService.store('pago/new', pagoData).subscribe(
-            response => {
+        this.apiService.store('pago/new', pagoData)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+                response => {
                 if (!this.pago.id) {
                     this.alertService.success('Pago guardado', 'El pago fue añadido exitosamente.');
                 } else {
