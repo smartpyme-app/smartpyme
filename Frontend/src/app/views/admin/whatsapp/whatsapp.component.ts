@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,7 +6,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { interval, Subscription } from 'rxjs';
+import { interval } from 'rxjs';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -53,7 +54,8 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   public connectionStatus: string = 'unknown';
   public lastUpdate: Date = new Date();
   
-  private autoRefreshSubscription?: Subscription;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
   public autoRefreshEnabled: boolean = true;
   public refreshInterval: number = 30;
 
@@ -83,9 +85,7 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.autoRefreshSubscription) {
-      this.autoRefreshSubscription.unsubscribe();
-    }
+    // El DestroyRef maneja automáticamente la limpieza
   }
 
   loadInitialData() {
@@ -126,7 +126,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   loadStats(): Promise<void> {
     return new Promise((resolve) => {
       
-      this.apiService.getAll('admin/whatsapp/stats').subscribe(
+      this.apiService.getAll('admin/whatsapp/stats')
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (response) => {
           if (response && response.success !== undefined) {
             if (response.success) {
@@ -158,7 +160,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
         days: this.selectedPeriod
       };
 
-      this.apiService.getAll('admin/whatsapp/executive-summary', params).subscribe(
+      this.apiService.getAll('admin/whatsapp/executive-summary', params)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (response) => {
           if (response && response.success) {
             this.executiveSummary = response.data;
@@ -179,7 +183,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   loadSessions(): Promise<void> {
     return new Promise((resolve) => {
       
-      this.apiService.getAll('admin/whatsapp/sessions', this.filtros).subscribe(
+      this.apiService.getAll('admin/whatsapp/sessions', this.filtros)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (response) => {
           if (response && response.success !== undefined) {
             if (response.success) {
@@ -203,7 +209,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     return new Promise((resolve) => {
   
       
-      this.apiService.getAll('usuarios/list').subscribe(
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (usuarios) => {
           this.usuarios = usuarios || [];
           resolve();
@@ -315,7 +323,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
      cancelButtonText: 'Cancelar'
     }).then((result) => {
      if (result.isConfirmed) {
-       this.apiService.read('admin/whatsapp/sessions/disconnect/',session.id).subscribe(
+       this.apiService.read('admin/whatsapp/sessions/disconnect/',session.id)
+         .pipe(this.untilDestroyed())
+         .subscribe(
          (response) => {
            this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
            this.refreshData();
@@ -343,7 +353,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.read('admin/whatsapp/sessions/connect/' ,session.id).subscribe(
+        this.apiService.read('admin/whatsapp/sessions/connect/' ,session.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (response) => {
             this.alertService.success('Sesión conectada correctamente', 'WhatsApp');
             this.refreshData();
@@ -371,7 +383,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('admin/whatsapp/sessions', session.id).subscribe(
+        this.apiService.delete('admin/whatsapp/sessions', session.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (response) => {
             this.alertService.success('Sesión eliminada correctamente', 'WhatsApp');
             this.refreshData();
@@ -386,7 +400,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   setupAutoRefresh() {
     if (this.autoRefreshEnabled) {
-      this.autoRefreshSubscription = interval(this.refreshInterval * 1000).subscribe(() => {
+      interval(this.refreshInterval * 1000)
+        .pipe(this.untilDestroyed())
+        .subscribe(() => {
         this.refreshData();
       });
     }
@@ -406,10 +422,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
 
   toggleAutoRefresh() {
     this.autoRefreshEnabled = !this.autoRefreshEnabled;
-    
-    if (this.autoRefreshSubscription) {
-      this.autoRefreshSubscription.unsubscribe();
-    }
 
     if (this.autoRefreshEnabled) {
       this.setupAutoRefresh();
@@ -549,7 +561,9 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     this.refreshing = true;
     this.loading = true;
     
-    this.apiService.delete('admin/whatsapp/sessions', sessionId).subscribe(
+    this.apiService.delete('admin/whatsapp/sessions', sessionId)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
         this.refreshData();

@@ -66,7 +66,9 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
 
     public filtrarProveedores(){
         this.loading = true;
-        this.apiService.getAll('proveedores', this.filtros).subscribe(proveedores => {
+        this.apiService.getAll('proveedores', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -85,7 +87,9 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
+        this.apiService.store('proveedor', this.proveedor)
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedor => {
             this.proveedor = {};
             this.saving = false;
             this.alertService.success('Proveedor actualizado', 'El proveedor fue actualizado exitosamente.');
@@ -105,7 +109,9 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
 
     public delete(cliente:any){
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('cliente/', cliente.id) .subscribe(data => {
+            this.apiService.delete('cliente/', cliente.id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 if (this.proveedores.data) {
                     for (let i = 0; i < this.proveedores.data.length; i++) {
                         if (this.proveedores.data[i].id == data.id )
@@ -126,7 +132,9 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
 
     public descargarPersonas(){
         this.downloading = true;
-        this.apiService.export('proveedores-personas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('proveedores-personas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -145,7 +153,9 @@ export class ProveedoresComponent extends BasePaginatedComponent implements OnIn
     public descargarEmpresas(){
         this.downloading = true;
         this.alertService.modal = false;
-        this.apiService.export('proveedores-empresas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('proveedores-empresas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

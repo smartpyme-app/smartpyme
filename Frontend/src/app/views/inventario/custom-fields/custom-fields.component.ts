@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 interface CustomFieldValue {
@@ -66,6 +67,9 @@ export class CustomFieldsComponent implements OnInit {
     public newValue = '';
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService,
         private alertService: AlertService,
@@ -78,7 +82,9 @@ export class CustomFieldsComponent implements OnInit {
 
     loadAll() {
         this.loading = true;
-        this.apiService.getAll('custom-fields', this.filtros).subscribe({
+        this.apiService.getAll('custom-fields', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe({
             next: (response) => {
                 this.customFields = response;
                 this.loading = false;
@@ -126,7 +132,9 @@ export class CustomFieldsComponent implements OnInit {
         } else {
             try {
                 // Obtener el campo con sus valores y usos
-                const fieldData = await this.apiService.getAll(`custom-fields/${field.id}/usage`).toPromise();
+                const fieldData = await this.apiService.getAll(`custom-fields/${field.id}/usage`)
+                  .pipe(this.untilDestroyed())
+                  .toPromise();
                 
                 const values = fieldData.values.map((value: any) => ({
                     id: value.id,
@@ -209,7 +217,9 @@ export class CustomFieldsComponent implements OnInit {
             this.loading = true;
         try {
             if (field.id) {
-                 this.apiService.delete('custom-fields/',field.id).subscribe({
+                 this.apiService.delete('custom-fields/',field.id)
+                   .pipe(this.untilDestroyed())
+                   .subscribe({
                     next: () => {
                         this.alertService.success('Éxito', 'Campo eliminado exitosamente');
                         this.loadAll();
@@ -266,7 +276,7 @@ export class CustomFieldsComponent implements OnInit {
             this.apiService.update('custom-fields', this.field.id, dataToSend) :
             this.apiService.store('custom-fields', dataToSend);
 
-        request.subscribe({
+        request.pipe(this.untilDestroyed()).subscribe({
             next: () => {
                 this.alertService.success(
                     'Éxito',

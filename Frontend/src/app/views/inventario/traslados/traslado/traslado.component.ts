@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-traslado',
@@ -31,6 +32,9 @@ export class TrasladoComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -42,7 +46,7 @@ export class TrasladoComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
         this.loading = true;
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(bodegas => {
             this.bodegas = bodegas;
 
             this.traslado.id_bodega_de = this.bodegas[0].id;
@@ -66,7 +70,7 @@ export class TrasladoComponent implements OnInit {
         else{
             // Optenemos el traslado
             this.loading = true;
-            this.apiService.read('traslado/', id).subscribe(traslado => {
+            this.apiService.read('traslado/', id).pipe(this.untilDestroyed()).subscribe(traslado => {
 	            this.traslado = traslado;
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
@@ -77,7 +81,7 @@ export class TrasladoComponent implements OnInit {
 	openModal(template: TemplateRef<any>) {
 		this.alertService.modal = true;
 		if(!this.productos.length){
-		    this.apiService.getAll('productos/list').subscribe(productos => {
+		    this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
 		        this.productos = productos;
 		    }, error => {this.alertService.error(error);});
 		}
@@ -113,7 +117,7 @@ export class TrasladoComponent implements OnInit {
 
 	public onSubmit() {
         this.saving = true;
-        this.apiService.store('traslado', this.traslado).subscribe(traslado => {
+        this.apiService.store('traslado', this.traslado).pipe(this.untilDestroyed()).subscribe(traslado => {
             this.router.navigateByUrl('/traslados');
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false; });
@@ -127,7 +131,7 @@ export class TrasladoComponent implements OnInit {
     public editDetalle() {
         if(this.detalle.id) {
             this.saving = true;
-    	    this.apiService.store('traslado/detalle', this.detalle).subscribe(data => {
+    	    this.apiService.store('traslado/detalle', this.detalle).pipe(this.untilDestroyed()).subscribe(data => {
     	    	this.detalle = {};
     			this.saving = false;
     		}, error => {this.alertService.error(error); this.saving = false; });
@@ -153,7 +157,7 @@ export class TrasladoComponent implements OnInit {
 	public eliminarDetalle(detalle:any){
 		if (confirm('¿Desea eliminar el Registro?')) {
 			if(detalle.id) {
-				this.apiService.delete('traslado/detalle/', detalle.id).subscribe(detalle => {
+				this.apiService.delete('traslado/detalle/', detalle.id).pipe(this.untilDestroyed()).subscribe(detalle => {
 					for (var i = 0; i < this.traslado.detalles.length; ++i) {
 						if (this.traslado.detalles[i].id === detalle.id ){
 							this.traslado.detalles.splice(i, 1);
@@ -176,7 +180,7 @@ export class TrasladoComponent implements OnInit {
 	    openModalStock(template: TemplateRef<any>) {
 	    	this.loading = true;
 
-		    this.apiService.getAll('traslados/requisicion/' + this.traslado.id_origen + '/' + this.traslado.id_destino).subscribe(productos => {
+		    this.apiService.getAll('traslados/requisicion/' + this.traslado.id_origen + '/' + this.traslado.id_destino).pipe(this.untilDestroyed()).subscribe(productos => {
 		       this.productos = productos;
 		       this.loading = false;
 			}, error => {this.alertService.error(error);this.loading = false;});

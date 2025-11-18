@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { DatosComponent } from './datos/datos.component';
 import { TopsComponent } from './tops/tops.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -27,6 +28,9 @@ export class AdminDashComponent implements OnInit {
     public loading:boolean = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -46,7 +50,9 @@ export class AdminDashComponent implements OnInit {
         this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
         this.onFiltrar();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
@@ -66,7 +72,9 @@ export class AdminDashComponent implements OnInit {
     
     public onFiltrar(){     
         this.loading = true;
-        this.apiService.getAll('dash', this.filtro).subscribe(dash => { 
+        this.apiService.getAll('dash', this.filtro)
+          .pipe(this.untilDestroyed())
+          .subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
             if(this.modalRef){

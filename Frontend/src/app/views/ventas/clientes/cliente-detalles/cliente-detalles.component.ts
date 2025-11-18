@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-cliente-detalles',
@@ -47,6 +48,8 @@ export class ClienteDetallesComponent implements OnInit {
         '37': 'Otro'
     };
     modalRef?: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, private alertService: AlertService,
@@ -60,10 +63,10 @@ export class ClienteDetallesComponent implements OnInit {
     /**Carga todos los datos del cliente
      * @returns void*/
     public loadAll() {
-        this.route.params.subscribe((params: any) => {
+        this.route.params.pipe(this.untilDestroyed()).subscribe((params: any) => {
             if (params.id) {
                 this.loading = true;
-                this.apiService.read('cliente/', params.id).subscribe(cliente => {
+                this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(cliente => {
                     this.cliente = cliente;
                     this.loading = false;
                 }, error => { this.alertService.error(error); this.loading = false; });

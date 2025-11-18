@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -34,6 +35,9 @@ export class FacturacionConsignaComponent implements OnInit {
     public imprimir:boolean = false;
     
     modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -45,71 +49,89 @@ export class FacturacionConsignaComponent implements OnInit {
 
 	ngOnInit() {
 
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('venta/', params.id).subscribe(venta => {
-                    this.venta = venta;
-                    this.venta.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
-                    this.loading = false;
-                    this.cargarDocumentos();
-                    this.cargarDatos();
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
-                this.venta = {};
-                this.venta.id_empresa = this.apiService.auth_user().id_empresa;
-                this.venta.id_usuario = this.apiService.auth_user().id;
-            }
-        });
+        this.route.params
+            .pipe(this.untilDestroyed())
+            .subscribe((params:any) => {
+                if (params.id) {
+                    this.loading = true;
+                    this.apiService.read('venta/', params.id)
+                        .pipe(this.untilDestroyed())
+                        .subscribe(venta => {
+                            this.venta = venta;
+                            this.venta.cobrar_impuestos = (this.apiService.auth_user().empresa.cobra_iva == 'Si') ? true : false;
+                            this.loading = false;
+                            this.cargarDocumentos();
+                            this.cargarDatos();
+                        }, error => {this.alertService.error(error); this.loading = false;});
+                }else{
+                    this.venta = {};
+                    this.venta.id_empresa = this.apiService.auth_user().id_empresa;
+                    this.venta.id_usuario = this.apiService.auth_user().id;
+                }
+            });
 
 
     }
 
     public cargarDatos(){
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => {
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('bancos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => {
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('canales/list').subscribe(canales => {
-            this.canales = canales;
-            this.venta.id_canal = this.canales[0].id;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('canales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(canales => {
+                this.canales = canales;
+                this.venta.id_canal = this.canales[0].id;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('impuestos').subscribe(impuestos => {
-            this.impuestos = impuestos;
-            this.venta.impuestos = this.impuestos;
-            this.sumTotal();
+        this.apiService.getAll('impuestos')
+            .pipe(this.untilDestroyed())
+            .subscribe(impuestos => {
+                this.impuestos = impuestos;
+                this.venta.impuestos = this.impuestos;
+                this.sumTotal();
 
-        }, error => {this.alertService.error(error);});
+            }, error => {this.alertService.error(error);});
     }
     
     public cargarDocumentos(){
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
-            this.documentos = documentos;
-            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
-            
-            let documento = this.documentos.find((x:any) => x.predeterminado == 1);
-            if(documento){
-                this.venta.id_documento = documento.id;
-                this.venta.correlativo = documento.correlativo;
-            }else{
-                this.venta.id_documento = documentos[0].id;
-                this.venta.correlativo = documentos[0].correlativo;
-            }
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+                this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.venta.id_sucursal);
+                
+                let documento = this.documentos.find((x:any) => x.predeterminado == 1);
+                if(documento){
+                    this.venta.id_documento = documento.id;
+                    this.venta.correlativo = documento.correlativo;
+                }else{
+                    this.venta.id_documento = documentos[0].id;
+                    this.venta.correlativo = documentos[0].correlativo;
+                }
 
-        }, error => {this.alertService.error(error);});
+            }, error => {this.alertService.error(error);});
     }
 
 
@@ -176,12 +198,14 @@ export class FacturacionConsignaComponent implements OnInit {
         public onSubmit() {
             this.loading = true;
 
-            this.apiService.store('venta/facturacion/consigna', this.venta).subscribe(venta => {
-                this.loading = false;
-                this.router.navigate(['/ventas']);
-                this.alertService.success('Venta creada', 'La venta fue añadida exitosamente.');
+            this.apiService.store('venta/facturacion/consigna', this.venta)
+                .pipe(this.untilDestroyed())
+                .subscribe(venta => {
+                    this.loading = false;
+                    this.router.navigate(['/ventas']);
+                    this.alertService.success('Venta creada', 'La venta fue añadida exitosamente.');
 
-            },error => {this.alertService.error(error); this.loading = false; });
+                },error => {this.alertService.error(error); this.loading = false; });
 
         }
 

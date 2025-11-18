@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -29,6 +30,9 @@ export class ConciliacionComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -46,7 +50,9 @@ export class ConciliacionComponent implements OnInit {
 
         this.loadAll();
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+        this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => {this.alertService.error(error);});
 
@@ -56,7 +62,9 @@ export class ConciliacionComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('banco/conciliacion/', id).subscribe(conciliacion => {
+            this.apiService.read('banco/conciliacion/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(conciliacion => {
                 this.conciliacion = conciliacion;
                 console.log(this.conciliacion);
                 
@@ -94,14 +102,18 @@ export class ConciliacionComponent implements OnInit {
         this.filtros.inicio = this.conciliacion.desde;
         this.filtros.fin = this.conciliacion.hasta;
 
-        this.apiService.store('banco/ultima/conciliacion', this.filtros).subscribe(conciliacion => {
+        this.apiService.store('banco/ultima/conciliacion', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(conciliacion => {
             this.conciliacion_anterior = conciliacion;
             if(this.conciliacion_anterior.hasta){
                 this.conciliacion.desde = this.conciliacion_anterior.hasta;
             }
             this.conciliacion.saldo_anterior = this.conciliacion_anterior.saldo_actual || 0;
 
-            this.apiService.getAll('bancos/transacciones', this.filtros).subscribe(transacciones => { 
+            this.apiService.getAll('bancos/transacciones', this.filtros)
+              .pipe(this.untilDestroyed())
+              .subscribe(transacciones => { 
                 this.transacciones = transacciones;
                 this.loading = false;
 
@@ -174,7 +186,9 @@ export class ConciliacionComponent implements OnInit {
 
             this.saving = true;
 
-            this.apiService.store('banco/conciliacion', this.conciliacion).subscribe(conciliacion => {
+            this.apiService.store('banco/conciliacion', this.conciliacion)
+              .pipe(this.untilDestroyed())
+              .subscribe(conciliacion => {
                 if (!this.conciliacion.id) {
                     this.alertService.success('Conciliación guardado', 'El conciliacion fue guardado exitosamente.');
                 }else{

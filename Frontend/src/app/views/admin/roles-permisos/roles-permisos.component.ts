@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { ActivatedRoute, Router } from '@angular/router';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-roles-permisos',
@@ -36,6 +37,9 @@ export class RolesPermisosComponent implements OnInit {
 
   modalRef!: BsModalRef;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     public alertService: AlertService,
@@ -50,7 +54,9 @@ export class RolesPermisosComponent implements OnInit {
   }
 
   cargarModulos() {
-    this.apiService.getAll('permissions').subscribe(
+    this.apiService.getAll('permissions')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         console.log('Response modules:', response);
         this.modules = (response?.modules || []).map((module: any) => ({
@@ -108,7 +114,9 @@ export class RolesPermisosComponent implements OnInit {
       is_global: this.role.is_global && this.canCreateGlobalRoles()
     };
 
-    this.apiService.store('roles-permissions', roleData).subscribe(
+    this.apiService.store('roles-permissions', roleData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.alertService.success('Rol creado correctamente', 'El rol ha sido creado exitosamente.');
         this.closeModal();
@@ -124,7 +132,9 @@ export class RolesPermisosComponent implements OnInit {
 
   cargarDatos() {
     this.loading = true;
-    this.apiService.getAll('roles-permissions', this.filtros).subscribe(
+    this.apiService.getAll('roles-permissions', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.roles = response;
         
@@ -288,7 +298,9 @@ export class RolesPermisosComponent implements OnInit {
     this.apiService.store('update-role-permissions', {
       role: this.selectedRole.name,
       permissions: selectedPermissions
-    }).subscribe(
+    })
+      .pipe(this.untilDestroyed())
+      .subscribe(
       response => {
         this.alertService.success('Permisos actualizados correctamente', 'Los permisos del rol han sido actualizados.');
         this.closeModal();
@@ -330,7 +342,9 @@ export class RolesPermisosComponent implements OnInit {
     }
 
     if (confirm(`¿Está seguro que desea eliminar el rol "${role.display_name || role.name}"?`)) {
-      this.apiService.delete('roles-permissions/', role.id).subscribe(
+      this.apiService.delete('roles-permissions/', role.id)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         response => {
           this.alertService.success('Rol eliminado', 'El rol ha sido eliminado correctamente.');
           this.cargarDatos();

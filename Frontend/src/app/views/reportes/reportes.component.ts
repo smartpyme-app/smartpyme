@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-reportes',
@@ -19,6 +20,9 @@ export class ReportesComponent implements OnInit {
     public indicadores:any = {};
     public dashboards:any = [];
     public filtros:any = {};
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(public apiService: ApiService, public alertService: AlertService, 
         private sanitizer: DomSanitizer) {}
@@ -36,12 +40,14 @@ export class ReportesComponent implements OnInit {
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
 
-        this.apiService.getAll('dashboards', this.filtros).subscribe(dashboards => { 
-            this.dashboards = dashboards;
-            for (let i = 0; i < this.dashboards['data'].length; i++) { 
-                this.dashboards['data'][i].codigo_embed = this.sanitizer.bypassSecurityTrustHtml(this.dashboards['data'][i].codigo_embed);
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('dashboards', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(dashboards => { 
+                this.dashboards = dashboards;
+                for (let i = 0; i < this.dashboards['data'].length; i++) { 
+                    this.dashboards['data'][i].codigo_embed = this.sanitizer.bypassSecurityTrustHtml(this.dashboards['data'][i].codigo_embed);
+                }
+            }, error => {this.alertService.error(error); });
     }
     
 }

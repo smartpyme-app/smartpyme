@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-busqueda-cliente',
@@ -20,6 +21,9 @@ export class BusquedaClienteComponent implements OnInit {
   @Output() clienteSelect = new EventEmitter();
 
 	modalRef?: BsModalRef;
+
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
@@ -36,7 +40,9 @@ export class BusquedaClienteComponent implements OnInit {
 
     public submit():void{
         this.loading = true;
-        this.apiService.store('cliente', this.cliente).subscribe(cliente => { 
+        this.apiService.store('cliente', this.cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe(cliente => { 
             this.clienteSelect.emit({item: cliente});
             this.loading = false;
             this.modalRef?.hide()

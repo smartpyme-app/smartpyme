@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-proveedor',
@@ -30,6 +31,9 @@ export class CrearProveedorComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -47,7 +51,9 @@ export class CrearProveedorComponent implements OnInit {
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
         
         if(this.id_proveedor){
-            this.apiService.read('proveedor/', this.id_proveedor).subscribe(proveedor => {
+            this.apiService.read('proveedor/', this.id_proveedor)
+                .pipe(this.untilDestroyed())
+                .subscribe(proveedor => {
             this.proveedor = proveedor;
             this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -110,7 +116,9 @@ export class CrearProveedorComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
+        this.apiService.store('proveedor', this.proveedor)
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedor => {
             this.update.emit(proveedor);
             this.modalRef?.hide();
             this.saving = false;
@@ -121,7 +129,9 @@ export class CrearProveedorComponent implements OnInit {
 
     public verificarSiExiste(){
         if(this.proveedor.nombre && this.proveedor.apellido){
-            this.apiService.getAll('proveedores', { nombre: this.proveedor.nombre, apellido: this.proveedor.apellido, estado: 1, }).subscribe(proveedores => { 
+            this.apiService.getAll('proveedores', { nombre: this.proveedor.nombre, apellido: this.proveedor.apellido, estado: 1, })
+                .pipe(this.untilDestroyed())
+                .subscribe(proveedores => { 
                 if(proveedores.data[0]){
                     this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
                         'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'

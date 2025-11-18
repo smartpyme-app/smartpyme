@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -27,6 +28,9 @@ export class CatalogoCuentaComponent implements OnInit {
     modalRef?: BsModalRef;
     public cuentas: any[] = [];
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor(
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -34,7 +38,9 @@ export class CatalogoCuentaComponent implements OnInit {
 
 	ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('catalogo/list').subscribe(cuentas => {
+        this.apiService.getAll('catalogo/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => { this.alertService.error(error); });
 
@@ -47,7 +53,9 @@ export class CatalogoCuentaComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('catalogo/cuenta/', id).subscribe(cuenta => {
+            this.apiService.read('catalogo/cuenta/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(cuenta => {
                 this.cuenta = cuenta;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -61,7 +69,9 @@ export class CatalogoCuentaComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
-        this.apiService.store('catalogo/cuenta', this.cuenta).subscribe(cuenta => {
+        this.apiService.store('catalogo/cuenta', this.cuenta)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuenta => {
             if (!this.cuenta.id) {
                 this.alertService.success('Cuenta guardada', 'La cuenta fue guardada exitosamente.');
             }else{

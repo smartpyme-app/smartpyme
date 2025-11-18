@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-busqueda-producto',
@@ -23,6 +24,9 @@ export class BusquedaProductoComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -33,7 +37,9 @@ export class BusquedaProductoComponent implements OnInit {
 
     openModal(template: TemplateRef<any>) {
         this.loading = true;
-        this.apiService.getAll('productos/list').subscribe(productos => {
+        this.apiService.getAll('productos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(productos => {
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

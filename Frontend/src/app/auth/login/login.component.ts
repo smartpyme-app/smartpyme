@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 declare let $:any;
 
@@ -24,6 +25,9 @@ export class LoginComponent implements OnInit {
     public saludo:string = '';
     public anio:any = '';
     public showpassword:boolean = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( private apiService: ApiService, private mhService: MHService,
         private router: Router, private alertService: AlertService) { }
@@ -43,34 +47,36 @@ export class LoginComponent implements OnInit {
         this.loading = true;
     
         this.apiService.login(this.user)
-        .subscribe(
-            data => {
-                const returnUrl = localStorage.getItem('returnUrl') || '/';
-                localStorage.removeItem('returnUrl');
-    
-                this.user = this.apiService.auth_user();
-    
-                if(this.user.empresa.fe_ambiente == '01'){
-                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                }else{
-                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data) => {
+                    const returnUrl = localStorage.getItem('returnUrl') || '/';
+                    localStorage.removeItem('returnUrl');
+        
+                    this.user = this.apiService.auth_user();
+        
+                    if(this.user.empresa.fe_ambiente == '01'){
+                        localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+                    }else{
+                        localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+                    }
+        
+                    if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
+                        this.mhService.login();
+                    }
+        
+                    this.apiService.loadData();
+                    setTimeout(() => {
+                        this.router.navigate([returnUrl]);
+                    }, 100);
+                    
+                    this.loading = false;
+                },
+                error: (error) => {
+                    $('.container').addClass("animated shake");
+                    this.alertService.error(error);
+                    this.loading = false;
                 }
-    
-                if(this.user.empresa.mh_usuario && this.user.empresa.mh_contrasena){
-                    this.mhService.login();
-                }
-    
-                this.apiService.loadData();
-                setTimeout(() => {
-                    this.router.navigate([returnUrl]);
-                }, 100);
-                
-                this.loading = false;
-            },
-            error => {
-                $('.container').addClass("animated shake");
-                this.alertService.error(error);
-                this.loading = false;
             });
     }
 

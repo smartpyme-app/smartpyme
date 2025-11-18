@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-categoria-activo',
@@ -22,6 +23,9 @@ export class CrearCategoriaActivoComponent implements OnInit {
     public loading = false;
 
     modalRef?: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -39,7 +43,9 @@ export class CrearCategoriaActivoComponent implements OnInit {
     public onSubmit() {
         this.loading = true;
         this.categoria.empresa_id = this.apiService.auth_user().empresa_id;
-        this.apiService.store('activos/categoria', this.categoria).subscribe(categoria => {
+        this.apiService.store('activos/categoria', this.categoria)
+            .pipe(this.untilDestroyed())
+            .subscribe(categoria => {
             this.update.emit(categoria);
             this.modalRef?.hide();
             this.loading = false;

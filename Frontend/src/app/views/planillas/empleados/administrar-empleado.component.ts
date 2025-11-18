@@ -1,5 +1,5 @@
 // nuevo-empleado.component.ts
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TemplateRef, ChangeDetectorRef } from '@angular/core';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { createDuration } from '@fullcalendar/core/internal';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-administrar-empleado',
@@ -73,6 +74,9 @@ export class AdministrarEmpleadoComponent implements OnInit {
   };
 
   modalRef!: BsModalRef;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -229,6 +233,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
 
     this.apiService
       .store(`empleados/${this.empleado.id}/documentos`, formData)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           this.alertService.success('Exito','Documento guardado exitosamente');
@@ -250,6 +255,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.loading = true;
     this.apiService
       .getAll(`empleados/${this.empleado.id}/documentos`, this.filtrosDocumentos)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           this.documentos = response;
@@ -342,7 +348,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
       ? `empleados/contratos/${documentoId}/descargar`
       : `empleados/documentos/${documentoId}/descargar`;
 
-    this.apiService.download(ruta).subscribe(
+    this.apiService.download(ruta).pipe(this.untilDestroyed()).subscribe(
       (response: any) => {
         // Crear un blob con la respuesta
         const blob = new Blob([response], { type: response.type });
@@ -439,7 +445,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.saving = true;
     this.departamento.activo = true;
 
-    this.apiService.store('departamentosPlanilla', this.departamento).subscribe(
+    this.apiService.store('departamentosPlanilla', this.departamento).pipe(this.untilDestroyed()).subscribe(
       (response: any) => {
         this.alertService.success(
           'Exito',
@@ -465,7 +471,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.saving = true;
     this.cargo.activo = true;
   
-    this.apiService.store('cargos', this.cargo).subscribe(
+    this.apiService.store('cargos', this.cargo).pipe(this.untilDestroyed()).subscribe(
       (response: any) => {
         // Guardar temporalmente los IDs
         const departamentoId = response.id_departamento;
@@ -531,10 +537,10 @@ export class AdministrarEmpleadoComponent implements OnInit {
   public loadAll() {
     // Cargar catálogos primero
     this.loadCatalogos().then(() => {
-      this.route.params.subscribe((params: any) => {
+      this.route.params.pipe(this.untilDestroyed()).subscribe((params: any) => {
         if (params.id) {
           this.loading = true;
-          this.apiService.read('empleados/', params.id).subscribe(
+          this.apiService.read('empleados/', params.id).pipe(this.untilDestroyed()).subscribe(
             (empleado) => {
               this.empleado = {
                 ...empleado,
@@ -612,6 +618,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.loading = true;
     this.apiService
       .getAll(`empleados/${this.empleado.id}/historialesContratos`)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.historialContratos = response;
@@ -633,6 +640,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.loading = true;
     this.apiService
       .getAll(`empleados/${this.empleado.id}/historialesBajas`)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.historialBajas = response;
@@ -700,7 +708,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
     this.empleado.id_empresa = this.id_empresa;
     this.empleado.id_sucursal = this.id_sucursal;
 
-    this.apiService.store('empleados', this.empleado).subscribe(
+    this.apiService.store('empleados', this.empleado).pipe(this.untilDestroyed()).subscribe(
       (response) => {
         const mensaje = this.empleado.id
           ? 'Empleado actualizado exitosamente'
@@ -724,6 +732,7 @@ export class AdministrarEmpleadoComponent implements OnInit {
           apellidos: this.empleado.apellidos,
           estado: 'Activo',
         })
+        .pipe(this.untilDestroyed())
         .subscribe(
           (empleados) => {
             if (empleados.data[0]) {

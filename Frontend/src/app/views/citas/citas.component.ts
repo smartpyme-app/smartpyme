@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import { CalendarioComponent } from './calendario/calendario.component';
 import { CrearEventoComponent } from '@shared/modals/crear-evento/crear-evento.component';
@@ -45,6 +46,9 @@ export class CitasComponent implements OnInit {
   // public filtros:any = {};
 
   modalRef!: BsModalRef;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(public apiService: ApiService, private alertService: AlertService,
     private modalService: BsModalService
@@ -93,7 +97,9 @@ export class CitasComponent implements OnInit {
 
   public filtrarEventos() {
     this.loading = true;
-    this.apiService.getAll('eventos', this.filtros).subscribe(eventos => {
+    this.apiService.getAll('eventos', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(eventos => {
       this.eventos = eventos;
       this.loading = false;
       if (this.modalRef) {
@@ -208,7 +214,9 @@ export class CitasComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('evento/', evento.id).subscribe(data => {
+        this.apiService.delete('evento/', evento.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(data => {
           for (let i = 0; i < this.eventos.data.length; i++) {
             if (this.eventos.data[i].id == data.id)
               this.eventos.data.splice(i, 1);
@@ -225,7 +233,9 @@ export class CitasComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
-    this.apiService.store('evento', this.evento).subscribe(evento => {
+    this.apiService.store('evento', this.evento)
+      .pipe(this.untilDestroyed())
+      .subscribe(evento => {
       if (!this.evento.id) {
         this.loadAll();
         this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
@@ -254,7 +264,9 @@ export class CitasComponent implements OnInit {
   }
 
   obtenerClientes() {
-    this.apiService.getAll('clientes/list').subscribe(clientes => {
+    this.apiService.getAll('clientes/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(clientes => {
       this.clientes = clientes;
     }, error => {
       this.alertService.error(error);

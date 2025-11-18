@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-categoria.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-ver-producto',
@@ -24,6 +25,8 @@ export class VerProductoComponent {
   public loading = false;
   public guardar = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute){}
 
@@ -31,7 +34,7 @@ export class VerProductoComponent {
     let param = this.route.snapshot.params;
   
     if(param['id']){
-      this.apiService.read('producto/', param['id']).subscribe(producto => {
+      this.apiService.read('producto/', param['id']).pipe(this.untilDestroyed()).subscribe(producto => {
         this.producto = producto;
       },error => {this.alertService.error(error);this.loading = false;});
     }

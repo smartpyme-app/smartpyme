@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-buscador-productos',
@@ -23,6 +24,9 @@ export class BuscadorProductosComponent implements OnInit {
 
     public productos:any = [];
     public loading:boolean = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService
@@ -53,7 +57,8 @@ export class BuscadorProductosComponent implements OnInit {
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
               );
-            })
+            }),
+            this.untilDestroyed()
           )
           .subscribe({
             next: (results: any[]) => {

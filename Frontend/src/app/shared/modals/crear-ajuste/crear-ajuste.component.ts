@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-ajuste',
@@ -27,6 +28,9 @@ export class CrearAjusteComponent implements OnInit {
  	public loading = false;
 
 	modalRef!: BsModalRef;
+
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
    constructor(private apiService: ApiService, private alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
@@ -56,7 +60,9 @@ export class CrearAjusteComponent implements OnInit {
         this.ajuste.id_empresa = this.apiService.auth_user().id_empresa;
         this.ajuste.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+        this.apiService.store('ajuste', this.ajuste)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.inventario.stock = ajuste.stock_real;
             this.modalRef.hide();
             this.setAjuste.emit(ajuste);

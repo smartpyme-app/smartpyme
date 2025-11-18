@@ -1,11 +1,12 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
 import { AlertService } from '@services/alert.service';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 interface Empresa {
   id: number;
@@ -32,7 +33,7 @@ interface Funcionalidad {
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
+export class EmpresasFuncionalidadesComponent implements OnInit {
   // Datos principales
   empresas: Empresa[] = [];
   empresasFiltradas: Empresa[] = [];
@@ -48,10 +49,10 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
   
   // Búsqueda
   terminoBusqueda = '';
-  searchTerms = new Subject<string>();
   
   // Control de componente
-  private destroy$ = new Subject<void>();
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private http: HttpClient,
@@ -60,25 +61,11 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargarEmpresas();
-    
-    // Configurar búsqueda con debounce
-    this.searchTerms.pipe(
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$)
-    ).subscribe(term => {
-      this.filtrarEmpresas(term);
-    });
-  }
-  
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
   cargarEmpresas() {
     this.isLoading = true;
-    this.http.get<Empresa[]>(`${environment.API_URL}/api/empresas/list`).subscribe({
+    this.http.get<Empresa[]>(`${environment.API_URL}/api/empresas/list`).pipe(this.untilDestroyed()).subscribe({
       next: (data) => {
         this.empresas = data;
         this.isLoading = false;
@@ -92,7 +79,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
   }
 
   buscarEmpresas() {
-    this.searchTerms.next(this.terminoBusqueda);
+    this.filtrarEmpresas(this.terminoBusqueda);
   }
   
   filtrarEmpresas(termino: string) {
@@ -133,6 +120,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
     this.mensajeExito = '';
     
     this.http.get<{empresa: Empresa, funcionalidades: Funcionalidad[]}>(`${environment.API_URL}/api/empresas/${idEmpresa}/funcionalidades`)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (data) => {
           // Agregar propiedad de seguimiento para cada funcionalidad
@@ -170,6 +158,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
     };
     
     this.http.post(`${environment.API_URL}/api/empresas/funcionalidades/actualizar`, datos)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response: any) => {
           this.mensajeExito = `Funcionalidad "${funcionalidad.nombre}" ${funcionalidad.asignada ? 'activada' : 'desactivada'} correctamente`;
@@ -208,6 +197,7 @@ export class EmpresasFuncionalidadesComponent implements OnInit, OnDestroy {
     };
     
     this.http.post(`${environment.API_URL}/api/empresas/funcionalidades/actualizar-multiple`, datos)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response: any) => {
           this.mensajeExito = `Configuración de funcionalidades para "${this.empresaActualNombre}" guardada correctamente`;

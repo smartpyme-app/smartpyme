@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -33,6 +34,9 @@ export class ImpuestosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -44,10 +48,12 @@ export class ImpuestosComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('impuestos').subscribe(impuestos => { 
-            this.impuestos = impuestos;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('impuestos')
+            .pipe(this.untilDestroyed())
+            .subscribe(impuestos => { 
+                this.impuestos = impuestos;
+                this.loading = false;this.filtrado = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public openModal(template: TemplateRef<any>, impuesto:any) {
@@ -56,9 +62,11 @@ export class ImpuestosComponent implements OnInit {
             this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
             this.impuesto.enable = true;
         }
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
-            this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('catalogo/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(catalogo => {
+                this.catalogo = catalogo;
+            }, error => {this.alertService.error(error);});
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     }
 
@@ -69,7 +77,9 @@ export class ImpuestosComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('impuesto', this.impuesto).subscribe(impuesto => {
+        this.apiService.store('impuesto', this.impuesto)
+            .pipe(this.untilDestroyed())
+            .subscribe(impuesto => {
             if (!this.impuesto.id) {
                 this.impuestos.push(impuesto);
                 this.alertService.success('Impuesto creado', 'El impuesto fue añadido exitosamente.');
@@ -93,12 +103,14 @@ export class ImpuestosComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('impuesto/', id) .subscribe(data => {
-                    for (let i = 0; i < this.impuestos.length; i++) { 
-                        if (this.impuestos[i].id == data.id )
-                            this.impuestos.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
+                this.apiService.delete('impuesto/', id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(data => {
+                        for (let i = 0; i < this.impuestos.length; i++) { 
+                            if (this.impuestos[i].id == data.id )
+                                this.impuestos.splice(i, 1);
+                        }
+                    }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }

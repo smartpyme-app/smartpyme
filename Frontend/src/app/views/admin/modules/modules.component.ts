@@ -1,11 +1,12 @@
 // modules.component.ts
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-modules',
@@ -39,6 +40,9 @@ export class ModulesComponent implements OnInit {
 
   modalRef!: BsModalRef;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -51,7 +55,9 @@ export class ModulesComponent implements OnInit {
 
   loadModules() {
     this.loading = true;
-    this.apiService.getAll('modules', this.filtros).subscribe(
+    this.apiService.getAll('modules', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       modules => {
         this.modules = modules;
         this.loading = false;
@@ -85,7 +91,9 @@ export class ModulesComponent implements OnInit {
   deleteModule(id: number) {
     if (confirm('¿Está seguro que desea eliminar este módulo?')) {
       this.loading = true;
-      this.apiService.delete('modules/', id).subscribe(
+      this.apiService.delete('modules/', id)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         () => {
           this.loadModules();
           this.alertService.success('Módulo eliminado', 'El módulo fue eliminado exitosamente.');
@@ -138,7 +146,7 @@ export class ModulesComponent implements OnInit {
         this.apiService.update('modules/', this.module.id, moduleData) :
         this.apiService.store('modules', moduleData);
 
-    operation.subscribe(
+    operation.pipe(this.untilDestroyed()).subscribe(
       response => {
         this.loadModules();
         this.alertService.success('Módulo guardado', 'El módulo fue guardado exitosamente.');

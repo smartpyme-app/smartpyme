@@ -59,9 +59,11 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
         this.usuario = this.apiService.auth_user();
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -102,13 +104,15 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
     public filtrarVentas(){
         localStorage.setItem('ventasRecurrentesFiltros', JSON.stringify(this.filtros));
         this.loading = true;
-        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('ventas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(ventas => { 
+                this.ventas = ventas;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); });
     }
 
     public setEstado(venta:any, estado:any){
@@ -133,18 +137,22 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
         this.venta = venta;
         this.venta.recurrente = false;
         
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.loadAll();
-            this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
+        this.apiService.store('venta', this.venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(venta => {
+                this.venta = {};
+                this.loadAll();
+                this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
+            },error => {this.alertService.error(error); this.saving = false; });
 
     }
     
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('venta/', id) .subscribe(data => {
+            this.apiService.delete('venta/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.ventas['data'].length; i++) { 
                     if (this.ventas['data'][i].id == data.id )
                         this.ventas['data'].splice(i, 1);
@@ -166,33 +174,45 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template);
     }
     
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => { 
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
         
-        this.apiService.getAll('documentos/list-nombre').subscribe(documentos => { 
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('documentos/list-nombre')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => { 
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('canales').subscribe(canales => { 
-            this.canales = canales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('canales')
+            .pipe(this.untilDestroyed())
+            .subscribe(canales => { 
+                this.canales = canales;
+            }, error => {this.alertService.error(error); });
         
         this.modalRef = this.modalService.show(template);
     }
@@ -203,7 +223,9 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -219,7 +241,9 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
     }
 
     public descargarVentas(){
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -234,7 +258,9 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
     }
 
     public descargarDetalles(){
-        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas-detalles/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -258,7 +284,9 @@ export class RecurrentesComponent extends BasePaginatedComponent implements OnIn
 
     public onSubmit() {
         this.saving = true;            
-        this.apiService.store('venta', this.venta).subscribe(venta => {
+        this.apiService.store('venta', this.venta)
+            .pipe(this.untilDestroyed())
+            .subscribe(venta => {
             this.venta = {};
             this.saving = false;
             if(this.modalRef){

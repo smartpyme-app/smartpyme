@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 interface Permission {
@@ -142,6 +143,9 @@ export class UsuarioComponent implements OnInit {
   public revokedPermissions: string[] = []; // Permisos que se revocan
   public effectivePermissions: string[] = []; // Permisos efectivos
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -169,7 +173,9 @@ export class UsuarioComponent implements OnInit {
       this.loadAll(id);
     }
 
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
         this.loading = false;
@@ -185,7 +191,9 @@ export class UsuarioComponent implements OnInit {
 
   public loadAll(id: number) {
     this.loading = true;
-    this.apiService.read('usuario/', id).subscribe(
+    this.apiService.read('usuario/', id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuario) => {
         this.usuario = usuario;
         this.usuario.rol_id = usuario.roles[0].id;
@@ -209,7 +217,9 @@ export class UsuarioComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('roles').subscribe(
+    this.apiService.getAll('roles')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (roles) => {
         this.roles = roles.map((role: any) => {
           return {
@@ -257,7 +267,9 @@ export class UsuarioComponent implements OnInit {
     }
 
     // Save the user
-    this.apiService.store('usuario', formData).subscribe(
+    this.apiService.store('usuario', formData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuario) => {
 
         if (!this.usuario.id) {
@@ -359,6 +371,7 @@ export class UsuarioComponent implements OnInit {
       .update('usuario', this.usuario.id, {
         password: this.usuario.password,
       })
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
 
@@ -412,6 +425,7 @@ export class UsuarioComponent implements OnInit {
       .update('usuario/email', this.usuario.id, {
         email: this.nuevoEmail,
       })
+      .pipe(this.untilDestroyed())
       .subscribe(
         () => {
           this.usuario.email = this.nuevoEmail;
@@ -472,6 +486,7 @@ export class UsuarioComponent implements OnInit {
         .update('usuario/codigo-autorizacion', this.usuario.id, {
             codigo_autorizacion: this.nuevoCodigoAuth
         })
+        .pipe(this.untilDestroyed())
         .subscribe(
             () => {
                 this.usuario.codigo_autorizacion = this.nuevoCodigoAuth;
@@ -516,6 +531,7 @@ export class UsuarioComponent implements OnInit {
       .update('usuario/password', this.usuario.id, {
         password: this.newPassword,
       })
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response: any) => {
 
@@ -572,7 +588,9 @@ export class UsuarioComponent implements OnInit {
   loadPermissions(id: number) {
     this.permissionsLoading = true;
 
-    this.apiService.getAll(`roles-permissions/user/${id}`).subscribe({
+    this.apiService.getAll(`roles-permissions/user/${id}`)
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response: any) => {
         if (response.data) {
           this.modules = response.data.modules.map((module: any) => ({
@@ -602,7 +620,9 @@ export class UsuarioComponent implements OnInit {
     let formData: FormData = new FormData();
     formData.append('file', file);
     formData.append('id', this.usuario.id);
-    this.apiService.store('usuario/avatar', formData).subscribe(
+    this.apiService.store('usuario/avatar', formData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response: any) => {
       },
       (error) => {
@@ -841,6 +861,7 @@ export class UsuarioComponent implements OnInit {
 
     this.apiService
       .store(`roles-permissions/user/${this.usuario.id}`, data)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response: any) => {
           if (response.ok) {

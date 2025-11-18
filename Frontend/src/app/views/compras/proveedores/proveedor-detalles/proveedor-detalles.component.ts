@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-proveedor-detalles',
@@ -23,6 +24,9 @@ export class ProveedorDetallesComponent implements OnInit {
     public loading = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -33,19 +37,23 @@ export class ProveedorDetallesComponent implements OnInit {
     }
 
     public loadAll(){
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('proveedor/', params.id).subscribe(proveedor => {
-                    this.proveedor = proveedor;
-                    this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
-                this.proveedor = {};
-                this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
-                this.proveedor.id_usuario = this.apiService.auth_user().id;
-            }
-        });
+        this.route.params
+            .pipe(this.untilDestroyed())
+            .subscribe((params:any) => {
+                if (params.id) {
+                    this.loading = true;
+                    this.apiService.read('proveedor/', params.id)
+                        .pipe(this.untilDestroyed())
+                        .subscribe(proveedor => {
+                            this.proveedor = proveedor;
+                            this.loading = false;
+                        }, error => {this.alertService.error(error); this.loading = false;});
+                }else{
+                    this.proveedor = {};
+                    this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
+                    this.proveedor.id_usuario = this.apiService.auth_user().id;
+                }
+            });
     }
 
 }

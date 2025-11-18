@@ -40,7 +40,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
     }
 
     ngOnInit() {
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams
+          .pipe(this.untilDestroyed())
+          .subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 usuario_id: params['usuario_id'] || '',
@@ -91,7 +93,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
         });
 
         this.loading = true;
-        this.apiService.store('entradas/filtrar', this.filtros).subscribe(entradas => { 
+        this.apiService.store('entradas/filtrar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(entradas => { 
             this.entradas = entradas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -108,13 +112,17 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
               cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.apiService.store('entrada/aprobar/' + entrada.id, {}).subscribe(data => {
+                    this.apiService.store('entrada/aprobar/' + entrada.id, {})
+                      .pipe(this.untilDestroyed())
+                      .subscribe(data => {
                         this.alertService.success('Entrada aprobada correctamente', 'El registro fue aprobado exitosamente.');
                         this.filtrar();
 
                         //Generar partida contable
                         if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                            this.apiService.store('entrada/partida-contable/' + data.id, {}).subscribe(entrada => {
+                            this.apiService.store('entrada/partida-contable/' + data.id, {})
+                              .pipe(this.untilDestroyed())
+                              .subscribe(entrada => {
                             },error => {this.alertService.error(error);});
                         }
 
@@ -132,7 +140,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
               cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.apiService.store('entrada/anular/' + entrada.id, {}).subscribe(data => {
+                    this.apiService.store('entrada/anular/' + entrada.id, {})
+                      .pipe(this.untilDestroyed())
+                      .subscribe(data => {
                         this.alertService.success('Entrada anulada correctamente', 'El registro fue anulado exitosamente.');
                         this.filtrar();
                     }, error => {this.alertService.error(error); });
@@ -151,7 +161,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                this.apiService.delete('entrada/', id).subscribe(data => {
+                this.apiService.delete('entrada/', id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     this.alertService.success('Entrada eliminada correctamente', 'El registro fue eliminado exitosamente.');
                     this.filtrar();
                 }, error => {this.alertService.error(error); });
@@ -164,7 +176,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
     // Filtros
     openFilter(template: TemplateRef<any>) {
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/filtrar/tipo/Empleado').subscribe(usuarios => { 
+            this.apiService.getAll('usuarios/filtrar/tipo/Empleado')
+              .pipe(this.untilDestroyed())
+              .subscribe(usuarios => { 
                 this.usuarios = usuarios.data;
             }, error => {this.alertService.error(error); });
         }
@@ -183,7 +197,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
 
     public onSubmit() {
         this.saving = true;            
-        this.apiService.store('entrada', this.entrada).subscribe(entrada => {
+        this.apiService.store('entrada', this.entrada)
+          .pipe(this.untilDestroyed())
+          .subscribe(entrada => {
             this.alertService.success('Entrada actualizada correctamente', 'El registro fue actualizado exitosamente.');
             this.saving = false;
             this.filtrar();
@@ -204,7 +220,9 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedComponent 
         }).then((result) => {
             if (result.isConfirmed) {
                 this.loading = true;
-                this.apiService.store('entrada/partida-contable/' + entrada.id, {}).subscribe(
+                this.apiService.store('entrada/partida-contable/' + entrada.id, {})
+                  .pipe(this.untilDestroyed())
+                  .subscribe(
                     (response) => {
                         this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
                         this.loading = false;

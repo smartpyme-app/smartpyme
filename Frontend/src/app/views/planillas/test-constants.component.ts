@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ConstantsService } from '@services/constants.service';
 import { PlanillaConstants } from './../../constants/planilla.constants';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-test-constants',
@@ -91,6 +92,9 @@ export class TestConstantsComponent implements OnInit {
   tiposJornada: any[] = [];
   message = '';
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(private constantsService: ConstantsService) {}
 
   ngOnInit() {
@@ -99,7 +103,7 @@ export class TestConstantsComponent implements OnInit {
 
   loadConstants() {
     this.message = 'Cargando constantes...';
-    this.constantsService.loadConstants().subscribe(
+    this.constantsService.loadConstants().pipe(this.untilDestroyed()).subscribe(
       (constants) => {
         this.constantsData = constants;
         this.constantsLoaded = true;

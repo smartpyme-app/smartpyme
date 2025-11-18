@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -38,6 +39,8 @@ export class ClienteInformacionComponent implements OnInit {
   public catalogo:any = [];
 
   modalRef?: BsModalRef;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -55,17 +58,17 @@ export class ClienteInformacionComponent implements OnInit {
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+        this.apiService.getAll('catalogo/list').pipe(this.untilDestroyed()).subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
     }
 
   public loadAll() {
-    this.route.params.subscribe((params: any) => {
+    this.route.params.pipe(this.untilDestroyed()).subscribe((params: any) => {
       if (params.id) {
         this.esNuevo = false;
         this.loading = true;
-        this.apiService.read('cliente/', params.id).subscribe(
+        this.apiService.read('cliente/', params.id).pipe(this.untilDestroyed()).subscribe(
           (cliente) => {
             this.cliente = cliente;
             this.tipoAnterior = cliente.tipo;
@@ -157,7 +160,7 @@ export class ClienteInformacionComponent implements OnInit {
 
     let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
 
-    this.apiService.store(routeUrl, this.cliente).subscribe({
+    this.apiService.store(routeUrl, this.cliente).pipe(this.untilDestroyed()).subscribe({
       next: (cliente) => {
         const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
         const mensaje = this.esNuevo
@@ -188,6 +191,7 @@ export class ClienteInformacionComponent implements OnInit {
           apellido: this.cliente.apellido,
           estado: 1,
         })
+        .pipe(this.untilDestroyed())
         .subscribe(
           (clientes) => {
             if (clientes.data[0]) {
@@ -284,7 +288,7 @@ export class ClienteInformacionComponent implements OnInit {
     if (this.cliente.id) {
       this.loading_contacto = true;
 
-      this.apiService.store('cliente/contacto', nuevoContacto).subscribe({
+      this.apiService.store('cliente/contacto', nuevoContacto).pipe(this.untilDestroyed()).subscribe({
         next: (contactoGuardado) => {
           const index = this.cliente.contactos.findIndex(
             (c: any) => c.id === contactoGuardado.id
@@ -350,7 +354,7 @@ export class ClienteInformacionComponent implements OnInit {
         if (contacto.id && this.cliente.id) {
           this.loading = true;
 
-          this.apiService.delete('cliente/contacto/', contacto.id).subscribe({
+          this.apiService.delete('cliente/contacto/', contacto.id).pipe(this.untilDestroyed()).subscribe({
             next: () => {
               const index = this.cliente.contactos.findIndex(
                 (c: any) => c.id === contacto.id

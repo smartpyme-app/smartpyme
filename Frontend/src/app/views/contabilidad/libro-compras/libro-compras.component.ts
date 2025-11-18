@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import * as moment from 'moment';
@@ -26,6 +27,9 @@ export class LibroComprasComponent implements OnInit {
     public downloading:boolean = false;
     public filtros:any = {};
     modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService, private alertService: AlertService,
@@ -49,7 +53,9 @@ export class LibroComprasComponent implements OnInit {
 
         this.setTime();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => {
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); this.loading = false;});
 
@@ -58,7 +64,9 @@ export class LibroComprasComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('libro-iva/compras', this.filtros).subscribe(ivas => {
+        this.apiService.getAll('libro-iva/compras', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(ivas => {
             this.ivas = ivas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -81,7 +89,9 @@ export class LibroComprasComponent implements OnInit {
 
     public descargarLibro(){
         this.downloading = true;
-        this.apiService.export('libro-iva/compras/descargar-libro', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('libro-iva/compras/descargar-libro', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -98,7 +108,9 @@ export class LibroComprasComponent implements OnInit {
 
     public descargarLibroPercepcion(){
         this.downloading = true;
-        this.apiService.export('libro-iva/percepcion1/descargar-libro', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('libro-iva/percepcion1/descargar-libro', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -115,7 +127,9 @@ export class LibroComprasComponent implements OnInit {
 
     public descargarAnexo() {
         this.downloading = true;
-        this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('libro-iva/compras/descargar-anexo', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -134,7 +148,9 @@ export class LibroComprasComponent implements OnInit {
 
     public descargarAnexoPercepcion() {
         this.downloading = true;
-        this.apiService.export('libro-iva/percepcion1/descargar-anexo', this.filtros).subscribe((data: Blob) => {
+        this.apiService.export('libro-iva/percepcion1/descargar-anexo', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data: Blob) => {
             const blob = new Blob([data], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

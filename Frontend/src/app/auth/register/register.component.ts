@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -26,6 +27,9 @@ export class RegisterComponent implements OnInit {
     public anio:any = '';
     public showpassword:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
@@ -34,15 +38,18 @@ export class RegisterComponent implements OnInit {
     ngOnInit() {
         this.user = this.apiService.register_user();
 
-        this.apiService.getToUrl('https://restcountries.com/v3.1/all?order=name').subscribe(
-        data => {
-            this.paises = data;
-            // console.log(data);
-        },
-        error => {
-            this.alertService.error(error);
-            this.loading = false;
-        });
+        this.apiService.getToUrl('https://restcountries.com/v3.1/all?order=name')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data) => {
+                    this.paises = data;
+                    // console.log(data);
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
 
         if(!this.user){
             this.user = {};
@@ -161,14 +168,16 @@ export class RegisterComponent implements OnInit {
         this.loading = true;
 
         this.apiService.register(this.user)
-        .subscribe(
-            data => {
-                this.router.navigate(['/pago']);
-                this.loading = false;
-            },
-            error => {
-                this.alertService.error(error);
-                this.loading = false;
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data) => {
+                    this.router.navigate(['/pago']);
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
             });
     }
 

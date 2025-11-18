@@ -59,10 +59,12 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
     }
 
     public filtrarEmpresas(){
-        this.apiService.getAll('licencias/empresas', this.filtros).subscribe(empresas => { 
-            this.empresas = empresas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('licencias/empresas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresas => { 
+                this.empresas = empresas;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -78,20 +80,24 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
 
 
     public setEstado(empresa:any){
-        this.apiService.store('empresa', empresa).subscribe(empresa => { 
-            this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('empresa', empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => { 
+                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('empresa/', id) .subscribe(data => {
-                for (let i = 0; i < this.empresas['data'].length; i++) { 
-                    if (this.empresas['data'][i].id == data.id )
-                        this.empresas['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('empresa/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.empresas['data'].length; i++) { 
+                        if (this.empresas['data'][i].id == data.id )
+                            this.empresas['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -99,7 +105,9 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('licencia/empresa', this.empresa).subscribe(empresa => {
+        this.apiService.store('licencia/empresa', this.empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => {
             this.loadAll();
             this.saving = false;
             if(!this.empresa.id){
@@ -119,9 +127,11 @@ export class OrganizacionEmpresasComponent extends BasePaginatedComponent implem
     openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;
 
-        this.apiService.getAll('empresas/list').subscribe(empresasList => { 
-            this.empresasList = empresasList;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('empresas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(empresasList => { 
+                this.empresasList = empresasList;
+            }, error => {this.alertService.error(error); });
         
         if (!this.empresa.id) {
             this.empresa.id_licencia = this.apiService.auth_user().empresa.licencia.id;

@@ -56,31 +56,39 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
    	        else{
    	            // Optenemos el proveedor
    	            this.loading = true;
-   	            this.apiService.read('proveedor/', this.id).subscribe(proveedor => {
-   	               this.proveedor = proveedor;
-   	            }, error => {this.alertService.error(error); this.loading = false; });
-   	            this.apiService.read('proveedor/compras/', this.id).subscribe(compras => {
-   	                this.compras = compras;
-   	            	this.loading = false;
-   	            }, error => {this.alertService.error(error); this.loading = false; });
+   	            this.apiService.read('proveedor/', this.id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(proveedor => {
+                        this.proveedor = proveedor;
+                    }, error => {this.alertService.error(error); this.loading = false; });
+   	            this.apiService.read('proveedor/compras/', this.id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(compras => {
+                        this.compras = compras;
+                        this.loading = false;
+                    }, error => {this.alertService.error(error); this.loading = false; });
    	        }
 
 	    }
 
         onFiltrar(){
             this.filtro.id = this.id;
-            this.apiService.store('proveedor/compras/filtrar', this.filtro).subscribe(compras => { 
-                this.compras = compras;
-            }, error => {this.alertService.error(error);});
+            this.apiService.store('proveedor/compras/filtrar', this.filtro)
+                .pipe(this.untilDestroyed())
+                .subscribe(compras => { 
+                    this.compras = compras;
+                }, error => {this.alertService.error(error);});
 
         }
 
         public setEstado(compra:any, estado:string){
             compra.estado = estado;
-            this.apiService.store('compra', compra).subscribe(compra => {
-                this.loadAll();
-                this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente.');
-            }, error => {this.alertService.error(error); });
+            this.apiService.store('compra', compra)
+                .pipe(this.untilDestroyed())
+                .subscribe(compra => {
+                    this.loadAll();
+                    this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente.');
+                }, error => {this.alertService.error(error); });
         }
 
 	    // setPagination() ahora se hereda de BasePaginatedComponent

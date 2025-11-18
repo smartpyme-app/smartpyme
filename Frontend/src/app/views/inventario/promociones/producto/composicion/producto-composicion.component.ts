@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto-composicion',
@@ -24,6 +25,9 @@ export class ProductoComposicionComponent implements OnInit {
     public buscador:string = '';
 
 	modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(private apiService: ApiService, private alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
@@ -58,7 +62,7 @@ export class ProductoComposicionComponent implements OnInit {
     onSubmit(){
        
         this.loading = true;
-        this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
+        this.apiService.store('producto/composicion', this.composicion).pipe(this.untilDestroyed()).subscribe(composicion => {
             if(!this.composicion.id) {
                 this.composicion.id = composicion.id;
                 this.producto.composiciones.unshift(this.composicion);
@@ -72,7 +76,7 @@ export class ProductoComposicionComponent implements OnInit {
 
     deleteComposicion(composicion:any){
         if (confirm('¿Desea eliminar el Registro?')) {        
-            this.apiService.delete('producto/composicion/', composicion.id).subscribe(composicion => {
+            this.apiService.delete('producto/composicion/', composicion.id).pipe(this.untilDestroyed()).subscribe(composicion => {
                 for (var i = 0; i < this.producto.composiciones.length; ++i) {
                     if (this.producto.composiciones[i].id === composicion.id ){
                         this.producto.composiciones.splice(i, 1);

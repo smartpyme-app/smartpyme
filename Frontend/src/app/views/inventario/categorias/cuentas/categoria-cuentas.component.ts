@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-categoria-cuentas',
@@ -26,17 +27,24 @@ export class CategoriaCuentasComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
 
     ngOnInit() {
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+        this.apiService.getAll('catalogo/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
 
@@ -54,7 +62,9 @@ export class CategoriaCuentasComponent implements OnInit {
 
     public onSubmit():void{
         this.saving = true;
-        this.apiService.store('categoria/cuenta', this.cuenta).subscribe(cuenta => {
+        this.apiService.store('categoria/cuenta', this.cuenta)
+          .pipe(this.untilDestroyed())
+          .subscribe(cuenta => {
             if (!this.cuenta.id) {
                 this.categoria.cuentas.push(cuenta);
                 this.alertService.success('Cuenta creada', 'La cuenta fue añadida exitosamente.');
@@ -70,7 +80,9 @@ export class CategoriaCuentasComponent implements OnInit {
 
     public delete(cuenta:any) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('categoria/cuenta/', cuenta.id) .subscribe(data => {
+            this.apiService.delete('categoria/cuenta/', cuenta.id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.categoria.cuentas.length; i++) { 
                     if (this.categoria.cuentas[i].id == data.id )
                         this.categoria.cuentas.splice(i, 1);

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from '@views/compras/facturacion/detalles/compra-detalles.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-orden-compra-form',
@@ -42,6 +43,9 @@ export class OrdenCompraFormComponent implements OnInit {
     detalles: []
   }
   deletedDetalles: number[] = [];
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(private _fb: FormBuilder, public apiService: ApiService, private alertService: AlertService, private router: Router, private activatedRoute: ActivatedRoute) {
     this.ordenCompraForm = this._fb.group({
       id: [null],
@@ -57,7 +61,9 @@ export class OrdenCompraFormComponent implements OnInit {
       cobrar_percepcion: [null],
     });
 
-    this.ordenCompraForm.valueChanges.subscribe(() => this.sumTotal())
+    this.ordenCompraForm.valueChanges
+      .pipe(this.untilDestroyed())
+      .subscribe(() => this.sumTotal())
   }
 
   ngOnInit(): void {
@@ -85,9 +91,13 @@ export class OrdenCompraFormComponent implements OnInit {
       }
     );
 
-    this.activatedRoute.params.subscribe((params: any) => {
+    this.activatedRoute.params
+      .pipe(this.untilDestroyed())
+      .subscribe((params: any) => {
       if (params.id) {
-        this.apiService.read('orden-de-compra/', params.id).subscribe(compra => {
+        this.apiService.read('orden-de-compra/', params.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(compra => {
           console.log(compra);
 
           this.ordenCompraForm?.patchValue(compra);
@@ -127,7 +137,9 @@ export class OrdenCompraFormComponent implements OnInit {
       deletedDetalles: this.deletedDetalles
 
     };
-    this.apiService.store("orden-de-compra", postData).subscribe((res: any) => {
+    this.apiService.store("orden-de-compra", postData)
+      .pipe(this.untilDestroyed())
+      .subscribe((res: any) => {
       this.router.navigate(['/ordenes-de-compras']);
       this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
     },

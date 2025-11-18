@@ -41,7 +41,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
 
     ngOnInit() {
 
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams.pipe(this.untilDestroyed()).subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 id_categoria: +params['id_categoria'] || '',
@@ -56,7 +56,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
             this.filtrarServicios();
         });
 
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
     }
@@ -87,7 +87,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
         if(!this.filtros.id_categoria){
             this.filtros.id_categoria = '';
         }
-        this.apiService.getAll('servicios', this.filtros).subscribe(servicios => { 
+        this.apiService.getAll('servicios', this.filtros).pipe(this.untilDestroyed()).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -96,7 +96,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('servicio/', id) .subscribe(data => {
+            this.apiService.delete('servicio/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.servicios['data'].length; i++) { 
                     if (this.servicios['data'][i].id == data.id )
                         this.servicios['data'].splice(i, 1);
@@ -122,7 +122,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
     }
 
     public setEstado(producto:any){
-        this.apiService.store('producto', producto).subscribe(producto => { 
+        this.apiService.store('producto', producto).pipe(this.untilDestroyed()).subscribe(producto => { 
             this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
         }, error => {this.alertService.error(error); });
     }
@@ -130,7 +130,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
     public onSubmit() {
         this.loading = true;
         // Guardamos la caja
-        this.apiService.store('servicio', this.servicio).subscribe(servicio=> {
+        this.apiService.store('servicio', this.servicio).pipe(this.untilDestroyed()).subscribe(servicio=> {
             this.servicio= {};
             this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
             this.loading = false;
@@ -141,7 +141,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedComponent implement
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('servicios/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('servicios/exportar', this.filtros).pipe(this.untilDestroyed()).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

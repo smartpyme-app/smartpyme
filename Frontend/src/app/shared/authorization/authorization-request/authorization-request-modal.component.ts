@@ -1,9 +1,10 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AuthorizationService } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-authorization-request-modal',
@@ -30,6 +31,9 @@ export class AuthorizationRequestModalComponent implements OnInit {
   description: string = '';
   loading: boolean = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private authorizationService: AuthorizationService,
     private alertService: AlertService
@@ -51,29 +55,31 @@ export class AuthorizationRequestModalComponent implements OnInit {
       this.modelId ?? null,
       this.description,
       this.data
-    ).subscribe({
-      next: (response) => {
-        if (response.ok) {
-          if (response.estado === 'Pendiente Autorización') {
-            this.alertService.success(
-              this.getSuccessTitle(),
-              this.getSuccessMessage()
-            );
-            this.closeModal();
-            window.location.href = this.getRedirectUrl();
-            return;
-          } else {
-            this.alertService.success('Autorización solicitada', 'La solicitud fue enviada exitosamente');
-            this.closeModal();
+    )
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          if (response.ok) {
+            if (response.estado === 'Pendiente Autorización') {
+              this.alertService.success(
+                this.getSuccessTitle(),
+                this.getSuccessMessage()
+              );
+              this.closeModal();
+              window.location.href = this.getRedirectUrl();
+              return;
+            } else {
+              this.alertService.success('Autorización solicitada', 'La solicitud fue enviada exitosamente');
+              this.closeModal();
+            }
           }
+          this.loading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
         }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    });
+      });
   }
 
   private getSuccessTitle(): string {

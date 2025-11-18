@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-subcategoria',
@@ -24,6 +25,9 @@ export class CrearSubCategoriaComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -40,7 +44,9 @@ export class CrearSubCategoriaComponent implements OnInit {
     public onSubmit() {
         this.loading = true;
         this.subcategoria.categoria_id = this.categoria_id;
-        this.apiService.store('subcategoria', this.subcategoria).subscribe(subcategoria => {
+        this.apiService.store('subcategoria', this.subcategoria)
+            .pipe(this.untilDestroyed())
+            .subscribe(subcategoria => {
             this.update.emit(subcategoria);
             this.modalRef?.hide();
             this.loading = false;

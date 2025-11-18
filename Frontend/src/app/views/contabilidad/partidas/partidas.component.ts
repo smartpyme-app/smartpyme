@@ -81,7 +81,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
   }
 
   ngOnInit() {
-    this.apiService.getAll('catalogo/list').subscribe(
+    this.apiService.getAll('catalogo/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (catalogo) => {
         this.catalogo = catalogo;
       },
@@ -198,7 +200,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
 
     this.guardarFiltros();
 
-    this.apiService.getAll('partidas', this.filtros).subscribe(
+    this.apiService.getAll('partidas', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.partidas = response;
 
@@ -250,7 +254,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
   }
 
   public setEstado(partida: any, estado: any) {
-    this.apiService.read('partida/', partida.id).subscribe(
+    this.apiService.read('partida/', partida.id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (partidaCompleta) => {
         partidaCompleta.estado = estado;
         this.onSubmit(partidaCompleta);
@@ -262,7 +268,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
   }
 
   public setEstadoChange(partida: any) {
-    this.apiService.store('partida', partida).subscribe(
+    this.apiService.store('partida', partida)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (producto) => {
         this.alertService.success(
           'Partida actualizada',
@@ -287,7 +295,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('partida/', partida.id).subscribe(
+        this.apiService.delete('partida/', partida.id)
+          .pipe(this.untilDestroyed())
+          .subscribe(
           (data) => {
             for (let i = 0; i < this.partidas.data.length; i++) {
               if (this.partidas.data[i].id == data.id)
@@ -306,7 +316,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
 
   public onSubmit(partidaData?: any) {
     this.saving = true;
-    this.apiService.store('partida', partidaData || this.partida).subscribe(
+    this.apiService.store('partida', partidaData || this.partida)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (partida) => {
         if (!this.partida.id) {
           this.loadAll();
@@ -339,7 +351,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
   public reordenarCorrelativos() {
     this.saving = true;
 
-    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento).subscribe({
+    this.apiService.store('partidas/reordenar-correlativos', this.reordenamiento)
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         this.saving = false;
         this.alertService.success(
@@ -532,7 +546,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
   }
 
   public abrirPartida(partida: any) {
-    this.apiService.store('partidas/abrir', { id: partida.id }).subscribe({
+    this.apiService.store('partidas/abrir', { id: partida.id })
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         this.alertService.success('Partida abierta', 'La partida ha sido reabierta exitosamente.');
         this.filtrarPartidas();
@@ -563,7 +579,9 @@ export class PartidasComponent extends BasePaginatedComponent implements OnInit 
       if (result.isConfirmed) {
         this.saving = true;
 
-        this.apiService.store('partidas/reordenar-correlativos', { todos: true }).subscribe({
+        this.apiService.store('partidas/reordenar-correlativos', { todos: true })
+          .pipe(this.untilDestroyed())
+          .subscribe({
           next: (response) => {
             this.saving = false;
             this.alertService.success(

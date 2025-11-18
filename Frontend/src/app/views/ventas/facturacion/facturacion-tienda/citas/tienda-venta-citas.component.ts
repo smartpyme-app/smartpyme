@@ -56,7 +56,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
     }
 
     public openModal(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
         this.citas = {} as PaginatedResponse;
@@ -90,7 +90,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
     public filtrarCitas(){
         this.loading = true;
         this.venta.id_cliente = this.filtros.id_cliente;
-        this.apiService.getAll('eventos', this.filtros).subscribe(citas => { 
+        this.apiService.getAll('eventos', this.filtros).pipe(this.untilDestroyed()).subscribe(citas => { 
             this.citas = citas;
             
             this.detalles = [];
@@ -122,7 +122,7 @@ export class TiendaVentaCitasComponent extends BasePaginatedComponent implements
             
             cita.productos.forEach((detalleProducto: any) => {
                 this.saving = true;
-                this.apiService.read('producto/', detalleProducto.id_producto).subscribe(producto => {
+                this.apiService.read('producto/', detalleProducto.id_producto).pipe(this.untilDestroyed()).subscribe(producto => {
                     let detalle:any = {};
                     detalle.id_cita    = cita.id;
                     detalle.id_producto    = producto.id;

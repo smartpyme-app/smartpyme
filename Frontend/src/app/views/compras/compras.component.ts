@@ -65,7 +65,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     ngOnInit() {
 
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams
+            .pipe(this.untilDestroyed())
+            .subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
                 id_proyecto: +params['id_proyecto'] || '',
@@ -86,9 +88,11 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
         });
 
         this.getNumsIds();
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => {
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => {
+                this.proveedores = proveedores;
+            }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -128,13 +132,15 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             this.filtros.id_usuario = '';
         }
 
-        this.apiService.getAll('compras', this.filtros).subscribe(compras => {
-            this.compras = compras;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('compras', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => {
+                this.compras = compras;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -168,7 +174,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id) .subscribe(data => {
+            this.apiService.delete('compra/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.compras['data'].length; i++) {
                     if (this.compras['data'][i].id == data.id )
                         this.compras['data'].splice(i, 1);
@@ -183,25 +191,33 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
         this.compra = compra;
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
-                this.proyectos = proyectos;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('proyectos/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(proyectos => {
+                    this.proyectos = proyectos;
+                }, error => {this.alertService.error(error); });
         }
 
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-                this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('formas-de-pago/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(formaPagos => {
+                    this.formaPagos = formaPagos;
+                }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-                this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('usuarios/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(usuarios => {
+                    this.usuarios = usuarios;
+                }, error => {this.alertService.error(error); });
         }
 
         this.modalRef = this.modalService.show(template);
@@ -210,7 +226,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
-        this.apiService.read('compras/filtrar/' + filtro + '/', txt).subscribe(compras => {
+        this.apiService.read('compras/filtrar/' + filtro + '/', txt)
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => {
             this.compras = compras;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -219,7 +237,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('compra', this.compra).subscribe(compra => {
+        this.apiService.store('compra', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => {
             this.compra = {};
             this.saving = false;
             if(this.modalRef){
@@ -236,10 +256,12 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
         this.compra = compra;
         this.compra.recurrente = true;
 
-        this.apiService.store('compra', this.compra).subscribe(compra => {
-            this.compra = {};
-            this.alertService.success('Compra guardada', 'La compra se marco como recurrente exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
+        this.apiService.store('compra', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => {
+                this.compra = {};
+                this.alertService.success('Compra guardada', 'La compra se marco como recurrente exitosamente.');
+            },error => {this.alertService.error(error); this.saving = false; });
 
     }
 
@@ -251,7 +273,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public descargarCompras(){
         this.downloadingCompras = true; this.saving = true;
-        this.apiService.export('compras/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('compras/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -268,7 +292,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public descargarDetalles(){
         this.downloadingDetalles = true; this.saving = true;
-        this.apiService.export('compras-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('compras-detalles/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -291,32 +317,42 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
     public openFilter(template: TemplateRef<any>) {
 
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
         if(!this.formaPagos.length){
-            this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-                this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('formas-de-pago/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(formaPagos => {
+                    this.formaPagos = formaPagos;
+                }, error => {this.alertService.error(error); });
         }
 
         if(!this.sucursales.length){
-            this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('sucursales/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(sucursales => {
+                    this.sucursales = sucursales;
+                }, error => {this.alertService.error(error); });
         }
 
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-                this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('usuarios/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(usuarios => {
+                    this.usuarios = usuarios;
+                }, error => {this.alertService.error(error); });
         }
 
         if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.apiService.getAll('proyectos/list').subscribe(proyectos => {
-                this.proyectos = proyectos;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('proyectos/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(proyectos => {
+                    this.proyectos = proyectos;
+                }, error => {this.alertService.error(error); });
         }
 
         this.modalRef = this.modalService.show(template);
@@ -356,7 +392,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     enviarDTE(){
         this.sending = true;
         this.compra.tipo = 'compra';
-        this.apiService.store('enviarDTE', this.compra).subscribe(dte => {
+        this.apiService.store('enviarDTE', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
@@ -371,18 +409,26 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
             if (confirm('¿Confirma anular la compra y el DTE?')) {
                 this.compra = compra;
                 this.saving = true;
-                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra).subscribe(dte => {
-                    // this.alertService.success('DTE generado.');
-                    this.compra.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                        this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        // this.alertService.success('DTE firmado.');
+                this.apiService.store('generarDTEAnuladoSujetoExcluidoCompra', this.compra)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(dte => {
+                        // this.alertService.success('DTE generado.');
+                        this.compra.dte_invalidacion = dte;
+                        this.mhService.firmarDTE(dte)
+                            .pipe(this.untilDestroyed())
+                            .subscribe(dteFirmado => {
+                                this.compra.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                                // this.alertService.success('DTE firmado.');
 
-                        this.mhService.anularDTE(this.compra, dteFirmado.body).subscribe(dte => {
-                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                this.compra.dte_invalidacion.sello = dte.selloRecibido;
-                                this.compra.estado = 'Anulada';
-                                this.apiService.store('compra', this.compra).subscribe(data => {
+                                this.mhService.anularDTE(this.compra, dteFirmado.body)
+                                    .pipe(this.untilDestroyed())
+                                    .subscribe(dte => {
+                                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                            this.compra.dte_invalidacion.sello = dte.selloRecibido;
+                                            this.compra.estado = 'Anulada';
+                                            this.apiService.store('compra', this.compra)
+                                                .pipe(this.untilDestroyed())
+                                                .subscribe(data => {
                                     // this.alertService.success('Compra guardada.');
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }
@@ -414,9 +460,11 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
 
 
     public abrirModalFiltrosRentabilidad(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
 
         this.modalRefRentabilidad = this.modalService.show(template, {
           class: 'modal-lg',
@@ -428,7 +476,9 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
     this.downloadingRentabilidad = true;
     this.saving = true;
 
-    this.apiService.exportAcumulado('compras-rentabilidad/exportar', this.filtrosRentabilidad).subscribe(
+    this.apiService.exportAcumulado('compras-rentabilidad/exportar', this.filtrosRentabilidad)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (data: Blob) => {
         const blob = new Blob([data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -475,13 +525,17 @@ export class ComprasComponent extends BaseFilteredPaginatedComponent implements 
   }
 
   getNumsIds(){
-    this.apiService.getAll('compras/nums-ids').subscribe(numsIds => {
-        this.numeros_ids = numsIds;
-    }, error => {this.alertService.error(error); });
+    this.apiService.getAll('compras/nums-ids')
+        .pipe(this.untilDestroyed())
+        .subscribe(numsIds => {
+            this.numeros_ids = numsIds;
+        }, error => {this.alertService.error(error); });
   }
 
   generarPartidaContable(compra:any){
-    this.apiService.store('contabilidad/partida/compra', compra).subscribe(compra => {
+    this.apiService.store('contabilidad/partida/compra', compra)
+        .pipe(this.untilDestroyed())
+        .subscribe(compra => {
       this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
     },error => {this.alertService.error(error);});
   }

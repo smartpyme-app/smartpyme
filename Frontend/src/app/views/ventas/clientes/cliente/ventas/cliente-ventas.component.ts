@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-cliente-ventas',
@@ -25,6 +26,8 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
     public filtro:any = {};
 
 	modalRef!: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(apiService: ApiService, alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
@@ -64,7 +67,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
         }
         else{
             this.loading = true;
-            this.apiService.read('cliente/ventas/', this.id).subscribe(ventas => {
+            this.apiService.read('cliente/ventas/', this.id).pipe(this.untilDestroyed()).subscribe(ventas => {
                 this.ventas = ventas;
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
@@ -77,7 +80,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
     onFiltrar(){
         this.filtro.id = this.id;
         this.loading = true;
-        this.apiService.store('cliente/ventas/filtrar', this.filtro).subscribe(ventas => { 
+        this.apiService.store('cliente/ventas/filtrar', this.filtro).pipe(this.untilDestroyed()).subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -93,7 +96,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
 
     public setEstado(venta:any, estado:string){
         venta.estado = estado;
-        this.apiService.store('venta', venta).subscribe(venta => {
+        this.apiService.store('venta', venta).pipe(this.untilDestroyed()).subscribe(venta => {
             this.loadAll();
             this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
         }, error => {this.alertService.error(error); });
@@ -127,7 +130,7 @@ export class ClienteVentasComponent extends BasePaginatedComponent implements On
         for (var i = 0; i < this.ventas.data.length; ++i) {
             if(this.ventas.data[i].estado == 'Pendiente') {
                 this.ventas.data[i].estado = 'Cobrada';
-                this.apiService.store('venta', this.ventas.data[i]).subscribe(venta => {
+                this.apiService.store('venta', this.ventas.data[i]).pipe(this.untilDestroyed()).subscribe(venta => {
                 }, error => {this.alertService.error(error); });
             }
         }

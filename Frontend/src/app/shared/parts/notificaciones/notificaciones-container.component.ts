@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Subscription } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-notificaciones-container',
@@ -12,10 +12,12 @@ import { ActivatedRoute } from '@angular/router';
     standalone: true,
     imports: [CommonModule, RouterModule]
 })
-export class NotificacionesContainerComponent implements OnInit, OnDestroy {
+export class NotificacionesContainerComponent implements OnInit {
 
     public alertMessage!:any;
-    private alertSubscription!: Subscription;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(private alertService: AlertService,
                 private sanitizer: DomSanitizer,
@@ -23,14 +25,16 @@ export class NotificacionesContainerComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit() {
-        this.alertSubscription = this.alertService.getAlert().subscribe(message => {
-            this.alertMessage = message;
-            if (this.alertMessage && (this.alertMessage.tipo == 'alert-success')) {
-                setTimeout(() => {
-                    this.closeAlert();
-                }, 10000);
-            }
-        });
+        this.alertService.getAlert()
+            .pipe(this.untilDestroyed())
+            .subscribe(message => {
+                this.alertMessage = message;
+                if (this.alertMessage && (this.alertMessage.tipo == 'alert-success')) {
+                    setTimeout(() => {
+                        this.closeAlert();
+                    }, 10000);
+                }
+            });
     }
 
     closeAlert() {
@@ -39,12 +43,7 @@ export class NotificacionesContainerComponent implements OnInit, OnDestroy {
 
     sanitizeHtml(html: string): SafeHtml {
         return this.sanitizer.bypassSecurityTrustHtml(html);
-      }
-
-      ngOnDestroy() {
-        // Desuscribirse para evitar fugas de memoria
-        // this.alertSubscription?.unsubscribe();
-      }
+    }
 
 }
 

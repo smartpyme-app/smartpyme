@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
 import { AuthorizationService } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-authorization-view',
@@ -19,6 +20,9 @@ export class AuthorizationViewComponent implements OnInit {
   authCode: string = '';
   notes: string = '';
   processing = false;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private route: ActivatedRoute,
@@ -35,13 +39,17 @@ export class AuthorizationViewComponent implements OnInit {
 
   loadAuthorization(code: string) {
     this.loading = true;
-    this.authorizationService.getAuthorization(code).subscribe({
-      next: (response) => {
-        this.authorization = response.data;
-        this.loading = false;
-      },
-      error: () => this.loading = false
-    });
+    this.authorizationService.getAuthorization(code)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          this.authorization = response.data;
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+        }
+      });
   }
 
   approve() {
@@ -50,19 +58,21 @@ export class AuthorizationViewComponent implements OnInit {
       this.authorization.code, 
       this.authCode, 
       this.notes
-    ).subscribe({
-      next: (response) => {
-        if (response.ok) {
-          this.alertService.success("Autorización aprobada exitosamente","Autorización aprobada exitosamente");
-          this.loadAuthorization(this.authorization.code); // Recargar
+    )
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          if (response.ok) {
+            this.alertService.success("Autorización aprobada exitosamente","Autorización aprobada exitosamente");
+            this.loadAuthorization(this.authorization.code); // Recargar
+          }
+          this.processing = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.processing = false;
         }
-        this.processing = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.processing = false;
-      }
-    });
+      });
   }
 
   reject() {
@@ -71,19 +81,21 @@ export class AuthorizationViewComponent implements OnInit {
       this.authorization.code, 
       this.authCode, 
       this.notes
-    ).subscribe({
-      next: (response) => {
-        if (response.ok) {
-          this.alertService.success("Autorización rechazada","Autorización rechazada");
-          this.loadAuthorization(this.authorization.code); // Recargar
+    )
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          if (response.ok) {
+            this.alertService.success("Autorización rechazada","Autorización rechazada");
+            this.loadAuthorization(this.authorization.code); // Recargar
+          }
+          this.processing = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.processing = false;
         }
-        this.processing = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.processing = false;
-      }
-    });
+      });
   }
 
 }

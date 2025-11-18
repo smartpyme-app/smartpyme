@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { NgChartsModule } from 'ng2-charts';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -32,6 +33,9 @@ export class ProductoPreciosComponent implements OnInit {
     public labels:any = [];
     public Cdatasets:any[] = [];
     public Clabels:any = [];
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( private alertService:AlertService, private apiService:ApiService,
       private route: ActivatedRoute, private router: Router,
@@ -62,7 +66,7 @@ export class ProductoPreciosComponent implements OnInit {
     public loadAll(){
 
 
-        this.apiService.getAll('producto/precios/historicos/' + this.producto.id).subscribe(producto => { 
+        this.apiService.getAll('producto/precios/historicos/' + this.producto.id).pipe(this.untilDestroyed()).subscribe(producto => { 
             this.datasets     = [{
                 label: 'Precio de venta',
                 data: producto.ventas_precios

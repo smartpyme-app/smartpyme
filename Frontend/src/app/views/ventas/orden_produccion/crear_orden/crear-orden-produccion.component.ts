@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FileService } from '@services/file.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-orden-produccion',
@@ -31,6 +32,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
   filtros: any = {
     id: null,
   };
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private fileService: FileService,
@@ -62,7 +66,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
   cargarOrden(id: number) {
     this.loading = true;
-    this.apiService.read('orden-produccion/', id).subscribe(
+    this.apiService.read('orden-produccion/', id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response: any) => {
         this.cotizacion = response;
 
@@ -129,7 +135,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
   cargarCotizacion(id: number) {
     //console.log('id', id)
     this.loading = true;
-    this.apiService.read('cotizacion/', id).subscribe(
+    this.apiService.read('cotizacion/', id)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response: any) => {
         this.cotizacion = response;
 
@@ -194,7 +202,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
   }
 
   loadCustomFields() {
-    this.apiService.getAll('custom-fields', { bandera: true }).subscribe(
+    this.apiService.getAll('custom-fields', { bandera: true })
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.customFields = response.data;
         this.loading = false;
@@ -337,7 +347,9 @@ export class CrearOrdenProduccionComponent implements OnInit {
   public setEstado(orden: any) {
     //emviar en formData
     const formData = this.fileService.prepareFormData(orden, this.selectedFile);
-    this.apiService.store('orden-produccion', formData).subscribe(
+    this.apiService.store('orden-produccion', formData)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.alertService.success(
           'Estado actualizado',
@@ -382,6 +394,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
     this.downloading = true;
     this.apiService
       .export('ordenes-produccion/exportar/documento', this.filtros)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (data: Blob) => {
           const blob = new Blob([data], {

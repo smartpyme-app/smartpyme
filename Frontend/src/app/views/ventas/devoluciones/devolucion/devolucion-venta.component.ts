@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -28,6 +29,9 @@ export class DevolucionVentaComponent implements OnInit {
 
     public loading = false;
     modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor(private apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService){}
 
@@ -41,11 +45,13 @@ export class DevolucionVentaComponent implements OnInit {
 
     public loadAll(){
 	    const id = +this.route.snapshot.paramMap.get('id')!;
-        this.apiService.read('devolucion/venta/', id).subscribe(devolucion => {
-           this.devolucion = devolucion;
-           this.detalles = devolucion.detalles;
-           this.proveedor = devolucion.proveedor;
-        });
+        this.apiService.read('devolucion/venta/', id)
+            .pipe(this.untilDestroyed())
+            .subscribe(devolucion => {
+                this.devolucion = devolucion;
+                this.detalles = devolucion.detalles;
+                this.proveedor = devolucion.proveedor;
+            });
     }
 
 }

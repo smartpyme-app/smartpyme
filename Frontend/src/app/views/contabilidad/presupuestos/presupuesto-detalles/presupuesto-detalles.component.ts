@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-presupuesto-detalles',
@@ -23,6 +24,9 @@ export class PresupuestoDetallesComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -36,10 +40,14 @@ export class PresupuestoDetallesComponent implements OnInit {
 	}
 
 	public loadAll(){
-	    this.route.params.subscribe((params:any) => {
+	    this.route.params
+	      .pipe(this.untilDestroyed())
+	      .subscribe((params:any) => {
 	        if (params.id) {
 	            this.loading = true;
-	            this.apiService.read('presupuesto/', params.id).subscribe(presupuesto => {
+	            this.apiService.read('presupuesto/', params.id)
+	              .pipe(this.untilDestroyed())
+	              .subscribe(presupuesto => {
 		            this.presupuesto = presupuesto;
 	            	this.loading = false;
 	            }, error => {this.alertService.error(error); this.loading = false; });

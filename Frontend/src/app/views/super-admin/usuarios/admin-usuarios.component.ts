@@ -58,30 +58,36 @@ export class AdminUsuariosComponent extends BasePaginatedComponent implements On
 
         this.loadAll();
 
-        this.apiService.getAll('empresas/list').subscribe(empresas => { 
-            this.empresas = empresas;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('empresas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(empresas => { 
+                this.empresas = empresas;
+            }, error => {this.alertService.error(error); });
     }
 
     public loadAll(){
         this.loading = true;        
-        this.apiService.getAll('admin-usuarios', this.filtros).subscribe(usuarios => { 
-            this.usuarios = usuarios;
-            this.usuarios.data.forEach((usuario:any) => {
-                usuario.rol_name = usuario.roles[0].name;
-                usuario.rol_id = usuario.roles[0].id;
-            });
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('admin-usuarios', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+                this.usuarios.data.forEach((usuario:any) => {
+                    usuario.rol_name = usuario.roles[0].name;
+                    usuario.rol_id = usuario.roles[0].id;
+                });
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
 
-        this.apiService.getAll('roles').subscribe(roles => { 
-            this.roles = roles;
-            this.roles.forEach((rol:any) => {
-                rol.name = rol.name.split('_')
-                                 .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                                 .join(' ');
-            });
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('roles')
+            .pipe(this.untilDestroyed())
+            .subscribe(roles => { 
+                this.roles = roles;
+                this.roles.forEach((rol:any) => {
+                    rol.name = rol.name.split('_')
+                                     .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                                     .join(' ');
+                });
+            }, error => {this.alertService.error(error); });
     }
 
 
@@ -95,14 +101,18 @@ export class AdminUsuariosComponent extends BasePaginatedComponent implements On
             // this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
         }
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursalesList = sucursales;
-            this.setSucursales();
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursalesList = sucursales;
+                this.setSucursales();
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('bodegas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+            }, error => {this.alertService.error(error); });
 
         this.modalRef = this.modalService.show(template, { class: 'modal-lg', backdrop: 'static' });
     }
@@ -130,7 +140,9 @@ export class AdminUsuariosComponent extends BasePaginatedComponent implements On
     public onSubmit() {
         this.saving = true;
         // Guardamos al usuario
-        this.apiService.store('admin-usuario', this.usuario).subscribe(usuario => {
+        this.apiService.store('admin-usuario', this.usuario)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuario => {
             this.loadAll();
             this.saving = false;
             if(!this.usuario.id){
@@ -144,23 +156,27 @@ export class AdminUsuariosComponent extends BasePaginatedComponent implements On
     }
 
     public setEstado(usuario:any){
-        this.apiService.store('admin-usuario', usuario).subscribe(usuario => { 
-            if(usuario.enable == 1){
-                this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
-            }else{
-                this.alertService.success('Usuario desactivado', 'El usuario fue desactivado exitosamente.');
-            }
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.store('admin-usuario', usuario)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuario => { 
+                if(usuario.enable == 1){
+                    this.alertService.success('Usuario activado', 'El usuario fue activado exitosamente.');
+                }else{
+                    this.alertService.success('Usuario desactivado', 'El usuario fue desactivado exitosamente.');
+                }
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('admin-usuario/', id) .subscribe(data => {
-                for (let i = 0; i < this.usuarios.data.length; i++) { 
-                    if (this.usuarios.data[i].id == data.id )
-                        this.usuarios.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); this.loading = false;});
+            this.apiService.delete('admin-usuario/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.usuarios.data.length; i++) { 
+                        if (this.usuarios.data[i].id == data.id )
+                            this.usuarios.data.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); this.loading = false;});
                    
         }
     }
@@ -168,11 +184,13 @@ export class AdminUsuariosComponent extends BasePaginatedComponent implements On
 
     onFiltrar(){
         this.loading = true;
-        this.apiService.store('admin-usuarios/filtrar', this.filtros).subscribe(usuarios => { 
-            this.usuarios = usuarios;
-            this.loading = false;;
-            this.modalRef?.hide();
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.store('admin-usuarios/filtrar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+                this.loading = false;;
+                this.modalRef?.hide();
+            }, error => {this.alertService.error(error); this.loading = false;});
 
     }
 

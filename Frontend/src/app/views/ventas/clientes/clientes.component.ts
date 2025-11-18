@@ -67,10 +67,12 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
 
     public filtrarClientes(){
         this.loading = true;
-        this.apiService.getAll('clientes', this.filtros).subscribe(clientes => { 
-            this.clientes = clientes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('clientes', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => { 
+                this.clientes = clientes;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
     
     public setOrden(columna: string) {
@@ -97,21 +99,25 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('cliente', this.cliente).subscribe(cliente => {
-            this.cliente = {};
-            this.saving = false;
-            this.alertService.success('Cliente actualizado', 'El cliente fue actualizado exitosamente.');
-        }, error => {this.alertService.error(error); this.saving = false;});
+        this.apiService.store('cliente', this.cliente)
+            .pipe(this.untilDestroyed())
+            .subscribe(cliente => {
+                this.cliente = {};
+                this.saving = false;
+                this.alertService.success('Cliente actualizado', 'El cliente fue actualizado exitosamente.');
+            }, error => {this.alertService.error(error); this.saving = false;});
     }
 
     public delete(cliente:any){
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('cliente/', cliente.id) .subscribe(data => {
-                for (let i = 0; i < this.clientes.data.length; i++) { 
-                    if (this.clientes.data[i].id == data.id )
-                        this.clientes.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('cliente/', cliente.id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.clientes.data.length; i++) { 
+                        if (this.clientes.data[i].id == data.id )
+                            this.clientes.data.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
     }
@@ -125,7 +131,9 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
 
     public descargarPersonas(){
         this.downloading = true;
-        this.apiService.export('clientes-personas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('clientes-personas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -144,7 +152,9 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
     public descargarEmpresas(){
         this.downloading = true;
         this.alertService.modal = false;
-        this.apiService.export('clientes-empresas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('clientes-empresas/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -164,7 +174,9 @@ export class ClientesComponent extends BasePaginatedComponent implements OnInit 
     public descargarExtranjeros(){
         this.downloading = true;
         this.alertService.modal = false;
-        this.apiService.export('clientes-extranjeros/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('clientes-extranjeros/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

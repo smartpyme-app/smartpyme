@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { FilterPipe } from '@pipes/filter.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -59,6 +60,9 @@ export class EmpresaComponent implements OnInit {
         }
     };
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -66,7 +70,9 @@ export class EmpresaComponent implements OnInit {
 
     ngOnInit() {
 
-        this.apiService.getAll('canales').subscribe(canales => {
+        this.apiService.getAll('canales')
+            .pipe(this.untilDestroyed())
+            .subscribe(canales => {
             this.canales = canales;
         }, error => { this.alertService.error(error); });
 
@@ -82,7 +88,9 @@ export class EmpresaComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
+        this.apiService.read('empresa/', this.apiService.auth_user().id_empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => {
             this.empresa = empresa;
 
             this.initializeCustomConfig();
@@ -100,7 +108,9 @@ export class EmpresaComponent implements OnInit {
 
         return new Promise((resolve, reject) => {
             this.saving = true;
-            this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+            this.apiService.store('empresa', this.empresa)
+                .pipe(this.untilDestroyed())
+                .subscribe(empresa => {
                 this.empresa = empresa;
 
                 this.initializeCustomConfig();
@@ -244,7 +254,9 @@ export class EmpresaComponent implements OnInit {
         let endpoint = 'empresa/imagenes';
 
 
-        this.apiService.store(endpoint, formData).subscribe(
+        this.apiService.store(endpoint, formData)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (response: any) => {
                 if (type === 'sello') {
                     this.empresa.sello = response.path;
@@ -269,7 +281,9 @@ export class EmpresaComponent implements OnInit {
         this.cheking = true;
 
         this.onSubmit().then(() => {
-            this.mhService.auth().subscribe(response => {
+            this.mhService.auth()
+                .pipe(this.untilDestroyed())
+                .subscribe(response => {
 
                 if (response.status == 'ERROR') {
                     this.cheking = false;
@@ -294,7 +308,9 @@ export class EmpresaComponent implements OnInit {
     public onCheckFE() {
         this.cheking = true;
 
-        this.mhService.verificarFirmador().subscribe(response => {
+        this.mhService.verificarFirmador()
+            .pipe(this.untilDestroyed())
+            .subscribe(response => {
             this.cheking = false;
             console.log(response.status)
             if (response.status === 200) {
@@ -316,7 +332,9 @@ export class EmpresaComponent implements OnInit {
 
     cargarEstadisticasPruebas() {
         if (this.empresa.fe_ambiente == '00') {
-            this.mhService.obtenerEstadisticasPruebasMasivas().subscribe(
+            this.mhService.obtenerEstadisticasPruebasMasivas()
+                .pipe(this.untilDestroyed())
+                .subscribe(
                 (data) => {
                     this.estadisticasPruebas = data.tipos;
                     this.estadoPruebasCompletado = data.estado.completado;
@@ -426,7 +444,9 @@ export class EmpresaComponent implements OnInit {
         // Llamar al endpoint con el tipo específico
         const endpoint = `mh/pruebas-masivas/documentos-base?tipo=${this.tipoSeleccionado}`;
 
-        this.apiService.getAll(endpoint).subscribe(
+        this.apiService.getAll(endpoint)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (data) => {
                 // Asegurarse de que data sea un array
                 this.documentosBase = Array.isArray(data) ? data : [];
@@ -483,7 +503,9 @@ export class EmpresaComponent implements OnInit {
             this.cantidadFaltante,
             this.documentoBaseSeleccionado?.id,
             this.correlativoInicial || undefined
-        ).subscribe(
+        )
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (response) => {
                 this.procesando = false;
 
@@ -599,7 +621,9 @@ export class EmpresaComponent implements OnInit {
             }
         });
 
-        this.apiService.store(config.endpoint, credentials).subscribe(
+        this.apiService.store(config.endpoint, credentials)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             response => {
                 this.saving = false;
                 this.loadAll();
@@ -676,7 +700,9 @@ export class EmpresaComponent implements OnInit {
         this.empresa.woocommerce_consumer_key = '';
         this.empresa.woocommerce_consumer_secret = '';
 
-        this.apiService.store('usuario/disconnect-woocommerce', {}).subscribe(
+        this.apiService.store('usuario/disconnect-woocommerce', {})
+            .pipe(this.untilDestroyed())
+            .subscribe(
             response => {
                 this.saving = false;
                 this.loadAll();
@@ -708,7 +734,9 @@ export class EmpresaComponent implements OnInit {
         this.empresa.shopify_store_url = '';
         this.empresa.shopify_consumer_secret = '';
 
-        this.apiService.store('usuario/disconnect-shopify', {}).subscribe(
+        this.apiService.store('usuario/disconnect-shopify', {})
+            .pipe(this.untilDestroyed())
+            .subscribe(
             response => {
                 this.saving = false;
                 this.loadAll();
@@ -762,7 +790,9 @@ export class EmpresaComponent implements OnInit {
                     timer: 3000
                 });
 
-                this.apiService.store('producto/exportar-woocommerce', {}).subscribe(
+                this.apiService.store('producto/exportar-woocommerce', {})
+                    .pipe(this.untilDestroyed())
+                    .subscribe(
                     response => {
                         Swal.fire({
                             title: 'Proceso iniciado',
@@ -806,7 +836,9 @@ export class EmpresaComponent implements OnInit {
                     timer: 3000
                 });
 
-                this.apiService.store('producto/exportar-shopify', {}).subscribe(
+                this.apiService.store('producto/exportar-shopify', {})
+                    .pipe(this.untilDestroyed())
+                    .subscribe(
                     response => {
                         Swal.fire({
                             title: 'Proceso iniciado',
@@ -835,7 +867,9 @@ export class EmpresaComponent implements OnInit {
             }
         });
 
-        this.apiService.export('productos/exportar/woocommerce', this.filtros).subscribe(
+        this.apiService.export('productos/exportar/woocommerce', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (data: Blob) => {
                 Swal.close();
 
@@ -880,7 +914,9 @@ export class EmpresaComponent implements OnInit {
             }
         });
 
-        this.apiService.export('productos/exportar/shopify', this.filtros).subscribe(
+        this.apiService.export('productos/exportar/shopify', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             (data: Blob) => {
                 Swal.close();
 
@@ -969,7 +1005,9 @@ export class EmpresaComponent implements OnInit {
         };
 
         // Usar timeout más corto ya que la respuesta es inmediata
-        this.apiService.storeWithTimeout('producto/importar-shopify', datosEmpresa, 30000).subscribe(
+        this.apiService.storeWithTimeout('producto/importar-shopify', datosEmpresa, 30000)
+            .pipe(this.untilDestroyed())
+            .subscribe(
             response => {
                 Swal.close();
 
@@ -1171,9 +1209,13 @@ export class EmpresaComponent implements OnInit {
 
     setCamposRenta() {
         this.onSubmit().then(() => {
-            this.mhService.auth().subscribe(response => {
+            this.mhService.auth()
+                .pipe(this.untilDestroyed())
+                .subscribe(response => {
 
-                this.apiService.getAll('set-campos-nuevos').subscribe((usuario) => {
+                this.apiService.getAll('set-campos-nuevos')
+                    .pipe(this.untilDestroyed())
+                    .subscribe((usuario) => {
                     this.alertService.success(
                         'Usuario guardado',
                         'El usuario fue guardado exitosamente.'

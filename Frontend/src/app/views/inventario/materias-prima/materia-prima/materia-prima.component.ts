@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { ProductoAjustesComponent } from '@views/inventario/productos/producto/h
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-materia-prima',
@@ -25,6 +26,9 @@ export class MateriaPrimaComponent implements OnInit {
 	public producto: any = {};
 	public categorias:any[] = [];
   public loading = false;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
@@ -50,7 +54,9 @@ export class MateriaPrimaComponent implements OnInit {
 	    else{
 	        // Optenemos el producto
 	        this.loading = true;
-	        this.apiService.read('materia-prima/', id).subscribe(producto => {
+	        this.apiService.read('materia-prima/', id)
+	          .pipe(this.untilDestroyed())
+	          .subscribe(producto => {
 	           this.producto = producto;
 	           this.loading = false;
 	        },error => {this.alertService.error(error);this.loading = false;});
@@ -60,7 +66,9 @@ export class MateriaPrimaComponent implements OnInit {
 
 	public onSubmit() {
 	    this.loading = true;
-	    this.apiService.store('materia-prima', this.producto).subscribe(producto => {
+	    this.apiService.store('materia-prima', this.producto)
+	      .pipe(this.untilDestroyed())
+	      .subscribe(producto => {
 	        this.loading = false;
 	    	if(!this.producto.id) {
 	    		this.producto = producto;

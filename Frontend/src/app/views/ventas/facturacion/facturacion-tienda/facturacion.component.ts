@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { BuscadorClientesComponent } from '@shared/parts/buscador-clientes/busca
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { FilterPipe } from '@pipes/filter.pipe';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -80,6 +81,8 @@ export class FacturacionComponent implements OnInit {
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -109,7 +112,7 @@ export class FacturacionComponent implements OnInit {
   }
 
   public loadData() {
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
 
@@ -126,7 +129,7 @@ export class FacturacionComponent implements OnInit {
 
     //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-      this.apiService.getAll('custom-fields', this.filtros).subscribe(
+      this.apiService.getAll('custom-fields', this.filtros).pipe(this.untilDestroyed()).subscribe(
         (customFields) => {
           // console.log('customFields', customFields);
           this.customFields = customFields;
@@ -146,7 +149,7 @@ export class FacturacionComponent implements OnInit {
       );
     }
 
-    this.apiService.getAll('bodegas/list').subscribe(
+    this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
         if (this.apiService.validateRole('super_admin', false)
@@ -162,7 +165,7 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('usuarios/list').subscribe(
+    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
 
@@ -175,7 +178,7 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('formas-de-pago/list').subscribe(
+    this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
       },
@@ -184,7 +187,7 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('canales/list').subscribe(
+    this.apiService.getAll('canales/list').pipe(this.untilDestroyed()).subscribe(
       (canales) => {
         this.canales = canales;
         this.venta.id_canal = this.canales[0].id;
@@ -194,7 +197,7 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('impuestos').subscribe(
+    this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
         this.impuestos = impuestos;
         if (!this.venta.impuestos || this.venta.iva == 0) {
@@ -207,7 +210,7 @@ export class FacturacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('proyectos/list').subscribe(
+    this.apiService.getAll('proyectos/list').pipe(this.untilDestroyed()).subscribe(
       (proyectos) => {
         this.proyectos = proyectos;
         this.loading = false;
@@ -220,7 +223,7 @@ export class FacturacionComponent implements OnInit {
   }
 
   public cargarDocumentos() {
-    this.apiService.getAll('documentos/list').subscribe(
+    this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
       (documentos) => {
         this.documentos = documentos;
         this.documentos = this.documentos.filter(
@@ -342,6 +345,7 @@ export class FacturacionComponent implements OnInit {
       const isCotizacion = this.venta.cotizacion == 1 ? true : false;
       this.apiService
         .read(endpoint, +this.route.snapshot.paramMap.get('id')!)
+        .pipe(this.untilDestroyed())
         .subscribe((venta) => {
           this.venta = venta;
           this.venta.cotizacion = isCotizacion ? 1 : 0;
@@ -374,6 +378,7 @@ export class FacturacionComponent implements OnInit {
       this.duplicarventa = true;
       this.apiService
         .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (venta) => {
             this.venta = venta;
@@ -414,7 +419,7 @@ export class FacturacionComponent implements OnInit {
     ) {
       this.facturarCotizacion = true;
 
-      this.apiService.getAll('impuestos').subscribe(
+      this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
         (impuestos) => {
           this.impuestos = impuestos;
 
@@ -422,7 +427,7 @@ export class FacturacionComponent implements OnInit {
           this.apiService.read(
             'cotizacionVentas/',
             +this.route.snapshot.queryParamMap.get('id_venta')!
-          ).subscribe(
+          ).pipe(this.untilDestroyed()).subscribe(
             (venta) => {
               this.venta = venta;
               this.venta.cobrar_impuestos = venta.cobrar_impuestos;
@@ -456,7 +461,7 @@ export class FacturacionComponent implements OnInit {
               }
 
               // Cargar los documentos y buscar una factura
-              this.apiService.getAll('documentos/list').subscribe(
+              this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
                 (documentos) => {
                   this.documentos = documentos;
                   this.documentos = this.documentos.filter(
@@ -513,10 +518,10 @@ export class FacturacionComponent implements OnInit {
 
     // Facturar orden de compra
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
-      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).subscribe((ordenCompra) => {
+      this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).pipe(this.untilDestroyed()).subscribe((ordenCompra) => {
         this.venta.num_orden = ordenCompra.id;
 
-        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).subscribe((empresa) => {
+        this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).pipe(this.untilDestroyed()).subscribe((empresa) => {
           if(empresa.length > 0){
             this.setCliente(empresa[0]);
             console.log(empresa);
@@ -555,7 +560,7 @@ export class FacturacionComponent implements OnInit {
     // Método para procesar productos de orden de compra
   public procesarProductosOrdenCompra(detalles: any[]) {
     detalles.forEach((detalleCompra: any) => {
-      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).subscribe((producto) => {
+      this.apiService.getAll('producto/buscar-by-code/'+ detalleCompra.codigo).pipe(this.untilDestroyed()).subscribe((producto) => {
         if (producto) {
           let detalle: any = {};
           detalle.cantidad = detalleCompra.cantidad;
@@ -618,6 +623,7 @@ export class FacturacionComponent implements OnInit {
       this.loading = true;
       this.apiService
         .read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (evento) => {
             this.evento = evento;
@@ -627,6 +633,7 @@ export class FacturacionComponent implements OnInit {
             this.evento.productos.forEach((detalleProducto: any) => {
               this.apiService
                 .read('producto/', detalleProducto.id_producto)
+                .pipe(this.untilDestroyed())
                 .subscribe(
                   (producto) => {
                     let detalle: any = {};
@@ -996,7 +1003,7 @@ export class FacturacionComponent implements OnInit {
         this.venta.correlativo = documento.correlativo;
 
         if (this.venta.nombre_documento == 'Factura de exportación') {
-            this.apiService.getAll('recintos').subscribe(
+            this.apiService.getAll('recintos').pipe(this.untilDestroyed()).subscribe(
                 (recintos) => {
                     this.recintos = recintos;
                 },
@@ -1004,7 +1011,7 @@ export class FacturacionComponent implements OnInit {
                     this.alertService.error(error);
                 }
             );
-            this.apiService.getAll('regimenes').subscribe(
+            this.apiService.getAll('regimenes').pipe(this.untilDestroyed()).subscribe(
                 (regimenes) => {
                     this.regimenes = regimenes;
                 },
@@ -1012,7 +1019,7 @@ export class FacturacionComponent implements OnInit {
                     this.alertService.error(error);
                 }
             );
-            this.apiService.getAll('incoterms').subscribe(
+            this.apiService.getAll('incoterms').pipe(this.untilDestroyed()).subscribe(
                 (incoterms) => {
                     this.incoterms = incoterms;
                 },
@@ -1115,7 +1122,7 @@ export class FacturacionComponent implements OnInit {
       });
     }
 
-    this.apiService.store('facturacion', this.venta).subscribe(
+    this.apiService.store('facturacion', this.venta).pipe(this.untilDestroyed()).subscribe(
       (venta) => {
 
         if (
@@ -1158,6 +1165,7 @@ export class FacturacionComponent implements OnInit {
             ) {
               this.apiService
                 .store('contabilidad/partida/venta', venta)
+                .pipe(this.untilDestroyed())
                 .subscribe(
                   (venta) => { },
                   (error) => {
@@ -1190,7 +1198,7 @@ export class FacturacionComponent implements OnInit {
 
   public supervisorCheck() {
     this.loading = true;
-    this.apiService.store('usuario-validar', this.supervisor).subscribe(
+    this.apiService.store('usuario-validar', this.supervisor).pipe(this.untilDestroyed()).subscribe(
       (supervisor) => {
         this.modalRef.hide();
         this.cargarDatosIniciales();
@@ -1244,7 +1252,7 @@ export class FacturacionComponent implements OnInit {
 
   enviarDTE() {
     this.sending = true;
-    this.apiService.store('enviarDTE', this.venta).subscribe(
+    this.apiService.store('enviarDTE', this.venta).pipe(this.untilDestroyed()).subscribe(
       (dte) => {
         this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
         this.sending = false;
@@ -1266,7 +1274,7 @@ export class FacturacionComponent implements OnInit {
       // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
-      this.apiService.getAll('documentos/list').subscribe(
+      this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
         (documentos) => {
           this.documentos = documentos.filter(
             (x: any) => x.id_sucursal == this.venta.id_sucursal
@@ -1333,7 +1341,7 @@ export class FacturacionComponent implements OnInit {
 
 
   public verificarAccesoPropina() {
-    this.funcionalidadesService.verificarAcceso('cobro-propina').subscribe(
+    this.funcionalidadesService.verificarAcceso('cobro-propina').pipe(this.untilDestroyed()).subscribe(
         (acceso) => {
             this.tieneAccesoPropina = acceso;
         },

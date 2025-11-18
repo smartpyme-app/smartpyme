@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-ver-boletas',
@@ -33,6 +34,8 @@ export class VerBoletasComponent implements OnInit {
   public planilla: any = {};
   public pdfUrl: SafeResourceUrl | null = null;
   public loading: boolean = false;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private route: ActivatedRoute,
@@ -44,7 +47,7 @@ export class VerBoletasComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(this.untilDestroyed()).subscribe((params) => {
       if (params['id']) {
         this.planillaId = params['id'];
         this.cargarPlanilla();
@@ -59,7 +62,7 @@ export class VerBoletasComponent implements OnInit {
         id: this.planillaId,
     };
 
-    this.apiService.getAll('planillas/detalles', params).subscribe({
+    this.apiService.getAll('planillas/detalles', params).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         this.planilla = response;
       },
@@ -71,7 +74,7 @@ export class VerBoletasComponent implements OnInit {
 
   cargarBoletas() {
     this.loading = true;
-    this.apiService.generatePayrollSlips(this.planillaId).subscribe({
+    this.apiService.generatePayrollSlips(this.planillaId).pipe(this.untilDestroyed()).subscribe({
       next: (response: Blob) => {
         const url = URL.createObjectURL(response);
         this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);

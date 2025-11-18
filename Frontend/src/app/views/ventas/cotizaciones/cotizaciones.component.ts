@@ -57,9 +57,11 @@ export class CotizacionesComponent extends BasePaginatedComponent implements OnI
 
     this.loadAll();
 
-    this.apiService.getAll('clientes/list').subscribe(clientes => {
-      this.clientes = clientes;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('clientes/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(clientes => {
+        this.clientes = clientes;
+      }, error => { this.alertService.error(error); });
   }
 
   public setOrden(columna: string) {
@@ -93,11 +95,13 @@ export class CotizacionesComponent extends BasePaginatedComponent implements OnI
     this.loading = true;
     if (!this.filtros.id_cliente) this.filtros.id_cliente = '';
   
-    this.apiService.getAll('cotizaciones', this.filtros).subscribe(ventas => {
-      this.ventas = this.normalizeVentas(ventas);
-      this.loading = false;
-      if (this.modalRef) this.modalRef.hide();
-    }, error => { this.alertService.error(error); this.loading = false; });
+    this.apiService.getAll('cotizaciones', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(ventas => {
+        this.ventas = this.normalizeVentas(ventas);
+        this.loading = false;
+        if (this.modalRef) this.modalRef.hide();
+      }, error => { this.alertService.error(error); this.loading = false; });
   }
 
   private normalizeVentas(ventas: any) {
@@ -120,20 +124,24 @@ public setEstado(cotizacion: any) {
   // Agregamos el distintivo
   cotizacion.cotizacion_id = 1;
   
-  this.apiService.store('cotizacion', cotizacion).subscribe(
-    response => {
-      this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
-    }, 
-    error => {
-      this.alertService.error(error);
-    }
-  );
+  this.apiService.store('cotizacion', cotizacion)
+    .pipe(this.untilDestroyed())
+    .subscribe(
+      response => {
+        this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
+      }, 
+      error => {
+        this.alertService.error(error);
+      }
+    );
  }
 
 
   public delete(id: number) {
     if (confirm('¿Desea eliminar el Registro?')) {
-      this.apiService.delete('venta/', id).subscribe(data => {
+      this.apiService.delete('venta/', id)
+        .pipe(this.untilDestroyed())
+        .subscribe(data => {
         for (let i = 0; i < this.ventas['data'].length; i++) {
           if (this.ventas['data'][i].id == data.id)
             this.ventas['data'].splice(i, 1);
@@ -156,16 +164,20 @@ public setEstado(cotizacion: any) {
   openModalEdit(template: TemplateRef<any>, venta: any) {
     this.venta = venta;
 
-    this.apiService.getAll('documentos').subscribe(documentos => {
-      this.documentos = documentos;
-    }, error => { this.alertService.error(error); });
+    this.apiService.getAll('documentos')
+      .pipe(this.untilDestroyed())
+      .subscribe(documentos => {
+        this.documentos = documentos;
+      }, error => { this.alertService.error(error); });
 
     this.modalRef = this.modalService.show(template);
   }
 
   public onSubmit() {
     this.loading = true;
-    this.apiService.store('cotizacion', this.venta).subscribe(venta => {
+    this.apiService.store('cotizacion', this.venta)
+      .pipe(this.untilDestroyed())
+      .subscribe(venta => {
       this.venta = {};
       this.modalRef.hide();
       this.loading = false;
@@ -176,21 +188,27 @@ public setEstado(cotizacion: any) {
 
   public openFilter(template: TemplateRef<any>) {
     if (!this.sucursales.length) {
-      this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-        this.sucursales = sucursales;
-      }, error => { this.alertService.error(error); });
+      this.apiService.getAll('sucursales/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(sucursales => {
+          this.sucursales = sucursales;
+        }, error => { this.alertService.error(error); });
     }
 
     if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-        this.usuarios = usuarios;
-      }, error => { this.alertService.error(error); });
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(usuarios => {
+          this.usuarios = usuarios;
+        }, error => { this.alertService.error(error); });
     }
 
     if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
-      this.apiService.getAll('proyectos/list').subscribe(proyectos => {
-        this.proyectos = proyectos;
-      }, error => { this.alertService.error(error); });
+      this.apiService.getAll('proyectos/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(proyectos => {
+          this.proyectos = proyectos;
+        }, error => { this.alertService.error(error); });
     }
 
     this.modalRef = this.modalService.show(template);
@@ -206,7 +224,9 @@ public setEstado(cotizacion: any) {
     this.downloading = true;
     //agregar a filtros que es una cotizacion_id
     this.filtros.cotizacion_id = 1;
-    this.apiService.export('cotizaciones/exportar', this.filtros).subscribe((data: Blob) => {
+    this.apiService.export('cotizaciones/exportar', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe((data: Blob) => {
       const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -222,14 +242,18 @@ public setEstado(cotizacion: any) {
   }
 
   changeStateCotizacion(ventaId: number, estado: string) {
-    this.apiService.store('cotizacion/changeState', { id: ventaId, estado: estado }).subscribe(data => {
+    this.apiService.store('cotizacion/changeState', { id: ventaId, estado: estado })
+      .pipe(this.untilDestroyed())
+      .subscribe(data => {
         this.alertService.success(`Cotización ${estado}`, `La cotización fue ${estado} exitosamente.`);
       this.filtrarVentas();
     }, error => { this.alertService.error(error); });
   }
 
   public duplicarCotizacion(id: number) {
-    this.apiService.store('cotizacion/duplicar', { id: id }).subscribe(data => {
+    this.apiService.store('cotizacion/duplicar', { id: id })
+      .pipe(this.untilDestroyed())
+      .subscribe(data => {
       this.alertService.success('Cotización duplicada', 'La cotización fue duplicada exitosamente.');
       this.filtrarVentas();
     }, error => { this.alertService.error(error); });

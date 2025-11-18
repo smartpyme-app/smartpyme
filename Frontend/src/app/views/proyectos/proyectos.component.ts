@@ -49,9 +49,11 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
     }
 
     ngOnInit() {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => { 
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
 
         this.loadAll();
     }
@@ -88,13 +90,15 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
             this.filtros.id_cliente = '';
         }
 
-        this.apiService.getAll('proyectos', this.filtros).subscribe(proyectos => { 
-            this.proyectos = proyectos;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('proyectos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(proyectos => { 
+                this.proyectos = proyectos;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
 
 
@@ -106,9 +110,11 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
 
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-lg', backdrop: 'static'});
     }
@@ -138,12 +144,14 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('proyecto/', proyecto.id) .subscribe(data => {
-                    for (let i = 0; i < this.proyectos.data.length; i++) { 
-                        if (this.proyectos.data[i].id == data.id )
-                            this.proyectos.data.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });4
+                this.apiService.delete('proyecto/', proyecto.id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(data => {
+                        for (let i = 0; i < this.proyectos.data.length; i++) { 
+                            if (this.proyectos.data[i].id == data.id )
+                                this.proyectos.data.splice(i, 1);
+                        }
+                    }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -153,7 +161,9 @@ export class ProyectosComponent extends BasePaginatedComponent implements OnInit
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('proyecto', this.proyecto).subscribe(proyecto => {
+        this.apiService.store('proyecto', this.proyecto)
+            .pipe(this.untilDestroyed())
+            .subscribe(proyecto => {
             if (!this.proyecto.id) {
                 this.loadAll();
                 this.alertService.success('proyecto creada', 'El proyecto fue añadido exitosamente.');

@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -27,6 +28,9 @@ export class TransaccionComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -35,7 +39,9 @@ export class TransaccionComponent implements OnInit {
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+        this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => {this.alertService.error(error);});
 
@@ -45,7 +51,9 @@ export class TransaccionComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('banco/transaccion/', id).subscribe(transaccion => {
+            this.apiService.read('banco/transaccion/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(transaccion => {
                 this.transaccion = transaccion;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -64,7 +72,9 @@ export class TransaccionComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
-        this.apiService.store('banco/transaccion', this.transaccion).subscribe(transaccion => {
+        this.apiService.store('banco/transaccion', this.transaccion)
+          .pipe(this.untilDestroyed())
+          .subscribe(transaccion => {
             if (!this.transaccion.id) {
                 this.alertService.success('Transacción guardado', 'El transaccion fue guardado exitosamente.');
             }else{
@@ -84,14 +94,18 @@ export class TransaccionComponent implements OnInit {
         }
 
         this.loading = true;
-        this.apiService.store('banco/transaccion', formData).subscribe(transaccion => {
+        this.apiService.store('banco/transaccion', formData)
+          .pipe(this.untilDestroyed())
+          .subscribe(transaccion => {
             this.transaccion.url_referencia = transaccion.url_referencia;
             this.loading = false;
             this.alertService.success('Documento guardado', 'La transaccion fue actualizada exitosamente.');
         
             //Generar partida contable
             if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                this.apiService.store('contabilidad/partida/transaccion', transaccion).subscribe(transaccion => {
+                this.apiService.store('contabilidad/partida/transaccion', transaccion)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(transaccion => {
                 },error => {this.alertService.error(error);});
             }
 

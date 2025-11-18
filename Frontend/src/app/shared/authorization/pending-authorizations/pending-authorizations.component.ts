@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { AuthorizationService, Authorization } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
 import { CommonModule } from '@angular/common';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
   selector: 'app-pending-authorizations',
@@ -18,6 +19,9 @@ export class PendingAuthorizationsComponent implements OnInit {
   notes: string = '';
   processingAction: 'approve' | 'reject' | null = null;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private authorizationService: AuthorizationService,
     private alertService: AlertService
@@ -29,18 +33,20 @@ export class PendingAuthorizationsComponent implements OnInit {
 
   loadPendingAuthorizations() {
     this.loading = true;
-    this.authorizationService.getPendingAuthorizations().subscribe({
-      next: (response) => {
-        if (response.ok) {
-          this.authorizations = response.data;
+    this.authorizationService.getPendingAuthorizations()
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          if (response.ok) {
+            this.authorizations = response.data;
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
         }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    });
+      });
   }
 
   openApprovalModal(authorization: Authorization, action: 'approve' | 'reject') {
@@ -66,21 +72,23 @@ export class PendingAuthorizationsComponent implements OnInit {
       ? this.authorizationService.approveAuthorization(code, this.authorizationCode, this.notes)
       : this.authorizationService.rejectAuthorization(code, this.authorizationCode, this.notes);
 
-    request.subscribe({
-      next: (response) => {
-        if (response.ok) {
-          const action = this.processingAction === 'approve' ? 'aprobada' : 'rechazada';
-          this.alertService.success('success',`Autorización ${action} exitosamente`);
-          this.loadPendingAuthorizations();
-          this.closeApprovalModal();
+    request
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          if (response.ok) {
+            const action = this.processingAction === 'approve' ? 'aprobada' : 'rechazada';
+            this.alertService.success('success',`Autorización ${action} exitosamente`);
+            this.loadPendingAuthorizations();
+            this.closeApprovalModal();
+          }
+          this.loading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
         }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    });
+      });
   }
 
   closeApprovalModal() {

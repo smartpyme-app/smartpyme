@@ -58,10 +58,12 @@ export class EmpresasComponent extends BasePaginatedComponent implements OnInit 
 
     public filtrarEmpresas(){
         this.loading = true;
-        this.apiService.getAll('empresas', this.filtros).subscribe(empresas => { 
-            this.empresas = empresas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.getAll('empresas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresas => { 
+                this.empresas = empresas;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false;});
     }
 
     public setOrden(columna: string) {
@@ -77,20 +79,24 @@ export class EmpresasComponent extends BasePaginatedComponent implements OnInit 
 
 
     public setEstado(empresa:any){
-        this.apiService.store('empresa', empresa).subscribe(empresa => { 
-            this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('empresa', empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => { 
+                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('empresa/', id) .subscribe(data => {
-                for (let i = 0; i < this.empresas['data'].length; i++) { 
-                    if (this.empresas['data'][i].id == data.id )
-                        this.empresas['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('empresa/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.empresas['data'].length; i++) { 
+                        if (this.empresas['data'][i].id == data.id )
+                            this.empresas['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -98,7 +104,9 @@ export class EmpresasComponent extends BasePaginatedComponent implements OnInit 
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+        this.apiService.store('empresa', this.empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => {
             this.loadAll();
             this.saving = false;
             if(!this.empresa.id){

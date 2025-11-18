@@ -86,32 +86,38 @@ export class VentasComponent extends BasePaginatedComponent implements OnInit {
     this.loadAll();
     this.getNumsIds();
 
-    this.apiService.getAll('sucursales/list').subscribe(
-      (sucursales) => {
-        this.sucursales = sucursales;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (sucursales) => {
+          this.sucursales = sucursales;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
-    this.apiService.getAll('categorias/list').subscribe(
-      (categorias) => {
-        this.categorias = categorias;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('categorias/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (categorias) => {
+          this.categorias = categorias;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
-    this.apiService.getAll('marcas/list').subscribe(
-      (marcas) => {
-        this.marcas = marcas;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('marcas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (marcas) => {
+          this.marcas = marcas;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
   }
 
   public abrirModalFiltrosAcumulado(template: TemplateRef<any>) {

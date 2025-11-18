@@ -47,7 +47,8 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
         this.productosInput$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
-            switchMap(term => this.searchProductos(term))
+            switchMap(term => this.searchProductos(term)),
+            this.untilDestroyed()
         ).subscribe(productos => {
             this.productos = productos;
             this.loadingProductos = false;
@@ -63,7 +64,9 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
         const empresa = this.apiService.auth_user()?.empresa;
         this.tieneShopify = !!empresa?.shopify_store_url;
 
-        this.route.queryParams.subscribe(params => {
+        this.route.queryParams
+            .pipe(this.untilDestroyed())
+            .subscribe(params => {
             this.filtros = {
                 search: params['search'] || '',
                 id_bodega: +params['id_bodega'] || '',
@@ -81,9 +84,11 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
         });
 
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
-            this.bodegas = bodegas;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('bodegas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+            }, error => {this.alertService.error(error); });
 
     }
 
@@ -120,10 +125,12 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
             queryParamsHandling: 'merge',
         });
         this.loading = true;
-        this.apiService.getAll('ajustes', this.filtros).subscribe(ajustes => {
-            this.ajustes = ajustes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('ajustes', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajustes => {
+                this.ajustes = ajustes;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -175,7 +182,9 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
 
     // Cargar inventarios de un producto específico
     private loadProductoInventarios(productoId: number) {
-        this.apiService.getAll(`productos/${productoId}/inventarios`).subscribe(inventarios => {
+        this.apiService.getAll(`productos/${productoId}/inventarios`)
+            .pipe(this.untilDestroyed())
+            .subscribe(inventarios => {
             if (this.producto && this.producto.id == productoId) {
                 this.producto.inventarios = inventarios;
             }
@@ -208,18 +217,24 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('productos/list').subscribe(productos => {
-            this.productos = productos;
-        }, error => {this.alertService.error(error); });
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('productos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(productos => {
+                this.productos = productos;
+            }, error => {this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => {
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('ajuste', this.ajuste).subscribe(ajuste => {
+        this.apiService.store('ajuste', this.ajuste)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
             this.modalRef.hide();
@@ -230,7 +245,9 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
 
     public delete(id:number) {
         this.saving = true;
-        this.apiService.delete('ajuste/', id).subscribe(ajuste => {
+        this.apiService.delete('ajuste/', id)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.ajuste = {};
             this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
             this.modalRef.hide();
@@ -240,14 +257,18 @@ export class AjustesComponent extends BaseFilteredPaginatedComponent implements 
     }
 
     generarPartidaContable(ajuste:any){
-        this.apiService.store('contabilidad/partida/ajuste', ajuste).subscribe(ajuste => {
+        this.apiService.store('contabilidad/partida/ajuste', ajuste)
+            .pipe(this.untilDestroyed())
+            .subscribe(ajuste => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('ajustes/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ajustes/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

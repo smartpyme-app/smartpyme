@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { LicenciaEmpresasComponent } from './empresas/licencia-empresas.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-licencia',
@@ -16,11 +17,12 @@ import { ApiService } from '@services/api.service';
     
 })
 export class LicenciaComponent implements OnInit {
-
     public licencia:any = {};
     public loading = false;
     public saving = false;
     modalRef?: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -39,7 +41,7 @@ export class LicenciaComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('licencia/', id).subscribe(licencia => {
+            this.apiService.read('licencia/', id).pipe(this.untilDestroyed()).subscribe(licencia => {
                 this.licencia = licencia;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -52,7 +54,7 @@ export class LicenciaComponent implements OnInit {
     public onSubmit(){
         this.saving = true;
 
-        this.apiService.store('licencia', this.licencia).subscribe(licencia => {
+        this.apiService.store('licencia', this.licencia).pipe(this.untilDestroyed()).subscribe(licencia => {
             if (!this.licencia.id) {
                 this.alertService.success('Licencia guardado', 'El licencia fue guardado exitosamente.');
             }else{

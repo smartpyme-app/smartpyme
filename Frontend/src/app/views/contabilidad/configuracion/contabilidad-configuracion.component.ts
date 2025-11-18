@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { GastosCategoriasComponent } from '../../compras/gastos/categorias/gastos-categorias.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-contabilidad-configuracion',
@@ -27,6 +28,9 @@ export class ContabilidadConfiguracionComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
@@ -40,7 +44,9 @@ export class ContabilidadConfiguracionComponent implements OnInit {
         this.loading = true;
         
         // Cargar catálogo y configuración en paralelo
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+        this.apiService.getAll('catalogo/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(catalogo => {
             this.catalogo = catalogo;
             this.loadingCatalogo = false;
         }, error => {
@@ -53,7 +59,9 @@ export class ContabilidadConfiguracionComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.read('contabilidad/configuracion/', this.apiService.auth_user().id_empresa).subscribe(configuracion => {
+        this.apiService.read('contabilidad/configuracion/', this.apiService.auth_user().id_empresa)
+          .pipe(this.untilDestroyed())
+          .subscribe(configuracion => {
             this.configuracion = configuracion;
             if (!this.configuracion.id) {
                 this.configuracion = {};
@@ -70,7 +78,9 @@ export class ContabilidadConfiguracionComponent implements OnInit {
 
         public onSubmit() {
             this.saving = true;
-            this.apiService.store('contabilidad/configuracion', this.configuracion).subscribe(configuracion => {
+            this.apiService.store('contabilidad/configuracion', this.configuracion)
+              .pipe(this.untilDestroyed())
+              .subscribe(configuracion => {
                 if (!this.configuracion.id) {
                     this.alertService.success('Configuracion creada', 'El configuracion fue añadido exitosamente.');
                 }else{

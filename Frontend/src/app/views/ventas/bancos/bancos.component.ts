@@ -1,10 +1,11 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -24,6 +25,9 @@ export class BancosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -34,10 +38,12 @@ export class BancosComponent implements OnInit {
 
     public loadAll() {        
         this.loading = true;
-        this.apiService.getAll('bancos').subscribe(bancos => { 
-            this.bancos = bancos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('bancos')
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => { 
+                this.bancos = bancos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public onSubmit(nombre:any){
@@ -46,11 +52,13 @@ export class BancosComponent implements OnInit {
         this.banco.nombre = nombre;
         this.banco.id_empresa = this.apiService.auth_user().id_empresa;
 
-        this.apiService.store('banco', this.banco).subscribe(banco => {
-            this.alertService.success('Bancos actualizadas', 'Los bancos fueron actualizadas exitosamente.');
-            this.saving = false;
-            this.modalRef.hide();
-        }, error => {this.alertService.error(error); this.saving = false;});
+        this.apiService.store('banco', this.banco)
+            .pipe(this.untilDestroyed())
+            .subscribe(banco => {
+                this.alertService.success('Bancos actualizadas', 'Los bancos fueron actualizadas exitosamente.');
+                this.saving = false;
+                this.modalRef.hide();
+            }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 }

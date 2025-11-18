@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -34,6 +35,8 @@ export class CrearEmpresaComponent implements OnInit {
     public actividad_economicas:any = [];
 
     modalRef!: BsModalRef;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -46,12 +49,12 @@ export class CrearEmpresaComponent implements OnInit {
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-        this.apiService.getAll('clientes/list').subscribe((clientes) => {
+        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe((clientes) => {
             this.clientes = clientes;
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
 
-        this.apiService.getAll('documentos/list').subscribe((documentos) => {
+        this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe((documentos) => {
             this.documentos = documentos;
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
@@ -62,7 +65,7 @@ export class CrearEmpresaComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('empresa/', id).subscribe(empresa => {
+            this.apiService.read('empresa/', id).pipe(this.untilDestroyed()).subscribe(empresa => {
                 this.empresa = empresa;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -99,7 +102,7 @@ export class CrearEmpresaComponent implements OnInit {
     public onSubmit() {
         this.saving = true;
         this.empresa.isRegister = false;
-        this.apiService.store('empresa', this.empresa).subscribe(empresa => {
+        this.apiService.store('empresa', this.empresa).pipe(this.untilDestroyed()).subscribe(empresa => {
             this.saving = false;
             if(!this.empresa.id){
                 this.empresa = empresa;
@@ -113,7 +116,7 @@ export class CrearEmpresaComponent implements OnInit {
                 let data:any = {};
                 data.id_empresa = empresa.id;
                 data.id_licencia = this.apiService.auth_user().empresa.licencia.id;                
-                this.apiService.store('licencia/empresa', data).subscribe(empresa => {
+                this.apiService.store('licencia/empresa', data).pipe(this.untilDestroyed()).subscribe(empresa => {
                 },error => {this.alertService.error(error); this.saving = false; });
             }
         },error => {this.alertService.error(error); this.saving = false; });

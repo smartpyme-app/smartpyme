@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto-inventarios',
@@ -28,6 +29,9 @@ export class ProductoInventariosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(private apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
@@ -44,7 +48,9 @@ export class ProductoInventariosComponent implements OnInit {
     openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -63,7 +69,9 @@ export class ProductoInventariosComponent implements OnInit {
     public onSubmit() {
         this.loading = true;
 
-        this.apiService.store('inventario', this.inventario).subscribe(inventario => {
+        this.apiService.store('inventario', this.inventario)
+          .pipe(this.untilDestroyed())
+          .subscribe(inventario => {
             if(!this.inventario.id) {
                 this.producto.inventarios.push(inventario);
                 this.alertService.success('Inventario creado', 'El inventario fue añadido exitosamente.');
@@ -84,7 +92,9 @@ export class ProductoInventariosComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('inventario/', id) .subscribe(data => {
+            this.apiService.delete('inventario/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.producto.inventarios.length; i++) {
                     if (this.producto.inventarios[i].id == data.id )
                         this.producto.inventarios.splice(i, 1);

@@ -411,18 +411,20 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
     this.suscripcion.empresa = empresa;
     this.tabActivo = 'n1co'; // Establecer tab por defecto
 
-    this.apiService.getAll(`suscripciones/${suscripcion.id}/pagos`).subscribe({
-      next: (response) => {
-        console.log('Historial de pagos:', response); // Para debug
-        this.historialPagos = response;
-        this.loadingHistorial = false;
-      },
-      error: (error) => {
-        console.error('Error cargando historial:', error); // Para debug
-        this.alertService.error('Error al cargar el historial de pagos');
-        this.loadingHistorial = false;
-      },
-    });
+    this.apiService.getAll(`suscripciones/${suscripcion.id}/pagos`)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response) => {
+          console.log('Historial de pagos:', response); // Para debug
+          this.historialPagos = response;
+          this.loadingHistorial = false;
+        },
+        error: (error) => {
+          console.error('Error cargando historial:', error); // Para debug
+          this.alertService.error('Error al cargar el historial de pagos');
+          this.loadingHistorial = false;
+        },
+      });
 
     this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
   }
@@ -458,18 +460,25 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
 
   public descargar(){
     this.downloading = true;
-    this.apiService.export('suscripciones/exportar', this.filtros).subscribe((data:Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'suscripciones.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloading = false;
-      }, (error) => { this.alertService.error(error); this.downloading = false; }
-    );
+    this.apiService.export('suscripciones/exportar', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (data: Blob) => {
+          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'suscripciones.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.downloading = false;
+        }
+      });
   }
 }

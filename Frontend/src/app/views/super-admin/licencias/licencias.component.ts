@@ -42,9 +42,11 @@ export class LicenciasComponent extends BasePaginatedComponent implements OnInit
     }
 
     ngOnInit() {
-        this.apiService.getAll('empresas/list').subscribe(empresas => { 
-            this.empresas = empresas;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('empresas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(empresas => { 
+                this.empresas = empresas;
+            }, error => {this.alertService.error(error); });
 
         this.loadAll();
     }
@@ -61,10 +63,12 @@ export class LicenciasComponent extends BasePaginatedComponent implements OnInit
     }
 
     public filtrarLicencias(){
-        this.apiService.getAll('licencias', this.filtros).subscribe(licencias => { 
-            this.licencias = licencias;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('licencias', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(licencias => { 
+                this.licencias = licencias;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public setOrden(columna: string) {
@@ -80,20 +84,24 @@ export class LicenciasComponent extends BasePaginatedComponent implements OnInit
 
 
     public setEstado(licencia:any){
-        this.apiService.store('licencia', licencia).subscribe(licencia => { 
-            this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('licencia', licencia)
+            .pipe(this.untilDestroyed())
+            .subscribe(licencia => { 
+                this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('licencia/', id) .subscribe(data => {
-                for (let i = 0; i < this.licencias['data'].length; i++) { 
-                    if (this.licencias['data'][i].id == data.id )
-                        this.licencias['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('licencia/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.licencias['data'].length; i++) { 
+                        if (this.licencias['data'][i].id == data.id )
+                            this.licencias['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -101,7 +109,9 @@ export class LicenciasComponent extends BasePaginatedComponent implements OnInit
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('licencia', this.licencia).subscribe(licencia => {
+        this.apiService.store('licencia', this.licencia)
+            .pipe(this.untilDestroyed())
+            .subscribe(licencia => {
             this.loadAll();
             this.saving = false;
             if(!this.licencia.id){

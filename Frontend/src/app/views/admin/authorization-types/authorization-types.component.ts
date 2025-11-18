@@ -1,8 +1,9 @@
 // components/admin/authorization-types/authorization-types.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { AuthorizationService, AuthorizationType } from '@services/Authorization/authorization.service';
 import { AlertService } from '@services/alert.service';
 import { CommonModule } from '@angular/common';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
   selector: 'app-authorization-types',
@@ -30,6 +31,9 @@ export class AuthorizationTypesComponent implements OnInit {
   assignedUsers: any[] = [];
   selectedUserIds: number[] = [];
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private authorizationService: AuthorizationService,
     private alertService: AlertService
@@ -41,7 +45,9 @@ export class AuthorizationTypesComponent implements OnInit {
 
   loadTypes() {
     this.loading = true;
-    this.authorizationService.getAuthorizationTypes().subscribe({
+    this.authorizationService.getAuthorizationTypes()
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         this.types = response.data;
         this.loading = false;
@@ -75,7 +81,9 @@ export class AuthorizationTypesComponent implements OnInit {
       this.loading = false;
     } else {
       // Crear nuevo tipo
-      this.authorizationService.createAuthorizationType(this.typeForm).subscribe({
+      this.authorizationService.createAuthorizationType(this.typeForm)
+        .pipe(this.untilDestroyed())
+        .subscribe({
         next: (response) => {
           if (response.ok) {
             this.alertService.success('success','Tipo de autorización creado exitosamente');
@@ -114,7 +122,9 @@ export class AuthorizationTypesComponent implements OnInit {
     this.loading = true;
     
     // Cargar usuarios disponibles
-    this.authorizationService.getAvailableUsers(typeId).subscribe({
+    this.authorizationService.getAvailableUsers(typeId)
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         if (response.ok) {
           this.availableUsers = response.data;
@@ -124,7 +134,9 @@ export class AuthorizationTypesComponent implements OnInit {
     });
 
     // Cargar usuarios asignados
-    this.authorizationService.getAuthorizationTypeUsers(typeId).subscribe({
+    this.authorizationService.getAuthorizationTypeUsers(typeId)
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         if (response.ok) {
           this.assignedUsers = response.data;
@@ -156,7 +168,9 @@ export class AuthorizationTypesComponent implements OnInit {
     this.authorizationService.assignUsersToAuthorizationType(
       this.selectedType.id, 
       this.selectedUserIds
-    ).subscribe({
+    )
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (response) => {
         if (response.ok) {
           this.alertService.success('success','Usuarios asignados exitosamente');

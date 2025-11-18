@@ -44,11 +44,11 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
         super(apiService, alertService);
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
+    protected override getPaginatedData(): PaginatedResponse | null {
         return this.productosData;
     }
 
-    protected setPaginatedData(data: PaginatedResponse): void {
+    protected override setPaginatedData(data: PaginatedResponse): void {
         this.productosData = data;
     }
 
@@ -58,7 +58,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
               .pipe(
                 debounceTime(500),
                 filter((query: string) => query.trim().length > 0),
-                switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+                switchMap((query: any) => this.apiService.read('productos/buscar/', query)),
+                this.untilDestroyed()
               )
               .subscribe((results: any[]) => {
                 this.productos = Array.isArray(results) ? results : [];
@@ -72,7 +73,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
 
     public openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
@@ -95,7 +96,7 @@ export class TiendaVentaProductoComponent extends BasePaginatedComponent impleme
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

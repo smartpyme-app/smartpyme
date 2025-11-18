@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
 import { ChatService } from '@services/chat/chat.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
 // import {
@@ -33,19 +34,24 @@ export class AppComponent implements OnInit {
     modalRefStarTour!: BsModalRef;
     modalRefEndTour!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
         /* private tourService: TourService, */ private modalService: BsModalService, private chatService: ChatService,
         private constantsService: ConstantsService,
     ) {
 
         if (this.updates.isEnabled) {
-            this.updates.versionUpdates.subscribe((event: any) => {
-                if (event.type === 'VERSION_READY') {
-                    // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
-                      this.updates.activateUpdate().then(() => document.location.reload());
-                    // }
-                }
-            });
+            this.updates.versionUpdates
+                .pipe(this.untilDestroyed())
+                .subscribe((event: any) => {
+                    if (event.type === 'VERSION_READY') {
+                        // if (confirm('Hay una nueva versión disponible. ¿Quieres actualizar?')) {
+                          this.updates.activateUpdate().then(() => document.location.reload());
+                        // }
+                    }
+                });
         }
     }
     
@@ -175,22 +181,28 @@ export class AppComponent implements OnInit {
 
     saveTour(){
         this.usuario.tour_bienvenida = true;
-        this.apiService.store('usuario', this.usuario).subscribe(usuario => {
-        },error => {this.alertService.error(error); });
+        this.apiService.store('usuario', this.usuario)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (usuario) => {},
+                error: (error) => { this.alertService.error(error); }
+            });
     }
 
     private loadConstantsIfNeeded() {
         const constants = localStorage.getItem('SP_constants');
         if (!constants) {
             // console.log('Cargando constantes...');
-            this.constantsService.loadConstants().subscribe(
-                (constants) => {
-                    console.log('Constantes cargadas en app component:', constants);
-                },
-                (error) => {
-                    console.error('Error cargando constantes en app component:', error);
-                }
-            );
+            this.constantsService.loadConstants()
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (constants) => {
+                        console.log('Constantes cargadas en app component:', constants);
+                    },
+                    error: (error) => {
+                        console.error('Error cargando constantes en app component:', error);
+                    }
+                });
         } else {
             // console.log('Constantes ya disponibles en localStorage');
         }

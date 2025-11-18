@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-area-empresa',
@@ -27,6 +28,9 @@ export class CrearAreaEmpresaComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, 
         private alertService: AlertService,
@@ -40,7 +44,9 @@ export class CrearAreaEmpresaComponent implements OnInit {
 
         if(!this.departamentos.length){
             this.loading = true;
-            this.apiService.getAll('departamentosEmpresa/list').subscribe(departamentos => {
+            this.apiService.getAll('departamentosEmpresa/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(departamentos => {
                 this.departamentos = departamentos.map((dept: any) => ({
                     ...dept,
                     id: dept.id.toString()
@@ -54,7 +60,9 @@ export class CrearAreaEmpresaComponent implements OnInit {
 
         if(this.id_area){
             this.loading = true;
-            this.apiService.read('area-empresa/', this.id_area).subscribe(area => {
+            this.apiService.read('area-empresa/', this.id_area)
+                .pipe(this.untilDestroyed())
+                .subscribe(area => {
                 this.area = area;
                 if(this.area.id_departamento) {
                     this.area.id_departamento = this.area.id_departamento.toString();
@@ -86,7 +94,9 @@ export class CrearAreaEmpresaComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('area-empresa', this.area).subscribe(area => {
+        this.apiService.store('area-empresa', this.area)
+            .pipe(this.untilDestroyed())
+            .subscribe(area => {
             this.update.emit(area);
             this.modalRef?.hide();
             this.saving = false;

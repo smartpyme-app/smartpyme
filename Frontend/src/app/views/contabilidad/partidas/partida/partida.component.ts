@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { PartidaDetallesComponent } from './detalles/partida-detalles.component'
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -30,6 +31,9 @@ export class PartidaComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor( 
       private apiService: ApiService, private alertService: AlertService, private sumPipe:SumPipe,
       private route: ActivatedRoute, private router: Router, private modalService: BsModalService
@@ -47,7 +51,9 @@ export class PartidaComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
-            this.apiService.read('partida/', id).subscribe(partida => {
+            this.apiService.read('partida/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(partida => {
                 this.partida = partida;
                 this.sumTotal();
                 this.loading = false;
@@ -80,7 +86,9 @@ export class PartidaComponent implements OnInit {
 
         console.log(this.partida.detalles);
 
-        this.apiService.store('partida', this.partida).subscribe(partida => {
+        this.apiService.store('partida', this.partida)
+          .pipe(this.untilDestroyed())
+          .subscribe(partida => {
             if (!this.partida.id) {
                 this.alertService.success('Partida guardada', 'La partida fue guardada exitosamente.');
             }else{
@@ -108,7 +116,9 @@ export class PartidaComponent implements OnInit {
     
     public onSubmitProveedor() {
         this.saving = true;
-        this.apiService.store('proveedor', this.proveedor).subscribe(proveedor => {
+        this.apiService.store('proveedor', this.proveedor)
+          .pipe(this.untilDestroyed())
+          .subscribe(proveedor => {
             // this.update.emit(proveedor);
             this.modalRef?.hide();
             this.saving = false;
@@ -138,7 +148,9 @@ export class PartidaComponent implements OnInit {
 
     public onSubmitCliente() {
         this.saving = true;
-        this.apiService.store('cliente', this.cliente).subscribe(cliente => {
+        this.apiService.store('cliente', this.cliente)
+          .pipe(this.untilDestroyed())
+          .subscribe(cliente => {
             // this.update.emit(cliente);
             this.modalRef?.hide();
             this.saving = false;
@@ -149,7 +161,9 @@ export class PartidaComponent implements OnInit {
 
     generarPartidasDelDia(){
         this.saving = true;
-        this.apiService.store('partidas/generar/' + this.partida.tipo.toLowerCase() , this.partida).subscribe(data => {
+        this.apiService.store('partidas/generar/' + this.partida.tipo.toLowerCase() , this.partida)
+          .pipe(this.untilDestroyed())
+          .subscribe(data => {
             this.partida = data.partida;
             this.partida.id_usuario = this.apiService.auth_user().id;
             this.partida.id_empresa = this.apiService.auth_user().id_empresa;

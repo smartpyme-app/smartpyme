@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -33,6 +34,9 @@ export class DocumentosComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -45,10 +49,12 @@ export class DocumentosComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('documentos').subscribe(documentos => { 
-            this.documentos = documentos;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => { 
+                this.documentos = documentos;
+                this.loading = false;this.filtrado = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public openModal(template: TemplateRef<any>, documento:any, nuevaResolucion:boolean) {
@@ -61,9 +67,11 @@ export class DocumentosComponent implements OnInit {
             this.documento.activo = true;
             this.documento.correlativo = 1;
         }
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error);});
         this.alertService.modal = true;
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
     
@@ -87,7 +95,9 @@ export class DocumentosComponent implements OnInit {
     public onSubmit(){
         this.loading = true;
         this.documento.nuevaResolucion = this.nuevaResolucion;
-        this.apiService.store('documento', this.documento).subscribe(documento => {
+        this.apiService.store('documento', this.documento)
+            .pipe(this.untilDestroyed())
+            .subscribe(documento => {
             if (!this.documento.id) {
                 this.documentos.push(documento);
                 this.alertService.success('Documento creado', 'El documento fue añadido exitosamente.');
@@ -106,7 +116,9 @@ export class DocumentosComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id) .subscribe(data => {
+            this.apiService.delete('gasto/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.documentos.length; i++) { 
                     if (this.documentos[i].id == data.id )
                         this.documentos.splice(i, 1);

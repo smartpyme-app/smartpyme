@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,6 +11,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-buscar-producto',
@@ -34,6 +35,9 @@ export class BuscadorProductoComponent implements OnInit {
   public buscador: any = '';
   public loading: boolean = false;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     private apiService: ApiService, private alertService: AlertService,
     private modalService: BsModalService, private sumPipe: SumPipe
@@ -44,7 +48,8 @@ export class BuscadorProductoComponent implements OnInit {
       .pipe(
         debounceTime(500),
         filter((query: string) => query.trim().length > 0),
-        switchMap((query: any) => this.apiService.read('productos/buscar/', query))
+        switchMap((query: any) => this.apiService.read('productos/buscar/', query)),
+        this.untilDestroyed()
       )
       .subscribe((results: any[]) => {
         this.productos = Array.isArray(results) ? results : [];
@@ -71,7 +76,9 @@ export class BuscadorProductoComponent implements OnInit {
     this.filtros.direccion = 'asc';
     this.filtros.paginate = 5;
 
-    this.apiService.getAll('categorias').subscribe(categorias => {
+    this.apiService.getAll('categorias')
+      .pipe(this.untilDestroyed())
+      .subscribe(categorias => {
       this.categorias = categorias;
     }, error => { this.alertService.error(error); });
 
@@ -83,7 +90,9 @@ export class BuscadorProductoComponent implements OnInit {
     }
 
     this.loading = true;
-    this.apiService.getAll('productos', this.filtros).subscribe(productos => {
+    this.apiService.getAll('productos', this.filtros)
+      .pipe(this.untilDestroyed())
+      .subscribe(productos => {
       this.productos = productos;
       this.loading = false;
     }, error => { this.alertService.error(error); this.loading = false; });

@@ -1,10 +1,11 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-cliente-documentos',
@@ -14,10 +15,11 @@ import { ApiService } from '@services/api.service';
     
 })
 export class ClienteDocumentosComponent implements OnInit {
-
     public documento:any = {};
     public documentos:any = [];
     public loading:boolean = false;
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( public apiService:ApiService, private alertService:AlertService,
             private route: ActivatedRoute, private router: Router,
@@ -29,7 +31,7 @@ export class ClienteDocumentosComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('cliente/' + this.route.snapshot.paramMap.get('id')! + '/documentos').subscribe(documentos => {
+        this.apiService.getAll('cliente/' + this.route.snapshot.paramMap.get('id')! + '/documentos').pipe(this.untilDestroyed()).subscribe(documentos => {
             this.documentos = documentos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -38,7 +40,7 @@ export class ClienteDocumentosComponent implements OnInit {
 
     public updateNombre(documento:any) {
         this.loading = true;
-        this.apiService.store('cliente/documento', documento).subscribe(documento => {
+        this.apiService.store('cliente/documento', documento).pipe(this.untilDestroyed()).subscribe(documento => {
             this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente');
         }, error => {this.alertService.error(error); this.loading = false; this.documento = {};});
     }
@@ -54,7 +56,7 @@ export class ClienteDocumentosComponent implements OnInit {
         }
 
         this.loading = true;
-        this.apiService.store('cliente/documento', formData).subscribe(documento => {
+        this.apiService.store('cliente/documento', formData).pipe(this.untilDestroyed()).subscribe(documento => {
             if(!this.documento.id) {
                 this.documentos.push(documento);
             }
@@ -66,7 +68,7 @@ export class ClienteDocumentosComponent implements OnInit {
 
     public delete(documento:any){
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('cliente/documento/', documento.id) .subscribe(data => {
+            this.apiService.delete('cliente/documento/', documento.id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.documentos.length; i++) { 
                     if (this.documentos[i].id == data.id )
                         this.documentos.splice(i, 1);

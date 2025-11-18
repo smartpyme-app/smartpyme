@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { TiendaVentaCitasComponent } from '../citas/tienda-venta-citas.component
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -44,6 +45,8 @@ export class VentaDetallesComponent implements OnInit {
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
   modalRef!: BsModalRef;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -94,7 +97,7 @@ export class VentaDetallesComponent implements OnInit {
 
   public supervisorCheck() {
     this.loading = true;
-    this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+    this.apiService.store('usuario-validar', this.supervisor).pipe(this.untilDestroyed()).subscribe(supervisor => {
       this.modalRef.hide();
       this.delete(this.detalle);
       this.loading = false;
@@ -231,7 +234,7 @@ export class VentaDetallesComponent implements OnInit {
             console.log('venta', this.venta);
             const endpoint = this.venta.cotizacion == 1 ? 'cotizacion-venta-detalle' : 'venta-detalle';
 
-            this.apiService.delete(endpoint + '/', detalle.id).subscribe(detalle => { 
+            this.apiService.delete(endpoint + '/', detalle.id).pipe(this.untilDestroyed()).subscribe(detalle => { 
               this.venta.detalles.splice(indexAEliminar, 1);
               this.update.emit(this.venta);
             }, error => { this.alertService.error(error); this.loading = false; });

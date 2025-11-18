@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { ComboDetallesComponent } from './detalles/combo-detalles.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto-combo',
@@ -33,7 +34,8 @@ export class ProductoComboComponent implements OnInit {
   public guardar = false;
   public variants: Array<{ nombre: string, cantidad: number }> = [];
 
-
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private apiService: ApiService, private alertService: AlertService,
@@ -52,20 +54,28 @@ export class ProductoComboComponent implements OnInit {
     this.usuario = this.apiService.auth_user();
     // subcategorias
 
-    this.apiService.getAll('categorias/list').subscribe(categorias => {
+    this.apiService.getAll('categorias/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(categorias => {
       this.categorias = categorias;
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('subcategorias').subscribe(subcategorias => {
+    this.apiService.getAll('subcategorias')
+      .pipe(this.untilDestroyed())
+      .subscribe(subcategorias => {
       this.subcategorias = subcategorias;
     }, error => { this.alertService.error(error); });
 
-    this.apiService.getAll('proveedores/list').subscribe(proveedores => {
+    this.apiService.getAll('proveedores/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(proveedores => {
       this.proveedores = proveedores;
       this.loading = false;
     }, error => { this.alertService.error(error); this.loading = false; });
 
-    this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+    this.apiService.getAll('bodegas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(bodegas => {
       this.bodegas = bodegas;
     }, error => { this.alertService.error(error); });
 
@@ -117,7 +127,9 @@ export class ProductoComboComponent implements OnInit {
   public onSubmit() {
     this.guardar = true;  
     this.producto.codigo = "CMPKIT" + this.producto.codigo;  
-    this.apiService.store('producto/compuesto', this.producto).subscribe(producto => {
+    this.apiService.store('producto/compuesto', this.producto)
+      .pipe(this.untilDestroyed())
+      .subscribe(producto => {
       this.guardar = false;
       if (!this.producto.id) {
         this.producto = producto;
@@ -133,7 +145,9 @@ export class ProductoComboComponent implements OnInit {
 
   public verificarSiExiste() {
     if (this.producto.nombre) {
-      this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, }).subscribe(productos => {
+      this.apiService.getAll('productos', { nombre: this.producto.nombre, estado: 1, })
+        .pipe(this.untilDestroyed())
+        .subscribe(productos => {
         if (productos.data[0]) {
           this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
             'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + this.apiService.appUrl + '/producto/editar/' + productos.data[0].id + '">Ver producto</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'

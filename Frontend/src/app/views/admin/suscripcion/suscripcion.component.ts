@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import {
   SafeHtml,
 } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-suscripcion',
@@ -69,6 +70,9 @@ export class SuscripcionComponent implements OnInit {
 
   modalRef?: BsModalRef;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -86,7 +90,9 @@ export class SuscripcionComponent implements OnInit {
   public loadAll() {
     this.loading = true;
     this.usuario = this.apiService.auth_user();
-    this.apiService.getAll('suscripcion').subscribe(
+    this.apiService.getAll('suscripcion')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (suscripcion) => {
         this.suscripcion = suscripcion;
         this.loading = false;
@@ -116,13 +122,17 @@ export class SuscripcionComponent implements OnInit {
   }
 
   getPaises() {
-    this.apiService.getAll('paises-suscripcion', this.paises).subscribe(paises => { 
+    this.apiService.getAll('paises-suscripcion', this.paises)
+      .pipe(this.untilDestroyed())
+      .subscribe(paises => { 
       this.paises = paises;
     }, error => {this.alertService.error(error); });
   }
 
   getEstados(countryCode: string) {
-    this.apiService.getAll(`estados-por-pais/${countryCode}`, []).subscribe(
+    this.apiService.getAll(`estados-por-pais/${countryCode}`, [])
+      .pipe(this.untilDestroyed())
+      .subscribe(
       estados => { 
         this.estados = estados;
       }, 
@@ -212,7 +222,9 @@ export class SuscripcionComponent implements OnInit {
 
   public onSubmit() {
     this.saving = true;
-    this.apiService.store('suscripcion', this.suscripcion).subscribe(
+    this.apiService.store('suscripcion', this.suscripcion)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (suscripcion) => {
         this.suscripcion = suscripcion;
         this.alertService.success(
@@ -248,6 +260,7 @@ export class SuscripcionComponent implements OnInit {
     this.saving = true;
     this.apiService
       .store('cancelar-suscripcion', this.cancelarSuscripcion)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.saving = false;
@@ -568,7 +581,9 @@ export class SuscripcionComponent implements OnInit {
 
   loadPayments() {
     this.loading = true;
-    this.apiService.getAll('suscripcion').subscribe({
+    this.apiService.getAll('suscripcion')
+      .pipe(this.untilDestroyed())
+      .subscribe({
       next: (data) => {
         this.suscripcion = data;
         this.loading = false;
@@ -826,7 +841,9 @@ export class SuscripcionComponent implements OnInit {
     this.apiService.store('suscripcion/pago-recurrente', {
       id_empresa: this.usuario.empresa.id,
       pago_recurrente: isRecurrent
-    }).subscribe(
+    })
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (response) => {
         this.suscripcion.pago_recurrente = isRecurrent;
         this.alertService.success(

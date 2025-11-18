@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -29,6 +30,9 @@ export class CanalesComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -40,10 +44,12 @@ export class CanalesComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('canales').subscribe(canales => { 
-            this.canales = canales;
-            this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('canales')
+            .pipe(this.untilDestroyed())
+            .subscribe(canales => { 
+                this.canales = canales;
+                this.loading = false;this.filtrado = false;
+            }, error => {this.alertService.error(error); });
     }
 
     public openModal(template: TemplateRef<any>, canal:any) {
@@ -63,7 +69,9 @@ export class CanalesComponent implements OnInit {
 
     public onSubmit(isStatusChange: boolean = false) {
         this.loading = true;
-        this.apiService.store('canal', this.canal).subscribe(canal => {
+        this.apiService.store('canal', this.canal)
+            .pipe(this.untilDestroyed())
+            .subscribe(canal => {
             if (isStatusChange) {
                 const index = this.canales.findIndex((c: any) => c.id === canal.id);
                 if (index !== -1) {
@@ -97,12 +105,14 @@ export class CanalesComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id) .subscribe(data => {
-                for (let i = 0; i < this.canales.length; i++) { 
-                    if (this.canales[i].id == data.id )
-                        this.canales.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('gasto/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.canales.length; i++) { 
+                        if (this.canales[i].id == data.id )
+                            this.canales.splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 

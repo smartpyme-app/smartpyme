@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -29,6 +30,9 @@ export class GastosCategoriasComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -40,7 +44,9 @@ export class GastosCategoriasComponent implements OnInit {
     public loadAll() {        
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('gastos/categorias').subscribe(categorias => { 
+        this.apiService.getAll('gastos/categorias')
+          .pipe(this.untilDestroyed())
+          .subscribe(categorias => { 
             this.categorias = categorias;
             this.loading = false;this.filtrado = false;
         }, error => {this.alertService.error(error); });
@@ -52,7 +58,9 @@ export class GastosCategoriasComponent implements OnInit {
             this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
             this.categoria.enable = true;
         }
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+        this.apiService.getAll('catalogo/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
         this.modalRef = this.modalService.show(template, {class: 'modal-md', backdrop: 'static'});
@@ -65,7 +73,9 @@ export class GastosCategoriasComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('gastos/categoria', this.categoria).subscribe(categoria => {
+        this.apiService.store('gastos/categoria', this.categoria)
+          .pipe(this.untilDestroyed())
+          .subscribe(categoria => {
             if (!this.categoria.id) {
                 this.categorias.push(categoria);
                 this.alertService.success('Categoria creado', 'El categoria fue añadido exitosamente.');
@@ -90,7 +100,9 @@ export class GastosCategoriasComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('categoria/', id) .subscribe(data => {
+                this.apiService.delete('categoria/', id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.categorias.length; i++) { 
                         if (this.categorias[i].id == data.id )
                             this.categorias.splice(i, 1);

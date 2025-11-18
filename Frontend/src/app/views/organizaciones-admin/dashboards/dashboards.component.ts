@@ -55,13 +55,13 @@ export class DashboardsComponent extends BasePaginatedComponent implements OnIni
 
         this.loading = true;
         this.filtrarDashboards();
-        this.apiService.getAll('empresas/list').subscribe(empresas => { 
+        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe(empresas => { 
             this.empresas = empresas;
         }, error => {this.alertService.error(error); });
     }
 
     public filtrarDashboards(){
-        this.apiService.getAll('dashboards', this.filtros).subscribe(dashboards => { 
+        this.apiService.getAll('dashboards', this.filtros).pipe(this.untilDestroyed()).subscribe(dashboards => { 
             this.dashboards = dashboards;
             this.loading = false;
         }, error => {this.alertService.error(error); });
@@ -81,7 +81,7 @@ export class DashboardsComponent extends BasePaginatedComponent implements OnIni
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('dashboard/', id) .subscribe(data => {
+            this.apiService.delete('dashboard/', id).pipe(this.untilDestroyed()).subscribe(data => {
                 for (let i = 0; i < this.dashboards['data'].length; i++) { 
                     if (this.dashboards['data'][i].id == data.id )
                         this.dashboards['data'].splice(i, 1);
@@ -105,7 +105,7 @@ export class DashboardsComponent extends BasePaginatedComponent implements OnIni
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('dashboard', this.dashboard).subscribe(dashboard => {
+        this.apiService.store('dashboard', this.dashboard).pipe(this.untilDestroyed()).subscribe(dashboard => {
             this.loadAll();
             this.saving = false;
             if(!this.dashboards.id){

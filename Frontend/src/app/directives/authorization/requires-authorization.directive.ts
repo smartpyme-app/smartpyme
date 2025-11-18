@@ -1,5 +1,6 @@
-import { Directive, Input, TemplateRef, ViewContainerRef, OnInit } from '@angular/core';
+import { Directive, Input, TemplateRef, ViewContainerRef, OnInit, DestroyRef, inject } from '@angular/core';
 import { AuthorizationService } from '@services/Authorization/authorization.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Directive({
   selector: '[appRequiresAuthorization]'
@@ -7,6 +8,9 @@ import { AuthorizationService } from '@services/Authorization/authorization.serv
 export class RequiresAuthorizationDirective implements OnInit {
   @Input() appRequiresAuthorization: string = '';
   @Input() authorizationData: any = {};
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private templateRef: TemplateRef<any>,
@@ -27,20 +31,22 @@ export class RequiresAuthorizationDirective implements OnInit {
     this.authorizationService.checkRequirement(
       this.appRequiresAuthorization, 
       this.authorizationData
-    ).subscribe({
-      next: (response : any) => {
-        if (!response.requires_authorization) {
+    )
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (response : any) => {
+          if (!response.requires_authorization) {
+            this.viewContainer.createEmbeddedView(this.templateRef);
+          } else {
+            // Mostrar botón de solicitar autorización en lugar del contenido original
+            this.showAuthorizationButton();
+          }
+        },
+        error: () => {
+          // En caso de error, mostrar el contenido original
           this.viewContainer.createEmbeddedView(this.templateRef);
-        } else {
-          // Mostrar botón de solicitar autorización en lugar del contenido original
-          this.showAuthorizationButton();
         }
-      },
-      error: () => {
-        // En caso de error, mostrar el contenido original
-        this.viewContainer.createEmbeddedView(this.templateRef);
-      }
-    });
+      });
   }
 
   private showAuthorizationButton() {

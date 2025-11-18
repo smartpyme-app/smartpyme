@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -30,13 +31,18 @@ export class PartidaDetallesComponent implements OnInit {
     public buscador:string = '';
     public loading:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
     ) { }
 
     ngOnInit() {
-        this.apiService.getAll('catalogo/list').subscribe(catalogo => {
+        this.apiService.getAll('catalogo/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
     }
@@ -91,7 +97,9 @@ export class PartidaDetallesComponent implements OnInit {
             }).then((result) => {
               if (result.isConfirmed) {
                     if(detalle.id) {
-                        this.apiService.delete('partida/detalle/', detalle.id).subscribe(detalle => {
+                        this.apiService.delete('partida/detalle/', detalle.id)
+                          .pipe(this.untilDestroyed())
+                          .subscribe(detalle => {
                             let indexAEliminar;
                             if (indexAEliminar !== -1) {
                                 indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);

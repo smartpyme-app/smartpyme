@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { TabsetComponent } from 'ngx-bootstrap/tabs';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -21,6 +22,9 @@ export class EliminarDatosComponent implements OnInit {
     public empresa: any = {};
     public loading = false;
     public saving = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   	constructor( 
   	    public apiService: ApiService, private alertService: AlertService,
@@ -38,7 +42,9 @@ export class EliminarDatosComponent implements OnInit {
         this.empresa.m_presupuestos = false;
 
   	    this.loading = true;
-        this.apiService.read('empresa/', this.apiService.auth_user().id_empresa).subscribe(empresa => {
+        this.apiService.read('empresa/', this.apiService.auth_user().id_empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(empresa => {
             this.empresa = empresa;
             this.loading = false;
         },error => {this.alertService.error(error); this.loading = false; });
@@ -67,7 +73,9 @@ export class EliminarDatosComponent implements OnInit {
         }).then((result) => {
           if (result.isConfirmed) {
                 this.saving = true;
-                this.apiService.store('empresa/eliminar/datos', this.empresa).subscribe(empresa => {
+                this.apiService.store('empresa/eliminar/datos', this.empresa)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(empresa => {
                     Swal.fire('Eliminado', 'Los datos fueron eliminados correctamente', 'success');
                     this.saving = false;
                 },error => {this.alertService.error(error); this.saving = false; });

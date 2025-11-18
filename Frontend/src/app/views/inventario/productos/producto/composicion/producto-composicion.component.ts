@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto-composicion',
@@ -28,6 +29,9 @@ export class ProductoComposicionComponent implements OnInit {
 
 	modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(private apiService: ApiService, private alertService: AlertService,  
     	private route: ActivatedRoute, private router: Router,
     	private modalService: BsModalService
@@ -36,7 +40,9 @@ export class ProductoComposicionComponent implements OnInit {
 	ngOnInit() {}
 
     openModal(template: TemplateRef<any>, compuesto:any) {
-        this.apiService.getAll('productos/list').subscribe(productos => {
+        this.apiService.getAll('productos/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => {
             this.productos = productos;
         }, error => {this.alertService.error(error);});
         
@@ -53,7 +59,9 @@ export class ProductoComposicionComponent implements OnInit {
     onSubmit(){
        
         this.saving = true;
-        this.apiService.store('producto/composicion', this.composicion).subscribe(composicion => {
+        this.apiService.store('producto/composicion', this.composicion)
+          .pipe(this.untilDestroyed())
+          .subscribe(composicion => {
             if(!this.composicion.id) {
                 composicion.opciones = [];
                 this.producto.composiciones.unshift(composicion);
@@ -67,7 +75,9 @@ export class ProductoComposicionComponent implements OnInit {
 
     delete(composicion:any){
         if (confirm('¿Desea eliminar el Registro?')) {        
-            this.apiService.delete('producto/composicion/', composicion.id).subscribe(composicion => {
+            this.apiService.delete('producto/composicion/', composicion.id)
+              .pipe(this.untilDestroyed())
+              .subscribe(composicion => {
                 for (var i = 0; i < this.producto.composiciones.length; ++i) {
                     if (this.producto.composiciones[i].id === composicion.id ){
                         this.producto.composiciones.splice(i, 1);
@@ -81,7 +91,9 @@ export class ProductoComposicionComponent implements OnInit {
 
         public openModalOpciones(template: TemplateRef<any>, composicion:any) {
             this.composicion = composicion;
-            this.apiService.getAll('productos/list').subscribe(productos => {
+            this.apiService.getAll('productos/list')
+              .pipe(this.untilDestroyed())
+              .subscribe(productos => {
                 this.productos = productos;
             }, error => {this.alertService.error(error);});
 
@@ -92,7 +104,9 @@ export class ProductoComposicionComponent implements OnInit {
         public agregarOpcion(){
             this.loading = true;
             this.opcion.id_composicion = this.composicion.id;
-            this.apiService.store('producto/composicion/opcion', this.opcion).subscribe(opcion => {
+            this.apiService.store('producto/composicion/opcion', this.opcion)
+              .pipe(this.untilDestroyed())
+              .subscribe(opcion => {
                 this.composicion.opciones.push(opcion);
                 this.opcion = {};
                 this.loading = false;
@@ -101,7 +115,9 @@ export class ProductoComposicionComponent implements OnInit {
 
         public deleteOpcion(opcion:any){
             if (confirm('¿Desea eliminar el Registro?')) {
-                this.apiService.delete('producto/composicion/opcion/', opcion.id).subscribe(opcion => {
+                this.apiService.delete('producto/composicion/opcion/', opcion.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(opcion => {
                     for (let i = 0; i < this.composicion.opciones.length; i++) { 
                         if (this.composicion.opciones[i].id == opcion.id )
                             this.composicion.opciones.splice(i, 1);

@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { CompraProductoComponent } from '../compra-producto/compra-producto.comp
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -35,6 +36,9 @@ export class CompraDetallesComponent implements OnInit {
 
   public buscador: string = '';
   public loading: boolean = false;
+
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService, private alertService: AlertService,
@@ -67,12 +71,14 @@ export class CompraDetallesComponent implements OnInit {
 
   public supervisorCheck() {
     this.loading = true;
-    this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
-      this.modalRef.hide();
-      this.delete(this.detalle);
-      this.loading = false;
-      this.supervisor = {};
-    }, error => { this.alertService.error(error); this.loading = false; });
+    this.apiService.store('usuario-validar', this.supervisor)
+        .pipe(this.untilDestroyed())
+        .subscribe(supervisor => {
+            this.modalRef.hide();
+            this.delete(this.detalle);
+            this.loading = false;
+            this.supervisor = {};
+        }, error => { this.alertService.error(error); this.loading = false; });
   }
 
   // Agregar detalle
@@ -116,10 +122,12 @@ export class CompraDetallesComponent implements OnInit {
         const indexAEliminar = this.compra.detalles.findIndex((item: any) => item.id_producto === detalle.id_producto);
         if (indexAEliminar !== -1) {
             if(detalle.id) {
-                this.apiService.delete('compra/detalle/', detalle.id).subscribe(detalle => {
-                    this.compra.detalles.splice(indexAEliminar, 1);
-                    this.update.emit(this.compra);
-                },error => {this.alertService.error(error); this.loading = false; });
+                this.apiService.delete('compra/detalle/', detalle.id)
+                    .pipe(this.untilDestroyed())
+                    .subscribe(detalle => {
+                        this.compra.detalles.splice(indexAEliminar, 1);
+                        this.update.emit(this.compra);
+                    },error => {this.alertService.error(error); this.loading = false; });
             }else{
                 this.compra.detalles.splice(indexAEliminar, 1);
                 this.update.emit(this.compra);

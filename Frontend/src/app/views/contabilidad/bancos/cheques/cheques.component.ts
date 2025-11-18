@@ -50,7 +50,9 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
 
     ngOnInit() {
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(cuentas => {
+        this.apiService.getAll('banco/cuentas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(cuentas => {
             this.cuentas = cuentas;
         }, error => {this.alertService.error(error);});
 
@@ -81,7 +83,9 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
 
     public filtrarCheques(){
         this.loading = true;
-        this.apiService.getAll('bancos/cheques', this.filtros).subscribe(cheques => { 
+        this.apiService.getAll('bancos/cheques', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(cheques => { 
             this.cheques = cheques;
             this.loading = false;
             if(this.modalRef){
@@ -99,7 +103,9 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
 
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
+        this.apiService.getAll('usuarios/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(usuarios => { 
             this.usuarios = usuarios;
         }, error => {this.alertService.error(error); });
         this.alertService.modal = true;
@@ -136,12 +142,14 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('banco/cheque/', cheque.id) .subscribe(data => {
+                this.apiService.delete('banco/cheque/', cheque.id)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(data => {
                     for (let i = 0; i < this.cheques.data.length; i++) { 
                         if (this.cheques.data[i].id == data.id )
                             this.cheques.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });4
+                }, error => {this.alertService.error(error); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -155,7 +163,9 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
 
     public onSubmit(){
         this.saving = true;
-        this.apiService.store('banco/cheque', this.cheque).subscribe(cheque => {
+        this.apiService.store('banco/cheque', this.cheque)
+          .pipe(this.untilDestroyed())
+          .subscribe(cheque => {
             if (!this.cheque.id) {
                 this.loadAll();
                 this.alertService.success('Cheque creado', 'El cheque fue añadido exitosamente.');
@@ -172,7 +182,9 @@ export class ChequesComponent extends BasePaginatedComponent implements OnInit {
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('bancos/cheques/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('bancos/cheques/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

@@ -83,30 +83,36 @@ export class AbonosComprasComponent extends BasePaginatedComponent implements On
 
     public filtrarAbonos(){
         this.loading = true;
-        this.apiService.getAll('compras/abonos', this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('compras/abonos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(abonos => { 
+                this.abonos = abonos;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); });
     }
 
     public setEstado(cotizacion:any){
-        this.apiService.store('compras/abonos/change-estado', cotizacion).subscribe(cotizacion => { 
-            this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('compras/abonos/change-estado', cotizacion)
+            .pipe(this.untilDestroyed())
+            .subscribe(cotizacion => { 
+                this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('orden-de-compra/', id) .subscribe(data => {
-                for (let i = 0; i < this.abonos['data'].length; i++) { 
-                    if (this.abonos['data'][i].id == data.id )
-                        this.abonos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('orden-de-compra/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.abonos['data'].length; i++) { 
+                        if (this.abonos['data'][i].id == data.id )
+                            this.abonos['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -123,16 +129,20 @@ export class AbonosComprasComponent extends BasePaginatedComponent implements On
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
         this.modalRef = this.modalService.show(template);
     }
 
     public onSubmit() {
         this.loading = true;            
-        this.apiService.store('compra/abono', this.abono).subscribe(abono => {
+        this.apiService.store('compra/abono', this.abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
             this.abono = {};
             this.modalRef.hide();
             this.loading = false;
@@ -142,15 +152,19 @@ export class AbonosComprasComponent extends BasePaginatedComponent implements On
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('compras/abonos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('compras/abonos/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -166,7 +180,9 @@ export class AbonosComprasComponent extends BasePaginatedComponent implements On
     }
 
     generarPartidaContable(abono:any){
-        this.apiService.store('contabilidad/partida/cxp', abono).subscribe(abono => {
+        this.apiService.store('contabilidad/partida/cxp', abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }

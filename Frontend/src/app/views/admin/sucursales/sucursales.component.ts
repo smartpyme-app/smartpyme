@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef} from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-sucursales',
@@ -25,6 +26,9 @@ export class SucursalesComponent implements OnInit {
     public filtros:any = {};
 
     modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   	constructor( 
   	    public apiService: ApiService, private alertService: AlertService,
@@ -45,7 +49,9 @@ export class SucursalesComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('sucursales', this.filtros).subscribe(sucursales => {
+        this.apiService.getAll('sucursales', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
             this.sucursales = sucursales;
             this.loading = false;
             this.contarActivos();
@@ -69,7 +75,9 @@ export class SucursalesComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('sucursal/', id) .subscribe(data => {
+            this.apiService.delete('sucursal/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.sucursales.data.length; i++) { 
                     if (this.sucursales.data[i].id == data.id )
                         this.sucursales.data.splice(i, 1);
@@ -85,7 +93,9 @@ export class SucursalesComponent implements OnInit {
     }
 
     public setEstado(sucursal:any){
-        this.apiService.store('sucursal', sucursal).subscribe(sucursal => { 
+        this.apiService.store('sucursal', sucursal)
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursal => { 
             if(sucursal.activo == '1'){
                 this.alertService.success('Sucursal activada', 'La sucursal fue activada exitosamente.');
             }else{
@@ -98,7 +108,9 @@ export class SucursalesComponent implements OnInit {
     
     public onSubmit() {
           this.saving = true;
-          this.apiService.store('sucursal', this.sucursal).subscribe(sucursal => {
+          this.apiService.store('sucursal', this.sucursal)
+              .pipe(this.untilDestroyed())
+              .subscribe(sucursal => {
               if (!this.sucursal.id) {
                     this.sucursales.data.push(sucursal);
                     this.alertService.success('Sucursal guardada', 'La sucursal fue añadida exitosamente.');

@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ChatService } from '@services/chat/chat.service';
-import { Subscription } from 'rxjs';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-speed-dial',
@@ -18,8 +18,8 @@ export class SpeedDialComponent implements OnInit, OnDestroy {
   // Variable para controlar la visibilidad del botón
   mostrarBotonChat = false;
   
-  // Suscripción para liberar recursos al destruir el componente
-  private subscription: Subscription = new Subscription();
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
   
   constructor(private chatService: ChatService, private apiService: ApiService) { }
 
@@ -31,18 +31,15 @@ export class SpeedDialComponent implements OnInit, OnDestroy {
     this.chatService.verificarAcceso();
     
     // Suscribirse al observable que indica si tiene acceso al chat
-    this.subscription.add(
-      this.chatService.tieneAcceso$.subscribe(tieneAcceso => {
+    this.chatService.tieneAcceso$
+      .pipe(this.untilDestroyed())
+      .subscribe(tieneAcceso => {
         this.mostrarBotonChat = tieneAcceso;
-      })
-    );
+      });
   }
 
   ngOnDestroy(): void {
-    // Liberar recursos al destruir el componente
-    if (this.subscription) {
-      this.subscription.unsubscribe();
-    }
+    // El DestroyRef maneja automáticamente la limpieza
   }
 
   openChat() {

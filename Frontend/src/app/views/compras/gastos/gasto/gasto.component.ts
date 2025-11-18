@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { CrearImpuestoComponent } from '@shared/modals/crear-impuesto/crear-impu
 import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-empresa/crear-departamento-empresa.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -51,6 +52,9 @@ export class GastoComponent implements OnInit {
 
   modalRef?: BsModalRef;
 
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
+
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
@@ -67,7 +71,9 @@ export class GastoComponent implements OnInit {
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
 
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
       },
@@ -76,7 +82,9 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('usuarios/list').subscribe(
+    this.apiService.getAll('usuarios/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
       },
@@ -85,7 +93,9 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('bancos/list').subscribe(
+    this.apiService.getAll('bancos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (bancos) => {
         this.bancos = bancos;
       },
@@ -94,7 +104,9 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('formas-de-pago/list').subscribe(
+    this.apiService.getAll('formas-de-pago/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (formaspago) => {
         this.formaspago = formaspago;
       },
@@ -103,12 +115,16 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('gastos/categorias/list').subscribe(categorias => {
+    this.apiService.getAll('gastos/categorias/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(categorias => {
       this.categorias = categorias;
       this.loading = false;
     }, error => {this.alertService.error(error); this.loading = false;});
 
-    this.apiService.getAll('proveedores/list').subscribe(
+    this.apiService.getAll('proveedores/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (proveedores) => {
         this.proveedores = proveedores;
         this.loading = false;
@@ -119,7 +135,9 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('proyectos/list').subscribe(
+    this.apiService.getAll('proyectos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (proyectos) => {
         this.proyectos = proyectos;
         this.loading = false;
@@ -131,7 +149,9 @@ export class GastoComponent implements OnInit {
     );
 
 
-    this.apiService.getAll('impuestos').subscribe(impuestos => {
+    this.apiService.getAll('impuestos')
+      .pipe(this.untilDestroyed())
+      .subscribe(impuestos => {
       this.impuestos = impuestos;
       this.loading = false;
 
@@ -147,7 +167,9 @@ export class GastoComponent implements OnInit {
     const id = +this.route.snapshot.paramMap.get('id')!;
     if (id) {
       this.loading = true;
-      this.apiService.read('gasto/', id).subscribe(
+      this.apiService.read('gasto/', id)
+        .pipe(this.untilDestroyed())
+        .subscribe(
         (gasto) => {
           this.gasto = gasto;
 
@@ -258,6 +280,7 @@ export class GastoComponent implements OnInit {
       this.duplicargasto = true;
       this.apiService
         .read('gasto/', +this.route.snapshot.queryParamMap.get('id_gasto')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (gasto) => {
             this.gasto = gasto;
@@ -354,7 +377,9 @@ export class GastoComponent implements OnInit {
   toggleDiv(): void { this.opAvanzadas = !this.opAvanzadas;}
 
   public cargarDocumentos() {
-    this.apiService.getAll('documentos/list').subscribe(
+    this.apiService.getAll('documentos/list')
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (documentos) => {
         this.documentos = documentos;
         this.documentos = this.documentos.filter(
@@ -544,7 +569,9 @@ export class GastoComponent implements OnInit {
         this.gasto.otros_impuestos = [];
     }
 
-    this.apiService.store('gasto', this.gasto).subscribe(
+    this.apiService.store('gasto', this.gasto)
+      .pipe(this.untilDestroyed())
+      .subscribe(
       (gasto) => {
         if (!this.gasto.id) {
           this.alertService.success(
@@ -906,8 +933,9 @@ export class GastoComponent implements OnInit {
 
       try {
         // Intentar buscar en el backend por NIT
-        const response = await this.apiService
+        const response = await       this.apiService
           .store('proveedores/buscar-nit', { nit: emisorData.nit })
+          .pipe(this.untilDestroyed())
           .toPromise();
         if (response && response.id) {
           this.gasto.id_proveedor = response.id;
@@ -941,6 +969,7 @@ export class GastoComponent implements OnInit {
       try {
         const proveedorCreado = await this.apiService
           .store('proveedor', nuevoProveedor)
+          .pipe(this.untilDestroyed())
           .toPromise();
         if (proveedorCreado && proveedorCreado.id) {
           this.gasto.id_proveedor = proveedorCreado.id;
@@ -1051,7 +1080,9 @@ export class GastoComponent implements OnInit {
 
   private loadDepartamentos(): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.apiService.getAll('departamentosEmpresa/list').subscribe(departamentos => {
+      this.apiService.getAll('departamentosEmpresa/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(departamentos => {
         this.departamentos = departamentos;
         resolve(departamentos);
       }, error => {
@@ -1075,6 +1106,7 @@ export class GastoComponent implements OnInit {
     this.loadingAreas = true;
 
     this.apiService.getAll('area-empresa', { id_departamento: idDepartamento, estado: 1 })
+      .pipe(this.untilDestroyed())
       .subscribe(response => {
         this.areasDisponibles = response.data || response;
         this.loadingAreas = false;

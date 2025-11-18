@@ -1,5 +1,5 @@
 
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-departamento',
@@ -26,6 +27,9 @@ export class CrearDepartamentoComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, 
         private alertService: AlertService,
@@ -39,7 +43,9 @@ export class CrearDepartamentoComponent implements OnInit {
         if(this.id_departamento){
             this.loading = true;
             this.departamento.activo = 1;
-            this.apiService.read('departamentosEmpresa/', this.id_departamento).subscribe(departamento => {
+            this.apiService.read('departamentosEmpresa/', this.id_departamento)
+                .pipe(this.untilDestroyed())
+                .subscribe(departamento => {
                 this.departamento = departamento;
                 this.loading = false;
             }, error => {
@@ -58,7 +64,9 @@ export class CrearDepartamentoComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('departamentosEmpresa', this.departamento).subscribe(departamento => {
+        this.apiService.store('departamentosEmpresa', this.departamento)
+            .pipe(this.untilDestroyed())
+            .subscribe(departamento => {
             this.update.emit(departamento);
             this.modalRef?.hide();
             this.saving = false;

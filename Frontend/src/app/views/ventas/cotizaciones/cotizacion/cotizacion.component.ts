@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
@@ -75,6 +76,8 @@ export class CotizacionComponent implements OnInit {
 
   modalRef!: BsModalRef;
   modalCredito!: BsModalRef;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -102,7 +105,7 @@ export class CotizacionComponent implements OnInit {
   }
 
   public loadData() {
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
         // if (this.apiService.auth_user().tipo != 'Administrador') {
@@ -124,7 +127,7 @@ export class CotizacionComponent implements OnInit {
 
     //solo si es una cotizacion if (this.route.snapshot.queryParamMap.get('cotizacion')) {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
-      this.apiService.getAll('custom-fields', this.filtros).subscribe(
+      this.apiService.getAll('custom-fields', this.filtros).pipe(this.untilDestroyed()).subscribe(
         (customFields) => {
           console.log('customFields', customFields);
           this.customFields = customFields;
@@ -153,7 +156,7 @@ export class CotizacionComponent implements OnInit {
 //       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
 //         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
 // =======
-    this.apiService.getAll('bodegas/list').subscribe(
+    this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
         // if (this.apiService.auth_user().tipo != 'Administrador') {
@@ -172,7 +175,7 @@ export class CotizacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('usuarios/list').subscribe(
+    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
         // if (
@@ -197,7 +200,7 @@ export class CotizacionComponent implements OnInit {
     //     this.bancos = bancos;
     // }, error => {this.alertService.error(error);});
 
-    this.apiService.getAll('formas-de-pago/list').subscribe(
+    this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
       },
@@ -206,7 +209,7 @@ export class CotizacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('canales/list').subscribe(
+    this.apiService.getAll('canales/list').pipe(this.untilDestroyed()).subscribe(
       (canales) => {
         this.canales = canales;
 
@@ -221,7 +224,7 @@ export class CotizacionComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('impuestos').subscribe(
+    this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
         this.impuestos = impuestos;
         if (!this.venta.impuestos || this.venta.iva == 0) {
@@ -245,7 +248,7 @@ export class CotizacionComponent implements OnInit {
     //   }
     // );
 
-    this.apiService.getAll('proyectos/list').subscribe(
+    this.apiService.getAll('proyectos/list').pipe(this.untilDestroyed()).subscribe(
       (proyectos) => {
         this.proyectos = proyectos;
         this.loading = false;
@@ -258,7 +261,7 @@ export class CotizacionComponent implements OnInit {
   }
 
   public cargarDocumentos() {
-    this.apiService.getAll('documentos/list').subscribe(
+    this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
       (documentos) => {
         this.documentos = documentos;
         this.documentos = this.documentos.filter(
@@ -382,6 +385,7 @@ export class CotizacionComponent implements OnInit {
       const isCotizacion = this.venta.cotizacion == 1 ? true : false;
       this.apiService
         .read(endpoint, +this.route.snapshot.paramMap.get('id')!)
+        .pipe(this.untilDestroyed())
         .subscribe((venta) => {
           this.venta = venta;
           this.venta.cotizacion = isCotizacion ? 1 : 0;
@@ -417,6 +421,7 @@ export class CotizacionComponent implements OnInit {
       this.duplicarventa = true;
       this.apiService
         .read('venta/', +this.route.snapshot.queryParamMap.get('id_venta')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (venta) => {
             this.venta = venta;
@@ -505,7 +510,7 @@ if (
   console.log('facturar cotizacion');
 
 
-  this.apiService.getAll('impuestos').subscribe(
+  this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
     (impuestos) => {
       this.impuestos = impuestos;
 
@@ -513,7 +518,7 @@ if (
       this.apiService.read(
         'cotizacionVentas/',
         +this.route.snapshot.queryParamMap.get('id_venta')!
-      ).subscribe(
+      ).pipe(this.untilDestroyed()).subscribe(
         (venta) => {
           this.venta = venta;
           this.venta.cobrar_impuestos = venta.cobrar_impuestos;
@@ -547,7 +552,7 @@ if (
           }
 
           // Cargar los documentos y buscar una factura
-          this.apiService.getAll('documentos/list').subscribe(
+          this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
             (documentos) => {
               this.documentos = documentos;
               this.documentos = this.documentos.filter(
@@ -607,6 +612,7 @@ if (
       this.loading = true;
       this.apiService
         .read('evento/', +this.route.snapshot.queryParamMap.get('id_cita')!)
+        .pipe(this.untilDestroyed())
         .subscribe(
           (evento) => {
             this.evento = evento;
@@ -616,6 +622,7 @@ if (
             this.evento.productos.forEach((detalleProducto: any) => {
               this.apiService
                 .read('producto/', detalleProducto.id_producto)
+                .pipe(this.untilDestroyed())
                 .subscribe(
                   (producto) => {
                     let detalle: any = {};
@@ -853,7 +860,7 @@ if (
     this.venta.correlativo = documento.correlativo;
 
     if (this.venta.nombre_documento == 'Factura de exportación') {
-      this.apiService.getAll('recintos').subscribe(
+      this.apiService.getAll('recintos').pipe(this.untilDestroyed()).subscribe(
         (recintos) => {
           this.recintos = recintos;
         },
@@ -861,7 +868,7 @@ if (
           this.alertService.error(error);
         }
       );
-      this.apiService.getAll('regimenes').subscribe(
+      this.apiService.getAll('regimenes').pipe(this.untilDestroyed()).subscribe(
         (regimenes) => {
           this.regimenes = regimenes;
         },
@@ -869,7 +876,7 @@ if (
           this.alertService.error(error);
         }
       );
-      this.apiService.getAll('incoterms').subscribe(
+      this.apiService.getAll('incoterms').pipe(this.untilDestroyed()).subscribe(
         (incoterms) => {
           this.incoterms = incoterms;
         },
@@ -955,7 +962,7 @@ if (
       });
     }
 
-    this.apiService.store('facturacion', this.venta).subscribe(
+    this.apiService.store('facturacion', this.venta).pipe(this.untilDestroyed()).subscribe(
       (venta) => {
         // Si es cotización
         // if (this.facturarCotizacion) {
@@ -1007,6 +1014,7 @@ if (
             ) {
               this.apiService
                 .store('contabilidad/partida/venta', venta)
+                .pipe(this.untilDestroyed())
                 .subscribe(
                   (venta) => {},
                   (error) => {
@@ -1039,7 +1047,7 @@ if (
 
   public supervisorCheck() {
     this.loading = true;
-    this.apiService.store('usuario-validar', this.supervisor).subscribe(
+    this.apiService.store('usuario-validar', this.supervisor).pipe(this.untilDestroyed()).subscribe(
       (supervisor) => {
         this.modalRef.hide();
         this.cargarDatosIniciales();
@@ -1093,7 +1101,7 @@ if (
 
   enviarDTE() {
     this.sending = true;
-    this.apiService.store('enviarDTE', this.venta).subscribe(
+    this.apiService.store('enviarDTE', this.venta).pipe(this.untilDestroyed()).subscribe(
       (dte) => {
         this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
         this.sending = false;
@@ -1115,7 +1123,7 @@ if (
      // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
-      this.apiService.getAll('documentos/list').subscribe(
+      this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(
         (documentos) => {
           this.documentos = documentos.filter(
             (x: any) => x.id_sucursal == this.venta.id_sucursal

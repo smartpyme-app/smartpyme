@@ -86,36 +86,42 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
 
   public loadEmpleados() {
     this.loading = true;
-    this.apiService.getAll('empleados', this.filtros).subscribe(
-      (empleados) => {
-        this.empleados = empleados;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+    this.apiService.getAll('empleados', this.filtros)
+        .pipe(this.untilDestroyed())
+        .subscribe(
+            (empleados) => {
+                this.empleados = empleados;
+                this.loading = false;
+            },
+            (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+        );
   }
 
   public loadCatalogos() {
-    this.apiService.getAll('departamentosPlanilla/list').subscribe(
-      (departamentos) => {
-        this.departamentos = departamentos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('departamentosPlanilla/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+            (departamentos) => {
+                this.departamentos = departamentos;
+            },
+            (error) => {
+                this.alertService.error(error);
+            }
+        );
 
-    this.apiService.getAll('cargos/list').subscribe(
-      (cargos) => {
-        this.cargos = cargos;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('cargos/list')
+        .pipe(this.untilDestroyed())
+        .subscribe(
+            (cargos) => {
+                this.cargos = cargos;
+            },
+            (error) => {
+                this.alertService.error(error);
+            }
+        );
   }
 
   public filtrarEmpleados() {
@@ -133,20 +139,22 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
     this.saving = true;
     const empleadoActualizado = { ...empleado, estado };
 
-    this.apiService.store('empleados', empleadoActualizado).subscribe({
-      next: () => {
-        this.saving = false;
-        this.alertService.success(
-          'Estado actualizado correctamente',
-          'Empleado'
-        );
-        this.loadEmpleados();
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      },
-    });
+    this.apiService.store('empleados', empleadoActualizado)
+        .pipe(this.untilDestroyed())
+        .subscribe({
+            next: () => {
+                this.saving = false;
+                this.alertService.success(
+                    'Estado actualizado correctamente',
+                    'Empleado'
+                );
+                this.loadEmpleados();
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.saving = false;
+            },
+        });
   }
 
   public setOrden(columna: string) {
@@ -232,7 +240,9 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
   }
 
   public descargarPlantilla() {
-    this.apiService.download('planillas/plantilla-importacion').subscribe(
+    this.apiService.download('planillas/plantilla-importacion')
+        .pipe(this.untilDestroyed())
+        .subscribe(
       (response: any) => {
         const blob = new Blob([response], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -260,7 +270,9 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
     const formData = new FormData();
     formData.append('archivo', this.datosImportacion.archivo);
 
-    this.apiService.store('empleados/importar', formData).subscribe({
+    this.apiService.store('empleados/importar', formData)
+        .pipe(this.untilDestroyed())
+        .subscribe({
       next: (response: any) => {
         this.alertService.success(
           'Éxito',
@@ -343,6 +355,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
 
     this.apiService
       .store(`empleados/${this.empleado.id}/dar-baja`, formData)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
           this.modalRef.hide();
@@ -387,6 +400,7 @@ export class EmpleadosComponent extends BasePaginatedComponent implements OnInit
 
     this.apiService
       .store(`empleados/${this.empleado.id}/dar-alta`, formData)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: () => {
           this.modalRef.hide();

@@ -53,13 +53,13 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
     }
 
     public openModal(template: TemplateRef<any>) {
-        this.apiService.getAll('paquetes/pendientes/clientes').subscribe(clientes => { 
+        this.apiService.getAll('paquetes/pendientes/clientes').pipe(this.untilDestroyed()).subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
         this.loadAll();
         this.modalRef = this.modalService.show(template, { class: 'modal-xl', backdrop: 'static' });
         
-        this.apiService.getAll('servicios', {buscador: 'Servicio de importación de paquetería'}).subscribe(productos => { 
+        this.apiService.getAll('servicios', {buscador: 'Servicio de importación de paquetería'}).pipe(this.untilDestroyed()).subscribe(productos => { 
             if(productos.data[0]){
                 this.servicio = productos.data[0];
             }else{
@@ -93,7 +93,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedComponent impleme
     public filtrarPaquetes(){
         this.loading = true;
         this.venta.id_cliente = this.filtros.id_cliente;
-        this.apiService.getAll('paquetes', this.filtros).subscribe(paquetes => { 
+        this.apiService.getAll('paquetes', this.filtros).pipe(this.untilDestroyed()).subscribe(paquetes => { 
             this.paquetes = paquetes;
             
             this.detalles = [];

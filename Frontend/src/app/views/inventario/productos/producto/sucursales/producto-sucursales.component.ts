@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-producto-sucursales',
@@ -27,6 +28,9 @@ export class ProductoSucursalesComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(private apiService: ApiService, private alertService: AlertService,  
         private route: ActivatedRoute, private router: Router,
         private modalService: BsModalService
@@ -38,7 +42,7 @@ export class ProductoSucursalesComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
+        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
             this.validate();
             this.loading = false;
@@ -66,7 +70,7 @@ export class ProductoSucursalesComponent implements OnInit {
         this.sucursal.id = sucursal.sucursal_id;
 
         this.loading = true;
-        this.apiService.store('producto/sucursal', this.sucursal).subscribe(sucursal => {
+        this.apiService.store('producto/sucursal', this.sucursal).pipe(this.untilDestroyed()).subscribe(sucursal => {
             this.sucursal = {};
             this.loading = false;
             this.alertService.success('Sucursal guardada', 'El inventario fue guardada exitosamente.');

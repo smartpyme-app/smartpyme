@@ -53,9 +53,11 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
 
     ngOnInit() {
         this.loadAll();
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => { 
+                this.proveedores = proveedores;
+            }, error => {this.alertService.error(error); });
     }
 
     public loadAll() {
@@ -74,13 +76,15 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
 
     public filtrarCompras(){
         this.loading = true;
-        this.apiService.getAll('devoluciones/compras', this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('devoluciones/compras', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => { 
+                this.compras = compras;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); });
     }
 
     public setEstado(compra:any, enable:string){
@@ -105,19 +109,23 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
     }
 
     public onSubmit(){
-        this.apiService.store('devolucion/compra', this.compra).subscribe(compra => { 
-            this.alertService.success('Compra actualizada', 'La devolución de compra fue actualizada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('devolucion/compra', this.compra)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => { 
+                this.alertService.success('Compra actualizada', 'La devolución de compra fue actualizada exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('devolucion/compra/', id) .subscribe(data => {
-                for (let i = 0; i < this.compras['data'].length; i++) { 
-                    if (this.compras['data'][i].id == data.id )
-                        this.compras['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('devolucion/compra/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.compras['data'].length; i++) { 
+                        if (this.compras['data'][i].id == data.id )
+                            this.compras['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -140,14 +148,18 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
 
     openFilter(template: TemplateRef<any>) {     
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(proveedores => { 
+                this.proveedores = proveedores;
+            }, error => {this.alertService.error(error); });
 
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => { 
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error); });
         
 
         this.modalRef = this.modalService.show(template);
@@ -156,16 +168,20 @@ export class DevolucionesComprasComponent extends BasePaginatedComponent impleme
     openModal(template: TemplateRef<any>) {
         this.id_compra = null;
         this.loading = true;
-        this.apiService.getAll('compras/sin-devolucion').subscribe(compras => { 
-            this.comprasList = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('compras/sin-devolucion')
+            .pipe(this.untilDestroyed())
+            .subscribe(compras => { 
+                this.comprasList = compras;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
         this.modalRef = this.modalService.show(template);
     }
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('devoluciones/compras/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('devoluciones/compras/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

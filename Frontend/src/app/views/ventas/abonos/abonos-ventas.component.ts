@@ -83,29 +83,35 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
 
     public filtrarAbonos(){
         this.loading = true;
-        this.apiService.getAll('ventas/abonos', this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('ventas/abonos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(abonos => { 
+                this.abonos = abonos;
+                this.loading = false;
+                if(this.modalRef){
+                    this.modalRef.hide();
+                }
+            }, error => {this.alertService.error(error); });
     }
 
     public setEstado(abono:any){
-        this.apiService.store('venta/abono/update', abono).subscribe(abono => { 
-            this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('venta/abono/update', abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => { 
+                this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
+            }, error => {this.alertService.error(error); });
     }
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('orden-de-venta/', id) .subscribe(data => {
-                for (let i = 0; i < this.abonos['data'].length; i++) { 
-                    if (this.abonos['data'][i].id == data.id )
-                        this.abonos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+            this.apiService.delete('orden-de-venta/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
+                    for (let i = 0; i < this.abonos['data'].length; i++) { 
+                        if (this.abonos['data'][i].id == data.id )
+                            this.abonos['data'].splice(i, 1);
+                    }
+                }, error => {this.alertService.error(error); });
                    
         }
 
@@ -122,42 +128,52 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
         this.modalRef = this.modalService.show(template);
     }
 
     public onSubmit() {
         this.loading = true;            
-        this.apiService.store('venta/abono', this.abono).subscribe(abono => {
-            this.abono = {};
-            this.modalRef.hide();
-            this.loading = false;
-            this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
+        this.apiService.store('venta/abono', this.abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
+                this.abono = {};
+                this.modalRef.hide();
+                this.loading = false;
+                this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
+            },error => {this.alertService.error(error); this.loading = false; });
 
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => {
-            this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('clientes/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(clientes => {
+                this.clientes = clientes;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => {
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
 
         if (!this.documentos.length) {
-            this.apiService.getAll('documentos/list-nombre').subscribe(
-                (documentos) => {
-                    this.documentos = documentos;
-                },
-                (error) => {
-                    this.alertService.error(error);
-                }
-            );
+            this.apiService.getAll('documentos/list-nombre')
+                .pipe(this.untilDestroyed())
+                .subscribe(
+                    (documentos) => {
+                        this.documentos = documentos;
+                    },
+                    (error) => {
+                        this.alertService.error(error);
+                    }
+                );
         }
 
         this.modalRef = this.modalService.show(template);
@@ -165,7 +181,9 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('ventas/abonos/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas/abonos/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -181,9 +199,11 @@ export class AbonosVentasComponent extends BasePaginatedComponent implements OnI
     }
 
     generarPartidaContable(abono:any){
-        this.apiService.store('contabilidad/partida/cxc', abono).subscribe(abono => {
-            this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-        },error => {this.alertService.error(error);});
+        this.apiService.store('contabilidad/partida/cxc', abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
+                this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+            },error => {this.alertService.error(error);});
     }
 
 

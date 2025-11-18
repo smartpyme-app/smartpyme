@@ -5,12 +5,14 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
+  DestroyRef,
+  inject,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
 import { ChatService, ChatMessage } from '@services/chat/chat.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-chat-drawer',
@@ -31,7 +33,8 @@ export class ChatDrawerComponent
 
   private shouldScrollToBottom = false;
 
-  private subscriptions: Subscription[] = [];
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(private chatService: ChatService) {}
 
@@ -40,18 +43,19 @@ export class ChatDrawerComponent
     this.chatService.verificarAcceso();
 
     // Suscribirse al estado del drawer
-    this.subscriptions.push(
-      this.chatService.loading$.subscribe((isLoading) => {
+    this.chatService.loading$
+      .pipe(this.untilDestroyed())
+      .subscribe((isLoading) => {
         this.isLoading = isLoading;
 
         if (isLoading) {
           this.shouldScrollToBottom = true;
         }
-      })
-    );
+      });
 
-    this.subscriptions.push(
-      this.chatService.drawerOpen$.subscribe((isOpen) => {
+    this.chatService.drawerOpen$
+      .pipe(this.untilDestroyed())
+      .subscribe((isOpen) => {
         this.isOpen = isOpen;
 
         // Manipulación del offcanvas de Bootstrap mediante JavaScript
@@ -60,24 +64,22 @@ export class ChatDrawerComponent
         } else {
           this.hideOffcanvas();
         }
-      })
-    );
+      });
 
     // Suscribirse a los mensajes
-    this.subscriptions.push(
-      this.chatService.messages$.subscribe((messages) => {
+    this.chatService.messages$
+      .pipe(this.untilDestroyed())
+      .subscribe((messages) => {
         if (messages.length > this.messages.length) {
           this.shouldScrollToBottom = true;
         }
 
         this.messages = messages;
-      })
-    );
+      });
   }
 
   ngOnDestroy(): void {
-    // Limpiar suscripciones
-    this.subscriptions.forEach((sub) => sub.unsubscribe());
+    // Las suscripciones se limpian automáticamente mediante DestroyRef
   }
 
   toggle() {

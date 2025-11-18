@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -33,6 +34,9 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
     public buscador:string = '';
     public loading:boolean = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService,
@@ -61,7 +65,9 @@ export class DevolucionCompraDetallesComponent implements OnInit {
 
     public supervisorCheck(){
         this.loading = true;
-        this.apiService.store('usuario-validar', this.supervisor).subscribe(supervisor => {
+        this.apiService.store('usuario-validar', this.supervisor)
+          .pipe(this.untilDestroyed())
+          .subscribe(supervisor => {
             this.modalRef.hide();
             this.delete(this.detalle);
             this.loading = false;

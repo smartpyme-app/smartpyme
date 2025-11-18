@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-impuesto',
@@ -25,6 +26,9 @@ export class CrearImpuestoComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, 
         public alertService: AlertService,
@@ -37,7 +41,9 @@ export class CrearImpuestoComponent implements OnInit {
 
     openModal(template: TemplateRef<any>) {
         if(this.id_impuesto){
-            this.apiService.read('impuesto/', this.id_impuesto).subscribe(impuesto => {
+            this.apiService.read('impuesto/', this.id_impuesto)
+                .pipe(this.untilDestroyed())
+                .subscribe(impuesto => {
                 this.impuesto = impuesto;
                 this.loading = false;
             }, error => {
@@ -56,7 +62,9 @@ export class CrearImpuestoComponent implements OnInit {
 
     public onSubmit() {
         this.saving = true;
-        this.apiService.store('impuesto', this.impuesto).subscribe(impuesto => {
+        this.apiService.store('impuesto', this.impuesto)
+            .pipe(this.untilDestroyed())
+            .subscribe(impuesto => {
             this.update.emit(impuesto);
             this.modalRef?.hide();
             this.saving = false;
@@ -73,7 +81,9 @@ export class CrearImpuestoComponent implements OnInit {
             this.apiService.getAll('impuestos', { 
                 nombre: this.impuesto.nombre, 
                 estado: 1, 
-            }).subscribe(impuestos => { 
+            })
+                .pipe(this.untilDestroyed())
+                .subscribe(impuestos => { 
                 if(impuestos.data[0]){
                     this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
                         'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'

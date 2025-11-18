@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { VendedorDatosComponent } from './datos/vendedor-datos.component';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -21,6 +22,9 @@ export class VendedorDashComponent implements OnInit {
     public loading:boolean = false;
     public dashResfresh:any;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         public apiService: ApiService, private alertService: AlertService
     ) { }
@@ -28,7 +32,9 @@ export class VendedorDashComponent implements OnInit {
 
     ngOnInit() {
         this.loading = true;
-        this.apiService.getAll('dash/vendedor').subscribe(dash => {
+        this.apiService.getAll('dash/vendedor')
+          .pipe(this.untilDestroyed())
+          .subscribe(dash => {
             this.dash = dash;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -41,7 +47,9 @@ export class VendedorDashComponent implements OnInit {
     
     public loadAll(){
         this.loading = true;
-        this.apiService.getAll('dash/vendedor').subscribe(dash => {
+        this.apiService.getAll('dash/vendedor')
+          .pipe(this.untilDestroyed())
+          .subscribe(dash => {
             this.dash = dash;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

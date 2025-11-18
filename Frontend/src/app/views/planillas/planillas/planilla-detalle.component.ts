@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -58,6 +59,8 @@ export class PlanillaDetalleComponent implements OnInit {
 
   modalRef!: BsModalRef;
   detalleSeleccionado: any = null;
+  private destroyRef = inject(DestroyRef);
+  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private route: ActivatedRoute,
@@ -69,7 +72,7 @@ export class PlanillaDetalleComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(this.untilDestroyed()).subscribe((params) => {
 
       if (params['id']) {
         this.loadPlanillas(params['id']);
@@ -84,14 +87,14 @@ export class PlanillaDetalleComponent implements OnInit {
   }
 
   public cargarCatalogos() {
-    this.apiService.getAll('departamentosPlanilla/list').subscribe({
+    this.apiService.getAll('departamentosPlanilla/list').pipe(this.untilDestroyed()).subscribe({
       next: (departamentos) => {
         this.departamentos = departamentos;
       },
       error: (error) => this.alertService.error(error),
     });
 
-    this.apiService.getAll('cargos/list').subscribe({
+    this.apiService.getAll('cargos/list').pipe(this.untilDestroyed()).subscribe({
       next: (cargos) => {
         this.cargos = cargos;
       },
@@ -142,7 +145,7 @@ export class PlanillaDetalleComponent implements OnInit {
       id: id,
     };
 
-    this.apiService.getAll('planillas/detalles', params).subscribe({
+    this.apiService.getAll('planillas/detalles', params).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         this.planilla = response;
         this.detalles = response.detalles.data;
@@ -292,7 +295,7 @@ export class PlanillaDetalleComponent implements OnInit {
   
 
   loadConceptosConfigurados() {
-    this.configPlanillaService.obtenerConfiguracion().subscribe({
+    this.configPlanillaService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
       next: (config) => {
         this.conceptosConfigurados = config?.configuracion?.conceptos || null;
         this.cargarConceptosDeduccion();
@@ -524,6 +527,7 @@ export class PlanillaDetalleComponent implements OnInit {
         `planillas/detalles/editar/${this.detalleSeleccionado.id}`,
         datosActualizados
       )
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           this.alertService.success(
@@ -680,6 +684,7 @@ export class PlanillaDetalleComponent implements OnInit {
         this.saving = true;
         this.apiService
           .store(`planillas/detalles/retirar/${detalle.id}`, {})
+          .pipe(this.untilDestroyed())
           .subscribe({
             next: (response) => {
               this.alertService.success(
@@ -727,6 +732,7 @@ export class PlanillaDetalleComponent implements OnInit {
         this.saving = true;
         this.apiService
           .store(`planillas/detalles/incluir/${detalle.id}`, {})
+          .pipe(this.untilDestroyed())
           .subscribe({
             next: (response) => {
               this.alertService.success(
@@ -762,6 +768,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
     this.apiService
       .download(`planillas/detalles/${detalle.id}/boleta`)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response) => {
           // Crear blob y descargar
@@ -823,7 +830,7 @@ export class PlanillaDetalleComponent implements OnInit {
    */
   private cargarDescuentosPatronales() {
     this.loading = true;
-    this.apiService.read('planillas/descuentos-patronales/', this.planilla.id).subscribe({
+    this.apiService.read('planillas/descuentos-patronales/', this.planilla.id).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         this.descuentosPatronales = response;
         // console.log(this.descuentosPatronales);
@@ -1402,7 +1409,7 @@ export class PlanillaDetalleComponent implements OnInit {
       if (result.isConfirmed) {
         this.apiService.store(`planillas/recalculo-renta/${this.planilla.id}`, {
           tipo_recalculo: tipoRecalculo
-        }).subscribe({
+        }).pipe(this.untilDestroyed()).subscribe({
           next: (response) => {
             Swal.fire({
               title: 'Éxito',
@@ -1539,7 +1546,7 @@ export class PlanillaDetalleComponent implements OnInit {
       ...this.filtros // Incluir todos los filtros actuales
     };
 
-    this.apiService.export('planillas/detalles/exportar', filtrosExport).subscribe(
+    this.apiService.export('planillas/detalles/exportar', filtrosExport).pipe(this.untilDestroyed()).subscribe(
       (data: Blob) => {
         const blob = new Blob([data], {
           type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1588,7 +1595,7 @@ export class PlanillaDetalleComponent implements OnInit {
     };
 
     // Intentar usar sistema configurable
-    this.configPlanillaService.probarCalculo(datosEmpleado).subscribe({
+    this.configPlanillaService.probarCalculo(datosEmpleado).pipe(this.untilDestroyed()).subscribe({
       next: (resultado) => {
         this.aplicarResultadosConfigurables(resultado);
 
@@ -1751,7 +1758,7 @@ export class PlanillaDetalleComponent implements OnInit {
       tipo_planilla: this.planilla.tipo_planilla
     };
 
-    this.configPlanillaService.probarCalculo(datosEmpleado).subscribe({
+    this.configPlanillaService.probarCalculo(datosEmpleado).pipe(this.untilDestroyed()).subscribe({
       next: (resultado) => {
         // console.table({
         //   'Concepto': ['ISSS Empleado', 'AFP Empleado', 'Renta', 'Sueldo Neto'],
@@ -1783,7 +1790,7 @@ export class PlanillaDetalleComponent implements OnInit {
   }
 
   public validarConfiguracionEmpresa(): void {
-    this.configPlanillaService.obtenerConfiguracion().subscribe({
+    this.configPlanillaService.obtenerConfiguracion().pipe(this.untilDestroyed()).subscribe({
       next: (config) => {
         if (config.configuracion.conceptos) {
           const totalConceptos = Object.keys(config.configuracion.conceptos).length;

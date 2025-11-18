@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { ApiService } from '@services/api.service';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
 
@@ -47,6 +48,9 @@ export class FacturacionCompraConsignaComponent implements OnInit {
     public detalle: any = {};
     
     modalRef!: BsModalRef;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -76,7 +80,8 @@ export class FacturacionCompraConsignaComponent implements OnInit {
                         return of([]);
                     })
                 );
-            })
+            }),
+            this.untilDestroyed()
         ).subscribe(results => {
             this.searchResults = results || [];
             this.searchLoading = false;
@@ -85,45 +90,59 @@ export class FacturacionCompraConsignaComponent implements OnInit {
 
 	ngOnInit() {
 
-        this.route.params.subscribe((params:any) => {
-            if (params.id) {
-                this.loading = true;
-                this.apiService.read('compra/', params.id).subscribe(compra => {
-                    this.compra = compra;
-                    this.compra.cobrar_impuestos = this.compra.iva ? true : false;
-                    this.loading = false;
-                    this.cargarDatos();
-                }, error => {this.alertService.error(error); this.loading = false;});
-            }else{
-                this.compra = {};
-                this.compra.id_empresa = this.apiService.auth_user().id_empresa;
-                this.compra.id_usuario = this.apiService.auth_user().id;
-            }
-        });
+        this.route.params
+            .pipe(this.untilDestroyed())
+            .subscribe((params:any) => {
+                if (params.id) {
+                    this.loading = true;
+                    this.apiService.read('compra/', params.id)
+                        .pipe(this.untilDestroyed())
+                        .subscribe(compra => {
+                            this.compra = compra;
+                            this.compra.cobrar_impuestos = this.compra.iva ? true : false;
+                            this.loading = false;
+                            this.cargarDatos();
+                        }, error => {this.alertService.error(error); this.loading = false;});
+                }else{
+                    this.compra = {};
+                    this.compra.id_empresa = this.apiService.auth_user().id_empresa;
+                    this.compra.id_usuario = this.apiService.auth_user().id;
+                }
+            });
 
 
     }
 
     public cargarDatos(){
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => {
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list').subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('usuarios/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(usuarios => {
+                this.usuarios = usuarios;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('bancos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('documentos/list').subscribe(documentos => {
-            this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('documentos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(documentos => {
+                this.documentos = documentos;
+            }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => {
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => {
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error);});
 
     }
 

@@ -53,7 +53,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
         this.usuario = this.apiService.auth_user();
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -88,7 +90,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
 
     public filtrarVentas(){
         this.loading = true;
-        this.apiService.getAll('ventas', this.filtros).subscribe(ventas => { 
+        this.apiService.getAll('ventas', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
             if(this.modalRef){
@@ -118,7 +122,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('venta/', id) .subscribe(data => {
+            this.apiService.delete('venta/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.ventas['data'].length; i++) { 
                     if (this.ventas['data'][i].id == data.id )
                         this.ventas['data'].splice(i, 1);
@@ -140,11 +146,15 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
         
-        this.apiService.getAll('documentos').subscribe(documentos => {
+        this.apiService.getAll('documentos')
+          .pipe(this.untilDestroyed())
+          .subscribe(documentos => {
             this.documentos = documentos;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago')
+          .pipe(this.untilDestroyed())
+          .subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
@@ -152,19 +162,27 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
     }
     
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('clientes/list').subscribe(clientes => { 
+        this.apiService.getAll('clientes/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(clientes => { 
             this.clientes = clientes;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('formas-de-pago').subscribe(formaPagos => { 
+        this.apiService.getAll('formas-de-pago')
+          .pipe(this.untilDestroyed())
+          .subscribe(formaPagos => { 
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
         
-        this.apiService.getAll('documentos').subscribe(documentos => { 
+        this.apiService.getAll('documentos')
+          .pipe(this.untilDestroyed())
+          .subscribe(documentos => { 
             this.documentos = documentos;
         }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('canales').subscribe(canales => { 
+        this.apiService.getAll('canales')
+          .pipe(this.untilDestroyed())
+          .subscribe(canales => { 
             this.canales = canales;
         }, error => {this.alertService.error(error); });
         
@@ -176,7 +194,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
     }
 
     public descargarVentas(){
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -191,7 +211,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
     }
 
     public descargarDetalles(){
-        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('ventas-detalles/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -215,7 +237,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
 
     public onSubmit() {
         this.saving = true;            
-        this.apiService.store('venta', this.venta).subscribe(venta => {
+        this.apiService.store('venta', this.venta)
+          .pipe(this.untilDestroyed())
+          .subscribe(venta => {
             this.venta = {};
             this.saving = false;
             if(this.modalRef){
@@ -264,7 +288,9 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
 
     enviarDTE(){
         this.sending = true;
-        this.apiService.store('enviarDTE', this.venta).subscribe(dte => {
+        this.apiService.store('enviarDTE', this.venta)
+          .pipe(this.untilDestroyed())
+          .subscribe(dte => {
             this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
             this.sending = false;
             setTimeout(()=>{
@@ -292,22 +318,30 @@ export class CajaVentasComponent extends BasePaginatedComponent implements OnIni
             if (confirm('¿Confirma anular la venta y el DTE?')) {
                 this.venta = venta;
                 this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+                this.apiService.store('generarDTEAnulado', this.venta)
+                  .pipe(this.untilDestroyed())
+                  .subscribe(dte => {
                     // this.alertService.success('DTE generado.');
                     this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+                    this.mhService.firmarDTE(dte)
+                      .pipe(this.untilDestroyed())
+                      .subscribe(dteFirmado => {
                         this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
                         
                         if(dteFirmado.status == 'ERROR'){
                             this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
                         }
                         
-                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+                        this.mhService.anularDTE(this.venta, dteFirmado.body)
+                          .pipe(this.untilDestroyed())
+                          .subscribe(dte => {
                             if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
                                 this.venta.dte_invalidacion.sello = dte.selloRecibido;
                                 this.venta.sello_mh = dte.selloRecibido;
                                 this.venta.estado = 'Anulada';
-                                this.apiService.store('venta', this.venta).subscribe(data => {
+                                this.apiService.store('venta', this.venta)
+                                  .pipe(this.untilDestroyed())
+                                  .subscribe(data => {
                                     // this.alertService.success('Venta guardada.');
                                 },error => {this.alertService.error(error); this.saving = false; });
                             }

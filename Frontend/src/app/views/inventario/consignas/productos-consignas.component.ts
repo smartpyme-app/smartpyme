@@ -47,11 +47,15 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('sucursales/list').subscribe(sucursales => { 
+        this.apiService.getAll('sucursales/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
     }
@@ -59,7 +63,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
     public loadAll() {
         this.filtros.categoria = '';
         this.loading = true;
-        this.apiService.getAll('productos/consignas').subscribe(productos => { 
+        this.apiService.getAll('productos/consignas')
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -69,7 +75,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
     public search(){
         if(this.buscador && this.buscador.length > 2) {
             this.loading = true;
-            this.apiService.read('productos/buscar/', this.buscador).subscribe(productos => { 
+            this.apiService.read('productos/buscar/', this.buscador)
+              .pipe(this.untilDestroyed())
+              .subscribe(productos => { 
                 this.productos = productos;
                 this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false;});
@@ -80,7 +88,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id) .subscribe(data => {
+            this.apiService.delete('producto/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(data => {
                 for (let i = 0; i < this.productos['data'].length; i++) { 
                     if (this.productos['data'][i].id == data.id )
                         this.productos['data'].splice(i, 1);
@@ -95,7 +105,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
 
     public onFiltrar(){
         this.loading = true;
-        this.apiService.store('productos/filtrar', this.filtros).subscribe(productos => { 
+        this.apiService.store('productos/filtrar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
             this.modalRef.hide();
@@ -110,7 +122,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
 
     public onSubmit() {
         this.loading = true;
-        this.apiService.store('producto', this.producto).subscribe(producto=> {
+        this.apiService.store('producto', this.producto)
+          .pipe(this.untilDestroyed())
+          .subscribe(producto=> {
             this.producto = {};
             this.alertService.success('Consigna guardada', 'La consigna fue guardado exitosamente.');
             this.loading = false;
@@ -121,7 +135,9 @@ export class ProductosConsignasComponent extends BasePaginatedComponent implemen
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('productos/consignas/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('productos/consignas/exportar', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');

@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AlertService } from '../../services/alert.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-multimedia',
@@ -17,6 +18,9 @@ export class MultimediaComponent implements OnInit {
     public file:any;
     public loading:boolean = false;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( public apiService:ApiService, private alertService:AlertService ){}
 
     ngOnInit() {
@@ -25,7 +29,9 @@ export class MultimediaComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
-        this.apiService.getAll('multimedias').subscribe(multimedia => { 
+        this.apiService.getAll('multimedias')
+            .pipe(this.untilDestroyed())
+            .subscribe(multimedia => { 
             this.multimedia = multimedia;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -33,7 +39,9 @@ export class MultimediaComponent implements OnInit {
 
     public delete(multimedia:any){
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('multimedia/', multimedia.nombre) .subscribe(data => {
+            this.apiService.delete('multimedia/', multimedia.nombre)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 for (let i = 0; i < this.multimedia.length; i++) { 
                     if (this.multimedia[i].nombre == data.nombre )
                         this.multimedia.splice(i, 1);
@@ -60,7 +68,9 @@ export class MultimediaComponent implements OnInit {
         formData.append('file', this.file);
 
         this.loading = true;
-        this.apiService.store('multimedia', formData).subscribe(foto => {
+        this.apiService.store('multimedia', formData)
+            .pipe(this.untilDestroyed())
+            .subscribe(foto => {
             this.multimedia.unshift(foto);
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -69,7 +79,9 @@ export class MultimediaComponent implements OnInit {
 
     public setPagination(event:any):void{
         this.loading = true;
-        this.apiService.paginate(this.multimedia.path + '?page='+ event.page).subscribe(multimedia => { 
+        this.apiService.paginate(this.multimedia.path + '?page='+ event.page)
+            .pipe(this.untilDestroyed())
+            .subscribe(multimedia => { 
             this.multimedia = multimedia;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

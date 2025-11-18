@@ -69,7 +69,8 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedComponent impleme
                   return of([]); // Retornar un observable vacío para que el flujo continúe.
                 })
               )
-            )
+            ),
+            this.untilDestroyed()
           )
           .subscribe({
             next: (results: any[]) => {
@@ -93,7 +94,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedComponent impleme
 
     public openModal(template: TemplateRef<any>) {
 
-        this.apiService.getAll('categorias').subscribe(categorias => {
+        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
@@ -116,7 +117,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedComponent impleme
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});

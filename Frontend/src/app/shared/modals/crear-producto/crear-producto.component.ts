@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-crear-producto',
@@ -27,6 +28,9 @@ export class CrearProductoComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( 
         private apiService: ApiService, 
         private alertService: AlertService,
@@ -40,7 +44,9 @@ export class CrearProductoComponent implements OnInit {
     ngOnInit() {
         this.producto.empresa_id = this.apiService.auth_user().empresa_id;
         
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(categorias => {
             this.categorias = categorias;
         }, error => { this.alertService.error(error); });
 
@@ -107,7 +113,9 @@ export class CrearProductoComponent implements OnInit {
         // this.producto.empresa_id = this.apiService.auth_user().empresa_id;
         this.producto.id_empresa = this.apiService.auth_user().id_empresa;
 
-        this.apiService.store('producto', this.producto).subscribe(producto => {
+        this.apiService.store('producto', this.producto)
+            .pipe(this.untilDestroyed())
+            .subscribe(producto => {
             this.guardar = false;
             this.producto = producto;
             this.update.emit(producto);
@@ -132,7 +140,9 @@ export class CrearProductoComponent implements OnInit {
             this.apiService.getAll('productos', { 
                 nombre: this.producto.nombre, 
                 estado: 1 
-            }).subscribe(productos => { 
+            })
+                .pipe(this.untilDestroyed())
+                .subscribe(productos => { 
                 if (productos.data[0]) {
                     this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.', 
                         'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' + 

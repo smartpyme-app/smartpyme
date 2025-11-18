@@ -120,7 +120,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
   public loadAll() {
     this.loading = true;
-    this.apiService.getAll('reportes-configuracion', this.filtros).subscribe(
+    this.apiService.getAll('reportes-configuracion', this.filtros).pipe(this.untilDestroyed()).subscribe(
       (configuraciones) => {
         this.configuraciones = configuraciones;
         this.loading = false;
@@ -133,7 +133,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
         this.loading = false;
       }
     );
-    this.apiService.getAll('categorias/list').subscribe(
+    this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(
       (categorias) => {
         this.categorias = categorias;
       },
@@ -141,7 +141,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
         this.alertService.error(error);
       }
     );
-    this.apiService.getAll('sucursales/list').subscribe(
+    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
       },
@@ -359,6 +359,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
             this.saving = true;
             this.apiService
               .store('reportes-configuracion', this.configuracionActual)
+              .pipe(this.untilDestroyed())
               .subscribe(
                 (response) => {
                   this.saving = false;
@@ -385,6 +386,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
     this.saving = true;
     this.apiService
       .store('reportes-configuracion', this.configuracionActual)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.saving = false;
@@ -481,6 +483,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
       .update('reportes-configuracion/estado', configId, {
         activo: nuevoEstado
       })
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.loadAll();
@@ -525,6 +528,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
     this.apiService
       .store('reportes-configuracion/enviar-prueba', data)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.enviandoPrueba = false;
@@ -555,6 +559,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
     this.apiService
       .delete('reportes-configuracion/', this.configuracionEliminar.id!)
+      .pipe(this.untilDestroyed())
       .subscribe(
         (response) => {
           this.eliminando = false;
@@ -711,6 +716,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
     // Realizar la petición al servidor
     this.apiService.exportAcumuladoReportes(route, params)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response: any) => {
           // Crear nombre de archivo
@@ -840,6 +846,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedComponent impleme
 
     // Realizar la petición al servidor
     this.apiService.exportAcumuladoReportes(route, params)
+      .pipe(this.untilDestroyed())
       .subscribe({
         next: (response: any) => {
           // Crear nombre de archivo

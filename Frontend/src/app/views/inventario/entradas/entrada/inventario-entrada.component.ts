@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/bus
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-inventario-entrada',
@@ -29,6 +30,9 @@ export class InventarioEntradaComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -40,7 +44,9 @@ export class InventarioEntradaComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
         this.loading = true;
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -61,7 +67,9 @@ export class InventarioEntradaComponent implements OnInit {
         else{
             // Optenemos el entrada
             this.loading = true;
-            this.apiService.read('entrada/', id).subscribe(entrada => {
+            this.apiService.read('entrada/', id)
+              .pipe(this.untilDestroyed())
+              .subscribe(entrada => {
 	            this.entrada = entrada;
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
@@ -94,7 +102,9 @@ export class InventarioEntradaComponent implements OnInit {
 	
 	public onSubmit() {
         this.saving = true;
-        this.apiService.store('entrada', this.entrada).subscribe(entrada => {
+        this.apiService.store('entrada', this.entrada)
+          .pipe(this.untilDestroyed())
+          .subscribe(entrada => {
             this.router.navigateByUrl('/entradas');
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false; });
@@ -104,7 +114,9 @@ export class InventarioEntradaComponent implements OnInit {
 	public eliminarDetalle(detalle:any){
 		if (confirm('¿Desea eliminar el Registro?')) {
 			if(detalle.id) {
-				this.apiService.delete('entrada/detalle/', detalle.id).subscribe(detalle => {
+				this.apiService.delete('entrada/detalle/', detalle.id)
+				  .pipe(this.untilDestroyed())
+				  .subscribe(detalle => {
 					for (var i = 0; i < this.entrada.detalles.length; ++i) {
 						if (this.entrada.detalles[i].id === detalle.id ){
 							this.entrada.detalles.splice(i, 1);

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,6 +6,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -28,6 +29,9 @@ export class FormasDePagoComponent implements OnInit {
 
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor(public apiService: ApiService, private alertService: AlertService,
                 private modalService: BsModalService
     ){}
@@ -36,16 +40,20 @@ export class FormasDePagoComponent implements OnInit {
         this.empresa = this.apiService.auth_user().empresa;
         this.loadAll();
 
-        this.apiService.getAll('banco/cuentas/list').subscribe(bancos => { 
-            this.bancos = bancos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('banco/cuentas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => { 
+                this.bancos = bancos;
+                this.loading = false;
+            }, error => {this.alertService.error(error); });
 
     }
 
     public loadAll() {        
         this.loading = true;
-        this.apiService.getAll('formas-de-pago').subscribe(formas_pago => { 
+        this.apiService.getAll('formas-de-pago')
+            .pipe(this.untilDestroyed())
+            .subscribe(formas_pago => { 
             this.formas_pago = formas_pago;
             this.wompiActivo = formas_pago.filter((item:any) => item.nombre == 'Wompi')[0].activo;
             this.loading = false;
@@ -57,7 +65,9 @@ export class FormasDePagoComponent implements OnInit {
 
         this.forma_pago.id_empresa = this.apiService.auth_user().id_empresa;
 
-        this.apiService.store('forma-de-pago', this.forma_pago).subscribe(forma_pago => {
+        this.apiService.store('forma-de-pago', this.forma_pago)
+            .pipe(this.untilDestroyed())
+            .subscribe(forma_pago => {
             this.alertService.success('Formas de pago actualizadas', 'Las formas de pago fueron actualizadas exitosamente.');
             this.saving = false;
             this.modalRef.hide();
@@ -72,7 +82,9 @@ export class FormasDePagoComponent implements OnInit {
 
     public onSubmitWompi(){
         this.saving = true;
-        this.apiService.store('wompi', this.empresa).subscribe(forma_pago => {
+        this.apiService.store('wompi', this.empresa)
+            .pipe(this.untilDestroyed())
+            .subscribe(forma_pago => {
             this.saving = false;
             this.alertService.success('Conexión exitosa', 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para tus ventas.');
             // this.modalRef.hide();
@@ -81,7 +93,9 @@ export class FormasDePagoComponent implements OnInit {
 
     public delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('forma-de-pago/', id) .subscribe(data => {
+            this.apiService.delete('forma-de-pago/', id)
+                .pipe(this.untilDestroyed())
+                .subscribe(data => {
                 this.loadAll();
             }, error => {this.alertService.error(error); });
         }

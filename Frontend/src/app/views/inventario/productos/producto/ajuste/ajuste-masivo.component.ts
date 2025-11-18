@@ -64,11 +64,15 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
        // this.initFilters();
         this.loadAll();
 
-        this.apiService.getAll('categorias/list').subscribe(categorias => {
+        this.apiService.getAll('categorias/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(categorias => {
             this.categorias = categorias;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list')
+          .pipe(this.untilDestroyed())
+          .subscribe(bodegas => { 
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error);});
     }
@@ -100,7 +104,9 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
         this.seleccionados = [];
         this.ajusteMasivo.productos = [];
 
-        this.apiService.getAll('productos', this.filtros).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros)
+          .pipe(this.untilDestroyed())
+          .subscribe(productos => { 
             this.productos = productos;
             this.procesarProductosRecibidos();
             this.loading = false;
@@ -198,7 +204,9 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
             id_empresa: this.apiService.auth_user().id_empresa
         };
 
-        this.apiService.store('productos/ajuste-masivo', datos).subscribe(
+        this.apiService.store('productos/ajuste-masivo', datos)
+          .pipe(this.untilDestroyed())
+          .subscribe(
             respuesta => {
                 this.alertService.success('Ajuste masivo realizado', 'Se han actualizado ' + respuesta.actualizados + ' productos exitosamente.');
                 this.modalRef.hide();
@@ -217,7 +225,9 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
         
         const filtrosExport = {...this.filtros, formato: 'plantilla'};
         
-        this.apiService.export('productos/exportar-plantilla', filtrosExport).subscribe(
+        this.apiService.export('productos/exportar-plantilla', filtrosExport)
+          .pipe(this.untilDestroyed())
+          .subscribe(
             (data: Blob) => {
                 const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const url = window.URL.createObjectURL(blob);
@@ -268,7 +278,9 @@ export class AjusteMasivoComponent extends BasePaginatedComponent implements OnI
         formData.append('id_empresa', this.apiService.auth_user().id_empresa);
     
         this.saving = true;
-        this.apiService.upload('productos/ajuste-masivo/importar', formData).subscribe(
+        this.apiService.upload('productos/ajuste-masivo/importar', formData)
+          .pipe(this.untilDestroyed())
+          .subscribe(
             respuesta => {
                 const stats = (respuesta as any).estadisticas;
                 let mensaje = `<div><strong>Importación completada:</strong></div>`;

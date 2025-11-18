@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject } from '@angular/core';
+import { Component, OnInit, Inject, DestroyRef, inject } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
 import { Router } from '@angular/router';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 // declare var $:any;
 
@@ -27,6 +28,9 @@ export class HeaderComponent implements OnInit {
     public notificaciones: any = [];
     public isfullscreen: boolean = false;
     public isVisible: boolean = false;
+
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
      constructor(public apiService: ApiService, private alertService: AlertService, public encryptService: EncryptService, private router: Router, @Inject(DOCUMENT) private document: any) { }
 
@@ -82,9 +86,16 @@ export class HeaderComponent implements OnInit {
     public loadNotificaciones() {
         this.filtros.leido = 0;
         this.filtros.paginate = 1;
-        this.apiService.getAll('notificaciones', this.filtros).subscribe(notificaciones => { 
-            this.notificaciones = notificaciones;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('notificaciones', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (notificaciones) => {
+                    this.notificaciones = notificaciones;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
 

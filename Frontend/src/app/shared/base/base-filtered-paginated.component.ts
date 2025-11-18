@@ -1,11 +1,14 @@
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
+import { BaseComponent } from './base.component';
 
 /**
  * Clase base abstracta para componentes que implementan paginación mediante filtros.
  * 
  * Este componente es para casos donde la paginación se maneja actualizando `filtros.page`
  * y luego llamando a un método de filtrado que usa `apiService.getAll()` con los filtros.
+ * 
+ * Incluye gestión automática de suscripciones para prevenir memory leaks.
  * 
  * Uso:
  * ```typescript
@@ -14,28 +17,32 @@ import { AlertService } from '@services/alert.service';
  *   
  *   protected aplicarFiltros(): void {
  *     this.loading = true;
- *     this.apiService.getAll('endpoint', this.filtros).subscribe(
- *       datos => {
- *         this.datos = datos;
- *         this.loading = false;
- *       },
- *       error => {
- *         this.alertService.error(error);
- *         this.loading = false;
- *       }
- *     );
+ *     this.apiService.getAll('endpoint', this.filtros)
+ *       .pipe(this.untilDestroyed())
+ *       .subscribe(
+ *         datos => {
+ *           this.datos = datos;
+ *           this.loading = false;
+ *         },
+ *         error => {
+ *           this.alertService.error(error);
+ *           this.loading = false;
+ *         }
+ *       );
  *   }
  * }
  * ```
  */
-export abstract class BaseFilteredPaginatedComponent {
+export abstract class BaseFilteredPaginatedComponent extends BaseComponent {
   public loading: boolean = false;
   public filtros: any = {};
 
   constructor(
     protected apiService: ApiService,
     protected alertService: AlertService
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Método abstracto que debe implementar el componente hijo.

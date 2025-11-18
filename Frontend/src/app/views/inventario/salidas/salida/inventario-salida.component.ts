@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,6 +8,7 @@ import { BuscadorProductosComponent } from '@shared/parts/buscador-productos/bus
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-inventario-salida',
@@ -29,6 +30,9 @@ export class InventarioSalidaComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
@@ -40,7 +44,7 @@ export class InventarioSalidaComponent implements OnInit {
     ngOnInit() {
         this.loadAll();
         this.loading = true;
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => {
+        this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false; });
@@ -61,7 +65,7 @@ export class InventarioSalidaComponent implements OnInit {
         else{
             // Optenemos el salida
             this.loading = true;
-            this.apiService.read('salida/', id).subscribe(salida => {
+            this.apiService.read('salida/', id).pipe(this.untilDestroyed()).subscribe(salida => {
 	            this.salida = salida;
             	this.loading = false;
             }, error => {this.alertService.error(error); this.loading = false; });
@@ -90,7 +94,7 @@ export class InventarioSalidaComponent implements OnInit {
 
 	public onSubmit() {
         this.saving = true;
-        this.apiService.store('salida', this.salida).subscribe(salida => {
+        this.apiService.store('salida', this.salida).pipe(this.untilDestroyed()).subscribe(salida => {
             this.router.navigateByUrl('/salidas');
             this.saving = false;
         }, error => {this.alertService.error(error); this.saving = false; });
@@ -104,7 +108,7 @@ export class InventarioSalidaComponent implements OnInit {
     public editDetalle() {
         if(this.detalle.id) {
             this.loading = true;
-    	    this.apiService.store('salida/detalle', this.detalle).subscribe(data => {
+    	    this.apiService.store('salida/detalle', this.detalle).pipe(this.untilDestroyed()).subscribe(data => {
     	    	this.detalle = {};
     			this.loading = false;
     		}, error => {this.alertService.error(error); this.loading = false; });
@@ -116,7 +120,7 @@ export class InventarioSalidaComponent implements OnInit {
 	public eliminarDetalle(detalle:any){
 		if (confirm('¿Desea eliminar el Registro?')) {
 			if(detalle.id) {
-				this.apiService.delete('salida/detalle/', detalle.id).subscribe(detalle => {
+				this.apiService.delete('salida/detalle/', detalle.id).pipe(this.untilDestroyed()).subscribe(detalle => {
 					for (var i = 0; i < this.salida.detalles.length; ++i) {
 						if (this.salida.detalles[i].id === detalle.id ){
 							this.salida.detalles.splice(i, 1);

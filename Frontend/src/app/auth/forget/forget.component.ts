@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../services/alert.service';
 import { ApiService } from '../../services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 declare let $:any;
 
@@ -23,6 +24,9 @@ export class ForgetComponent implements OnInit {
     public loading = false;
     public anio:any = '';
 
+    private destroyRef = inject(DestroyRef);
+    private untilDestroyed = subscriptionHelper(this.destroyRef);
+
     constructor( private apiService: ApiService, private router: Router, private alertService: AlertService) { }
 
     ngOnInit() {
@@ -33,16 +37,18 @@ export class ForgetComponent implements OnInit {
         this.loading = true;
 
         this.apiService.store('password/email', this.user)
-        .subscribe(
-            data => {
-                this.alertService.success('Enviado', '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!');
-                // this.router.navigate(['/login']);
-                this.loading = false;
-            },
-            error => {
-                $('.container').addClass("animated shake");
-                this.alertService.error(error);
-                this.loading = false;
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data) => {
+                    this.alertService.success('Enviado', '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!');
+                    // this.router.navigate(['/login']);
+                    this.loading = false;
+                },
+                error: (error) => {
+                    $('.container').addClass("animated shake");
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
             });
     }
   

@@ -1,9 +1,10 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-descargar-inventario',
@@ -18,6 +19,9 @@ export class DescargarInventarioComponent implements OnInit {
     public downloading:boolean = false;
     modalRef!: BsModalRef;
 
+	private destroyRef = inject(DestroyRef);
+	private untilDestroyed = subscriptionHelper(this.destroyRef);
+
 	constructor( 
         public apiService: ApiService, private alertService: AlertService,
         private modalService: BsModalService
@@ -28,7 +32,9 @@ export class DescargarInventarioComponent implements OnInit {
         this.filtros.id_bodega = '';
         this.filtros.fecha = this.apiService.date();
 
-        this.apiService.getAll('bodegas/list').subscribe(bodegas => { 
+        this.apiService.getAll('bodegas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => { 
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error); });
         
@@ -41,7 +47,9 @@ export class DescargarInventarioComponent implements OnInit {
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('inventarios/exportar', this.filtros).subscribe((data:Blob) => {
+        this.apiService.export('inventarios/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
