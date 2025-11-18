@@ -210,7 +210,17 @@ export class PlanillaDetalleComponent implements OnInit {
 
 
   get esElSalvador(): boolean {
-    return this.planilla?.empresa?.cod_pais === 'SV';
+    // Verificar primero el código de país de la empresa
+    if (this.planilla?.empresa?.cod_pais === 'SV') {
+      return true;
+    }
+
+    // Si cod_pais es null, verificar el pais_configuracion del primer detalle
+    if (this.detalles && this.detalles.length > 0) {
+      return this.detalles[0]?.pais_configuracion === 'SV';
+    }
+
+    return false;
   }
 
   get conceptosEmpleado() {
