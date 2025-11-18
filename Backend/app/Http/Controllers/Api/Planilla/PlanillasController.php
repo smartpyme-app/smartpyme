@@ -752,11 +752,15 @@ class PlanillasController extends Controller
             $detalle->renta = 0;
 
         } else {
-            // EL SALVADOR (aunque tenga configuración)
-            Log::info('🇸🇻 Usando campos fijos El Salvador', [
-                'pais' => $pais
+            // EL SALVADOR - Usar valores del servicio (que ya maneja servicios profesionales)
+            Log::info('🇸🇻 Usando valores del servicio para El Salvador', [
+                'pais' => $pais,
+                'isss_empleado' => $resultados['isss_empleado'] ?? 0,
+                'afp_empleado' => $resultados['afp_empleado'] ?? 0,
+                'renta' => $resultados['renta'] ?? 0
             ]);
 
+            // El servicio ya calculó correctamente según tipo de contrato (incluyendo servicios profesionales)
             $detalle->isss_empleado = $resultados['isss_empleado'] ?? 0;
             $detalle->isss_patronal = $resultados['isss_patronal'] ?? 0;
             $detalle->afp_empleado = $resultados['afp_empleado'] ?? 0;
