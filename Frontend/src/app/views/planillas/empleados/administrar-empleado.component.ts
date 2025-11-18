@@ -706,20 +706,34 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     this.empleado.id_empresa = this.id_empresa;
     this.empleado.id_sucursal = this.id_sucursal;
 
-    this.apiService.store('empleados', this.empleado).subscribe(
-      (response) => {
-        const mensaje = this.empleado.id
-          ? 'Empleado actualizado exitosamente'
-          : 'Empleado creado exitosamente';
+    // Determinar si es actualización o creación
+    const esActualizacion = !!this.empleado.id;
 
-        this.alertService.success('Éxito', mensaje);
-        this.router.navigate(['/planilla/empleados']);
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+    if (esActualizacion) {
+      // Usar el endpoint update para actualizar
+      this.apiService.update('empleados', this.empleado.id, this.empleado).subscribe(
+        (response) => {
+          this.alertService.success('Éxito', 'Empleado actualizado exitosamente');
+          this.router.navigate(['/planilla/empleados']);
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.saving = false;
+        }
+      );
+    } else {
+      // Usar el endpoint store para crear
+      this.apiService.store('empleados', this.empleado).subscribe(
+        (response) => {
+          this.alertService.success('Éxito', 'Empleado creado exitosamente');
+          this.router.navigate(['/planilla/empleados']);
+        },
+        (error) => {
+          this.alertService.error(error);
+          this.saving = false;
+        }
+      );
+    }
   }
 
   public verificarSiExiste() {

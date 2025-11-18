@@ -19,15 +19,15 @@ import Swal from 'sweetalert2';
     templateUrl: './venta-detalles.component.html',
     standalone: true,
     imports: [
-        CommonModule, 
-        RouterModule, 
+        CommonModule,
+        RouterModule,
         FormsModule,
         TiendaVentaBuscadorComponent,
         TiendaVentaProductoComponent,
         TiendaVentaPaquetesComponent,
         TiendaVentaCitasComponent
     ],
-    
+
 })
 export class VentaDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -68,13 +68,15 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     this.openModal(template, { class: 'modal-md', backdrop: 'static' });
   }
 
-  public updateTotal(detalle: any) {
-    if (!detalle.cantidad) {
+  public updateTotal(detalle:any){
+    if(!detalle.cantidad){
       detalle.cantidad = 0;
     }
-    if (detalle.descuento_porcentaje) {
-      detalle.descuento = detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100));
-    } else {
+    if(detalle.descuento_porcentaje){
+      detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+    }else if(detalle.descuento_monto){
+      detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
+    }else{
       detalle.descuento = 0;
     }
 
@@ -238,7 +240,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
             console.log('venta', this.venta);
             const endpoint = this.venta.cotizacion == 1 ? 'cotizacion-venta-detalle' : 'venta-detalle';
 
-            this.apiService.delete(endpoint + '/', detalle.id).subscribe(detalle => { 
+            this.apiService.delete(endpoint + '/', detalle.id).subscribe(detalle => {
               this.venta.detalles.splice(indexAEliminar, 1);
               this.update.emit(this.venta);
             }, error => { this.alertService.error(error); this.loading = false; });

@@ -98,4 +98,58 @@
     </div>
 </div>
 
+<div class="card" *ngIf="gasto.abonos?.length > 0 || gasto.estado == 'Pendiente'">
+    <h5 class="card-title p-3">
+        Recibos de pago
+        <a *ngIf="gasto.saldo > 0" (click)="openAbono(mabono, gasto)" class="btn btn-default float-end">
+            <i class="fas fa-fw fa-hand-holding-usd"></i> Agregar abono
+        </a>
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Concepto</th>
+                        <th>Forma de pago</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center" *ngIf="gasto.abonos?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene abonos agregados</span>
+                        </td>
+                        <td colspan="5" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let abono of gasto.abonos; let i=index">
+                        <td>{{ abono.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ abono.concepto }}</td>
+                        <td>{{ abono.forma_pago }} <small *ngIf="abono.detalle_banco" class="text-muted">({{ abono.detalle_banco }})</small></td>
+                        <td>
+                            <select name="estado" class="form-select w-auto border-0" (change)="setEstado(abono)" [(ngModel)]="abono.estado" [ngClass]="{'bg-light-danger' : abono?.estado == 'Cancelado', 'bg-light-success' : abono?.estado == 'Confirmado'}">
+                                <option value="Cancelado">Cancelado</option>
+                                <option value="Confirmado">Confirmado</option>
+                            </select>
+                        </td>
+                        <td class="text-end">{{ abono.total | currency:'USD':'symbol':'1.2' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<ng-template #mabono>
+    <div class="modal-header d-block text-center">
+        <h4 class="modal-title">Agregar abono</h4>
+    </div>
+    <div class="modal-body">
+        <app-crear-abono-gasto [gasto]="gasto" (update)="loadAll()"></app-crear-abono-gasto>
+    </div>
+</ng-template>
 

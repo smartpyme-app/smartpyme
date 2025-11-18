@@ -59,7 +59,7 @@ class Gasto extends Model {
         'otros_impuestos' => 'json',
     ];
 
-    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento', 'total_otros_impuestos'];
+    protected $appends = ['nombre_usuario', 'nombre_proveedor', 'nombre_categoria', 'nombre_sucursal', 'nombre_proyecto', 'id_departamento','nombre_departamento', 'total_otros_impuestos', 'saldo'];
 
     protected static function boot()
     {
@@ -133,6 +133,11 @@ class Gasto extends Model {
         return $total;
     }
 
+    public function getSaldoAttribute(){
+        $abonos = $this->abonos()->where('estado', 'Confirmado')->sum('total');
+        return round($this->total - $abonos, 2);
+    }
+
     public function usuario()
     {
         return $this->belongsTo('App\Models\User', 'id_usuario');
@@ -188,7 +193,10 @@ class Gasto extends Model {
         return $this->areaEmpresa ? $this->areaEmpresa->departamento->nombre : null;
     }
 
-
+    public function abonos()
+    {
+        return $this->hasMany('App\Models\Compras\Gastos\Abono', 'id_gasto');
+    }
 }
 
 

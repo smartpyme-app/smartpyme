@@ -81,6 +81,23 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         super.openModal(template, config);
     }
 
+    private manejarErrorDescarga(error: any): void {
+        // Si el error viene como Blob (JSON convertido a Blob), leerlo y mostrar el mensaje
+        if (error.error instanceof Blob) {
+            error.error.text().then((text: string) => {
+                try {
+                    const errorJson = JSON.parse(text);
+                    this.alertService.error({ status: error.status || 409, error: { message: errorJson.message } });
+                } catch (e) {
+                    this.alertService.error({ status: error.status || 409, error: { message: text } });
+                }
+            });
+        } else {
+            this.alertService.error(error);
+        }
+        this.downloading = false;
+    }
+
     public descargarLibro(){
         this.downloading = true;
         this.apiService.export('libro-iva/anulados/descargar-libro', this.filtros).subscribe((data:Blob) => {
@@ -94,7 +111,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+          }, (error) => { this.manejarErrorDescarga(error); }
         );
     }
 
@@ -112,8 +129,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             window.URL.revokeObjectURL(url);
             this.downloading = false;
         }, (error) => {
-            this.alertService.error(error);
-            this.downloading = false;
+            this.manejarErrorDescarga(error);
         });
     }
 

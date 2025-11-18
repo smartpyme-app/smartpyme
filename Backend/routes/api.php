@@ -58,6 +58,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     require base_path('routes/modulos/compras/detalles.php');
     require base_path('routes/modulos/compras/devoluciones.php');
     require base_path('routes/modulos/compras/gastos.php');
+    require base_path('routes/modulos/compras/gastos-abonos.php');
     require base_path('routes/modulos/compras/proveedores.php');
     require base_path('routes/modulos/compras/abonos.php');
     require base_path('routes/modulos/compras/ordenes-de-compras.php');
@@ -76,8 +77,7 @@ Route::group(['middleware' => ['jwt.auth']], function () {
     require base_path('routes/modulos/inventario/custom-fields.php');
     require base_path('routes/modulos/inventario/entradas-salidas.php');
 
-
-    // Eventos
+	// Eventos
 	require base_path('routes/modulos/eventos/eventos.php');
 
 	// Empleados

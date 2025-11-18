@@ -12,7 +12,8 @@ use Maatwebsite\Excel\Events\BeforeSheet;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Auth;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Admin\Empresa;
 
 class LibroContribuyentesExport implements FromCollection, WithMapping, WithHeadings, WithEvents
 {
@@ -23,6 +24,122 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica habilitada
+     */
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    /**
+     * Filtra ventas según si tienen facturación electrónica o no
+     */
+    private function filtrarVentasPorFacturacionElectronica($ventas)
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            // Con facturación electrónica: solo ventas con sello_mh
+            $ventasSinSello = $ventas->filter(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+
+            if ($ventasSinSello->isNotEmpty()) {
+                Log::warning('Se excluyeron ventas sin sello al exportar libro contribuyentes', [
+                    'ventas' => $ventasSinSello->pluck('id'),
+                ]);
+            }
+
+            return $ventas->reject(function ($venta) {
+                return empty($venta->sello_mh);
+            });
+        } else {
+            // Sin facturación electrónica: todas las ventas
+            return $ventas;
+        }
+    }
+
+    /**
+     * Obtiene el código de generación o correlativo según facturación electrónica
+     */
+    private function obtenerCodigoGeneracion($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])) {
+            return $venta->dte['identificacion']['codigoGeneracion'];
+        }
+        return trim((string) $venta->correlativo);
+    }
+
+    /**
+     * Obtiene el número de control según facturación electrónica
+     */
+    private function obtenerNumeroControl($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])) {
+            return $venta->dte['identificacion']['numeroControl'];
+        }
+        return $venta->numero_control ?? trim((string) $venta->correlativo);
+    }
+
+    /**
+     * Obtiene el sello según facturación electrónica
+     */
+    private function obtenerSello($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && isset($venta->dte['sello'])) {
+            return $venta->dte['sello'];
+        }
+        return $venta->sello_mh ?? '';
+    }
+
+    /**
+     * Obtiene el código de generación para devoluciones
+     */
+    private function obtenerCodigoGeneracionDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if ($devolucion->codigo_generacion) {
+                return $devolucion->codigo_generacion;
+            }
+            if (isset($dte['identificacion']['codigoGeneracion'])) {
+                return $dte['identificacion']['codigoGeneracion'];
+            }
+        }
+        return trim((string) $devolucion->correlativo);
+    }
+
+    /**
+     * Obtiene el número de control para devoluciones
+     */
+    private function obtenerNumeroControlDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if ($devolucion->numero_control) {
+                return $devolucion->numero_control;
+            }
+            if (isset($dte['identificacion']['numeroControl'])) {
+                return $dte['identificacion']['numeroControl'];
+            }
+        }
+        return trim((string) $devolucion->correlativo);
+    }
+
+    /**
+     * Obtiene el sello para devoluciones
+     */
+    private function obtenerSelloDevolucion($devolucion): string
+    {
+        if ($this->tieneFacturacionElectronica()) {
+            $dte = $devolucion->dte ?? [];
+            if (isset($dte['sello'])) {
+                return $dte['sello'];
+            }
+        }
+        return $devolucion->sello_mh ?? '';
     }
 
     public function registerEvents(): array
@@ -81,32 +198,15 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
                         ->where('cotizacion', 0)
                         ->get();
 
-        $ventasSinSello = $ventas->filter(function ($venta) {
-            return empty($venta->sello_mh);
-        });
+        // Filtrar ventas según facturación electrónica
+        $ventasFiltradas = $this->filtrarVentasPorFacturacionElectronica($ventas);
 
-        if ($ventasSinSello->isNotEmpty()) {
-            Log::warning('Se excluyeron ventas sin sello al exportar libro contribuyentes', [
-                'ventas' => $ventasSinSello->pluck('id'),
-            ]);
-        }
-
-        $ventasConSello = $ventas->reject(function ($venta) {
-            return empty($venta->sello_mh);
-        });
-
-        $ventasData = $ventasConSello->map(function ($venta) {
+        $ventasData = $ventasFiltradas->map(function ($venta) {
             $cliente = optional($venta->cliente);
 
-            $codigoGeneracion = $venta->sello_mh && isset($venta->dte['identificacion']['codigoGeneracion'])
-                ? $venta->dte['identificacion']['codigoGeneracion']
-                : trim($venta->correlativo);
-
-            $numeroControl = $venta->sello_mh && isset($venta->dte['identificacion']['numeroControl'])
-                ? $venta->dte['identificacion']['numeroControl']
-                : ($venta->numero_control ?? trim($venta->correlativo));
-
-            $sello = $venta->dte['sello'] ?? $venta->sello_mh;
+            $codigoGeneracion = $this->obtenerCodigoGeneracion($venta);
+            $numeroControl = $this->obtenerNumeroControl($venta);
+            $sello = $this->obtenerSello($venta);
 
             return [
                 'fecha' => $venta->fecha,
@@ -141,15 +241,10 @@ class LibroContribuyentesExport implements FromCollection, WithMapping, WithHead
 
         $devolucionesData = $devoluciones->map(function ($devolucion) {
             $cliente = optional($devolucion->cliente);
-            $dte = $devolucion->dte;
 
-            $codigoGeneracion = $devolucion->codigo_generacion
-                ?? ($dte['identificacion']['codigoGeneracion'] ?? trim($devolucion->correlativo));
-
-            $numeroControl = $devolucion->numero_control
-                ?? ($dte['identificacion']['numeroControl'] ?? trim($devolucion->correlativo));
-
-            $sello = $dte['sello'] ?? $devolucion->sello_mh;
+            $codigoGeneracion = $this->obtenerCodigoGeneracionDevolucion($devolucion);
+            $numeroControl = $this->obtenerNumeroControlDevolucion($devolucion);
+            $sello = $this->obtenerSelloDevolucion($devolucion);
 
             return [
                 'fecha' => $devolucion->fecha,

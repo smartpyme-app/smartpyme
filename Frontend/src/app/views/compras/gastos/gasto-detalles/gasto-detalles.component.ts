@@ -8,12 +8,13 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 
 @Component({
     selector: 'app-gasto-detalles',
     templateUrl: './gasto-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
     
 })
 export class GastoDetallesComponent implements OnInit {
@@ -32,6 +33,9 @@ export class GastoDetallesComponent implements OnInit {
     }
 
     public loadAll(){
+        if(this.modalRef){
+            this.modalRef.hide();
+        }
         this.route.params.subscribe((params:any) => {
             if (params.id) {
                 this.loading = true;
@@ -45,6 +49,17 @@ export class GastoDetallesComponent implements OnInit {
                 this.gasto.id_usuario = this.apiService.auth_user().id;
             }
         });
+    }
+
+    public openAbono(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
+    }
+
+    public setEstado(abono: any){
+        this.apiService.store('gasto/abono', abono).subscribe(abono => {
+            this.loadAll();
+        }, error => {this.alertService.error(error); });
     }
 
 }

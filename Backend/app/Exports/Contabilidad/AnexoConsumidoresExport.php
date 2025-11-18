@@ -8,6 +8,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 use Illuminate\Http\Request;
+use App\Models\Admin\Empresa;
 
 class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustomCsvSettings
 {
@@ -17,6 +18,26 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
     public function filter(Request $request)
     {
         $this->request = $request;
+    }
+
+    /**
+     * Verifica si la empresa tiene facturación electrónica habilitada
+     */
+    private function tieneFacturacionElectronica(): bool
+    {
+        $empresa = Auth::user()->empresa()->first();
+        return $empresa && $empresa->facturacion_electronica === true;
+    }
+
+    /**
+     * Obtiene la clase de documento (DTE o Impreso)
+     */
+    private function obtenerClaseDocumento($venta): string
+    {
+        if ($this->tieneFacturacionElectronica() && $venta->sello_mh) {
+            return '4'; // DTE
+        }
+        return '1'; // Impreso
     }
 
     public function collection()
@@ -59,16 +80,25 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $venta->exenta = $venta->total;
             }
 
+           // Según guía de Hacienda:
+           // Para documentos IMPRESOS (sin FE): F y G = correlativo, H e I = correlativo
+           // Para documentos DTE (con FE): F y G = código generación, H e I = vacío o código generación
+           $tieneFE = $this->tieneFacturacionElectronica() && $venta->sello_mh;
+           $codigoGeneracion = $tieneFE && isset($venta->dte['identificacion']['codigoGeneracion']) 
+               ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion']) 
+               : '';
+           $correlativo = trim($venta->correlativo);
+           
            $fields = [
                 \Carbon\Carbon::parse($venta->fecha)->format('d/m/Y'), //A Fecha
-                $venta->sello_mh ? '4' : '1', //B Clase DTE o Impreso,
+                $this->obtenerClaseDocumento($venta), //B Clase DTE o Impreso,
                 '01', //C Tipo
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['numeroControl'] ?? '') : '', //D Resolucion
-                $venta->sello_mh ?? '', //E Serie
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion'] ?? '') : '', //F Numero Interno del
-                $venta->sello_mh ? str_replace('-', '', $venta->dte['identificacion']['codigoGeneracion'] ?? '') : '', //G Numero Interno al
-                trim($venta->correlativo), //H Numero Control
-                trim($venta->correlativo), //I Numero Control
+                $tieneFE ? str_replace('-', '', $venta->dte['identificacion']['numeroControl'] ?? '') : '', //D Resolucion (vacío si impreso)
+                $tieneFE ? ($venta->dte['sello'] ?? '') : '', //E Serie (vacío si impreso)
+                $tieneFE ? $codigoGeneracion : $correlativo, //F Numero Interno del (código generación si DTE, correlativo si impreso)
+                $tieneFE ? $codigoGeneracion : $correlativo, //G Numero Interno al (código generación si DTE, correlativo si impreso)
+                $tieneFE ? '' : $correlativo, //H Numero Control (vacío si DTE, correlativo si impreso)
+                $tieneFE ? '' : $correlativo, //I Numero Control (vacío si DTE, correlativo si impreso)
                 NULL, //J Caja registradora
                 $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad

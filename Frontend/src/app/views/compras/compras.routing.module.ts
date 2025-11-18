@@ -42,10 +42,10 @@ const routes: Routes = [
         loadComponent: () => import('../compras/facturacion/facturacion-consigna/facturacion-compra-consigna.component').then(m => m.FacturacionCompraConsignaComponent),
         title: 'Compra consigna',
       },
-      { 
-        path: 'compra/:id', 
-        loadComponent: () => import('../compras/compra/compra.component').then(m => m.CompraComponent), 
-        title: 'Compra' 
+      {
+        path: 'compra/:id',
+        loadComponent: () => import('../compras/compra/compra.component').then(m => m.CompraComponent),
+        title: 'Compra'
       },
 
       {
@@ -147,9 +147,9 @@ const routes: Routes = [
         path: 'reporte/compras/historial',
         loadComponent: () => import('../reportes/compras/historial/historial-compras.component').then(m => m.HistorialComprasComponent),
       },
-      { 
-        path: 'reporte/compras/detalle', 
-        loadComponent: () => import('../reportes/compras/detalle/detalle-compras.component').then(m => m.DetalleComprasComponent) 
+      {
+        path: 'reporte/compras/detalle',
+        loadComponent: () => import('../reportes/compras/detalle/detalle-compras.component').then(m => m.DetalleComprasComponent)
       },
       {
         path: 'reporte/compras/categorias',
@@ -170,6 +170,11 @@ const routes: Routes = [
         title: 'Gastos recurrentes',
       },
       {
+        path: 'gastos/abonos',
+        loadComponent: () => import('./gastos/abonos/abonos-gastos.component').then(m => m.AbonosGastosComponent),
+        title: 'Abonos de gastos',
+      },
+      {
         path: 'gasto/detalles/:id',
         loadComponent: () => import('./gastos/gasto-detalles/gasto-detalles.component').then(m => m.GastoDetallesComponent),
         canActivate: [PermissionGuard],
@@ -187,9 +192,9 @@ const routes: Routes = [
         },
         title: 'Gasto',
       },
-      { 
-        path: 'gastos/dash', 
-        loadComponent: () => import('./gastos/dash/gastos-dash.component').then(m => m.GastosDashComponent) 
+      {
+        path: 'gastos/dash',
+        loadComponent: () => import('./gastos/dash/gastos-dash.component').then(m => m.GastosDashComponent)
       },
       {
         path: 'gastos/categorias',
@@ -201,30 +206,30 @@ const routes: Routes = [
         title: 'Categorías de gastos',
       },
 
-      { 
-        path: 'retaceos', 
-        loadComponent: () => import('./retaceo/retaceos-list.component').then(m => m.RetaceosListComponent), 
-        title: 'Retaceos' 
+      {
+        path: 'retaceos',
+        loadComponent: () => import('./retaceo/retaceos-list.component').then(m => m.RetaceosListComponent),
+        title: 'Retaceos'
       },
-      { 
-        path: 'retaceo/crear', 
-        loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent), 
-        title: 'Retaceo' 
+      {
+        path: 'retaceo/crear',
+        loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent),
+        title: 'Retaceo'
       },
-      { 
-        path: 'retaceo/:id', 
-        loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent), 
-        title: 'Retaceo' 
+      {
+        path: 'retaceo/:id',
+        loadComponent: () => import('./retaceo/retaceo.component').then(m => m.RetaceoComponent),
+        title: 'Retaceo'
       },
-      { 
-        path: 'departamentos-empresa', 
-        loadComponent: () => import('./gastos/departamento-empresa/departamento-empresa.component').then(m => m.DepartamentoEmpresaComponent), 
-        title:'Departamentos de empresa' 
+      {
+        path: 'departamentos-empresa',
+        loadComponent: () => import('./gastos/departamento-empresa/departamento-empresa.component').then(m => m.DepartamentoEmpresaComponent),
+        title:'Departamentos de empresa'
       },
-      { 
-        path: 'areas-empresa', 
-        loadComponent: () => import('./gastos/area-empresa/area-empresa.component').then(m => m.AreaEmpresaComponent), 
-        title:'Áreas de empresa' 
+      {
+        path: 'areas-empresa',
+        loadComponent: () => import('./gastos/area-empresa/area-empresa.component').then(m => m.AreaEmpresaComponent),
+        title:'Áreas de empresa'
       },
 
     ]

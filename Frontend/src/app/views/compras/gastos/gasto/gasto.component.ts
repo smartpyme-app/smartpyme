@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,6 +10,7 @@ import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proy
 import { CrearAreaEmpresaComponent } from '@shared/modals/crear-area-empresa/crear-area-empresa.component';
 import { CrearImpuestoComponent } from '@shared/modals/crear-impuesto/crear-impuesto.component';
 import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-empresa/crear-departamento-empresa.component';
+import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 
@@ -19,7 +20,7 @@ import * as moment from 'moment';
     selector: 'app-gasto',
     templateUrl: './gasto.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent, CrearAbonoGastoComponent],
     
 })
 export class GastoComponent implements OnInit {
@@ -58,6 +59,17 @@ export class GastoComponent implements OnInit {
     private router: Router,
     private modalService: BsModalService
   ) {}
+
+  public openAbono(template: TemplateRef<any>, gasto:any){
+    this.gasto = gasto;
+    this.modalRef = this.modalService.show(template);
+  }
+
+  public setEstado(abono: any){
+    this.apiService.store('gasto/abono', abono).subscribe(abono => {
+      this.loadAll();
+    }, error => {this.alertService.error(error); });
+  }
 
 	ngOnInit(){
         this.loadAll();
@@ -151,6 +163,15 @@ export class GastoComponent implements OnInit {
         (gasto) => {
           this.gasto = gasto;
 
+          // Inicializar el campo credito basándose en el estado
+          // credito = false significa pendiente (toggle apagado)
+          // credito = true significa no pendiente (toggle encendido)
+          if (this.gasto.estado === 'Pendiente') {
+            this.gasto.credito = false;
+          } else {
+            this.gasto.credito = true;
+          }
+
           // console.log('Gasto completo:', this.gasto);
           // console.log('otros_impuestos raw:', this.gasto.otros_impuestos);
           // console.log('Tipo de otros_impuestos:', typeof this.gasto.otros_impuestos);
@@ -222,6 +243,7 @@ export class GastoComponent implements OnInit {
       this.gasto = {};
       this.gasto.forma_pago = 'Efectivo';
       this.gasto.estado = 'Confirmado';
+      this.gasto.credito = false; // Por defecto no está pendiente
       this.gasto.tipo_documento = 'Factura';
       this.gasto.detalle_banco = '';
       this.gasto.tipo = '';
@@ -409,6 +431,26 @@ export class GastoComponent implements OnInit {
       this.gasto.estado = 'Pendiente';
     } else {
       this.gasto.estado = 'Confirmado';
+    }
+  }
+
+  public setPendiente(event: any) {
+    // El toggle representa "Pendiente": cuando está encendido (true), está pendiente
+    // Cuando está apagado (false), no está pendiente (ya pagado)
+    const estaPendiente = event.target.checked;
+    
+    if (estaPendiente) {
+      // Si está pendiente (toggle encendido), deshabilitar fecha de pago y limpiar el valor
+      this.gasto.estado = 'Pendiente';
+      this.gasto.credito = false;
+      this.gasto.fecha_pago = null;
+    } else {
+      // Si no está pendiente (toggle apagado), habilitar fecha de pago y establecer fecha actual si no tiene
+      this.gasto.estado = 'Confirmado';
+      this.gasto.credito = true;
+      if (!this.gasto.fecha_pago) {
+        this.gasto.fecha_pago = moment().format('YYYY-MM-DD');
+      }
     }
   }
 
