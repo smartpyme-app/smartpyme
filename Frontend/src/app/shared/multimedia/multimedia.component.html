@@ -25,7 +25,7 @@
                 }
                 @for (foto of multimedia; track foto.url || $index) {
                   <div class="col col-6 col-md-4 col-lg-3">
-                    <img src="{{ apiService.baseUrl + '/' + foto.url }}" alt="" class="img-thumbnail">
+                    <img [appLazyImage]="apiService.baseUrl + '/' + foto.url" alt="" class="img-thumbnail">
                     <p class="text-center">
                         <a class="btn btn-light btn-sm" (click)="delete(foto)" tooltip="Eliminar">
                             <i class="fa fa-trash"></i>

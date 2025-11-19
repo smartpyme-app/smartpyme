@@ -242,7 +242,7 @@
                         <div class="d-flex gap-2 flex-wrap">
                             @for (usuario of precio.usuarios; track usuario.id) {
                             <span class="badge bg-default text-dark">
-                                <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="25px">
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="rounded-circle" width="25px">
                                 {{ usuario.nombre }}
                             </span>
                             }

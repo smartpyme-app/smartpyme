@@ -479,7 +479,7 @@
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                 @if (!saving) {
-                    <span>Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span>Guardar cliente <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                 }
                 @if (saving) {
                     <span>Guardando...</span>
@@ -546,7 +546,7 @@
         <div class="form-group col-md-12 mt-3">
             <button type="submit" [disabled]="saving" class="btn btn-primary float-end tcla-F10" tooltip="Guardar (F10)">
                 @if (!saving) {
-                    <span>Guardar cliente <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
+                    <span>Guardar cliente <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                 }
                 @if (saving) {
                     <span>Guardando...</span>

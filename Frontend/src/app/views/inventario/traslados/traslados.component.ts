@@ -14,12 +14,13 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
 import { Subscription } from 'rxjs';
 import { distinctUntilChanged, skip, debounceTime } from 'rxjs/operators';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-traslados',
     templateUrl: './traslados.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
 
 })
 export class TrasladosComponent extends BaseFilteredPaginatedModalComponent implements OnInit, OnDestroy {

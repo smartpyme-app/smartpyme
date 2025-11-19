@@ -9,12 +9,13 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-ordenes-produccion',
     templateUrl: './ordenes-produccion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule, LazyImageDirective],
     
 })
 export class OrdenesProduccionComponent extends BasePaginatedComponent implements OnInit {

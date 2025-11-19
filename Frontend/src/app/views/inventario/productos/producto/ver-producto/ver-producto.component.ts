@@ -9,13 +9,14 @@ import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-ca
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-ver-producto',
     templateUrl: './ver-producto.component.html',
     styleUrls: ['./ver-producto.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule],
+    imports: [CommonModule, RouterModule, LazyImageDirective],
     
 })
 export class VerProductoComponent {

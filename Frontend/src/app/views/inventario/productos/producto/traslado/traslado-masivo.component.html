@@ -72,7 +72,7 @@
                 }
                 @for (producto of productos; track producto.id) {
                 <a href="javascript:void(0);" class="list-group-item d-flex" (click)="selectProducto(producto)">
-                    <img style="width: 45px; height: 45px;" src="{{ apiService.baseUrl }}/img/{{ producto.img }}"
+                    <img style="width: 45px; height: 45px;" [appLazyImage]="apiService.baseUrl + '/img/' + producto.img"
                          class="rounded-circle img-fluid col-1">
                     <span id="producto_nombre" class="col-7 ps-2">
                         {{ getNombreCompleto(producto) }} <br>
@@ -133,7 +133,7 @@
                     <tr>
                         <td>
                             <div class="d-flex align-items-center gap-2">
-                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="40px">
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="40px">
                                 <span>{{ producto.nombre }}</span>
                             </div>
                         </td>
@@ -177,7 +177,7 @@
                 @if (!saving) {
                 <span>
                     Realizar traslado
-                    <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                    <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
                 </span>
                 }
                 @if (saving) {

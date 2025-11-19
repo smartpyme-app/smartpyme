@@ -11,12 +11,13 @@ import { CrearAbonoCompraComponent } from '@shared/modals/crear-abono-compra/cre
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-compra',
     templateUrl: './compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoCompraComponent],
+    imports: [CommonModule, RouterModule, FormsModule, CrearAbonoCompraComponent, LazyImageDirective],
     
 })
 export class CompraComponent implements OnInit {

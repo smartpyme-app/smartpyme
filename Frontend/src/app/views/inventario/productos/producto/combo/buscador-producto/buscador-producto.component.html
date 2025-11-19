@@ -10,7 +10,7 @@
           <ul class="list-group opciones">
               @for (producto of productos; track producto.id) {
                   <a href="javascript:void(0);" class="list-group-item d-flex gap-2" (click)="selectProducto(producto)">
-                      <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px">
+                      <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" height="50px" width="50px">
                       <p class="mb-0">
                           {{ producto.nombre }} <br>
                           <small class="text-muted">{{ producto.inventarios | sum:'stock' }} disponibles</small>
@@ -120,7 +120,7 @@
                                 (click)="onCheckProducto(producto)">
                         </td>
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="50px">
                             {{ producto.nombre }}
                         </td>
                         <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>

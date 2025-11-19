@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 declare let $:any;
 
@@ -16,7 +17,7 @@ declare let $:any;
     selector: 'app-login',
     templateUrl: './login.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, NotificacionesContainerComponent]
+    imports: [CommonModule, FormsModule, RouterModule, NotificacionesContainerComponent, LazyImageDirective]
 })
 export class LoginComponent implements OnInit {
 

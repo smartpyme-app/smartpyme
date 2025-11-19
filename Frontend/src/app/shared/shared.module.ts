@@ -11,6 +11,7 @@ import { PipesModule } from '@pipes/pipes.module';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
+import { LazyImageDirective } from '../directives/lazy-image.directive';
 import { BusquedaClienteComponent } from './modals/busqueda-cliente/busqueda-cliente.component';
 import { BusquedaProductoComponent } from './modals/busqueda-producto/busqueda-producto.component';
 import { ClienteDireccionComponent } from './modals/cliente-direccion/cliente-direccion.component';
@@ -60,6 +61,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     PipesModule,
     NgSelectModule,
     NgxMaskDirective, NgxMaskPipe,
+    LazyImageDirective,
     // TooltipModule removido - los módulos lo importan directamente
     // Componentes y pipes standalone
     NotFoundComponent,
@@ -114,6 +116,7 @@ import { DescargarInventarioComponent } from './parts/descargar-inventario/desca
     NgSelectModule,
     NgxMaskDirective,
     NgxMaskPipe,
+    LazyImageDirective,
     BusquedaClienteComponent,
     BusquedaProductoComponent,
     CrearProductoComponent,

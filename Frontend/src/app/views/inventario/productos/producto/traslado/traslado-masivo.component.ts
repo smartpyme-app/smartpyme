@@ -12,12 +12,13 @@ import { debounceTime, switchMap, filter, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-traslado-masivo',
     templateUrl: './traslado-masivo.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
     
 })
 export class TrasladoMasivoComponent extends BaseModalComponent implements OnInit {

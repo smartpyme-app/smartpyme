@@ -11,12 +11,13 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-tienda-venta-buscador',
     templateUrl: './tienda-venta-buscador.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
     
 })
 export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent implements OnInit {

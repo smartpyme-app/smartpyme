@@ -11,6 +11,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-sidebar',
@@ -22,7 +23,8 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
         RouterModule, 
         ReactiveFormsModule,
         CollapseModule,
-        TooltipModule
+        TooltipModule,
+        LazyImageDirective
     ],
     
 })

@@ -37,7 +37,7 @@
 <!--             <div class="col-12 text-center">
                 <figure style="min-height: 100px;" class="img-thumbnail file-upload d-flex justify-content-center align-items-center" tooltip="Agregar">
                     <i *ngIf="!subcategoria.img && !preview" class="fa fa-image fa-2x text-muted"></i>
-                    <img *ngIf="subcategoria.img && !preview" src="{{ apiService.baseUrl + '/img/' + subcategoria.img }}" height="100">
+                    <img *ngIf="subcategoria.img && !preview" [appLazyImage]="apiService.baseUrl + '/img/' + subcategoria.img" height="100">
                     <img *ngIf="url_img_preview && preview" src="{{ url_img_preview }}" height="100">
                     <input type="file" name="img" (change)="setFile($event)" accept="image/png, image/jpeg, image/jpg">
                 </figure>

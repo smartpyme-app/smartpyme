@@ -34,7 +34,7 @@
                                    (change)="actualizarSeleccion()">
                         </td>
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px"> 
                             {{ detalle.descripcion }}
                             <small class="text-muted text-tiny">{{ detalle?.producto?.tipo }}</small>
                             <ul style="font-size: 14px;">

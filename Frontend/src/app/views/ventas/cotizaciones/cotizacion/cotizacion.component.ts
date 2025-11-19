@@ -20,6 +20,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-cotizacion',
@@ -35,7 +36,8 @@ import * as moment from 'moment';
         MetodosDePagoComponent,
         BuscadorClientesComponent,
         CrearClienteComponent,
-        CrearProyectoComponent
+        CrearProyectoComponent,
+        LazyImageDirective
     ],
     providers: [SumPipe],
     

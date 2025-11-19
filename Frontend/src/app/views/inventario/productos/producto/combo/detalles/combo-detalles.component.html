@@ -26,7 +26,7 @@
         @for (detalle of producto?.detalles; track detalle.id_producto || $index) {
             <tr>
                 <td>
-                    <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                    <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
                     {{ detalle.nombre_producto }}
                 </td>
                 <td style="width: 150px;">

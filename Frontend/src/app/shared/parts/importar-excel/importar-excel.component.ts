@@ -8,6 +8,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 interface ImportResponse {
     success: boolean;
@@ -30,7 +31,7 @@ interface ValidationError {
     selector: 'app-importar-excel',
     templateUrl: './importar-excel.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, NotificacionesContainerComponent]
+    imports: [CommonModule, FormsModule, NotificacionesContainerComponent, LazyImageDirective]
 })
 export class ImportarExcelComponent extends BaseModalComponent implements OnInit {
 

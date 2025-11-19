@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
 import { Router } from '@angular/router';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 // declare var $:any;
 
@@ -16,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     selector: 'app-header',
     templateUrl: './header.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    imports: [CommonModule, RouterModule, FormsModule, TooltipModule, LazyImageDirective],
     
 })
 export class HeaderComponent implements OnInit {

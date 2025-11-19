@@ -2,7 +2,7 @@
   <div class="container-fluid d-flex justify-content-between">
     <div class="d-flex justify-content-between align-items-center px-0">
         <button class="btn btn-link text-decoration-none d-flex d-md-none justify-content-end toggle" type="button" (click)="toggleSidebar()">
-            <img src="/assets/icons/sidebar.png">
+            <img appLazyImage="/assets/icons/sidebar.png">
         </button>
     </div>
     <ul class="d-flex mt-3">
@@ -15,7 +15,7 @@
 
             <li>
                 <a [routerLink]="['/notificaciones']" class="btn d-inline-flex align-items-center text-decoration-none rounded px-2 position-relative">
-                    <img src="/assets/icons/bell.png" class="icon me-2">
+                    <img appLazyImage="/assets/icons/bell.png" class="icon me-2">
                     <span style="position: absolute;right: 10px;line-height: 10px;font-size: 8px;top: 1px;" class="badge bg-primary">{{ notificaciones.total ? notificaciones.total : 0 }}</span>
                 </a>
             </li>
@@ -28,11 +28,11 @@
             <li class="icons nav-item dropdown ps-3">
 
                 <a class="nav-link dropdown-toggle user-img c-pointer-x px-0" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
-                    <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="30" width="30" class="img-circle">
+                    <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" height="30" width="30" class="img-circle">
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" style="margin-top: 54px; min-width: 210px;"  >
                     <li class="dropdown-item click user-header text-center" (click)="irAPerfil()">
-                        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
+                        <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="img-circle" alt="User Image" width="40px">
                         <p>
                           {{ usuario.name }} <br>
                           <small>{{rol ?? '' }}</small><br>
@@ -40,16 +40,16 @@
                         </p>
                     </li>
                     @if (apiService.hasPermission('organizacion.usuarios.ver')) {
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/usuarios']" tooltip="Usuarios" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user.png" class="icon me-2">Usuarios</a></li>
                     }
                     @if (apiService.hasPermission('administracion.sucursales.ver')) {
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/sucursales']" tooltip="Sucursales" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Sucursales</a></li>
                     }
                     @if (apiService.validateRole('admin', true)) {
-                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
+                        <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/suscripcion']" tooltip="Mi suscripción" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/star.png" class="icon me-2">Mi suscripción</a></li>
                     }
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
-                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img src="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/mi-cuenta']" tooltip="Mi cuenta" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Mi cuenta</a></li>
+                    <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/login']" tooltip="Cerrar sesión" [adaptivePosition]="false" placement="right" class="dropdown-item click link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/log-out.png" class="icon me-2">Cerrar sesión</a></li>
                 </ul>
             </li>
         </ul>

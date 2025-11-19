@@ -6,12 +6,13 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-vendedor-productos',
     templateUrl: './vendedor-productos.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     
 })
 export class VendedorProductosComponent extends BasePaginatedComponent implements OnInit {

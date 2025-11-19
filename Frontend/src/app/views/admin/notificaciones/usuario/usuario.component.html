@@ -21,7 +21,7 @@
                       <i class="fa fa-image fa-2x text-muted"></i>
                     }
                     @if (usuario.avatar && !preview) {
-                      <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" height="100">
+                      <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" height="100">
                     }
                     @if (url_img_preview && preview) {
                       <img src="{{ url_img_preview }}" height="100">

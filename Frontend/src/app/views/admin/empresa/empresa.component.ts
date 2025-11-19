@@ -13,12 +13,13 @@ import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-empresa',
     templateUrl: './empresa.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, TabsModule, NgxMaskDirective, LazyImageDirective],
 
 })
 export class EmpresaComponent implements OnInit {
