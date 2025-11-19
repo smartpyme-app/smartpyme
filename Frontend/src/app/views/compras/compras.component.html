@@ -116,11 +116,11 @@
                                             <td>Total</td>
                                             <td class="text-end">{{ compra.total | currency}}</td>
                                         </tr>
-                                        <tr *ngIf="compra.abonos_sum_total > 0">
+                                        <tr>
                                             <td>Abonos</td>
                                             <td class="text-end">{{ compra.abonos_sum_total | currency}}</td>
                                         </tr>
-                                        <tr *ngIf="compra.devoluciones_sum_total > 0">
+                                        <tr>
                                             <td>Devoluciones</td>
                                             <td class="text-end">{{ compra.devoluciones_sum_total | currency}}</td>
                                         </tr>

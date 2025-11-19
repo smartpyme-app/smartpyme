@@ -28,16 +28,18 @@
             <table class="table table-bordered">
                 <tbody>
                     <tr>
-                        <th colspan="3" class="text-center">Datos de la venta</th>
+                        <th colspan="4" class="text-center">Datos de la venta</th>
                     </tr>
                     <tr>
-                        <th width="33%">Total</th>
-                        <th width="33%">Abonado</th>
-                        <th width="33%">Saldo</th>
+                        <th width="25%">Total</th>
+                        <th width="25%">Abonado</th>
+                        <th width="25%">Devoluciones</th>
+                        <th width="25%">Saldo</th>
                     </tr>
                     <tr>
                         <td>{{ venta.total | currency}}</td>
-                        <td>{{ (venta.total - venta.saldo) | currency}}</td>
+                        <td>{{ venta.abonos_sum_total | currency}}</td>
+                        <td>{{ venta.devoluciones_sum_total | currency}}</td>
                         <td>{{ venta.saldo | currency}}</td>
                     </tr>
                 </tbody>
