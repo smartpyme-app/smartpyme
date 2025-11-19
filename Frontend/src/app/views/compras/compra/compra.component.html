@@ -194,6 +194,50 @@
     </div>
 </div>
 
+<div class="card" *ngIf="compra.devoluciones?.length > 0">
+    <h5 class="card-title p-3">
+        Devoluciones
+    </h5>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-borderless">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Tipo documento</th>
+                        <th>Referencia</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center" *ngIf="compra.devoluciones?.length < 1 && !loading">
+                            <span class="badge bg-primary">No tiene devoluciones agregadas</span>
+                        </td>
+                        <td colspan="6" class="text-center" *ngIf="loading">
+                            <span class="badge bg-primary">Cargando...</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let devolucion of compra.devoluciones; let i=index">
+                        <td>{{ devolucion.fecha | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ devolucion.tipo }}</td>
+                        <td>{{ devolucion.tipo_documento }}</td>
+                        <td>{{ devolucion.referencia }}</td>
+                        <td>
+                            <span class="badge" [ngClass]="{'bg-danger' : devolucion?.enable == '0', 'bg-success' : devolucion?.enable == '1'}">
+                                {{ devolucion?.enable == '1' ? 'Activa' : 'Anulada' }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{ devolucion.total | currency:'USD':'symbol':'1.2' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 
 <ng-template #mabono>
     <div class="modal-header d-block text-center">

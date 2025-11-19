@@ -81,6 +81,9 @@ class ComprasController extends Controller
                         ->withSum(['abonos' => function ($query) {
                             $query->where('estado', 'Confirmado');
                         }], 'total')
+                        ->withSum(['devoluciones' => function ($query) {
+                            $query->where('enable', 1);
+                        }], 'total')
                         ->orderBy($request->orden, $request->direccion)
                         ->orderBy('id', 'desc')
                         ->paginate($request->paginate);
@@ -95,7 +98,7 @@ class ComprasController extends Controller
 
     public function read($id) {
 
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos')->first();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos', 'devoluciones')->first();
         $compra->saldo = $compra->saldo;
         return Response()->json($compra, 200);
  
