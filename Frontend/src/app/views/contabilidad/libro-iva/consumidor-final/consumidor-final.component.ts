@@ -10,12 +10,13 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { SumPipe } from '@pipes/sum.pipe';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-consumidor-final',
     templateUrl: './consumidor-final.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, SumPipe],
+    imports: [CommonModule, RouterModule, FormsModule, SumPipe, LazyImageDirective],
     
 })
 

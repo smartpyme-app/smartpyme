@@ -115,7 +115,7 @@
             </tr>
             <tr *ngFor="let detalle of detalles; let i = index">
               <td>
-                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px"
+                <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px"
                   width="50px">
                 {{ detalle.nombre_producto }}
               </td>
@@ -237,7 +237,7 @@
           @if (saving) {
             <span>Procesando...</span>
           }
-          <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+          <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
         </button>
         <!-- <button type="submit" (click)="openModalFacturar(mfacturar)" [disabled]="loading" class="ml-3 btn btn-primary float-end tcla-F10" title="Procesar compra (F10)">
                 Revisar información <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">

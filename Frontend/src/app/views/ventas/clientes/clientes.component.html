@@ -25,15 +25,15 @@
         <div class="col-md-6 mb-3">
             <div class="d-flex gap-2">
                 <button (click)="openModal(mimportar)" class="btn btn-default tcla-F4" tooltip="Importar clientes desde archivo de Excel">
-                    <img src="/assets/icons/upload.png" class="icon">
+                    <img appLazyImage="/assets/icons/upload.png" class="icon">
                 </button>
                 <button (click)="openModal(mexportar)" tooltip="Descargar clientes a Excel" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarClientes()" autocomplete="off">
                     <input type="search" name="buscador" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador" focus="true">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="openModal(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <button tooltip="Filtrar (F3)" (click)="openModal(mfilter)" class="btn btn-default tcla-F3"> <img appLazyImage="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -306,13 +306,13 @@
             <div class="form-group col-sm-6">
                 <label for="">Exportar clientes de tipo persona:</label>
                 <button [disabled]="downloading" tooltip="Descargar clientes persona" (click)="descargarPersonas()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
             </div>
             <div class="form-group col-sm-6">
                 <label for="">Exportar clientes de tipo empresa:</label>
                 <button [disabled]="downloading" tooltip="Descargar clientes empresa" (click)="descargarEmpresas()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
             </div>
         </div>

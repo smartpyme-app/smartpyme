@@ -12,13 +12,14 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-cotizacion-form',
     templateUrl: './cotizacion-form.component.html',
     styleUrls: ['./cotizacion-form.component.css'],
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective],
     
 })
 export class CotizacionFormComponent implements OnInit {

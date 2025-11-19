@@ -13,13 +13,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SafeHtmlPipe } from '@pipes/safe-html.pipe';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-chat-drawer',
     templateUrl: './chat-drawer.component.html',
     styleUrls: ['./chat-drawer.component.css'],
     standalone: true,
-    imports: [CommonModule, FormsModule, SafeHtmlPipe],
+    imports: [CommonModule, FormsModule, SafeHtmlPipe, LazyImageDirective],
     
 })
 export class ChatDrawerComponent

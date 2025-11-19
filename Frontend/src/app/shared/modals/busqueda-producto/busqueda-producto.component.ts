@@ -8,12 +8,13 @@ import { AlertService } from '../../../services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-busqueda-producto',
     templateUrl: './busqueda-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule]
+    imports: [CommonModule, FormsModule, RouterModule, LazyImageDirective]
 })
 export class BusquedaProductoComponent extends BaseModalComponent implements OnInit {
 

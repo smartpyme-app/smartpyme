@@ -16,12 +16,13 @@ import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import Swal from 'sweetalert2';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-ventas',
     templateUrl: './ventas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
 
 })
 export class VentasComponent extends BasePaginatedModalComponent implements OnInit {

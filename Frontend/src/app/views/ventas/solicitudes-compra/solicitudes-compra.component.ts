@@ -7,13 +7,14 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 
 @Component({
     selector: 'app-solicitudes-compra',
     templateUrl: './solicitudes-compra.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, LazyImageDirective],
     
 })
 

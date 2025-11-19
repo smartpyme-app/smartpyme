@@ -25,7 +25,7 @@
               <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form> -->
           <button [disabled]="downloading" tooltip="Descargar suscripciones" (click)="descargar()" class="btn btn-default tcla-F6">
-            <img src="/assets/icons/download.png" class="icon">
+            <img appLazyImage="/assets/icons/download.png" class="icon">
         </button>
         <form
           class="d-flex input-group"
@@ -52,7 +52,7 @@
           (click)="openFilter(mfilterSuscriptions)"
           class="btn btn-default tcla-F3"
         >
-          <img src="/assets/icons/filter.png" class="icon" />
+          <img appLazyImage="/assets/icons/filter.png" class="icon" />
         </button>
       </div>
     </div>

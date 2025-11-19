@@ -9,6 +9,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 declare var bootstrap: any;
 
@@ -16,7 +17,7 @@ declare var bootstrap: any;
     selector: 'app-producto-precios',
     templateUrl: './producto-precios.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     
 })
 export class ProductoPreciosComponent extends BaseModalComponent implements OnInit, AfterViewInit {

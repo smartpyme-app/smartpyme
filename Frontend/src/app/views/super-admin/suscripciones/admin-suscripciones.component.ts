@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 interface Plan {
   id: number;
@@ -31,7 +32,7 @@ interface OrdenPago {
     selector: 'app-admin-suscripciones',
     templateUrl: './admin-suscripciones.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective],
     
 })
 export class AdminSuscripcionesComponent extends BasePaginatedComponent implements OnInit {

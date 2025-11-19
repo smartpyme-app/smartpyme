@@ -27,7 +27,7 @@
             <div class="d-flex gap-2">
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'servicios'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar servicios" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarServicios()" autocomplete="off">
                     <input type="search" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
@@ -90,7 +90,7 @@
                     @for (servicio of servicios?.data; track servicio.id) {
                         <tr>
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ servicio.img }}" class="rounded-circle" width="50px">
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + servicio.img" class="rounded-circle" width="50px">
                             {{ servicio.nombre }}
                         </td>
                         <td class="d-none d-lg-table-cell">

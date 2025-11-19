@@ -25,13 +25,13 @@
       <div class="col-md-6 mb-3">
         <div class="d-flex gap-2">
           <!-- <button [disabled]="downloading" tooltip="Descargar órdenes" (click)="descargar()" class="btn btn-default">
-            <img src="/assets/icons/download.png" class="icon">
+            <img appLazyImage="/assets/icons/download.png" class="icon">
           </button> -->
           <form class="d-flex input-group" (ngSubmit)="filtrarOrdenes()" autocomplete="off">
             <input type="text" name="buscador" class="form-control" placeholder="Buscar" [(ngModel)]="filtros.buscador">
           </form>
           <button tooltip="Filtrar" (click)="openFilter(mfilter)" class="btn btn-default">
-            <img src="/assets/icons/filter.png" class="icon">
+            <img appLazyImage="/assets/icons/filter.png" class="icon">
           </button>
         </div>
       </div>

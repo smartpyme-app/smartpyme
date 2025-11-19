@@ -17,7 +17,7 @@
             <div class="d-flex gap-2">
                 <!-- <app-importar-excel (loadAll)="loadAll()" [nombre]="'Productos'"></app-importar-excel> -->
                 <button [disabled]="downloading" tooltip="Descargar consignas" (click)="descargar()" class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <!-- <form class="d-flex input-group" name="form" (ngSubmit)="search()" autocomplete="off"> -->
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="buscador">
@@ -79,7 +79,7 @@
                     @for (producto of productos?.data | filter:['nombre']:buscador | filter:['nombre_categoria']:filtros.categoria; track producto.id) {
                         <tr>
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/productos/default.jpg" class="rounded-circle" width="50px">
+                            <img [appLazyImage]="apiService.baseUrl + '/img/productos/default.jpg'" class="rounded-circle" width="50px">
                             @if (isShopifyActive() && producto.nombre_variante) {
                                 <span>{{ producto.nombre }} ({{ producto.nombre_variante }})</span>
                             } @else {
@@ -92,7 +92,7 @@
                         <td class="text-center"> {{ producto.stock }} </td>
                         <td class="text-center">
                             <a (click)="openModal(mdetalles, producto)" class="btn" tooltip="Ver detalles">
-                                <img  src="/assets/icons/search.png" class="icon me-2">
+                                <img  appLazyImage="/assets/icons/search.png" class="icon me-2">
                             </a>
                         </td>
                     </tr>
@@ -141,7 +141,7 @@
                         <td class="text-end">{{ venta.cantidad }}</td>
                         <td class="text-end">
                             <a class="btn btn-default"  tooltip="Ver información de la venta" routerLink="/venta/{{venta.id}}">
-                                <img  src="/assets/icons/search.png" class="icon">
+                                <img  appLazyImage="/assets/icons/search.png" class="icon">
                             </a>
                         </td>
                     </tr>

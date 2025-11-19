@@ -55,7 +55,7 @@
                         @if (!usuario.empresa.editar_descripcion_venta) {
                           <div class="d-flex gap-3">
                             <div>
-                                <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
                             </div>
                             <div>
                                 {{ detalle.descripcion }} <br>

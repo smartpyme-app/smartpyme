@@ -11,7 +11,7 @@
               <ul class="list-group opciones" style="position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 300px; overflow-y: auto; background-color: #fff; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
                 @for (producto of productos.data; track producto.id || $index) {
                   <a href="javascript:void(0);" class="list-group-item d-flex gap-2" style="cursor: pointer;" (click)="selectProducto(producto)">
-                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" height="50px" width="50px" onerror="this.src='{{ apiService.baseUrl }}/img/default.png'">
+                    <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" [errorImage]="apiService.baseUrl + '/img/default.png'" class="rounded-circle" height="50px" width="50px">
                     <p class="mb-0">
                       {{ getNombreCompleto(producto) }} <br>
                         <small class="text-muted">{{ producto.inventarios | filter:'id_bodega':compra.id_bodega | sum:'stock' }} disponibles</small>
@@ -60,7 +60,7 @@
                                 <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                             </div>
                         </form>
-                        <button type="button" tooltip="Filtrar (F6)" (click)="filtrarProductos()" class="btn btn-default tcla-F6"><img src="/assets/icons/filter.png" class="icon"></button>
+                        <button type="button" tooltip="Filtrar (F6)" (click)="filtrarProductos()" class="btn btn-default tcla-F6"><img appLazyImage="/assets/icons/filter.png" class="icon"></button>
                     </div>
                 </div>
             </div>
@@ -109,7 +109,7 @@
                                     <input type="radio" name="productos" id="producto{{producto.id}}" class="form-check" (click)="onCheckProducto(producto)">
                                 </td>
                                 <td>
-                                    <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
+                                    <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="50px">
                                     {{ getNombreCompleto(producto) }}
                                 </td>
                                 <td class="d-none d-md-table-cell">{{ producto.nombre_categoria }}</td>

@@ -43,6 +43,7 @@ class   ConfiguracionPlanillaController extends Controller
                     'id' => $configuracion->id,
                     'empresa_id' => $configuracion->empresa_id,
                     'cod_pais' => $configuracion->cod_pais,
+                    'pais_configuracion' => $configuracion->pais->nombre,
                     'configuracion' => $configuracion->configuracion,
                     'activo' => $configuracion->activo,
                     'fecha_vigencia_desde' => $configuracion->fecha_vigencia_desde,

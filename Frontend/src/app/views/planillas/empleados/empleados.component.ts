@@ -12,12 +12,13 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { VerHistorialButtonComponent } from './shared/ver-historial-button.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-empleados',
     templateUrl: './empleados.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective],
 
 })
 export class EmpleadosComponent extends BasePaginatedModalComponent implements OnInit {

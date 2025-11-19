@@ -3,11 +3,11 @@
   <div>
     @if (apiService.canCreateTest('productos.compuestos.crear')) {
         <button routerLink="/producto/combo/crear" class="btn btn-default font-weight-bold"
-            style="margin-right: 10px;"><img src="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
+            style="margin-right: 10px;"><img appLazyImage="/assets/icons/plus.png" class="icon me-2"> Crear compuesto</button>
     }
     @if (apiService.canCreateTest('productos.crear')) {
         <button routerLink="/producto/crear" tooltip="Crear producto (F4)"
-            class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir
+            class="btn btn-default tcla-F4 font-weight-bold"><img appLazyImage="/assets/icons/plus.png" class="icon me-2"> Añadir
             producto</button>
     }
   </div>
@@ -35,7 +35,7 @@
                 <app-importar-excel (loadAll)="loadAll()" [nombre]="'productos'"></app-importar-excel>
                 <button [disabled]="downloading" tooltip="Descargar productos" (click)="openDescargar(mdescargar)"
                     class="btn btn-default tcla-F6">
-                    <img src="/assets/icons/download.png" class="icon">
+                    <img appLazyImage="/assets/icons/download.png" class="icon">
                 </button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarProductos()" autocomplete="off">
                     <div class="input-group">
@@ -47,7 +47,7 @@
                     </div>
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"><img
-                        src="/assets/icons/filter.png" class="icon"></button>
+                        appLazyImage="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
@@ -144,7 +144,7 @@
                             <input type="checkbox" class="form-check">
                         </td> -->
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle"
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle"
                                 width="50px">
                             @if (isShopifyActive() && producto.nombre_variante) {
                                 <span>{{ producto.nombre }} ({{ producto.nombre_variante }})</span>
@@ -220,22 +220,22 @@
                                 <div class="d-flex flex-column">
                                     @if (apiService.canEditTest('productos.editar')) {
                                         <button type="button" routerLink="/producto/editar/{{producto.id}}" class="btn text-start border-0">
-                                            <img  src="/assets/icons/edit.png" class="icon me-2">Editar
+                                            <img  appLazyImage="/assets/icons/edit.png" class="icon me-2">Editar
                                         </button>
                                     }
                                     <button type="button" routerLink="/kardex/{{producto.id}}"
                                         class="btn text-start border-0">
-                                        <img src="/assets/icons/file-text.png" class="icon me-2">Kardex
+                                        <img appLazyImage="/assets/icons/file-text.png" class="icon me-2">Kardex
                                     </button>
                                     <!-- <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/tool.png" class="icon me-2">Ajustar
+                                        <img  appLazyImage="/assets/icons/tool.png" class="icon me-2">Ajustar
                                     </button>
                                     <button type="button" class="btn text-start border-0">
-                                        <img  src="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
+                                        <img  appLazyImage="/assets/icons/corner-up-right.png" class="icon me-2">Trasladar
                                     </button> -->
 
                                     <!-- <button type="button" (click)="delete(producto.id)" class="btn text-start text-danger">
-                                        <img  src="/assets/icons/trash-2.png" class="icon me-2">Eliminar
+                                        <img  appLazyImage="/assets/icons/trash-2.png" class="icon me-2">Eliminar
                                     </button> -->
                                 </div>
                             </ng-template>

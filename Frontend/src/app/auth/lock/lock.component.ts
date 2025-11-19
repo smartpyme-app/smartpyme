@@ -7,6 +7,7 @@ import { ApiService } from '../../services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../services/modal-manager.service';
 import { BaseModalComponent } from '../../shared/base/base-modal.component';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 declare let $:any;
 
@@ -14,7 +15,7 @@ declare let $:any;
     selector: 'app-lock',
     templateUrl: './lock.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     
 })
 export class LockComponent extends BaseModalComponent implements OnInit {

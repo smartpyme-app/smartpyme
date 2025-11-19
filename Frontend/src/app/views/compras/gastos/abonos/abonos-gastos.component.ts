@@ -8,12 +8,13 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
   selector: 'app-abonos-gastos',
   templateUrl: './abonos-gastos.component.html',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent],
+  imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
 })
 
 export class AbonosGastosComponent implements OnInit {

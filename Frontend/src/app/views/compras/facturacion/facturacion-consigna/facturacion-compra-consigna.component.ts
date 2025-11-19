@@ -14,12 +14,13 @@ import { of } from 'rxjs';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-facturacion-compra-consigna',
     templateUrl: './facturacion-compra-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     providers: [SumPipe],
     
 })

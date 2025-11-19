@@ -24,11 +24,11 @@
 
         <div class="col">
             <div class="d-flex gap-2">
-                <button tooltip="Descargar compras" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img src="/assets/icons/download.png" class="icon"></button>
+                <button tooltip="Descargar compras" (click)="openDescargar(mdescargar)" class="btn btn-default tcla-F6"><img appLazyImage="/assets/icons/download.png" class="icon"></button>
                 <form class="d-flex input-group" name="form" (ngSubmit)="filtrarCompras()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img src="/assets/icons/filter.png" class="icon"> </button>
+                <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3"> <img appLazyImage="/assets/icons/filter.png" class="icon"> </button>
             </div>
         </div>
     </div>
@@ -125,10 +125,10 @@
                             </span>
                         </td>
                         <td class="text-end">
-                            <span *ngIf="compra.estado != 'Pendiente' && !compra.abonos_sum_total">
+                            <span *ngIf="compra.estado != 'Pendiente' && !compra.abonos_sum_total && !compra.devoluciones_sum_total">
                                 {{compra.total | currency:'USD':'symbol':'1.2'}}
                             </span>
-                            <span *ngIf="compra.estado == 'Pendiente' || compra.abonos_sum_total > 0" class="click"
+                            <span *ngIf="compra.estado == 'Pendiente' || compra.abonos_sum_total > 0 || compra.devoluciones_sum_total > 0" class="click"
                                 placement="left" [popover]="popTemplate" triggers="mouseenter:mouseleave">
                                 {{compra.total | currency:'USD':'symbol':'1.2'}}
                             </span>
@@ -139,14 +139,17 @@
                                             <td>Total</td>
                                             <td class="text-end">{{ compra.total | currency}}</td>
                                         </tr>
-                                        <tr>
+                                        <tr *ngIf="compra.abonos_sum_total > 0">
                                             <td>Abonos</td>
                                             <td class="text-end">{{ compra.abonos_sum_total | currency}}</td>
                                         </tr>
+                                        <tr *ngIf="compra.devoluciones_sum_total > 0">
+                                            <td>Devoluciones</td>
+                                            <td class="text-end">{{ compra.devoluciones_sum_total | currency}}</td>
+                                        </tr>
                                         <tr>
                                             <td>Saldo</td>
-                                                <td class="text-end">{{ compra.total - compra.abonos_sum_total | currency}}
-                                            </td>
+                                            <td class="text-end">{{ compra.saldo | currency}}</td>
                                         </tr>
                                     </tbody>
                                 </table>

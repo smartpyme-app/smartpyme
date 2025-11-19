@@ -14,6 +14,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import Swal from 'sweetalert2';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-venta-detalles',
@@ -26,7 +27,8 @@ import Swal from 'sweetalert2';
         TiendaVentaBuscadorComponent,
         TiendaVentaProductoComponent,
         TiendaVentaPaquetesComponent,
-        TiendaVentaCitasComponent
+        TiendaVentaCitasComponent,
+        LazyImageDirective
     ],
 
 })
