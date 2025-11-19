@@ -6,12 +6,15 @@ import { HttpCacheService } from './http-cache.service';
 
 @Injectable()
 export class CacheInterceptor implements HttpInterceptor {
+  private cleanupInterval?: any;
 
   constructor(
     private cacheService: HttpCacheService
   ) {
     // Limpiar cache expirado cada 5 minutos
-    setInterval(() => {
+    // Nota: Los interceptors son singletons que viven durante toda la vida de la aplicación,
+    // por lo que este intervalo es intencional y necesario para mantener el cache limpio.
+    this.cleanupInterval = setInterval(() => {
       this.cacheService.cleanExpired();
     }, 5 * 60 * 1000);
   }
@@ -147,6 +150,10 @@ export class CacheInterceptor implements HttpInterceptor {
     if (url.includes('/gasto') || url.includes('/gastos')) {
       this.cacheService.invalidatePattern('/gastos');
       this.cacheService.invalidatePattern('/proveedores');
+    }
+
+    if (url.includes('/bodega') || url.includes('/bodegas')) {
+      this.cacheService.invalidatePattern('/bodegas');
     }
   }
 }

@@ -167,7 +167,8 @@ export class SharedDataService {
       catchError(error => {
         this.cache[cacheKey].loading = false;
         this.loadingSubjects[cacheKey].next(false);
-        console.error(`Error cargando ${cacheKey}:`, error);
+        // En producción, considerar usar un servicio de logging en lugar de console.error
+        // console.error(`Error cargando ${cacheKey}:`, error);
         // Retornar datos del cache si existen, aunque estén expirados
         if (this.cache[cacheKey]?.data.length > 0) {
           return of(this.cache[cacheKey].data);
@@ -223,7 +224,8 @@ export class SharedDataService {
       'marcas': 'marcas/list',
       'clientes': 'clientes/list',
       'proveedores': 'proveedores/list',
-      'canales': 'canales/list'
+      'canales': 'canales/list',
+      'bodegas': 'bodegas/list'
     };
 
     const endpoint = endpointMap[cacheKey];
