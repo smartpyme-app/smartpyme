@@ -39,7 +39,7 @@
                 }
                 @for (producto of productos | filter:'nombre':buscador; track producto.id) {
                     <tr>
-                        <td><img src="{{ apiService.baseUrl + '/img/' + producto.img }}" width="50px"></td>
+                        <td><img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" width="50px"></td>
                         <td>{{ producto.nombre }}</td>
                         <td class="text-center">
                             @if (producto.precio_oferta) {

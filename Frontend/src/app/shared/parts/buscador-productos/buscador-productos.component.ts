@@ -9,12 +9,13 @@ import { debounceTime, switchMap, filter,catchError  } from 'rxjs/operators';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-buscador-productos',
     templateUrl: './buscador-productos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule]
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, LazyImageDirective]
 })
 export class BuscadorProductosComponent implements OnInit {
 

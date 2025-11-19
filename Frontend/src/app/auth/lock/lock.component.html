@@ -13,7 +13,7 @@
                 <div class="col-12 col-md-6 col-lg-3">
                 <div class="card click" (click)="openModal(mpin, usuario)">
                     <div class="card-body text-center">
-                        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="img-circle" alt="User Image" width="40px">
+                        <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="img-circle" alt="User Image" width="40px">
                         <h2 class="text-center no-margin">{{ usuario.name }}</h2>
                         <p class="login-box-msg text-info">Bienvenido</p>
                     </div>

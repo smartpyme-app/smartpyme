@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 import Swal from 'sweetalert2';
 
@@ -15,7 +16,7 @@ import Swal from 'sweetalert2';
     selector: 'app-devolucion-venta-detalles',
     templateUrl: './devolucion-venta-detalles.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     
 })
 export class DevolucionVentaDetallesComponent extends BaseModalComponent implements OnInit {

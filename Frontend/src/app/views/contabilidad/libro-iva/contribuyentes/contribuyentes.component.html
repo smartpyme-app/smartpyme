@@ -11,37 +11,37 @@
         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibro()">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Libro de IVA Excel
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroPDF()">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Libro de IVA PDF
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexo()">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Anexo CSV
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarLibroRetencion()">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Libro de Rentención 1% Excel
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarAnexoRetencion()">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 Anexo de Rentención 1% CSV
             </button>
           </li>
           <li>
             <button class="dropdown-item d-flex align-items-center" (click)="descargarDTECreditoFiscal()" title="Descargar DTEs en zip como JSON ">
-                <img src="/assets/icons/download.png" class="icon me-2">
+                <img appLazyImage="/assets/icons/download.png" class="icon me-2">
                 DTEs Zip
             </button>
           </li>
@@ -93,7 +93,7 @@
                 <!-- <button class="btn tcla-F8" tooltip="Mes (F8)" [ngClass]="{'btn-primary': filtros.time == 'month', 'btn-default': filtros.time != 'month' }" (click)="setTime('month')">Mes</button> -->
                 <!-- <button *ngIf="apiService.auth_user().tipo == 'Administrador'" class="btn tcla-F9" tooltip="Año (F9)" [ngClass]="{'btn-primary': filtros.time == 'year', 'btn-default': filtros.time != 'year' }" (click)="setTime('year')">Año</button> -->
             <!-- </div> -->
-            <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img src="/assets/icons/filter.png" class="icon"></button>
+            <button type="button" (click)="openModal(mfilter)" class="btn btn-default tcla-F3" tooltip="Filtrar (F3)"><img appLazyImage="/assets/icons/filter.png" class="icon"></button>
         </div>
     </div>
 

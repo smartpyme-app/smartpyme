@@ -5,12 +5,13 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AlertService } from '../../services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-multimedia',
     templateUrl: './multimedia.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule]
+    imports: [CommonModule, FormsModule, RouterModule, LazyImageDirective]
 })
 export class MultimediaComponent implements OnInit {
 

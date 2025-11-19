@@ -90,7 +90,7 @@
                     @for (detalle of compra?.detalles; track detalle.id || $index) {
                       <tr>
                         <td>
-                            <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px"> 
+                            <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px"> 
                             {{ detalle.nombre_producto }}
                         </td>
                         <td style="width: 150px;">
@@ -178,7 +178,7 @@
                     @if (compra.estado != 'Pre-compra') {
                       <span>compra</span>
                     }
-                    <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
+                    <img appLazyImage="assets/icons/arrow-right-stroke.png" class="icon2 ms-2">
                   </span>
                 }
                 @if (loading) {

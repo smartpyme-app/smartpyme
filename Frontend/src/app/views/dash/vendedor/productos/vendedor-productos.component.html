@@ -2,7 +2,7 @@
     <h2 class="page-heading">Inventario</h2>
     <!-- <button *ngIf="apiService.auth_user().tipo == 'Vendedor' || apiService.auth_user().empresa.vendedor_inventario" routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button> -->
     @if (apiService.validateRole('usuario_vendedor', true) || apiService.auth_user().empresa.vendedor_inventario) {
-        <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img src="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
+        <button routerLink="/producto/crear" tooltip="Crear producto (F4)" class="btn btn-default tcla-F4 font-weight-bold"><img appLazyImage="/assets/icons/plus.png" class="icon me-2"> Añadir producto</button>
     }
 
 </section>
@@ -27,7 +27,7 @@
                         <input type="search" name="buscador" class="form-control pull-right border-start-0" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                     </div>
                 </form>
-                <button tooltip="Filtrar (F3)" (click)="filtrarProductos()" class="btn btn-default tcla-F3"><img src="/assets/icons/filter.png" class="icon"></button>
+                <button tooltip="Filtrar (F3)" (click)="filtrarProductos()" class="btn btn-default tcla-F3"><img appLazyImage="/assets/icons/filter.png" class="icon"></button>
             </div>
         </div>
     </div>
@@ -88,7 +88,7 @@
                     @for (producto of productos?.data; track producto.id) {
                         <tr>
                             <td>
-                                <img src="{{ apiService.baseUrl }}/img/{{ producto.img }}" class="rounded-circle" width="50px">
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + producto.img" class="rounded-circle" width="50px">
                                 {{ producto.nombre }}
                             </td>
                             <td class="d-none d-lg-table-cell">
@@ -140,7 +140,7 @@
                                     <ng-template #accionesTemplate>
                                         <div class="d-flex flex-column">
                                             <button type="button" routerLink="/kardex/{{producto.id}}" class="btn text-start border-0">
-                                                <img  src="/assets/icons/file-text.png" class="icon me-2">Kardex
+                                                <img  appLazyImage="/assets/icons/file-text.png" class="icon me-2">Kardex
                                             </button>
                                         </div>
                                     </ng-template> -->

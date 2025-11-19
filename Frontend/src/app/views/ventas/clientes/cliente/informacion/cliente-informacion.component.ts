@@ -12,12 +12,13 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import Swal from 'sweetalert2';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
     
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {

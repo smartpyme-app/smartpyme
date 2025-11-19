@@ -21,6 +21,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import Swal from 'sweetalert2';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-facturacion',
@@ -36,7 +37,8 @@ import * as moment from 'moment';
         MetodosDePagoComponent,
         CrearClienteComponent,
         BuscadorClientesComponent,
-        CrearProyectoComponent
+        CrearProyectoComponent,
+        LazyImageDirective
     ],
     providers: [SumPipe],
     

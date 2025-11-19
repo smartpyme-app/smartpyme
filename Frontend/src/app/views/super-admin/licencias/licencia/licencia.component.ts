@@ -8,12 +8,13 @@ import { LicenciaEmpresasComponent } from './empresas/licencia-empresas.componen
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-licencia',
     templateUrl: './licencia.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, LicenciaEmpresasComponent],
+    imports: [CommonModule, RouterModule, FormsModule, LicenciaEmpresasComponent, LazyImageDirective],
     
 })
 export class LicenciaComponent implements OnInit {

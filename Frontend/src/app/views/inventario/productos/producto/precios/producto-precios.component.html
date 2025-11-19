@@ -110,7 +110,7 @@
                         @for (usuario of usuarios; track usuario.id) {
                         <tr>
                             <td>
-                                <img src="{{ apiService.baseUrl }}/img/{{usuario.avatar}}" class="rounded-circle" width="50px">
+                                <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="rounded-circle" width="50px">
                                 {{ usuario.name }}
                             </td>
                             <td class="text-center">

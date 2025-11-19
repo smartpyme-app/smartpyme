@@ -11,12 +11,13 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-facturacion-consigna',
     templateUrl: './facturacion-consigna.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     providers: [SumPipe],
     
 })

@@ -17,12 +17,13 @@ import { TruncatePipe } from '@pipes/truncate.pipe';
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-citas',
     templateUrl: './citas.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, CalendarioComponent, NgSelectModule, PopoverModule, TooltipModule, CrearEventoComponent, TruncatePipe],
+    imports: [CommonModule, RouterModule, CalendarioComponent, NgSelectModule, PopoverModule, TooltipModule, CrearEventoComponent, TruncatePipe, LazyImageDirective],
     
 })
 

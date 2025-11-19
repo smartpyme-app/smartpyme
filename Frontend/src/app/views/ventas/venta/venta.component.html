@@ -167,7 +167,7 @@
                             }
                             <td class="d-flex">
                                 <div>
-                                    <img src="{{ apiService.baseUrl }}/img/{{ detalle.img }}" class="rounded-circle" height="50px" width="50px">
+                                    <img [appLazyImage]="apiService.baseUrl + '/img/' + detalle.img" class="rounded-circle" height="50px" width="50px">
                                 </div>
                                 <div class="ms-3">
                                     {{ detalle.descripcion }}

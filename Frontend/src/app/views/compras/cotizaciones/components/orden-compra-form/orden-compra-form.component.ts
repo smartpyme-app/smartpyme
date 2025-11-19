@@ -13,13 +13,14 @@ import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-pr
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from '@views/compras/facturacion/detalles/compra-detalles.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-orden-compra-form',
     templateUrl: './orden-compra-form.component.html',
     styleUrls: ['./orden-compra-form.component.css'],
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
+    imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent, LazyImageDirective],
     
 })
 export class OrdenCompraFormComponent implements OnInit {

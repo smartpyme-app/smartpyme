@@ -13,12 +13,13 @@ import { AlertService } from '@services/alert.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { LazyImageDirective } from '../../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-buscar-producto',
     templateUrl: './buscador-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe, LazyImageDirective],
     
 })
 export class BuscadorProductoComponent extends BaseModalComponent implements OnInit {

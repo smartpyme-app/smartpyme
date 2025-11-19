@@ -14,12 +14,13 @@ import { FilterPipe }  from '@pipes/filter.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-compra-producto',
     templateUrl: './compra-producto.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent, SumPipe, FilterPipe],
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, CrearProductoComponent, SumPipe, FilterPipe, LazyImageDirective],
     
 })
 export class CompraProductoComponent extends BasePaginatedModalComponent implements OnInit {

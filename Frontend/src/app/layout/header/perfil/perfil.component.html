@@ -2,12 +2,12 @@
 
     <a class="nav-link dropdown-toggle user-img c-pointer-x px-2" href="#" id="offcanvasNavbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="true">
         <span class="activity active"></span>
-        <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
+        <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="rounded-circle" height="35px">
     </a>
     <ul class="dropdown-menu dropdown-menu-end" style="min-width: 250px;">
         <li>
             <a class="dropdown-item text-center">
-                <img src="{{ apiService.baseUrl + '/img/' + usuario.avatar }}" class="rounded-circle" height="35px">
+                <img [appLazyImage]="apiService.baseUrl + '/img/' + usuario.avatar" class="rounded-circle" height="35px">
                 <p class="mt-3"> {{ usuario.name }} <br> <small>{{rol }}</small> </p>
             </a>
         </li>

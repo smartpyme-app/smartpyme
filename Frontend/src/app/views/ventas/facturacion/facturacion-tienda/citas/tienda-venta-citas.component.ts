@@ -14,12 +14,13 @@ import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 
 import * as moment from 'moment';
+import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-tienda-venta-citas',
     templateUrl: './tienda-venta-citas.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, NgSelectModule],
+    imports: [CommonModule, FormsModule, RouterModule, NgSelectModule, LazyImageDirective],
     
 })
 export class TiendaVentaCitasComponent extends BasePaginatedModalComponent implements OnInit {
