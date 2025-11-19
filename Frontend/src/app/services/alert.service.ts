@@ -1,6 +1,6 @@
 // alert-service.ts
 import { Injectable } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Router, ActivatedRoute } from '@angular/router';
 
 @Injectable({
@@ -10,7 +10,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 export class AlertService {
 
     public modal:boolean = false;
-    private alertSubject = new Subject<any>();
+    private alertSubject = new BehaviorSubject<any>(null);
 
     getAlert(): Observable<any> { return this.alertSubject.asObservable(); }
      
@@ -46,6 +46,12 @@ export class AlertService {
     error(message: any) {
         console.log(message);
     
+        // Para errores de validación (422), siempre mostrar el alert incluso si hay modal abierto
+        if(message.status == 422) {
+            // Forzar modal a false ANTES de procesar el error
+            this.modal = false;
+        }
+    
         if(message.status == 0) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
         }
@@ -63,22 +69,69 @@ export class AlertService {
             this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.error.titulo, 'mensaje' : message.error.error});
         }
         else if(message.status == 422) {
-            // Verificar si el error es un array o una cadena
+            // Manejar diferentes formatos de errores de validación
+            let errorMessage = '';
+            let errorTitle = 'Error de validación';
+            
+            // Formato 1: message.error.error (array o string)
             if(message.error && message.error.error) {
                 if(Array.isArray(message.error.error)) {
-                    let alerts='';
-                    for (var i = 0; i < message.error.error.length; ++i) {
-                        alerts += '- ' + message.error.error[i] + '<br>';
-                    }
-                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
+                    errorMessage = message.error.error.map((err: string) => `- ${err}`).join('<br>');
+                    errorTitle = 'Corrige los siguientes errores';
                 } else {
-                    // Si es una cadena, mostrarla directamente
-                    this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : message.error.error});
+                    errorMessage = message.error.error;
                 }
-            } else {
-                // Fallback por si la estructura es diferente
-                this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Error de validación', 'mensaje' : 'Ocurrió un error de validación'});
             }
+            // Formato 2: message.error.message (común en Laravel)
+            else if(message.error && message.error.message) {
+                if(Array.isArray(message.error.message)) {
+                    errorMessage = message.error.message.map((err: string) => `- ${err}`).join('<br>');
+                    errorTitle = 'Corrige los siguientes errores';
+                } else {
+                    errorMessage = message.error.message;
+                }
+            }
+            // Formato 3: message.error.errors (objeto con campos) - MÁS COMÚN EN LARAVEL
+            else if(message.error && message.error.errors) {
+                const errors = message.error.errors;
+                const errorList: string[] = [];
+                Object.keys(errors).forEach(key => {
+                    if(Array.isArray(errors[key])) {
+                        errors[key].forEach((err: string) => {
+                            // Traducir el nombre del campo si es necesario
+                            const campoTraducido = this.translateFieldName(key);
+                            errorList.push(`- ${campoTraducido}: ${err}`);
+                        });
+                    } else {
+                        const campoTraducido = this.translateFieldName(key);
+                        errorList.push(`- ${campoTraducido}: ${errors[key]}`);
+                    }
+                });
+                errorMessage = errorList.join('<br>');
+                errorTitle = 'Corrige los siguientes errores';
+            }
+            // Formato 4: message.error directamente como string
+            else if(typeof message.error === 'string') {
+                errorMessage = message.error;
+            }
+            // Fallback - mostrar estructura completa para debugging
+            else {
+                errorMessage = 'Ocurrió un error de validación. Por favor, verifica los datos ingresados.';
+            }
+            
+            const alertData = {
+                'tipo': 'alert-warning',
+                'titulo': errorTitle,
+                'mensaje': errorMessage
+            };
+            
+            // Emitir el alert inmediatamente
+            this.alertSubject.next(alertData);
+            
+            // Asegurar que el modal no bloquee la visualización del error
+            setTimeout(() => {
+                this.modal = false;
+            }, 0);
         }
         else if(message.status == 500) {
             this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
@@ -88,39 +141,29 @@ export class AlertService {
         }
     }
 
-    // error(message: any) {
-    //     console.log(message);
-
-    //     if(message.status == 0) {
-    //         this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'No hay conexión con el servidor, intentar nuevamente'});
-    //     }
-    //     else if(message.status == 404) {
-    //         this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : 'El registro no ha sido encontrado'});
-    //     }
-    //     else if(message.status == 403) {
-    //         this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.error});
-    //     }
-    //     else if(message.status == 401) {
-    //         this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
-    //         this.router.navigate(['/login']);
-    //     }
-    //     else if(message.status == 400) {
-    //         this.alertSubject.next({'tipo': 'alert-info' ,'titulo': message.statusText, 'mensaje' : message.error.error});
-    //     }
-    //     else if(message.status == 422) {
-    //         let alerts='';
-    //         for (var i = 0; i < message.error.error.length; ++i) {
-    //             alerts += '- ' + message.error.error[i] + '<br>';
-    //         }
-    //         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Corrige los siguientes errores', 'mensaje' : alerts});
-    //     }
-    //     else if(message.status == 500) {
-    //         this.alertSubject.next({'tipo': 'alert-danger' ,'titulo': 'Lo sentimos', 'mensaje' : message.error.message});
-    //     }
-    //     else {
-    //         this.alertSubject.next({'tipo': 'alert-warning' ,'titulo': 'Lo sentimos', 'mensaje' : message});
-    //     }
+    /**
+     * Traduce nombres de campos comunes del backend al español
+     */
+    private translateFieldName(fieldName: string): string {
+        const translations: { [key: string]: string } = {
+            'id_categoria': 'Categoría',
+            'categoria': 'Categoría',
+            'id_proveedor': 'Proveedor',
+            'proveedor': 'Proveedor',
+            'id_usuario': 'Usuario',
+            'usuario': 'Usuario',
+            'id_sucursal': 'Sucursal',
+            'sucursal': 'Sucursal',
+            'monto': 'Monto',
+            'total': 'Total',
+            'fecha': 'Fecha',
+            'descripcion': 'Descripción',
+            'detalle': 'Detalle',
+            'forma_pago': 'Forma de pago',
+            'estado': 'Estado'
+        };
         
-    // }
+        return translations[fieldName] || fieldName;
+    }
 
 }

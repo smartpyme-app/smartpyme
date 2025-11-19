@@ -152,21 +152,17 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       );
     }
 
-    this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(
-      (bodegas) => {
-        this.bodegas = bodegas;
-        if (this.apiService.validateRole('super_admin', false)
-          || this.apiService.validateRole('admin', false)) {
-          this.bodegas = this.bodegas.filter(
-            (item: any) =>
-              item.id_sucursal == this.apiService.auth_user().id_sucursal
-          );
+    // Cargar bodegas usando SharedDataService
+    this.sharedDataService.getBodegas()
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (bodegas) => {
+          this.bodegas = bodegas;
+        },
+        error: (error) => {
+          this.alertService.error(error);
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      });
 
     // Cargar todos los usuarios usando SharedDataService (como en compras)
     this.sharedDataService.getUsuarios().pipe(this.untilDestroyed()).subscribe({

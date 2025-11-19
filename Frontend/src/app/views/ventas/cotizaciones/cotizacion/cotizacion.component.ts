@@ -14,6 +14,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
@@ -92,7 +93,8 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     protected override modalManager: ModalManagerService,
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private sharedDataService: SharedDataService
   ) {
     super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -157,24 +159,17 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
 //       if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
 //         this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
 // =======
-    this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(
-      (bodegas) => {
-        this.bodegas = bodegas;
-        // if (this.apiService.auth_user().tipo != 'Administrador') {
-        //   this.bodegas = this.bodegas.filter((item: any) => item.id_sucursal == this.apiService.auth_user().id_sucursal);
-        // }
-        if(this.apiService.validateRole('super_admin', false)
-          || this.apiService.validateRole('admin', false)) {
-          this.bodegas = this.bodegas.filter(
-            (item: any) =>
-              item.id_sucursal == this.apiService.auth_user().id_sucursal
-          );
+    // Cargar bodegas usando SharedDataService
+    this.sharedDataService.getBodegas()
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (bodegas) => {
+          this.bodegas = bodegas;
+        },
+        error: (error) => {
+          this.alertService.error(error);
         }
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      });
 
     this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(
       (usuarios) => {

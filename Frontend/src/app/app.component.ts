@@ -8,6 +8,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { ApiService } from '@services/api.service';
 import { ConstantsService } from '@services/constants.service';
 import { ChatService } from '@services/chat/chat.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
@@ -37,9 +38,15 @@ export class AppComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private updates: SwUpdate, public apiService: ApiService, public alertService: AlertService,
-        /* private tourService: TourService, */ private modalService: BsModalService, private chatService: ChatService,
+    constructor(
+        private updates: SwUpdate, 
+        public apiService: ApiService, 
+        public alertService: AlertService,
+        /* private tourService: TourService, */ 
+        private modalService: BsModalService, 
+        private chatService: ChatService,
         private constantsService: ConstantsService,
+        private sharedDataService: SharedDataService
     ) {
 
         if (this.updates.isEnabled) {
@@ -64,6 +71,12 @@ export class AppComponent implements OnInit {
         
         // Cargar constantes si no están disponibles
         // this.loadConstantsIfNeeded();
+        
+        // Precargar datos comunes en segundo plano para mejorar la experiencia
+        // Solo si el usuario está autenticado
+        if (this.apiService.autenticated()) {
+            this.sharedDataService.preloadCommonData();
+        }
         
         // Tour deshabilitado temporalmente por incompatibilidad con Angular 20
         /* 

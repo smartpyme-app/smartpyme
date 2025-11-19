@@ -109,6 +109,13 @@ export class SharedDataService {
   }
 
   /**
+   * Obtiene bodegas
+   */
+  getBodegas(forceRefresh: boolean = false): Observable<any[]> {
+    return this.getSharedData('bodegas/list', 'bodegas', forceRefresh);
+  }
+
+  /**
    * Método genérico para obtener datos compartidos
    */
   private getSharedData(endpoint: string, cacheKey: string, forceRefresh: boolean = false): Observable<any[]> {

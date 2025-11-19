@@ -11,6 +11,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
@@ -37,30 +38,65 @@ export class ProyectoComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+	    private apiService: ApiService, 
+	    private alertService: AlertService,
+	    private route: ActivatedRoute, 
+	    private router: Router, 
+	    private modalService: BsModalService,
+	    private sharedDataService: SharedDataService
 	) { }
 
 	ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+        // Cargar datos compartidos usando SharedDataService
+        this.sharedDataService.getSucursales()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (sucursales) => {
+                    this.sucursales = sucursales;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
-        this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+        this.sharedDataService.getUsuarios()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (usuarios) => {
+                    this.usuarios = usuarios;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
-        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
-            this.proveedores = proveedores;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.sharedDataService.getProveedores()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (proveedores) => {
+                    this.proveedores = proveedores;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
 
-        this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => {
-            this.clientes = clientes;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.sharedDataService.getClientes()
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (clientes) => {
+                    this.clientes = clientes;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public loadAll(){
