@@ -9,6 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
@@ -68,7 +69,8 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     protected override apiService: ApiService,
     private mhService: MHService,
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private sharedDataService: SharedDataService
   ) {
     super(apiService, alertService, modalManager);
   }
@@ -86,7 +88,8 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     this.loadAll();
     this.getNumsIds();
 
-    this.apiService.getAll('sucursales/list')
+    // Cargar datos compartidos usando SharedDataService
+    this.sharedDataService.getSucursales()
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (sucursales) => {
@@ -97,7 +100,7 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
         }
       });
 
-    this.apiService.getAll('categorias/list')
+    this.sharedDataService.getCategorias()
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (categorias) => {
@@ -108,7 +111,7 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
         }
       });
 
-    this.apiService.getAll('marcas/list')
+    this.sharedDataService.getMarcas()
       .pipe(this.untilDestroyed())
       .subscribe({
         next: (marcas) => {
@@ -258,61 +261,71 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     this.venta = venta;
 
     if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
-      this.apiService.getAll('proyectos/list').subscribe(
-        (proyectos) => {
-          this.proyectos = proyectos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getProyectos()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (proyectos) => {
+            this.proyectos = proyectos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.documentos.length) {
-      this.apiService.getAll('documentos/list').subscribe(
-        (documentos) => {
-          this.documentos = documentos;
-          this.documentos = this.documentos.filter(
-            (x: any) => x.id_sucursal == this.venta.id_sucursal
-          );
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getDocumentos()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (documentos) => {
+            this.documentos = documentos;
+            this.documentos = this.documentos.filter(
+              (x: any) => x.id_sucursal == this.venta.id_sucursal
+            );
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.formaPagos.length) {
-      this.apiService.getAll('formas-de-pago/list').subscribe(
-        (formaPagos) => {
-          this.formaPagos = formaPagos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getFormasDePago()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (formaPagos) => {
+            this.formaPagos = formaPagos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(
-        (usuarios) => {
-          this.usuarios = usuarios;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getUsuarios()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (usuarios) => {
+            this.usuarios = usuarios;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.canales.length) {
-      this.apiService.getAll('canales/list').subscribe(
-        (canales) => {
-          this.canales = canales;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getCanales()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (canales) => {
+            this.canales = canales;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     this.openModal(template);
@@ -320,72 +333,84 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
 
   public openFilter(template: TemplateRef<any>) {
     if (!this.clientes.length) {
-      this.apiService.getAll('clientes/list').subscribe(
-        (clientes) => {
-          this.clientes = clientes;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getClientes()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (clientes) => {
+            this.clientes = clientes;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.documentos.length) {
-      this.apiService.getAll('documentos/list-nombre').subscribe(
-        (documentos) => {
-          this.documentos = documentos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getDocumentosPorNombre()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (documentos) => {
+            this.documentos = documentos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.formaPagos.length) {
-      this.apiService.getAll('formas-de-pago/list').subscribe(
-        (formaPagos) => {
-          this.formaPagos = formaPagos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getFormasDePago()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (formaPagos) => {
+            this.formaPagos = formaPagos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(
-        (usuarios) => {
-          this.usuarios = usuarios;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getUsuarios()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (usuarios) => {
+            this.usuarios = usuarios;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.canales.length) {
-      this.apiService.getAll('canales/list').subscribe(
-        (canales) => {
-          this.canales = canales;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getCanales()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (canales) => {
+            this.canales = canales;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (
       !this.proyectos.length &&
       this.apiService.auth_user().empresa.modulo_proyectos
     ) {
-      this.apiService.getAll('proyectos/list').subscribe(
-        (proyectos) => {
-          this.proyectos = proyectos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.sharedDataService.getProyectos()
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (proyectos) => {
+            this.proyectos = proyectos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
     this.openModal(template);
   }

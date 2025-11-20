@@ -248,9 +248,9 @@
       }
     </div>
     <app-header></app-header>
-    @if (!alertService.modal) {
-        <app-notificaciones-container></app-notificaciones-container>
-    }
+    <!-- Siempre renderizar el componente de notificaciones para que pueda recibir mensajes -->
+    <!-- El componente manejará internamente si debe mostrarse o no -->
+    <app-notificaciones-container></app-notificaciones-container>
     <router-outlet></router-outlet>
   </div>
 </div>

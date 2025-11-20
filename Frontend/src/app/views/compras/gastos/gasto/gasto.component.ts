@@ -13,6 +13,8 @@ import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-em
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { SharedDataService } from '@services/shared-data.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import * as moment from 'moment';
@@ -62,7 +64,9 @@ export class GastoComponent implements OnInit {
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private sharedDataService: SharedDataService,
+    private cacheService: HttpCacheService
   ) {}
 
   public openAbono(template: TemplateRef<any>, gasto:any){
@@ -84,27 +88,28 @@ export class GastoComponent implements OnInit {
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
 
-    this.apiService.getAll('sucursales/list')
+    // Cargar datos compartidos usando SharedDataService
+    this.sharedDataService.getSucursales()
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (sucursales) => {
-        this.sucursales = sucursales;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      .subscribe({
+        next: (sucursales) => {
+          this.sucursales = sucursales;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
-    this.apiService.getAll('usuarios/list')
+    this.sharedDataService.getUsuarios()
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (usuarios) => {
-        this.usuarios = usuarios;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      .subscribe({
+        next: (usuarios) => {
+          this.usuarios = usuarios;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
     this.apiService.getAll('bancos/list')
       .pipe(this.untilDestroyed())
@@ -117,16 +122,16 @@ export class GastoComponent implements OnInit {
       }
     );
 
-    this.apiService.getAll('formas-de-pago/list')
+    this.sharedDataService.getFormasDePago()
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (formaspago) => {
-        this.formaspago = formaspago;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+      .subscribe({
+        next: (formaspago) => {
+          this.formaspago = formaspago;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
     this.apiService.getAll('gastos/categorias/list')
       .pipe(this.untilDestroyed())
@@ -135,31 +140,31 @@ export class GastoComponent implements OnInit {
       this.loading = false;
     }, error => {this.alertService.error(error); this.loading = false;});
 
-    this.apiService.getAll('proveedores/list')
+    this.sharedDataService.getProveedores()
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (proveedores) => {
-        this.proveedores = proveedores;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+      .subscribe({
+        next: (proveedores) => {
+          this.proveedores = proveedores;
+          this.loading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      });
 
-    this.apiService.getAll('proyectos/list')
+    this.sharedDataService.getProyectos()
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (proyectos) => {
-        this.proyectos = proyectos;
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+      .subscribe({
+        next: (proyectos) => {
+          this.proyectos = proyectos;
+          this.loading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      });
 
 
     this.apiService.getAll('impuestos')
@@ -614,27 +619,39 @@ export class GastoComponent implements OnInit {
 
     this.apiService.store('gasto', this.gasto)
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (gasto) => {
-        if (!this.gasto.id) {
-          this.alertService.success(
-            'Gasto guardado',
-            'El gasto fue guardado exitosamente.'
-          );
-        } else {
-          this.alertService.success(
-            'Gasto creado',
-            'El gasto fue añadido exitosamente.'
-          );
+      .subscribe({
+        next: (gasto) => {
+          // Invalidar cache de gastos para que aparezca en el listado
+          this.cacheService.invalidatePattern('/gastos');
+          
+          if (!this.gasto.id) {
+            this.alertService.success(
+              'Gasto guardado',
+              'El gasto fue guardado exitosamente.'
+            );
+          } else {
+            this.alertService.success(
+              'Gasto creado',
+              'El gasto fue añadido exitosamente.'
+            );
+          }
+          this.router.navigate(['/gastos']);
+          this.saving = false;
+        },
+        error: (error) => {
+          // Cerrar cualquier modal abierto para que se muestre el error
+          if (this.modalRef) {
+            this.modalRef.hide();
+            this.modalRef = undefined;
+          }
+          // Asegurar que el alert se muestre
+          this.alertService.modal = false;
+          
+          // El AlertService ya maneja los errores 422 con mensajes detallados
+          this.alertService.error(error);
+          this.saving = false;
         }
-        this.router.navigate(['/gastos']);
-        this.saving = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+      });
   }
 
   public setOtrosImpuestos() {

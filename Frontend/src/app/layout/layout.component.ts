@@ -10,6 +10,7 @@ import { HeaderComponent } from './header/header.component';
 import { FooterComponent } from './footer/footer.component';
 import { SidebarComponent } from './sidebar/sidebar.component';
 import { SidebarAdminComponent } from './sidebar/sidebar-admin/sidebar-admin.component';
+import { NotificacionesContainerComponent } from '../shared/parts/notificaciones/notificaciones-container.component';
 import { Router } from '@angular/router';
 import { AppConstants } from '../constants/app.constants';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -27,7 +28,8 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
         HeaderComponent, 
         FooterComponent,
         SidebarComponent,
-        SidebarAdminComponent
+        SidebarAdminComponent,
+        NotificacionesContainerComponent
     ],
     
 })

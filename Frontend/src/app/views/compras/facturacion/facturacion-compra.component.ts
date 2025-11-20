@@ -7,6 +7,7 @@ import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { SharedDataService } from '@services/shared-data.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
@@ -90,7 +91,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router,
+        private route: ActivatedRoute, 
+        private router: Router,
+        private sharedDataService: SharedDataService
     ) {
         super(modalManager, alertService);
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -129,11 +132,17 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         this.cargarDatosIniciales();
 
-        this.apiService.getAll('sucursales/list')
+        // Cargar datos compartidos usando SharedDataService
+        this.sharedDataService.getSucursales()
           .pipe(this.untilDestroyed())
-          .subscribe(sucursales => {
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+          .subscribe({
+            next: (sucursales) => {
+              this.sucursales = sucursales;
+            },
+            error: (error) => {
+              this.alertService.error(error);
+            }
+          });
 
         this.apiService.getAll('bodegas/list')
           .pipe(this.untilDestroyed())
@@ -141,11 +150,16 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.bodegas = bodegas;
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('usuarios/list')
+        this.sharedDataService.getUsuarios()
           .pipe(this.untilDestroyed())
-          .subscribe(usuarios => {
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+          .subscribe({
+            next: (usuarios) => {
+              this.usuarios = usuarios;
+            },
+            error: (error) => {
+              this.alertService.error(error);
+            }
+          });
 
       this.apiService.getAll('banco/cuentas/list')
           .pipe(this.untilDestroyed())
@@ -153,11 +167,16 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           this.bancos = bancos;
       }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('formas-de-pago/list')
+        this.sharedDataService.getFormasDePago()
           .pipe(this.untilDestroyed())
-          .subscribe(formaPagos => {
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error);});
+          .subscribe({
+            next: (formaPagos) => {
+              this.formaPagos = formaPagos;
+            },
+            error: (error) => {
+              this.alertService.error(error);
+            }
+          });
 
         this.apiService.getAll('impuestos')
           .pipe(this.untilDestroyed())
@@ -168,38 +187,55 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
         }, error => {this.alertService.error(error);});
 
-        this.apiService.getAll('proveedores/list')
+        this.sharedDataService.getProveedores()
           .pipe(this.untilDestroyed())
-          .subscribe(proveedores => {
-            this.proveedores = proveedores;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+          .subscribe({
+            next: (proveedores) => {
+              this.proveedores = proveedores;
+              this.loading = false;
+            },
+            error: (error) => {
+              this.alertService.error(error);
+              this.loading = false;
+            }
+          });
 
-        this.apiService.getAll('proyectos/list')
+        this.sharedDataService.getProyectos()
           .pipe(this.untilDestroyed())
-          .subscribe(proyectos => {
-            this.proyectos = proyectos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+          .subscribe({
+            next: (proyectos) => {
+              this.proyectos = proyectos;
+              this.loading = false;
+            },
+            error: (error) => {
+              this.alertService.error(error);
+              this.loading = false;
+            }
+          });
     }
 
     public cargarDocumentos(){
-        this.apiService.getAll('documentos/list')
+        this.sharedDataService.getDocumentos()
           .pipe(this.untilDestroyed())
-          .subscribe(documentos => {
-            this.documentos = documentos;
-            this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
-            if(this.compra.cotizacion == 1){
-                this.documentos = this.documentos.filter((x:any) => x.nombre == 'Orden de compra');
-                let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
-                if(documento){
-                    this.compra.tipo_documento = documento.nombre;
-                    this.compra.referencia = documento.correlativo;
-                }
-            }else{
-                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+          .subscribe({
+            next: (documentos) => {
+              this.documentos = documentos;
+              this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
+              if(this.compra.cotizacion == 1){
+                  this.documentos = this.documentos.filter((x:any) => x.nombre == 'Orden de compra');
+                  let documento = this.documentos.find((x:any) => x.nombre == 'Orden de compra');
+                  if(documento){
+                      this.compra.tipo_documento = documento.nombre;
+                      this.compra.referencia = documento.correlativo;
+                  }
+              }else{
+                  this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+              }
+            },
+            error: (error) => {
+              this.alertService.error(error);
             }
-        }, error => {this.alertService.error(error);});
+          });
     }
 
     public cargarDatosIniciales(){
