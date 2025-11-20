@@ -17,6 +17,7 @@ export class VentasComponent implements OnInit {
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
+  public reporteSeleccionado: string = '';
 
   public clientes: any = [];
   public usuario: any = {};
@@ -31,7 +32,7 @@ export class VentasComponent implements OnInit {
   public consulting: boolean = false;
   public categorias: any[] = [];
   public marcas: any[] = [];
-  public numeros_ids:any = [];
+  public numeros_ids: any = [];
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -56,7 +57,7 @@ export class VentasComponent implements OnInit {
     private mhService: MHService,
     private alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
@@ -99,7 +100,18 @@ export class VentasComponent implements OnInit {
 
   public abrirModalFiltrosPorMarca(template: TemplateRef<any>) {
     this.modalRefDescargar.hide();
-    
+
+    setTimeout(() => {
+      this.modalRefPorMarca = this.modalService.show(template, {
+        class: 'modal-md',
+      });
+    }, 100);
+
+  }
+
+  public abrirModalFiltrosPorUtilidades(template: TemplateRef<any>) {
+    this.modalRefDescargar.hide();
+
     setTimeout(() => {
       this.modalRefPorMarca = this.modalService.show(template, {
         class: 'modal-md',
@@ -122,12 +134,12 @@ export class VentasComponent implements OnInit {
 
   public loadAll() {
     const filtrosGuardados = localStorage.getItem('ventasFiltros');
-    
+
     if (filtrosGuardados) {
       this.filtros = JSON.parse(filtrosGuardados);
       console.log(this.filtros);
     } else {
-      
+
       this.filtros = {
         id_sucursal: '',
         id_cliente: '',
@@ -225,10 +237,10 @@ export class VentasComponent implements OnInit {
   public reemprimir(venta: any) {
     window.open(
       this.apiService.baseUrl +
-        '/api/reporte/facturacion/' +
-        venta.id +
-        '?token=' +
-        this.apiService.auth_token(),
+      '/api/reporte/facturacion/' +
+      venta.id +
+      '?token=' +
+      this.apiService.auth_token(),
       'Impresión',
       'width=400'
     );
@@ -376,6 +388,7 @@ export class VentasComponent implements OnInit {
   //   this.modalRef = this.modalService.show(template);
   // }
   public openDescargar(template: TemplateRef<any>) {
+    this.reporteSeleccionado = '';
     this.modalRefDescargar = this.modalService.show(template);
   }
 
@@ -406,7 +419,7 @@ export class VentasComponent implements OnInit {
     );
   }
 
- 
+
 
   public descargarAcumulado() {
     this.downloadingVentas = true;
@@ -437,7 +450,7 @@ export class VentasComponent implements OnInit {
         this.downloadingVentas = false;
         this.saving = false;
 
-     
+
         this.filtrosAcumulado = {
           inicio: '',
           fin: '',
@@ -455,266 +468,266 @@ export class VentasComponent implements OnInit {
   }
 
 
-    public descargarDetalles(){
-        this.downloadingDetalles = true; this.saving = true;
-        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ventas-detalles.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloadingDetalles = false; this.saving = false;
-          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
-        );
-    }
-
-    public descargarDetallesDiario(){
-      this.downloadingDetalles = true; this.saving = true;
-      this.apiService.export('ventas-detalles/exportar/diario', null).subscribe((data:Blob) => {
-          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'ventas-detalles-diario.xlsx';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          this.downloadingDetalles = false; this.saving = false;
-        }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
-      );
+  public descargarDetalles() {
+    this.downloadingDetalles = true; this.saving = true;
+    this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data: Blob) => {
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ventas-detalles.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.downloadingDetalles = false; this.saving = false;
+    }, (error) => { this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+    );
   }
 
-    public imprimir(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token());
+  public descargarDetallesDiario() {
+    this.downloadingDetalles = true; this.saving = true;
+    this.apiService.export('ventas-detalles/exportar/diario', null).subscribe((data: Blob) => {
+      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ventas-detalles-diario.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.downloadingDetalles = false; this.saving = false;
+    }, (error) => { this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+    );
+  }
+
+  public imprimir(venta: any) {
+    window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token());
+  }
+
+  public linkWompi(venta: any) {
+    window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
+  }
+
+  public onSubmit() {
+    this.saving = true;
+    this.apiService.store('venta', this.venta).subscribe(venta => {
+      this.venta = {};
+      this.saving = false;
+      if (this.modalRef) {
+        this.modalRef.hide();
+      }
+      this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+    }, error => { this.alertService.error(error); this.saving = false; });
+
+  }
+
+  public setRecurrencia(venta: any) {
+    this.venta = venta;
+    this.venta.recurrente = true;
+
+    this.apiService.store('venta', this.venta).subscribe(venta => {
+      this.venta = {};
+      this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
+    }, error => { this.alertService.error(error); this.saving = false; });
+
+  }
+
+  public openAbono(template: TemplateRef<any>, venta: any) {
+    this.venta = venta;
+    this.modalRef = this.modalService.show(template);
+  }
+
+
+  // DTE
+
+  openDTE(template: TemplateRef<any>, venta: any) {
+    this.venta = venta;
+    this.alertService.modal = true;
+    this.modalRef = this.modalService.show(template);
+    if (!this.venta.dte) {
+      this.emitirDTE();
     }
+  }
 
-    public linkWompi(venta:any){
-        window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
-    }
+  imprimirDTEPDF(venta: any) {
+    window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  }
 
-    public onSubmit() {
-        this.saving = true;            
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.saving = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
+  imprimirDTEJSON(venta: any) {
+    window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
+  }
 
-    }
+  emitirDTE() {
+    this.saving = true;
+    this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
+      this.venta = { ...ventaActualizada };
+      const index = this.ventas.data.findIndex((v: any) => v.id === ventaActualizada.id);
+      if (index !== -1) {
+        this.ventas.data[index] = { ...ventaActualizada };
+      }
 
-    public setRecurrencia(venta:any){
+      this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+      this.saving = false;
+      this.enviarDTE(this.venta);
+    }).catch((error) => {
+      this.saving = false;
+      console.log(error);
+      if (error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR') {
+        this.consultarDTE();
+      }
+      else if (error.status) {
+        this.alertService.warning('Hubo un problema', error);
+      } else {
+        this.venta.errores = error;
+      }
+    });
+  }
+
+  enviarDTE(venta: any) {
+    this.sending = true;
+    this.apiService.store('enviarDTE', venta).subscribe(dte => {
+      this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+      this.sending = false;
+      setTimeout(() => {
+        this.modalRef?.hide();
+      }, 5000);
+    }, error => { this.alertService.error(error); this.sending = false; });
+  }
+
+  emitirEnContingencia(venta: any) {
+    this.venta = venta;
+    this.saving = true;
+    this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
+      this.venta = venta;
+      this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
+      this.saving = false;
+    }).catch((error) => {
+      this.saving = false;
+      this.alertService.warning('Hubo un problema', error);
+    });
+  }
+
+  anularDTE(venta: any) {
+    this.venta = venta;
+    if (venta.sello_mh && !venta.dte_invalidacion) {
+      if (confirm('¿Confirma anular la venta y el DTE?')) {
         this.venta = venta;
-        this.venta.recurrente = true;
-        
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    public openAbono(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.modalRef = this.modalService.show(template);
-    }
-
-
-    // DTE
-
-    openDTE(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.alertService.modal = true;
-        this.modalRef = this.modalService.show(template);
-        if(!this.venta.dte){
-            this.emitirDTE();
-        }
-    }
-
-    imprimirDTEPDF(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id  + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
-
-    imprimirDTEJSON(venta:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
-    }
-
-    emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTE(this.venta).then((ventaActualizada) => {
-            this.venta = { ...ventaActualizada };
-            const index = this.ventas.data.findIndex((v:any) => v.id === ventaActualizada.id);
-            if (index !== -1) {
-              this.ventas.data[index] = { ...ventaActualizada };
+        this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
+          // this.alertService.success('DTE generado.');
+          this.venta.dte_invalidacion = dte;
+          this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
+            this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+
+            if (dteFirmado.status == 'ERROR') {
+              this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
             }
-            
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-            this.saving = false;
-            this.enviarDTE(this.venta);
-        }).catch((error) => {
-            this.saving = false;
-            console.log(error);
-            if(error == '[identificacion.codigoGeneracion] YA EXISTE UN REGISTRO CON ESE VALOR'){
-                this.consultarDTE();
-            }
-            else if (error.status){
-                this.alertService.warning('Hubo un problema', error);
-            }else{
-                this.venta.errores = error;
-            }
-        });
-    }
 
-    enviarDTE(venta:any){
-        this.sending = true;
-        this.apiService.store('enviarDTE', venta).subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
-            this.sending = false;
-            setTimeout(()=>{
-                this.modalRef?.hide();
-            },5000);
-        },error => {this.alertService.error(error); this.sending = false; });
-    }
-
-    emitirEnContingencia(venta:any){
-        this.venta = venta;
-        this.saving = true;
-        this.mhService.emitirDTEContingencia(this.venta).then((venta) => {
-            this.venta = venta;
-            this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
-            this.saving = false;
-        }).catch((error) => {
-            this.saving = false;
-            this.alertService.warning('Hubo un problema', error);
-        });
-    }
-
-    anularDTE(venta:any){
-        this.venta = venta;
-        if(venta.sello_mh && !venta.dte_invalidacion){
-            if (confirm('¿Confirma anular la venta y el DTE?')) {
-                this.venta = venta;
-                this.saving = true;
-                this.apiService.store('generarDTEAnulado', this.venta).subscribe(dte => {
-                    // this.alertService.success('DTE generado.');
-                    this.venta.dte_invalidacion = dte;
-                    this.mhService.firmarDTE(dte).subscribe(dteFirmado => {
-                        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                        
-                        if(dteFirmado.status == 'ERROR'){
-                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
-                        }
-                        
-                        this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
-                            if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                this.venta.dte_invalidacion.sello = dte.selloRecibido;
-                                this.venta.sello_mh = dte.selloRecibido;
-                                this.venta.estado = 'Anulada';
-                                this.onSubmit();
-                                if(this.venta.id_cliente){
-                                  setTimeout(()=>{
-                                  this.enviarDTE(this.venta);
-                                  },3000);
-                              }
-                            }
-
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
-                            this.saving = false;
-                        });
-
-                    },error => {this.alertService.error(error);this.saving = false; });
-
-                },error => {this.alertService.error(error);this.saving = false; });
-            }
-        }
-        else{
-            if (confirm('¿Confirma anular la venta?')){
+            this.mhService.anularDTE(this.venta, dteFirmado.body).subscribe(dte => {
+              if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                this.venta.dte_invalidacion.sello = dte.selloRecibido;
+                this.venta.sello_mh = dte.selloRecibido;
                 this.venta.estado = 'Anulada';
                 this.onSubmit();
-            }
-        }
-    }
-
-    consultarDTE(){
-        this.consulting = true;
-        let data = {
-            codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
-            fechaEmi: this.venta.dte.identificacion.fecEmi,
-            ambiente: this.venta.dte.identificacion.ambiente
-        };
-
-        setTimeout(()=>{
-
-            this.apiService.store('consultarDTE', data).subscribe(dte => {
-                if (dte && dte.selloVal) {
-                    this.venta.dte.sello = dte.selloVal;
-                    this.venta.dte.selloRecibido = dte.selloVal;
-                    this.venta.sello_mh = dte.selloVal;
-                    this.apiService.store('venta', this.venta).subscribe(data => {
-                        this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
-                        if(this.venta.cliente_id){
-                            this.enviarDTE(this.venta);
-                        }
-                        setTimeout(()=>{
-                            this.modalRef?.hide();
-                        },500);
-                        this.consulting = false;
-                    },error => {this.alertService.error(error);});
+                if (this.venta.id_cliente) {
+                  setTimeout(() => {
+                    this.enviarDTE(this.venta);
+                  }, 3000);
                 }
-                else if (dte){
-                    this.consulting = false;
-                    this.alertService.info('No se obtuvo el sello', 'El DTE no ha sido emitido.');
-                }else {
-                    this.consulting = false;
-                    this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');
-                }
+              }
+
+              this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
             }, error => {
-                this.consulting = false;
-                this.alertService.warning('Hubo un problema', error);
+              if (error.error.descripcionMsg) {
+                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+              }
+              if (error.error.observaciones.length > 0) {
+                this.alertService.warning('Hubo un problema', error.error.observaciones);
+              }
+              this.saving = false;
             });
-        },1000);
-    }
 
-    public limpiarFiltros() {
-      localStorage.removeItem('ventasFiltros');
-      this.loadAll();
-    }
+          }, error => { this.alertService.error(error); this.saving = false; });
 
-    public filtrosActivos(): boolean {
-      return Object.values(this.filtros).some(valor => {
-        if (Array.isArray(valor)) {
-          return valor.length > 0;
+        }, error => { this.alertService.error(error); this.saving = false; });
+      }
+    }
+    else {
+      if (confirm('¿Confirma anular la venta?')) {
+        this.venta.estado = 'Anulada';
+        this.onSubmit();
+      }
+    }
+  }
+
+  consultarDTE() {
+    this.consulting = true;
+    let data = {
+      codigoGeneracion: this.venta.dte.identificacion.codigoGeneracion,
+      fechaEmi: this.venta.dte.identificacion.fecEmi,
+      ambiente: this.venta.dte.identificacion.ambiente
+    };
+
+    setTimeout(() => {
+
+      this.apiService.store('consultarDTE', data).subscribe(dte => {
+        if (dte && dte.selloVal) {
+          this.venta.dte.sello = dte.selloVal;
+          this.venta.dte.selloRecibido = dte.selloVal;
+          this.venta.sello_mh = dte.selloVal;
+          this.apiService.store('venta', this.venta).subscribe(data => {
+            this.alertService.success('Sello recibido', 'El DTE ha sido sellado.');
+            if (this.venta.cliente_id) {
+              this.enviarDTE(this.venta);
+            }
+            setTimeout(() => {
+              this.modalRef?.hide();
+            }, 500);
+            this.consulting = false;
+          }, error => { this.alertService.error(error); });
         }
-        return valor !== '' && valor !== null && valor !== undefined;
+        else if (dte) {
+          this.consulting = false;
+          this.alertService.info('No se obtuvo el sello', 'El DTE no ha sido emitido.');
+        } else {
+          this.consulting = false;
+          this.alertService.info('No se obtuvo el sello', 'Hacienda no devolvió el sello.');
+        }
+      }, error => {
+        this.consulting = false;
+        this.alertService.warning('Hubo un problema', error);
       });
-    }
+    }, 1000);
+  }
 
-    public isColumnEnabled(columnName: string): boolean {
-      return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+  public limpiarFiltros() {
+    localStorage.removeItem('ventasFiltros');
+    this.loadAll();
+  }
+
+  public filtrosActivos(): boolean {
+    return Object.values(this.filtros).some(valor => {
+      if (Array.isArray(valor)) {
+        return valor.length > 0;
+      }
+      return valor !== '' && valor !== null && valor !== undefined;
+    });
+  }
+
+  public isColumnEnabled(columnName: string): boolean {
+    return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
 
 
-  getNumsIds(){
-    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => { 
-        this.numeros_ids = numsIds;
-    }, error => {this.alertService.error(error); });
-  } 
+  getNumsIds() {
+    this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => {
+      this.numeros_ids = numsIds;
+    }, error => { this.alertService.error(error); });
+  }
 
-  descargarPorMarcasPorMes(){
+  descargarPorMarcasPorMes() {
     this.downloadingPorMarca = true;
     this.saving = true;
     this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
@@ -743,7 +756,44 @@ export class VentasComponent implements OnInit {
     );
   }
 
-  public generarTrasladoEmpresa(venta:any){
+  public descargarPorUtilidades() {
+    this.downloadingPorMarca = true;
+    this.saving = true;
+    this.filtrosPorMarca.inicio = this.filtrosPorMarca.inicio;
+    this.filtrosPorMarca.fin = this.filtrosPorMarca.fin;
+    this.apiService.export('ventas-por-utilidades/exportar', this.filtrosPorMarca).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ventas-por-utilidades_' + this.filtrosPorMarca.inicio + '_' + this.filtrosPorMarca.fin + '.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloadingPorMarca = false;
+        this.saving = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloadingPorMarca = false;
+        this.saving = false;
+      }
+    );
+  }
+
+  public descargarReportePorMarcaOUtilidades() {
+    if (this.reporteSeleccionado === 'marca') {
+      this.descargarPorMarcasPorMes();
+    } else if (this.reporteSeleccionado === 'utilidades') {
+      this.descargarPorUtilidades();
+    }
+  }
+
+  public generarTrasladoEmpresa(venta: any) {
     Swal.fire({
       title: '¿Confirmar traslado?',
       text: '¿Está seguro de generar el traslado a empresa para esta venta?',
@@ -757,7 +807,7 @@ export class VentasComponent implements OnInit {
       if (result.isConfirmed) {
         this.apiService.store('compra/generar-compra-desde-orden', venta).subscribe(venta => {
           this.alertService.success('Traslado generado.', 'El traslado fue generado exitosamente.');
-        }, error => {this.alertService.error(error); });
+        }, error => { this.alertService.error(error); });
       }
     });
   }

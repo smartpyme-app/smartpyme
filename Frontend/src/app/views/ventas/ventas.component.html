@@ -252,7 +252,8 @@
                                         class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                     </a>
-                                    <a class="list-group-item list-group-item-action border-0 click" (click)="generarTrasladoEmpresa(venta)">
+                                    <a class="list-group-item list-group-item-action border-0 click"
+                                        (click)="generarTrasladoEmpresa(venta)">
                                         <i class="fa fa-fw fa-exchange"></i> Generar traslado a empresa
                                     </a>
                                 </div>
@@ -282,41 +283,61 @@
 
 <ng-template #mdescargar>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Descargar registro de ventas</h4>
+        <h4 class="modal-title text-center">Descargar reporte de registros de ventas</h4>
         <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
         <button type="button" class="btn-close" (click)="modalRefDescargar.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
-        <p class="alert bg-info">Acá puedes descargar los registros de ventas en un archivo de Excel.</p>
-        <div class="row">
-            <div class="d-grid mt-4">
-                <p>Descargar los detalles de ventas por producto.</p>
-                <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
-                    <span *ngIf="downloadingDetalles">Descargando...</span>
-                </button>
-            </div>
-            <div class="d-grid my-4">
-                <p>Descargar los detalles de ventas totales.</p>
-                <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
-                    <span *ngIf="!downloadingVentas">Descargar Ventas</span>
-                    <span *ngIf="downloadingVentas">Descargando...</span>
-                </button>
-            </div>
-            <div class="d-grid mb-4">
-                <p>Descarga acumulado por producto.</p>
-                <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)"
-                    class="btn btn-primary btn-block">
-                    Descargar Acumulado
-                </button>
-            </div>
-            <div class="d-grid mb-4">
-                <p>Descarga detalles de ventas por marca.</p>
-                <button class="btn btn-primary" (click)="abrirModalFiltrosPorMarca(mfiltrosPorMarca)">
-                    Descargar por Marca
-                </button>
-            </div>
+        <p class="alert bg-info">Al seleccionar el reporte, se mostrará un boton para descargar los datos.</p>
+        <div class="mb-3">
+            <label class="form-label">Seleccione el reporte a descargar:</label>
+            <select class="form-select" [(ngModel)]="reporteSeleccionado">
+                <option value="">Seleccione una opción</option>
+                <option value="detalles">Detalles de ventas por producto</option>
+                <option value="ventas">Detalles de ventas totales</option>
+                <option value="acumulado">Acumulado por producto</option>
+                <option value="marca">Detalles de ventas por marca</option>
+                <option value="utilidades">Detalles de ventas utilidades</option>
+            </select>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'detalles'">
+            <p>Descargar los detalles de ventas por producto.</p>
+            <button [disabled]="saving" (click)="descargarDetalles()" class="btn btn-primary btn-block">
+                <span *ngIf="!downloadingDetalles">Descargar Detalles</span>
+                <span *ngIf="downloadingDetalles">Descargando...</span>
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'ventas'">
+            <p>Descargar los detalles de ventas totales.</p>
+            <button [disabled]="saving" (click)="descargarVentas()" class="btn btn-primary btn-block">
+                <span *ngIf="!downloadingVentas">Descargar Ventas</span>
+                <span *ngIf="downloadingVentas">Descargando...</span>
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'acumulado'">
+            <p>Descarga acumulado por producto.</p>
+            <button [disabled]="saving" (click)="abrirModalFiltrosAcumulado(mfiltrosAcumulado)"
+                class="btn btn-primary btn-block">
+                Descargar Acumulado
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'marca'">
+            <p>Descarga detalles de ventas por marca.</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosPorMarca(mfiltrosPorMarca)">
+                Descargar por Marca
+            </button>
+        </div>
+
+        <div class="d-grid mt-4" *ngIf="reporteSeleccionado == 'utilidades'">
+            <p>Descarga detalles de ventas utilidades.</p>
+            <button class="btn btn-primary" (click)="abrirModalFiltrosPorUtilidades(mfiltrosPorMarca)">
+                Descargar por Utilidades
+            </button>
         </div>
     </div>
 </ng-template>
@@ -379,11 +400,13 @@
                 </div>
                 <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
                     <label for="num_orden">Número de orden:</label><br>
-                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden" id="num_orden">
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden" name="num_orden"
+                        id="num_orden">
                 </div>
                 <div class="form-group col-md-6" *ngIf="apiService.auth_user().empresa.pais == 'Honduras'">
                     <label for="num_orden_exento">Número de orden exento:</label><br>
-                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento" id="num_orden_exento">
+                    <input type="text" class="form-control" [(ngModel)]="venta.num_orden_exento" name="num_orden_exento"
+                        id="num_orden_exento">
                 </div>
                 <div class="form-group col-sm-6">
                     <label for="tipo_operacion">Tipo de operación:</label>
@@ -709,14 +732,15 @@
 
 <ng-template #mfiltrosPorMarca>
     <div class="modal-header">
-        <h4 class="modal-title text-center">Filtros para Reporte por Marca</h4>
+        <h4 class="modal-title text-center">Filtros para Reporte {{ reporteSeleccionado == 'marca' ? 'de Marcas' : 'de
+            Utilidades' }}</h4>
         <button type="button" class="btn-close" (click)="modalRefPorMarca.hide()" aria-label="Close"></button>
         <!-- <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button> -->
     </div>
     <div class="modal-body">
         <app-notificaciones-container></app-notificaciones-container>
 
-        <form (ngSubmit)="descargarPorMarcasPorMes()">
+        <form (ngSubmit)="descargarReportePorMarcaOUtilidades()">
             <div class="row">
                 <!-- Fechas -->
                 <div class="form-group col-12">
@@ -733,7 +757,8 @@
             </div>
 
             <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary" [disabled]="downloadingPorMarca || !filtrosPorMarca.inicio || !filtrosPorMarca.fin">
+                <button type="submit" class="btn btn-primary"
+                    [disabled]="downloadingPorMarca || !filtrosPorMarca.inicio || !filtrosPorMarca.fin">
                     <span *ngIf="!downloadingPorMarca">Descargar Reporte</span>
                     <span *ngIf="downloadingPorMarca">Descargando...</span>
                 </button>
