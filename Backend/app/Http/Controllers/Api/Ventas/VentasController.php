@@ -156,6 +156,9 @@ class VentasController extends Controller
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
             }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
+            }], 'total')
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->paginate($request->paginate);
