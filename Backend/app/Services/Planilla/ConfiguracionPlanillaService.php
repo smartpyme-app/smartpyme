@@ -53,11 +53,11 @@ class ConfiguracionPlanillaService
                         ($datosEmpleado['bonificaciones'] ?? 0) +
                         ($datosEmpleado['otros_ingresos'] ?? 0);
         
-        // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
-        $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
-        
-        if ($esServiciosProfesionales) {
-            // Solo renta del 10%
+        // ✅ VERIFICAR SI ES CONTRATO SIN PRESTACIONES
+        $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
+        if ($esContratoSinPrestaciones) {
+            // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Solo renta del 10%
             $resultados = [
                 'isss_empleado' => 0,
                 'isss_patronal' => 0,
