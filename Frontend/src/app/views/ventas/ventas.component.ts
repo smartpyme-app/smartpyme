@@ -14,7 +14,7 @@ import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-ex
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { CrearAbonoVentaComponent } from '@shared/modals/crear-abono-venta/crear-abono-venta.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
@@ -25,10 +25,9 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
 
 })
-export class VentasComponent extends BasePaginatedModalComponent implements OnInit {
-  public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
+export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
+  public ventas: any = {};
   public venta: any = {};
-  public override saving: boolean = false;
   public sending: boolean = false;
   public downloadingDetalles: boolean = false;
   public downloadingVentas: boolean = false;
@@ -73,15 +72,30 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     protected override modalManager: ModalManagerService,
     private sharedDataService: SharedDataService
   ) {
-    super(apiService, alertService, modalManager);
+    super(apiService, alertService, modalManager, {
+      endpoint: 'venta',
+      itemsProperty: 'ventas',
+      itemProperty: 'venta',
+      reloadAfterSave: false,
+      reloadAfterDelete: false,
+      messages: {
+        created: 'La venta fue guardada exitosamente.',
+        updated: 'La venta fue guardada exitosamente.',
+        deleted: 'Venta eliminada exitosamente.',
+        createTitle: 'Venta guardada',
+        updateTitle: 'Venta guardada',
+        deleteTitle: 'Venta eliminada',
+        deleteConfirm: '¿Desea eliminar el Registro?'
+      },
+      afterSave: () => {
+        this.venta = {};
+        this.filtrarVentas();
+      }
+    });
   }
 
-  protected getPaginatedData(): PaginatedResponse | null {
-    return this.ventas;
-  }
-
-  protected setPaginatedData(data: PaginatedResponse): void {
-    this.ventas = data;
+  protected aplicarFiltros(): void {
+    this.filtrarVentas();
   }
 
   ngOnInit() {
@@ -170,7 +184,7 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     this.filtrarVentas();
   }
 
-  public loadAll() {
+  public override loadAll() {
     const filtrosGuardados = localStorage.getItem('ventasFiltros');
 
     if (filtrosGuardados) {
@@ -226,34 +240,20 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
   public setEstado(venta: any, estado: any) {
     if (estado == 'Pagada') {
       if (confirm('¿Confirma el pago de la venta?')) {
-        this.venta = venta;
-        this.venta.estado = estado;
-        this.onSubmit();
+        venta.estado = estado;
+        this.onSubmit(venta, true);
       }
     }
     if (estado == 'Anulada') {
       if (confirm('¿Confirma la anulación de la venta?')) {
-        this.venta = venta;
-        this.venta.estado = estado;
-        this.onSubmit();
+        venta.estado = estado;
+        this.onSubmit(venta, true);
       }
     }
   }
 
-  public delete(id: number) {
-    if (confirm('¿Desea eliminar el Registro?')) {
-      this.apiService.delete('venta/', id).subscribe(
-        (data) => {
-          for (let i = 0; i < this.ventas['data'].length; i++) {
-            if (this.ventas['data'][i].id == data.id)
-              this.ventas['data'].splice(i, 1);
-          }
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
+  public override delete(id: number) {
+    super.delete(id);
   }
 
   // setPagination() ahora se hereda de BasePaginatedComponent
@@ -558,18 +558,9 @@ export class VentasComponent extends BasePaginatedModalComponent implements OnIn
     window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
   }
 
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('venta', this.venta).subscribe(venta => {
-            this.venta = {};
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-  }
+    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
+        await super.onSubmit(item, isStatusChange);
+    }
 
     public setRecurrencia(venta:any){
         this.venta = venta;

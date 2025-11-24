@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
 	public productos: any = [];
     public bodegas: any = [];
 	public producto: any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    public apiService: ApiService, 
@@ -72,7 +69,6 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         }
 	}
 
-
 	productoSelect(producto:any){
         this.producto = producto;
         this.detalle.id_producto = this.producto.id;
@@ -92,12 +88,19 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         detalle.total = detalle.cantidad * detalle.costo;
     }
 
-	public onSubmit() {
+	public async onSubmit() {
         this.saving = true;
-        this.apiService.store('salida', this.salida).pipe(this.untilDestroyed()).subscribe(salida => {
+        try {
+            await this.apiService.store('salida', this.salida)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.router.navigateByUrl('/salidas');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
+        }
     }
 
     openModalDetalle(template: TemplateRef<any>, detalle:any) {
@@ -115,7 +118,6 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
         }
         this.closeModal();
 	}
-
 
 	public eliminarDetalle(detalle:any){
 		if (confirm('¿Desea eliminar el Registro?')) {
@@ -138,6 +140,5 @@ export class InventarioSalidaComponent extends BaseModalComponent implements OnI
 			}
 		}
 	}
-
 
 }

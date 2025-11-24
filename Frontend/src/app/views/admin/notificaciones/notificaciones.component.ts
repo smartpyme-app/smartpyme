@@ -2,7 +2,8 @@ import { Component, OnInit, Input, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
@@ -17,7 +18,7 @@ import { TruncatePipe } from '../../../pipes/truncate.pipe';
     
 })
 
-export class NotificacionesComponent extends BasePaginatedModalComponent implements OnInit {
+export class NotificacionesComponent extends BaseCrudComponent<any> implements OnInit {
 
     public notificacion:any = {};
     public cajas:any = [];
@@ -32,22 +33,32 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
         protected override alertService:AlertService,
         protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
-    }
-
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.notificaciones;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.notificaciones = data;
+        super(apiService, alertService, modalManager, {
+            endpoint: 'notificacion',
+            itemsProperty: 'notificaciones',
+            itemProperty: 'notificacion',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'Notificación actualizada.',
+                updated: 'Notificación actualizada.',
+                deleted: 'Notificación eliminada.',
+                createTitle: 'Notificación',
+                updateTitle: 'Notificación',
+                deleteTitle: 'Notificación',
+                deleteConfirm: '¿Desea eliminar el registro?'
+            },
+            afterSave: () => {
+                this.filtrarNotificaciones();
+            }
+        });
     }
 
 	ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.categoria = '';
         this.filtros.tipo = '';
         this.filtros.leido = '';
@@ -56,6 +67,10 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
 
+        this.filtrarNotificaciones();
+    }
+
+    protected aplicarFiltros(): void {
         this.filtrarNotificaciones();
     }
 
@@ -72,46 +87,18 @@ export class NotificacionesComponent extends BasePaginatedModalComponent impleme
         }, error => {this.alertService.error(error); });
     }
 
-    override openModal(template: TemplateRef<any>, notificacion:any) {
-        this.notificacion = notificacion;
-        this.notificacion.leido = true;
-        this.setEstado(this.notificacion);
-
-        super.openModal(template);
-    }
-    
-
-    public onSubmit() {
-        this.loading = true;
-        this.apiService.store('notificacion', this.notificacion)
-            .pipe(this.untilDestroyed())
-            .subscribe(notificacion => {
-            this.notificacion = notificacion;
-            this.loading = false;
-        },error => {this.alertService.error(error); this.loading = false; });
-
+    override openModal(template: TemplateRef<any>, notificacion?: any, modalConfig?: any) {
+        if (notificacion) {
+            const updated = { ...notificacion, leido: true };
+            this.setEstado(updated);
+            super.openModal(template, updated, modalConfig);
+        } else {
+            super.openModal(template, notificacion, modalConfig);
+        }
     }
 
     public setEstado(notificacion:any){
-        this.apiService.store('notificacion', notificacion)
-            .pipe(this.untilDestroyed())
-            .subscribe(notificacion => { 
-            // this.alertService.success('Actualizado');
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('notificacion/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.notificaciones.data.length; i++) { 
-                    if (this.notificaciones.data[i].id == data.id )
-                        this.notificaciones.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); this.loading = false;});
-                   
-        }
+        this.onSubmit({ ...notificacion, leido: true }, true);
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent

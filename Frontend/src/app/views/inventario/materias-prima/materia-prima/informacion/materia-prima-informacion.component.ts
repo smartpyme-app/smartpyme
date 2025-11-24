@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '../../../../../services/alert.service';
 import { ApiService } from '../../../../../services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-materia-prima-informacion',
@@ -17,19 +17,19 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class MateriaPrimaInformacionComponent implements OnInit {
+export class MateriaPrimaInformacionComponent extends BaseComponent implements OnInit {
 
     @Input() producto: any = {};
     public categorias:any[] = [];
     public loading = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router,
+        protected apiService: ApiService, 
+        protected alertService: AlertService,
+        private route: ActivatedRoute, 
+        private router: Router,
     ) {
+        super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,9 +27,6 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     public sucursalSelected: any = {};
     public buscador:string = '';
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
         private apiService: ApiService, 
         protected override alertService: AlertService,
@@ -46,7 +43,6 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
     public setAjuste(event:any){
         this.inventario.stock = event.stock_real;
     }
-
 
     override openModal(template: TemplateRef<any>, inventario:any) {
         this.inventario = inventario;

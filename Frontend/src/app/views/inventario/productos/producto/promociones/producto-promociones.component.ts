@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,9 +23,6 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
 
     @Input() producto: any = {};
 	public promocion: any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, 
@@ -80,6 +77,5 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
             },error => {this.alertService.error(error); this.loading = false;});
         }
     }
-
 
 }

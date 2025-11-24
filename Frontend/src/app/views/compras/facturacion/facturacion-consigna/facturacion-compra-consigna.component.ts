@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -49,8 +49,6 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     public searchProductos$ = new Subject<string>();
     public detalle: any = {};
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor( 
 	    public apiService: ApiService,
@@ -113,7 +111,6 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                 }
             });
 
-
     }
 
     public cargarDatos(){
@@ -148,7 +145,6 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
             }, error => {this.alertService.error(error);});
 
     }
-
 
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
@@ -230,7 +226,6 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
         }
     }
 
-
     // Facturar
 
         public openModalFacturar(template: TemplateRef<any>) {
@@ -261,6 +256,5 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
             },error => {this.alertService.error(error); this.loading = false; });
 
         }
-
 
 }

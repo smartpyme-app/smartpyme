@@ -8,6 +8,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
   selector: 'app-crear-abono-gasto',
@@ -15,7 +16,7 @@ import { ApiService } from '@services/api.service';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
 })
-export class CrearAbonoGastoComponent implements OnInit {
+export class CrearAbonoGastoComponent extends BaseComponent implements OnInit {
 
 	@Input() gasto: any = {};
 	@Output() update = new EventEmitter();
@@ -27,10 +28,15 @@ export class CrearAbonoGastoComponent implements OnInit {
 
 	modalRef!: BsModalRef;
 
-   constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
+   constructor(
+        protected apiService: ApiService, 
+        protected alertService: AlertService,  
+    	private route: ActivatedRoute, 
+        private router: Router,
     	private modalService: BsModalService
-    ){ }
+    ) {
+        super();
+    }
 
 	ngOnInit() {
         this.abono.total = this.gasto.saldo;
@@ -44,13 +50,17 @@ export class CrearAbonoGastoComponent implements OnInit {
         this.abono.id_empresa = this.apiService.auth_user().id_empresa;
         this.abono.id_usuario = this.apiService.auth_user().id;
 
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(formaPagos => { 
+                this.formaPagos = formaPagos;
+            }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('bancos/list').subscribe(bancos => {
-            this.bancos = bancos;
-        }, error => {this.alertService.error(error);});
+        this.apiService.getAll('bancos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(bancos => {
+                this.bancos = bancos;
+            }, error => {this.alertService.error(error);});
 	}
 
     public setTotal(total:any){
@@ -67,11 +77,13 @@ export class CrearAbonoGastoComponent implements OnInit {
             this.abono.concepto = 'Abono';
         }
 
-        this.apiService.store('gasto/abono', this.abono).subscribe(abono => {
-            this.update.emit();
-            this.router.navigate(['/gastos']);
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
+        this.apiService.store('gasto/abono', this.abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
+                this.update.emit();
+                this.router.navigate(['/gastos']);
+                this.saving = false;
+            }, error => {this.alertService.error(error); this.saving = false; });
 
 	}
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -24,9 +24,6 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
     public proveedor: any = {};
     public buscador:string = '';
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
         private apiService: ApiService, 
         protected override alertService: AlertService,
@@ -49,7 +46,6 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
         }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-
     override openModal(template: TemplateRef<any>, proveedor:any) {
         this.proveedor = proveedor;
         this.proveedor.id_proveedor = '';
@@ -63,7 +59,6 @@ export class ProductoProveedoresComponent extends BaseModalComponent implements 
         }
         this.proveedor.id_proveedor = proveedor.id;
     }
-
 
     public onSubmit() {
         this.loading = true;

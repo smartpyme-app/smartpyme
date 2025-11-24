@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,10 +8,9 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -23,54 +22,68 @@ import Swal from 'sweetalert2';
     
 })
 
-export class ImpuestosComponent extends BaseModalComponent implements OnInit {
+export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public impuestos:any = [];
     public impuesto:any = {};
     public catalogo:any = [];
-    public override loading:boolean = false;
-    public override saving:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'impuesto',
+            itemsProperty: 'impuestos',
+            itemProperty: 'impuesto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El impuesto fue añadido exitosamente.',
+                updated: 'El impuesto fue guardado exitosamente.',
+                createTitle: 'Impuesto creado',
+                updateTitle: 'Impuesto guardado'
+            },
+            initNewItem: (item) => {
+                item.id_empresa = apiService.auth_user().id_empresa;
+                item.enable = true;
+                return item;
+            }
+        });
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {        
+    public override loadAll() {
         this.loading = true;
         this.filtro.estado = '';
         this.apiService.getAll('impuestos')
             .pipe(this.untilDestroyed())
             .subscribe(impuestos => { 
                 this.impuestos = impuestos;
-                this.loading = false;this.filtrado = false;
-            }, error => {this.alertService.error(error); });
+                this.loading = false;
+                this.filtrado = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public override openModal(template: TemplateRef<any>, impuesto:any) {
-        this.impuesto = impuesto;
-        if (!this.impuesto.id) {
-            this.impuesto.id_empresa = this.apiService.auth_user().id_empresa;
-            this.impuesto.enable = true;
-        }
+    protected aplicarFiltros(): void {
+        this.loadAll();
+    }
+
+    public override openModal(template: TemplateRef<any>, impuesto?: any) {
+        // Cargar catálogo antes de abrir el modal
         this.apiService.getAll('catalogo/list')
             .pipe(this.untilDestroyed())
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
             }, error => {this.alertService.error(error);});
-        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        
+        super.openModal(template, impuesto, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(impuesto:any){
@@ -78,27 +91,9 @@ export class ImpuestosComponent extends BaseModalComponent implements OnInit {
         this.onSubmit();
     }
 
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('impuesto', this.impuesto)
-            .pipe(this.untilDestroyed())
-            .subscribe(impuesto => {
-            if (!this.impuesto.id) {
-                this.impuestos.push(impuesto);
-                this.alertService.success('Impuesto creado', 'El impuesto fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Impuesto guardado', 'El impuesto fue guardado exitosamente.');
-            }
-            this.saving = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.saving = false;});
-    }
-
-
-    public delete(id:number) {
-
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -108,20 +103,22 @@ export class ImpuestosComponent extends BaseModalComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('impuesto/', id)
+                this.loading = true;
+                this.apiService.delete('impuesto/', itemToDelete)
                     .pipe(this.untilDestroyed())
                     .subscribe(data => {
-                        for (let i = 0; i < this.impuestos.length; i++) { 
-                            if (this.impuestos[i].id == data.id )
-                                this.impuestos.splice(i, 1);
+                        const index = this.impuestos.findIndex((i: any) => i.id === data.id);
+                        if (index !== -1) {
+                            this.impuestos.splice(index, 1);
                         }
-                    }, error => {this.alertService.error(error); });
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+                        this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                        this.loading = false;
+                    }, error => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    });
           }
         });
-
-
     }
 
 }

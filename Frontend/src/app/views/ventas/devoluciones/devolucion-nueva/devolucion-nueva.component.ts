@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,7 +9,6 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-detalles.component';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 @Component({
     selector: 'app-devolucion-nueva',
@@ -30,9 +29,6 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     public override loading:boolean = false;
     public override saving:boolean = false;
     public imprimir:boolean = true;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor(
         public apiService: ApiService,
@@ -187,7 +183,6 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         //console.log(this.devolucion);
     }
 
-
     updateDevolucion(devolucion:any) {
         this.devolucion = devolucion;
         this.sumTotal();
@@ -214,12 +209,10 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
             },error => {this.alertService.error(error); this.saving = false; });
         }
 
-
     public imprimirDocDevolucion(devolucion:any){
         setTimeout(()=>{
             window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + devolucion.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
         }, 1000);
     }
-
 
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AlertService } from '@services/alert.service';
@@ -18,9 +18,6 @@ export class DescargarInventarioComponent extends BaseModalComponent implements 
 	public filtros:any = [];
     public bodegas:any = [];
     public downloading:boolean = false;
-
-	private destroyRef = inject(DestroyRef);
-	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
         public apiService: ApiService,
@@ -65,6 +62,5 @@ export class DescargarInventarioComponent extends BaseModalComponent implements 
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
-
 
 }

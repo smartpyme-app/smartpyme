@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class CrearProyectoComponent extends BaseModalComponent implements OnInit
     @Output() update = new EventEmitter();
     public override loading = false;
     public override saving = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -83,6 +80,5 @@ export class CrearProyectoComponent extends BaseModalComponent implements OnInit
             this.alertService.success('proyecto creado', 'El proyecto ha sido agregado.');
         },error => {this.alertService.error(error); this.saving = false; });
     }
-
 
 }

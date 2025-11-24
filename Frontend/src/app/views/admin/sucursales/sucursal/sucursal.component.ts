@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,7 +7,7 @@ import { TabsetComponent } from 'ngx-bootstrap/tabs';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-sucursal',
@@ -16,20 +16,19 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class SucursalComponent implements OnInit {
+export class SucursalComponent extends BaseComponent implements OnInit {
 
     public sucursal: any = {};
     public loading = false;
 
     @ViewChild('staticTabs', { static:false }) staticTabs?: TabsetComponent;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
       constructor( 
           public apiService: ApiService, private alertService: AlertService,
           private route: ActivatedRoute, private router: Router
-      ) { }
+      ) {
+        super();
+      }
 
       ngOnInit() {
             

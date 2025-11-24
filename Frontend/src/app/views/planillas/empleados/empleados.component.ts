@@ -11,7 +11,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { VerHistorialButtonComponent } from './shared/ver-historial-button.component';
 import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/notificaciones-container.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -21,38 +21,39 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective],
 
 })
-export class EmpleadosComponent extends BasePaginatedModalComponent implements OnInit {
-  public empleados: PaginatedResponse<any> = {} as PaginatedResponse;
+export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit {
+  public empleados:any = {};
   public empleado: any = {};
-
   public departamentos: any = [];
   public cargos: any = [];
-  public override filtros: any = {};
-
   public datosImportacion = {
     archivo: null as File | null,
   };
-
   public procesandoImportacion = false;
-
-  // Expose enum to template
   ESTADO_EMPLEADO = PlanillaConstants.ESTADOS_EMPLEADO;
-  
 
   constructor(
     apiService: ApiService,
     alertService: AlertService,
     modalManager: ModalManagerService
   ) {
-    super(apiService, alertService, modalManager);
+    super(apiService, alertService, modalManager, {
+      endpoint: 'empleados',
+      itemsProperty: 'empleados',
+      itemProperty: 'empleado',
+      reloadAfterSave: false,
+      reloadAfterDelete: false,
+      messages: {
+        created: 'El empleado fue guardado exitosamente.',
+        updated: 'El empleado fue guardado exitosamente.',
+        createTitle: 'Empleado guardado',
+        updateTitle: 'Empleado guardado'
+      }
+    });
   }
 
-  protected getPaginatedData(): PaginatedResponse | null {
-    return this.empleados;
-  }
-
-  protected setPaginatedData(data: PaginatedResponse): void {
-    this.empleados = data;
+  protected aplicarFiltros(): void {
+    this.filtrarEmpleados();
   }
 
   ngOnInit() {
@@ -60,7 +61,7 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     this.loadCatalogos();
   }
   
-  public loadAll() {
+  public override loadAll() {
     // Inicializar filtros
     this.filtros = {
       estado: '',
@@ -86,40 +87,40 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     this.loading = true;
     this.apiService.getAll('empleados', this.filtros)
         .pipe(this.untilDestroyed())
-        .subscribe(
-            (empleados) => {
+        .subscribe({
+            next: (empleados) => {
                 this.empleados = empleados;
                 this.loading = false;
             },
-            (error) => {
+            error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
             }
-        );
+        });
   }
 
   public loadCatalogos() {
     this.apiService.getAll('departamentosPlanilla/list')
         .pipe(this.untilDestroyed())
-        .subscribe(
-            (departamentos) => {
+        .subscribe({
+            next: (departamentos) => {
                 this.departamentos = departamentos;
             },
-            (error) => {
+            error: (error) => {
                 this.alertService.error(error);
             }
-        );
+        });
 
     this.apiService.getAll('cargos/list')
         .pipe(this.untilDestroyed())
-        .subscribe(
-            (cargos) => {
+        .subscribe({
+            next: (cargos) => {
                 this.cargos = cargos;
             },
-            (error) => {
+            error: (error) => {
                 this.alertService.error(error);
             }
-        );
+        });
   }
 
   public filtrarEmpleados() {
@@ -129,7 +130,7 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     }
   }
 
-  public cambiarEstado(empleado: any, estado: string) {
+  public async cambiarEstado(empleado: any, estado: string) {
     if (!confirm('¿Está seguro de cambiar el estado del empleado?')) {
       return;
     }
@@ -137,22 +138,21 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     this.saving = true;
     const empleadoActualizado = { ...empleado, estado };
 
-    this.apiService.store('empleados', empleadoActualizado)
-        .pipe(this.untilDestroyed())
-        .subscribe({
-            next: () => {
-                this.saving = false;
-                this.alertService.success(
-                    'Estado actualizado correctamente',
-                    'Empleado'
-                );
-                this.loadEmpleados();
-            },
-            error: (error) => {
-                this.alertService.error(error);
-                this.saving = false;
-            },
-        });
+    try {
+      await this.apiService.store('empleados', empleadoActualizado)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+      
+      this.alertService.success(
+          'Estado actualizado correctamente',
+          'Empleado'
+      );
+      this.loadEmpleados();
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
   }
 
   public setOrden(columna: string) {
@@ -165,8 +165,6 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     }
     this.loadEmpleados();
   }
-
-  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public openFilter(template: TemplateRef<any>) {
     super.openModal(template);
@@ -240,22 +238,22 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
   public descargarPlantilla() {
     this.apiService.download('planillas/plantilla-importacion')
         .pipe(this.untilDestroyed())
-        .subscribe(
-      (response: any) => {
-        const blob = new Blob([response], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        .subscribe({
+            next: (response: any) => {
+                const blob = new Blob([response], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'plantilla_importacion_planillas.xlsx';
+                link.click();
+                window.URL.revokeObjectURL(url);
+            },
+            error: (error) => {
+                this.alertService.error('Error al descargar la plantilla');
+            }
         });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'plantilla_importacion_planillas.xlsx';
-        link.click();
-        window.URL.revokeObjectURL(url);
-      },
-      (error) => {
-        this.alertService.error('Error al descargar la plantilla');
-      }
-    );
   }
 
   public importarEmpleados() {
@@ -271,29 +269,29 @@ export class EmpleadosComponent extends BasePaginatedModalComponent implements O
     this.apiService.store('empleados/importar', formData)
         .pipe(this.untilDestroyed())
         .subscribe({
-      next: (response: any) => {
-        this.alertService.success(
-          'Éxito',
-          `Empleados importados correctamente. Creados: ${response.data?.creados || 0}, Actualizados: ${response.data?.actualizados || 0}`
-        );
-        this.closeModal();
-        this.loadEmpleados(); // Recargar la lista de empleados
-        this.procesandoImportacion = false;
-        this.datosImportacion.archivo = null;
-        
-        // Mostrar errores si los hay
-        if (response.data?.errores && response.data.errores.length > 0) {
-          const errores = response.data.errores
-            .map((e: any) => `${e.nombre}: ${e.error}`)
-            .join('\n');
-          this.alertService.error(`Errores en la importación:\n${errores}`);
-        }
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.procesandoImportacion = false;
-      },
-    });
+            next: (response: any) => {
+                this.alertService.success(
+                    'Éxito',
+                    `Empleados importados correctamente. Creados: ${response.data?.creados || 0}, Actualizados: ${response.data?.actualizados || 0}`
+                );
+                this.closeModal();
+                this.loadEmpleados();
+                this.procesandoImportacion = false;
+                this.datosImportacion.archivo = null;
+                
+                // Mostrar errores si los hay
+                if (response.data?.errores && response.data.errores.length > 0) {
+                    const errores = response.data.errores
+                        .map((e: any) => `${e.nombre}: ${e.error}`)
+                        .join('\n');
+                    this.alertService.error(`Errores en la importación:\n${errores}`);
+                }
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.procesandoImportacion = false;
+            },
+        });
   }
 
   public openModalDarAlta(template: TemplateRef<any>, empleado: any) {

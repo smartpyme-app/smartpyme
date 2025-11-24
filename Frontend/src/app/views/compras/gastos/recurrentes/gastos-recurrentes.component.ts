@@ -7,7 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 declare var $:any;
 
@@ -19,9 +19,9 @@ declare var $:any;
     
 })
 
-export class GastosRecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
+export class GastosRecurrentesComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public gastos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public gastos:any = {};
     public gasto:any = {};
     public formaPagos:any = [];
     public documentos:any = [];
@@ -29,24 +29,32 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
     public usuarios:any = [];
     public sucursales:any = [];
     public buscador:any = '';
-    public override saving:boolean = false;
-
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'gasto',
+            itemsProperty: 'gastos',
+            itemProperty: 'gasto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La gasto fue guardada exitosamente.',
+                updated: 'La gasto fue guardada exitosamente.',
+                createTitle: 'Venta guardado',
+                updateTitle: 'Venta guardado'
+            },
+            afterSave: () => {
+                this.gasto = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.gastos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.gastos = data;
+    protected aplicarFiltros(): void {
+        this.filtrarGastos();
     }
 
     ngOnInit() {
@@ -58,10 +66,9 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
         }, error => {this.alertService.error(error); });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
-        this.filtros.id_usuario = '';
         this.filtros.id_usuario = '';
         this.filtros.id_canal = '';
         this.filtros.id_documento = '';
@@ -72,7 +79,6 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-
         this.filtrarGastos();
     }
 
@@ -80,11 +86,17 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
         this.loading = true;
         this.apiService.getAll('gastos', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe(gastos => { 
-            this.gastos = gastos;
-            this.loading = false;
-            this.closeModal();
-        }, error => {this.alertService.error(error); });
+          .subscribe({
+              next: (gastos) => {
+                  this.gastos = gastos;
+                  this.loading = false;
+                  this.closeModal();
+              },
+              error: (error) => {
+                  this.alertService.error(error);
+                  this.loading = false;
+              }
+          });
     }
 
     public setOrden(columna: string) {
@@ -113,36 +125,49 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
                 this.onSubmit();
             }
         }
-
     }
 
-    public setRecurrencia(gasto:any){
+    public async setRecurrencia(gasto:any){
         this.gasto = gasto;
         this.gasto.recurrente = false;
         
-        this.apiService.store('gasto', this.gasto)
-          .pipe(this.untilDestroyed())
-          .subscribe(gasto => {
+        try {
+            await this.apiService.store('gasto', this.gasto)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.gasto = {};
             this.loadAll();
             this.alertService.success('Gasto guardada', 'La gasto se marco como no recurrente exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.saving = false;
+        }
     }
-    
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id)
-              .pipe(this.untilDestroyed())
-              .subscribe(data => {
-                for (let i = 0; i < this.gastos['data'].length; i++) { 
-                    if (this.gastos['data'][i].id == data.id )
-                        this.gastos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('gasto/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.gastos.data?.findIndex((g: any) => g.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.gastos.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
 
     public openModalEdit(template: TemplateRef<any>, gasto:any) {
@@ -160,37 +185,28 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
             this.formaPagos = formaPagos;
         }, error => {this.alertService.error(error); });
 
-        this.openModal(template);
+        this.openModal(template, gasto);
     }
 
+    public openFilter(template: TemplateRef<any>) {
+        this.openModal(template);
+    }
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
         this.apiService.read('gastos/filtrar/' + filtro + '/', txt)
           .pipe(this.untilDestroyed())
-          .subscribe(gastos => { 
-            this.gastos = gastos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
-
+          .subscribe({
+              next: (gastos) => {
+                  this.gastos = gastos;
+                  this.loading = false;
+              },
+              error: (error) => {
+                  this.alertService.error(error);
+                  this.loading = false;
+              }
+          });
     }
-
-    public onSubmit() {
-        this.saving = true;            
-        this.apiService.store('gasto', this.gasto)
-          .pipe(this.untilDestroyed())
-          .subscribe(gasto => {
-            this.gasto = {};
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-            this.alertService.success('Venta guardado', 'La gasto fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openDescargar(template: TemplateRef<any>) {
         this.openModal(template);
@@ -204,7 +220,7 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'gastos.xlsx';
+            a.download = 'gastos-recurrentes.xlsx';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -228,27 +244,6 @@ export class GastosRecurrentesComponent extends BasePaginatedModalComponent impl
             window.URL.revokeObjectURL(url);
           }, (error) => {console.error('Error al exportar gastos:', error); }
         );
-    }
-
-    public openAbono(template: TemplateRef<any>, gasto:any){
-        this.gasto = gasto;
-        this.openModal(template);
-    }
-
-    public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('sucursales/list')
-          .pipe(this.untilDestroyed())
-          .subscribe(sucursales => { 
-            this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
-
-        this.apiService.getAll('usuarios/list')
-          .pipe(this.untilDestroyed())
-          .subscribe(usuarios => { 
-            this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
-
-        this.openModal(template);
     }
 
 }

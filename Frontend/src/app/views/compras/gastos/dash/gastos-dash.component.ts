@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { BaseChartDirective, NgChartsModule } from 'ng2-charts';
 
 import { AlertService } from '../../../../services/alert.service';
 import { ApiService } from '../../../../services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-gastos-dash',
@@ -17,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgChartsModule],
     
 })
-export class GastosDashComponent implements OnInit {
+export class GastosDashComponent extends BaseComponent implements OnInit {
 
     @ViewChild(BaseChartDirective)
     public chart!: BaseChartDirective;
@@ -47,11 +47,10 @@ export class GastosDashComponent implements OnInit {
     };
     public chartType2: ChartType = 'bar';
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( private alertService:AlertService, private apiService:ApiService
-    ) { }
+    ) {
+        super();
+    }
 
     ngOnInit() {
         this.filtro.inicio  = this.apiService.date();

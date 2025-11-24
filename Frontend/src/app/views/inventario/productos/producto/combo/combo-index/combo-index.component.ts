@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -24,9 +24,6 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   filtros: any = {};
   bodegas: any = [];
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
     public apiService: ApiService, 
     protected override alertService: AlertService,
@@ -48,7 +45,6 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       this.usuarios = usuarios;
     }, error => { this.alertService.error(error); });
     this.openModal(template);
-
 
   }
   ngOnInit() {
@@ -97,7 +93,6 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   async setComboState(combo: any) {
     //await 1 tick
     setTimeout(() => { }, 0);
-
 
     let res = await Swal.fire({
       title: 'Cambiar estado',

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,9 +27,6 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
     public downloading:boolean = false;
     public filtros:any = {};
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -45,7 +42,6 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         for (let i = 0; i <= 10; i++) {
           this.years.push(currentYear - i);
         }
-
 
         this.filtros.id_sucursal = '';
         this.filtros.tipo_documento = 'Crédito fiscal';
@@ -144,6 +140,5 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             this.manejarErrorDescarga(error);
         });
     }
-
 
 }

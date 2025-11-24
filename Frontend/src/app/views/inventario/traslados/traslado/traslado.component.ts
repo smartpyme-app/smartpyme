@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -28,9 +28,6 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 	public producto: any = {};
 	public bodegaDe:any = {};
 	public bodegaPara:any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    public apiService: ApiService, 
@@ -77,7 +74,6 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
         }
 	}
 
-
 	override openModal(template: TemplateRef<any>) {
 		if(!this.productos.length){
 		    this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
@@ -114,12 +110,19 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
         this.closeModal();
 	}
 
-	public onSubmit() {
+	public async onSubmit() {
         this.saving = true;
-        this.apiService.store('traslado', this.traslado).pipe(this.untilDestroyed()).subscribe(traslado => {
+        try {
+            await this.apiService.store('traslado', this.traslado)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.router.navigateByUrl('/traslados');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
+        }
     }
 
     openModalDetalle(template: TemplateRef<any>, detalle:any) {

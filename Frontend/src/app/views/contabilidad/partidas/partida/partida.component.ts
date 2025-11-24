@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,9 +30,6 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
     public cliente: any = {};
     public override loading = false;
     public override saving = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor( 
       private apiService: ApiService,

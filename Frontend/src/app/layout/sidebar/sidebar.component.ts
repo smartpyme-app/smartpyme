@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
@@ -10,7 +10,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 @Component({
@@ -29,7 +29,7 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     
 })
 
-export class SidebarComponent implements OnInit {
+export class SidebarComponent extends BaseComponent implements OnInit {
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -55,15 +55,14 @@ export class SidebarComponent implements OnInit {
 
     searchControl = new FormControl();
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
         public apiService: ApiService,
         public alertService: AlertService,
         private router: Router,
         private funcionalidadesService: FuncionalidadesService
-    ) {}
+    ) {
+        super();
+    }
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {

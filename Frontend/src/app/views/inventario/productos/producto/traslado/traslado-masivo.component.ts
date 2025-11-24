@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -55,9 +55,6 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
     
     // Control para el buscador
     searchControl = new FormControl();
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService, 
@@ -281,7 +278,6 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
     }
 
     public limpiarSeleccion() {
-
 
         Swal.fire({
             title: '¿Está seguro de eliminar todos los productos de la lista de traslado?',

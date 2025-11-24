@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -11,7 +11,7 @@ import { VentaDetallesComponent } from '../detalles/venta-detalles.component';
 import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-cliente.component';
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { NgSelectModule } from '@ng-select/ng-select';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective],
     
 })
-export class CotizacionFormComponent implements OnInit {
+export class CotizacionFormComponent extends BaseComponent implements OnInit {
   venta: any = {};
 
   usuarios: any = [];
@@ -34,8 +34,6 @@ export class CotizacionFormComponent implements OnInit {
   impuestos: any = [];
   loading: boolean = false;
   saving: boolean = false;
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor') supervisorTemplate!: TemplateRef<any>;
   modalRefInstance!: any;
@@ -43,10 +41,11 @@ export class CotizacionFormComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private modalService: BsModalService,
-    private alertService: AlertService,
+    protected alertService: AlertService,
     private router: Router,
     private _activeRoute: ActivatedRoute
   ) {
+    super();
     let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
 
     this.venta = {

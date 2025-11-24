@@ -1,11 +1,10 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../../services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
@@ -23,9 +22,6 @@ export class BusquedaProductoComponent extends BaseModalComponent implements OnI
     public override loading = false;
     public buscador:any = '';
     @Output() productoSelect = new EventEmitter();
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
     constructor( 
         public apiService: ApiService,

@@ -1,14 +1,12 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-admin-sucursales',
@@ -17,24 +15,40 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class AdminSucursalesComponent extends BaseModalComponent implements OnInit {
+export class AdminSucursalesComponent extends BaseCrudComponent<any> implements OnInit {
 
     public sucursales:any = [];
     public sucursal:any = {};
-    public override loading = false;
     public sucursales_activas:any = 0;
-    public filtros:any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   	constructor( 
-  	    public apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService,
-  	    private route: ActivatedRoute, private router: Router
+  	    apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+  	    private route: ActivatedRoute, 
+        private router: Router
   	) {
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'sucursal',
+            itemsProperty: 'sucursales',
+            itemProperty: 'sucursal',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            initNewItem: (item) => {
+                item.activo = 1;
+                return item;
+            },
+            afterSave: (item, isNew) => {
+                if (isNew) {
+                    this.sucursales.data.push(item);
+                }
+                this.contarActivos();
+                this.sucursal = {};
+            },
+            afterDelete: () => {
+                this.contarActivos();
+            }
+        });
     }
 
   	ngOnInit() {
@@ -45,10 +59,9 @@ export class AdminSucursalesComponent extends BaseModalComponent implements OnIn
         this.filtros.paginate = 10;
   	    
         this.loadAll();
-
   	}
 
-    public loadAll(){
+    public override loadAll() {
         this.loading = true;
         this.apiService.getAll('sucursales', this.filtros)
             .pipe(this.untilDestroyed())
@@ -59,32 +72,16 @@ export class AdminSucursalesComponent extends BaseModalComponent implements OnIn
             }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public override openModal(template: TemplateRef<any>, sucursal:any) {
-        this.sucursal = sucursal;
-        if(!this.sucursal.id){
-            // this.sucursal.id_empresa = this.apiService.auth_user().id_empresa;
-            this.sucursal.activo = 1;
-        }
-        super.openModal(template);
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('sucursal/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.sucursales.data.length; i++) { 
-                        if (this.sucursales.data[i].id == data.id )
-                            this.sucursales.data.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-               
-        }
+    public override openModal(template: TemplateRef<any>, sucursal?: any) {
+        super.openModal(template, sucursal);
     }
 
     public contarActivos(){
-        this.sucursales_activas = this.sucursales.data.filter((item:any) => item.activo == '1').length;
-        console.log(this.sucursales_activas);
+        this.sucursales_activas = this.sucursales.data?.filter((item:any) => item.activo == '1').length || 0;
     }
 
     public setEstado(sucursal:any){
@@ -99,24 +96,5 @@ export class AdminSucursalesComponent extends BaseModalComponent implements OnIn
                 this.contarActivos();
             }, error => {this.alertService.error(error); this.loading = false;});
     }
-
-    
-    public onSubmit() {
-          this.loading = true;
-          this.apiService.store('sucursal', this.sucursal)
-              .pipe(this.untilDestroyed())
-              .subscribe(sucursal => {
-              if (!this.sucursal.id) {
-                    this.sucursales.data.push(sucursal);
-                    this.alertService.success('Sucursal guardada', 'La sucursal fue añadida exitosamente.');
-              }
-              this.contarActivos();
-              this.sucursal = {};
-              this.loading = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-          },error => {this.alertService.error(error); this.loading = false; });
-      }
 
 }

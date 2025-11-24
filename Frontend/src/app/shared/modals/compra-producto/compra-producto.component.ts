@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class CompraProductoComponent extends BaseModalComponent implements OnIni
     public producto: any = {};
 	public detalle: any = {};
     public searching:boolean = false;
-
-	private destroyRef = inject(DestroyRef);
-	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    private apiService: ApiService,

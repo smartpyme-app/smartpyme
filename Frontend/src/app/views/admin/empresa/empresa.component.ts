@@ -105,34 +105,36 @@ export class EmpresaComponent implements OnInit {
         }, error => { this.alertService.error(error); this.loading = false; });
     }
 
-    public onSubmit(): Promise<any> {
-
-        return new Promise((resolve, reject) => {
-            this.saving = true;
-            this.apiService.store('empresa', this.empresa)
+    public async onSubmit(): Promise<any> {
+        this.saving = true;
+        try {
+            const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
-                .subscribe(empresa => {
-                this.empresa = empresa;
+                .toPromise();
+            
+            this.empresa = empresaGuardada;
 
-                this.initializeCustomConfig();
+            this.initializeCustomConfig();
 
-                let user: any = {};
-                user = JSON.parse(localStorage.getItem('SP_auth_user')!);
-                user.empresa = empresa;
-                localStorage.setItem('SP_auth_user', JSON.stringify(user));
+            let user: any = {};
+            user = JSON.parse(localStorage.getItem('SP_auth_user')!);
+            user.empresa = empresaGuardada;
+            localStorage.setItem('SP_auth_user', JSON.stringify(user));
 
-                if (this.empresa.fe_ambiente == '01') {
-                    localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
-                } else {
-                    localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
-                }
+            if (this.empresa.fe_ambiente == '01') {
+                localStorage.setItem('SP_mh_url_base', 'https://api.dtes.mh.gob.sv');
+            } else {
+                localStorage.setItem('SP_mh_url_base', 'https://apitest.dtes.mh.gob.sv');
+            }
 
-                this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
-                this.saving = false;
-                resolve(null);
-            }, error => { this.alertService.error(error); this.saving = false; resolve(null); });
-
-        });
+            this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
+            return null;
+        } catch (error: any) {
+            this.alertService.error(error);
+            return null;
+        } finally {
+            this.saving = false;
+        }
     }
 
     setGiro() {

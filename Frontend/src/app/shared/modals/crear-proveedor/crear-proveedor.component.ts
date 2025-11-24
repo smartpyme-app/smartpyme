@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -28,9 +28,6 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
     public actividad_economicas:any = [];
     public override loading = false;
     public override saving = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -140,6 +137,5 @@ export class CrearProveedorComponent extends BaseModalComponent implements OnIni
             }, error => {this.alertService.error(error); this.loading = false;});
         }
     }
-
 
 }

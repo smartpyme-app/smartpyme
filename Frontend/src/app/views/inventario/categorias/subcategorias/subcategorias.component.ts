@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, ViewChild, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ViewChild, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -34,9 +34,6 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
     @ViewChild('mcategorias')
     public categoriasTemplate!: TemplateRef<any>;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
         public apiService: ApiService, 
         protected override alertService: AlertService,
@@ -60,7 +57,6 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
         }, error => {this.alertService.error(error); });
     }
 
-
     override openModal(template: TemplateRef<any>, subcategoria:any) {
         this.subcategoria = subcategoria;
         super.openModal(template, {class: 'modal-sm', backdrop: 'static'});
@@ -76,25 +72,29 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
         }
     }
 
-    onSubmit(){
-
+    async onSubmit(){
         this.subcategoria.categoria_id = this.categoria.id;
         
-        let formData:FormData = new FormData();
-        for (var key in this.subcategoria) {
+        const formData: FormData = new FormData();
+        for (const key in this.subcategoria) {
             formData.append(key, this.subcategoria[key] ? this.subcategoria[key] : '');
         }
 
         this.loading = true;
-        this.apiService.store('subcategoria', formData)
-          .pipe(this.untilDestroyed())
-          .subscribe(subcategoria => {
-            if(!this.subcategoria.id){
-                this.categoria.subcategorias.push(subcategoria);
+        try {
+            const subcategoriaGuardada = await this.apiService.store('subcategoria', formData)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            if (!this.subcategoria.id) {
+                this.categoria.subcategorias.push(subcategoriaGuardada);
             }
-            this.loading = false;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
 
     onNameChange(subcategoria:any, name:string):void{
@@ -103,28 +103,26 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
         this.onSubmit();
     }
 
-
-    delete(subcategoria:any) {
-
+    async delete(subcategoria:any) {
         if (subcategoria.total_productos > 0) {
             alert('Hay productos asignados, primero cambie los productos a otra categoria.');
             this.openModalCategorias(subcategoria);
-        }
-        else{
+        } else {
             if (confirm('¿Desea eliminar el Registro?')) {
-                this.apiService.delete('subcategoria/', subcategoria.id)
-                  .pipe(this.untilDestroyed())
-                  .subscribe(data => {
+                try {
+                    const data = await this.apiService.delete('subcategoria/', subcategoria.id)
+                        .pipe(this.untilDestroyed())
+                        .toPromise();
+                    
                     for (let i = 0; i < this.subcategorias.length; i++) { 
                         if (this.subcategorias[i].id == data.id )
                             this.subcategorias.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });
-                       
+                } catch (error: any) {
+                    this.alertService.error(error);
+                }
             }
-
         }
-
     }
 
     setFile(event:any){
@@ -139,7 +137,6 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
            };
         reader.readAsDataURL(this.file!);
     }
-
 
     openModalCategorias(subcategoria:any) {
         this.subcategoria = subcategoria;
@@ -166,8 +163,5 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
             this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
     }
-
-
-
 
 }

@@ -3,12 +3,11 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { formatDate } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { CommonModule } from '@angular/common';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-admin-pagos',
@@ -17,16 +16,14 @@ import { CommonModule } from '@angular/common';
     imports: [CommonModule, FormsModule, PaginationComponent],
     
 })
-export class AdminPagosComponent extends BasePaginatedModalComponent implements OnInit {
+export class AdminPagosComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public pagos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public pagos:any = {};
     public empresas:any = [];
     public planes:any = [];
     public pago:any = {};
-    public override filtros:any = {};
     public maxDate: string = '';
-
-    selectedFile: File | null = null;
+    public selectedFile: File | null = null;
 
     constructor( 
         apiService: ApiService, 
@@ -35,15 +32,26 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
         private route: ActivatedRoute, 
         private router: Router
     ) {
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'pago/new',
+            itemsProperty: 'pagos',
+            itemProperty: 'pago',
+            reloadAfterSave: true,
+            reloadAfterDelete: true,
+            messages: {
+                created: 'El pago fue añadido exitosamente.',
+                updated: 'El pago fue guardado exitosamente.',
+                createTitle: 'Pago guardado',
+                updateTitle: 'Pago actualizado'
+            },
+            afterSave: () => {
+                this.resetForm();
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.pagos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.pagos = data;
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     ngOnInit() {
@@ -59,7 +67,7 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
         this.loadAll();
     }
 
-    public loadAll(){
+    public override loadAll(){
         this.loading = true;
         this.apiService.getAll('pagos', this.filtros)
             .pipe(this.untilDestroyed())
@@ -95,7 +103,7 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
             );
     }
 
-    override openModal(template: TemplateRef<any>, pago: any = {}) {
+    override openModal(template: TemplateRef<any>, pago?: any) {
         this.loadEmpresas();
         this.loadPlanes();
 
@@ -110,7 +118,7 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
                 this.pago.fecha_proximo_pago = formatDate(this.pago.fecha_proximo_pago, 'yyyy-MM-dd', 'en');
             }
         }
-        super.openLargeModal(template);
+        super.openLargeModal(template, pago);
     }
 
     override closeModal(){
@@ -126,9 +134,6 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
         };
         this.selectedFile = null;
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
 
     public onPlanSelected(planId: string) {
         if (!planId) return;
@@ -146,58 +151,49 @@ export class AdminPagosComponent extends BasePaginatedModalComponent implements 
         }
     }
 
-    public delete(id: number) {
-        if (confirm('¿Desea eliminar este pago?')) {
-            this.apiService.delete('pago/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    this.loadAll(); // Recargar la lista
-                    this.alertService.success('Exito','Pago eliminado exitosamente');
-                }, error => {
-                    this.alertService.error(error);
-                });
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar este pago?')) {
+            return;
         }
-    }
 
-    public onSubmit() {
-        this.saving = true;
-        
-        // Asegurarse de que las fechas estén en el formato correcto para el backend
-        const pagoData = {...this.pago};
-        
-        this.apiService.store('pago/new', pagoData)
+        this.loading = true;
+        this.apiService.delete('pago/', itemToDelete)
             .pipe(this.untilDestroyed())
-            .subscribe(
-                response => {
-                if (!this.pago.id) {
-                    this.alertService.success('Pago guardado', 'El pago fue añadido exitosamente.');
-                } else {
-                    this.alertService.success('Pago actualizado', 'El pago fue guardado exitosamente.');
+            .subscribe({
+                next: () => {
+                    this.loadAll();
+                    this.alertService.success('Exito','Pago eliminado exitosamente');
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
                 }
-                this.resetForm();
-                this.saving = false;
-                this.closeModal();
-                this.loadAll(); // Recargar la lista de pagos
-            },
-            error => {
-                this.alertService.error('Error al guardar pago: ' + error);
-                this.saving = false;
-            }
-        );
+            });
     }
 
     public generarVenta(pago:any) {
         this.saving = true;
-        this.apiService.read('pago/generar-venta/', pago.id).subscribe(venta => {
-          this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
-            this.pago.venta = venta;
-            this.saving = false;
-          this.closeModal();
-        },error => {this.alertService.error(error); this.saving = false; });
-  }
+        this.apiService.read('pago/generar-venta/', pago.id)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (venta) => {
+                    this.alertService.success('Venta generada', 'La venta fue generada exitosamente.');
+                    this.pago.venta = venta;
+                    this.saving = false;
+                    this.closeModal();
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.saving = false;
+                }
+            });
+    }
 
-  openModalEdit(template: TemplateRef<any>, pago: any = {}) {
-    this.pago = {...pago};
-    this.openModal(template, pago);
-  }
+    openModalEdit(template: TemplateRef<any>, pago: any = {}) {
+        this.openModal(template, pago);
+    }
+
 }

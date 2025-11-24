@@ -7,8 +7,9 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -18,32 +19,38 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule, LazyImageDirective],
     
 })
-export class OrdenesProduccionComponent extends BasePaginatedComponent implements OnInit {
-  public ordenes: PaginatedResponse<any> = {} as PaginatedResponse;
+export class OrdenesProduccionComponent extends BaseCrudComponent<any> implements OnInit {
+  public ordenes:any = {};
   public orden: any = {}
   public downloading: boolean = false;
-
   public clientes: any = [];
   public usuarios: any = [];
   public asesores: any = [];
-  public override filtros: any = {};
-  
-  modalRef!: BsModalRef;
+  public override modalRef!: BsModalRef;
 
   constructor(
     apiService: ApiService, 
     alertService: AlertService,
+    modalManager: ModalManagerService,
     private modalService: BsModalService
   ) {
-    super(apiService, alertService);
+    super(apiService, alertService, modalManager, {
+      endpoint: 'orden-produccion',
+      itemsProperty: 'ordenes',
+      itemProperty: 'orden',
+      reloadAfterSave: false,
+      reloadAfterDelete: false,
+      messages: {
+        created: 'La orden fue guardada exitosamente.',
+        updated: 'La orden fue guardada exitosamente.',
+        createTitle: 'Orden guardada',
+        updateTitle: 'Orden guardada'
+      }
+    });
   }
 
-  protected getPaginatedData(): PaginatedResponse | null {
-    return this.ordenes;
-  }
-
-  protected setPaginatedData(data: PaginatedResponse): void {
-    this.ordenes = data;
+  protected aplicarFiltros(): void {
+    this.filtrarOrdenes();
   }
 
   ngOnInit() {
@@ -51,9 +58,14 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
     
     this.apiService.getAll('clientes/list')
       .pipe(this.untilDestroyed())
-      .subscribe(clientes => {
-        this.clientes = clientes;
-      }, error => { this.alertService.error(error); });
+      .subscribe({
+        next: (clientes) => {
+          this.clientes = clientes;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
   }
 
   public setOrden(columna: string) {
@@ -66,7 +78,7 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
     this.filtrarOrdenes();
   }
 
-  public loadAll() {
+  public override loadAll() {
     this.filtros = {
       id_cliente: '',
       id_usuario: '',
@@ -84,60 +96,61 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
     this.loading = true;
     this.apiService.getAll('ordenes-produccion', this.filtros)
       .pipe(this.untilDestroyed())
-      .subscribe(ordenes => {
-      this.ordenes = ordenes.data;
-      this.loading = false;
-      if (this.modalRef) {
-        this.modalRef.hide();
-      }
-    }, error => { 
-      this.alertService.error(error); 
-      this.loading = false; 
-    });
+      .subscribe({
+        next: (ordenes) => {
+          this.ordenes = ordenes.data;
+          this.loading = false;
+          if (this.modalRef) {
+            this.modalRef.hide();
+          }
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      });
   }
 
   public setEstado(orden: any) {
     this.apiService.store('orden-produccion/cambiar-estado', orden)
       .pipe(this.untilDestroyed())
-      .subscribe(
-      response => {
-        this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
-      }, 
-      error => {
-        this.alertService.error(error);
-      }
-    );
+      .subscribe({
+        next: () => {
+          this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
   }
 
   changeStateOrden(ordenId: number, estado: string) {
     this.apiService.store('orden-produccion/cambiar-estado-orden', { id: ordenId, estado: estado })
       .pipe(this.untilDestroyed())
-      .subscribe(
-      data => {
-        this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
-        this.filtrarOrdenes();
-      }, 
-      error => {
-        if (error.status === 400 && error.error && error.error.message) {
-          let mensaje = error.error.message;
-          
-          if (error.error.detalles_incompletos && error.error.detalles_incompletos.length > 0) {
-            mensaje += '<br><br><strong>Productos pendientes:</strong><ul>';
-            error.error.detalles_incompletos.forEach((detalle: any) => {
-              mensaje += `<li>Producto ID: ${detalle.producto_id} - Faltante: ${detalle.cantidad_faltante} unidades</li>`;
-            });
-            mensaje += '</ul>';
+      .subscribe({
+        next: () => {
+          this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
+          this.filtrarOrdenes();
+        },
+        error: (error) => {
+          if (error.status === 400 && error.error && error.error.message) {
+            let mensaje = error.error.message;
+            
+            if (error.error.detalles_incompletos && error.error.detalles_incompletos.length > 0) {
+              mensaje += '<br><br><strong>Productos pendientes:</strong><ul>';
+              error.error.detalles_incompletos.forEach((detalle: any) => {
+                mensaje += `<li>Producto ID: ${detalle.producto_id} - Faltante: ${detalle.cantidad_faltante} unidades</li>`;
+              });
+              mensaje += '</ul>';
+            }
+            
+            this.alertService.error(mensaje);
+          } else {
+            this.alertService.error('Ocurrió un error al actualizar el estado de la orden.');
           }
-          
-          this.alertService.error(mensaje);
-        } else {
-          this.alertService.error('Ocurrió un error al actualizar el estado de la orden.');
         }
-      }
-    );
+      });
   }
-
-  // setPagination() ahora se hereda de BasePaginatedComponent
 
   public imprimir(orden: any) {
     window.open(this.apiService.baseUrl + '/api/orden-produccion/imprimir/' + orden.id + '?token=' + this.apiService.auth_token());
@@ -147,11 +160,15 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
     if (!this.usuarios.length) {
       this.apiService.getAll('usuarios/list')
         .pipe(this.untilDestroyed())
-        .subscribe(usuarios => {
-          this.asesores = usuarios;
-        }, error => { this.alertService.error(error); });
+        .subscribe({
+          next: (usuarios) => {
+            this.asesores = usuarios;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
-
 
     this.modalRef = this.modalService.show(template);
   }
@@ -160,37 +177,38 @@ export class OrdenesProduccionComponent extends BasePaginatedComponent implement
     this.downloading = true;
     this.apiService.export('ordenes-produccion/exportar', this.filtros)
       .pipe(this.untilDestroyed())
-      .subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ordenes-produccion.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloading = false;
-      }, 
-      error => { 
-        this.alertService.error(error); 
-        this.downloading = false; 
-      }
-    );
+      .subscribe({
+        next: (data: Blob) => {
+          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ordenes-produccion.xlsx';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          this.downloading = false;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.downloading = false;
+        }
+      });
   }
 
   public anular(orden: any) {
     this.apiService.store('orden-produccion/anular', orden)
       .pipe(this.untilDestroyed())
-      .subscribe(
-      response => {
-        this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
-        orden.estado = 'anulada';
-
-        this.filtrarOrdenes();
-      }, 
-      error => { this.alertService.error(error); }
-    );
+      .subscribe({
+        next: () => {
+          this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
+          orden.estado = 'anulada';
+          this.filtrarOrdenes();
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
   }
 }

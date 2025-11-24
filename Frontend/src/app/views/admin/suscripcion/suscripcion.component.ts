@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -68,9 +68,6 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     id_empresa: 0,
     motivo_cancelacion: '',
   };
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -221,24 +218,23 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     });
   }
 
-  public onSubmit() {
+  public async onSubmit() {
     this.saving = true;
-    this.apiService.store('suscripcion', this.suscripcion)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (suscripcion) => {
-        this.suscripcion = suscripcion;
-        this.alertService.success(
-          'Suscripción guardada',
-          'Los datos de tu plan fueron guardados exitosamente.'
-        );
-        this.saving = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
+    try {
+      const suscripcionGuardada = await this.apiService.store('suscripcion', this.suscripcion)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      this.suscripcion = suscripcionGuardada;
+      this.alertService.success(
+        'Suscripción guardada',
+        'Los datos de tu plan fueron guardados exitosamente.'
+      );
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
   }
 
   public openCancelarSuscripcion(template: TemplateRef<any>) {

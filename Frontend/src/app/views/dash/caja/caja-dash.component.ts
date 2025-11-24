@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -33,9 +33,6 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
     public supervisorTemplate!: TemplateRef<any>;
 
     public supervisorModalRef!: any; // BsModalRef
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         public apiService: ApiService,
@@ -160,6 +157,5 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
     public corteZ(){
         window.open(this.apiService.baseUrl + '/api/caja/reporte-dia/' + this.caja.id + '?token=' + this.apiService.auth_token(), 'Corte #' + this.caja.corte.id, "top=50,left=300,width=400,height=600");
     }
-
 
 }
