@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,7 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { EncryptService } from '@services/encryption/encrypt.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 
 interface Permission {
@@ -22,7 +22,7 @@ interface Permission {
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class UsuarioComponent implements OnInit {
+export class UsuarioComponent extends BaseComponent implements OnInit {
   public usuario: any = {
     password_show: false,
     password_confirmation_show: false,
@@ -143,16 +143,15 @@ export class UsuarioComponent implements OnInit {
   public revokedPermissions: string[] = []; // Permisos que se revocan
   public effectivePermissions: string[] = []; // Permisos efectivos
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
     public encryptService: EncryptService
-  ) {}
+  ) {
+    super();
+  }
   public authUser: any = {};
   public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543,569];
 

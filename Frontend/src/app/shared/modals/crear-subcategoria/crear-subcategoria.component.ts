@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,9 +22,6 @@ export class CrearSubCategoriaComponent extends BaseModalComponent implements On
     @Input() categoria_id: any;
     @Output() update = new EventEmitter();
     public override loading = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -54,6 +51,5 @@ export class CrearSubCategoriaComponent extends BaseModalComponent implements On
             this.alertService.success('Subcategoria creada', 'Tu subcategoria fue añadida exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
-
 
 }

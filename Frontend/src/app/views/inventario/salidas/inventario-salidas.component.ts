@@ -10,7 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -20,11 +20,10 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class InventarioSalidasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class InventarioSalidasComponent extends BaseCrudComponent<any> implements OnInit {
 
     public salidas:any = [];
     public salida:any = {};
-
     public usuarios:any = [];
 
     constructor(
@@ -34,7 +33,22 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
         private router: Router, 
         private route: ActivatedRoute
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'salida',
+            itemsProperty: 'salidas',
+            itemProperty: 'salida',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El registro fue actualizado exitosamente.',
+                updated: 'El registro fue actualizado exitosamente.',
+                deleted: 'El registro fue eliminado exitosamente.',
+                createTitle: 'Salida actualizada correctamente',
+                updateTitle: 'Salida actualizada correctamente',
+                deleteTitle: 'Salida eliminada correctamente',
+                deleteConfirm: '¿Estás seguro?'
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -42,25 +56,27 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
     }
 
     ngOnInit() {
-        this.route.queryParams.pipe(this.untilDestroyed()).subscribe(params => {
-            this.filtros = {
-                buscador: params['buscador'] || '',
-                usuario_id: params['usuario_id'] || '',
-                estado: params['estado'] || '',
-                tipo: params['tipo'] || '',
-                inicio: params['inicio'] || '',
-                fin: params['fin'] || '',
-                orden: params['orden'] || 'fecha',
-                direccion: params['direccion'] || 'desc',
-                per_page: params['per_page'] || 10,
-                page: params['page'] || 1,
-            };
+        this.route.queryParams.pipe(this.untilDestroyed()).subscribe({
+            next: (params) => {
+                this.filtros = {
+                    buscador: params['buscador'] || '',
+                    usuario_id: params['usuario_id'] || '',
+                    estado: params['estado'] || '',
+                    tipo: params['tipo'] || '',
+                    inicio: params['inicio'] || '',
+                    fin: params['fin'] || '',
+                    orden: params['orden'] || 'fecha',
+                    direccion: params['direccion'] || 'desc',
+                    per_page: params['per_page'] || 10,
+                    page: params['page'] || 1,
+                };
 
-            this.filtrar();
+                this.filtrar();
+            }
         });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.buscador = '';
         this.filtros.usuario_id = '';
         this.filtros.estado = '';
@@ -93,10 +109,16 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
         });
 
         this.loading = true;
-        this.apiService.store('salidas/filtrar', this.filtros).pipe(this.untilDestroyed()).subscribe(salidas => { 
-            this.salidas = salidas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.apiService.store('salidas/filtrar', this.filtros).pipe(this.untilDestroyed()).subscribe({
+            next: (salidas) => {
+                this.salidas = salidas;
+                this.loading = false;
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+        });
     }
 
     public setEstado(salida:any, estado:any){
@@ -110,17 +132,25 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
               cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.apiService.store('salida/aprobar/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe(data => {
-                        this.alertService.success('Salida aprobada correctamente', 'El registro fue aprobado exitosamente.');
-                        this.filtrar();
+                    this.apiService.store('salida/aprobar/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe({
+                        next: (data) => {
+                            this.alertService.success('Salida aprobada correctamente', 'El registro fue aprobado exitosamente.');
+                            this.filtrar();
 
-                        //Generar partida contable
-                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                            this.apiService.store('salida/partida-contable/' + data.id, {}).pipe(this.untilDestroyed()).subscribe(salida => {
-                            },error => {this.alertService.error(error);});
+                            //Generar partida contable
+                            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                                this.apiService.store('salida/partida-contable/' + data.id, {}).pipe(this.untilDestroyed()).subscribe({
+                                    next: () => {},
+                                    error: (error) => {
+                                        this.alertService.error(error);
+                                    }
+                                });
+                            }
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
                         }
-
-                    }, error => {this.alertService.error(error); });
+                    });
                 }
             });
         }
@@ -134,16 +164,21 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
               cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    this.apiService.store('salida/anular/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe(data => {
-                        this.alertService.success('Salida anulada correctamente', 'El registro fue anulado exitosamente.');
-                        this.filtrar();
-                    }, error => {this.alertService.error(error); });
+                    this.apiService.store('salida/anular/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe({
+                        next: () => {
+                            this.alertService.success('Salida anulada correctamente', 'El registro fue anulado exitosamente.');
+                            this.filtrar();
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
+                        }
+                    });
                 }
             });
         }
     }
 
-    public delete(id:number) {
+    public override delete(id:number) {
         Swal.fire({
             title: '¿Estás seguro?',
             text: '¡Esta acción no se puede deshacer!',
@@ -153,22 +188,30 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                this.apiService.delete('salida/', id).pipe(this.untilDestroyed()).subscribe(data => {
-                    this.alertService.success('Salida eliminada correctamente', 'El registro fue eliminado exitosamente.');
-                    this.filtrar();
-                }, error => {this.alertService.error(error); });
+                this.apiService.delete('salida/', id).pipe(this.untilDestroyed()).subscribe({
+                    next: () => {
+                        this.alertService.success('Salida eliminada correctamente', 'El registro fue eliminado exitosamente.');
+                        this.filtrar();
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                });
             }
         });
     }
 
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
-
     // Filtros
     openFilter(template: TemplateRef<any>) {
         if(!this.usuarios.length){
-            this.apiService.getAll('usuarios/filtrar/tipo/Empleado').pipe(this.untilDestroyed()).subscribe(usuarios => { 
-                this.usuarios = usuarios.data;
-            }, error => {this.alertService.error(error); });
+            this.apiService.getAll('usuarios/filtrar/tipo/Empleado').pipe(this.untilDestroyed()).subscribe({
+                next: (usuarios) => {
+                    this.usuarios = usuarios.data;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
         }
         this.openModal(template);
     }
@@ -183,16 +226,20 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
         this.loading = false;
     }
 
-    public onSubmit() {
+    public override async onSubmit() {
         this.saving = true;            
-        this.apiService.store('salida', this.salida).pipe(this.untilDestroyed()).subscribe(salida => {
-            this.alertService.success('Salida actualizada correctamente', 'El registro fue actualizado exitosamente.');
-            this.saving = false;
-            this.filtrar();
-        }, error => {
-            this.alertService.error(error);
-            this.saving = false;
-        });
+        try {
+            await this.apiService.store('salida', this.salida)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+                this.alertService.success('Salida actualizada correctamente', 'El registro fue actualizado exitosamente.');
+                this.filtrar();
+        } catch (error: any) {
+                this.alertService.error(error);
+        } finally {
+                this.saving = false;
+            }
     }
 
     generarPartidaContable(salida: any) {
@@ -206,17 +253,17 @@ export class InventarioSalidasComponent extends BaseFilteredPaginatedModalCompon
         }).then((result) => {
             if (result.isConfirmed) {
                 this.loading = true;
-                this.apiService.store('salida/partida-contable/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe(
-                    (response) => {
+                this.apiService.store('salida/partida-contable/' + salida.id, {}).pipe(this.untilDestroyed()).subscribe({
+                    next: () => {
                         this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
                         this.loading = false;
                         this.filtrar();
                     },
-                    (error) => {
+                    error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
                     }
-                );
+                });
             }
         });
     }

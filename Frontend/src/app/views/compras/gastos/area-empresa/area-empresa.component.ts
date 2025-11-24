@@ -7,7 +7,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-area-empresa',
@@ -17,12 +17,11 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     
 })
 
-export class AreaEmpresaComponent extends BasePaginatedModalComponent implements OnInit {
+export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public areas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public areas: any = {};
     public area: any = {};
     public departamento: any = {};
-    public override saving: boolean = false;
     public savingDepartamento: boolean = false;
     public downloading: boolean = false;
     public departamentoActual: any = null;
@@ -39,17 +38,51 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
         protected override apiService: ApiService, 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private route: ActivatedRoute // Agregar ActivatedRoute
+        private route: ActivatedRoute
     ) {
-        super(apiService, alertService, modalManager);
-    }
-
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.areas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.areas = data;
+        super(apiService, alertService, modalManager, {
+            endpoint: 'area-empresa',
+            itemsProperty: 'areas',
+            itemProperty: 'area',
+            reloadAfterSave: true,
+            reloadAfterDelete: true,
+            messages: {
+                created: 'El área fue creada exitosamente.',
+                updated: 'El área fue actualizada exitosamente.',
+                deleted: 'El área fue eliminada exitosamente.',
+                createTitle: 'Área guardada',
+                updateTitle: 'Área actualizada',
+                deleteTitle: 'Área eliminada',
+                deleteConfirm: '¿Está seguro de eliminar esta área? Esta acción no se puede deshacer.'
+            },
+            beforeSave: (item: any) => {
+                // Validaciones
+                if (!item.nombre || item.nombre.trim() === '') {
+                    throw new Error('El nombre del área es requerido');
+                }
+                if (!item.id_departamento) {
+                    throw new Error('Debe seleccionar un departamento');
+                }
+                // Asegurar que activo tenga un valor por defecto
+                if (!item.activo) {
+                    item.activo = '1';
+                }
+                return item;
+            },
+            afterSave: () => {
+                this.resetArea();
+            },
+            initNewItem: (item: any) => {
+                return {
+                    id: null,
+                    nombre: '',
+                    descripcion: '',
+                    id_sucursal: '',
+                    id_departamento: '',
+                    activo: '1'
+                };
+            }
+        });
     }
 
     ngOnInit() {
@@ -95,13 +128,13 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
                     `Mostrando áreas del departamento: ${this.departamentoActual.nombre}`
                 );
             }
-            this.filtrarArea();
+            this.aplicarFiltros();
         }).catch(() => {
-            this.filtrarArea();
+            this.aplicarFiltros();
         });
     }
 
-    public loadAll() {
+    public override loadAll() {
         // Inicializar filtros
         this.filtros = {
             id_sucursal: '',
@@ -115,11 +148,10 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
             paginate: 10
         };
 
-        this.loading = true;
-        this.filtrarArea();
+        super.loadAll();
     }
 
-    public filtrarArea() {
+    protected override aplicarFiltros(): void {
         this.loading = true;
 
         // Crear una copia de filtros para enviar
@@ -156,7 +188,7 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
             this.filtros.direccion = 'asc';
         }
 
-        this.filtrarArea();
+        this.aplicarFiltros();
     }
 
     public toggleEstado(area: any) {
@@ -165,17 +197,14 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
         
         if (confirm(`¿Está seguro de ${nuevoEstado == '1' ? 'activar' : 'desactivar'} esta área?`)) {
             area.activo = nuevoEstado;
-            this.saving = true;
             
             this.apiService.store('area-empresa', area)
               .pipe(this.untilDestroyed())
               .subscribe(response => { 
-                this.saving = false;
                 this.alertService.success('Área actualizada', `El área fue ${estadoTexto} exitosamente.`);
-                this.filtrarArea();
+                this.aplicarFiltros();
             }, error => {
                 this.alertService.error(error);
-                this.saving = false;
                 // Revertir el cambio en caso de error
                 area.activo = area.activo == '1' ? '0' : '1';
             });
@@ -183,59 +212,7 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
     }
 
     public editArea(template: TemplateRef<any>, area: any) {
-        this.area = { ...area }; // Crear una copia del área
-        this.openModal(template);
-    }
-
-    public onSubmit() {
-        if (!this.area.nombre || this.area.nombre.trim() === '') {
-            this.alertService.error('El nombre del área es requerido');
-            return;
-        }
-
-        if (!this.area.id_departamento) {
-            this.alertService.error('Debe seleccionar un departamento');
-            return;
-        }
-
-        this.saving = true;
-        
-        // Asegurar que activo tenga un valor por defecto
-        if (!this.area.activo) {
-            this.area.activo = '1';
-        }
-
-        const action = this.area.id ? 'actualizada' : 'creada';
-        
-        this.apiService.store('area-empresa', this.area)
-          .pipe(this.untilDestroyed())
-          .subscribe(response => { 
-            this.saving = false;
-            this.alertService.success('Área guardada', `El área fue ${action} exitosamente.`);
-            this.closeModal();
-            this.filtrarArea();
-            this.resetArea();
-        }, error => {
-            this.alertService.error(error);
-            this.saving = false;
-        });
-    }
-
-    public delete(id: number) {
-        if (confirm('¿Está seguro de eliminar esta área? Esta acción no se puede deshacer.')) {
-            this.apiService.delete('area-empresa/', id)
-              .pipe(this.untilDestroyed())
-              .subscribe(data => {
-                this.alertService.success('Área eliminada', 'El área fue eliminada exitosamente.');
-                // Remover el elemento del array local
-                if (this.areas && this.areas.data) {
-                    this.areas.data = this.areas.data.filter((area: any) => area.id !== id);
-                    this.areas.total--;
-                }
-            }, error => {
-                this.alertService.error(error);
-            });
-        }
+        this.openModal(template, area);
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent
@@ -267,17 +244,23 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
         this.openModal(template);
     }
 
-    public override openModal(template: TemplateRef<any>, config?: any) {
+    public override openModal(template: TemplateRef<any>, item?: any, config?: any) {
         this.loadSucursales();
         this.loadDepartamentos().then(() => {
-            this.resetArea();
-            
-            if (this.filtros.id_departamento) {
-                this.area.id_departamento = this.filtros.id_departamento;
-                this.departamentoOriginal = this.filtros.id_departamento;
+            if (item) {
+                // Si se pasa un item, usarlo
+                super.openModal(template, item, config);
+            } else {
+                // Si no, crear uno nuevo
+                this.resetArea();
+                
+                if (this.filtros.id_departamento) {
+                    this.area.id_departamento = this.filtros.id_departamento;
+                    this.departamentoOriginal = this.filtros.id_departamento;
+                }
+                
+                super.openModal(template, undefined, config);
             }
-            
-            super.openModal(template, config);
         });
     }
 
@@ -393,7 +376,7 @@ export class AreaEmpresaComponent extends BasePaginatedModalComponent implements
     public limpiarFiltroDepartamento() {
         this.filtros.id_departamento = '';
         this.departamentoActual = null; // Limpiar departamento actual
-        this.filtrarArea();
+        this.aplicarFiltros();
         this.alertService.info('Filtro removido', 'Mostrando todas las áreas');
     }
 

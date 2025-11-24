@@ -131,22 +131,23 @@ export class OrdenCompraFormComponent implements OnInit {
       + parseFloat(this.impuestos.percepcion) - parseFloat(this.impuestos.iva_retenido)
       - parseFloat(this.impuestos.renta_retenida)).toFixed(2);
   }
-  onSubmit() {
-    let postData = {
+  async onSubmit() {
+    const postData = {
       ...this.ordenCompraForm?.getRawValue(),
       detalles: this.detalles,
       deletedDetalles: this.deletedDetalles
-
     };
-    this.apiService.store("orden-de-compra", postData)
-      .pipe(this.untilDestroyed())
-      .subscribe((res: any) => {
+    
+    try {
+      const res = await this.apiService.store("orden-de-compra", postData)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
       this.router.navigate(['/ordenes-de-compras']);
       this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
-    },
-      error => {
-        this.alertService.error(error);
-      });
+    } catch (error: any) {
+      this.alertService.error(error);
+    }
   }
   limpiar() { }
 

@@ -596,7 +596,7 @@ export class GastoComponent implements OnInit {
     }
   }
 
-  public onSubmit() {
+  public async onSubmit() {
     this.saving = true;
 
     if (this.duplicargasto) {
@@ -617,41 +617,36 @@ export class GastoComponent implements OnInit {
         this.gasto.otros_impuestos = [];
     }
 
-    this.apiService.store('gasto', this.gasto)
-      .pipe(this.untilDestroyed())
-      .subscribe({
-        next: (gasto) => {
-          // Invalidar cache de gastos para que aparezca en el listado
-          this.cacheService.invalidatePattern('/gastos');
-          
-          if (!this.gasto.id) {
-            this.alertService.success(
-              'Gasto guardado',
-              'El gasto fue guardado exitosamente.'
-            );
-          } else {
-            this.alertService.success(
-              'Gasto creado',
-              'El gasto fue añadido exitosamente.'
-            );
-          }
-          this.router.navigate(['/gastos']);
-          this.saving = false;
-        },
-        error: (error) => {
-          // Cerrar cualquier modal abierto para que se muestre el error
-          if (this.modalRef) {
-            this.modalRef.hide();
-            this.modalRef = undefined;
-          }
-          // Asegurar que el alert se muestre
-          this.alertService.modal = false;
-          
-          // El AlertService ya maneja los errores 422 con mensajes detallados
-          this.alertService.error(error);
-          this.saving = false;
-        }
-      });
+    try {
+      const gastoGuardado = await this.apiService.store('gasto', this.gasto)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      // Invalidar cache de gastos para que aparezca en el listado
+      this.cacheService.invalidatePattern('/gastos');
+      
+      const isNew = !this.gasto.id;
+      const titulo = isNew ? 'Gasto creado' : 'Gasto guardado';
+      const mensaje = isNew 
+        ? 'El gasto fue añadido exitosamente.' 
+        : 'El gasto fue guardado exitosamente.';
+      
+      this.alertService.success(titulo, mensaje);
+      this.router.navigate(['/gastos']);
+    } catch (error: any) {
+      // Cerrar cualquier modal abierto para que se muestre el error
+      if (this.modalRef) {
+        this.modalRef.hide();
+        this.modalRef = undefined;
+      }
+      // Asegurar que el alert se muestre
+      this.alertService.modal = false;
+      
+      // El AlertService ya maneja los errores 422 con mensajes detallados
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
   }
 
   public setOtrosImpuestos() {

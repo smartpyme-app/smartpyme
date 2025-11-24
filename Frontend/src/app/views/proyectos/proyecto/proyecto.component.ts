@@ -130,18 +130,27 @@ export class ProyectoComponent implements OnInit {
     }
 
 
-    public onSubmit(){
+    public async onSubmit(){
         this.saving = true;
 
-        this.apiService.store('proyecto', this.proyecto).pipe(this.untilDestroyed()).subscribe(proyecto => {
-            if (!this.proyecto.id) {
-                this.alertService.success('Paquete guardado', 'El proyecto fue guardado exitosamente.');
-            }else{
-                this.alertService.success('Paquete creado', 'El proyecto fue añadido exitosamente.');
-            }
+        try {
+            const proyecto = await this.apiService.store('proyecto', this.proyecto)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+
+            const isNew = !this.proyecto.id;
+            const title = isNew ? 'Paquete creado' : 'Paquete guardado';
+            const message = isNew 
+                ? 'El proyecto fue añadido exitosamente.' 
+                : 'El proyecto fue guardado exitosamente.';
+            
+            this.alertService.success(title, message);
             this.router.navigate(['/proyectos']);
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+        }
     }
 
 }

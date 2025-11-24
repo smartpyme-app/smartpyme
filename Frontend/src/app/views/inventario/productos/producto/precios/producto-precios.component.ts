@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, AfterViewInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
     public precio: any = {};
     public usuarios: any = [];
     public buscador:string = '';
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService, 
@@ -167,6 +164,5 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         
         return precio.usuarios.map((u: any) => u.nombre).join(', ');
     }
-
 
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -36,8 +36,6 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
     public override loading = false;
     public imprimir:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
     
 	constructor( 
 	    public apiService: ApiService,
@@ -73,7 +71,6 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                     this.venta.id_usuario = this.apiService.auth_user().id;
                 }
             });
-
 
     }
 
@@ -137,7 +134,6 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
 
             }, error => {this.alertService.error(error);});
     }
-
 
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
@@ -212,6 +208,5 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                 },error => {this.alertService.error(error); this.loading = false; });
 
         }
-
 
 }

@@ -303,7 +303,7 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
     }
   }
 
-  public onSubmitCreateSuscription() {
+  public async onSubmitCreateSuscription() {
     if (!this.nuevaSuscripcion.empresa_id) {
       this.alertService.error('ID de empresa no válido');
       return;
@@ -324,18 +324,19 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       correo: this.nuevaSuscripcion.correo || null,
     };
 
-    this.apiService.store('suscripcion/create', datosSuscripcion).subscribe({
-      next: (response) => {
-        this.saving = false;
-        this.alertService.success('Éxito', 'Suscripción creada correctamente');
-        this.modalRef.hide();
-        this.filtrarSuscripciones();
-      },
-      error: (error) => {
-        this.saving = false;
-        this.alertService.error(error.message || 'Error creando suscripción');
-      },
-    });
+    try {
+      const response = await this.apiService.store('suscripcion/create', datosSuscripcion)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      this.alertService.success('Éxito', 'Suscripción creada correctamente');
+      this.modalRef.hide();
+      this.filtrarSuscripciones();
+    } catch (error: any) {
+      this.alertService.error(error.message || 'Error creando suscripción');
+    } finally {
+      this.saving = false;
+    }
   }
 
   public openFilter(template: TemplateRef<any>) {

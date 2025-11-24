@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,9 +22,6 @@ export class CrearCategoriaComponent extends BaseModalComponent implements OnIni
   public override loading = false;
   
   @Output() update = new EventEmitter();
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private apiService: ApiService,

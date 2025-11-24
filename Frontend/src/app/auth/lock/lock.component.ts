@@ -1,10 +1,9 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { AlertService } from '../../services/alert.service';
 import { ApiService } from '../../services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '../../services/modal-manager.service';
 import { BaseModalComponent } from '../../shared/base/base-modal.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
@@ -25,9 +24,6 @@ export class LockComponent extends BaseModalComponent implements OnInit {
     public filtro: any = {};
     public user: any = {};
     public saludo:string = '';
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService, 

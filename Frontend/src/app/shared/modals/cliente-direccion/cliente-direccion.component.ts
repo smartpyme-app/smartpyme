@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,9 +23,6 @@ export class ClienteDireccionComponent extends BaseModalComponent implements OnI
   public override loading = false;
   @Output() direccionSelect = new EventEmitter();
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
         private apiService: ApiService,
         protected override alertService: AlertService,
@@ -45,7 +42,6 @@ export class ClienteDireccionComponent extends BaseModalComponent implements OnI
     override openModal(template: TemplateRef<any>) {
         super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
-
 
     public submit():void{
         this.loading = true;

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -25,9 +25,6 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     public productos:any = [];
     public opcion: any = {};
     public buscador:string = '';
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, 
@@ -102,7 +99,6 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             super.openModal(template, {class: 'modal-md'});
         }
 
-
         public agregarOpcion(){
             this.loading = true;
             this.opcion.id_composicion = this.composicion.id;
@@ -127,6 +123,5 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
                 }, error => {this.alertService.error(error); });
             }
         }
-
 
 }

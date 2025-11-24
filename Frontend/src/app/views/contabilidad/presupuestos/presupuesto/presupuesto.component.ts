@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-presupuesto',
@@ -17,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class PresupuestoComponent implements OnInit {
+export class PresupuestoComponent extends BaseComponent implements OnInit {
 
 	public presupuesto: any = {};
     public proyectos:any = [];
@@ -25,14 +25,14 @@ export class PresupuestoComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
 	constructor( 
-	    public apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router,
+	    public apiService: ApiService, 
+	    protected alertService: AlertService,
+	    private route: ActivatedRoute, 
+	    private router: Router,
 	    private modalService: BsModalService
-    ) { 
+    ) {
+        super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 

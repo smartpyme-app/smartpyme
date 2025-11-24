@@ -11,9 +11,8 @@ import { MHService } from '@services/MH.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-
 import Swal from 'sweetalert2';
 
 @Component({
@@ -24,20 +23,18 @@ import Swal from 'sweetalert2';
     
 })
 
-export class DevolucionesVentasComponent extends BasePaginatedModalComponent implements OnInit {
+export class DevolucionesVentasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public ventas:any = {};
     public id_venta: any = null;
     public sending: boolean = false;
     public downloading: boolean = false;
-
     public clientes: any = [];
     public usuarios: any = [];
     public usuariosEmpresa: any = [];
     public ventasList: any = [];
     public sucursales: any = [];
     public venta: any = {};
-    public override filtros: any = {};
     public devolucionEditar: any = {};
     public documentos: any = [];
     public modalAbierto: boolean = false;
@@ -49,15 +46,23 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
         modalManager: ModalManagerService,
         private mhService: MHService
     ) {
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'devolucion/venta',
+            itemsProperty: 'ventas',
+            itemProperty: 'venta',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La venta fue actualizada exitosamente.',
+                updated: 'La venta fue actualizada exitosamente.',
+                createTitle: 'Venta actualizada',
+                updateTitle: 'Venta actualizada'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.ventas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.ventas = data;
+    protected aplicarFiltros(): void {
+        this.filtrarVentas();
     }
 
     ngOnInit() {
@@ -69,10 +74,8 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
             }, error => { this.alertService.error(error); });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.loading = true;
-        // this.filtros.inicio = this.apiService.date();
-        // this.filtros.fin = this.apiService.date();
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.id_cliente = '';
@@ -97,11 +100,10 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
                 if (this.modalRef) {
                     this.closeModal();
                 }
-            }, error => { this.alertService.error(error); });
+            }, error => { this.alertService.error(error); this.loading = false; });
     }
 
     public setEstado(venta: any, enable: string) {
-
         Swal.fire({
             title: '¿Estás seguro?',
             text: '¡No podrás revertir esto!',
@@ -114,34 +116,34 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
                 this.venta = venta;
                 this.venta.enable = enable;
                 this.onSubmit();
-            } else if (result.dismiss === Swal.DismissReason.cancel) {
-                // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
             }
         });
-
     }
 
-    public onSubmit() {
-        this.apiService.store('devolucion/venta', this.venta)
-            .pipe(this.untilDestroyed())
-            .subscribe(venta => {
-                this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-            }, error => { this.alertService.error(error); });
-    }
-
-    public delete(id: number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('devolucion/venta/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.ventas['data'].length; i++) {
-                    if (this.ventas['data'][i].id == data.id)
-                        this.ventas['data'].splice(i, 1);
-                }
-            }, error => { this.alertService.error(error); });
-
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        this.apiService.delete('devolucion/venta/', itemToDelete)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (deletedItem: any) => {
+                    const index = this.ventas.data?.findIndex((v: any) => v.id === deletedItem.id);
+                    if (index !== -1 && index >= 0) {
+                        this.ventas.data.splice(index, 1);
+                    }
+                    this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                    this.loading = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public setOrden(columna: string) {
@@ -155,18 +157,12 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
         this.filtrarVentas();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    // Filtros
-
     openFilter(template: TemplateRef<any>) {
-
         this.apiService.getAll('clientes/list')
             .pipe(this.untilDestroyed())
             .subscribe(clientes => {
                 this.clientes = clientes;
             }, error => { this.alertService.error(error); });
-
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
@@ -198,7 +194,7 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
             .subscribe(ventas => {
                 this.ventasList = ventas;
                 this.loading = false;
-            }, error => { this.alertService.error(error); });
+            }, error => { this.alertService.error(error); this.loading = false; });
         super.openModal(template);
     }
 
@@ -260,13 +256,19 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
         this.sending = true;
         this.apiService.store('enviarDTE', venta)
             .pipe(this.untilDestroyed())
-            .subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
-            this.sending = false;
-            setTimeout(() => {
-                this.closeModal();
-            }, 5000);
-        }, error => { this.alertService.error(error); this.sending = false; });
+            .subscribe({
+                next: () => {
+                    this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+                    this.sending = false;
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 5000);
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.sending = false;
+                }
+            });
     }
 
     anularDTE(venta: any) {
@@ -277,46 +279,64 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
                 this.saving = true;
                 this.apiService.store('generarDTEAnulado', this.venta)
                     .pipe(this.untilDestroyed())
-                    .subscribe(dte => {
-                        // this.alertService.success('DTE generado.');
-                        this.venta.dte_invalidacion = dte;
-                        this.mhService.firmarDTE(dte)
-                            .pipe(this.untilDestroyed())
-                            .subscribe(dteFirmado => {
-                                this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                    .subscribe({
+                        next: (dte) => {
+                            this.venta.dte_invalidacion = dte;
+                            this.mhService.firmarDTE(dte)
+                                .pipe(this.untilDestroyed())
+                                .subscribe({
+                                    next: (dteFirmado) => {
+                                        this.venta.dte_invalidacion.firmaElectronica = dteFirmado.body;
 
-                                if (dteFirmado.status == 'ERROR') {
-                                    this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
-                                }
+                                        if (dteFirmado.status == 'ERROR') {
+                                            this.alertService.warning('Hubo un problema', dteFirmado.body.mensaje);
+                                        }
 
-                                this.mhService.anularDTE(this.venta, dteFirmado.body)
-                                    .pipe(this.untilDestroyed())
-                                    .subscribe(dte => {
-                                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                            this.venta.dte_invalidacion.sello = dte.selloRecibido;
-                                            this.venta.sello_mh = dte.selloRecibido;
-                                            this.venta.enable = false;
-                                            this.apiService.store('devolucion/venta', this.venta)
-                                                .pipe(this.untilDestroyed())
-                                                .subscribe(data => {
-                                    // this.alertService.success('Venta guardada.');
-                                }, error => { this.alertService.error(error); this.saving = false; });
-                            }
+                                        this.mhService.anularDTE(this.venta, dteFirmado.body)
+                                            .pipe(this.untilDestroyed())
+                                            .subscribe({
+                                                next: (dte) => {
+                                                    if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                                        this.venta.dte_invalidacion.sello = dte.selloRecibido;
+                                                        this.venta.sello_mh = dte.selloRecibido;
+                                                        this.venta.enable = false;
+                                                        this.apiService.store('devolucion/venta', this.venta)
+                                                            .pipe(this.untilDestroyed())
+                                                            .subscribe({
+                                                                next: () => {
+                                                                    // this.alertService.success('Venta guardada.');
+                                                                },
+                                                                error: (error) => {
+                                                                    this.alertService.error(error);
+                                                                    this.saving = false;
+                                                                }
+                                                            });
+                                                    }
 
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        }, error => {
-                            if (error.error.descripcionMsg) {
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if (error.error.observaciones.length > 0) {
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
+                                                    this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                                                },
+                                                error: (error) => {
+                                                    if (error.error.descripcionMsg) {
+                                                        this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                                                    }
+                                                    if (error.error.observaciones?.length > 0) {
+                                                        this.alertService.warning('Hubo un problema', error.error.observaciones);
+                                                    }
+                                                    this.saving = false;
+                                                }
+                                            });
+                                    },
+                                    error: (error) => {
+                                        this.alertService.error(error);
+                                        this.saving = false;
+                                    }
+                                });
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
                             this.saving = false;
-                        });
-
-                    }, error => { this.alertService.error(error); this.saving = false; });
-
-                }, error => { this.alertService.error(error); this.saving = false; });
+                        }
+                    });
             }
         }
         else {
@@ -325,8 +345,7 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
     }
 
     editarDevolucion(template: TemplateRef<any>, venta: any) {
-    
-        const ventaActualizada = this.ventas.data.find((v: any) => v.id === venta.id);
+        const ventaActualizada = this.ventas.data?.find((v: any) => v.id === venta.id);
         
         if (!ventaActualizada) {
             console.error('No se encontró la venta actualizada');
@@ -365,22 +384,21 @@ export class DevolucionesVentasComponent extends BasePaginatedModalComponent imp
 
         this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar)
             .pipe(this.untilDestroyed())
-            .subscribe(devolucion => {
-            
-            this.closeModal();
-            this.saving = false;
-            
-            this.filtrarVentas();
-            
-            setTimeout(() => {
-                this.devolucionEditar = {};
-                this.alertService.success('Devolución actualizada', 'La devolución fue actualizada exitosamente.');
-            }, 200);
-
-        }, error => {
-            this.alertService.error(error);
-            this.saving = false;
-        });
+            .subscribe({
+                next: () => {
+                    this.closeModal();
+                    this.saving = false;
+                    this.filtrarVentas();
+                    setTimeout(() => {
+                        this.devolucionEditar = {};
+                        this.alertService.success('Devolución actualizada', 'La devolución fue actualizada exitosamente.');
+                    }, 200);
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.saving = false;
+                }
+            });
     }
 
 }

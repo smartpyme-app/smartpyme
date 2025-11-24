@@ -2,11 +2,11 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-empresas',
@@ -16,34 +16,43 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     
 })
 
-export class EmpresasComponent extends BasePaginatedComponent implements OnInit {
+export class EmpresasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public empresas: PaginatedResponse<any> = {} as PaginatedResponse;
-    public empresa:any = {};
-    public saving:boolean = false;
-    public override filtros:any = {};
+    public empresas: any = {};
+    public empresa: any = {};
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'empresa',
+            itemsProperty: 'empresas',
+            itemProperty: 'empresa',
+            reloadAfterSave: true,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La empresa fue añadida exitosamente.',
+                updated: 'La empresa fue guardada exitosamente.',
+                deleted: 'Empresa eliminada exitosamente.',
+                createTitle: 'Empresa creada',
+                updateTitle: 'Empresa guardada',
+                deleteTitle: 'Empresa eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.empresas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.empresas = data;
+    protected aplicarFiltros(): void {
+        this.filtrarEmpresas();
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.activo = '';
         this.filtros.forma_pago = '';
         this.filtros.plan = '';
@@ -77,53 +86,15 @@ export class EmpresasComponent extends BasePaginatedComponent implements OnInit 
         this.filtrarEmpresas();
     }
 
-
-    public setEstado(empresa:any){
-        this.apiService.store('empresa', empresa)
-            .pipe(this.untilDestroyed())
-            .subscribe(empresa => { 
-                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-            }, error => {this.alertService.error(error); });
+    public setEstado(empresa: any){
+        this.onSubmit(empresa, true);
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('empresa/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.empresas['data'].length; i++) { 
-                        if (this.empresas['data'][i].id == data.id )
-                            this.empresas['data'].splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
-        }
-
+    public override delete(id: number) {
+        super.delete(id);
     }
-
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('empresa', this.empresa)
-            .pipe(this.untilDestroyed())
-            .subscribe(empresa => {
-            this.loadAll();
-            this.saving = false;
-            if(!this.empresa.id){
-                this.alertService.success('Empresa creada', 'La empresa fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-            }
-            this.modalRef?.hide();
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public openFilter(template: TemplateRef<any>) {
-        this.modalRef = this.modalService.show(template);
+        this.openModal(template, undefined, { class: 'modal-md', backdrop: 'static' });
     }
-
-
 }

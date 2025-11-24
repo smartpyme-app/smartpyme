@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,9 +6,8 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import { CalendarioComponent } from './calendario/calendario.component';
 import { CrearEventoComponent } from '@shared/modals/crear-evento/crear-evento.component';
@@ -27,13 +26,11 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     
 })
 
-export class CitasComponent extends BaseModalComponent implements OnInit {
+export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
   @ViewChild('calendario') calendario!: CalendarioComponent;
 
   public eventos: any = [];
   public evento: any = {};
-  public override loading: boolean = false;
-  public override saving: boolean = false;
 
   public clientes: any = [];
   public usuario: any = {};
@@ -42,20 +39,56 @@ export class CitasComponent extends BaseModalComponent implements OnInit {
   public formaPagos: any = [];
   public documentos: any = [];
   public canales: any = [];
-  public filtros: any = {};
   public filtrado: boolean = false;
   public usuarioActual: any = {};
-  // public filtros:any = {};
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
-    public apiService: ApiService,
+    protected override apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService
   ) {
-    super(modalManager, alertService);
+    super(apiService, alertService, modalManager, {
+      endpoint: 'evento',
+      itemsProperty: 'eventos',
+      itemProperty: 'evento',
+      reloadAfterSave: false,
+      reloadAfterDelete: false,
+      messages: {
+        created: 'La cita fue añadida exitosamente.',
+        updated: 'La cita fue guardada exitosamente.',
+        deleted: 'Cita eliminada exitosamente.',
+        createTitle: 'Cita creada',
+        updateTitle: 'Cita guardada',
+        deleteTitle: 'Cita eliminada',
+        deleteConfirm: '¿Estás seguro?'
+      },
+      initNewItem: (item) => {
+        item.id_empresa = apiService.auth_user().id_empresa;
+        item.id_usuario = apiService.auth_user().id;
+        item.frecuencia = '';
+        item.tipo = 'Sin confirmar';
+        item.duracion = "1 hora";
+        item.estado = "Activo";
+        item.id_cliente = '';
+        item.id_servicio = '';
+        item.productos = [];
+        item.id_sucursal = apiService.auth_user().id_sucursal;
+        item.inicio = moment().format('YYYY-MM-DD HH') + ':00';
+        return item;
+      },
+      afterSave: () => {
+        this.calendario?.loadAll();
+        this.filtrarEventos();
+      },
+      afterDelete: () => {
+        this.calendario?.loadAll();
+        this.filtrarEventos();
+      }
+    });
+  }
+
+  protected aplicarFiltros(): void {
+    this.filtrarEventos();
   }
 
   ngOnInit() {
@@ -83,7 +116,7 @@ export class CitasComponent extends BaseModalComponent implements OnInit {
     return this.apiService.auth_user().rol === 'Citas';
   }
 
-  public loadAll() {
+  public override loadAll() {
     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
     this.filtros.id_cliente = '';
     this.filtros.id_usuario = '';
@@ -131,58 +164,22 @@ export class CitasComponent extends BaseModalComponent implements OnInit {
   }
 
   // Cuando se abra un modal, comprueba si no existen datos en clientes y si no existen, obtenerlas
-  public override openModal(template: TemplateRef<any>, evento: any) {
-    this.evento = evento;
-
+  public override openModal(template: TemplateRef<any>, evento?: any) {
     // Comprobar si no existen datos en clientes y si no existen, obtenerlas
     if (!this.clientes || this.clientes.length === 0) {
       this.obtenerClientes();
     }
 
-    if (!this.evento.id) {
-      this.evento.id_empresa = this.apiService.auth_user().id_empresa;
-      this.evento.id_usuario = this.apiService.auth_user().id;
-      this.evento.frecuencia = '';
-      this.evento.tipo = 'Sin confirmar';
-      this.evento.duracion = "1 hora";
-      this.evento.estado = "Activo";
-      this.evento.id_cliente = '';
-      this.evento.id_servicio = '';
-      this.evento.productos = [];
-      this.evento.id_sucursal = this.apiService.auth_user().id_sucursal;
-      this.evento.inicio = moment().format('YYYY-MM-DD HH') + ':00';
-      this.setTime();
-    }
-    super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
-  }
-
-  setTime() {
-    let fecha = moment(this.evento.inicio);
-
-    if (this.evento.duracion == '15 minutos') {
-      this.evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm');
-    }
-    if (this.evento.duracion == '30 minutos') {
-      this.evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm');
-    }
-    if (this.evento.duracion == '1 hora') {
-      this.evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm');
-    }
-    if (this.evento.duracion == '2 horas') {
-      this.evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm');
-    }
-    if (this.evento.duracion == '3 horas') {
-      this.evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm');
-    }
-    if (this.evento.duracion == '5 horas') {
-      this.evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm');
+    super.openModal(template, evento, { class: 'modal-lg', backdrop: 'static' });
+    
+    if (!this.evento.id && this.evento.inicio) {
+      this.setTimeForEvento(this.evento);
     }
   }
 
   public setEstado(evento: any, estado: any) {
-    this.evento = evento;
-    this.evento.tipo = estado;
-    this.onSubmit();
+    evento.tipo = estado;
+    this.onSubmit(evento, true);
   }
 
   agregarEventoAlCalendario(evento: any) {
@@ -205,8 +202,7 @@ export class CitasComponent extends BaseModalComponent implements OnInit {
     window.open(enlaceCalendario, '_blank');
   }
 
-  public delete(evento: any) {
-
+  public override delete(evento: any) {
     Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
@@ -216,40 +212,46 @@ export class CitasComponent extends BaseModalComponent implements OnInit {
       cancelButtonText: 'Cancelar'
     }).then((result) => {
       if (result.isConfirmed) {
-        this.apiService.delete('evento/', evento.id)
-          .pipe(this.untilDestroyed())
-          .subscribe(data => {
-          for (let i = 0; i < this.eventos.data.length; i++) {
-            if (this.eventos.data[i].id == data.id)
-              this.eventos.data.splice(i, 1);
-          }
-          this.calendario.loadAll();
-          this.filtrarEventos();
-        }, error => { this.alertService.error(error); });
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+        super.delete(evento.id || evento);
       }
     });
-
   }
 
-  public onSubmit() {
-    this.saving = true;
-    this.apiService.store('evento', this.evento)
-      .pipe(this.untilDestroyed())
-      .subscribe(evento => {
-      if (!this.evento.id) {
-        this.loadAll();
-        this.alertService.success('Cita creada', 'La cita fue añadida exitosamente.');
-      } else {
-        this.alertService.success('Cita guardada', 'La cita fue guardada exitosamente.');
+  public override async onSubmit(item?: any, isStatusChange: boolean = false) {
+    const eventoToSave = item || this.evento;
+    
+    if (!isStatusChange && eventoToSave.inicio && eventoToSave.duracion) {
+      this.setTimeForEvento(eventoToSave);
+    }
+
+    await super.onSubmit(eventoToSave, isStatusChange);
+    
+    if (!eventoToSave.id) {
+      this.loadAll();
       }
-      this.calendario.loadAll();
-      this.saving = false;
-      if (this.modalRef) {
-        this.closeModal();
+  }
+
+  private setTimeForEvento(evento: any) {
+    let fecha = moment(evento.inicio);
+
+    if (evento.duracion == '15 minutos') {
+      evento.fin = fecha.add(15, 'minutes').format('YYYY-MM-DD HH:mm');
+    }
+    if (evento.duracion == '30 minutos') {
+      evento.fin = fecha.add(30, 'minutes').format('YYYY-MM-DD HH:mm');
+    }
+    if (evento.duracion == '1 hora') {
+      evento.fin = fecha.add(1, 'hour').format('YYYY-MM-DD HH:mm');
+    }
+    if (evento.duracion == '2 horas') {
+      evento.fin = fecha.add(2, 'hour').format('YYYY-MM-DD HH:mm');
       }
-    }, error => { this.alertService.error(error); this.saving = false; });
+    if (evento.duracion == '3 horas') {
+      evento.fin = fecha.add(3, 'hour').format('YYYY-MM-DD HH:mm');
+      }
+    if (evento.duracion == '5 horas') {
+      evento.fin = fecha.add(5, 'hour').format('YYYY-MM-DD HH:mm');
+    }
   }
 
   // Cuando se abra un modal de filtro, comprueba si no existen datos en clientes y si no existen, obtenerlas

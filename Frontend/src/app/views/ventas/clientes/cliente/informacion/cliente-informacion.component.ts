@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -38,9 +38,6 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public esNuevo = false;
   public tipoAnterior = '';
   public catalogo:any = [];
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -157,32 +154,30 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
     this.cliente.cod_distrito = '';
   }
 
-  public onSubmit(): void {
+  public async onSubmit(): Promise<void> {
     this.saving = true;
+    try {
+      const routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
+      const clienteGuardado = await this.apiService.store(routeUrl, this.cliente)
+          .pipe(this.untilDestroyed())
+          .toPromise();
 
-    let routeUrl = this.esNuevo ? 'cliente' : 'cliente/update';
+      const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
+      const mensaje = this.esNuevo
+        ? 'El cliente fue creado exitosamente.'
+        : 'El cliente fue actualizado exitosamente.';
 
-    this.apiService.store(routeUrl, this.cliente).pipe(this.untilDestroyed()).subscribe({
-      next: (cliente) => {
-        const titulo = this.esNuevo ? 'Cliente creado' : 'Cliente actualizado';
-        const mensaje = this.esNuevo
-          ? 'El cliente fue creado exitosamente.'
-          : 'El cliente fue actualizado exitosamente.';
+      this.alertService.success(titulo, mensaje);
 
-        this.alertService.success(titulo, mensaje);
-
-        this.cliente = cliente;
-        if (this.esNuevo) {
-          this.router.navigate(['/cliente/editar', cliente.id]);
-        }
-
-        this.saving = false;
-      },
-      error: (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      },
-    });
+      this.cliente = clienteGuardado;
+      if (this.esNuevo) {
+        this.router.navigate(['/cliente/editar', clienteGuardado.id]);
+      }
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
   }
 
   public verificarSiExiste() {
@@ -239,7 +234,6 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
       backdrop: 'static',
     });
   }
-
 
   agregarContacto(template: TemplateRef<any>) {
     this.contacto = {};

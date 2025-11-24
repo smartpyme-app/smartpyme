@@ -6,7 +6,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 
 @Component({
@@ -17,35 +17,44 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     
 })
 
-export class OrganizacionEmpresasComponent extends BasePaginatedModalComponent implements OnInit {
+export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public empresas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public empresas:any = {};
     public empresasList:any = [];
     public empresa:any = {};
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'licencia/empresa',
+            itemsProperty: 'empresas',
+            itemProperty: 'empresa',
+            reloadAfterSave: true,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La empresa fue añadida exitosamente.',
+                updated: 'La empresa fue guardada exitosamente.',
+                deleted: 'Empresa eliminada exitosamente.',
+                createTitle: 'Empresa agregada',
+                updateTitle: 'Empresa guardada',
+                deleteTitle: 'Empresa eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.empresas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.empresas = data;
+    protected aplicarFiltros(): void {
+        this.filtrarEmpresas();
     }
 
     ngOnInit() {
-
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.activo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -60,10 +69,16 @@ export class OrganizacionEmpresasComponent extends BasePaginatedModalComponent i
     public filtrarEmpresas(){
         this.apiService.getAll('licencias/empresas', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(empresas => { 
-                this.empresas = empresas;
-                this.loading = false;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (empresas) => {
+                    this.empresas = empresas;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public setOrden(columna: string) {
@@ -77,65 +92,54 @@ export class OrganizacionEmpresasComponent extends BasePaginatedModalComponent i
         this.filtrarEmpresas();
     }
 
-
     public setEstado(empresa:any){
         this.apiService.store('empresa', empresa)
             .pipe(this.untilDestroyed())
-            .subscribe(empresa => { 
-                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
-
-    public delete(id:number) {
+    public override delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('empresa/', id)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.empresas['data'].length; i++) { 
-                        if (this.empresas['data'][i].id == data.id )
-                            this.empresas['data'].splice(i, 1);
+                .subscribe({
+                    next: (data) => {
+                        for (let i = 0; i < this.empresas['data'].length; i++) { 
+                            if (this.empresas['data'][i].id == data.id )
+                                this.empresas['data'].splice(i, 1);
+                        }
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
                     }
-                }, error => {this.alertService.error(error); });
-                   
+                });
         }
-
     }
 
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('licencia/empresa', this.empresa)
-            .pipe(this.untilDestroyed())
-            .subscribe(empresa => {
-            this.loadAll();
-            this.saving = false;
-            if(!this.empresa.id){
-                this.alertService.success('Empresa agregada', 'La empresa fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
-            }
-            this.closeModal();
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-
-    override openModal(template: TemplateRef<any>, empresa:any) {
-        this.empresa = empresa;
+    override openModal(template: TemplateRef<any>, empresa?: any) {
+        this.empresa = empresa || {};
 
         this.apiService.getAll('empresas/list')
             .pipe(this.untilDestroyed())
-            .subscribe(empresasList => { 
-                this.empresasList = empresasList;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (empresasList) => {
+                    this.empresasList = empresasList;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
         
         if (!this.empresa.id) {
             this.empresa.id_licencia = this.apiService.auth_user().empresa.licencia.id;
         }
         super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
-
-
 }

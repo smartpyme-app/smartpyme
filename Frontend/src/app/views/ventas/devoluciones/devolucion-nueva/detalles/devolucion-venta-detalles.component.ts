@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -28,9 +28,6 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     @ViewChild('msupervisor')
     public supervisorTemplate!: TemplateRef<any>;
@@ -163,6 +160,5 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
     public sumTotalEmit(){
         this.sumTotal.emit();
     }
-
 
 }

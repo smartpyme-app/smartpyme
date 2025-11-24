@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,7 +12,6 @@ import { CrearClienteComponent } from '@shared/modals/crear-cliente/crear-client
 import { FilterPipe } from '@pipes/filter.pipe';
 import { NgxMaskDirective } from 'ngx-mask';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-
 
 @Component({
     selector: 'app-crear-empresa',
@@ -34,9 +33,6 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public departamentos:any = [];
     public municipios:any = [];
     public actividad_economicas:any = [];
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -103,30 +99,43 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
       this.empresa.id_cliente = cliente.id;
     }
 
-    public onSubmit() {
+    public async onSubmit() {
         this.saving = true;
         this.empresa.isRegister = false;
-        this.apiService.store('empresa', this.empresa).pipe(this.untilDestroyed()).subscribe(empresa => {
-            this.saving = false;
-            if(!this.empresa.id){
-                this.empresa = empresa;
+        try {
+            const empresaGuardada = await this.apiService.store('empresa', this.empresa)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const isNew = !this.empresa.id;
+            if (isNew) {
+                this.empresa = empresaGuardada;
                 this.alertService.success('Empresa creada', 'La empresa fue añadida exitosamente.');
-                this.router.navigate(['/admin/empresa/' + empresa.id]);
-            }else{
+                this.router.navigate(['/admin/empresa/' + empresaGuardada.id]);
+            } else {
                 this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
             }
             
-            if(this.licencia){
-                let data:any = {};
-                data.id_empresa = empresa.id;
-                data.id_licencia = this.apiService.auth_user().empresa.licencia.id;                
-                this.apiService.store('licencia/empresa', data).pipe(this.untilDestroyed()).subscribe(empresa => {
-                },error => {this.alertService.error(error); this.saving = false; });
+            if (this.licencia) {
+                const data: any = {
+                    id_empresa: empresaGuardada.id,
+                    id_licencia: this.apiService.auth_user().empresa.licencia.id
+                };
+                
+                try {
+                    await this.apiService.store('licencia/empresa', data)
+                        .pipe(this.untilDestroyed())
+                        .toPromise();
+                } catch (error: any) {
+                    this.alertService.error(error);
+                }
             }
-        },error => {this.alertService.error(error); this.saving = false; });
-
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.saving = false;
+        }
     }
-
 
     setGiro(){
         this.empresa.giro = this.actividad_economicas.find((item:any) => item.cod == this.empresa.cod_giro).nombre;
@@ -220,7 +229,6 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         console.log(this.empresa.cobra_iva);
     }
 
-
     public override openModal(template: TemplateRef<any>, empresa:any) {
         this.empresa = empresa;
         if (!this.empresa.id) {
@@ -237,6 +245,5 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         }
         super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
     }
-
 
 }

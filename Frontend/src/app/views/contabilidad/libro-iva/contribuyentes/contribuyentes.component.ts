@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,9 +30,6 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
     public downloading:boolean = false;
     public filtros:any = {};
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -49,14 +46,12 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
           this.years.push(currentYear - i);
         }
 
-
         this.filtros.id_sucursal = '';
         this.filtros.tipo_documento = 'Crédito fiscal';
         this.filtros.anio = currentYear;
         this.filtros.mes = currentMonth;
         this.filtros.time = 'day';
         this.setTime();
-
 
         this.apiService.getAll('sucursales/list')
           .pipe(this.untilDestroyed())
@@ -124,7 +119,6 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
         );
     }
 
-
     public descargarLibroRetencion(){
         this.downloading = true;
         this.apiService.export('libro-iva/retencion1/descargar-libro', this.filtros)
@@ -183,7 +177,6 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
             this.manejarErrorDescarga(error);
         });
     }
-
 
     public descargarDTECreditoFiscal(): void {
       this.downloading = true;
@@ -248,6 +241,5 @@ export class ContribuyentesComponent extends BaseModalComponent implements OnIni
         const url = `${this.apiService.baseUrl}/api/libro-iva/contribuyentes?${filtros}&token=${token}`;
         window.open(url, '_blank');
       }
-
 
 }

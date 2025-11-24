@@ -6,7 +6,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-categorias',
@@ -16,7 +16,7 @@ import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-
     
 })
 
-export class CategoriasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class CategoriasComponent extends BaseCrudComponent<any> implements OnInit {
 
     public categorias: any = {};
     public categoria: any = {};
@@ -28,7 +28,22 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'categoria',
+            itemsProperty: 'categorias',
+            itemProperty: 'categoria',
+            messages: {
+                created: 'La categoria fue añadida exitosamente.',
+                updated: 'La categoria fue guardada exitosamente.',
+                createTitle: 'Categoria creada',
+                updateTitle: 'Categoria guardada'
+            },
+            initNewItem: (item) => {
+                item.id_empresa = apiService.auth_user().id_empresa;
+                item.enable = true;
+                return item;
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -36,8 +51,7 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
     }
 
     ngOnInit() {
-        this.loadAll();
-
+        // Cargar datos adicionales necesarios para el componente
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => { 
@@ -49,16 +63,16 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
             }, error => { this.alertService.error(error); });
+
+        // Cargar categorías usando el método heredado
+        this.loadAll();
     }
 
-    public loadAll() {
-        this.loading = true;
-        this.filtros.estado = '';
+    public override loadAll() {
+        // Resetear filtros específicos de categorías
         this.filtros.id_sucursal = '';
-        this.filtros.buscador = '';
-        this.filtros.page = 1;
-        this.filtros.paginate = 10;
-        this.filtrarCategorias();
+        // Llamar al método base que resetea filtros comunes y llama a aplicarFiltros()
+        super.loadAll();
     }
 
     public filtrarCategorias() {
@@ -76,12 +90,9 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     override openModal(template: TemplateRef<any>, categoria?: any) {
-        this.categoria = categoria || {};
-        if (!this.categoria.id) {
-            this.categoria.id_empresa = this.apiService.auth_user().id_empresa;
-            this.categoria.enable = true;
-        }
-        super.openModal(template, {
+        // Usar el método heredado que maneja la inicialización del item
+        // y pasar la configuración del modal
+        super.openModal(template, categoria, {
             class: 'modal-lg',
             backdrop: 'static'
         });
@@ -89,34 +100,12 @@ export class CategoriasComponent extends BaseFilteredPaginatedModalComponent imp
 
     public setEstado(categoria: any) {
         this.categoria = categoria;
+        // Usar el método heredado onSubmit
         this.onSubmit();
     }
 
-    public onSubmit(): void {
-        this.loading = true;
-        this.apiService.store('categoria', this.categoria)
-            .pipe(this.untilDestroyed())
-            .subscribe(categoria => {
-            if (!this.categoria.id) {
-                this.alertService.success('Categoria creada', 'La categoria fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Categoria guardada', 'La categoria fue guardada exitosamente.');
-            }
-            this.filtrarCategorias();
-            this.loading = false;
-            this.closeModal();
-        }, error => { this.alertService.error(error); this.loading = false; });
-    }
-
-    public delete(categoria: any) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('categoria/', categoria.id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                this.filtrarCategorias();
-            }, error => { this.alertService.error(error); });
-        }
-    }
+    // Los métodos onSubmit() y delete() ahora se heredan de BaseCrudComponent
+    // No es necesario redefinirlos a menos que necesites comportamiento personalizado
 
     public verificarSiExiste() {
         if (this.categoria.nombre) {

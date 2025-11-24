@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -84,8 +84,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public mensajeErrorBanco: string = '';
 
   public modalCredito!: any; // BsModalRef
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -421,7 +419,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         (impuestos) => {
           this.impuestos = impuestos;
 
-
           this.apiService.read(
             'cotizacionVentas/',
             +this.route.snapshot.queryParamMap.get('id_venta')!
@@ -437,11 +434,9 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               this.venta.num_cotizacion = this.venta.id;
               this.venta.id = null;
 
-
               if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
                 this.venta.impuestos = this.impuestos;
               }
-
 
               this.venta.detalles.forEach((detalle: any) => {
                 if (detalle.codigo_combo) {
@@ -452,7 +447,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 }
                 detalle.id = null;
               });
-
 
               if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
                 this.venta.detalles = [];
@@ -703,7 +697,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.venta.observaciones = this.venta.id_empresa == 2 ? '➢ Uso del Servicio: La plataforma SmartPyme se proporciona bajo licencia no exclusiva y no transferible, según el plan de suscripción seleccionado por el cliente. El cliente es responsable del uso adecuado de la plataforma y de la exactitud de los datos ingresados. \n➢ Pagos: Las tarifas establecidas en la cotización deben ser pagadas puntualmente. Los retrasos en el pago pueden llevar a la suspensión o cancelación del servicio. \n➢ Disponibilidad del Servicio: SmartPyme garantiza un 99% de disponibilidad del servicio, excluyendo mantenimientos programados y eventos de fuerza mayor. \n➢ Propiedad Intelectual: El cliente no podrá realizar ingeniería inversa, descompilar ni modificar la plataforma. \n➢ Limitación de responsabilidad: SmartPyme no se hace responsable de pérdidas de datos causadas por eventos externos, uso indebido de la plataforma o situaciones fuera de su control razonable. \n➢ Duración del acuerdo: Los servicios se brindan durante la vigencia del plan de suscripción. Tras terminación, el cliente tiene derecho a descargar su información antes de que sea eliminada, siempre y cuando no tenga pagos pendientes. En caso de mora, SmartPyme no estará obligada a proporcionar acceso o respaldos hasta que la situación sea regularizada. \n➢ Situaciones excepcionales: \nEn caso de circunstancias extraordinarias que conlleven la finalización de operaciones, la empresa no estará obligada a continuar con la prestación del servicio. Esto incluye, pero no se limita a, solicitudes de acceso perpetuo o indefinido a la plataforma. \n➢ Renovación: Los cobros se efectuarán de forma automática cada mes (acorde a la forma de pago elegida), por lo que de no continuar usando el sistema debe notificarse por escrito al correo electrónico expresando las razones. De esta forma se brindará un plazo de 15 días para extraer la información de su cuenta, posteriormente será eliminada definitivamente. \n➢ Política de reembolsos: No se realizan reembolsos ni devoluciones bajo ninguna circunstancia, incluyendo cancelaciones anticipadas, falta de uso del sistema o cualquier otra razón. Al realizar el pago, el cliente acepta esta condición. \nCompromisos de SmartPyme: \n➢ Brindar capacitaciones y soporte técnico a usuarios de negocios. \n➢ Garantizar el correcto funcionamiento de la plataforma en todo momento con altos estándares de seguridad, disponibilidad y confidencialidad. \n➢ Ofrecemos acompañamiento y asesoría durante el proceso de implementación, de facturación electrónica u otro correspondiente a la información para el uso necesario de SmartPyme.\n➢ Brindar documentación de confidencialidad para su firma. \nPara SmartPyme será un honor trabajar con usted y apoyar sus esfuerzos en optimizar las operaciones de su empresa y proporcionar información oportuna a través de nuestra plataforma de Inteligencia de Negocios. \nQuedamos atentos a cualquier consulta o información adicional que necesite.' : '';
     }
 
-
     this.cargarDocumentos();
     this.loadData();
   }
@@ -804,7 +797,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       parseFloat(this.venta.renta_retenida) +
       parseFloat(this.venta.propina || 0)
     ).toFixed(4);
-
 
     // Asignar tipoOperacion según los detalles
     if (this.venta.cobrar_impuestos) {
@@ -1338,7 +1330,6 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public isColumnEnabled(columnName: string): boolean {
     return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
   }
-
 
   public verificarAccesoPropina() {
     this.funcionalidadesService.verificarAcceso('cobro-propina').pipe(this.untilDestroyed()).subscribe(

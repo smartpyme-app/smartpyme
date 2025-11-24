@@ -50,14 +50,20 @@ export class AdminSucursalComponent implements OnInit {
             },700);
       }
 
-      public onSubmit() {
+      public async onSubmit() {
           this.loading = true;
+          try {
           // Guardamos la sucursal
-          this.apiService.store('sucursal', this.sucursal).pipe(this.untilDestroyed()).subscribe(sucursal => {
-              // this.sucursal = sucursal;
+              await this.apiService.store('sucursal', this.sucursal)
+                  .pipe(this.untilDestroyed())
+                  .toPromise();
+              
               this.alertService.success('Sucursal guardada', 'La sucursal fue guardada exitosamente.');
+          } catch (error: any) {
+              this.alertService.error(error);
+          } finally {
               this.loading = false;
-          },error => {this.alertService.error(error); this.loading = false; });
+          }
       }
 
 }

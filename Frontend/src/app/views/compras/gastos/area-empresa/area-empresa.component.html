@@ -29,7 +29,7 @@
             @if (areas?.total) {
               <span class="text-muted d-flex align-items-center gap-2">
                 Mostrando 
-                <select name="paginate" class="form-select w-auto" (change)="filtrarArea()" [(ngModel)]="filtros.paginate">
+                <select name="paginate" class="form-select w-auto" (change)="aplicarFiltros()" [(ngModel)]="filtros.paginate">
                     <option value="10">10</option>
                     <option value="25">25</option>
                     <option value="50">50</option>
@@ -45,7 +45,7 @@
                 <button [disabled]="downloading" tooltip="Descargar áreas" (click)="descargar()" class="btn btn-default tcla-F6">
                     <img src="/assets/icons/download.png" class="icon">
                 </button>
-                <form class="d-flex input-group" name="form" (ngSubmit)="filtrarArea()" autocomplete="off">
+                <form class="d-flex input-group" name="form" (ngSubmit)="aplicarFiltros()" autocomplete="off">
                     <input type="text" name="search" class="form-control pull-right" placeholder="Buscar" [(ngModel)]="filtros.buscador">
                 </form>
                 <button tooltip="Filtrar (F3)" (click)="openFilter(mfilter)" class="btn btn-default tcla-F3">
@@ -60,7 +60,7 @@
             <button class="btn btn-primary tcla-F5" tooltip="Filtrar (F5)" (click)="loadAll()">Todos</button>
         </div>
         <div class="col d-flex gap-2 justify-content-end">
-            <select name="estado" (change)="filtrarArea()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
+            <select name="estado" (change)="aplicarFiltros()" [(ngModel)]="filtros.estado" class="form-select bg-default w-auto">
                 <option value="">Estado</option>
                 <option value="1">Activo</option>
                 <option value="0">Inactivo</option>
@@ -174,7 +174,7 @@
         <button type="button" class="btn-close" (click)="modalRef.hide()" aria-label="Close"></button>
     </div>
     <div class="modal-body">
-        <form autocomplete="off" (ngSubmit)="filtrarArea()">
+        <form autocomplete="off" (ngSubmit)="aplicarFiltros()">
             <div class="row">
                 <div class="form-group col-md-6">
                     <label for="">Fecha desde:</label>
