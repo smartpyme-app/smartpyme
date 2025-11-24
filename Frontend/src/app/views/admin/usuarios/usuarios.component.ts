@@ -16,7 +16,7 @@ import { EncryptService } from '@services/encryption/encrypt.service';
     templateUrl: './usuarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+
 })
 export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -46,7 +46,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     CountryISO.CostaRica,
     CountryISO.Panama
   ];
-  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488];
+  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 569];
   public modules: any[] = [];
   public permissionsLoading: boolean = false;
   public role: any = {

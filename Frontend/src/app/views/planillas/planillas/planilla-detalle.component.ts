@@ -1047,9 +1047,32 @@ export class PlanillaDetalleComponent implements OnInit {
     const comisiones = Number(this.detalleSeleccionado.comisiones) || 0;
     const bonificaciones = Number(this.detalleSeleccionado.bonificaciones) || 0;
     const otrosIngresos = Number(this.detalleSeleccionado.otros_ingresos) || 0;
-  
+
+    // Obtener tipo de contrato
+    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
+    const esPorObra = tipoContrato === 3;
+    const esServiciosProfesionales = tipoContrato === 4;
+
     // Calcular salario devengado
-    const salarioDevengado = (salarioBase / 30) * diasLaborados;
+    let salarioDevengado = 0;
+    if (esPorObra) {
+      // Para Por obra, el salario_base ES el monto total ganado en este período
+      // NO se divide proporcionalmente
+      salarioDevengado = salarioBase;
+    } else if (esServiciosProfesionales) {
+      // Para Servicios Profesionales, el salario_base es MENSUAL
+      // Se divide según el tipo de planilla, pero NO usa días laborados
+      if (this.planilla.tipo_planilla === 'quincenal') {
+        salarioDevengado = salarioBase / 2;
+      } else if (this.planilla.tipo_planilla === 'semanal') {
+        salarioDevengado = salarioBase / 4.33;
+      } else {
+        salarioDevengado = salarioBase; // mensual
+      }
+    } else {
+      // Para empleados regulares, calcular proporcionalmente según días laborados
+      salarioDevengado = (salarioBase / 30) * diasLaborados;
+    }
     this.detalleSeleccionado.salario_devengado = Number(salarioDevengado.toFixed(2));
   
     let montoHorasExtra = 0;
@@ -1062,40 +1085,47 @@ export class PlanillaDetalleComponent implements OnInit {
     // Calcular total de ingresos
     const totalIngresos = salarioDevengado + montoHorasExtra + comisiones + bonificaciones + otrosIngresos;
     this.detalleSeleccionado.total_ingresos = Number(totalIngresos.toFixed(2));
-  
-    const tipoContrato = this.detalleSeleccionado.empleado?.tipo_contrato || 1;
-    const esServiciosProfesionales = tipoContrato === 4;
-  
+
+    // Calcular deducciones (ISSS, AFP, Renta)
+    // Ambos tipos de contrato sin prestaciones (Por obra y Servicios Profesionales) no tienen ISSS/AFP
+    const esContratoSinPrestaciones = esPorObra || esServiciosProfesionales;
+
     let isssEmpleado = 0;
     let afpEmpleado = 0;
     let isssPatronal = 0;
     let afpPatronal = 0;
-  
-    if (esServiciosProfesionales) {
+
+    if (esContratoSinPrestaciones) {
+      // Sin deducciones de seguridad social para contratos sin prestaciones
       isssEmpleado = 0;
       afpEmpleado = 0;
       isssPatronal = 0;
       afpPatronal = 0;
     } else {
+      // Para empleados regulares
       const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
       isssEmpleado = baseISSSEmpleado * 0.03;
       afpEmpleado = totalIngresos * 0.0725;
       isssPatronal = baseISSSEmpleado * 0.075;
       afpPatronal = totalIngresos * 0.0875;
     }
-  
+
     this.detalleSeleccionado.isss_empleado = Number(isssEmpleado.toFixed(2));
     this.detalleSeleccionado.afp_empleado = Number(afpEmpleado.toFixed(2));
     this.detalleSeleccionado.isss_patronal = Number(isssPatronal.toFixed(2));
     this.detalleSeleccionado.afp_patronal = Number(afpPatronal.toFixed(2));
-  
-    // ✅ CORREGIDO: calcular renta primero y guardarla
+
+    // Calcular renta
     let renta = 0;
-    if (esServiciosProfesionales) {
+    if (esContratoSinPrestaciones) {
+      // 10% fijo para contratos sin prestaciones (Por obra y Servicios Profesionales)
+      // Se calcula sobre el TOTAL de ingresos (salario + comisiones + bonos + otros)
       renta = totalIngresos * 0.10;
+      this.detalleSeleccionado.renta = Number(renta.toFixed(2));
     } else {
-      this.actualizarRenta(); // primero actualizas la renta
-      renta = Number(this.detalleSeleccionado.renta) || 0; // y luego la usas
+      // Usar tablas de renta para empleados regulares
+      this.actualizarRenta();
+      renta = Number(this.detalleSeleccionado.renta) || 0;
     }
   
     // Calcular otros descuentos
@@ -1117,7 +1147,37 @@ export class PlanillaDetalleComponent implements OnInit {
       this.actualizarDeduccionesCalculadas();
     }
   }
-  
+
+  /**
+   * Recalcula SOLO el sueldo neto sin recalcular deducciones de ley
+   * Usar cuando solo cambian préstamos, anticipos u otros descuentos manuales
+   */
+  public recalcularSueldoNeto() {
+    if (!this.detalleSeleccionado) {
+      return;
+    }
+
+    // Obtener valores actuales de deducciones de ley (YA calculadas, no recalcular)
+    const isssEmpleado = Number(this.detalleSeleccionado.isss_empleado) || 0;
+    const afpEmpleado = Number(this.detalleSeleccionado.afp_empleado) || 0;
+    const renta = Number(this.detalleSeleccionado.renta) || 0;
+
+    // Obtener descuentos manuales (estos SÍ pueden haber cambiado)
+    const prestamos = Number(this.detalleSeleccionado.prestamos) || 0;
+    const anticipos = Number(this.detalleSeleccionado.anticipos) || 0;
+    const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
+    const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
+
+    // Recalcular total de descuentos
+    const totalDescuentos = isssEmpleado + afpEmpleado + renta + prestamos + anticipos + otrosDescuentos + descuentosJudiciales;
+    this.detalleSeleccionado.total_descuentos = Number(totalDescuentos.toFixed(2));
+
+    // Recalcular sueldo neto
+    const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
+    const sueldoNeto = totalIngresos - totalDescuentos;
+    this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
+  }
+
 
   public getTipoContratoNombre(tipoContrato: number): string {
     switch (tipoContrato) {
@@ -1131,6 +1191,11 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public esServiciosProfesionales(): boolean {
     return this.detalleSeleccionado?.empleado?.tipo_contrato === 4;
+  }
+
+  public esContratoSinPrestaciones(): boolean {
+    const tipoContrato = this.detalleSeleccionado?.empleado?.tipo_contrato;
+    return tipoContrato === 3 || tipoContrato === 4;
   }
 
   // Agregar después de calcularTotales()

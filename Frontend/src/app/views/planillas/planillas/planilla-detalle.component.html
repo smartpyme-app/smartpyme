@@ -4,7 +4,7 @@
       <h2 class="page-heading">Detalle de Planilla</h2>
       <h6 class="text-muted mb-0 badge bg-primary">Planilla {{ planilla.tipo_planilla | titlecase }}</h6>
     </div>
-    
+
     @if (planilla?.codigo) {
       <p class="text-muted mb-0 ">
         Código: {{ planilla.codigo }} | Período:
@@ -148,14 +148,14 @@
             <th class="text-end">S. Devengado</th>
             <th class="text-end">Ingresos Adicionales</th>
             <th class="text-end">Total Ingresos</th>
-        
+
             <!-- Columnas para El Salvador -->
             @if (esElSalvador) {
               <th class="text-end">ISSS</th>
               <th class="text-end">AFP</th>
               <th class="text-end">ISR</th>
             }
-        
+
             <!-- Columnas dinámicas para otros países -->
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
@@ -164,11 +164,11 @@
                 </th>
               }
             }
-        
+
             <th class="text-end">Total Neto</th>
             <th class="text-center">Acciones</th>
           </tr>
-        </thead>        
+        </thead>
         <tbody>
           @for (detalle of detalles; track detalle.id) {
             <tr>
@@ -176,23 +176,23 @@
               {{ detalle.empleado?.nombres }} {{ detalle.empleado?.apellidos }}<br />
               <small class="text-muted">{{ detalle.empleado?.codigo }}</small>
             </td>
-        
+
             <td class="text-end">
               ${{ detalle.salario_base | number : "1.2-2" }}
             </td>
-        
+
             <td class="text-end">
               ${{ detalle.salario_devengado | number : "1.2-2" }}
             </td>
-        
+
             <td class="text-end">
               ${{ getIngresosAdicionales(detalle) | number : "1.2-2" }}
             </td>
-        
+
             <td class="text-end">
               ${{ detalle.total_ingresos | number : "1.2-2" }}
             </td>
-        
+
             <!-- Para El Salvador: columnas fijas -->
             @if (esElSalvador) {
               <td class="text-end">
@@ -205,7 +205,7 @@
                 ${{ detalle.renta | number : "1.2-2" }}
               </td>
             }
-        
+
             <!-- Para otros países: columnas dinámicas -->
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
@@ -214,16 +214,16 @@
                 </td>
               }
             }
-        
+
             <td class="text-end">
               ${{ detalle.sueldo_neto | number : "1.2-2" }}
             </td>
-        
+
             <td class="text-center">
               <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
                 <i class="fa fa-ellipsis-vertical fa-fw"></i>
               </span>
-        
+
               <ng-template #accionesTemplate>
                 <div class="list-group border-0">
                   <a (click)="editarDetalle(detalle)" class="list-group-item list-group-item-action border-0 click">
@@ -257,7 +257,7 @@
             </tr>
           }
         </tbody>
-        
+
         <tfoot>
           <tr class="border-top">
             <th>Totales</th>
@@ -273,7 +273,7 @@
             <th class="text-end">
               ${{ getTotalCampoReal('total_ingresos') | number : '1.2-2' }}
             </th>
-        
+
             <!-- Columnas fijas si es El Salvador -->
             @if (esElSalvador) {
               <th class="text-end">
@@ -286,7 +286,7 @@
                 ${{ getTotalCampoReal('renta') | number : '1.2-2' }}
               </th>
             }
-            
+
             <!-- Columnas dinámicas si NO es El Salvador -->
             @if (!esElSalvador) {
               @for (concepto of conceptosEmpleado; track concepto[0]) {
@@ -295,7 +295,7 @@
                 </th>
               }
             }
-        
+
             <th class="text-end">
               ${{ getTotalCampoReal('sueldo_neto') | number : "1.2-2" }}
             </th>
@@ -364,7 +364,7 @@
             <th>Empleado</th>
             <th class="text-end">Salario Base</th>
             <th class="text-end">Salario Devengado</th>
-        
+
             <!-- ✅ Aportes patronales para El Salvador -->
             @if (esElSalvador) {
               <th class="text-end">ISSS Patronal</th>
@@ -376,12 +376,12 @@
                 </th>
               }
             }
-        
+
             <th class="text-end text-danger">Total Aportes</th>
             <th class="text-end text-muted">% sobre Salario</th>
           </tr>
-        </thead>        
-        
+        </thead>
+
         <tbody>
           @for (detalle of descuentosPatronales?.detalles; track detalle.id) {
             <tr class="table-row">
@@ -396,14 +396,14 @@
                 </div>
               </div>
             </td>
-        
+
             <td class="text-end">
               ${{ detalle.salario_base | number : "1.2-2" }}
             </td>
             <td class="text-end">
               ${{ detalle.salario_devengado | number : "1.2-2" }}
             </td>
-        
+
             <!-- ✅ Aportes patronales para El Salvador -->
             @if (esElSalvador) {
               <td class="text-end">$ {{ detalle.isss_patronal | number : '1.2-2' }}</td>
@@ -415,12 +415,12 @@
                 </td>
               }
             }
-        
+
             <!-- Total aportes patronales -->
             <td class="text-end text-danger fw-bold">
               ${{ getTotalAportesPatronales(detalle) | number : "1.2-2" }}
             </td>
-        
+
             <!-- Porcentaje sobre salario devengado -->
             <td class="text-end text-muted">
               {{ (getTotalAportesPatronales(detalle) / detalle.salario_devengado * 100) | number : "1.2-2" }}%
@@ -428,8 +428,8 @@
             </tr>
           }
         </tbody>
-        
-        
+
+
       </table>
     </div>
     @if (!descuentosPatronales?.detalles || descuentosPatronales.detalles.length === 0) {
@@ -472,12 +472,26 @@
 
           <!-- ✅ Mostrar advertencia para servicios profesionales -->
           @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
-            <div class="alert alert-info">
+            <!-- Por Obra (tipo 3) -->
+            <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+              <i class="fa fa-info-circle"></i>
+              <strong>Contrato Por Obra:</strong>
+              <ul class="mb-0 mt-2">
+                <li>El campo "Monto Total del Período" es editable - ingrese el monto exacto ganado en este período.</li>
+                <li>No se aplican descuentos de ISSS ni AFP.</li>
+                <li>Solo se aplica retención de renta del 10% sobre el total de ingresos.</li>
+              </ul>
+            </div>
+
+            <!-- Servicios Profesionales (tipo 4) -->
+            <div class="alert alert-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
               <i class="fa fa-info-circle"></i>
               <strong>Servicios Profesionales:</strong>
-              Este empleado tiene contrato de servicios profesionales.
-              Solo se aplica retención de renta del 10% sobre el total de ingresos.
-              No aplican descuentos de ISSS ni AFP.
+              <ul class="mb-0 mt-2">
+                <li>El salario base es MENSUAL - se dividirá automáticamente según tipo de planilla (quincenal /2, semanal /4.33).</li>
+                <li>No se aplican descuentos de ISSS ni AFP.</li>
+                <li>Solo se aplica retención de renta del 10% sobre el total de ingresos.</li>
+              </ul>
             </div>
           }
 
@@ -493,37 +507,85 @@
                 </div>
                 <div class="card-body">
                   <div class="mb-3">
-                    <label>Salario Base Mensual:</label>
+                    <label>
+                      <!-- Para contratos regulares (tipo 1 y 2) -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
+                                   detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Salario Base Mensual:
+                      </span>
+                      <!-- Para Por Obra (tipo 3) - editable -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+                        Monto Total del Período:
+                        <i class="fa fa-edit text-primary ms-1"></i>
+                      </span>
+                      <!-- Para Servicios Profesionales (tipo 4) - fijo mensual -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        Salario Base Mensual:
+                      </span>
+                    </label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_base"
-                        name="salario_base" disabled />
+                      <input type="number"
+                        class="form-control"
+                        [(ngModel)]="detalleSeleccionado.salario_base"
+                        name="salario_base"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
+                        [disabled]="detalleSeleccionado?.empleado?.tipo_contrato !== 3 ||
+                                    (planilla.estado !== 2 && planilla.estado !== 3)"
+                        [class.border-primary]="detalleSeleccionado?.empleado?.tipo_contrato === 3"
+                        step="0.01"
+                        min="0" />
                     </div>
-                    @if (planilla.tipo_planilla === 'quincenal') {
+                    <!-- Mensaje para Por Obra (tipo 3) -->
+                    <small class="text-success" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+                      <i class="fa fa-info-circle"></i> Este campo es editable. Ingrese el monto total ganado en este período.
+                    </small>
+                    <!-- Mensaje para Servicios Profesionales (tipo 4) -->
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                      Salario mensual (se dividirá según tipo de planilla)
+                    </small>
+                    @if (planilla.tipo_planilla === 'quincenal' && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
                       <small class="text-info">
                         Salario quincenal: ${{
-                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                          detalleSeleccionado.salario_base / 2 | number : "1.2-2"
                         }}
                       </small>
                     }
-                    @if (planilla.tipo_planilla === 'semanal') {
+                    @if (planilla.tipo_planilla === 'semanal' && detalleSeleccionado?.empleado?.tipo_contrato !== 3 && detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
                       <small class="text-info">
                         Salario semanal: ${{
-                        detalleSeleccionado.salario_base / 4.33
-                        | number : "1.2-2"
+                          detalleSeleccionado.salario_base / 4.33
+                            | number : "1.2-2"
                         }}
                       </small>
+                    }
+                    @if (planilla.tipo_planilla === 'quincenal' && detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                    <small class="text-info">
+                      Salario quincenal: ${{
+                        detalleSeleccionado.salario_base / 2 | number : "1.2-2"
+                      }}
+                    </small>
+                    }
+                    @if (planilla.tipo_planilla === 'semanal' && detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                    <small class="text-info">
+                      Salario semanal: ${{
+                        detalleSeleccionado.salario_base / 4.33
+                          | number : "1.2-2"
+                      }}
+                    </small>
                     }
                   </div>
 
-                  <div class="mb-3">
+                  <div class="mb-3" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
+                                          detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                     <label>Días Laborados:</label>
                     <div class="input-group">
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.dias_laborados"
-                        (input)="calcularTotalesUnificado()" 
-                        name="dias_laborados" 
-                        (change)="calcularTotalesUnificado()" 
+                        (input)="calcularTotalesUnificado()"
+                        name="dias_laborados"
+                        (change)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                       <span class="input-group-text">días</span>
@@ -543,26 +605,50 @@
                   </div>
 
                   <div class="mb-3">
-                    <label>Salario Devengado:</label>
+                    <label>
+                      <!-- Para contratos regulares (tipo 1 y 2) -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
+                                   detalleSeleccionado?.empleado?.tipo_contrato !== 4">
+                        Salario Devengado:
+                      </span>
+                      <!-- Para Por Obra (tipo 3) -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+                        Monto Total del Período:
+                      </span>
+                      <!-- Para Servicios Profesionales (tipo 4) -->
+                      <span *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                        Monto del Período:
+                      </span>
+                    </label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
                       <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.salario_devengado"
                         name="salario_devengado" disabled />
                     </div>
-                    <small class="text-muted">
+                    <!-- Mensaje para contratos regulares -->
+                    <small class="text-muted" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato !== 3 &&
+                                                     detalleSeleccionado?.empleado?.tipo_contrato !== 4">
                       Calculado en base a días laborados
+                    </small>
+                    <!-- Mensaje para Por Obra (tipo 3) -->
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 3">
+                      Monto completo ingresado (no se divide)
+                    </small>
+                    <!-- Mensaje para Servicios Profesionales (tipo 4) -->
+                    <small class="text-info" *ngIf="detalleSeleccionado?.empleado?.tipo_contrato === 4">
+                      Calculado según tipo de planilla (quincenal: /2, semanal: /4.33)
                     </small>
                   </div>
 
                   <div class="mb-3">
                     <label>Horas Extra:</label>
                     <div class="input-group">
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                       [(ngModel)]="detalleSeleccionado.horas_extra"
-                      (input)="calcularTotalesUnificado()" 
-                      (change)="calcularTotalesUnificado()" 
+                      (input)="calcularTotalesUnificado()"
+                      (change)="calcularTotalesUnificado()"
                       name="horas_extra"
-                      [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                      [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       min="0" step="0.5" />
                       <span class="input-group-text">hrs</span>
                     </div>
@@ -580,11 +666,11 @@
                     <label>Comisiones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.comisiones"
-                        name="comisiones" 
-                        (input)="calcularTotalesUnificado()" 
-                        (change)="calcularTotalesUnificado()" 
+                        name="comisiones"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
                         [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
@@ -594,12 +680,12 @@
                     <label>Bonificaciones:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.bonificaciones"
-                        name="bonificaciones" 
-                        (input)="calcularTotalesUnificado()" 
-                        (change)="calcularTotalesUnificado()" 
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                        name="bonificaciones"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
                   </div>
@@ -608,12 +694,12 @@
                     <label>Otros Ingresos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.otros_ingresos"
-                        name="otros_ingresos" 
-                        (input)="calcularTotalesUnificado()" 
-                        (change)="calcularTotalesUnificado()" 
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                        name="otros_ingresos"
+                        (input)="calcularTotalesUnificado()"
+                        (change)="calcularTotalesUnificado()"
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
                   </div>
@@ -635,7 +721,7 @@
                     <i class="fa fa-money-bill-wave"></i> Descuentos
                   </h5>
                 </div>
-            
+
                 <div class="card-body">
                   <!-- 🔁 ESTÁTICO para El Salvador -->
                   @if (esElSalvador) {
@@ -645,46 +731,50 @@
                         <span class="input-group-text">$</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.isss_empleado"
                           name="isss_empleado" [disabled]="true"
-                          [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+                          [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
+                                         detalleSeleccionado?.empleado?.tipo_contrato === 3) ?
+                                         'N/A - Contrato sin prestaciones' : ''" />
                       </div>
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
                         <small class="text-muted">
                           Patronal (7.5%): ${{ detalleSeleccionado.isss_patronal | number : "1.2-2" }}
                         </small>
                       }
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
                         <small class="text-info">
-                          No aplica para servicios profesionales
+                          No aplica para este tipo de contrato
                         </small>
                       }
                     </div>
-            
+
                     <div class="mb-3">
                       <label>AFP (7.25%):</label>
                       <div class="input-group">
                         <span class="input-group-text">$</span>
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.afp_empleado"
                           name="afp_empleado" [disabled]="true"
-                          [placeholder]="detalleSeleccionado?.empleado?.tipo_contrato === 4 ? 'N/A - Servicios Profesionales' : ''" />
+                          [placeholder]="(detalleSeleccionado?.empleado?.tipo_contrato === 4 ||
+                                         detalleSeleccionado?.empleado?.tipo_contrato === 3) ?
+                                         'N/A - Contrato sin prestaciones' : ''" />
                       </div>
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
                         <small class="text-muted">
                           Patronal (8.75%): ${{ detalleSeleccionado.afp_patronal | number : "1.2-2" }}
                         </small>
                       }
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
                         <small class="text-info">
-                          No aplica para servicios profesionales
+                         No aplica para este tipo de contrato
                         </small>
                       }
                     </div>
-            
+
                     <div class="mb-3">
                       <label>
-                        @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                        @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
                           <span>ISR:</span>
                         }
-                        @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                        @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
                           <span>ISR (10% fijo):</span>
                         }
                       </label>
@@ -693,19 +783,19 @@
                         <input type="number" class="form-control" [(ngModel)]="detalleSeleccionado.renta" name="renta"
                           [disabled]="true" />
                       </div>
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato !== 4 && detalleSeleccionado?.empleado?.tipo_contrato !== 3) {
                         <small class="text-muted">
                           Según tablas de renta vigentes
                         </small>
                       }
-                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4) {
+                      @if (detalleSeleccionado?.empleado?.tipo_contrato === 4 || detalleSeleccionado?.empleado?.tipo_contrato === 3) {
                         <small class="text-info">
                           10% fijo sobre total de ingresos
                         </small>
                       }
                     </div>
                   }
-            
+
                   <!-- 🌍 DINÁMICO para otros países -->
                   @if (!esElSalvador) {
                     @for (concepto of conceptosDeduccion; track concepto[0]) {
@@ -726,36 +816,42 @@
                       </div>
                     }
                   }
-            
+
                   <!-- 🟡 Préstamos y Anticipos (siempre aplican) -->
                   <div class="mb-3">
                     <label>Préstamos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.prestamos"
-                        name="prestamos" 
-                        (input)="calcularTotalesUnificado()" 
-                        (change)="calcularTotalesUnificado()" 
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                        name="prestamos"
+                        (input)="recalcularSueldoNeto()"
+                        (change)="recalcularSueldoNeto()"
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
+                    <small class="text-muted">
+                      No afecta el cálculo de ISSS, AFP o Renta
+                    </small>
                   </div>
-            
+
                   <div class="mb-3">
                     <label>Anticipos:</label>
                     <div class="input-group">
                       <span class="input-group-text">$</span>
-                      <input type="number" class="form-control" 
+                      <input type="number" class="form-control"
                         [(ngModel)]="detalleSeleccionado.anticipos"
-                        name="anticipos" 
-                        (change)="calcularTotalesUnificado()" 
-                        (input)="calcularTotalesUnificado()" 
-                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3" 
+                        name="anticipos"
+                        (input)="recalcularSueldoNeto()"
+                        (change)="recalcularSueldoNeto()"
+                        [disabled]="planilla.estado !== 2 && planilla.estado !== 3"
                       />
                     </div>
+                    <small class="text-muted">
+                      No afecta el cálculo de ISSS, AFP o Renta
+                    </small>
                   </div>
-            
+
                   <!-- Total descuentos -->
                   <div class="alert alert-warning">
                     <strong>Total Descuentos:</strong> ${{
@@ -765,7 +861,7 @@
                 </div>
               </div>
             </div>
-            
+
 
             <!-- Sueldo Neto -->
             <div class="col-12">

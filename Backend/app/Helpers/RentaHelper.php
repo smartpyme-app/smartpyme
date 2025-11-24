@@ -23,10 +23,10 @@ class RentaHelper
         //     'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
         // ]);
 
-        // ✅ SI ES SERVICIOS PROFESIONALES, aplicar 10% fijo
-        if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
+        // ✅ SI ES CONTRATO SIN PRESTACIONES (Por obra o Servicios Profesionales), aplicar 10% fijo
+        if (PlanillaConstants::esContratoSinPrestaciones($tipoContrato)) {
             $retencion = round($salarioGravado * 0.10, 2);
-            // Log::info('=== SERVICIOS PROFESIONALES - 10% FIJO ===', [
+            // Log::info('=== CONTRATO SIN PRESTACIONES - 10% FIJO ===', [
             //     'calculo' => "{$salarioGravado} * 0.10 = {$retencion}"
             // ]);
             return round($salarioGravado * 0.10, 2); // 10% fijo sobre salario total
@@ -129,9 +129,9 @@ class RentaHelper
         //     'es_servicios_profesionales' => PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)
         // ]);
 
-        // ✅ SI ES SERVICIOS PROFESIONALES, el salario gravado es el total
-        if (PlanillaConstants::esContratoServiciosProfesionales($tipoContrato)) {
-            // Log::info('=== SERVICIOS PROFESIONALES DETECTADO ===', [
+        // ✅ SI ES CONTRATO SIN PRESTACIONES (Por obra o Servicios Profesionales), el salario gravado es el total
+        if (PlanillaConstants::esContratoSinPrestaciones($tipoContrato)) {
+            // Log::info('=== CONTRATO SIN PRESTACIONES DETECTADO ===', [
             //     'salario_gravado_final' => round($salarioDevengado, 2)
             // ]);
             return round($salarioDevengado, 2); // Sin descuentos de seguridad social

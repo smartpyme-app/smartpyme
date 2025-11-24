@@ -378,4 +378,18 @@ class PlanillaConstants
     {
         return $tipoContrato == self::TIPO_CONTRATO_SERVICIOS_PROFESIONALES;
     }
+
+    /**
+     * Verifica si el tipo de contrato NO tiene prestaciones laborales (ISSS, AFP)
+     * Aplica para: Por obra y Servicios Profesionales
+     * Estos contratos solo tienen retención de renta del 10% fijo
+     *
+     * @param int $tipoContrato
+     * @return bool
+     */
+    public static function esContratoSinPrestaciones($tipoContrato)
+    {
+        return $tipoContrato == self::TIPO_CONTRATO_POR_OBRA ||
+               $tipoContrato == self::TIPO_CONTRATO_SERVICIOS_PROFESIONALES;
+    }
 }

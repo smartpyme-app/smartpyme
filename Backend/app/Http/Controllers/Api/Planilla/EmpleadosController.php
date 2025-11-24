@@ -189,7 +189,7 @@ class EmpleadosController extends Controller
 
             if ($salarioCambiado) {
                 $this->actualizarPlanillasConNuevoSalario($empleado->id, $request->salario_base);
-            }    
+            }
 
             DB::commit();
             return $empleado;
@@ -203,10 +203,12 @@ class EmpleadosController extends Controller
     {
         // Obtener empleado existente
         $empleado = Empleado::findOrFail($id);
-        
+
         // Validar que el empleado pertenezca a la empresa y sucursal del usuario
-        if ($empleado->id_empresa != auth()->user()->id_empresa || 
-            $empleado->id_sucursal != auth()->user()->id_sucursal) {
+        if (
+            $empleado->id_empresa != auth()->user()->id_empresa ||
+            $empleado->id_sucursal != auth()->user()->id_sucursal
+        ) {
             return response()->json(['error' => 'No tienes permiso para actualizar este empleado'], 403);
         }
 
@@ -216,7 +218,7 @@ class EmpleadosController extends Controller
         if ($request->has('dui') && $request->dui !== null && trim($request->dui) !== '') {
             $duiActual = trim($empleado->dui ?? '');
             $duiNuevo = trim($request->dui);
-            
+
             if ($duiNuevo !== $duiActual) {
                 // Si el DUI cambió, validar unicidad
                 $reglasDui = [
@@ -273,17 +275,33 @@ class EmpleadosController extends Controller
 
             // Guardar salario anterior para comparar cambios
             $salarioAnterior = $empleado->salario_base;
-            
+
             // Preparar datos para actualizar (solo campos que vienen en el request)
             $datosActualizar = [];
-            
+
             $camposPermitidos = [
-                'nombres', 'apellidos', 'dui', 'nit', 'isss', 'afp',
-                'fecha_nacimiento', 'direccion', 'telefono', 'email',
-                'salario_base', 'tipo_contrato', 'tipo_jornada',
-                'fecha_ingreso', 'id_departamento', 'id_cargo',
-                'forma_pago', 'banco', 'tipo_cuenta', 'numero_cuenta',
-                'titular_cuenta', 'estado'
+                'nombres',
+                'apellidos',
+                'dui',
+                'nit',
+                'isss',
+                'afp',
+                'fecha_nacimiento',
+                'direccion',
+                'telefono',
+                'email',
+                'salario_base',
+                'tipo_contrato',
+                'tipo_jornada',
+                'fecha_ingreso',
+                'id_departamento',
+                'id_cargo',
+                'forma_pago',
+                'banco',
+                'tipo_cuenta',
+                'numero_cuenta',
+                'titular_cuenta',
+                'estado'
             ];
 
             foreach ($camposPermitidos as $campo) {
@@ -302,10 +320,10 @@ class EmpleadosController extends Controller
 
             // Verificar cambios antes de refrescar
             $huboCambiosContrato = $empleado->wasChanged(['salario_base', 'tipo_contrato', 'id_cargo']);
-            
+
             // Refrescar para obtener valores actualizados
             $empleado->refresh();
-            
+
             // Verificar si hubo cambio en el salario
             $salarioNuevo = $empleado->salario_base;
             $salarioCambiado = $salarioAnterior != $salarioNuevo;
@@ -357,10 +375,10 @@ class EmpleadosController extends Controller
             }
 
             DB::commit();
-            
+
             // Cargar relaciones para la respuesta
             $empleado->load(['departamento', 'cargo', 'contacto_emergencia']);
-            
+
             return response()->json([
                 'message' => 'Empleado actualizado exitosamente',
                 'empleado' => $empleado
@@ -386,35 +404,33 @@ class EmpleadosController extends Controller
     {
         // Obtener todas las planillas en estado borrador que contengan al empleado
         $planillasActivas = Planilla::where('estado', PlanillaConstants::PLANILLA_BORRADOR)
-            ->whereHas('detalles', function($query) use ($idEmpleado) {
+            ->whereHas('detalles', function ($query) use ($idEmpleado) {
                 $query->where('id_empleado', $idEmpleado);
             })
             ->get();
-        
+
         // Si no hay planillas activas, no hay nada que actualizar
         if ($planillasActivas->isEmpty()) {
             return;
         }
-        
-        Log::info("Actualizando salario en planillas para empleado ID: {$idEmpleado}. Nuevo salario: {$nuevoSalario}");
-        
+
         foreach ($planillasActivas as $planilla) {
             // Obtener el detalle del empleado en esta planilla
             $detalle = PlanillaDetalle::where('id_planilla', $planilla->id)
                 ->where('id_empleado', $idEmpleado)
                 ->first();
-            
+
             if (!$detalle) {
                 continue;
             }
-            
+
             // Guardar salario base anterior para calcular proporción
             $salarioBaseAnterior = $detalle->salario_base;
-            
+
             // Determinar días de referencia y factor de ajuste según tipo de planilla
             $diasReferencia = 30;
             $factorAjuste = 1;
-            
+
             if ($planilla->tipo_planilla === 'quincenal') {
                 $diasReferencia = 15;
                 $factorAjuste = 2;
@@ -422,30 +438,51 @@ class EmpleadosController extends Controller
                 $diasReferencia = 7;
                 $factorAjuste = 4.33;
             }
-            
+
             // Actualizar salario base en detalle
             $detalle->salario_base = $nuevoSalario;
-            
-            // Recalcular salario devengado según días laborados
-            $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
-                $nuevoSalario / $factorAjuste : $nuevoSalario;
-            $detalle->salario_devengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
-            
+
+            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO (mover arriba para usarlo en cálculos)
+            $empleado = $detalle->empleado;
+            $tipoContrato = $empleado ? $empleado->tipo_contrato : null;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
+            // Recalcular salario devengado según tipo de contrato
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioBaseAjustado = $nuevoSalario;
+                $detalle->salario_devengado = $nuevoSalario;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                if ($planilla->tipo_planilla === 'quincenal') {
+                    $detalle->salario_devengado = $nuevoSalario / 2;
+                    $salarioBaseAjustado = $nuevoSalario / 2;
+                } elseif ($planilla->tipo_planilla === 'semanal') {
+                    $detalle->salario_devengado = $nuevoSalario / 4.33;
+                    $salarioBaseAjustado = $nuevoSalario / 4.33;
+                } else {
+                    $detalle->salario_devengado = $nuevoSalario; // mensual
+                    $salarioBaseAjustado = $nuevoSalario;
+                }
+            } else {
+                // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+                $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                    $nuevoSalario / $factorAjuste : $nuevoSalario;
+                $detalle->salario_devengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            }
+
             // ✅ CALCULAR TOTAL DE INGRESOS PRIMERO (antes de calcular deducciones)
             $detalle->total_ingresos = round($detalle->salario_devengado +
                 $detalle->monto_horas_extra +
                 $detalle->comisiones +
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos, 2);
-            
-            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
-            $empleado = $detalle->empleado;
-            $tipoContrato = $empleado ? $empleado->tipo_contrato : null;
-            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
-            
+
             // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-            if ($esServiciosProfesionales) {
-                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $detalle->isss_empleado = 0;
                 $detalle->isss_patronal = 0;
                 $detalle->afp_empleado = 0;
@@ -458,7 +495,7 @@ class EmpleadosController extends Controller
                 $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
                 $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
             }
-            
+
             // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (usar total_ingresos)
             $salarioGravado = RentaHelper::calcularSalarioGravado(
                 $detalle->total_ingresos,
@@ -467,13 +504,13 @@ class EmpleadosController extends Controller
                 $planilla->tipo_planilla,
                 $tipoContrato
             );
-            
+
             $detalle->renta = round(RentaHelper::calcularRetencionRenta(
                 $salarioGravado,
                 $planilla->tipo_planilla,
                 $tipoContrato
             ), 2);
-                
+
             $detalle->total_descuentos = $detalle->isss_empleado +
                 $detalle->afp_empleado +
                 $detalle->renta +
@@ -481,18 +518,18 @@ class EmpleadosController extends Controller
                 $detalle->anticipos +
                 $detalle->otros_descuentos +
                 $detalle->descuentos_judiciales;
-                
+
             $detalle->sueldo_neto = $detalle->total_ingresos - $detalle->total_descuentos;
-            
+
             $detalle->save();
-            
+
             // Log::info("Actualizado detalle de planilla ID: {$detalle->id}, de salario {$salarioBaseAnterior} a {$nuevoSalario}");
-            
+
             // Actualizar totales de la planilla
             $planilla->actualizarTotales();
         }
-        
-        Log::info("Finalizada actualización de salario en planillas para empleado ID: {$idEmpleado}");
+
+        // Log::info("Finalizada actualización de salario en planillas para empleado ID: {$idEmpleado}");
     }
 
     public function getDocumentos($id)
@@ -759,15 +796,11 @@ class EmpleadosController extends Controller
     public function descargarDocumento($id)
     {
         try {
-            Log::info('Intentando descargar documento: ' . $id);
 
             $documento = DocumentoEmpleado::findOrFail($id);
 
             // Cambiamos la ruta para que apunte a public
             $rutaCompleta = storage_path('app/documents/' . $documento->ruta_archivo);
-
-            Log::info('Ruta del documento: ' . $rutaCompleta);
-
             if (!file_exists($rutaCompleta)) {
                 Log::error('Archivo no encontrado: ' . $rutaCompleta);
                 return response()->json([
@@ -787,14 +820,10 @@ class EmpleadosController extends Controller
     public function descargarContrato($id)
     {
         try {
-            Log::info('Intentando descargar contrato: ' . $id);
 
             $documento = DocumentoEmpleado::findOrFail($id);
-
-            // Cambiamos la ruta para que apunte a public
             $rutaCompleta = public_path('documents/' . $documento->ruta_archivo);
 
-            Log::info('Ruta del documento: ' . $rutaCompleta);
 
             if (!file_exists($rutaCompleta)) {
                 Log::error('Archivo no encontrado: ' . $rutaCompleta);
