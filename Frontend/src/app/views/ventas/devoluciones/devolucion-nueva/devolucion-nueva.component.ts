@@ -17,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe],
     providers: [SumPipe],
-    
+
 })
 
 export class DevolucionVentaNuevaComponent extends BaseModalComponent implements OnInit {
@@ -33,7 +33,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
-    
+
 	constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -67,9 +67,10 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 this.devolucion.tipo = 'devolucion';
                 this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
 
-                this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false; 
+                this.devolucion.percepcion = parseFloat(this.venta.iva_percibido) > 0 ? true : false;
                 this.devolucion.retencion = parseFloat(this.venta.iva_retenido) > 0 ? true : false;
                 this.devolucion.cobrar_impuestos = parseFloat(this.venta.iva) > 0 ? true : false;
+                this.devolucion.renta = parseFloat(this.venta.renta_retenida || 0) > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
@@ -85,6 +86,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 this.devolucion.iva = this.venta.iva;
                 this.devolucion.iva_retenido = this.venta.iva_retenido;
                 this.devolucion.iva_percibido = this.venta.iva_percibido;
+                this.devolucion.renta_retenida = this.venta.renta_retenida || 0;
                 this.devolucion.cuenta_a_terceros = this.venta.cuenta_a_terceros;
                 this.devolucion.exenta = this.venta.exenta;
                 this.devolucion.no_sujeta = this.venta.no_sujeta;
@@ -162,12 +164,13 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
 
     public sumTotal() {
         this.devolucion.sub_total = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total'))).toFixed(2);
-        
+
         this.devolucion.exenta = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'exenta'))).toFixed(4);
         this.devolucion.no_sujeta = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'no_sujeta'))).toFixed(4);
-        
-        this.devolucion.iva_percibido = this.devolucion.percepcion ? this.devolucion.sub_total * 0.01 : 0; 
-        this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0; 
+
+        this.devolucion.iva_percibido = this.devolucion.percepcion ? this.devolucion.sub_total * 0.01 : 0;
+        this.devolucion.iva_retenido = this.devolucion.retencion ? this.devolucion.sub_total * 0.01 : 0;
+        this.devolucion.renta_retenida = this.devolucion.renta ? this.devolucion.sub_total * 0.10 : 0;
 
         this.devolucion.impuestos.forEach((impuesto:any) => {
             if(this.devolucion.cobrar_impuestos){
@@ -180,8 +183,8 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
         this.devolucion.iva = (parseFloat(this.sumPipe.transform(this.devolucion.impuestos, 'monto'))).toFixed(2);
         this.devolucion.descuento = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'descuento'))).toFixed(2);
         this.devolucion.total_costo = (parseFloat(this.sumPipe.transform(this.devolucion.detalles, 'total_costo'))).toFixed(2);
-        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.cuenta_a_terceros) + parseFloat(this.devolucion.exenta) + parseFloat(this.devolucion.no_sujeta) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido)).toFixed(2);
-        // console.log(this.devolucion);
+        this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.cuenta_a_terceros) + parseFloat(this.devolucion.exenta) + parseFloat(this.devolucion.no_sujeta) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido) - parseFloat(this.devolucion.renta_retenida)).toFixed(2);
+        //console.log(this.devolucion);
     }
 
 

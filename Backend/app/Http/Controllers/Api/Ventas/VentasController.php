@@ -39,6 +39,7 @@ use App\Models\Inventario\CustomFields\ProductCustomField;
 use App\Models\Ventas\Orden_Produccion\OrdenProduccion;
 use App\Exports\ReportesAutomaticos\VentasPorCategoriaPorVendedor\VentasPorCategoriaVendedorExport;
 use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
+use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
 use App\Mail\ReporteVentasPorVendedor;
 use Maatwebsite\Excel\Facades\Excel;
@@ -168,6 +169,9 @@ class VentasController extends Controller
             })
             ->withSum(['abonos' => function ($query) {
                 $query->where('estado', 'Confirmado');
+            }], 'total')
+            ->withSum(['devoluciones' => function ($query) {
+                $query->where('enable', 1);
             }], 'total')
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
@@ -1230,6 +1234,13 @@ class VentasController extends Controller
         $ventas = new VentasPorMarcasExport();
         $ventas->filter($request);
         return Excel::download($ventas, 'ventas-por-marcas.xlsx');
+    }
+
+    public function porUtilidadesExport(Request $request)
+    {
+        $ventas = new VentasPorUtilidadesExport();
+        $ventas->filter($request);
+        return Excel::download($ventas, 'ventas-por-utilidades.xlsx');
     }
 
     public function enviarReporteDiario()
