@@ -1,15 +1,13 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-licencia-empresas',
@@ -18,81 +16,97 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class LicenciaEmpresasComponent extends BaseModalComponent implements OnInit {
+export class LicenciaEmpresasComponent extends BaseCrudComponent<any> implements OnInit {
 
     @Input() licencia: any = {};
     public empresas: any = [];
     public empresa: any = {};
-    public buscador:string = '';
-    public override loading:boolean = false;
-    public override saving:boolean = false;
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
+    public buscador: string = '';
 
     constructor(
-        private apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService,
-        private route: ActivatedRoute, private router: Router
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'licencia/empresa',
+            itemsProperty: 'empresas',
+            itemProperty: 'empresa',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El empresa fue agregado exitosamente.',
+                updated: 'El empresa fue actualizado exitosamente.',
+                deleted: 'El empresa fue eliminado exitosamente.',
+                createTitle: 'Empresa agregado',
+                updateTitle: 'Empresa actualizado',
+                deleteTitle: 'Empresa eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            beforeSave: (item) => {
+                item.id_licencia = this.licencia.id;
+                return item;
+            },
+            afterSave: (item, isNew) => {
+                if (isNew && this.licencia.empresas) {
+                    this.licencia.empresas.push(item);
+                }
+                this.empresa = {};
+            },
+            afterDelete: (item) => {
+                if (this.licencia.empresas) {
+                    const index = this.licencia.empresas.findIndex((e: any) => e.id === item.id);
+                    if (index !== -1) {
+                        this.licencia.empresas.splice(index, 1);
+                    }
+                }
+            }
+        });
+    }
+
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll(){
+    public override loadAll(){
         this.loading = true;
-        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe(empresas => {
+        this.apiService.getAll('empresas/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (empresas) => {
             this.empresas = empresas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
-
-    public override openModal(template: TemplateRef<any>, empresa:any) {
-        this.empresa = empresa;
+    public override openModal(template: TemplateRef<any>, empresa?: any) {
+        if (empresa) {
+            this.empresa = { ...empresa };
+        } else {
+            this.empresa = {};
+        }
         this.empresa.id_empresa = '';
-        super.openModal(template, {class: 'modal-md'});
+        super.openModal(template, undefined, { class: 'modal-md' });
     }
 
     // empresa
-    public setEmpresa(empresa:any){
+    public setEmpresa(empresa: any){
         if(!this.empresa.id_empresa){
             this.empresas.push(empresa);
         }
         this.empresa.id_empresa = empresa.id;
     }
 
-
-    public onSubmit() {
-        this.saving = true;
-        this.empresa.id_licencia = this.licencia.id;
-        this.apiService.store('licencia/empresa', this.empresa).pipe(this.untilDestroyed()).subscribe(empresa => {
-            if(!this.empresa.id)
-                this.licencia.empresas.push(empresa);
-            this.empresa = {};
-            this.saving = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-            this.alertService.success('Empresa agregado', 'El empresa fue agregado exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-    }
-
-    public delete(empresa:any) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('licencia/empresa/', empresa.id).pipe(this.untilDestroyed()).subscribe(data => {
-                for (let i = 0; i < this.licencia.empresas.length; i++) { 
-                    if (this.licencia.empresas[i].id == data.id )
-                        this.licencia.empresas.splice(i, 1);
+    public override delete(empresa: any) {
+        super.delete(empresa.id || empresa);
                 }
-                this.alertService.success('Empresa eliminado', 'El empresa fue eliminado exitosamente.');
-            }, error => {this.alertService.error(error); });
-                   
-        }
-
-    }
-
 }

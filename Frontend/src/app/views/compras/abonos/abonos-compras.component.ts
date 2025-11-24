@@ -8,8 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-abonos-compras',
@@ -19,9 +18,9 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
 
 })
 
-export class AbonosComprasComponent extends BasePaginatedModalComponent implements OnInit {
+export class AbonosComprasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public abonos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public abonos:any = {};
     public abono:any = {};
     public downloading:boolean = false;
     public formaPagos:any = [];
@@ -29,7 +28,6 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
     public usuarios:any = [];
     public sucursales:any = [];
     public documentos:any = [];
-    public override filtros:any = {};
     public filtrado:boolean = false;
 
     constructor(
@@ -37,19 +35,29 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'compra/abono',
+            itemsProperty: 'abonos',
+            itemProperty: 'abono',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El abono fue guardada exitosamente.',
+                updated: 'El abono fue guardada exitosamente.',
+                createTitle: 'Abono guardado',
+                updateTitle: 'Abono guardado'
+            },
+            afterSave: () => {
+                this.abono = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.abonos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.abonos = data;
+    protected aplicarFiltros(): void {
+        this.filtrarAbonos();
     }
 
     ngOnInit() {
-
         this.loadAll();
 
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
@@ -68,7 +76,7 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
         this.filtrarAbonos();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
         this.filtros.estado = '';
@@ -77,7 +85,6 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-        
         this.filtrarAbonos();
     }
 
@@ -89,40 +96,50 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
                 this.abonos = abonos;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public setEstado(cotizacion:any){
-        this.apiService.store('compras/abonos/change-estado', cotizacion)
-            .pipe(this.untilDestroyed())
-            .subscribe(cotizacion => { 
-                this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
-            }, error => {this.alertService.error(error); });
-    }
-
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('orden-de-compra/', id)
+    public async setEstado(cotizacion:any){
+        try {
+            await this.apiService.store('compras/abonos/change-estado', cotizacion)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.abonos['data'].length; i++) { 
-                        if (this.abonos['data'][i].id == data.id )
-                            this.abonos['data'].splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
+                .toPromise();
+            
+            this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        }
+    }
+
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            // Nota: El endpoint original usa 'orden-de-compra/' pero debería ser 'compra/abono/'
+            const deletedItem = await this.apiService.delete('compra/abono/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.abonos.data?.findIndex((a: any) => a.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.abonos.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public reemprimir(abono:any){
         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + abono.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
-
-    // Editar
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
@@ -133,20 +150,7 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
                 this.documentos = documentos;
             }, error => {this.alertService.error(error);});
 
-        this.openModal(template);
-    }
-
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('compra/abono', this.abono)
-            .pipe(this.untilDestroyed())
-            .subscribe(abono => {
-            this.abono = {};
-            this.closeModal();
-            this.loading = false;
-            this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.loading = false; });
-
+        this.openModal(template, abono);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -184,6 +188,5 @@ export class AbonosComprasComponent extends BasePaginatedModalComponent implemen
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
         },error => {this.alertService.error(error);});
     }
-
 
 }

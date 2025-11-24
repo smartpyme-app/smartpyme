@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -35,9 +35,6 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
   public filtros: any = {};
   public buscador: any = '';
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
     private apiService: ApiService, 
     protected override alertService: AlertService,
@@ -71,7 +68,6 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
     // const subscribe = debouncedInput.subscribe(val => { this.searchProducto(); });
   }
 
-
   public override openModal(template: TemplateRef<any>) {
     // this.filtros.id_sucursal = this.compra.id_sucursal;
     this.filtros.id_categoria = '';
@@ -103,7 +99,6 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
 
     super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
   }
-
 
   selectProducto(producto: any) {
     this.detalle = Object.assign({}, producto);

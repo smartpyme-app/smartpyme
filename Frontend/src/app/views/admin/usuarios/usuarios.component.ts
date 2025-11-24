@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,10 +6,9 @@ import { RouterModule } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CountryISO, PhoneNumberFormat, SearchCountryField } from 'ngx-intl-tel-input';
 import { EncryptService } from '@services/encryption/encrypt.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 
 @Component({
@@ -19,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule],
     
 })
-export class UsuariosComponent extends BaseModalComponent implements OnInit {
+export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit {
 
   @ViewChild('mrol', { static: false }) roleModalTemplate!: TemplateRef<any>;
 
@@ -29,11 +28,9 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
   public roles:any = [];
   public usuario: any = {};
   public paginacion = [];
-  public override loading: boolean = false;
-  public override saving: boolean = false;
   public filtrado: boolean = false;
   public usuarios_activos: any = 0;
-  public filtros: any = {};
+  public override filtros: any = {};
   public showpassword: boolean = false;
   public showpassword2: boolean = false;
   public authUser: any = {};
@@ -58,16 +55,47 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
     is_global: false
   };
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService:ApiService,
+        protected override apiService:ApiService,
         protected override alertService:AlertService,
         protected override modalManager: ModalManagerService,
         public encryptService: EncryptService
     ) {
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'usuario',
+            itemsProperty: 'usuarios',
+            itemProperty: 'usuario',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El usuario fue añadido exitosamente.',
+                updated: 'El usuario fue guardado exitosamente.',
+                deleted: 'Usuario eliminado exitosamente.',
+                createTitle: 'Usuario guardado',
+                updateTitle: 'Usuario guardado',
+                deleteTitle: 'Usuario eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            beforeSave: (item) => {
+                // Transformar teléfono antes de guardar
+                if (item.telefono?.e164Number) {
+                    item.telefono = item.telefono.e164Number;
+                }
+                return item;
+            },
+            afterSave: () => {
+                this.loadAll();
+            },
+            afterDelete: () => {
+                this.contarActivos();
+            },
+            initNewItem: (item) => {
+                item.rol_id = 2;
+                item.id_sucursal = this.apiService.auth_user().id_sucursal;
+                item.id_empresa = this.apiService.auth_user().id_empresa;
+                return item;
+            }
+        });
     }
 
   ngOnInit() {
@@ -121,7 +149,7 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
     );
   }
 
-  public loadAll(){
+  protected aplicarFiltros(): void {
     this.loading = true;
     if(!this.filtros.id_sucursal){
       this.filtros.id_sucursal = '';
@@ -164,14 +192,8 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
 
 
 
-    override openModal(template: TemplateRef<any>, usuario:any) {
-        this.usuario = usuario;
-        if (!this.usuario.id) {
-            this.usuario.rol_id = 2;
-            this.usuario.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.usuario.id_empresa = this.apiService.auth_user().id_empresa;
-        }
-        super.openModal(template, { class: 'modal-lg', backdrop: 'static' });
+    override openModal(template: TemplateRef<any>, usuario?: any, modalConfig?: any) {
+        super.openModal(template, usuario, { class: 'modal-lg', backdrop: 'static', ...modalConfig });
     }
 
     openRoleModal() {
@@ -195,71 +217,30 @@ export class UsuariosComponent extends BaseModalComponent implements OnInit {
         this.showpassword2 = !this.showpassword2;
     }
 
-  public onSubmit() {
-    this.saving = true;
-    this.usuario.telefono = this.usuario.telefono?.e164Number || '';
-    this.apiService.store('usuario', this.usuario)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (usuario) => {
-        this.loadAll();
-        this.saving = false;
-        this.alertService.success(
-          'Usuario guardado',
-          'El usuario fue guardado exitosamente.'
-        );
-        this.closeModal();
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
-      }
-    );
-  }
 
-  public setEstado(usuario: any) {
-    this.apiService.store('usuario', usuario)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (usuario) => {
-        if (usuario.enable == '1') {
-          this.alertService.success(
-            'Usuario activado',
-            'El usuario fue activado exitosamente.'
-          );
-        } else {
-          this.alertService.success(
-            'Usuario desactivado',
-            'El usuario fue desactivado exitosamente.'
-          );
-        }
-        this.contarActivos();
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
-  }
-
-  public delete(id: number) {
-    if (confirm('¿Desea eliminar el Registro?')) {
-      this.apiService.delete('usuario/', id)
+  public async setEstado(usuario: any) {
+    try {
+      const usuarioActualizado = await this.apiService.store('usuario', usuario)
         .pipe(this.untilDestroyed())
-        .subscribe(
-        (data) => {
-          for (let i = 0; i < this.usuarios.data.length; i++) {
-            if (this.usuarios.data[i].id == data.id)
-              this.usuarios.data.splice(i, 1);
-          }
-        },
-        (error) => {
-          this.alertService.error(error);
-          this.loading = false;
-        }
-      );
+        .toPromise();
+      
+      if (usuarioActualizado.enable == '1') {
+        this.alertService.success(
+          'Usuario activado',
+          'El usuario fue activado exitosamente.'
+        );
+      } else {
+        this.alertService.success(
+          'Usuario desactivado',
+          'El usuario fue desactivado exitosamente.'
+        );
+      }
+      this.contarActivos();
+    } catch (error: any) {
+      this.alertService.error(error);
     }
   }
+
 
   selectSucursal() {
     this.usuario.id_bodega = this.usuario.id_sucursal;

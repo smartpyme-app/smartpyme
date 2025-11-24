@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 	public productos: any = [];
     public bodegas: any = [];
 	public producto: any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
 	    public apiService: ApiService, 
@@ -76,7 +73,6 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
         }
 	}
 
-
 	override openModal(template: TemplateRef<any>) {
         super.openModal(template);
     }
@@ -100,16 +96,20 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
         detalle.total = detalle.cantidad * detalle.costo;
     }
 	
-	public onSubmit() {
+	public async onSubmit() {
         this.saving = true;
-        this.apiService.store('entrada', this.entrada)
-          .pipe(this.untilDestroyed())
-          .subscribe(entrada => {
+        try {
+            await this.apiService.store('entrada', this.entrada)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.router.navigateByUrl('/entradas');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
+        }
     }
-
 
 	public eliminarDetalle(detalle:any){
 		if (confirm('¿Desea eliminar el Registro?')) {
@@ -134,6 +134,5 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 			}
 		}
 	}
-
 
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,9 +23,6 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
 	public composicion: any = {};
     public productos:any = [];
     public buscador:string = '';
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, 
@@ -61,7 +58,6 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
         document.getElementById('cantidad')!.focus();
     }
 
-
     onSubmit(){
        
         this.loading = true;
@@ -88,6 +84,5 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             },error => {this.alertService.error(error); this.loading = false;});
         }
     }
-
 
 }

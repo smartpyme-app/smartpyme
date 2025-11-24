@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -28,9 +28,6 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
     public usuario:any = {};
     public override loading:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -38,7 +35,6 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
     ) {
         super(modalManager, alertService);
     }
-
 
     ngOnInit() {
 
@@ -58,7 +54,6 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
-
 
     }
 
@@ -86,6 +81,5 @@ export class AdminDashComponent extends BaseModalComponent implements OnInit {
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
-
 
 }

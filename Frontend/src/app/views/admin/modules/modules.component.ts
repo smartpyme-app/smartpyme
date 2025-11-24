@@ -1,5 +1,5 @@
 // modules.component.ts
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -37,8 +37,6 @@ export class ModulesComponent extends BaseModalComponent implements OnInit {
     custom_permissions: []
 };
 @ViewChild('moduleModal') moduleModal!: TemplateRef<any>;
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -167,7 +165,6 @@ removeSubmodule(index: number) {
     this.module.submodules.splice(index, 1);
 }
 
-
 getDefaultModulePermissions(): string[] {
     if (!this.module.name) return [];
     return [
@@ -220,8 +217,6 @@ getGeneratedPermissions(): string[] {
 
   return permissions;
 }
-
-
 
 addCustomPermission() {
   if (!this.isValidNewPermission()) return;
@@ -293,6 +288,5 @@ isValidNewPermission(): boolean {
       (p: any) => p.action.toLowerCase() === this.newPermissionAction.toLowerCase()
   );
 }
-
 
 }

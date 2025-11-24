@@ -1,11 +1,11 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AlertService } from '../../services/alert.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-multimedia',
@@ -13,16 +13,15 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     standalone: true,
     imports: [CommonModule, FormsModule, RouterModule, LazyImageDirective]
 })
-export class MultimediaComponent implements OnInit {
+export class MultimediaComponent extends BaseComponent implements OnInit {
 
     public multimedia:any = [];
     public file:any;
     public loading:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
-    constructor( public apiService:ApiService, private alertService:AlertService ){}
+    constructor( public apiService:ApiService, private alertService:AlertService ){
+        super();
+    }
 
     ngOnInit() {
         // this.loadAll();

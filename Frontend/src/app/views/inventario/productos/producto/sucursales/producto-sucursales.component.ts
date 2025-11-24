@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -25,9 +25,6 @@ export class ProductoSucursalesComponent extends BaseModalComponent implements O
     public sucursalSelected: any = {};
     public ajuste:any = {};
     public buscador:string = '';
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         private apiService: ApiService, 
@@ -79,6 +76,5 @@ export class ProductoSucursalesComponent extends BaseModalComponent implements O
             this.alertService.success('Sucursal guardada', 'El inventario fue guardada exitosamente.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
-
 
 }

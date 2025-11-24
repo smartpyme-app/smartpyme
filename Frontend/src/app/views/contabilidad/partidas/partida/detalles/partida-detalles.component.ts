@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,9 +30,6 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
 
     public buscador:string = '';
     public override loading:boolean = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         public apiService: ApiService,
@@ -76,7 +73,6 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
         console.log(this.detalle);
         super.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
-
 
     public onsubmit(){
         this.partida.detalles.push(this.detalle);
@@ -131,6 +127,5 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
     public sumTotalEmit(){
         this.sumTotal.emit();
     }
-
 
 }

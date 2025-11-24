@@ -1,14 +1,13 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
@@ -18,15 +17,12 @@ import { ModalManagerService } from '@services/modal-manager.service';
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
     
 })
-export class ClienteVentasComponent extends BasePaginatedModalComponent implements OnInit {
+export class ClienteVentasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public id:any;
-	public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public id: any;
+	public ventas: any = {};
 
-    public filtro:any = {};
-
-    protected override destroyRef = inject(DestroyRef);
-    protected override untilDestroyed = subscriptionHelper(this.destroyRef);
+    public filtro: any = {};
 
     constructor(
         apiService: ApiService, 
@@ -35,15 +31,26 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
         private router: Router,
     	modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'venta',
+            itemsProperty: 'ventas',
+            itemProperty: 'venta',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La venta fue actualizada exitosamente.',
+                updated: 'La venta fue actualizada exitosamente.',
+                deleted: 'Venta eliminada exitosamente.',
+                createTitle: 'Venta actualizada',
+                updateTitle: 'Venta actualizada',
+                deleteTitle: 'Venta eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.ventas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.ventas = data;
+    protected aplicarFiltros(): void {
+        this.onFiltrar();
     }
 
 	ngOnInit() {
@@ -60,48 +67,56 @@ export class ClienteVentasComponent extends BasePaginatedModalComponent implemen
 
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.id = +this.route.snapshot.paramMap.get('id')!;
-
                 	        
         if(isNaN(this.id)){
-            this.ventas = {} as PaginatedResponse;
+            this.ventas = {};
         }
         else{
             this.loading = true;
-            this.apiService.read('cliente/ventas/', this.id).pipe(this.untilDestroyed()).subscribe(ventas => {
-                this.ventas = ventas;
-            	this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+            this.apiService.read('cliente/ventas/', this.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (ventas) => {
+                        this.ventas = ventas;
+                        this.loading = false;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                });
         }
-
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     onFiltrar(){
         this.filtro.id = this.id;
         this.loading = true;
-        this.apiService.store('cliente/ventas/filtrar', this.filtro).pipe(this.untilDestroyed()).subscribe(ventas => { 
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+        this.apiService.store('cliente/ventas/filtrar', this.filtro)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (ventas) => {
+                    this.ventas = ventas;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
-    public delete(id:number) {
-        for (let i = 0; i < this.ventas['data'].length; i++) { 
-            if (this.ventas['data'][i].id == id )
-                this.ventas['data'].splice(i, 1);
+    public override delete(id: number) {
+        const index = this.ventas.data?.findIndex((v: any) => v.id === id);
+        if (index !== -1 && index >= 0) {
+            this.ventas.data.splice(index, 1);
         }
     }
 
-    public setEstado(venta:any, estado:string){
+    public setEstado(venta: any, estado: string){
         venta.estado = estado;
-        this.apiService.store('venta', venta).pipe(this.untilDestroyed()).subscribe(venta => {
-            this.loadAll();
-            this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-        }, error => {this.alertService.error(error); });
+        this.onSubmit(venta, true);
     }
 
     override openModal(template: TemplateRef<any>) {

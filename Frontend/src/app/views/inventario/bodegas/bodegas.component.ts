@@ -8,7 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-bodegas',
@@ -17,7 +17,7 @@ import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
 
 })
-export class BodegasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
 
     public bodegas:any = [];
     public sucursales:any = [];
@@ -30,11 +30,35 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
         private route: ActivatedRoute, 
         private router: Router
     ) {
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'bodega',
+            itemsProperty: 'bodegas',
+            itemProperty: 'bodega',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            initNewItem: (item) => {
+                item.id_sucursal = apiService.auth_user().id_sucursal;
+                item.id_empresa = apiService.auth_user().id_empresa;
+                item.activo = 1;
+                return item;
+            },
+            afterSave: (item, isNew) => {
+                if (isNew) {
+                    this.bodegas.data.push(item);
+                }
+                this.bodega = {};
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
-        this.loadAll();
+        this.loading = true;
+        this.apiService.getAll('bodegas', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe(bodegas => {
+                this.bodegas = bodegas;
+                this.loading = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     ngOnInit() {
@@ -45,50 +69,17 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
         this.filtros.paginate = 10;
         
         this.loadAll();
-
     }
 
-    public loadAll(){
-        this.loading = true;
-        this.apiService.getAll('bodegas', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe(bodegas => {
-                this.bodegas = bodegas;
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
-    }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
-
-    override openModal(template: TemplateRef<any>, bodega:any) {
-        this.bodega = bodega;
-        if(!this.bodega.id){
-            this.bodega.id_sucursal = this.apiService.auth_user().id_sucursal;
-            this.bodega.id_empresa = this.apiService.auth_user().id_empresa;
-            this.bodega.activo = 1;
-        }
-
+    override openModal(template: TemplateRef<any>, bodega?: any) {
+        // Cargar sucursales antes de abrir el modal
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); this.loading = false; });
 
-        super.openModal(template);
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('bodega/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.bodegas.data.length; i++) { 
-                    if (this.bodegas.data[i].id == data.id )
-                        this.bodegas.data.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-               
-        }
+        super.openModal(template, bodega);
     }
 
     public setEstado(bodega:any){
@@ -102,21 +93,5 @@ export class BodegasComponent extends BaseFilteredPaginatedModalComponent implem
             }
         }, error => {this.alertService.error(error); this.loading = false;});
     }
-
-    
-    public onSubmit() {
-          this.saving = true;
-          this.apiService.store('bodega', this.bodega)
-              .pipe(this.untilDestroyed())
-              .subscribe(bodega => {
-              if (!this.bodega.id) {
-                    this.bodegas.data.push(bodega);
-                    this.alertService.success('Bodega guardada', 'La bodega fue añadida exitosamente.');
-              }
-              this.bodega = {};
-              this.saving = false;
-              this.closeModal();
-          },error => {this.alertService.error(error); this.saving = false; });
-      }
 
 }

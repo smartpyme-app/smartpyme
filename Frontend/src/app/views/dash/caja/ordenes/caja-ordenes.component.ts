@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -25,9 +25,6 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
     public filterBy:any[] = ['nombre_usuario', 'nombre_cliente', 'id'];
     public ordenesResfresh:any;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
           private apiService: ApiService,
           protected override alertService: AlertService,
@@ -52,7 +49,6 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
         }, 25000);  
     }
 
-
     public loadAll() {
         // this.loading = true;
         this.apiService.read('dash/cajero/', this.apiService.auth_user().id)
@@ -67,7 +63,6 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
         this.orden = orden;
         super.openModal(template);
     }
-
 
     public setEstado(orden:any, estado:any){
         if (estado == 'Entregada') {
@@ -89,30 +84,39 @@ export class CajaOrdenesComponent extends BaseModalComponent implements OnInit {
         }
     }
 
-    public onSubmit() {
+    public async onSubmit() {
           this.loading = true;
-          // Guardamos la orden
-          this.apiService.store('orden', this.orden)
-            .pipe(this.untilDestroyed())
-            .subscribe(orden => {
-                if (orden.estado == 'Entregada') {
-                    this.orden = {};
-                }
-                // this.alertService.success("Datos guardados");
-                this.loading = false;
-          },error => {this.alertService.error(error); this.loading = false; });
+          try {
+              // Guardamos la orden
+              const ordenGuardada = await this.apiService.store('orden', this.orden)
+                  .pipe(this.untilDestroyed())
+                  .toPromise();
+              
+              if (ordenGuardada.estado == 'Entregada') {
+                  this.orden = {};
+              }
+              // this.alertService.success("Datos guardados");
+          } catch (error: any) {
+              this.alertService.error(error);
+          } finally {
+              this.loading = false;
+          }
     }
 
-    public setEstadoDetalle(detalle:any, estado:string) {
+    public async setEstadoDetalle(detalle:any, estado:string) {
           this.loading = true;
           detalle.estado = estado;
-          this.apiService.store('orden/detalle', detalle)
-            .pipe(this.untilDestroyed())
-            .subscribe(detalle => {
-                detalle = detalle;
-                // this.alertService.success("Datos guardados");
-                this.loading = false;
-          },error => {this.alertService.error(error); this.loading = false; });
+          try {
+              const detalleGuardado = await this.apiService.store('orden/detalle', detalle)
+                  .pipe(this.untilDestroyed())
+                  .toPromise();
+              
+              // this.alertService.success("Datos guardados");
+          } catch (error: any) {
+              this.alertService.error(error);
+          } finally {
+              this.loading = false;
+          }
     }
 
     ngOnDestroy(){

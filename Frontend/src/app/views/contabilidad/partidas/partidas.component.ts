@@ -264,81 +264,78 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     );
   }
 
-  public setEstadoChange(partida: any) {
-    this.apiService.store('partida', partida)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (producto) => {
-        this.alertService.success(
-          'Partida actualizada',
-          'El estado de la partida fue actualizado.'
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+  public async setEstadoChange(partida: any) {
+    try {
+      await this.apiService.store('partida', partida)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      this.alertService.success(
+        'Partida actualizada',
+        'El estado de la partida fue actualizado.'
+      );
+    } catch (error: any) {
+      this.alertService.error(error);
+    }
   }
 
   // setPagination() ahora se hereda de BasePaginatedComponent
 
-  public delete(partida: any) {
-    Swal.fire({
+  public async delete(partida: any) {
+    const result = await Swal.fire({
       title: '¿Estás seguro?',
       text: '¡No podrás revertir esto!',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminarlo',
       cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        this.apiService.delete('partida/', partida.id)
-          .pipe(this.untilDestroyed())
-          .subscribe(
-          (data) => {
-            for (let i = 0; i < this.partidas.data.length; i++) {
-              if (this.partidas.data[i].id == data.id)
-                this.partidas.data.splice(i, 1);
-            }
-          },
-          (error) => {
-            this.alertService.error(error);
-          }
-        );
-      } else if (result.dismiss === Swal.DismissReason.cancel) {
-        // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
-      }
     });
+    
+    if (result.isConfirmed) {
+      try {
+        const data = await this.apiService.delete('partida/', partida.id)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+        
+        for (let i = 0; i < this.partidas.data.length; i++) {
+          if (this.partidas.data[i].id == data.id)
+            this.partidas.data.splice(i, 1);
+        }
+      } catch (error: any) {
+        this.alertService.error(error);
+      }
+    }
   }
 
-  public onSubmit(partidaData?: any) {
+  public async onSubmit(partidaData?: any) {
     this.saving = true;
-    this.apiService.store('partida', partidaData || this.partida)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (partida) => {
-        if (!this.partida.id) {
-          this.loadAll();
-          this.alertService.success(
-            'Partida creada',
-            'El partida fue añadida exitosamente.'
-          );
-        } else {
-          this.alertService.success(
-            'Partida guardada',
-            'El partida fue guardada exitosamente.'
-          );
-        }
-        this.saving = false;
-        if (this.modalRef) {
-          this.closeModal();
-        }
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.saving = false;
+    try {
+      const partidaGuardada = await this.apiService.store('partida', partidaData || this.partida)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      
+      const isNew = !this.partida.id;
+      if (isNew) {
+        this.loadAll();
+        this.alertService.success(
+          'Partida creada',
+          'El partida fue añadida exitosamente.'
+        );
+      } else {
+        this.alertService.success(
+          'Partida guardada',
+          'El partida fue guardada exitosamente.'
+        );
       }
-    );
+      
+      if (this.modalRef) {
+        this.closeModal();
+      }
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
+    }
   }
 
   /**

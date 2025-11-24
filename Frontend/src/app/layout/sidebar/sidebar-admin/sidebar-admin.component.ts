@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,7 +9,7 @@ import { AlertService } from '@services/alert.service';
 
 import { FormControl } from '@angular/forms';
 import { debounceTime, switchMap, filter  } from 'rxjs/operators';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-sidebar-admin',
@@ -19,7 +19,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     
 })
 
-export class SidebarAdminComponent implements OnInit {
+export class SidebarAdminComponent extends BaseComponent implements OnInit {
     public sidebarCollapsed:boolean = false;
 
     public productosIsCollapsed:boolean = true;
@@ -39,10 +39,9 @@ export class SidebarAdminComponent implements OnInit {
 
     searchControl = new FormControl();
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
-    constructor(public apiService: ApiService, public alertService: AlertService) {}
+    constructor(public apiService: ApiService, public alertService: AlertService) {
+        super();
+    }
 
     ngOnInit() {
         if (!localStorage.getItem('sidebarCollapsed')) {

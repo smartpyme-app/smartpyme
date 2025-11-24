@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,10 +6,9 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 
 import Swal from 'sweetalert2';
 
@@ -21,54 +20,68 @@ import Swal from 'sweetalert2';
     
 })
 
-export class RetencionesComponent extends BaseModalComponent implements OnInit {
+export class RetencionesComponent extends BaseCrudComponent<any> implements OnInit {
 
     public retenciones:any = [];
     public retencion:any = {};
     public catalogo:any = [];
-    public override loading:boolean = false;
-    public override saving:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'retencion',
+            itemsProperty: 'retenciones',
+            itemProperty: 'retencion',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El retencion fue añadido exitosamente.',
+                updated: 'El retencion fue guardado exitosamente.',
+                createTitle: 'Impuesto creado',
+                updateTitle: 'Impuesto guardado'
+            },
+            initNewItem: (item) => {
+                item.id_empresa = apiService.auth_user().id_empresa;
+                item.enable = true;
+                return item;
+            }
+        });
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {        
+    public override loadAll() {
         this.loading = true;
         this.filtro.estado = '';
         this.apiService.getAll('retenciones')
             .pipe(this.untilDestroyed())
             .subscribe(retenciones => { 
                 this.retenciones = retenciones;
-                this.loading = false;this.filtrado = false;
-            }, error => {this.alertService.error(error); });
+                this.loading = false;
+                this.filtrado = false;
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public override openModal(template: TemplateRef<any>, retencion:any) {
-        this.retencion = retencion;
-        if (!this.retencion.id) {
-            this.retencion.id_empresa = this.apiService.auth_user().id_empresa;
-            this.retencion.enable = true;
-        }
+    protected aplicarFiltros(): void {
+        this.loadAll();
+    }
+
+    public override openModal(template: TemplateRef<any>, retencion?: any) {
+        // Cargar catálogo antes de abrir el modal
         this.apiService.getAll('catalogo/list')
             .pipe(this.untilDestroyed())
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
             }, error => {this.alertService.error(error);});
-        super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        
+        super.openModal(template, retencion, {class: 'modal-md', backdrop: 'static'});
     }
 
     public setEstado(retencion:any){
@@ -76,27 +89,9 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
         this.onSubmit();
     }
 
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('retencion', this.retencion)
-            .pipe(this.untilDestroyed())
-            .subscribe(retencion => {
-            if (!this.retencion.id) {
-                this.retenciones.push(retencion);
-                this.alertService.success('Impuesto creado', 'El retencion fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Impuesto guardado', 'El retencion fue guardado exitosamente.');
-            }
-            this.saving = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.saving = false;});
-    }
-
-
-    public delete(id:number) {
-
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -106,20 +101,22 @@ export class RetencionesComponent extends BaseModalComponent implements OnInit {
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('retencion/', id)
+                this.loading = true;
+                this.apiService.delete('retencion/', itemToDelete)
                     .pipe(this.untilDestroyed())
                     .subscribe(data => {
-                        for (let i = 0; i < this.retenciones.length; i++) { 
-                            if (this.retenciones[i].id == data.id )
-                                this.retenciones.splice(i, 1);
+                        const index = this.retenciones.findIndex((r: any) => r.id === data.id);
+                        if (index !== -1) {
+                            this.retenciones.splice(index, 1);
                         }
-                    }, error => {this.alertService.error(error); });
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+                        this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                        this.loading = false;
+                    }, error => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    });
           }
         });
-
-
     }
 
 }

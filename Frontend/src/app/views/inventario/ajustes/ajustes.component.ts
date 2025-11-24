@@ -14,7 +14,7 @@ import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/
 import { of } from 'rxjs';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -24,7 +24,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
 
 })
-export class AjustesComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
 
 	public ajustes:any = [];
     public ajuste:any = {};
@@ -45,7 +45,28 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         private router: Router, 
         private route: ActivatedRoute
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'ajuste',
+            itemsProperty: 'ajustes',
+            itemProperty: 'ajuste',
+            reloadAfterSave: true,
+            reloadAfterDelete: true,
+            messages: {
+                created: 'El ajuste fue guardado exitosamente.',
+                updated: 'El ajuste fue guardado exitosamente.',
+                createTitle: 'Ajuste guardado',
+                updateTitle: 'Ajuste guardado',
+                deleted: 'El ajuste fue eliminado exitosamente.',
+                deleteTitle: 'Ajuste eliminado'
+            },
+            afterSave: () => {
+                this.ajuste = {};
+            },
+            afterDelete: () => {
+                this.ajuste = {};
+            }
+        });
+        
         this.productosInput$.pipe(
             debounceTime(300),
             distinctUntilChanged(),
@@ -85,13 +106,11 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
             this.filtrarAjustes();
         });
 
-
         this.apiService.getAll('bodegas/list')
             .pipe(this.untilDestroyed())
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
             }, error => {this.alertService.error(error); });
-
     }
 
     private searchProductos(term: string): Observable<any[]> {
@@ -105,7 +124,7 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         );
     }
 
-    public loadAll() {
+    public override () {
         this.filtros.id_bodega = '';
         this.filtros.id_producto = '';
         this.filtros.id_usuario = '';
@@ -132,7 +151,7 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
             .subscribe(ajustes => {
                 this.ajustes = ajustes;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setOrden(columna: string) {
@@ -141,7 +160,7 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
                 this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
             } else {
                 this.filtros.orden = 'created_at';
-                this.filtros.direccion = 'desc'; // Por defecto, ordenar por fecha descendente (más reciente primero)
+                this.filtros.direccion = 'desc';
             }
         } else {
             if (this.filtros.orden === columna) {
@@ -153,8 +172,6 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         }
         this.filtrarAjustes();
     }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     public setEstado(ajuste:any){
         this.ajuste = ajuste;
@@ -175,14 +192,12 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         this.producto = this.productos.find((item:any) => item.id == this.ajuste.id_producto);
         if (this.producto) {
             this.ajuste.costo = this.producto.costo;
-            // Si el producto no tiene inventarios cargados, cargarlos
             if (!this.producto.inventarios) {
                 this.loadProductoInventarios(this.producto.id);
             }
         }
     }
 
-    // Cargar inventarios de un producto específico
     private loadProductoInventarios(productoId: number) {
         this.apiService.getAll(`productos/${productoId}/inventarios`)
             .pipe(this.untilDestroyed())
@@ -195,7 +210,6 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
 
     public setBodega(){
         this.sucursal = this.producto?.inventarios.find((item:any) => item.id_bodega == this.ajuste.id_bodega);
-        // console.log(this.sucursal);
         this.ajuste.stock_actual = this.sucursal.stock;
     }
 
@@ -231,30 +245,30 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         this.openModal(template);
     }
 
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('ajuste', this.ajuste)
-            .pipe(this.untilDestroyed())
-            .subscribe(ajuste => {
-            this.ajuste = {};
-            this.alertService.success('Ajuste guardado', 'El ajuste fue guardado exitosamente.');
-            this.closeModal();
-            this.loadAll();
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+    public override async onSubmit(item?: any): Promise<void> {
+        await super.onSubmit(item);
+        // El método base ya maneja el cierre del modal y recarga
     }
 
-    public delete(id:number) {
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
         this.saving = true;
-        this.apiService.delete('ajuste/', id)
+        this.apiService.delete('ajuste/', itemToDelete)
             .pipe(this.untilDestroyed())
-            .subscribe(ajuste => {
-            this.ajuste = {};
-            this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
-            this.closeModal();
-            this.loadAll();
-            this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+            .subscribe({
+                next: () => {
+                    this.ajuste = {};
+                    this.alertService.success('Ajuste eliminado', 'El ajuste fue eliminado exitosamente.');
+                    this.closeModal();
+                    this.filtrarAjustes();
+                    this.saving = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.saving = false;
+                }
+            });
     }
 
     generarPartidaContable(ajuste:any){
@@ -284,18 +298,11 @@ export class AjustesComponent extends BaseFilteredPaginatedModalComponent implem
         );
     }
 
-    /**
-     * Verifica si el usuario puede ver las opciones de inventario
-     * Oculta ciertas opciones para Supervisores de la empresa 324
-     */
     public puedeVerOpcionesInventario(): boolean {
         const user = this.apiService.auth_user();
         return !(user?.tipo === 'Supervisor' && user?.id_empresa === 324);
     }
 
-    /**
-     * Obtiene el nombre completo del producto (nombre + nombre_variante si aplica)
-     */
     getNombreCompleto(producto: any): string {
         if (this.tieneShopify && producto.nombre_variante) {
             return `${producto.nombre} ${producto.nombre_variante}`;

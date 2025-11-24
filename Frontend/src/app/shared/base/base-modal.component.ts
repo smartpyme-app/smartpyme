@@ -2,6 +2,7 @@ import { Directive, TemplateRef } from '@angular/core';
 import { BsModalRef } from 'ngx-bootstrap/modal';
 import { ModalManagerService, ModalConfig } from '../../services/modal-manager.service';
 import { AlertService } from '../../services/alert.service';
+import { BaseComponent } from './base.component';
 
 /**
  * Clase base abstracta para componentes que utilizan modales.
@@ -26,7 +27,7 @@ import { AlertService } from '../../services/alert.service';
  * ```
  */
 @Directive()
-export abstract class BaseModalComponent {
+export abstract class BaseModalComponent extends BaseComponent {
   public modalRef?: BsModalRef;
   public loading: boolean = false;
   public saving: boolean = false;
@@ -34,7 +35,9 @@ export abstract class BaseModalComponent {
   constructor(
     protected modalManager: ModalManagerService,
     protected alertService: AlertService
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Abre un modal con configuración por defecto

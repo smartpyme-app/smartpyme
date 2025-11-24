@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,7 +9,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -22,29 +22,42 @@ import Swal from 'sweetalert2';
 
 })
 
-export class ProyectosComponent extends BasePaginatedModalComponent implements OnInit {
+export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public proyectos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public proyectos:any = {};
     public sucursales:any = [];
     public clientes:any = [];
     public usuarios:any = [];
     public proyecto:any = {};
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'proyecto',
+            itemsProperty: 'proyectos',
+            itemProperty: 'proyecto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El proyecto fue añadido exitosamente.',
+                updated: 'El proyecto fue guardado exitosamente.',
+                createTitle: 'proyecto creada',
+                updateTitle: 'proyecto guardado'
+            },
+            afterSave: (item, isNew) => {
+                if (isNew) {
+                    this.loadAll();
+                }
+                this.proyecto = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.proyectos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.proyectos = data;
+    protected aplicarFiltros(): void {
+        this.filtrarProyectos();
     }
 
     ngOnInit() {
@@ -68,7 +81,7 @@ export class ProyectosComponent extends BasePaginatedModalComponent implements O
         this.filtrarProyectos();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_cliente = '';
         this.filtros.id_sucursal = '';
         this.filtros.id_asesor = '';
@@ -100,10 +113,8 @@ export class ProyectosComponent extends BasePaginatedModalComponent implements O
             }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-
-    override openModal(template: TemplateRef<any>, proyecto:any) {
-        this.proyecto = proyecto;
-        super.openLargeModal(template);
+    override openModal(template: TemplateRef<any>, proyecto?: any) {
+        super.openLargeModal(template, proyecto);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -114,7 +125,6 @@ export class ProyectosComponent extends BasePaginatedModalComponent implements O
             }, error => {this.alertService.error(error); });
         super.openLargeModal(template);
     }
-
 
     public setEstado(proyecto:any, estado:any){
         this.proyecto = proyecto;
@@ -127,10 +137,9 @@ export class ProyectosComponent extends BasePaginatedModalComponent implements O
         this.onSubmit();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    public delete(proyecto:any){
-
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -140,38 +149,25 @@ export class ProyectosComponent extends BasePaginatedModalComponent implements O
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('proyecto/', proyecto.id)
+                this.loading = true;
+                this.apiService.delete('proyecto/', itemToDelete)
                     .pipe(this.untilDestroyed())
-                    .subscribe(data => {
-                        for (let i = 0; i < this.proyectos.data.length; i++) { 
-                            if (this.proyectos.data[i].id == data.id )
-                                this.proyectos.data.splice(i, 1);
+                    .subscribe({
+                        next: (deletedItem: any) => {
+                            const index = this.proyectos.data?.findIndex((p: any) => p.id === deletedItem.id);
+                            if (index !== -1 && index >= 0) {
+                                this.proyectos.data.splice(index, 1);
+                            }
+                            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                            this.loading = false;
+                        },
+                        error: (error: any) => {
+                            this.alertService.error(error);
+                            this.loading = false;
                         }
-                    }, error => {this.alertService.error(error); });
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+                    });
           }
         });
-
-    }
-
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('proyecto', this.proyecto)
-            .pipe(this.untilDestroyed())
-            .subscribe(proyecto => {
-            if (!this.proyecto.id) {
-                this.loadAll();
-                this.alertService.success('proyecto creada', 'El proyecto fue añadido exitosamente.');
-            }else{
-                this.alertService.success('proyecto guardado', 'El proyecto fue guardado exitosamente.');
-            }
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-            this.proyecto = {};
-        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 }

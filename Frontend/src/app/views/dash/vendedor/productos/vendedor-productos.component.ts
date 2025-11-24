@@ -2,10 +2,10 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '@services/modal-manager.service';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
@@ -15,52 +15,73 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     
 })
-export class VendedorProductosComponent extends BasePaginatedComponent implements OnInit {
+export class VendedorProductosComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
-    public usuario:any = {};
-    public override filtros:any = {};
-    public producto:any = {};
-    public sucursales:any = [];
-    public categorias:any = [];
+    public productos: any = {};
+    public usuario: any = {};
+    public producto: any = {};
+    public sucursales: any = [];
+    public categorias: any = [];
 
-    modalRef!: BsModalRef;
-
-    constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+    constructor(
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'producto',
+            itemsProperty: 'productos',
+            itemProperty: 'producto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El producto fue guardado exitosamente.',
+                updated: 'El producto fue guardado exitosamente.',
+                deleted: 'Producto eliminado exitosamente.',
+                createTitle: 'Producto guardado',
+                updateTitle: 'Producto guardado',
+                deleteTitle: 'Producto eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            afterSave: () => {
+                this.producto = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.productos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.productos = data;
+    protected aplicarFiltros(): void {
+        this.filtrarProductos();
     }
 
     ngOnInit() {
-
         this.loadAll();
 
         this.usuario = this.apiService.auth_user();
 
         this.apiService.getAll('categorias')
           .pipe(this.untilDestroyed())
-          .subscribe(categorias => {
+          .subscribe({
+            next: (categorias) => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            },
+            error: (error) => {
+                this.alertService.error(error);
+            }
+          });
 
         this.apiService.getAll('sucursales/list')
           .pipe(this.untilDestroyed())
-          .subscribe(sucursales => { 
+          .subscribe({
+            next: (sucursales) => {
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
-        
+            },
+            error: (error) => {
+                this.alertService.error(error);
+            }
+          });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_categoria = '';
         this.filtros.buscador = '';
@@ -68,6 +89,7 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
 
+        this.loading = true;
         this.filtrarProductos();
     }
 
@@ -75,33 +97,24 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
         this.loading = true;
         this.apiService.getAll('productos', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe(productos => { 
+          .subscribe({
+            next: (productos) => {
             this.productos = productos;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+          });
     }
 
-    public setEstado(producto:any){
-        this.apiService.store('producto', producto)
-          .pipe(this.untilDestroyed())
-          .subscribe(producto => { 
-            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
-        }, error => {this.alertService.error(error); });
+    public setEstado(producto: any){
+        this.onSubmit(producto, true);
     }
 
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id)
-              .pipe(this.untilDestroyed())
-              .subscribe(data => {
-                for (let i = 0; i < this.productos['data'].length; i++) { 
-                    if (this.productos['data'][i].id == data.id )
-                        this.productos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
-        }
-
+    public override delete(id: number) {
+        super.delete(id);
     }
 
     public setOrden(columna: string) {
@@ -115,24 +128,11 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
         this.filtrarProductos();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    public onSubmit() {
-        this.loading = true;
-        this.apiService.store('producto', this.producto)
-          .pipe(this.untilDestroyed())
-          .subscribe(producto=> {
-            this.producto = {};
-            this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
-            this.loading = false;
-            this.modalRef.hide();
-        },error => {this.alertService.error(error); this.loading = false; });
-    }
-
     public descargar(){
         this.apiService.export('productos/exportar', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe((data:Blob) => {
+          .subscribe({
+            next: (data: Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -142,8 +142,10 @@ export class VendedorProductosComponent extends BasePaginatedComponent implement
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar productos:', error); }
-        );
+            },
+            error: (error) => {
+                console.error('Error al exportar productos:', error);
+            }
+          });
     }
-
 }

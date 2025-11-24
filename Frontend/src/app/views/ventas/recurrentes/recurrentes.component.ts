@@ -8,9 +8,8 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-
 
 @Component({
     selector: 'app-recurrentes',
@@ -20,13 +19,12 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     
 })
 
-export class RecurrentesComponent extends BasePaginatedModalComponent implements OnInit {
+export class RecurrentesComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public ventas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public ventas:any = {};
     public venta:any = {};
     public override saving:boolean = false;
     public downloading:boolean = false;
-
     public clientes:any = [];
     public usuario:any = {};
     public usuarios:any = [];
@@ -37,21 +35,30 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
     public filtrado:boolean = false;
 
     constructor(
-        protected override apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'venta',
+            itemsProperty: 'ventas',
+            itemProperty: 'venta',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La venta fue guardada exitosamente.',
+                updated: 'La venta fue guardada exitosamente.',
+                createTitle: 'Venta guardada',
+                updateTitle: 'Venta guardada'
+            },
+            afterSave: () => {
+                this.venta = {};
+            }
+        });
     }
 
-    // Método requerido por BasePaginatedComponent: retorna la referencia
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.ventas;
-    }
-
-    // Método requerido por BasePaginatedComponent: REASIGNA la propiedad (esto es crítico)
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.ventas = data;
+    protected aplicarFiltros(): void {
+        this.filtrarVentas();
     }
 
     ngOnInit() {
@@ -76,12 +83,11 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
         this.filtrarVentas();
     }
 
-    public loadAll() {
+    public override loadAll() {
         const filtrosGuardados = localStorage.getItem('ventasRecurrentesFiltros');
 
         if (filtrosGuardados) {
             this.filtros = JSON.parse(filtrosGuardados);
-            // console.log(this.filtros);
           } else {
             this.filtros.id_sucursal = '';
             this.filtros.id_cliente = '';
@@ -111,7 +117,7 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setEstado(venta:any, estado:any){
@@ -129,46 +135,54 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
                 this.onSubmit();
             }
         }
-
     }
 
-    public setRecurrencia(venta:any){
+    public async setRecurrencia(venta:any){
         this.venta = venta;
         this.venta.recurrente = false;
         
-        this.apiService.store('venta', this.venta)
-            .pipe(this.untilDestroyed())
-            .subscribe(venta => {
-                this.venta = {};
-                this.loadAll();
-                this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-    
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('venta/', id)
+        try {
+            await this.apiService.store('venta', this.venta)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.ventas['data'].length; i++) { 
-                    if (this.ventas['data'][i].id == data.id )
-                        this.ventas['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+                .toPromise();
+            
+            this.venta = {};
+            this.loadAll();
+            this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.saving = false;
+        }
+    }
+
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('venta/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.ventas.data?.findIndex((v: any) => v.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.ventas.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public reemprimir(venta:any){
         window.open(this.apiService.baseUrl + '/api/reporte/facturacion/' + venta.id + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
-
-    // Editar
 
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
@@ -185,7 +199,7 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
 
-        this.openModal(template);
+        this.openModal(template, venta);
     }
     
     public openFilter(template: TemplateRef<any>) {
@@ -281,30 +295,14 @@ export class RecurrentesComponent extends BasePaginatedModalComponent implements
         window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
     }
 
-    public onSubmit() {
-        this.saving = true;            
-        this.apiService.store('venta', this.venta)
-            .pipe(this.untilDestroyed())
-            .subscribe(venta => {
-            this.venta = {};
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    public openAbono(template: TemplateRef<any>, venta:any){
-        this.venta = venta;
-        this.openModal(template);
-    }
-
     public limpiarFiltros() {
         localStorage.removeItem('ventasRecurrentesFiltros');
         this.loadAll();
     }
 
+    public openAbono(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.openModal(template, venta);
+    }
 
 }

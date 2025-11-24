@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,7 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 import Swal from 'sweetalert2';
 
 
@@ -44,7 +44,7 @@ interface ItemDistribucion {
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class RetaceoComponent implements OnInit {
+export class RetaceoComponent extends BaseComponent implements OnInit {
   public retaceo: any = {};
   public compras: any[] = [];
   public gastos: any[] = [];
@@ -83,15 +83,14 @@ export class RetaceoComponent implements OnInit {
 
   public bodegas: any[] = [];
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
     public apiService: ApiService,
-    private alertService: AlertService,
+    protected alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router
-  ) {}
+  ) {
+    super();
+  }
 
   ngOnInit() {
     this.inicializarRetaceo();

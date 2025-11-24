@@ -92,18 +92,26 @@ export class PaqueteComponent implements OnInit {
     }
 
 
-    public onSubmit(){
+    public async onSubmit(){
         this.saving = true;
-
-        this.apiService.store('paquete', this.paquete).pipe(this.untilDestroyed()).subscribe(paquete => {
-            if (!this.paquete.id) {
-                this.alertService.success('Paquete guardado', 'El paquete fue guardado exitosamente.');
-            }else{
-                this.alertService.success('Paquete creado', 'El paquete fue añadido exitosamente.');
-            }
+        try {
+            const isNew = !this.paquete.id;
+            const paqueteGuardado = await this.apiService.store('paquete', this.paquete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const titulo = isNew ? 'Paquete creado' : 'Paquete guardado';
+            const mensaje = isNew 
+                ? 'El paquete fue añadido exitosamente.' 
+                : 'El paquete fue guardado exitosamente.';
+            
+            this.alertService.success(titulo, mensaje);
             this.router.navigate(['/paquetes']);
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+        }
     }
 
 }

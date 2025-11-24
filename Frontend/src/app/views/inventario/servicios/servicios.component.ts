@@ -9,7 +9,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -19,7 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective],
 
 })
-export class ServiciosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public servicios:any = [];
     public buscador:any = '';
@@ -36,7 +36,16 @@ export class ServiciosComponent extends BaseFilteredPaginatedModalComponent impl
         private router: Router, 
         private route: ActivatedRoute
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'servicio',
+            itemsProperty: 'servicios',
+            itemProperty: 'servicio',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            afterSave: () => {
+                this.servicio = {};
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -44,7 +53,6 @@ export class ServiciosComponent extends BaseFilteredPaginatedModalComponent impl
     }
 
     ngOnInit() {
-
         this.route.queryParams.pipe(this.untilDestroyed()).subscribe(params => {
             this.filtros = {
                 buscador: params['buscador'] || '',
@@ -65,7 +73,7 @@ export class ServiciosComponent extends BaseFilteredPaginatedModalComponent impl
         }, error => {this.alertService.error(error);});
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_categoria = '';
         this.filtros.estado = '';
@@ -76,11 +84,9 @@ export class ServiciosComponent extends BaseFilteredPaginatedModalComponent impl
         this.filtros.page = 1;
         this.loading = true;
         this.filtrarServicios();
-
     }
 
     public filtrarServicios(){
-
         this.router.navigate([], {
             relativeTo: this.route,
             queryParams: this.filtros,
@@ -97,50 +103,45 @@ export class ServiciosComponent extends BaseFilteredPaginatedModalComponent impl
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('servicio/', id).pipe(this.untilDestroyed()).subscribe(data => {
-                for (let i = 0; i < this.servicios['data'].length; i++) { 
-                    if (this.servicios['data'][i].id == data.id )
-                        this.servicios['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('servicio/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.servicios.data?.findIndex((s: any) => s.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.servicios.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     openModalPrecio(template: TemplateRef<any>, servicio:any) {
-        // if(this.apiService.auth_user().tipo == 'Administrador') {
-        //     this.servicio = servicio;
-        //     this.openModal(template, {class: 'modal-sm'});
-        // }
         if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.servicio = servicio;
-            this.openModal(template, {class: 'modal-sm'});
+            this.openModal(template, servicio, {class: 'modal-sm'});
         }
-
     }
 
-    public setEstado(producto:any){
-        this.apiService.store('producto', producto).pipe(this.untilDestroyed()).subscribe(producto => { 
-            this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
-        }, error => {this.alertService.error(error); });
+    public setEstado(servicio: any){
+        this.onSubmit(servicio, true);
     }
 
-    public onSubmit() {
-        this.loading = true;
-        // Guardamos la caja
-        this.apiService.store('servicio', this.servicio).pipe(this.untilDestroyed()).subscribe(servicio=> {
-            this.servicio= {};
-            this.alertService.success('Servicio guardado', 'El servicio fue guardado exitosamente.');
-            this.loading = false;
-            this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false;
-        });
+    public override async onSubmit(item?: any, isStatusChange: boolean = false): Promise<void> {
+        await super.onSubmit(item, isStatusChange);
+        this.servicio = {};
     }
 
     public descargar(){

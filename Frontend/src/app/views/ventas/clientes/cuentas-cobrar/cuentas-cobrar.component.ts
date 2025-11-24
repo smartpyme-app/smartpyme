@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 
 @Component({
     selector: 'app-cuentas-cobrar',
@@ -16,56 +17,80 @@ import { ApiService } from '@services/api.service';
     
 })
 
-export class CuentasCobrarComponent extends BasePaginatedComponent implements OnInit {
+export class CuentasCobrarComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public cobros: PaginatedResponse<any> = {} as PaginatedResponse;
-    public buscador:any = '';
+    public cobros: any = {};
+    public buscador: any = '';
 
-    constructor(apiService: ApiService, alertService: AlertService){
-        super(apiService, alertService);
+    constructor(
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager, {
+            endpoint: 'venta',
+            itemsProperty: 'cobros',
+            itemProperty: 'venta',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La venta fue actualizada exitosamente.',
+                updated: 'La venta fue actualizada exitosamente.',
+                deleted: 'Venta eliminada exitosamente.',
+                createTitle: 'Venta actualizada',
+                updateTitle: 'Venta actualizada',
+                deleteTitle: 'Venta eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.cobros;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.cobros = data;
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.loading = true;
         this.apiService.getAll('cuentas-cobrar')
             .pipe(this.untilDestroyed())
-            .subscribe(cobros => { 
-                this.cobros = cobros;
-                this.loading = false;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (cobros) => {
+                    this.cobros = cobros;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public search(){
         if(this.buscador && this.buscador.length > 2) {
+            this.loading = true;
             this.apiService.read('cuentas-cobrar/buscar/', this.buscador)
                 .pipe(this.untilDestroyed())
-                .subscribe(cobros => { 
-                    this.cobros = cobros;
-                }, error => {this.alertService.error(error); });
+                .subscribe({
+                    next: (cobros) => {
+                        this.cobros = cobros;
+                        this.loading = false;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                });
+        } else {
+            this.loadAll();
         }
     }
 
-    public setEstado(venta:any, estado:string){
+    public setEstado(venta: any, estado: string){
         venta.estado = estado;
-        this.apiService.store('venta', venta)
-            .pipe(this.untilDestroyed())
-            .subscribe(venta => { 
-                this.alertService.success('Venta actualizada', 'La venta fue actualizada exitosamente.');
-            }, error => {this.alertService.error(error); });
+        this.onSubmit(venta, true);
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
 }

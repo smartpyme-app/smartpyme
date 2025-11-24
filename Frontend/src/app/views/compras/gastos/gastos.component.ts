@@ -13,7 +13,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
@@ -25,14 +25,13 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 })
 
-export class GastosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public gastos:any = [];
     public gasto:any = {};
     public override saving:boolean = false;
     public sending:boolean = false;
     public downloading:boolean = false;
-
     public clientes:any = [];
     public usuarios:any = [];
     public proyectos:any = [];
@@ -51,7 +50,22 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
         private route: ActivatedRoute,
         private modalService: BsModalService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'gasto',
+            itemsProperty: 'gastos',
+            itemProperty: 'gasto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El gasto fue cambiado exitosamente.',
+                updated: 'El gasto fue cambiado exitosamente.',
+                createTitle: 'Gasto guardado',
+                updateTitle: 'Gasto guardado'
+            },
+            afterSave: (item) => {
+                this.gasto = item;
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -95,7 +109,7 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
             }, error => {this.alertService.error(error); });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
         this.filtros.id_usuario = '';
@@ -139,7 +153,7 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
                 this.gastos = gastos;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setOrden(columna: string) {
@@ -153,52 +167,52 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
         this.filtrarGastos();
     }
 
-
     public setEstado(gasto:any){
         this.gasto = gasto;
         this.onSubmit();
     }
 
-    public onSubmit(){
-        this.apiService.store('gasto', this.gasto)
-            .pipe(this.untilDestroyed())
-            .subscribe(gasto => {
-            this.gasto = gasto;
-            this.alertService.success('Gasto guardado', 'El gasto fue cambiado a ' + this.gasto.estado.toLowerCase() + ' exitosamente.');
-        }, error => {this.alertService.error(error); });
-    }
-
-    public setRecurrencia(gasto:any){
+    public async setRecurrencia(gasto:any){
         this.gasto = gasto;
         this.gasto.recurrente = true;
 
-        this.apiService.store('gasto', this.gasto)
-            .pipe(this.untilDestroyed())
-            .subscribe(gasto => {
-                this.gasto = {};
-                this.alertService.success('Gasto guardado', 'El gasto se marco como recurrente exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
-
+        try {
+            await this.apiService.store('gasto', this.gasto)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            this.gasto = {};
+            this.alertService.success('Gasto guardado', 'El gasto se marco como recurrente exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.saving = false;
+        }
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.gastos['data'].length; i++) {
-                    if (this.gastos['data'][i].id == data.id )
-                        this.gastos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('gasto/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.gastos.data?.findIndex((g: any) => g.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.gastos.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
-
 
     public descargar(){
         this.downloading = true;
@@ -236,12 +250,6 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
                 }, error => {this.alertService.error(error); });
         }
 
-        // if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-        //     this.apiService.getAll('proyectos/list').subscribe(proyectos => {
-        //         this.proyectos = proyectos;
-        //     }, error => {this.alertService.error(error); });
-        // }
-
         if(!this.proyectos.length &&
             this.apiService.auth_user().empresa.modulo_proyectos &&
             this.isColumnEnabled('columna_proyecto')){
@@ -255,6 +263,23 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
         this.openModal(template);
     }
 
+    public isColumnEnabled(columnName: string): boolean {
+        return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+    }
+
+    public getNumsIds() {
+        this.apiService.getAll('gastos/nums-ids')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (numsIds) => {
+                    this.numeros_ids = numsIds;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
+    }
+
     openDTE(template: TemplateRef<any>, gasto:any){
         this.gasto = gasto;
         this.openModal(template);
@@ -265,39 +290,44 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
     }
 
     imprimirDTEPDF(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     imprimirDTEJSON(gasto:any){
-        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/14/' + '?tipo=gasto&token=' + this.apiService.auth_token(), 'hola', 'width=400');
+        window.open(this.apiService.baseUrl + '/api/reporte/dte-json/' + gasto.id + '/03/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
     }
 
     emitirDTE(){
         this.saving = true;
-        this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto) => {
+        this.mhService.emitirDTESujetoExcluidoGasto(this.gasto).then((gasto: any) => {
             this.gasto = gasto;
             this.alertService.success('DTE emitido.', 'El documento ha sido emitido.');
             this.saving = false;
             this.enviarDTE();
-        }).catch((error) => {
+        }).catch((error: any) => {
             this.saving = false;
             this.alertService.warning('Hubo un problema', error);
         });
     }
-
 
     enviarDTE(){
         this.sending = true;
         this.gasto.tipo = 'gasto';
         this.apiService.store('enviarDTE', this.gasto)
             .pipe(this.untilDestroyed())
-            .subscribe(dte => {
-            this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
-            this.sending = false;
-            setTimeout(()=>{
-                this.closeModal();
-            },5000);
-        },error => {this.alertService.error(error); this.sending = false; });
+            .subscribe({
+                next: () => {
+                    this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
+                    this.sending = false;
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 5000);
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.sending = false;
+                }
+            });
     }
 
     anularDTE(gasto:any){
@@ -308,42 +338,57 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
                 this.saving = true;
                 this.apiService.store('generarDTEAnuladoSujetoExcluidoGasto', this.gasto)
                     .pipe(this.untilDestroyed())
-                    .subscribe(dte => {
-                        // this.alertService.success('DTE generado.');
-                        this.gasto.dte_invalidacion = dte;
-                        this.mhService.firmarDTE(dte)
-                            .pipe(this.untilDestroyed())
-                            .subscribe(dteFirmado => {
-                                this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
-                                // this.alertService.success('DTE firmado.');
-
-                                this.mhService.anularDTE(this.gasto, dteFirmado.body)
-                                    .pipe(this.untilDestroyed())
-                                    .subscribe(dte => {
-                                        if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
-                                            this.gasto.dte_invalidacion.sello = dte.selloRecibido;
-                                            this.gasto.estado = 'Anulada';
-                                            this.apiService.store('gasto', this.gasto)
-                                                .pipe(this.untilDestroyed())
-                                                .subscribe(data => {
-                                    // this.alertService.success('Compra guardada.');
-                                },error => {this.alertService.error(error); this.saving = false; });
-                            }
-
-                            this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
-                        },error => {
-                            if(error.error.descripcionMsg){
-                                this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
-                            }
-                            if(error.error.observaciones.length > 0){
-                                this.alertService.warning('Hubo un problema', error.error.observaciones);
-                            }
+                    .subscribe({
+                        next: (dte) => {
+                            this.gasto.dte_invalidacion = dte;
+                            this.mhService.firmarDTE(dte)
+                                .pipe(this.untilDestroyed())
+                                .subscribe({
+                                    next: (dteFirmado) => {
+                                        this.gasto.dte_invalidacion.firmaElectronica = dteFirmado.body;
+                                        this.mhService.anularDTE(this.gasto, dteFirmado.body)
+                                            .pipe(this.untilDestroyed())
+                                            .subscribe({
+                                                next: (dte) => {
+                                                    if ((dte.estado == 'PROCESADO') && dte.selloRecibido) {
+                                                        this.gasto.dte_invalidacion.sello = dte.selloRecibido;
+                                                        this.gasto.estado = 'Anulada';
+                                                        this.apiService.store('gasto', this.gasto)
+                                                            .pipe(this.untilDestroyed())
+                                                            .subscribe({
+                                                                next: () => {
+                                                                    // this.alertService.success('Compra guardada.');
+                                                                },
+                                                                error: (error) => {
+                                                                    this.alertService.error(error);
+                                                                    this.saving = false;
+                                                                }
+                                                            });
+                                                    }
+                                                    this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
+                                                },
+                                                error: (error) => {
+                                                    if(error.error.descripcionMsg){
+                                                        this.alertService.warning('Hubo un problema', error.error.descripcionMsg);
+                                                    }
+                                                    if(error.error.observaciones?.length > 0){
+                                                        this.alertService.warning('Hubo un problema', error.error.observaciones);
+                                                    }
+                                                    this.saving = false;
+                                                }
+                                            });
+                                    },
+                                    error: (error) => {
+                                        this.alertService.error(error);
+                                        this.saving = false;
+                                    }
+                                });
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
                             this.saving = false;
-                        });
-
-                    },error => {this.alertService.error(error);this.saving = false; });
-
-                },error => {this.alertService.error(error);this.saving = false; });
+                        }
+                    });
             }
         }
         else{
@@ -354,28 +399,22 @@ export class GastosComponent extends BaseFilteredPaginatedModalComponent impleme
         }
     }
 
-    public isColumnEnabled(columnName: string): boolean {
-        return this.apiService.auth_user().empresa?.custom_empresa?.columnas?.[columnName] || false;
+    public openAbono(template: TemplateRef<any>, gasto:any){
+        this.gasto = gasto;
+        this.modalRef = this.modalService.show(template);
     }
 
-    getNumsIds(){
-        this.apiService.getAll('gastos/nums-ids')
+    generarPartidaContable(gasto:any){
+        this.apiService.store('contabilidad/partida/gasto', gasto)
             .pipe(this.untilDestroyed())
-            .subscribe(numsIds => {
-                this.numeros_ids = numsIds;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
-  public openAbono(template: TemplateRef<any>, gasto:any){
-    this.gasto = gasto;
-    this.modalRef = this.modalService.show(template);
-  }
-
-  generarPartidaContable(gasto:any){
-    this.apiService.store('contabilidad/partida/gasto', gasto)
-        .pipe(this.untilDestroyed())
-        .subscribe(gasto => {
-      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-    },error => {this.alertService.error(error);});
-  }
 }

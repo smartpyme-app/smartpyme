@@ -7,7 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 import * as moment from 'moment';
 import Swal from 'sweetalert2';
@@ -20,27 +20,37 @@ import Swal from 'sweetalert2';
     
 })
 
-export class CuentasComponent extends BasePaginatedModalComponent implements OnInit {
+export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public cuentas: PaginatedResponse<any> = {} as PaginatedResponse;
+    public cuentas:any = {};
     public cuenta:any = {};
     public override saving:boolean = false;
-    public override filtros:any = {};
 
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'cuenta',
+            itemsProperty: 'cuentas',
+            itemProperty: 'cuenta',
+            reloadAfterSave: true,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El cuenta fue añadida exitosamente.',
+                updated: 'El cuenta fue guardada exitosamente.',
+                deleted: 'Cuenta eliminada exitosamente.',
+                createTitle: 'Cuenta creada',
+                updateTitle: 'Cuenta guardada',
+                deleteTitle: 'Cuenta eliminada',
+                deleteConfirm: '¿Estás seguro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.cuentas;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.cuentas = data;
+    protected aplicarFiltros(): void {
+        this.filtrarCuentas();
     }
 
     ngOnInit() {
@@ -61,7 +71,7 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
         this.filtrarCuentas();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.tipo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -74,36 +84,36 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
         this.loading = true;
         this.apiService.getAll('bancos/cuentas', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe(cuentas => { 
-            this.cuentas = cuentas;
-            this.loading = false;
-            if(this.modalRef){
-                this.closeModal();
+          .subscribe({
+            next: (cuentas) => {
+                this.cuentas = cuentas;
+                this.loading = false;
+                if(this.modalRef){
+                    this.closeModal();
+                }
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+          });
     }
 
-
-    public override openModal(template: TemplateRef<any>, cuenta:any) {
-        this.cuenta = cuenta;
+    public override openModal(template: TemplateRef<any>, cuenta?: any) {
+        this.cuenta = cuenta || {};
         super.openModal(template, {class: 'modal-lg', backdrop: 'static'});
     }
-
 
     public openFilter(template: TemplateRef<any>) {
         this.openModal(template, {class: 'modal-md', backdrop: 'static'});
     }
-
 
     public setEstado(cuenta:any){
         this.cuenta = cuenta;
         this.onSubmit();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    public delete(cuenta:any){
-
+    public override delete(cuenta:any){
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -115,39 +125,24 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
           if (result.isConfirmed) {
                 this.apiService.delete('cuenta/', cuenta.id)
                   .pipe(this.untilDestroyed())
-                  .subscribe(data => {
-                    for (let i = 0; i < this.cuentas.data.length; i++) { 
-                        if (this.cuentas.data[i].id == data.id )
-                            this.cuentas.data.splice(i, 1);
+                  .subscribe({
+                    next: (data) => {
+                        for (let i = 0; i < this.cuentas.data.length; i++) { 
+                            if (this.cuentas.data[i].id == data.id )
+                                this.cuentas.data.splice(i, 1);
+                        }
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
                     }
-                }, error => {this.alertService.error(error); });
+                  });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
         });
-
     }
 
     public imprimir(cuenta:any){
         window.open(this.apiService.baseUrl + '/api/banco/cuenta/libro/' + cuenta.id + '/' + cuenta.del + '/' + cuenta.al + '?token=' + this.apiService.auth_token());
     }
-
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('cuenta', this.cuenta)
-          .pipe(this.untilDestroyed())
-          .subscribe(cuenta => {
-            if (!this.cuenta.id) {
-                this.loadAll();
-                this.alertService.success('Cuenta creada', 'El cuenta fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Cuenta guardada', 'El cuenta fue guardada exitosamente.');
-            }
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.saving = false;});
-    }
-
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,9 +26,6 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
     public usuario:any = {};
     public override loading:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -36,7 +33,6 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
     ) {
         super(modalManager, alertService);
     }
-
 
     ngOnInit() {
 
@@ -56,7 +52,6 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
         }, error => {this.alertService.error(error); });
-
 
     }
 
@@ -85,6 +80,5 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
         }, error => {this.alertService.error(error); this.loading = false;});
 
     }
-
 
 }

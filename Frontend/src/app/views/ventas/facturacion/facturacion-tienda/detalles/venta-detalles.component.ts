@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -47,9 +47,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -123,7 +120,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     if (producto.tipo != 'Servicio' && (producto.stock < producto.cantidad)) {
       if (this.apiService.auth_user().empresa.vender_sin_stock == 0) {
 
-
         if (this.apiService.auth_user().codigo_autorizacion) {
 
           Swal.fire({
@@ -191,7 +187,6 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     if (!this.detalle.no_sujeta) {
       this.detalle.no_sujeta = 0;
     }
-
 
     if (!this.detalle.cuenta_a_terceros) {
       this.detalle.cuenta_a_terceros = 0;
@@ -294,6 +289,5 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     count += this.selectedCustomFields.length;
     return count;
   }
-
 
 }

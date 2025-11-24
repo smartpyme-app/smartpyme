@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,9 +30,6 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
   public clientes: any = [];
   public usuarios: any = [];
   public sucursales: any = [];
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -74,8 +71,6 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
     this.cargarRetaceos();
   }
 
-
-
   formatDate(date: Date): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -98,7 +93,6 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
       this.loading = false;
     });
   }
-
 
   verRetaceo(retaceo: any) {
     this.router.navigate(['/retaceo', retaceo.id]);

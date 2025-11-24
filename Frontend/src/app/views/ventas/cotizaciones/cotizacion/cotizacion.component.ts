@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -79,8 +79,6 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
   public customField: boolean = false;
 
   public modalCredito!: any; // BsModalRef
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   @ViewChild('msupervisor')
   public supervisorTemplate!: TemplateRef<any>;
@@ -507,11 +505,9 @@ if (
 
   console.log('facturar cotizacion');
 
-
   this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
     (impuestos) => {
       this.impuestos = impuestos;
-
 
       this.apiService.read(
         'cotizacionVentas/',
@@ -528,11 +524,9 @@ if (
           this.venta.num_cotizacion = this.venta.id;
           this.venta.id = null;
 
-
           if (!this.venta.impuestos || this.venta.impuestos.length === 0) {
             this.venta.impuestos = this.impuestos;
           }
-
 
           this.venta.detalles.forEach((detalle: any) => {
             if (detalle.codigo_combo) {
@@ -543,7 +537,6 @@ if (
             }
             detalle.id = null;
           });
-
 
           if (this.route.snapshot.queryParamMap.get('id_proyecto')) {
             this.venta.detalles = [];
@@ -773,7 +766,6 @@ if (
       parseFloat(this.venta.iva_retenido) -
       parseFloat(this.venta.renta_retenida)
     ).toFixed(4);
-
 
     // Asignar tipoOperacion según los detalles
     if (this.venta.cobrar_impuestos) {

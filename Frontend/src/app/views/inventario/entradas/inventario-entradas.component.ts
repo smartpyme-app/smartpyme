@@ -10,7 +10,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -20,11 +20,10 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
     
 })
-export class InventarioEntradasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class InventarioEntradasComponent extends BaseCrudComponent<any> implements OnInit {
 
     public entradas:any = [];
     public entrada:any = {};
-
     public usuarios:any = [];
 
     constructor(
@@ -34,7 +33,22 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
         private router: Router, 
         private route: ActivatedRoute
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'entrada',
+            itemsProperty: 'entradas',
+            itemProperty: 'entrada',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El registro fue actualizado exitosamente.',
+                updated: 'El registro fue actualizado exitosamente.',
+                deleted: 'El registro fue eliminado exitosamente.',
+                createTitle: 'Entrada actualizada correctamente',
+                updateTitle: 'Entrada actualizada correctamente',
+                deleteTitle: 'Entrada eliminada correctamente',
+                deleteConfirm: '¿Estás seguro?'
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -44,25 +58,27 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
     ngOnInit() {
         this.route.queryParams
           .pipe(this.untilDestroyed())
-          .subscribe(params => {
-            this.filtros = {
-                buscador: params['buscador'] || '',
-                usuario_id: params['usuario_id'] || '',
-                estado: params['estado'] || '',
-                tipo: params['tipo'] || '',
-                inicio: params['inicio'] || '',
-                fin: params['fin'] || '',
-                orden: params['orden'] || 'fecha',
-                direccion: params['direccion'] || 'desc',
-                per_page: params['per_page'] || 10,
-                page: params['page'] || 1,
-            };
+          .subscribe({
+            next: (params) => {
+                this.filtros = {
+                    buscador: params['buscador'] || '',
+                    usuario_id: params['usuario_id'] || '',
+                    estado: params['estado'] || '',
+                    tipo: params['tipo'] || '',
+                    inicio: params['inicio'] || '',
+                    fin: params['fin'] || '',
+                    orden: params['orden'] || 'fecha',
+                    direccion: params['direccion'] || 'desc',
+                    per_page: params['per_page'] || 10,
+                    page: params['page'] || 1,
+                };
 
-            this.filtrar();
-        });
+                this.filtrar();
+            }
+          });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.buscador = '';
         this.filtros.usuario_id = '';
         this.filtros.estado = '';
@@ -97,10 +113,16 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
         this.loading = true;
         this.apiService.store('entradas/filtrar', this.filtros)
           .pipe(this.untilDestroyed())
-          .subscribe(entradas => { 
-            this.entradas = entradas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+          .subscribe({
+            next: (entradas) => {
+                this.entradas = entradas;
+                this.loading = false;
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+          });
     }
 
     public setEstado(entrada:any, estado:any){
@@ -116,19 +138,27 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
                 if (result.isConfirmed) {
                     this.apiService.store('entrada/aprobar/' + entrada.id, {})
                       .pipe(this.untilDestroyed())
-                      .subscribe(data => {
-                        this.alertService.success('Entrada aprobada correctamente', 'El registro fue aprobado exitosamente.');
-                        this.filtrar();
+                      .subscribe({
+                        next: (data) => {
+                            this.alertService.success('Entrada aprobada correctamente', 'El registro fue aprobado exitosamente.');
+                            this.filtrar();
 
-                        //Generar partida contable
-                        if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
-                            this.apiService.store('entrada/partida-contable/' + data.id, {})
-                              .pipe(this.untilDestroyed())
-                              .subscribe(entrada => {
-                            },error => {this.alertService.error(error);});
+                            //Generar partida contable
+                            if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
+                                this.apiService.store('entrada/partida-contable/' + data.id, {})
+                                  .pipe(this.untilDestroyed())
+                                  .subscribe({
+                                    next: () => {},
+                                    error: (error) => {
+                                        this.alertService.error(error);
+                                    }
+                                  });
+                            }
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
                         }
-
-                    }, error => {this.alertService.error(error); });
+                      });
                 }
             });
         }
@@ -144,16 +174,21 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
                 if (result.isConfirmed) {
                     this.apiService.store('entrada/anular/' + entrada.id, {})
                       .pipe(this.untilDestroyed())
-                      .subscribe(data => {
-                        this.alertService.success('Entrada anulada correctamente', 'El registro fue anulado exitosamente.');
-                        this.filtrar();
-                    }, error => {this.alertService.error(error); });
+                      .subscribe({
+                        next: () => {
+                            this.alertService.success('Entrada anulada correctamente', 'El registro fue anulado exitosamente.');
+                            this.filtrar();
+                        },
+                        error: (error) => {
+                            this.alertService.error(error);
+                        }
+                      });
                 }
             });
         }
     }
 
-    public delete(id:number) {
+    public override delete(id:number) {
         Swal.fire({
             title: '¿Estás seguro?',
             text: '¡Esta acción no se puede deshacer!',
@@ -165,24 +200,32 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
             if (result.isConfirmed) {
                 this.apiService.delete('entrada/', id)
                   .pipe(this.untilDestroyed())
-                  .subscribe(data => {
-                    this.alertService.success('Entrada eliminada correctamente', 'El registro fue eliminado exitosamente.');
-                    this.filtrar();
-                }, error => {this.alertService.error(error); });
+                  .subscribe({
+                    next: () => {
+                        this.alertService.success('Entrada eliminada correctamente', 'El registro fue eliminado exitosamente.');
+                        this.filtrar();
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                    }
+                  });
             }
         });
     }
-
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     // Filtros
     openFilter(template: TemplateRef<any>) {
         if(!this.usuarios.length){
             this.apiService.getAll('usuarios/filtrar/tipo/Empleado')
               .pipe(this.untilDestroyed())
-              .subscribe(usuarios => { 
-                this.usuarios = usuarios.data;
-            }, error => {this.alertService.error(error); });
+              .subscribe({
+                next: (usuarios) => {
+                    this.usuarios = usuarios.data;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+              });
         }
         this.openModal(template);
     }
@@ -197,18 +240,20 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
         this.loading = false;
     }
 
-    public onSubmit() {
+    public override async onSubmit() {
         this.saving = true;            
-        this.apiService.store('entrada', this.entrada)
+        try {
+            await this.apiService.store('entrada', this.entrada)
           .pipe(this.untilDestroyed())
-          .subscribe(entrada => {
-            this.alertService.success('Entrada actualizada correctamente', 'El registro fue actualizado exitosamente.');
-            this.saving = false;
-            this.filtrar();
-        }, error => {
-            this.alertService.error(error);
-            this.saving = false;
-        });
+                .toPromise();
+            
+                this.alertService.success('Entrada actualizada correctamente', 'El registro fue actualizado exitosamente.');
+                this.filtrar();
+        } catch (error: any) {
+                this.alertService.error(error);
+        } finally {
+                this.saving = false;
+            }
     }
 
     generarPartidaContable(entrada: any) {
@@ -224,17 +269,17 @@ export class InventarioEntradasComponent extends BaseFilteredPaginatedModalCompo
                 this.loading = true;
                 this.apiService.store('entrada/partida-contable/' + entrada.id, {})
                   .pipe(this.untilDestroyed())
-                  .subscribe(
-                    (response) => {
+                  .subscribe({
+                    next: () => {
                         this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
                         this.loading = false;
                         this.filtrar();
                     },
-                    (error) => {
+                    error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
                     }
-                );
+                  });
             }
         });
     }

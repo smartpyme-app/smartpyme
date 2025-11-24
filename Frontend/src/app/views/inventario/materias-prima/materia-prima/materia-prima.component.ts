@@ -64,18 +64,25 @@ export class MateriaPrimaComponent implements OnInit {
 
 	}
 
-	public onSubmit() {
+	public async onSubmit() {
 	    this.loading = true;
-	    this.apiService.store('materia-prima', this.producto)
-	      .pipe(this.untilDestroyed())
-	      .subscribe(producto => {
+	    try {
+	        const isNew = !this.producto.id;
+	        const productoGuardado = await this.apiService.store('materia-prima', this.producto)
+	            .pipe(this.untilDestroyed())
+	            .toPromise();
+	        
+	        if (isNew) {
+	            this.producto = productoGuardado;
+	            this.router.navigate(['/materia-prima/' + productoGuardado.id]);
+	        }
+	        
+	        this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente');
+	    } catch (error: any) {
+	        this.alertService.error(error);
+	    } finally {
 	        this.loading = false;
-	    	if(!this.producto.id) {
-	    		this.producto = producto;
-	    		this.router.navigate(['/materia-prima/'+ producto.id]);
-	    	}
-	    	this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente');
-	    },error => {this.alertService.error(error); this.loading = false; });
+	    }
 	}
 	
 
