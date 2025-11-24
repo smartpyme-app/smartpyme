@@ -7,12 +7,13 @@ use App\Models\Transporte\Fletes\Detalle;
 use App\Models\Transporte\Motoristas\Motorista;
 use App\Models\Transporte\Flotas\Flota;
 use App\Models\Ventas\Clientes\Cliente;
+use Faker\Factory;
      
 class FletesTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
 
         for($i = 0; $i <= 20 ; $i++)

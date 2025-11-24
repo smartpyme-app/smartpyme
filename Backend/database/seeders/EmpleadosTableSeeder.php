@@ -3,12 +3,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Empleados\Empleados\Empleado;
+use Faker\Factory;
      
 class EmpleadosTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
 
         for($i = 0; $i <= 5 ; $i++)

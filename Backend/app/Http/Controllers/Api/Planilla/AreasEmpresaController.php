@@ -19,10 +19,10 @@ class AreasEmpresaController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth');
-        
+        // El middleware jwt.auth ya está aplicado en la ruta
+        // Solo obtenemos el usuario en un middleware closure
         $this->middleware(function ($request, $next) {
-            $this->usuario = Auth::user();
+            $this->usuario = auth()->user();
             return $next($request);
         });
     }

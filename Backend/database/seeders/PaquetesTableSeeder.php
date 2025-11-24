@@ -8,12 +8,13 @@ use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\Sucursal;
 use App\Models\User;
+use Faker\Factory;
      
 class PaquetesTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
 
         for($i = 0; $i <= 20 ; $i++)

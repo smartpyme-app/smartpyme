@@ -3,13 +3,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Transporte\Flotas\Flota;
+use Faker\Factory;
      
 class FlotasTableSeeder extends Seeder {
 
     public function run()
     {
 
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for ($i=0; $i < 20; $i++) { 
             Flota::create([

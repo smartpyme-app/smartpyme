@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Auth;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -25,6 +26,13 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        //
+        // Registrar el driver JWT para Laravel 9
+        Auth::extend('jwt', function ($app, $name, array $config) {
+            return new \Tymon\JWTAuth\JWTGuard(
+                $app->make(\Tymon\JWTAuth\JWT::class),
+                Auth::createUserProvider($config['provider'] ?? null),
+                $app['request']
+            );
+        });
     }
 }

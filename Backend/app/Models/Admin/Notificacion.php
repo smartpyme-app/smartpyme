@@ -39,7 +39,7 @@ class Notificacion extends Model
     }
 
     public function getCreatedAtHumanAttribute(){
-        return Carbon::parse($this->created_at)->diffForhumans();
+        return Carbon::parse($this->created_at)->diffForHumans();
     }
 
     public function usuario(){

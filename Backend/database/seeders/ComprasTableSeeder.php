@@ -4,12 +4,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle;
+use Faker\Factory;
      
 class ComprasTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for($i = 1; $i <= 50 ; $i++)
         {
