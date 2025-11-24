@@ -39,6 +39,7 @@ export class VentasComponent implements OnInit {
     sucursales: [],
     categorias: [],
     marcas: [],
+    detallePorSucursal: false,
   };
   public filtrosPorMarca: any = {
     inicio: '',
@@ -457,6 +458,7 @@ export class VentasComponent implements OnInit {
           sucursales: [],
           categorias: [],
           marcas: [],
+          detallePorSucursal: false,
         };
       },
       (error) => {
