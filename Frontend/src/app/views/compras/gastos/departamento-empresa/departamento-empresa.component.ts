@@ -10,7 +10,7 @@ import { ApiService } from '@services/api.service';
 import { Router } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-departamento-empresa',
@@ -20,11 +20,10 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     
 })
 
-export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent implements OnInit {
+export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public departamentos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public departamentos: any = {};
     public departamento: any = {};
-    public override saving: boolean = false;
     public downloading: boolean = false;
 
     public sucursales: any = [];
@@ -39,15 +38,48 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
         protected override modalManager: ModalManagerService,
         private router: Router
     ) {
-        super(apiService, alertService, modalManager);
-    }
-
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.departamentos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.departamentos = data;
+        super(apiService, alertService, modalManager, {
+            endpoint: 'departamentosEmpresa',
+            itemsProperty: 'departamentos',
+            itemProperty: 'departamento',
+            reloadAfterSave: true,
+            reloadAfterDelete: true,
+            messages: {
+                created: 'El departamento fue creado exitosamente.',
+                updated: 'El departamento fue actualizado exitosamente.',
+                deleted: 'El departamento fue eliminado exitosamente.',
+                createTitle: 'Departamento guardado',
+                updateTitle: 'Departamento actualizado',
+                deleteTitle: 'Departamento eliminado',
+                deleteConfirm: '¿Está seguro de eliminar este departamento? Esta acción eliminará también todas las áreas asociadas y no se puede deshacer.'
+            },
+            beforeSave: (item: any) => {
+                // Validaciones
+                if (!item.nombre || item.nombre.trim() === '') {
+                    throw new Error('El nombre del departamento es requerido');
+                }
+                if (!item.id_sucursal) {
+                    throw new Error('Debe seleccionar una sucursal');
+                }
+                // Asegurar que estado tenga un valor por defecto
+                if (!item.estado) {
+                    item.estado = '1';
+                }
+                return item;
+            },
+            afterSave: () => {
+                this.resetDepartamento();
+            },
+            initNewItem: (item: any) => {
+                return {
+                    id: null,
+                    nombre: '',
+                    descripcion: '',
+                    id_sucursal: '',
+                    estado: '1'
+                };
+            }
+        });
     }
 
     ngOnInit() {
@@ -55,7 +87,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
         this.loadSucursales();
     }
 
-    public loadAll() {
+    public override loadAll() {
         // Inicializar filtros
         this.filtros = {
             id_sucursal: '',
@@ -68,11 +100,10 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
             paginate: 10
         };
 
-        this.loading = true;
-        this.filtrarDepartamento();
+        super.loadAll();
     }
 
-    public filtrarDepartamento() {
+    protected override aplicarFiltros(): void {
         this.loading = true;
 
         const filtrosParaEnviar = { ...this.filtros };
@@ -108,7 +139,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
             this.filtros.direccion = 'asc';
         }
 
-        this.filtrarDepartamento();
+        this.aplicarFiltros();
     }
 
     public toggleEstado(departamento: any) {
@@ -117,17 +148,14 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
         
         if (confirm(`¿Está seguro de ${nuevoEstado == '1' ? 'activar' : 'desactivar'} este departamento?`)) {
             departamento.estado = nuevoEstado;
-            this.saving = true;
             
             this.apiService.store('departamentosEmpresa/changeState/' + departamento.id, departamento)
               .pipe(this.untilDestroyed())
               .subscribe(response => { 
-                this.saving = false;
                 this.alertService.success('Departamento actualizado', `El departamento fue ${estadoTexto} exitosamente.`);
-                this.filtrarDepartamento();
+                this.aplicarFiltros();
             }, error => {
                 this.alertService.error(error);
-                this.saving = false;
                 // Revertir el cambio en caso de error
                 departamento.estado = departamento.estado == '1' ? '0' : '1';
             });
@@ -135,8 +163,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
     }
 
     public editDepartamento(template: TemplateRef<any>, departamento: any) {
-        this.departamento = { ...departamento }; // Crear una copia del departamento
-        this.openModal(template);
+        this.openModal(template, departamento);
     }
 
     public verAreas(departamento: any) {
@@ -145,60 +172,77 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
         this.alertService.success('Áreas cargadas', `Se cargaron las áreas del departamento ${departamento.nombre}`);
     }
 
-    public onSubmit() {
-        if (!this.departamento.nombre || this.departamento.nombre.trim() === '') {
+    public override async onSubmit(item?: any, isStatusChange: boolean = false): Promise<void> {
+        const itemToSave = item || this.departamento;
+        
+        if (!itemToSave) {
+            console.error('No se encontró el departamento a guardar');
+            return;
+        }
+
+        // Validaciones
+        if (!itemToSave.nombre || itemToSave.nombre.trim() === '') {
             this.alertService.error('El nombre del departamento es requerido');
             return;
         }
 
-        if (!this.departamento.id_sucursal) {
+        if (!itemToSave.id_sucursal) {
             this.alertService.error('Debe seleccionar una sucursal');
             return;
         }
 
+        // Asegurar que estado tenga un valor por defecto
+        if (!itemToSave.estado) {
+            itemToSave.estado = '1';
+        }
+
+        this.loading = true;
         this.saving = true;
-        
-        // Asegurar que activo tenga un valor por defecto
-        if (!this.departamento.estado) {
-            this.departamento.estado = '1';
-        }
 
-        const action = this.departamento.id ? 'actualizado' : 'creado';
+        try {
+            // Usar endpoint diferente para actualización
+            const endpoint = itemToSave.id ? 'departamentosEmpresa/update' : 'departamentosEmpresa';
+            const savedItem = await this.apiService.store(endpoint, itemToSave)
+                .pipe(this.untilDestroyed())
+                .toPromise();
 
-        const urlRoute = this.departamento.id ? 'departamentosEmpresa/update' : 'departamentosEmpresa';
-        
-        this.apiService.store(urlRoute, this.departamento)
-          .pipe(this.untilDestroyed())
-          .subscribe(response => { 
-            this.saving = false;
-            this.alertService.success('Departamento guardado', `El departamento fue ${action} exitosamente.`);
-            this.closeModal();
-            this.filtrarDepartamento();
-            this.resetDepartamento();
-        }, error => {
+            // Actualizar el item en el componente
+            this.departamento = savedItem;
+
+            // Actualizar en la lista
+            if (itemToSave.id) {
+                this.updateItemInList(savedItem);
+            } else {
+                this.addItemToList(savedItem);
+            }
+
+            // Mostrar mensaje de éxito
+            const title = itemToSave.id ? this.config.messages!.updateTitle! : this.config.messages!.createTitle!;
+            const message = itemToSave.id ? this.config.messages!.updated! : this.config.messages!.created!;
+            this.alertService.success(title, message);
+
+            // Recargar lista
+            if (this.config.reloadAfterSave) {
+                this.aplicarFiltros();
+            }
+
+            // Ejecutar callback afterSave
+            if (this.config.afterSave) {
+                this.config.afterSave(savedItem, !itemToSave.id);
+            }
+
+            // Cerrar modal si existe
+            if (this.modalRef) {
+                this.closeModal();
+            }
+
+        } catch (error: any) {
             this.alertService.error(error);
+        } finally {
+            this.loading = false;
             this.saving = false;
-        });
-    }
-
-    public delete(id: number) {
-        if (confirm('¿Está seguro de eliminar este departamento? Esta acción eliminará también todas las áreas asociadas y no se puede deshacer.')) {
-            this.apiService.delete('departamentosEmpresa/', id)
-              .pipe(this.untilDestroyed())
-              .subscribe(data => {
-                this.alertService.success('Departamento eliminado', 'El departamento fue eliminado exitosamente.');
-                // Remover el elemento del array local
-                if (this.departamentos && this.departamentos.data) {
-                    this.departamentos.data = this.departamentos.data.filter((dept: any) => dept.id !== id);
-                    this.departamentos.total--;
-                }
-            }, error => {
-                this.alertService.error(error);
-            });
         }
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public descargar() {
         this.downloading = true;
@@ -226,10 +270,9 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
         this.openModal(template);
     }
 
-    public override openModal(template: TemplateRef<any>, config?: any) {
+    public override openModal(template: TemplateRef<any>, item?: any, config?: any) {
         this.loadSucursales();
-        this.resetDepartamento();
-        super.openModal(template, config);
+        super.openModal(template, item, config);
     }
 
     public onSucursalChange() {
@@ -239,7 +282,7 @@ export class DepartamentoEmpresaComponent extends BasePaginatedModalComponent im
 
     public onFilterSucursalChange() {
         // Filtrar automáticamente cuando cambie la sucursal en filtros
-        this.filtrarDepartamento();
+        this.aplicarFiltros();
     }
 
     private loadSucursales() {

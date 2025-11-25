@@ -10,7 +10,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-excel.component';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -20,13 +20,11 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
 
 })
-export class ClientesComponent extends BasePaginatedModalComponent implements OnInit {
+export class ClientesComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public clientes: PaginatedResponse<any> = {} as PaginatedResponse;
+    public clientes:any = {};
     public cliente:any = {};
     public downloading:boolean = false;
-
-    public override filtros:any = {};
     public producto:any = {};
     public categorias:any = [];
 
@@ -35,23 +33,33 @@ export class ClientesComponent extends BasePaginatedModalComponent implements On
         alertService:AlertService, 
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'cliente',
+            itemsProperty: 'clientes',
+            itemProperty: 'cliente',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El cliente fue actualizado exitosamente.',
+                updated: 'El cliente fue actualizado exitosamente.',
+                createTitle: 'Cliente actualizado',
+                updateTitle: 'Cliente actualizado'
+            },
+            afterSave: () => {
+                this.cliente = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.clientes;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.clientes = data;
+    protected aplicarFiltros(): void {
+        this.filtrarClientes();
     }
 
     ngOnInit() {
-
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.tipo_contribuyente = '';
         this.filtros.tipo = '';
@@ -68,14 +76,17 @@ export class ClientesComponent extends BasePaginatedModalComponent implements On
         }
     }
 
-    public filtrarClientes(){
+    public async filtrarClientes(): Promise<void> {
         this.loading = true;
-        this.apiService.getAll('clientes', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe(clientes => { 
-                this.clientes = clientes;
-                this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+        try {
+            this.clientes = await this.apiService.getAll('clientes', this.filtros)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
     
     public setOrden(columna: string) {
@@ -100,39 +111,37 @@ export class ClientesComponent extends BasePaginatedModalComponent implements On
         this.onSubmit();
     }
 
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('cliente', this.cliente)
-            .pipe(this.untilDestroyed())
-            .subscribe(cliente => {
-                this.cliente = {};
-                this.saving = false;
-                this.alertService.success('Cliente actualizado', 'El cliente fue actualizado exitosamente.');
-            }, error => {this.alertService.error(error); this.saving = false;});
-    }
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
+        }
 
-    public delete(cliente:any){
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('cliente/', cliente.id)
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('cliente/', itemToDelete)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.clientes.data.length; i++) { 
-                        if (this.clientes.data[i].id == data.id )
-                            this.clientes.data.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
+                .toPromise();
+            
+            const index = this.clientes.data?.findIndex((c: any) => c.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.clientes.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
         }
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-    // openModal() ahora se hereda de BasePaginatedModalComponent
-
-    public descargarPersonas(){
+    public async descargarPersonas(): Promise<void> {
         this.downloading = true;
-        this.apiService.export('clientes-personas/exportar', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
+        try {
+            const data = await this.apiService.export('clientes-personas/exportar', this.filtros)
+                .pipe(this.untilDestroyed())
+                .toPromise() as Blob;
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -142,18 +151,21 @@ export class ClientesComponent extends BasePaginatedModalComponent implements On
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            this.downloading = false;
             this.alertService.modal = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
-        );
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.alertService.modal = false;
+        } finally {
+            this.downloading = false;
+        }
     }
 
-    public descargarEmpresas(){
+    public async descargarEmpresas(): Promise<void> {
         this.downloading = true;
-        this.alertService.modal = false;
-        this.apiService.export('clientes-empresas/exportar', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
+        try {
+            const data = await this.apiService.export('clientes-empresas/exportar', this.filtros)
+                .pipe(this.untilDestroyed())
+                .toPromise() as Blob;
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -163,33 +175,13 @@ export class ClientesComponent extends BasePaginatedModalComponent implements On
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-            this.downloading = false;
             this.alertService.modal = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
-        );
-    }
-
-
-    public descargarExtranjeros(){
-        this.downloading = true;
-        this.alertService.modal = false;
-        this.apiService.export('clientes-extranjeros/exportar', this.filtros)
-            .pipe(this.untilDestroyed())
-            .subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'clientes-extranjeros.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloading = false;
+        } catch (error: any) {
+            this.alertService.error(error);
             this.alertService.modal = false;
-        }, (error) => { this.alertService.error(error); this.downloading = false; this.alertService.modal = false;}
-        );
+        } finally {
+            this.downloading = false;
+        }
     }
-
 
 }

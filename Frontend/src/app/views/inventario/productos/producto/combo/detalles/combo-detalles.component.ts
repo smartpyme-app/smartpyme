@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -26,7 +26,6 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
   public detalle: any = {};
   public supervisor: any = {};
 
-
   @Output() update = new EventEmitter();
   @Output() sumTotal = new EventEmitter();
 
@@ -34,9 +33,6 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
   public supervisorTemplate!: TemplateRef<any>;
 
   public buscador: string = '';
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private apiService: ApiService, 
@@ -94,7 +90,6 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
     this.detalle.total_costo = (this.detalle.costo * this.detalle.cantidad);
     this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.costo) - parseFloat(this.detalle.descuento)).toFixed(2);
 
-
     if (!detalle)
       this.producto.detalles.push(this.detalle);
 
@@ -132,6 +127,5 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
   public sumTotalEmit() {
     this.sumTotal.emit();
   }
-
 
 }

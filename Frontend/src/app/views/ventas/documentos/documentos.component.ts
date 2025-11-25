@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,11 +7,9 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { FilterPipe } from '@pipes/filter.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
-
 
 @Component({
     selector: 'app-documentos',
@@ -21,50 +19,67 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     
 })
 
-export class DocumentosComponent extends BaseModalComponent implements OnInit {
+export class DocumentosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public documentos:any = [];
     public documento:any = {};
     public sucursales:any = [];
-    public override loading:boolean = false;
     public filtro:any = {};
     public filtrado:boolean = false;
 
     public nuevaResolucion:boolean = false;
     public change:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'documento',
+            itemsProperty: 'documentos',
+            itemProperty: 'documento',
+            messages: {
+                created: 'El documento fue añadido exitosamente.',
+                updated: 'El documento fue guardado exitosamente.',
+                createTitle: 'Documento creado',
+                updateTitle: 'Documento guardado'
+            },
+            initNewItem: (item) => {
+                item.id_empresa = apiService.auth_user().id_empresa;
+                item.id_sucursal = apiService.auth_user().id_sucursal;
+                item.activo = true;
+                item.correlativo = 1;
+                return item;
+            }
+        });
     }
 
     ngOnInit() {
-
         this.loadAll();
     }
 
-    public loadAll() {        
+    public override async loadAll(): Promise<void> {
         this.loading = true;
         this.filtro.estado = '';
-        this.apiService.getAll('documentos')
-            .pipe(this.untilDestroyed())
-            .subscribe(documentos => { 
-                this.documentos = documentos;
-                this.loading = false;this.filtrado = false;
-            }, error => {this.alertService.error(error); });
+        try {
+            this.documentos = await this.apiService.getAll('documentos')
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            this.filtrado = false;
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
 
-    public override openModal(template: TemplateRef<any>, documento?: any, nuevaResolucion?: boolean): void;
-    public override openModal(template: TemplateRef<any>, config?: any): void;
-    public override openModal(template: TemplateRef<any>, documentoOrConfig?: any, nuevaResolucion?: boolean): void {
-        // Si el segundo parámetro es un objeto con propiedades de documento o es undefined/null
-        // y el tercer parámetro es un boolean, entonces es la firma personalizada
+    protected aplicarFiltros(): void {
+        this.loadAll();
+    }
+
+    public override async openModal(template: TemplateRef<any>, documentoOrConfig?: any, nuevaResolucion?: boolean): Promise<void> {
+        // Manejar la sobrecarga compleja del método original
         const isCustomSignature = nuevaResolucion !== undefined || 
             (documentoOrConfig && typeof documentoOrConfig === 'object' && !documentoOrConfig.class && !documentoOrConfig.size && !documentoOrConfig.backdrop);
         
@@ -79,12 +94,16 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
                 this.documento.activo = true;
                 this.documento.correlativo = 1;
             }
-            this.apiService.getAll('sucursales/list')
-                .pipe(this.untilDestroyed())
-                .subscribe(sucursales => {
-                this.sucursales = sucursales;
-            }, error => {this.alertService.error(error);});
-            super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+            
+            try {
+                this.sucursales = await this.apiService.getAll('sucursales/list')
+                    .pipe(this.untilDestroyed())
+                    .toPromise();
+            } catch (error: any) {
+                this.alertService.error(error);
+            }
+
+            super.openModal(template, documento, {class: 'modal-md', backdrop: 'static'});
         
             if (nuevaResolucion) {
                 this.documento.correlativo = '';
@@ -101,46 +120,42 @@ export class DocumentosComponent extends BaseModalComponent implements OnInit {
         }
     }
 
-    public setEstado(documento:any,change:boolean = false){
+    public setEstado(documento:any, change:boolean = false){
         this.documento = documento;
         this.documento.change = change;
         this.onSubmit();
     }
 
-    public onSubmit(){
-        this.loading = true;
-        this.documento.nuevaResolucion = this.nuevaResolucion;
-        this.apiService.store('documento', this.documento)
-            .pipe(this.untilDestroyed())
-            .subscribe(documento => {
-            if (!this.documento.id) {
-                this.documentos.push(documento);
-                this.alertService.success('Documento creado', 'El documento fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente.');
-            }
-            this.loading = false;
-            this.loadAll();
-            if (this.modalRef) {
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public override async onSubmit(item?: any): Promise<void> {
+        const documentoToSave = item || this.documento;
+        documentoToSave.nuevaResolucion = this.nuevaResolucion;
+        await super.onSubmit(documentoToSave);
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.documentos.length; i++) { 
-                    if (this.documentos[i].id == data.id )
-                        this.documentos.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+    public override async delete(item: any | number): Promise<void> {
+        // Corregir endpoint (estaba usando 'gasto/' por error)
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            const deletedItem = await this.apiService.delete('documento/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.documentos.findIndex((d: any) => d.id === deletedItem.id);
+            if (index !== -1) {
+                this.documentos.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
 
 }

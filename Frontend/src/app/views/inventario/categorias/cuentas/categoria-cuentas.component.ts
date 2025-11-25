@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,9 +23,6 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
     public cuenta:any = {};
     public sucursales:any = [];
     public catalogo:any = [];
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService, 
@@ -91,6 +88,5 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
         }
 
     }
-
 
 }

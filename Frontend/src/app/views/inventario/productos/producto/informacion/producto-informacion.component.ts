@@ -4,7 +4,6 @@ import {
   TemplateRef,
   Input,
   ViewChild,
-  DestroyRef,
   inject,
 } from '@angular/core';
 
@@ -22,7 +21,6 @@ import { TagInputModule } from 'ngx-chips';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { finalize } from 'rxjs/operators';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
-
 
 @Component({
     selector: 'app-producto-informacion',
@@ -53,9 +51,6 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   tipoAtributoActual: string = '';
   nuevoAtributo: any = {};
   guardandoAtributo: boolean = false;
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -339,8 +334,6 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
   removeVariant(index: number): void {
     this.variants.splice(index, 1);
   }
-
-
 
   addAttribute(event: any, tipo: string) {
     switch (tipo) {

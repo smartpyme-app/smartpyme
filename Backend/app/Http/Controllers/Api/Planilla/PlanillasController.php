@@ -364,9 +364,26 @@ class PlanillasController extends Controller
         }
     }
 
-    private function calcularSalarioDevengado($salarioBase, $diasLaborados)
+    private function calcularSalarioDevengado($salarioBase, $diasLaborados, $tipoContrato = null, $tipoPlanilla = 'mensual')
     {
-        return ($salarioBase / 30) * $diasLaborados;
+        if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+            // Para contratos Por Obra, el salario base ES el monto total del período
+            // NO se divide proporcionalmente
+            return $salarioBase;
+        } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+            // Para Servicios Profesionales, el salario base es MENSUAL
+            // Se divide según tipo de planilla pero NO usa días laborados
+            if ($tipoPlanilla === 'quincenal') {
+                return $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                return $salarioBase / 4.33;
+            } else {
+                return $salarioBase; // mensual
+            }
+        } else {
+            // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+            return ($salarioBase / 30) * $diasLaborados;
+        }
     }
 
     private function calcularISSSyAFP($salarioDevengado)
@@ -671,19 +688,40 @@ class PlanillasController extends Controller
 
         // Calcular salario base ajustado según tipo de planilla
         $salarioBase = $empleado->salario_base;
-        $salarioBaseAjustado = $salarioBase;
-
-        if ($tipoPlanilla === 'quincenal') {
-            $salarioBaseAjustado = $salarioBase / 2;
-        } elseif ($tipoPlanilla === 'semanal') {
-            $salarioBaseAjustado = $salarioBase / 4.33;
-        }
+        $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+        $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
         // Días laborados (por defecto el período completo)
         $diasLaborados = $diasReferencia;
 
-        // Salario devengado proporcional
-        $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+        // Calcular salario devengado
+        if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+            // Para contratos Por Obra, el salario base ES el monto total del período
+            // NO se divide proporcionalmente
+            $salarioBaseAjustado = $salarioBase;
+            $salarioDevengado = $salarioBase;
+        } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+            // Para Servicios Profesionales, el salario base es MENSUAL
+            // Se divide según tipo de planilla pero NO usa días laborados
+            $salarioBaseAjustado = $salarioBase;
+            if ($tipoPlanilla === 'quincenal') {
+                $salarioDevengado = $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                $salarioDevengado = $salarioBase / 4.33;
+            } else {
+                $salarioDevengado = $salarioBase; // mensual
+            }
+        } else {
+            // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
+            $salarioBaseAjustado = $salarioBase;
+            if ($tipoPlanilla === 'quincenal') {
+                $salarioBaseAjustado = $salarioBase / 2;
+            } elseif ($tipoPlanilla === 'semanal') {
+                $salarioBaseAjustado = $salarioBase / 4.33;
+            }
+            // Calcular proporcionalmente según días laborados
+            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
+        }
 
         // 🎯 PREPARAR DATOS PARA EL SERVICE
         $datosEmpleado = [
@@ -883,7 +921,8 @@ class PlanillasController extends Controller
             'anticipos' => 'nullable|numeric|min:0',
             'otros_descuentos' => 'nullable|numeric|min:0',
             'descuentos_judiciales' => 'nullable|numeric|min:0',
-            'detalle_otras_deducciones' => 'nullable|string'
+            'detalle_otras_deducciones' => 'nullable|string',
+            'salario_base' => 'nullable|numeric|min:0' // ✅ Permitir editar salario_base para contratos por obra
         ]);
 
         try {
@@ -911,6 +950,10 @@ class PlanillasController extends Controller
                 $factorAjuste = 4.33;
             }
 
+            // Verificar tipo de contrato primero
+            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
+
             // Actualizar campos básicos
             $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
             $detalle->horas_extra = $request->horas_extra ?? 0;
@@ -923,11 +966,39 @@ class PlanillasController extends Controller
             $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
             $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
 
-            // Calcular salario devengado según días laborados
+            // ✅ PERMITIR EDITAR SALARIO_BASE SOLO PARA CONTRATOS POR OBRA (tipo 3)
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA && $request->has('salario_base') && $request->salario_base !== null) {
+                // Para contratos Por obra, permitir editar el monto total del período
+                $detalle->salario_base = $request->salario_base;
+            }
+
+            // Calcular salario devengado
             $salarioBaseMensual = $detalle->salario_base;
-            $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
-                $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
-            $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioDevengado = $salarioBaseMensual;
+                $salarioBaseAjustado = $salarioBaseMensual;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                if ($planilla->tipo_planilla === 'quincenal') {
+                    $salarioDevengado = $salarioBaseMensual / 2;
+                    $salarioBaseAjustado = $salarioBaseMensual / 2;
+                } elseif ($planilla->tipo_planilla === 'semanal') {
+                    $salarioDevengado = $salarioBaseMensual / 4.33;
+                    $salarioBaseAjustado = $salarioBaseMensual / 4.33;
+                } else {
+                    $salarioDevengado = $salarioBaseMensual; // mensual
+                    $salarioBaseAjustado = $salarioBaseMensual;
+                }
+            } else {
+                // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
+                $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
+                    $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
+                $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
+            }
             $detalle->salario_devengado = round($salarioDevengado, 2);
 
             // Calcular monto de horas extra si aplica
@@ -947,11 +1018,11 @@ class PlanillasController extends Controller
 
             // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
             $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
             // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-            if ($esServiciosProfesionales) {
-                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $detalle->isss_empleado = 0;
                 $detalle->isss_patronal = 0;
                 $detalle->afp_empleado = 0;
@@ -2003,18 +2074,18 @@ class PlanillasController extends Controller
     {
         try {
             // Calcular salario base según el tipo de planilla
-            $salarioBase = $empleado->salario_base;
+            $salarioBaseMensual = $empleado->salario_base;
+            $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
+            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
             $diasReferencia = 30; // Por defecto, mensual
 
             // Ajustar según el tipo de planilla
             switch ($planilla->tipo_planilla) {
                 case 'quincenal':
                     $diasReferencia = 15;
-                    $salarioBase = $salarioBase / 2;
                     break;
                 case 'semanal':
                     $diasReferencia = 7;
-                    $salarioBase = $salarioBase / 4.33; // Aproximadamente 4.33 semanas por mes
                     break;
                 default:
                     $diasReferencia = 30;
@@ -2024,16 +2095,45 @@ class PlanillasController extends Controller
             // Calcular días laborados (por defecto el período completo)
             $diasLaborados = $diasReferencia;
 
-            // Calcular salario devengado proporcional
-            $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
+            // Calcular salario base y devengado según tipo de contrato
+            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
+                // Para contratos Por Obra, el salario base ES el monto total del período
+                // NO se divide proporcionalmente
+                $salarioBase = $salarioBaseMensual;
+                $salarioDevengado = $salarioBaseMensual;
+            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
+                // Para Servicios Profesionales, el salario base es MENSUAL
+                // Se divide según tipo de planilla pero NO usa días laborados
+                $salarioBase = $salarioBaseMensual;
+                switch ($planilla->tipo_planilla) {
+                    case 'quincenal':
+                        $salarioDevengado = $salarioBaseMensual / 2;
+                        break;
+                    case 'semanal':
+                        $salarioDevengado = $salarioBaseMensual / 4.33;
+                        break;
+                    default:
+                        $salarioDevengado = $salarioBaseMensual; // mensual
+                        break;
+                }
+            } else {
+                // Para empleados asalariados regulares, ajustar según tipo de planilla y días laborados
+                $salarioBase = $salarioBaseMensual;
+                switch ($planilla->tipo_planilla) {
+                    case 'quincenal':
+                        $salarioBase = $salarioBaseMensual / 2;
+                        break;
+                    case 'semanal':
+                        $salarioBase = $salarioBaseMensual / 4.33;
+                        break;
+                }
+                // Calcular proporcionalmente según días laborados
+                $salarioDevengado = ($salarioBase / $diasReferencia) * $diasLaborados;
+            }
 
-            // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
-            $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-            $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
-
-            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-            if ($esServiciosProfesionales) {
-                // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO (variables ya definidas arriba)
+            if ($esContratoSinPrestaciones) {
+                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $isssEmpleado = 0;
                 $isssPatronal = 0;
                 $afpEmpleado = 0;
@@ -2415,13 +2515,6 @@ class PlanillasController extends Controller
                 $empresaId,
                 $tipoPlanilla
             );
-
-            Log::info('✅ RESULTADOS HÍBRIDO EXITOSO', [
-                'isss_empleado' => $resultados['isss_empleado'] ?? 'N/A',
-                'afp_empleado' => $resultados['afp_empleado'] ?? 'N/A',
-                'renta' => $resultados['renta'] ?? 'N/A'
-            ]);
-
             return $resultados;
 
         } catch (\Exception $e) {
@@ -2504,13 +2597,13 @@ class PlanillasController extends Controller
         $diasLaborados = $diasReferencia;
         $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $diasLaborados;
 
-        // ✅ VERIFICAR SI ES SERVICIOS PROFESIONALES
+        // ✅ VERIFICAR SI ES CONTRATO SIN PRESTACIONES
         $tipoContrato = $empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-        $esServiciosProfesionales = PlanillaConstants::esContratoServiciosProfesionales($tipoContrato);
+        $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
         // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-        if ($esServiciosProfesionales) {
-            // SERVICIOS PROFESIONALES: Sin ISSS ni AFP
+        if ($esContratoSinPrestaciones) {
+            // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
             $isssEmpleado = 0;
             $isssPatronal = 0;
             $afpEmpleado = 0;

@@ -116,33 +116,37 @@ export class UsuarioComponent implements OnInit {
 
 	}
 
-	public onSubmit() {
+	public async onSubmit() {
 	    this.loading = true;
 	    if(this.usuario.tipo == 1) {
 	    	this.usuario.caja_id == null;
 	    }
 
-	    let formData:FormData = new FormData();
-	    for (var key in this.usuario) {
+	    const formData: FormData = new FormData();
+	    for (const key in this.usuario) {
 	        if (key == 'activo' || key == 'empleado') {
 	            this.usuario[key] = this.usuario[key] ? 1 : 0;
 	        }
 	        formData.append(key, this.usuario[key] == null ? '' : this.usuario[key]);
 	    }
 
-	    // Guardamos al usuario
-	    this.apiService.store('usuario', formData)
-            .pipe(this.untilDestroyed())
-            .subscribe(usuario => {
+	    try {
+	        // Guardamos al usuario
+	        const usuarioGuardado = await this.apiService.store('usuario', formData)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+	        
 	        if (!this.usuario.id) {
 		        this.router.navigate(['/usuarios']);
 	        }
-	        this.usuario = usuario;
-	        this.loading = false;
+	        this.usuario = usuarioGuardado;
 	        this.preview = false;
 	        this.alertService.success('Usuario guardado', 'El usuario fue guardado exitosamente.');
-	    },error => {this.alertService.error(error); this.loading = false; });
-
+	    } catch (error: any) {
+	        this.alertService.error(error);
+	    } finally {
+	        this.loading = false;
+	    }
 	}
 
 	setFile(event:any){

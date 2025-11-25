@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,9 +27,6 @@ export class CrearAjusteComponent extends BaseModalComponent implements OnInit {
 	public lugares:any [] = [];
 
  	public override loading = false;
-
-	private destroyRef = inject(DestroyRef);
-	private untilDestroyed = subscriptionHelper(this.destroyRef);
 
    constructor(
         private apiService: ApiService,

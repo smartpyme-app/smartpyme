@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-theme',
@@ -12,12 +13,14 @@ import { AlertService } from '../../../services/alert.service';
     imports: [CommonModule, RouterModule],
     
 })
-export class ThemeComponent implements OnInit {
+export class ThemeComponent extends BaseComponent implements OnInit {
 
     public file:any;
     public loading:boolean = false;
 
-    constructor( public apiService:ApiService, private alertService:AlertService ){}
+    constructor( public apiService:ApiService, private alertService:AlertService ){
+        super();
+    }
 
     ngOnInit() {
         this.apiService.loadTheme();

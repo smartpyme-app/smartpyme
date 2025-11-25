@@ -13,7 +13,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../directives/lazy-image.directive';
 
 declare var $:any;
@@ -26,7 +26,7 @@ declare var $:any;
 
 })
 
-export class ComprasComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
 
     public compras:any = [];
     public compra:any = {};
@@ -62,7 +62,26 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
         private route: ActivatedRoute,
         private sharedDataService: SharedDataService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'compra',
+            itemsProperty: 'compras',
+            itemProperty: 'compra',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La compra fue guardada exitosamente.',
+                updated: 'La compra fue guardada exitosamente.',
+                deleted: 'Compra eliminada exitosamente.',
+                createTitle: 'Compra guardada',
+                updateTitle: 'Compra guardada',
+                deleteTitle: 'Compra eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            afterSave: () => {
+                this.compra = {};
+                this.filtrarCompras();
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -106,7 +125,7 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
             });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
         this.filtros.id_usuario = '';
@@ -165,37 +184,23 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
         this.filtrarCompras();
     }
 
-    public setEstado(compra:any, estado:any){
+    public setEstado(compra: any, estado: any){
         if(estado == 'Pagada'){
             if(confirm('¿Confirma el pago de la compra?')){
-                this.compra = compra;
-                this.compra.estado = estado;
-                this.onSubmit();
+                compra.estado = estado;
+                this.onSubmit(compra, true);
             }
         }
         if(estado == 'Anulada'){
             if(confirm('¿Confirma la anulación de la compra?')){
-                this.compra = compra;
-                this.compra.estado = estado;
-                this.onSubmit();
+                compra.estado = estado;
+                this.onSubmit(compra, true);
             }
         }
-
     }
 
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.compras['data'].length; i++) {
-                    if (this.compras['data'][i].id == data.id )
-                        this.compras['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-
-        }
-
+    public override delete(id: number) {
+        super.delete(id);
     }
 
     public openModalEdit(template: TemplateRef<any>, compra:any) {
@@ -266,21 +271,8 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
 
     }
 
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('compra', this.compra)
-            .pipe(this.untilDestroyed())
-            .subscribe(compra => {
-            this.compra = {};
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-            this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
-        this.filtrarCompras();
-
+    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
+        await super.onSubmit(item, isStatusChange);
     }
 
     public setRecurrencia(compra:any){
@@ -600,3 +592,4 @@ export class ComprasComponent extends BaseFilteredPaginatedModalComponent implem
   }
 
 }
+

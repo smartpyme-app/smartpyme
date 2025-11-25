@@ -51,7 +51,7 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
 	        this.id = +this.route.snapshot.paramMap.get('id')!;
                             
    	        if(isNaN(this.id)){
-   	            this.compras = [];
+   	            this.compras = {} as PaginatedResponse<any>;
    	        }
    	        else{
    	            // Optenemos el proveedor

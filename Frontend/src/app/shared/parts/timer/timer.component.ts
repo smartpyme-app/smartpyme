@@ -1,7 +1,5 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AlertService } from '../../../services/alert.service';
-import { ApiService } from '../../../services/api.service';
 import * as moment from 'moment';
 
 @Component({
@@ -16,7 +14,7 @@ export class TimerComponent implements OnInit, OnDestroy {
     public timeAgo:number = 0;
     public timeResfresh:any;
 
-    constructor(private apiService: ApiService, private alertService: AlertService) { }
+    constructor() { }
 
     ngOnInit() {
         const today = new Date();

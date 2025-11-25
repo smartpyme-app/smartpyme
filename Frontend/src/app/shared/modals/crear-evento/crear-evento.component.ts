@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, ViewChild, OnChanges, SimpleChanges, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -46,9 +46,6 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
   modalCreateProductRef: any;
   conflictEvents: any = [];
   eventosConflictoModalRef: any;
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     private apiService: ApiService,
@@ -159,8 +156,6 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
     }
   }
 
-
-
   setTipo() {
     if (this.evento.tipo = 'Confirmado') {
       this.evento.tipo = 'Sin confirmar';
@@ -172,7 +167,6 @@ export class CrearEventoComponent extends BaseModalComponent implements OnInit, 
   isCitas() {
     return this.usuarioActual.tipo === 'Citas';
   }
-
 
   setTime() {
     let fecha = moment(this.evento.inicio);

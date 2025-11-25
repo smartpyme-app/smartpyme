@@ -6,7 +6,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 
 @Component({
@@ -17,34 +17,44 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     
 })
 
-export class DashboardsComponent extends BasePaginatedModalComponent implements OnInit {
+export class DashboardsComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public dashboards: PaginatedResponse<any> = {} as PaginatedResponse;
+    public dashboards:any = {};
     public dashboard:any = {};
     public empresas:any = [];
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'dashboard',
+            itemsProperty: 'dashboards',
+            itemProperty: 'dashboard',
+            reloadAfterSave: true,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La dashboard fue añadido exitosamente.',
+                updated: 'La dashboard fue guardado exitosamente.',
+                deleted: 'Dashboard eliminado exitosamente.',
+                createTitle: 'Dashboard creado',
+                updateTitle: 'Dashboard guardado',
+                deleteTitle: 'Dashboard eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.dashboards;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.dashboards = data;
+    protected aplicarFiltros(): void {
+        this.filtrarDashboards();
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_empresa = '';
         this.filtros.tipo = '';
         this.filtros.buscador = '';
@@ -54,16 +64,27 @@ export class DashboardsComponent extends BasePaginatedModalComponent implements 
 
         this.loading = true;
         this.filtrarDashboards();
-        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe(empresas => { 
-            this.empresas = empresas;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('empresas/list').pipe(this.untilDestroyed()).subscribe({
+            next: (empresas) => {
+                this.empresas = empresas;
+            },
+            error: (error) => {
+                this.alertService.error(error);
+            }
+        });
     }
 
     public filtrarDashboards(){
-        this.apiService.getAll('dashboards', this.filtros).pipe(this.untilDestroyed()).subscribe(dashboards => { 
-            this.dashboards = dashboards;
-            this.loading = false;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('dashboards', this.filtros).pipe(this.untilDestroyed()).subscribe({
+            next: (dashboards) => {
+                this.dashboards = dashboards;
+                this.loading = false;
+            },
+            error: (error) => {
+                this.alertService.error(error);
+                this.loading = false;
+            }
+        });
     }
 
     public setOrden(columna: string) {
@@ -77,24 +98,23 @@ export class DashboardsComponent extends BasePaginatedModalComponent implements 
         this.loadAll();
     }
 
-
-    public delete(id:number) {
+    public override delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('dashboard/', id).pipe(this.untilDestroyed()).subscribe(data => {
-                for (let i = 0; i < this.dashboards['data'].length; i++) { 
-                    if (this.dashboards['data'][i].id == data.id )
-                        this.dashboards['data'].splice(i, 1);
+            this.apiService.delete('dashboard/', id).pipe(this.untilDestroyed()).subscribe({
+                next: (data) => {
+                    for (let i = 0; i < this.dashboards['data'].length; i++) { 
+                        if (this.dashboards['data'][i].id == data.id )
+                            this.dashboards['data'].splice(i, 1);
+                    }
+                },
+                error: (error) => {
+                    this.alertService.error(error);
                 }
-            }, error => {this.alertService.error(error); });
-                   
+            });
         }
-
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-    // openModal() ahora se hereda de BasePaginatedModalComponent
-
-    override openModal(template: TemplateRef<any>, dashboard?: any) {
+    public override openModal(template: TemplateRef<any>, dashboard?: any) {
         this.dashboard = dashboard || {};
         if (!this.dashboard.id) {
             // this.dashboard.tipo = 'Administrador';
@@ -104,21 +124,4 @@ export class DashboardsComponent extends BasePaginatedModalComponent implements 
             backdrop: 'static'
         });
     }
-
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('dashboard', this.dashboard).pipe(this.untilDestroyed()).subscribe(dashboard => {
-            this.loadAll();
-            this.saving = false;
-            if(!this.dashboards.id){
-                this.alertService.success('Dashboard creado', 'La dashboard fue añadido exitosamente.');
-            }else{
-                this.alertService.success('Dashboard guardado', 'La dashboard fue guardado exitosamente.');
-            }
-            this.closeModal();
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-
 }

@@ -118,33 +118,39 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     }
 
-    public setRecurrencia(compra:any){
+    public async setRecurrencia(compra:any){
         this.compra = compra;
         this.compra.recurrente = false;
         
-        this.apiService.store('marcar-recurrente', this.compra)
-            .pipe(this.untilDestroyed())
-            .subscribe(compra => {
-                this.compra = {};
-                this.loadAll();
-                this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
-
+        try {
+            const compraActualizada = await this.apiService.store('marcar-recurrente', this.compra)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            this.compra = {};
+            this.loadAll();
+            this.alertService.success('Compra guardada', 'La compra se marco como no recurrente exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.saving = false;
+        }
     }
     
-    public delete(id:number) {
+    public async delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('compra/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.compras['data'].length; i++) { 
-                        if (this.compras['data'][i].id == data.id )
-                            this.compras['data'].splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
+            try {
+                const data = await this.apiService.delete('compra/', id)
+                    .pipe(this.untilDestroyed())
+                    .toPromise();
+                
+                for (let i = 0; i < this.compras['data'].length; i++) { 
+                    if (this.compras['data'][i].id == data.id )
+                        this.compras['data'].splice(i, 1);
+                }
+            } catch (error: any) {
+                this.alertService.error(error);
+            }
         }
-
     }
 
     public openModalEdit(template: TemplateRef<any>, compra:any) {
@@ -177,19 +183,23 @@ export class ComprasRecurrentesComponent extends BasePaginatedModalComponent imp
 
     }
 
-    public onSubmit() {
-        this.saving = true;            
-        this.apiService.store('compra', this.compra)
-            .pipe(this.untilDestroyed())
-            .subscribe(compra => {
+    public async onSubmit() {
+        this.saving = true;
+        try {
+            const compraGuardada = await this.apiService.store('compra', this.compra)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.compra = {};
-            this.saving = false;
             if(this.modalRef){
                 this.modalRef.hide();
             }
             this.alertService.success('Venta guardado', 'La compra fue guardada exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
-
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.saving = false;
+        }
     }
 
     // setPagination() ahora se hereda de BasePaginatedComponent

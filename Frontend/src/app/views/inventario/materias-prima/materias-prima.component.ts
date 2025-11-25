@@ -6,7 +6,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -16,11 +16,10 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, LazyImageDirective],
     
 })
-export class MateriasPrimaComponent extends BasePaginatedModalComponent implements OnInit {
+export class MateriasPrimaComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public productos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public productos:any = {};
     public buscador:any = '';
-    
     public filtro:any = {};
     public producto:any = {};
     public sucursales:any = [];
@@ -32,15 +31,26 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'producto',
+            itemsProperty: 'productos',
+            itemProperty: 'producto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La materia prima fue guardada exitosamente.',
+                updated: 'La materia prima fue guardada exitosamente.',
+                createTitle: 'Materia prima actualizada',
+                updateTitle: 'Materia prima actualizada'
+            },
+            afterSave: () => {
+                this.producto = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.productos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.productos = data;
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     ngOnInit() {
@@ -54,7 +64,7 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
         }
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtro.id_categoria = '';
         this.loading = true;
         this.apiService.getAll('materias-primas')
@@ -66,7 +76,8 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
               .subscribe(sucursales => { 
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); this.loading = false;});
-            this.loading = false; this.filtrado = false;
+            this.loading = false; 
+            this.filtrado = false;
         }, error => {this.alertService.error(error); this.loading = false;});
     }
 
@@ -77,35 +88,44 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
               .pipe(this.untilDestroyed())
               .subscribe(productos => { 
                 this.productos = productos;
-                this.loading = false; this.filtrado = true;
+                this.loading = false; 
+                this.filtrado = true;
             }, error => {this.alertService.error(error); this.loading = false;});
         }else{
             this.loadAll();
         }
     }
 
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('materia-prima/', id)
-              .pipe(this.untilDestroyed())
-              .subscribe(data => {
-                for (let i = 0; i < this.productos['data'].length; i++) { 
-                    if (this.productos['data'][i].id == data.id )
-                        this.productos['data'].splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
-                   
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        this.apiService.delete('materia-prima/', itemToDelete)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (deletedItem: any) => {
+                    const index = this.productos.data?.findIndex((p: any) => p.id === deletedItem.id);
+                    if (index !== -1 && index >= 0) {
+                        this.productos.data.splice(index, 1);
+                    }
+                    this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                    this.loading = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public descargar(){
         window.open(this.apiService.baseUrl + '/api/productos/export' + '?token=' + this.apiService.auth_token(), 'Impresión', 'width=400');
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    // Filtros
     openFilter(template: TemplateRef<any>) {
         this.filtro.id_categoria = '';
         if(!this.categorias.length){
@@ -124,37 +144,17 @@ export class MateriasPrimaComponent extends BasePaginatedModalComponent implemen
           .pipe(this.untilDestroyed())
           .subscribe(productos => { 
             this.productos = productos;
-            this.loading = false; this.filtrado = true;
+            this.loading = false; 
+            this.filtrado = true;
             this.closeModal();
         }, error => {this.alertService.error(error); this.loading = false;});
-
     }
 
     openModalPrecio(template: TemplateRef<any>, producto:any) {
         if(this.apiService.validateRole('super_admin', true) || this.apiService.validateRole('admin', true)) {
             this.producto = producto;
-            this.openModal(template, {class: 'modal-sm'});
+            this.openModal(template, producto, {class: 'modal-sm'});
         }
-
-        // if(this.apiService.auth_user().tipo == 'Administrador') {
-        //     this.producto = producto;
-        //     this.modalRef = this.modalService.show(template, {class: 'modal-sm'});
-        // }
-
-    }
-
-    public onSubmit() {
-        this.loading = true;
-        // Guardamos la caja
-        this.apiService.store('producto', this.producto)
-          .pipe(this.untilDestroyed())
-          .subscribe(producto=> {
-            this.producto= {};
-            this.alertService.success('Materia prima actualizada', 'La materia prima fue guardada exitosamente.');
-            this.loading = false;
-            this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false;
-        });
     }
 
 }

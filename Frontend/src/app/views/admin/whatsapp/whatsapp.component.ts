@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,7 +7,7 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { interval } from 'rxjs';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
     
 })
-export class WhatsAppComponent implements OnInit, OnDestroy {
+export class WhatsAppComponent extends BaseComponent implements OnInit {
 
   public stats: any = null;
   public executiveSummary: any = null;
@@ -54,8 +54,6 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
   public connectionStatus: string = 'unknown';
   public lastUpdate: Date = new Date();
   
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
   public autoRefreshEnabled: boolean = true;
   public refreshInterval: number = 30;
 
@@ -77,15 +75,13 @@ export class WhatsAppComponent implements OnInit, OnDestroy {
     public apiService: ApiService,
     public alertService: AlertService,
     private modalService: BsModalService
-  ) {}
+  ) {
+    super();
+  }
 
   ngOnInit() {
     this.loadInitialData();
     this.setupAutoRefresh();
-  }
-
-  ngOnDestroy() {
-    // El DestroyRef maneja automáticamente la limpieza
   }
 
   loadInitialData() {

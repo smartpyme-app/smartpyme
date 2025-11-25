@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,9 +7,8 @@ import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 
 interface CustomFieldValue {
@@ -36,7 +35,7 @@ interface CustomField {
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
 
 })
-export class CustomFieldsComponent extends BaseModalComponent implements OnInit {
+export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implements OnInit {
     public customFields: any = {
         data: [],
         total: 0
@@ -56,7 +55,7 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
         values: []
     };
 
-    public filtros = {
+    public override filtros = {
         buscador: '',
         paginate: 10,
         orden: '',
@@ -66,22 +65,75 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
 
     public newValue = '';
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService: ApiService,
+        protected override apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService
     ) {
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'custom-fields',
+            itemsProperty: 'customFields',
+            itemProperty: 'field',
+            reloadAfterSave: true,
+            reloadAfterDelete: true,
+            messages: {
+                created: 'Campo creado exitosamente',
+                updated: 'Campo actualizado exitosamente',
+                deleted: 'Campo eliminado exitosamente',
+                createTitle: 'Éxito',
+                updateTitle: 'Éxito',
+                deleteTitle: 'Éxito',
+                deleteConfirm: '¿Está seguro de eliminar este campo?'
+            },
+            beforeSave: async (item) => {
+                // Validaciones antes de guardar
+                if (item.field_type === 'select' && !item.values?.length) {
+                    throw new Error('Debe agregar al menos un valor para campos tipo lista');
+                }
+
+                if (this.originalField.in_use) {
+                    if (item.field_type !== this.originalField.field_type) {
+                        throw new Error('No se puede cambiar el tipo de un campo que está en uso');
+                    }
+
+                    const hasDeletedUsedValues = this.originalField.values
+                        .filter(v => v.in_use)
+                        .some(v => !item.values.find((nv: any) => nv.id === v.id));
+
+                    if (hasDeletedUsedValues) {
+                        throw new Error('No se pueden eliminar valores que están en uso');
+                    }
+                }
+
+                // Transformar datos para enviar
+                return {
+                    ...item,
+                    name: item.name,
+                    field_type: item.field_type,
+                    is_required: item.is_required,
+                    values: item.values.map((v: any) => ({
+                        id: v.id,
+                        value: v.value,
+                        is_active: v.is_active
+                    }))
+                } as any;
+            },
+            afterSave: () => {
+                this.originalField = {
+                    name: '',
+                    field_type: 'select',
+                    is_required: true,
+                    values: []
+                };
+            }
+        });
     }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    loadAll() {
+    protected aplicarFiltros(): void {
         this.loading = true;
         this.apiService.getAll('custom-fields', this.filtros)
           .pipe(this.untilDestroyed())
@@ -96,7 +148,6 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
                         field.in_use = field.product_custom_fields.length > 0;
                     }
                 });
-
             },
             error: (error) => {
                 this.alertService.error('Error');
@@ -120,8 +171,8 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
         this.filtrarCampos();
     }
 
-    override async openModal(template: TemplateRef<any>, field: Partial<CustomField> = {}) {
-        if (!field.id) {
+    override async openModal(template: TemplateRef<any>, field?: CustomField, modalConfig?: any) {
+        if (!field?.id) {
             // Nuevo campo
             this.field = {
                 name: '',
@@ -129,6 +180,12 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
                 is_required: true,
                 values: [],
                 in_use: false
+            };
+            this.originalField = {
+                name: '',
+                field_type: 'select',
+                is_required: true,
+                values: []
             };
         } else {
             try {
@@ -143,7 +200,6 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
                     custom_field_id: value.custom_field_id,
                     in_use: value.product_custom_fields.length > 0
                 }));
-    
          
                 this.field = {
                     id: fieldData.id,
@@ -151,7 +207,6 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
                     field_type: fieldData.field_type,
                     is_required: fieldData.is_required,
                     values: values,
-           
                     in_use: values.some((v: any) => v.in_use)
                 };
 
@@ -162,7 +217,7 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
             }
         }
     
-        super.openLargeModal(template);
+        super.openModal(template, this.field as CustomField, { class: 'modal-lg', backdrop: 'static', ...modalConfig });
     }
 
     addValue(value: string) {
@@ -213,86 +268,12 @@ export class CustomFieldsComponent extends BaseModalComponent implements OnInit 
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Eliminar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            this.loading = true;
-        try {
-            if (field.id) {
-                 this.apiService.delete('custom-fields/',field.id)
-                   .pipe(this.untilDestroyed())
-                   .subscribe({
-                    next: () => {
-                        this.alertService.success('Éxito', 'Campo eliminado exitosamente');
-                        this.loadAll();
-                    },
-                    error: (error) => this.alertService.error(error)
-                });
-            }
-        } catch (error) {
-            this.alertService.error( error);
-        } finally {
-            this.loading = false;
-            }
+    }).then(async (result) => {
+            if (result.isConfirmed && field.id) {
+                this.delete(field.id);
         }
     });
     }
 
-    onSubmit() {
-        if (this.field.field_type === 'select' && !this.field.values?.length) {
-            this.alertService.error( 'Debe agregar al menos un valor para campos tipo lista');
-            return;
-        }
-
-   
-        if (this.field.in_use) {
-            if (this.field.field_type !== this.originalField.field_type) {
-                this.alertService.error('No se puede cambiar el tipo de un campo que está en uso');
-                return;
-            }
-
-        
-            const hasDeletedUsedValues = this.originalField.values
-                .filter(v => v.in_use)
-                .some(v => !this.field.values.find(nv => nv.id === v.id));
-
-            if (hasDeletedUsedValues) {
-                this.alertService.error('No se pueden eliminar valores que están en uso');
-                return;
-            }
-        }
-
-        const dataToSend = {
-            name: this.field.name,
-            field_type: this.field.field_type,
-            is_required: this.field.is_required,
-            values: this.field.values.map(v => ({
-                id: v.id,
-                value: v.value,
-                is_active: v.is_active
-            }))
-        };
-
-        this.loading = true;
-        const request = this.field.id ?
-            this.apiService.update('custom-fields', this.field.id, dataToSend) :
-            this.apiService.store('custom-fields', dataToSend);
-
-        request.pipe(this.untilDestroyed()).subscribe({
-            next: () => {
-                this.alertService.success(
-                    'Éxito',
-                    this.field.id ? 'Campo actualizado exitosamente' : 'Campo creado exitosamente'
-                );
-                this.loadAll();
-                this.closeModal();
-            },
-            error: (error) => this.alertService.error(error),
-            complete: () => this.loading = false
-        });
-    }
-
-    setPagination(event: { page: number }) {
-        this.filtros.page = event.page;
-        this.loadAll();
-    }
+    // La paginación estándar se gestiona desde BaseCrudComponent
 }

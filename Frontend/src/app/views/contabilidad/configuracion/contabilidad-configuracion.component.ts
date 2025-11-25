@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -9,7 +9,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { GastosCategoriasComponent } from '../../compras/gastos/categorias/gastos-categorias.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-contabilidad-configuracion',
@@ -18,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent, TooltipModule],
     
 })
-export class ContabilidadConfiguracionComponent implements OnInit {
+export class ContabilidadConfiguracionComponent extends BaseComponent implements OnInit {
 
     public configuracion: any = {};
     public cuentas: any = {};
@@ -28,14 +28,14 @@ export class ContabilidadConfiguracionComponent implements OnInit {
     public saving = false;
     modalRef!: BsModalRef;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
-        public apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router,
+        public apiService: ApiService, 
+        protected alertService: AlertService,
+        private route: ActivatedRoute, 
+        private router: Router,
         private modalService: BsModalService
-    ) { 
+    ) {
+        super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
 

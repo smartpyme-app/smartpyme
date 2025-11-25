@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,9 +8,7 @@ import { ImportarExcelComponent } from '@shared/parts/importar-excel/importar-ex
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-
-import * as moment from 'moment';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -21,31 +19,43 @@ import Swal from 'sweetalert2';
     
 })
 
-export class PaquetesComponent extends BasePaginatedModalComponent implements OnInit {
+export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public paquetes: PaginatedResponse<any> = {} as PaginatedResponse;
+    public paquetes:any = {};
     public sucursales:any = [];
     public clientes:any = [];
     public guias:any = [];
     public usuarios:any = [];
     public paquete:any = {};
     public downloading:boolean = false;
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'paquete',
+            itemsProperty: 'paquetes',
+            itemProperty: 'paquete',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El paquete fue añadida exitosamente.',
+                updated: 'El paquete fue guardada exitosamente.',
+                createTitle: 'Paquete creada',
+                updateTitle: 'Paquete guardada'
+            },
+            afterSave: (item, isNew) => {
+                if (isNew) {
+                    this.loadAll();
+                }
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.paquetes;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.paquetes = data;
+    protected aplicarFiltros(): void {
+        this.filtrarPaquetes();
     }
 
     ngOnInit() {
@@ -56,7 +66,6 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
             }, error => {this.alertService.error(error); });
 
         this.getGuias();
-
         this.loadAll();
     }
 
@@ -66,7 +75,6 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
             .subscribe(paquetes => { 
                 this.guias = paquetes;
             }, error => {this.alertService.error(error); });
-
     }
 
     public setOrden(columna: string) {
@@ -80,7 +88,7 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
         this.filtrarPaquetes();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_cliente = '';
         this.filtros.id_sucursal = '';
         this.filtros.id_asesor = '';
@@ -93,9 +101,6 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
         this.filtros.direccion = 'asc';
         this.filtros.paginate = 10;
 
-        // if(this.apiService.auth_user().tipo != 'Administrador'){
-        //     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-        // }
         if(this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) {
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }
@@ -123,10 +128,8 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
             }, error => {this.alertService.error(error); this.loading = false;});
     }
 
-
-    override openModal(template: TemplateRef<any>, paquete:any) {
-        this.paquete = paquete;
-        super.openLargeModal(template);
+    override openModal(template: TemplateRef<any>, paquete?: any) {
+        super.openLargeModal(template, paquete);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -143,16 +146,14 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
         super.openLargeModal(template);
     }
 
-
     public setEstado(paquete:any){
         this.paquete = paquete;
         this.onSubmit();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    public delete(paquete:any){
-
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -162,19 +163,25 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
           cancelButtonText: 'Cancelar'
         }).then((result) => {
           if (result.isConfirmed) {
-                this.apiService.delete('paquete/', paquete.id)
+                this.loading = true;
+                this.apiService.delete('paquete/', itemToDelete)
                     .pipe(this.untilDestroyed())
-                    .subscribe(data => {
-                        for (let i = 0; i < this.paquetes.data.length; i++) { 
-                            if (this.paquetes.data[i].id == data.id )
-                                this.paquetes.data.splice(i, 1);
+                    .subscribe({
+                        next: (deletedItem: any) => {
+                            const index = this.paquetes.data?.findIndex((p: any) => p.id === deletedItem.id);
+                            if (index !== -1 && index >= 0) {
+                                this.paquetes.data.splice(index, 1);
+                            }
+                            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                            this.loading = false;
+                        },
+                        error: (error: any) => {
+                            this.alertService.error(error);
+                            this.loading = false;
                         }
-                    }, error => {this.alertService.error(error); });
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
+                    });
           }
         });
-
     }
 
     public descargar(){
@@ -194,24 +201,6 @@ export class PaquetesComponent extends BasePaginatedModalComponent implements On
             this.downloading = false;
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
-    }
-
-    public onSubmit(){
-        this.saving = true;
-        this.apiService.store('paquete', this.paquete)
-            .pipe(this.untilDestroyed())
-            .subscribe(paquete => {
-            if (!this.paquete.id) {
-                this.loadAll();
-                this.alertService.success('Paquete creada', 'El paquete fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Paquete guardada', 'El paquete fue guardada exitosamente.');
-            }
-            this.saving = false;
-            if(this.modalRef){
-                this.closeModal();
-            }
-        }, error => {this.alertService.error(error); this.saving = false;});
     }
 
 }

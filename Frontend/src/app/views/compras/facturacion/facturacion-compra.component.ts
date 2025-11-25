@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -82,9 +82,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     @ViewChild('productosAjuste')
     public productosAjusteTemplate!: TemplateRef<any>;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -456,7 +453,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         }
     }
 
-
     // Facturar
 
         public openModalFacturar(template: TemplateRef<any>) {
@@ -667,7 +663,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     this.updateCIF(detalle);
     this.updateLanded(detalle);
   }
-
 
   public updateInsuranceForDetails(): void {
     // Verificamos si `compra.insurance` tiene un valor numérico
@@ -1384,9 +1379,5 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             }
         );
     }
-
-
-
-
 
 }

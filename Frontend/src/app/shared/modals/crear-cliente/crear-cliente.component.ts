@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, DestroyRef, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, Input, EventEmitter, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -37,9 +37,6 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     public esNuevo = false;
     public tipoAnterior = '';
     public modalRefContacto: any;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,

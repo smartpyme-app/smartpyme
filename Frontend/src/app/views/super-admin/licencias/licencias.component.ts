@@ -7,7 +7,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-licencias',
@@ -17,40 +17,55 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     
 })
 
-export class LicenciasComponent extends BasePaginatedModalComponent implements OnInit {
+export class LicenciasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public licencias: PaginatedResponse<any> = {} as PaginatedResponse;
+    public licencias:any = {};
     public empresas:any = [];
     public licencia:any = {};
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'licencia',
+            itemsProperty: 'licencias',
+            itemProperty: 'licencia',
+            reloadAfterSave: true,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La licencia fue añadida exitosamente.',
+                updated: 'La licencia fue guardada exitosamente.',
+                deleted: 'Licencia eliminada exitosamente.',
+                createTitle: 'Licencia creada',
+                updateTitle: 'Licencia guardada',
+                deleteTitle: 'Licencia eliminada',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.licencias;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.licencias = data;
+    protected aplicarFiltros(): void {
+        this.filtrarLicencias();
     }
 
     ngOnInit() {
         this.apiService.getAll('empresas/list')
             .pipe(this.untilDestroyed())
-            .subscribe(empresas => { 
-                this.empresas = empresas;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (empresas) => {
+                    this.empresas = empresas;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
 
         this.loadAll();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.activo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
@@ -64,10 +79,16 @@ export class LicenciasComponent extends BasePaginatedModalComponent implements O
     public filtrarLicencias(){
         this.apiService.getAll('licencias', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(licencias => { 
-                this.licencias = licencias;
-                this.loading = false;
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: (licencias) => {
+                    this.licencias = licencias;
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public setOrden(columna: string) {
@@ -81,58 +102,42 @@ export class LicenciasComponent extends BasePaginatedModalComponent implements O
         this.filtrarLicencias();
     }
 
-
     public setEstado(licencia:any){
         this.apiService.store('licencia', licencia)
             .pipe(this.untilDestroyed())
-            .subscribe(licencia => { 
-                this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
-            }, error => {this.alertService.error(error); });
+            .subscribe({
+                next: () => {
+                    this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
-
-    public delete(id:number) {
+    public override delete(id:number) {
         if (confirm('¿Desea eliminar el Registro?')) {
             this.apiService.delete('licencia/', id)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.licencias['data'].length; i++) { 
-                        if (this.licencias['data'][i].id == data.id )
-                            this.licencias['data'].splice(i, 1);
+                .subscribe({
+                    next: (data) => {
+                        for (let i = 0; i < this.licencias['data'].length; i++) { 
+                            if (this.licencias['data'][i].id == data.id )
+                                this.licencias['data'].splice(i, 1);
+                        }
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
                     }
-                }, error => {this.alertService.error(error); });
-                   
+                });
         }
-
     }
 
-    public onSubmit() {
-        this.saving = true;
-        this.apiService.store('licencia', this.licencia)
-            .pipe(this.untilDestroyed())
-            .subscribe(licencia => {
-            this.loadAll();
-            this.saving = false;
-            if(!this.licencia.id){
-                this.alertService.success('Licencia creada', 'La licencia fue añadida exitosamente.');
-            }else{
-                this.alertService.success('Licencia guardada', 'La licencia fue guardada exitosamente.');
-            }
-            this.closeModal();
-        },error => {this.alertService.error(error); this.saving = false; });
-
-    }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
-    // openModal() ahora se hereda de BasePaginatedModalComponent
-
-    override openModal(template: TemplateRef<any>, licencia:any) {
-        this.licencia = licencia;
+    public override openModal(template: TemplateRef<any>, licencia?: any) {
+        this.licencia = licencia || {};
         if (!this.licencia.id) {
             // this.licencia.industria = '';
         }
         super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }
-
-
 }

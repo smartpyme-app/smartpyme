@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 
 @Component({
@@ -18,19 +18,21 @@ import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear
     imports: [CommonModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
     
 })
-export class GastoDetallesComponent implements OnInit {
+export class GastoDetallesComponent extends BaseComponent implements OnInit {
 
     public gasto:any = {};
     public loading = false;
     modalRef?: BsModalRef;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-	) { }
+	    protected apiService: ApiService, 
+	    protected alertService: AlertService,
+	    private route: ActivatedRoute, 
+	    private router: Router, 
+	    private modalService: BsModalService
+	) {
+        super();
+    }
 
 	ngOnInit() {
         this.loadAll();
@@ -62,9 +64,11 @@ export class GastoDetallesComponent implements OnInit {
     }
 
     public setEstado(abono: any){
-        this.apiService.store('gasto/abono', abono).subscribe(abono => {
-            this.loadAll();
-        }, error => {this.alertService.error(error); });
+        this.apiService.store('gasto/abono', abono)
+            .pipe(this.untilDestroyed())
+            .subscribe(abono => {
+                this.loadAll();
+            }, error => {this.alertService.error(error); });
     }
 
 }

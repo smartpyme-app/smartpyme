@@ -1,15 +1,13 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { NgSelectModule } from '@ng-select/ng-select';
-
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-admin-planes',
@@ -18,25 +16,39 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
+export class AdminPlanesComponent extends BaseCrudComponent<any> implements OnInit {
 
     public planes:any = [];
     public productos:any = [];
     public plan:any = {};
-    public override loading = false;
-    public override saving = false;
-    public filtros:any = {};
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   	constructor( 
-  	    public apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService,
-  	    private route: ActivatedRoute, private router: Router
+  	    apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService,
+  	    private route: ActivatedRoute, 
+        private router: Router
   	) {
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'plan',
+            itemsProperty: 'planes',
+            itemProperty: 'plan',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El plan fue añadida exitosamente.',
+                updated: 'El plan fue guardado exitosamente.',
+                createTitle: 'Plan guardado',
+                updateTitle: 'Plan actualizado'
+            },
+            initNewItem: (item) => {
+                item.activo = 1;
+                return item;
+            },
+            afterSave: () => {
+                this.plan = {};
+            }
+        });
     }
 
   	ngOnInit() {
@@ -47,10 +59,9 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
         this.filtros.paginate = 10;
   	    
         this.loadAll();
-
   	}
 
-    public loadAll(){
+    public override loadAll() {
         this.loading = true;
         this.apiService.getAll('planes', this.filtros)
             .pipe(this.untilDestroyed())
@@ -60,12 +71,11 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
             }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public override openModal(template: TemplateRef<any>, plan:any) {
-        this.plan = plan;
-        if(!this.plan.id){
-            this.plan.activo = 1;
-        }
+    protected aplicarFiltros(): void {
+        this.loadAll();
+    }
 
+    public override openModal(template: TemplateRef<any>, plan?: any) {
         if(!this.productos.length){
             this.apiService.getAll('productos/list')
                 .pipe(this.untilDestroyed())
@@ -73,42 +83,33 @@ export class AdminPlanesComponent extends BaseModalComponent implements OnInit {
                     this.productos = productos;
                 }, error => {this.alertService.error(error);});
         }
-
-        super.openModal(template);
+        super.openModal(template, plan);
     }
 
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('plan/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.planes.data.length; i++) { 
-                        if (this.planes.data[i].id == data.id )
-                            this.planes.data.splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-               
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
-    }
 
-
-    public onSubmit() {
-          this.saving = true;
-          this.apiService.store('plan', this.plan)
-              .pipe(this.untilDestroyed())
-              .subscribe(plan => {
-              if (!this.plan.id) {
-                    this.planes.data.push(plan);
-                    this.alertService.success('Plan guardado', 'El plan fue añadida exitosamente.');
-              }else{
-                    this.alertService.success('Plan actualizado', 'El plan fue guardado exitosamente.');
+        this.loading = true;
+        this.apiService.delete('plan/', itemToDelete)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (deletedItem: any) => {
+                    const index = this.planes.data?.findIndex((p: any) => p.id === deletedItem.id);
+                    if (index !== -1 && index >= 0) {
+                        this.planes.data.splice(index, 1);
+                    }
+                    this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                    this.loading = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.loading = false;
                 }
-              this.plan = {};
-              this.saving = false;
-            if (this.modalRef) {
-                this.closeModal();
-            }
-          },error => {this.alertService.error(error); this.saving = false; });
-      }
+            });
+    }
 
 }

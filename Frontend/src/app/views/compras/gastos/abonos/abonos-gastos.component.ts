@@ -2,12 +2,13 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../../directives/lazy-image.directive';
 
 @Component({
@@ -17,33 +18,58 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
   imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
 })
 
-export class AbonosGastosComponent implements OnInit {
+export class AbonosGastosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public abonos:any = [];
     public abono:any = {};
-    public loading:boolean = false;
     public downloading:boolean = false;
     public formaPagos:any = [];
     public proveedores:any = [];
     public usuarios:any = [];
     public sucursales:any = [];
     public documentos:any = [];
-    public filtros:any = {};
     public filtrado:boolean = false;
 
-    modalRef!: BsModalRef;
+    constructor(
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager, {
+            endpoint: 'gasto/abono',
+            itemsProperty: 'abonos',
+            itemProperty: 'abono',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El abono fue guardado exitosamente.',
+                updated: 'El abono fue guardado exitosamente.',
+                deleted: 'El abono fue eliminado exitosamente.',
+                createTitle: 'Abono guardado',
+                updateTitle: 'Abono guardado',
+                deleteTitle: 'Abono eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            }
+        });
+    }
 
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    protected aplicarFiltros(): void {
+        this.filtrarAbonos();
+    }
 
     ngOnInit() {
-
         this.loadAll();
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
-            this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+        this.apiService.getAll('proveedores/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (proveedores) => {
+                    this.proveedores = proveedores;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
     }
 
     public setOrden(columna: string) {
@@ -57,7 +83,7 @@ export class AbonosGastosComponent implements OnInit {
         this.filtrarAbonos();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_proveedor = '';
         this.filtros.estado = '';
@@ -67,71 +93,73 @@ export class AbonosGastosComponent implements OnInit {
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
         
+        this.loading = true;
         this.filtrarAbonos();
     }
 
     public filtrarAbonos(){
         this.loading = true;
-        this.apiService.getAll('gastos/abonos', this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-            if(this.modalRef){
-                this.modalRef.hide();
-            }
-        }, error => {this.alertService.error(error); });
-    }
-
-    public setEstado(abono:any){
-        this.apiService.store('gasto/abono', abono).subscribe(abonoActualizado => { 
-            this.filtrarAbonos();
-        }, error => {this.alertService.error(error); });
-    }
-
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('gasto/abono/', id) .subscribe(data => {
-                for (let i = 0; i < this.abonos['data'].length; i++) { 
-                    if (this.abonos['data'][i].id == data.id )
-                        this.abonos['data'].splice(i, 1);
+        this.apiService.getAll('gastos/abonos', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (abonos) => {
+                    this.abonos = abonos;
+                    this.loading = false;
+                    if(this.modalRef){
+                        this.closeModal();
+                    }
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
                 }
-                this.alertService.success('Abono eliminado', 'El abono fue eliminado exitosamente.');
-            }, error => {this.alertService.error(error); });
-                   
-        }
-
+            });
     }
 
-    public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.abonos.path + '?page='+ event.page, this.filtros).subscribe(abonos => { 
-            this.abonos = abonos;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+    public setEstado(abono: any){
+        this.onSubmit(abono, true);
+    }
+
+    public override delete(id: number) {
+        super.delete(id);
     }
 
     public openFilter(template: TemplateRef<any>) {
-        this.apiService.getAll('formas-de-pago/list').subscribe(formaPagos => { 
-            this.formaPagos = formaPagos;
-        }, error => {this.alertService.error(error); });
-        this.modalRef = this.modalService.show(template);
+        this.apiService.getAll('formas-de-pago/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (formaPagos) => {
+                    this.formaPagos = formaPagos;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                }
+            });
+        this.openModal(template, undefined, { class: 'modal-md', backdrop: 'static' });
     }
 
     public descargar(){
         this.downloading = true;
-        this.apiService.export('gastos/abonos/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'abonos-gastos.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
-        );
+        this.apiService.export('gastos/abonos/exportar', this.filtros)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (data: Blob) => {
+                    const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'abonos-gastos.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    this.downloading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.downloading = false;
+                }
+            });
     }
 
 

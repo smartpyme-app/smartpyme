@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, forwardRef, Output, EventEmitter, LOCALE_ID, AfterViewInit } from '@angular/core';
 import { CalendarOptions, Calendar } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -16,7 +16,7 @@ import { CrearEventoComponent } from '@shared/modals/crear-evento/crear-evento.c
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 import * as moment from 'moment';
 import { registerLocaleData } from '@angular/common';
@@ -33,7 +33,7 @@ registerLocaleData(localeEs);
     providers: [{ provide: LOCALE_ID, useValue: 'es-ES' }],
     
 })
-export class CalendarioComponent implements OnInit {
+export class CalendarioComponent extends BaseComponent implements OnInit {
 
   @Output() update = new EventEmitter();
   public eventos: any = [];
@@ -53,13 +53,12 @@ export class CalendarioComponent implements OnInit {
   sucursales: any = [];
   usuarioActual: any = {};
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(public apiService: ApiService, public alertService: AlertService,
     private route: ActivatedRoute, private router: Router,
     private modalService: BsModalService
-  ) { }
+  ) {
+    super();
+  }
 
   @ViewChild('fullcalendar') fullcalendar?: FullCalendarComponent;
   @ViewChild("fullCalendarContainer") fullCalendarContainer?: any;

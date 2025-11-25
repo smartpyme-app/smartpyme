@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,7 +10,7 @@ import { ComboDetallesComponent } from './detalles/combo-detalles.component';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-producto-combo',
@@ -20,7 +20,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     providers: [SumPipe],
     
 })
-export class ProductoComboComponent implements OnInit {
+export class ProductoComboComponent extends BaseComponent implements OnInit {
 
   public producto: any = {};
   public categorias: any = [];
@@ -34,13 +34,14 @@ export class ProductoComboComponent implements OnInit {
   public guardar = false;
   public variants: Array<{ nombre: string, cantidad: number }> = [];
 
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
-
   constructor(
-    private apiService: ApiService, private alertService: AlertService,
-    private route: ActivatedRoute, private router: Router, private sumPipe: SumPipe,
+    protected apiService: ApiService, 
+    protected alertService: AlertService,
+    private route: ActivatedRoute, 
+    private router: Router, 
+    private sumPipe: SumPipe,
   ) {
+    super();
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     this.addVariant();
   }

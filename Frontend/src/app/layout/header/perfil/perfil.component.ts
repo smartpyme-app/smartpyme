@@ -5,6 +5,7 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import { AlertService } from '../../../services/alert.service';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-perfil',
@@ -13,13 +14,15 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, LazyImageDirective],
     
 })
-export class PerfilComponent implements OnInit {
+export class PerfilComponent extends BaseComponent implements OnInit {
 
     public usuario:any = {};
     public rol:any = {};
     public loading:boolean = false;
 
-    constructor( public apiService:ApiService, private alertService:AlertService ){}
+    constructor( public apiService:ApiService, private alertService:AlertService ){
+        super();
+    }
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();

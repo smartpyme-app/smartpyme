@@ -10,8 +10,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
-
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -22,33 +21,39 @@ import Swal from 'sweetalert2';
 
 })
 
-export class DevolucionesComprasComponent extends BasePaginatedModalComponent implements OnInit {
+export class DevolucionesComprasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public compras: PaginatedResponse<any> = {} as PaginatedResponse;
+    public compras:any = {};
     public compra:any = {};
     public id_compra:any = null;
     public downloading:boolean = false;
-
     public proveedores:any = [];
     public usuarios:any = [];
     public comprasList:any = [];
     public sucursales:any = [];
-    public override filtros:any = {};
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'devolucion/compra',
+            itemsProperty: 'compras',
+            itemProperty: 'compra',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La devolución de compra fue actualizada exitosamente.',
+                updated: 'La devolución de compra fue actualizada exitosamente.',
+                createTitle: 'Compra actualizada',
+                updateTitle: 'Compra actualizada'
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.compras;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.compras = data;
+    protected aplicarFiltros(): void {
+        this.filtrarCompras();
     }
 
     ngOnInit() {
@@ -60,10 +65,8 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
             }, error => {this.alertService.error(error); });
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.loading = true;
-        // this.filtros.inicio = null;
-        // this.filtros.fin = this.apiService.date();
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.id_proveedor = '';
@@ -82,11 +85,10 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
                 this.compras = compras;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
     public setEstado(compra:any, enable:string){
-
         Swal.fire({
           title: '¿Estás seguro?',
           text: '¡No podrás revertir esto!',
@@ -99,34 +101,34 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
             this.compra = compra;
             this.compra.enable = enable;
             this.onSubmit();
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
         });
-
     }
 
-    public onSubmit(){
-        this.apiService.store('devolucion/compra', this.compra)
-            .pipe(this.untilDestroyed())
-            .subscribe(compra => { 
-                this.alertService.success('Compra actualizada', 'La devolución de compra fue actualizada exitosamente.');
-            }, error => {this.alertService.error(error); });
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('devolucion/compra/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.compras['data'].length; i++) { 
-                        if (this.compras['data'][i].id == data.id )
-                            this.compras['data'].splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        this.apiService.delete('devolucion/compra/', itemToDelete)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (deletedItem: any) => {
+                    const index = this.compras.data?.findIndex((c: any) => c.id === deletedItem.id);
+                    if (index !== -1 && index >= 0) {
+                        this.compras.data.splice(index, 1);
+                    }
+                    this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                    this.loading = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public setOrden(columna: string) {
@@ -140,25 +142,24 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
         this.filtrarCompras();
     }
 
-    // setPagination() ahora se hereda de BasePaginatedComponent
-
-    // Filtros
-
     openFilter(template: TemplateRef<any>) {     
-
         this.apiService.getAll('proveedores/list')
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => { 
                 this.proveedores = proveedores;
             }, error => {this.alertService.error(error); });
 
-
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => { 
                 this.usuarios = usuarios;
             }, error => {this.alertService.error(error); });
-        
+
+        this.apiService.getAll('sucursales/list')
+            .pipe(this.untilDestroyed())
+            .subscribe(sucursales => { 
+                this.sucursales = sucursales;
+            }, error => {this.alertService.error(error); });
 
         this.openModal(template);
     }
@@ -168,11 +169,15 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
         this.loading = true;
         this.apiService.getAll('compras/sin-devolucion')
             .pipe(this.untilDestroyed())
-            .subscribe(compras => { 
+            .subscribe(compras => {
                 this.comprasList = compras;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
         super.openModal(template);
+    }
+
+    public imprimir(compra:any){
+        window.open(this.apiService.baseUrl + '/api/devolucion/facturacion/impresion/' + compra.id + '?token=' + this.apiService.auth_token());
     }
 
     public descargar(){
@@ -193,6 +198,5 @@ export class DevolucionesComprasComponent extends BasePaginatedModalComponent im
           }, (error) => { this.alertService.error(error); this.downloading = false; }
         );
     }
-
 
 }

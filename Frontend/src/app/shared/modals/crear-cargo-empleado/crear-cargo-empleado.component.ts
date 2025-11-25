@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Output, EventEmitter, DestroyRef, inject  } from '@angular/core';
+import { Component, OnInit, TemplateRef, Output, EventEmitter, inject  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,9 +21,6 @@ export class CrearCargoEmpleadoComponent extends BaseModalComponent implements O
     public cargo: any = {};
     @Output() update = new EventEmitter();
     public override loading = false;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
         private apiService: ApiService,
@@ -53,6 +50,5 @@ export class CrearCargoEmpleadoComponent extends BaseModalComponent implements O
             this.alertService.success('Cargo creado', 'El cargo ha sido agregado.');
         },error => {this.alertService.error(error); this.loading = false; });
     }
-
 
 }

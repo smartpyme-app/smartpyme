@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,8 +30,6 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
     public override loading = false;
     public override saving = false;
     public imprimir:boolean = true;
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(
         public apiService: ApiService,
@@ -67,6 +65,7 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
                 this.devolucion.cobrar_impuestos = this.compra.iva > 0 ? true : false;
                 this.devolucion.cobrar_percepcion = this.compra.percepcion > 0 ? true : false;
                 this.devolucion.retencion = this.compra.iva_retenido > 0 ? true : false;
+                this.devolucion.renta = this.compra.renta_retenida > 0 ? true : false;
 
                 let corte = JSON.parse(sessionStorage.getItem('SP_corte')!);
                 if (corte) {
@@ -150,7 +149,6 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
         this.devolucion.total = (parseFloat(this.devolucion.sub_total) + parseFloat(this.devolucion.iva) + parseFloat(this.devolucion.iva_percibido) - parseFloat(this.devolucion.iva_retenido) - parseFloat(this.devolucion.renta_retenida)).toFixed(2);
     }
 
-
     updateCompra(devolucion:any) {
         this.devolucion = devolucion;
         this.sumTotal();
@@ -177,12 +175,10 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
             },error => {this.alertService.error(error); this.saving = false; });
         }
 
-
     public imprimirDocDevolucion(devolucion:any){
         setTimeout(()=>{
             window.open(this.apiService.baseUrl + '/api/reporte/devolucion/' + devolucion.id + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
         }, 1000);
     }
-
 
 }

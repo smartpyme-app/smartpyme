@@ -1,13 +1,12 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
-import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service'; 
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ModalManagerService } from '@services/modal-manager.service';
 import { NgSelectModule } from '@ng-select/ng-select';
-
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 
 @Component({
     selector: 'app-bancos',
@@ -17,49 +16,62 @@ import { NgSelectModule } from '@ng-select/ng-select';
     
 })
 
-export class BancosComponent implements OnInit {
+export class BancosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public bancos:any = [];
     public banco:any = {};
-    public loading:boolean = false;
-    public saving:boolean = false;
 
-    modalRef!: BsModalRef;
-
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
-    constructor(public apiService: ApiService, private alertService: AlertService,
-                private modalService: BsModalService
-    ){}
+    constructor(
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
+    ){
+        super(apiService, alertService, modalManager, {
+            endpoint: 'banco',
+            itemsProperty: 'bancos',
+            itemProperty: 'banco',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'Los bancos fueron actualizadas exitosamente.',
+                updated: 'Los bancos fueron actualizadas exitosamente.',
+                createTitle: 'Bancos actualizadas',
+                updateTitle: 'Bancos actualizadas'
+            },
+            beforeSave: (item) => {
+                item.id_empresa = apiService.auth_user().id_empresa;
+                return item;
+            },
+            afterSave: () => {
+                // El modal se cierra automáticamente por el componente base
+            }
+        });
+    }
 
     ngOnInit() {
         this.loadAll();
     }
 
-    public loadAll() {        
+    public override loadAll() {
         this.loading = true;
         this.apiService.getAll('bancos')
             .pipe(this.untilDestroyed())
             .subscribe(bancos => { 
                 this.bancos = bancos;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
+    }
+
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     public onSubmit(nombre:any){
-        this.saving = true;
-
+        // Método personalizado que recibe nombre como parámetro
         this.banco.nombre = nombre;
         this.banco.id_empresa = this.apiService.auth_user().id_empresa;
-
-        this.apiService.store('banco', this.banco)
-            .pipe(this.untilDestroyed())
-            .subscribe(banco => {
-                this.alertService.success('Bancos actualizadas', 'Los bancos fueron actualizadas exitosamente.');
-                this.saving = false;
-                this.modalRef.hide();
-            }, error => {this.alertService.error(error); this.saving = false;});
+        // Usar el método heredado
+        this.onSubmit(this.banco);
     }
 
 }

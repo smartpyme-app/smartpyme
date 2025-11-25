@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 import * as moment from 'moment';
 
@@ -19,7 +19,7 @@ import * as moment from 'moment';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
     
 })
-export class ConciliacionComponent implements OnInit {
+export class ConciliacionComponent extends BaseComponent implements OnInit {
 
     public conciliacion:any = {};
     public conciliacion_anterior:any = {};
@@ -30,13 +30,15 @@ export class ConciliacionComponent implements OnInit {
     public saving = false;
     modalRef?: BsModalRef;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-	) { }
+	    protected apiService: ApiService, 
+	    protected alertService: AlertService,
+	    private route: ActivatedRoute, 
+	    private router: Router, 
+	    private modalService: BsModalService
+	) {
+        super();
+    }
 
 	ngOnInit() {
 

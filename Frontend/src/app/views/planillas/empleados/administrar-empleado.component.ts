@@ -1,5 +1,5 @@
 // nuevo-empleado.component.ts
-import { Component, OnInit, OnDestroy, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -73,9 +73,6 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     direccion: 'desc',
     pagina: 1
   };
-
-  private destroyRef = inject(DestroyRef);
-  private untilDestroyed = subscriptionHelper(this.destroyRef);
 
   constructor(
     public apiService: ApiService,
@@ -707,7 +704,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     this.empleado.cod_distrito = '';
   }
 
-  public onSubmit() {
+  public async onSubmit() {
     this.saving = true;
 
     // Asegurar que tenemos los IDs de empresa y sucursal
@@ -717,34 +714,29 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     // Determinar si es actualización o creación
     const esActualizacion = !!this.empleado.id;
 
-    if (esActualizacion) {
-      // Usar el endpoint update para actualizar
-      this.apiService.update('empleados', this.empleado.id, this.empleado)
-        .pipe(this.untilDestroyed())
-        .subscribe(
-          (response) => {
-            this.alertService.success('Éxito', 'Empleado actualizado exitosamente');
-            this.router.navigate(['/planilla/empleados']);
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.saving = false;
-          }
-        );
-    } else {
-      // Usar el endpoint store para crear
-      this.apiService.store('empleados', this.empleado)
-        .pipe(this.untilDestroyed())
-        .subscribe(
-          (response) => {
-            this.alertService.success('Éxito', 'Empleado creado exitosamente');
-            this.router.navigate(['/planilla/empleados']);
-          },
-          (error) => {
-            this.alertService.error(error);
-            this.saving = false;
-          }
-        );
+    try {
+      let response;
+      if (esActualizacion) {
+        // Usar el endpoint update para actualizar
+        response = await this.apiService.update('empleados', this.empleado.id, this.empleado)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+        
+        this.alertService.success('Éxito', 'Empleado actualizado exitosamente');
+      } else {
+        // Usar el endpoint store para crear
+        response = await this.apiService.store('empleados', this.empleado)
+          .pipe(this.untilDestroyed())
+          .toPromise();
+        
+        this.alertService.success('Éxito', 'Empleado creado exitosamente');
+      }
+      
+      this.router.navigate(['/planilla/empleados']);
+    } catch (error: any) {
+      this.alertService.error(error);
+    } finally {
+      this.saving = false;
     }
   }
 

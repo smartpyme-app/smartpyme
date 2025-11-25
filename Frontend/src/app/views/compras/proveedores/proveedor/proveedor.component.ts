@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -10,7 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-proveedor',
@@ -19,7 +19,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
     
 })
-export class ProveedorComponent implements OnInit {
+export class ProveedorComponent extends BaseComponent implements OnInit {
 
     public proveedor:any = {};
     public paises:any = [];
@@ -33,13 +33,15 @@ export class ProveedorComponent implements OnInit {
 
     modalRef?: BsModalRef;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor( 
-        private apiService: ApiService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
-    ) { }
+        protected apiService: ApiService, 
+        protected alertService: AlertService,
+        private route: ActivatedRoute, 
+        private router: Router, 
+        private modalService: BsModalService
+    ) {
+        super();
+    }
 
     ngOnInit() {
         this.paises = JSON.parse(localStorage.getItem('paises')!);

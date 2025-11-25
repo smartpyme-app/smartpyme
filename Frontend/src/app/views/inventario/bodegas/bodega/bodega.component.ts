@@ -68,18 +68,21 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
         super.openModal(template, {class: 'modal-md'});
     }
 
-    public onSubmit() {
-
+    public async onSubmit() {
         this.loading = true;
-        this.apiService.store('inventario', this.producto)
-          .pipe(this.untilDestroyed())
-          .subscribe(producto => {
-            this.loading = false;
+        try {
+            const productoGuardado = await this.apiService.store('inventario', this.producto)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
             this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
             this.closeModal();
-        }, error => {this.alertService.error(error._body); this.loading = false; });
-
-
+            this.loadAll();
+        } catch (error: any) {
+            this.alertService.error(error._body || error);
+        } finally {
+            this.loading = false;
+        }
     }
 
     public search(){

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -6,10 +6,8 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
 import { AlertService } from '../../../services/alert.service';
 import { ApiService } from '../../../services/api.service';
 import { ModalManagerService } from '../../../services/modal-manager.service';
-import { FilterPipe }     from '../../../pipes/filter.pipe';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
-import { BaseModalComponent } from '../../../shared/base/base-modal.component';
-
+import { FilterPipe } from '../../../pipes/filter.pipe';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import * as moment from 'moment';
 
 @Component({
@@ -20,7 +18,7 @@ import * as moment from 'moment';
     providers: [FilterPipe],
     
 })
-export class PromocionesComponent extends BaseModalComponent implements OnInit {
+export class PromocionesComponent extends BaseCrudComponent<any> implements OnInit {
 
     public productos:any = [];
     public promociones:any = [];
@@ -31,21 +29,36 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
     public subcategoria:any = {};
     public promocion:any = {};
     public filtro:any = {};
-    
     public producto:any = {};
     public sucursales:any = [];
     public filtrado:boolean = false;
 
-    private destroyRef = inject(DestroyRef);
-    private untilDestroyed = subscriptionHelper(this.destroyRef);
-
     constructor(
-        public apiService: ApiService, 
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService,
+        apiService: ApiService, 
+        alertService: AlertService,
+        modalManager: ModalManagerService,
         private filterPipe:FilterPipe
     ){
-        super(modalManager, alertService);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'producto/promocion',
+            itemsProperty: 'promociones',
+            itemProperty: 'promocion',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'La promoción fue guardad exitosamente.',
+                updated: 'La promoción fue guardad exitosamente.',
+                createTitle: 'Promoción guardada',
+                updateTitle: 'Promoción guardada'
+            },
+            afterSave: (item) => {
+                this.promocion = item;
+            }
+        });
+    }
+
+    protected aplicarFiltros(): void {
+        this.loadAll();
     }
 
     ngOnInit() {
@@ -54,46 +67,76 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
         this.filtro.nombre_producto = '';
         this.filtro.enable = '';
         this.filtro.subcategoria = '';
-        this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
-            this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
-
+        this.apiService.getAll('categorias')
+            .pipe(this.untilDestroyed())
+            .subscribe(categorias => {
+                this.categorias = categorias;
+            }, error => {this.alertService.error(error);});
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.loading = true;
-        this.apiService.getAll('promociones').pipe(this.untilDestroyed()).subscribe(promociones => { 
-            this.promociones = promociones;
-            this.loading = false; this.filtrado = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-
+        this.apiService.getAll('promociones')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (promociones) => {
+                    this.promociones = promociones;
+                    this.loading = false;
+                    this.filtrado = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
     public onSelectCategoria(categoria:any){
-        console.log(categoria);
         this.categoria = this.categorias.find((item:any) => item.nombre == categoria);
-        console.log(this.categoria);
         this.subcategorias = this.categoria.subcategorias;
     }
 
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/promocion/', id).pipe(this.untilDestroyed()).subscribe(data => {
-                for (let i = 0; i < this.promociones.length; i++) { 
-                    if (this.promociones[i].id == data.id )
-                        this.promociones.splice(i, 1);
-                }
-            }, error => {this.alertService.error(error); });
+    public override delete(item: any | number): void {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
+
+        this.loading = true;
+        this.apiService.delete('producto/promocion/', itemToDelete)
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (deletedItem: any) => {
+                    const index = this.promociones.findIndex((p: any) => p.id === deletedItem.id);
+                    if (index !== -1 && index >= 0) {
+                        this.promociones.splice(index, 1);
+                    }
+                    this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+                    this.loading = false;
+                },
+                error: (error: any) => {
+                    this.alertService.error(error);
+                    this.loading = false;
+                }
+            });
     }
 
-
     public deleteAll() {
-        if (confirm('¿Desea eliminar totos los registros?')) {
-            this.apiService.getAll('producto/promociones/eliminar').pipe(this.untilDestroyed()).subscribe(data => {
-                this.loadAll();
-            }, error => {this.alertService.error(error); });
+        if (confirm('¿Desea eliminar todos los registros?')) {
+            this.loading = true;
+            this.apiService.getAll('producto/promociones/eliminar')
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: () => {
+                        this.loadAll();
+                        this.loading = false;
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                });
         }
     }
 
@@ -104,15 +147,13 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
         this.promocionesFiltradas = this.filterPipe.transform(this.promocionesFiltradas, ['nombre_categoria'], this.filtro.categoria);
         this.promocionesFiltradas = this.filterPipe.transform(this.promocionesFiltradas, ['nombre_subcategoria'], this.filtro.subcategoria);
 
-        console.log(this.promocionesFiltradas);
-
         this.promocion = {};
         this.promocion.inicio = moment().startOf('month').format('YYYY-MM-DDTHH:mm');
         this.promocion.fin = moment().endOf('month').format('YYYY-MM-DDTHH:mm');
         this.promocion.tipo_descuento = 'Porcentaje';
         this.promocion.descuento = 0;
 
-        this.openModal(template, {class: 'modal-md'});
+        this.openModal(template, undefined, {class: 'modal-md'});
     }
 
     public openModalPromocion(template: TemplateRef<any>, promocion:any) {
@@ -125,48 +166,40 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
             this.promocion.fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
         }
 
-        this.openModal(template, {class: 'modal-sm'});
+        this.openModal(template, promocion, {class: 'modal-sm'});
     }
 
     public loadProductos() {
         this.loading = true;
-        this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
-            this.promociones = [];
-            for (let i = 0; i < productos.length; i++) { 
-                let promocion:any = {};
-                promocion.producto = {};
-                promocion.producto_id = productos[i].id;
-                promocion.nombre_producto = productos[i].nombre;
-                promocion.producto.precio = productos[i].precio;
-                promocion.nombre_categoria = productos[i].nombre_categoria;
-                promocion.nombre_subcategoria = productos[i].nombre_subcategoria;
+        this.apiService.getAll('productos/list')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (productos) => {
+                    this.promociones = [];
+                    for (let i = 0; i < productos.length; i++) { 
+                        let promocion:any = {};
+                        promocion.producto = {};
+                        promocion.producto_id = productos[i].id;
+                        promocion.nombre_producto = productos[i].nombre;
+                        promocion.producto.precio = productos[i].precio;
+                        promocion.nombre_categoria = productos[i].nombre_categoria;
+                        promocion.nombre_subcategoria = productos[i].nombre_subcategoria;
 
-                if (productos[i].promocion) {
-                    promocion.id = productos[i].promocion.id;
-                    promocion.precio = productos[i].promocion.precio;
-                    promocion.inicio = productos[i].promocion.inicio;
-                    promocion.fin = productos[i].promocion.fin;
-                }else{
-                    // promocion.precio = productos[i].precio;
+                        if (productos[i].promocion) {
+                            promocion.id = productos[i].promocion.id;
+                            promocion.precio = productos[i].promocion.precio;
+                            promocion.inicio = productos[i].promocion.inicio;
+                            promocion.fin = productos[i].promocion.fin;
+                        }
+                        this.promociones.push(promocion);
+                    }
+                    this.loading = false;
+                },
+                error: (error) => {
+                    this.alertService.error(error);
+                    this.loading = false;
                 }
-                this.promociones.push(promocion);
-            }
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
-    }
-
-
-    public onSubmit() {
-        this.loading = true;
-        // Guardamos la caja
-        this.apiService.store('producto/promocion', this.promocion).pipe(this.untilDestroyed()).subscribe(promocion => {
-            this.promocion = promocion;
-            this.alertService.success('Promoción guardada', 'La promoción fue guardad exitosamente.');
-
-            this.loading = false;
-            this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false;
-        });
+            });
     }
 
     public generarPromociones() {
@@ -183,14 +216,22 @@ export class PromocionesComponent extends BaseModalComponent implements OnInit {
             this.promocionesFiltradas[i].inicio = moment(this.promocion.inicio).format('YYYY-MM-DDTHH:mm');
             this.promocionesFiltradas[i].fin = moment(this.promocion.fin).format('YYYY-MM-DDTHH:mm');
 
-            this.apiService.store('producto/promocion', this.promocionesFiltradas[i]).pipe(this.untilDestroyed()).subscribe(promocion=> {
-                if (this.promocionesFiltradas.length == i + 1) {
-                    this.alertService.success('Promociones agregadas', (i + 1) + " promociones configuradas");
-                    this.loading = false;
-                    this.closeModal();
-                    this.loadAll();
-                }
-            },error => {this.alertService.error(error); this.loading = false;});
+            this.apiService.store('producto/promocion', this.promocionesFiltradas[i])
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: () => {
+                        if (this.promocionesFiltradas.length == i + 1) {
+                            this.alertService.success('Promociones agregadas', (i + 1) + " promociones configuradas");
+                            this.loading = false;
+                            this.closeModal();
+                            this.loadAll();
+                        }
+                    },
+                    error: (error) => {
+                        this.alertService.error(error);
+                        this.loading = false;
+                    }
+                });
         }
     }
 

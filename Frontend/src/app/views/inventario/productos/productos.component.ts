@@ -14,7 +14,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SumPipe } from '@pipes/sum.pipe';
-import { BaseFilteredPaginatedModalComponent } from '@shared/base/base-filtered-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
 
 @Component({
@@ -24,7 +24,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule, LazyImageDirective],
 
 })
-export class ProductosComponent extends BaseFilteredPaginatedModalComponent implements OnInit {
+export class ProductosComponent extends BaseCrudComponent<any> implements OnInit {
 
     public productos: any = [];
     public downloading: boolean = false;
@@ -48,7 +48,25 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
         private router: Router, 
         private route: ActivatedRoute
     ) {
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'producto',
+            itemsProperty: 'productos',
+            itemProperty: 'producto',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El producto fue guardado exitosamente.',
+                updated: 'El producto fue guardado exitosamente.',
+                deleted: 'Producto eliminado exitosamente.',
+                createTitle: 'Producto guardado',
+                updateTitle: 'Producto guardado',
+                deleteTitle: 'Producto eliminado',
+                deleteConfirm: '¿Desea eliminar el Registro?'
+            },
+            afterSave: () => {
+                this.producto = {};
+            }
+        });
     }
 
     protected aplicarFiltros(): void {
@@ -115,7 +133,7 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
         this.filtrarProductos();
     }
 
-    public loadAll() {
+    public override loadAll() {
         // Verificar si Shopify está activo para mantener el filtro de bodega
         const empresa = this.apiService.auth_user()?.empresa;
         const usuario = this.apiService.auth_user();
@@ -177,26 +195,11 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
     }
 
     public setEstado(producto: any) {
-        this.apiService.store('producto', producto)
-            .pipe(this.untilDestroyed())
-            .subscribe(producto => {
-                this.alertService.success('Producto actualizado', 'El producto fue guardado exitosamente.');
-            }, error => { this.alertService.error(error); });
+        this.onSubmit(producto, true);
     }
 
-    public delete(id: number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('producto/', id)
-                .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                for (let i = 0; i < this.productos['data'].length; i++) {
-                    if (this.productos['data'][i].id == data.id)
-                        this.productos['data'].splice(i, 1);
-                }
-            }, error => { this.alertService.error(error); });
-
-        }
-
+    public override delete(id: number) {
+        super.delete(id);
     }
 
     public setOrden(columna: string) {
@@ -210,18 +213,9 @@ export class ProductosComponent extends BaseFilteredPaginatedModalComponent impl
         this.filtrarProductos();
     }
 
-    // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
-
-    public onSubmit() {
-        this.loading = true;
-        this.apiService.store('producto', this.producto)
-            .pipe(this.untilDestroyed())
-            .subscribe(producto => {
-            this.producto = {};
-            this.alertService.success('Producto guardado', 'El producto fue guardado exitosamente.');
-            this.loading = false;
-            this.closeModal();
-        }, error => { this.alertService.error(error); this.loading = false; });
+    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
+        await super.onSubmit(item, isStatusChange);
+        this.filtrarProductos();
     }
 
     public openDescargar(template: TemplateRef<any>) {

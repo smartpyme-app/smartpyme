@@ -10,9 +10,8 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { TruncatePipe } from '@pipes/truncate.pipe';
-import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
+import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
-
 
 @Component({
     selector: 'app-abonos-ventas',
@@ -22,39 +21,46 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     
 })
 
-export class AbonosVentasComponent extends BasePaginatedModalComponent implements OnInit {
+export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnInit {
 
-    public abonos: PaginatedResponse<any> = {} as PaginatedResponse;
+    public abonos:any = {};
     public abono:any = {};
     public downloading:boolean = false;
-
     public clientes:any = [];
     public usuarios:any = [];
     public formaPagos:any = [];
     public documentos:any = [];
-    public override filtros:any = {};
     public filtrado:boolean = false;
 
     constructor(
-        protected override apiService: ApiService,
-        protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        apiService: ApiService,
+        alertService: AlertService,
+        modalManager: ModalManagerService
     ){
-        super(apiService, alertService, modalManager);
+        super(apiService, alertService, modalManager, {
+            endpoint: 'venta/abono',
+            itemsProperty: 'abonos',
+            itemProperty: 'abono',
+            reloadAfterSave: false,
+            reloadAfterDelete: false,
+            messages: {
+                created: 'El abono fue guardada exitosamente.',
+                updated: 'El abono fue guardada exitosamente.',
+                createTitle: 'Abono guardado',
+                updateTitle: 'Abono guardado'
+            },
+            afterSave: () => {
+                this.abono = {};
+            }
+        });
     }
 
-    protected getPaginatedData(): PaginatedResponse | null {
-        return this.abonos;
-    }
-
-    protected setPaginatedData(data: PaginatedResponse): void {
-        this.abonos = data;
+    protected aplicarFiltros(): void {
+        this.filtrarAbonos();
     }
 
     ngOnInit() {
-
         this.loadAll();
-
     }
 
     public setOrden(columna: string) {
@@ -68,7 +74,7 @@ export class AbonosVentasComponent extends BasePaginatedModalComponent implement
         this.filtrarAbonos();
     }
 
-    public loadAll() {
+    public override loadAll() {
         this.filtros.id_sucursal = '';
         this.filtros.id_cliente = '';
         this.filtros.estado = '';
@@ -78,7 +84,6 @@ export class AbonosVentasComponent extends BasePaginatedModalComponent implement
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
-
         this.filtrarAbonos();
     }
 
@@ -92,39 +97,50 @@ export class AbonosVentasComponent extends BasePaginatedModalComponent implement
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public setEstado(abono:any){
-        this.apiService.store('venta/abono/update', abono)
-            .pipe(this.untilDestroyed())
-            .subscribe(abono => { 
-                this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
-            }, error => {this.alertService.error(error); });
-    }
-
-    public delete(id:number) {
-        if (confirm('¿Desea eliminar el Registro?')) {
-            this.apiService.delete('orden-de-venta/', id)
+    public async setEstado(abono:any){
+        try {
+            await this.apiService.store('venta/abono/update', abono)
                 .pipe(this.untilDestroyed())
-                .subscribe(data => {
-                    for (let i = 0; i < this.abonos['data'].length; i++) { 
-                        if (this.abonos['data'][i].id == data.id )
-                            this.abonos['data'].splice(i, 1);
-                    }
-                }, error => {this.alertService.error(error); });
-                   
+                .toPromise();
+            
+            this.alertService.success('Abono actualizado', 'El abono fue actualizado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        }
+    }
+
+    public override async delete(item: any | number): Promise<void> {
+        const itemToDelete = typeof item === 'number' ? item : (item as any).id;
+        
+        if (!confirm('¿Desea eliminar el Registro?')) {
+            return;
         }
 
+        this.loading = true;
+        try {
+            // Nota: El endpoint original usa 'orden-de-venta/' pero debería ser 'venta/abono/'
+            const deletedItem = await this.apiService.delete('venta/abono/', itemToDelete)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            
+            const index = this.abonos.data?.findIndex((a: any) => a.id === deletedItem.id);
+            if (index !== -1 && index >= 0) {
+                this.abonos.data.splice(index, 1);
+            }
+            this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+        } finally {
+            this.loading = false;
+        }
     }
-
-    // setPagination() ahora se hereda de BasePaginatedComponent
 
     public imprimir(abono:any){
         window.open(this.apiService.baseUrl + '/api/venta/abono/imprimir/' + abono.id + '?token=' + this.apiService.auth_token());
     }
-
-    // Editar
 
     openModalEdit(template: TemplateRef<any>, abono:any) {
         this.abono = abono;
@@ -135,22 +151,7 @@ export class AbonosVentasComponent extends BasePaginatedModalComponent implement
                 this.documentos = documentos;
             }, error => {this.alertService.error(error);});
 
-        this.openModal(template);
-    }
-
-    public onSubmit() {
-        this.loading = true;            
-        this.apiService.store('venta/abono', this.abono)
-            .pipe(this.untilDestroyed())
-            .subscribe(abono => {
-                this.abono = {};
-                if (this.modalRef) {
-                    this.closeModal();
-                }
-                this.loading = false;
-                this.alertService.success('Abono guardado', 'El abono fue guardada exitosamente.');
-            },error => {this.alertService.error(error); this.loading = false; });
-
+        this.openModal(template, abono);
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -208,6 +209,5 @@ export class AbonosVentasComponent extends BasePaginatedModalComponent implement
                 this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
             },error => {this.alertService.error(error);});
     }
-
 
 }

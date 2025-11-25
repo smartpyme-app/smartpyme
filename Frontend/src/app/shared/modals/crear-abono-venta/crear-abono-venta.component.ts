@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, Output, EventEmitter, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -8,7 +8,7 @@ import { NotificacionesContainerComponent } from '@shared/parts/notificaciones/n
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
-import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
     selector: 'app-crear-abono-venta',
@@ -17,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     imports: [CommonModule, RouterModule, FormsModule, NotificacionesContainerComponent],
     
 })
-export class CrearAbonoVentaComponent implements OnInit {
+export class CrearAbonoVentaComponent extends BaseComponent implements OnInit {
 
 	@Input() venta: any = {};
 	@Output() update = new EventEmitter();
@@ -29,13 +29,15 @@ export class CrearAbonoVentaComponent implements OnInit {
 
 	modalRef!: BsModalRef;
 
-	private destroyRef = inject(DestroyRef);
-	private untilDestroyed = subscriptionHelper(this.destroyRef);
-
-   constructor(private apiService: ApiService, private alertService: AlertService,  
-    	private route: ActivatedRoute, private router: Router,
+   constructor(
+        protected apiService: ApiService, 
+        protected alertService: AlertService,  
+    	private route: ActivatedRoute, 
+        private router: Router,
     	private modalService: BsModalService
-    ){ }
+    ) {
+        super();
+    }
 
 	ngOnInit() {
         this.abono.total = this.venta.saldo;
