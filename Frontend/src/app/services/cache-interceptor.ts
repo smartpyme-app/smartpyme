@@ -159,5 +159,13 @@ export class CacheInterceptor implements HttpInterceptor {
     if (url.includes('/planilla') || url.includes('/planillas')) {
       this.cacheService.invalidatePattern('/planillas');
     }
+
+    if (url.includes('/empleado') || url.includes('/empleados')) {
+      this.cacheService.invalidatePattern('/planillas');
+    }
+
+    if (url.includes('/producto') || url.includes('/productos')) {
+      this.cacheService.invalidatePattern('/productos');
+    }
   }
 }
