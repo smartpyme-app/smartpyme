@@ -41,3 +41,17 @@ testem.log
 .DS_Store
 Thumbs.db
 enviroments/environment.ts
+
+# Bugster
+.bugster/results/
+.bugster/screenshots/
+.bugster/videos/
+.bugster/logs/
+.bugster/reports/
+.bugster/.env
+*.bugster.log
+.bugster/paths.json
+.bugster/ui_config_cache.json
+.bugster/files/
+.bugster/*/import_tree.json
+.bugster/.sessions/
