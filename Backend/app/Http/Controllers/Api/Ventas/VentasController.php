@@ -466,6 +466,9 @@ class VentasController extends Controller
 
         try {
 
+            // Obtener la empresa para verificar configuración de vender sin stock
+            $empresa = Empresa::findOrFail(Auth::user()->id_empresa);
+            $puedeVenderSinStock = $empresa->vender_sin_stock == 1;
 
             if ($request->id)
                 $venta = Venta::findOrFail($request->id);
@@ -534,9 +537,38 @@ class VentasController extends Controller
                 // Actualizar inventario
                 if ($request->cotizacion == 0) {
 
-                    // $producto = Producto::where('id', $det['id_producto'])
-                    // ->with('composiciones')->firstOrFail();
+                    // Obtener el producto para verificar si es servicio
+                    $producto = Producto::where('id', $det['id_producto'])->first();
+                    
+                    // Validar stock solo si no es servicio y si la empresa no permite vender sin stock
+                    if ($producto && $producto->tipo != 'Servicio') {
+                        $inventario = Inventario::where('id_producto', $det['id_producto'])
+                            ->where('id_bodega', $venta->id_bodega)->first();
+                        
+                        // Validar stock disponible
+                        if ($inventario) {
+                            $stockDisponible = $inventario->stock;
+                            $cantidadRequerida = $det['cantidad'];
+                            
+                            // Si no se permite vender sin stock y no hay suficiente stock
+                            if (!$puedeVenderSinStock && $stockDisponible < $cantidadRequerida) {
+                                DB::rollback();
+                                return response()->json([
+                                    'error' => "No hay suficiente stock para el producto: {$producto->nombre}. Stock disponible: {$stockDisponible}, Cantidad requerida: {$cantidadRequerida}"
+                                ], 400);
+                            }
+                        } else {
+                            // Si no existe inventario y no se permite vender sin stock
+                            if (!$puedeVenderSinStock) {
+                                DB::rollback();
+                                return response()->json([
+                                    'error' => "No existe inventario para el producto: {$producto->nombre} en la bodega seleccionada"
+                                ], 400);
+                            }
+                        }
+                    }
 
+                    // Restar inventario del producto principal
                     $inventario = Inventario::where('id_producto', $det['id_producto'])
                         ->where('id_bodega', $venta->id_bodega)->first();
                     if ($inventario) {
@@ -548,7 +580,37 @@ class VentasController extends Controller
                     // Inventario compuestos
                     if (isset($det['composiciones'])) {
                         foreach ($det['composiciones'] as $comp) {
-
+                            $productoCompuesto = Producto::where('id', $comp['id_compuesto'])->first();
+                            
+                            // Validar stock de productos compuestos solo si no es servicio
+                            if ($productoCompuesto && $productoCompuesto->tipo != 'Servicio') {
+                                $inventarioComp = Inventario::where('id_producto', $comp['id_compuesto'])
+                                    ->where('id_bodega', $venta->id_bodega)->first();
+                                
+                                $cantidadCompRequerida = $det['cantidad'] * $comp['cantidad'];
+                                
+                                if ($inventarioComp) {
+                                    $stockDisponibleComp = $inventarioComp->stock;
+                                    
+                                    // Si no se permite vender sin stock y no hay suficiente stock
+                                    if (!$puedeVenderSinStock && $stockDisponibleComp < $cantidadCompRequerida) {
+                                        DB::rollback();
+                                        return response()->json([
+                                            'error' => "No hay suficiente stock para el producto compuesto: {$productoCompuesto->nombre}. Stock disponible: {$stockDisponibleComp}, Cantidad requerida: {$cantidadCompRequerida}"
+                                        ], 400);
+                                    }
+                                } else {
+                                    // Si no existe inventario y no se permite vender sin stock
+                                    if (!$puedeVenderSinStock) {
+                                        DB::rollback();
+                                        return response()->json([
+                                            'error' => "No existe inventario para el producto compuesto: {$productoCompuesto->nombre} en la bodega seleccionada"
+                                        ], 400);
+                                    }
+                                }
+                            }
+                            
+                            // Restar inventario del producto compuesto
                             $inventario = Inventario::where('id_producto', $comp['id_compuesto'])
                                 ->where('id_bodega', $venta->id_bodega)->first();
 
