@@ -34,7 +34,7 @@ use App\Models\Inventario\Composiciones\Composicion;
 use App\Exports\ShopifyExport;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class ProductosController extends Controller
 {

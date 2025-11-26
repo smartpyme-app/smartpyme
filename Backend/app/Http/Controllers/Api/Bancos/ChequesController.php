@@ -9,7 +9,7 @@ use App\Models\Bancos\Transaccion;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Bancos\ChequesExport;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Luecano\NumeroALetras\NumeroALetras;
 use Auth;
 

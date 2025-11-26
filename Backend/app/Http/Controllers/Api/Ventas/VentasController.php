@@ -9,7 +9,7 @@ use App\Exports\VentasAcumuladoExport;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-use Tymon\JWTAuth\Facades\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Carbon\Carbon;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Impuesto;
@@ -27,7 +27,7 @@ use App\Models\Contabilidad\Proyecto;
 use App\Models\Eventos\Evento;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Exports\VentasExport;

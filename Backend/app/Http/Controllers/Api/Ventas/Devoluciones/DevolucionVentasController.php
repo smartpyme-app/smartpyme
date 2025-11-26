@@ -20,7 +20,7 @@ use App\Exports\DevolucionesVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Creditos\Credito;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use Auth;
