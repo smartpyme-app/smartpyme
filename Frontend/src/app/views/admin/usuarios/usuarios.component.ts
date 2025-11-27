@@ -46,7 +46,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     CountryISO.CostaRica,
     CountryISO.Panama
   ];
-  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 569];
+  empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 569, 657];
   public modules: any[] = [];
   public permissionsLoading: boolean = false;
   public role: any = {
@@ -223,7 +223,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       const usuarioActualizado = await this.apiService.store('usuario', usuario)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       if (usuarioActualizado.enable == '1') {
         this.alertService.success(
           'Usuario activado',

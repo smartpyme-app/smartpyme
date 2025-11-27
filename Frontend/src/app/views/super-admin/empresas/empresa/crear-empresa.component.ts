@@ -180,6 +180,10 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.empresa.moneda = 'PAB';
             this.empresa.iva = 7;
         }
+        if(this.empresa.pais == 'México'){
+            this.empresa.moneda = 'MXN';
+            this.empresa.iva = 16;
+        }
         console.log(this.empresa);
     }
 
