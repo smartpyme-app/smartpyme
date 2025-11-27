@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterRequest;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\Admin\Acceso;
@@ -30,15 +30,13 @@ use App\Models\Suscripcion;
 use App\Services\Planilla\PlanillaTemplatesService;
 use App\Services\Suscripcion\SuscripcionService;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class AuthJWTController extends Controller
 {
-    use SendsPasswordResetEmails;
-
     private $suscripcionService;
 
     public function __construct(SuscripcionService $suscripcionService)
@@ -384,28 +382,25 @@ class AuthJWTController extends Controller
         }
     }
 
-    protected function sendResetLinkEmail(Request $request)
+    public function sendResetLinkEmail(Request $request)
     {
+        // Validar email
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email'
+        ]);
 
-        $this->validateEmail($request);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()->first()], 422);
+        }
 
-        $response = $this->broker()->sendResetLink(
-            $this->credentials($request)
+        // Enviar link de reset
+        $response = Password::sendResetLink(
+            $request->only('email')
         );
 
         return $response == Password::RESET_LINK_SENT
-            ? $this->sendResetLinkResponse($response)
-            : $this->sendResetLinkFailedResponse($request, $response);
-    }
-
-    protected function sendResetLinkResponse($response)
-    {
-        return  Response()->json(['message' => '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!', 'code' => 200], 200);
-    }
-
-    protected function sendResetLinkFailedResponse($response)
-    {
-        return response()->json(['error' => "El correo ingresado no esta en nuestros registros"], 400);
+            ? response()->json(['message' => '¡Te hemos enviado por correo el enlace para restablecer tu contraseña!', 'code' => 200], 200)
+            : response()->json(['error' => "El correo ingresado no esta en nuestros registros"], 400);
     }
 
 

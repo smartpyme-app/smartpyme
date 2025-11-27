@@ -1,0 +1,13 @@
+name: User successfully logs in with valid credentials
+page: /login
+page_path: src/app/auth/login/login.component.ts
+task: Verify user can log in with correct email and password credentials
+steps:
+  - Navigate to login page
+  - Enter valid email address in email field
+  - Enter valid password in password field
+  - Click "Iniciar sesión" button
+  - Verify loading state shows "Verificando..." text
+  - Verify user is redirected to dashboard or home page
+expected_result: User is authenticated and redirected to the application dashboard, token and user data are stored in localStorage
+

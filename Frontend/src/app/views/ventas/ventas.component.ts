@@ -53,6 +53,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     sucursales: [],
     categorias: [],
     marcas: [],
+    detallePorSucursal: false,
   };
   public filtrosPorMarca: any = {
     inicio: '',
@@ -505,6 +506,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
           sucursales: [],
           categorias: [],
           marcas: [],
+          detallePorSucursal: false,
         };
       },
       (error) => {

@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\Planilla\AreasEmpresaController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'area-empresa', 'middleware' => ['auth:api']], function () {
+Route::group(['prefix' => 'area-empresa', 'middleware' => ['jwt.auth']], function () {
     Route::controller(AreasEmpresaController::class)->group(function () {
         Route::get('/list', 'list');                       // Lista simple para selectores
         Route::get('/list_departamentos', 'list_departamentos');                       // Lista simple para selectores

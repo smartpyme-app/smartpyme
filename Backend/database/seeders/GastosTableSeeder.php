@@ -3,12 +3,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Compras\Gasto;
+use Faker\Factory;
      
 class GastosTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         $categorias = [
             "Transporte",

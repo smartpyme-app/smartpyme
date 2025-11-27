@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\Planilla\EmpleadosController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'empleados', 'middleware' => ['auth:api']], function () {
+Route::group(['prefix' => 'empleados', 'middleware' => ['jwt.auth']], function () {
     Route::controller(EmpleadosController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('/list', 'list');

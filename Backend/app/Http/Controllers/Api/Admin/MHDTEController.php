@@ -27,7 +27,7 @@ use App\Models\Ventas\Venta;
 use App\Models\Compras\Compra;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Gastos\Gasto;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class MHDTEController extends Controller
 {

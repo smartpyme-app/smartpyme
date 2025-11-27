@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Bancos;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Cuenta;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class CuentasController extends Controller
 {

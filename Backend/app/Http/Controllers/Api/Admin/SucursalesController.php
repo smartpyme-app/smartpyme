@@ -9,7 +9,7 @@ use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Log;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class SucursalesController extends Controller
 {

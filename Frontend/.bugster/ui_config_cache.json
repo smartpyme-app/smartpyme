@@ -1,0 +1,21 @@
+{
+  "frontend-1764185598": {
+    "config": {
+      "project_id": "frontend-1764185598",
+      "x_vercel_protection_bypass": null,
+      "preferences": {
+        "tests": {
+          "always_run": null,
+          "limit": null,
+          "headless": null,
+          "silent": null,
+          "verbose": null,
+          "only_affected": null,
+          "parallel": null,
+          "output": null
+        }
+      }
+    },
+    "timestamp": 1764194063.829634
+  }
+}

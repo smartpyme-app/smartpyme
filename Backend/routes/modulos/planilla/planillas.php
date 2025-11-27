@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\Planilla\PlanillaExportController;
 use App\Http\Controllers\Api\Planilla\PlanillaImportController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function () {
+Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function () {
     
     // CRUD básico de planillas
     Route::controller(PlanillaController::class)->group(function () {

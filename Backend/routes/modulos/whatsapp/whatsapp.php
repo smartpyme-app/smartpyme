@@ -12,7 +12,7 @@ Route::prefix('whatsapp')->group(function () {
     Route::post('/webhook', [WebhookController::class, 'handle']);
 });
 
-Route::middleware(['auth:api'])->prefix('admin/whatsapp')->group(function () {
+Route::middleware(['jwt.auth'])->prefix('admin/whatsapp')->group(function () {
     Route::get('/stats', [WebhookController::class, 'getStats']);
     Route::get('/sessions', [WebhookController::class, 'getSessions']);
     Route::get('/sessions/disconnect/{id}', [WebhookController::class, 'disconnectSession']);

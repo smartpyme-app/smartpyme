@@ -7,13 +7,14 @@ use App\Models\Admin\Empleados\Asistencia;
 use App\Models\Admin\Empleados\Planillas\Planilla;
 use App\Models\Admin\Empleados\Planillas\Detalle;
 use App\Models\User;
+use Faker\Factory;
 
 class UsersTableSeeder extends Seeder
 {
 
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
             $user = new User;
             $user->name         = 'Admin';

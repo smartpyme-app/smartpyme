@@ -117,52 +117,81 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   // Agregar detalle
   productoSelect(producto: any): void {
 
-    if (producto.tipo != 'Servicio' && (producto.stock < producto.cantidad)) {
-      if (this.apiService.auth_user().empresa.vender_sin_stock == 0) {
+            // Validar stock solo para productos (no servicios)
+            if (producto.tipo != 'Servicio' && producto.stock !== null && producto.stock !== undefined) {
+                // Verificar si hay suficiente stock para la cantidad solicitada
+                const stockDisponible = parseFloat(producto.stock) || 0;
+                const cantidadRequerida = parseFloat(producto.cantidad) || 1;
 
-        if (this.apiService.auth_user().codigo_autorizacion) {
+                if (stockDisponible < cantidadRequerida) {
+                    // Si la empresa no permite vender sin stock
+                    if (this.apiService.auth_user().empresa.vender_sin_stock == 0) {
 
-          Swal.fire({
-            title: 'Ingrese la clave de autorización',
-            input: 'password',
-            inputAttributes: {
-              autocapitalize: 'off',
-              autocorrect: 'off'
-            },
-            showCancelButton: true,
-            confirmButtonText: 'Enviar',
-            cancelButtonText: 'Cancelar',
-            showLoaderOnConfirm: true,
-            preConfirm: (clave) => {
-              // Aquí puedes realizar alguna validación de la clave ingresada
-              // Devuelve una promesa que se resolverá o rechazará según la validación
-              return new Promise((resolve: any, reject: any) => {
-                if (clave == this.apiService.auth_user().codigo_autorizacion) {
-                  resolve();
-                } else {
-                  reject('Clave incorrecta');
+                      if (this.apiService.auth_user().codigo_autorizacion) {
+
+                        Swal.fire({
+                              title: 'Stock insuficiente',
+                              html: `El producto <strong>${producto.nombre || producto.descripcion}</strong> tiene stock disponible: <strong>${stockDisponible}</strong><br>Se requiere: <strong>${cantidadRequerida}</strong><br><br>Ingrese la clave de autorización para vender sin Stock`,
+                              input: 'password',
+                              inputAttributes: {
+                                autocapitalize: 'off',
+                                autocorrect: 'off'
+                              },
+                              showCancelButton: true,
+                              confirmButtonText: 'Enviar',
+                              cancelButtonText: 'Cancelar',
+                              showLoaderOnConfirm: true,
+                              preConfirm: (clave) => {
+                                // Aquí puedes realizar alguna validación de la clave ingresada
+                                // Devuelve una promesa que se resolverá o rechazará según la validación
+                                return new Promise((resolve:any, reject:any) => {
+                                  if (clave == this.apiService.auth_user().codigo_autorizacion) {
+                                    resolve();
+                                  } else {
+                                    reject('Clave incorrecta');
+                                  }
+                                });
+                              },
+                              allowOutsideClick: () => !Swal.isLoading()
+                            }).then((result) => {
+                              if (result.isConfirmed) {
+                                this.addDetalle(producto);
+                              }
+                            }).catch((error) => {
+                              Swal.fire('Error', error, 'error');
+                            });
+
+                      }else{
+                          Swal.fire({
+                            title: 'Stock insuficiente',
+                            html: `El producto <strong>${producto.nombre || producto.descripcion}</strong> tiene stock disponible: <strong>${stockDisponible}</strong><br>Se requiere: <strong>${cantidadRequerida}</strong><br><br>No hay códigos de autorización configurados. No se puede vender sin stock.`,
+                            icon: 'warning',
+                            confirmButtonText: 'Aceptar'
+                          });
+                          return;
+                      }
+                    }else{
+                        // Si la empresa permite vender sin stock, mostrar advertencia pero permitir continuar
+                        Swal.fire({
+                          title: 'Advertencia de stock',
+                          html: `El producto <strong>${producto.nombre || producto.descripcion}</strong> tiene stock disponible: <strong>${stockDisponible}</strong><br>Se requiere: <strong>${cantidadRequerida}</strong><br><br>La venta continuará ya que está permitido vender sin stock.`,
+                          icon: 'warning',
+                          showCancelButton: true,
+                          confirmButtonText: 'Continuar',
+                          cancelButtonText: 'Cancelar'
+                        }).then((result) => {
+                          if (result.isConfirmed) {
+                            this.addDetalle(producto);
+                          }
+                        });
+                        return;
+                    }
                 }
-              });
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-          }).then((result) => {
-            if (result.isConfirmed) {
-              this.addDetalle(producto);
             }
-          }).catch((error) => {
-            Swal.fire('Error', error, 'error');
-          });
 
-        } else {
-          alert('No hay códigos configurados');
+            // Si pasa todas las validaciones o es un servicio, agregar el detalle
+            this.addDetalle(producto);
         }
-      } else {
-        this.addDetalle(producto);
-      }
-    } else {
-      this.addDetalle(producto);
-    }
-  }
 
   public addDetalle(producto: any) {
     this.detalle = Object.assign({}, producto);

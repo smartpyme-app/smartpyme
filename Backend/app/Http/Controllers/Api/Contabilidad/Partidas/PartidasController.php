@@ -22,7 +22,7 @@ use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class PartidasController extends Controller
 {
@@ -207,13 +207,21 @@ class PartidasController extends Controller
                     $cuenta = Cuenta::findOrFail($det['id_cuenta']);
                 }
 
+                // Normalizar valores decimales ANTES de guardar (convertir comas a puntos)
+                if (isset($det['debe']) && $det['debe'] !== null && $det['debe'] !== '') {
+                    $det['debe'] = $this->normalizeDecimal($det['debe']);
+                }
+                if (isset($det['haber']) && $det['haber'] !== null && $det['haber'] !== '') {
+                    $det['haber'] = $this->normalizeDecimal($det['haber']);
+                }
+
                 $detalle['id_partida'] = $partida->id;
                 $detalle->fill($det);
                 $detalle['codigo'] = $cuenta->codigo;
                 $detalle['nombre_cuenta'] = $cuenta->nombre;
                 $detalle->save();
 
-                // Normalizar valores decimales (convertir comas a puntos)
+                // Valores normalizados para uso posterior
                 $debe = $detalle->debe ? $this->normalizeDecimal($detalle->debe) : 0;
                 $haber = $detalle->haber ? $this->normalizeDecimal($detalle->haber) : 0;
 
@@ -491,7 +499,7 @@ class PartidasController extends Controller
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
                                 'concepto' => 'Ingreso por costo de ventas ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
-                                'debe' => number_format($detalle->costo * $detalle->cantidad,2),
+                                'debe' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'haber' => NULL,
                                 'saldo' => 0,
                             ];
@@ -503,7 +511,7 @@ class PartidasController extends Controller
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
                                 'concepto' => 'Inventarios  ' . $ingreso->nombre_documento . '#' . $ingreso->correlativo,
                                 'debe' => NULL,
-                                'haber' => number_format($detalle->costo * $detalle->cantidad,2),
+                                'haber' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'saldo' => 0,
                             ];
                         }else{
@@ -674,7 +682,7 @@ class PartidasController extends Controller
                                 'codigo' => $cuenta_costos->codigo,
                                 'nombre_cuenta' => $cuenta_costos->nombre,
                                 'concepto' => 'Ingreso por costo de ventas ' . $venta->nombre_documento . '#' . $venta->correlativo,
-                                'debe' => number_format($detalle->costo * $detalle->cantidad,2),
+                                'debe' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'haber' => NULL,
                                 'saldo' => 0,
                             ];
@@ -686,7 +694,7 @@ class PartidasController extends Controller
                                 'nombre_cuenta' => $cuenta_inventarios->nombre,
                                 'concepto' => 'Inventarios  ' . $venta->nombre_documento . '#' . $venta->correlativo,
                                 'debe' => NULL,
-                                'haber' => number_format($detalle->costo * $detalle->cantidad,2),
+                                'haber' => $this->normalizeDecimal($detalle->costo * $detalle->cantidad),
                                 'saldo' => 0,
                             ];
                         }else{

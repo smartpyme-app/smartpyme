@@ -4,6 +4,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Inventario\Categorias\SubCategoria;
+use Faker\Factory;
 
      
 class CategoriasTableSeeder extends Seeder {
@@ -11,7 +12,7 @@ class CategoriasTableSeeder extends Seeder {
     public function run()
     {
 
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         Categoria::create(['nombre' => 'Repuestos ', 'empresa_id' => 1]);
             SubCategoria::create(['nombre' => 'Nuevos', 'categoria_id' => 1]);
