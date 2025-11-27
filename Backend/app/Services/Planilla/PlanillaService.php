@@ -303,6 +303,7 @@ class PlanillaService
 
         // Calcular totales
         $totales = PlanillaDetalle::where('id_planilla', $planilla->id)
+            ->where('estado', '!=', PlanillaConstants::PLANILLA_INACTIVA)
             ->selectRaw('
                 SUM(salario_base) as total_salarios,
                 SUM(bonificaciones) as bonificaciones_total,
@@ -457,7 +458,7 @@ class PlanillaService
             $planilla = Planilla::findOrFail($id_planilla);
 
             $detalles = $planilla->detalles()
-                ->where('estado', PlanillaConstants::PLANILLA_BORRADOR)
+                ->where('estado', '!=', PlanillaConstants::PLANILLA_INACTIVA)
                 ->get();
 
             $total_salarios = 0;

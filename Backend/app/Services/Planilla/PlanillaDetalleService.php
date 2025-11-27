@@ -41,17 +41,37 @@ class PlanillaDetalleService
             $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
             $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
-            // Actualizar campos básicos
-            $detalle->dias_laborados = $datos['dias_laborados'] ?? $diasReferencia;
-            $detalle->horas_extra = $datos['horas_extra'] ?? 0;
-            $detalle->comisiones = $datos['comisiones'] ?? 0;
-            $detalle->bonificaciones = $datos['bonificaciones'] ?? 0;
-            $detalle->otros_ingresos = $datos['otros_ingresos'] ?? 0;
-            $detalle->prestamos = $datos['prestamos'] ?? 0;
-            $detalle->anticipos = $datos['anticipos'] ?? 0;
-            $detalle->otros_descuentos = $datos['otros_descuentos'] ?? 0;
-            $detalle->descuentos_judiciales = $datos['descuentos_judiciales'] ?? 0;
-            $detalle->detalle_otras_deducciones = $datos['detalle_otras_deducciones'] ?? null;
+            // Actualizar campos básicos evitando sobreescrituras cuando no se envían
+            $detalle->dias_laborados = array_key_exists('dias_laborados', $datos)
+                ? ($datos['dias_laborados'] ?? $diasReferencia)
+                : ($detalle->dias_laborados ?? $diasReferencia);
+            $detalle->horas_extra = array_key_exists('horas_extra', $datos)
+                ? ($datos['horas_extra'] ?? 0)
+                : ($detalle->horas_extra ?? 0);
+            $detalle->comisiones = array_key_exists('comisiones', $datos)
+                ? ($datos['comisiones'] ?? 0)
+                : ($detalle->comisiones ?? 0);
+            $detalle->bonificaciones = array_key_exists('bonificaciones', $datos)
+                ? ($datos['bonificaciones'] ?? 0)
+                : ($detalle->bonificaciones ?? 0);
+            $detalle->otros_ingresos = array_key_exists('otros_ingresos', $datos)
+                ? ($datos['otros_ingresos'] ?? 0)
+                : ($detalle->otros_ingresos ?? 0);
+            $detalle->prestamos = array_key_exists('prestamos', $datos)
+                ? ($datos['prestamos'] ?? 0)
+                : ($detalle->prestamos ?? 0);
+            $detalle->anticipos = array_key_exists('anticipos', $datos)
+                ? ($datos['anticipos'] ?? 0)
+                : ($detalle->anticipos ?? 0);
+            $detalle->otros_descuentos = array_key_exists('otros_descuentos', $datos)
+                ? ($datos['otros_descuentos'] ?? 0)
+                : ($detalle->otros_descuentos ?? 0);
+            $detalle->descuentos_judiciales = array_key_exists('descuentos_judiciales', $datos)
+                ? ($datos['descuentos_judiciales'] ?? 0)
+                : ($detalle->descuentos_judiciales ?? 0);
+            $detalle->detalle_otras_deducciones = array_key_exists('detalle_otras_deducciones', $datos)
+                ? ($datos['detalle_otras_deducciones'] ?? null)
+                : $detalle->detalle_otras_deducciones;
 
             // Permitir editar salario_base solo para contratos por obra
             if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA && 
