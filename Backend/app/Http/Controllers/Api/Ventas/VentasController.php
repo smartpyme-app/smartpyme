@@ -96,7 +96,7 @@ class VentasController extends Controller
             ->firstOrFail();
 
         $venta->saldo = $venta->saldo;
-        
+
         return response()->json($venta, 200);
     }
 
@@ -158,13 +158,13 @@ class VentasController extends Controller
             // Si es cotización, guardar en cotizacion_ventas
             if ($request->cotizacion == 1) {
                 $data = $request->validated();
-                
+
                 // Crear o actualizar cotización
                 $cotizacion = $this->cotizacionService->crearOActualizarCotizacion($data);
-                
+
                 // Asignar correlativo
                 $this->cotizacionService->asignarCorrelativo($cotizacion, $data['id_documento']);
-                
+
                 // Guardar detalles
                 $this->cotizacionService->guardarDetalles($cotizacion, $data['detalles']);
 
@@ -174,30 +174,30 @@ class VentasController extends Controller
 
             // Si NO es cotización, guardar en ventas (flujo original)
             $data = $request->validated();
-            
+
             // Crear o actualizar venta
             $venta = $this->ventaService->crearOActualizarVenta($data);
-            
+
             // Asignar correlativo
             $this->ventaService->asignarCorrelativo($venta, $data['id_documento']);
-            
+
             // Guardar detalles
             $this->ventaService->guardarDetalles($venta, $data['detalles']);
-            
+
             // Actualizar inventario si no es cotización
             if ($request->cotizacion == 0) {
                 $this->inventarioService->actualizarInventarioVenta($venta, $data['detalles'], false);
             }
-            
+
             // Procesar evento si existe
             $this->ventaService->procesarEvento($request->id_evento ?? null, $venta);
-            
+
             // Procesar proyecto si existe
             $this->ventaService->procesarProyecto($request->id_proyecto ?? null, $venta);
-            
+
             // Guardar impuestos
             $this->ventaService->guardarImpuestos($venta, $request->impuestos ?? null);
-            
+
             // Guardar métodos de pago
             $this->ventaService->guardarMetodosDePago($venta, $request->metodos_de_pago ?? null);
 

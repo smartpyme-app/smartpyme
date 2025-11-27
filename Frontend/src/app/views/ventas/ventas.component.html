@@ -811,19 +811,24 @@
               </ng-select>
             </div>
 
-            <!-- Marcas -->
-            <div class="form-group col-12 mt-3">
-              <label>Marcas:</label>
-              <ng-select [multiple]="true" class="form-select p-0"
-                        [items]="marcas"
-                        [(ngModel)]="filtrosAcumulado.marcas"
-                        bindLabel="nombre"
-                        bindValue="nombre"
-                        placeholder="Seleccione marcas"
-                        name="marcas">
-              </ng-select>
+                <!-- Marcas -->
+                <div class="form-group col-12 mt-3">
+                    <label>Marcas:</label>
+                    <ng-select [multiple]="true" class="form-select p-0" [items]="marcas"
+                        [(ngModel)]="filtrosAcumulado.marcas" bindLabel="nombre" bindValue="nombre"
+                        placeholder="Seleccione marcas" name="marcas">
+                    </ng-select>
+                </div>
+
+                <!-- Detalle por sucursal -->
+                <div class="form-group col-12 mt-3">
+                    <div class="form-switch bg-light-info rounded">
+                        <label for="detallePorSucursal">Detalle por sucursal</label>
+                        <input class="form-check-input float-end" type="checkbox" role="switch" id="detallePorSucursal"
+                            [(ngModel)]="filtrosAcumulado.detallePorSucursal" name="detallePorSucursal">
+                    </div>
+                </div>
             </div>
-          </div>
 
           <div class="d-grid mt-4">
             <button type="submit" class="btn btn-primary" [disabled]="downloadingAcumulado">
