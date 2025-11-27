@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Api\Ventas;
 
 use App\Http\Controllers\Controller;
+use App\Models\Ventas\Venta;
+use Illuminate\Support\Facades\DB;
 use App\Http\Requests\Ventas\StoreVentaRequest;
 use App\Http\Requests\Ventas\FacturacionRequest;
 use App\Http\Requests\Ventas\FacturacionConsignaRequest;
 use App\Http\Requests\Ventas\IndexVentaRequest;
 use App\Http\Requests\Ventas\LibroIvaRequest;
 use App\Http\Requests\Ventas\HistorialVentaRequest;
-use App\Http\Resources\Ventas\VentaResource;
-use App\Http\Resources\Ventas\VentaCollection;
 use App\Services\Ventas\VentaService;
 use App\Services\Ventas\InventarioService;
 use App\Services\Ventas\VentaQueryService;
@@ -24,12 +24,8 @@ use App\Services\Ventas\CxcService;
 use App\Services\Ventas\HistorialService;
 use App\Services\Ventas\ReporteEmailService;
 use App\Services\Ventas\CotizacionService;
-use App\Models\Ventas\Venta;
-use App\Models\CotizacionVenta;
-use JWTAuth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class VentasController extends Controller
 {

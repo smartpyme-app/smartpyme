@@ -4,13 +4,14 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Transporte\Flete;
 use App\Models\Inventario\Inventario;
+use Faker\Factory;
      
 class MateriasPrimasTableSeeder extends Seeder {
 
     public function run()
     {
 
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for($i = 0; $i < 50 - 1 ; $i++)
         {

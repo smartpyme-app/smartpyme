@@ -1,0 +1,14 @@
+name: User sees validation errors when submitting empty login form
+page: /login
+page_path: src/app/auth/login/login.component.ts
+task: Verify form validation prevents submission with empty required fields
+steps:
+  - Navigate to login page
+  - Leave email field empty
+  - Leave password field empty
+  - Click "Iniciar sesión" button
+  - Verify email field shows validation error state
+  - Verify password field shows validation error state
+  - Verify form does not submit
+expected_result: Both email and password fields display validation error styling, form submission is prevented, and no API request is made
+

@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\Planilla\PlanillasController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['prefix' => 'planillas', 'middleware' => ['auth:api']], function () {
+Route::group(['prefix' => 'planillas', 'middleware' => ['jwt.auth']], function () {
     Route::controller(PlanillasController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('{id}/boletas', 'generarBoletas');

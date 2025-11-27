@@ -4,12 +4,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Ordenes\Orden;
 use App\Models\Ordenes\Detalle;
+use Faker\Factory;
      
 class OrdenesTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for($i = 1; $i <= 100 ; $i++)
         {

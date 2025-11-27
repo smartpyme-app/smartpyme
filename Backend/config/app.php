@@ -176,11 +176,11 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
-        Tymon\JWTAuth\Providers\LaravelServiceProvider::class,
+        PHPOpenSourceSaver\JWTAuth\Providers\LaravelServiceProvider::class,
         Barryvdh\DomPDF\ServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
 
-        Milon\Barcode\BarcodeServiceProvider::class,
+        // Milon\Barcode\BarcodeServiceProvider::class, // Temporalmente comentado - migrar a alternativa compatible con Laravel 10+
 
         App\Providers\AIServiceProvider::class,
 
@@ -241,14 +241,15 @@ return [
 
 
         // Backend
-        'JWTAuth'   => Tymon\JWTAuth\Facades\JWTAuth::class,
-        'JWTFactory'=> Tymon\JWTAuth\Facades\JWTFactory::class,
-        'PDF' => Barryvdh\DomPDF\Facade::class,
+        'JWTAuth'   => PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth::class,
+        'JWTFactory'=> PHPOpenSourceSaver\JWTAuth\Facades\JWTFactory::class,
+        'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
         'Image' => Intervention\Image\Facades\Image::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 
-        'DNS1D' => Milon\Barcode\Facades\DNS1DFacade::class,
-        'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
+        'DNS1D' => App\Helpers\DNS1D::class,
+        'DNS2D' => App\Helpers\DNS2D::class,
+        'Currency' => App\Helpers\Currency::class,
 
     ],
 

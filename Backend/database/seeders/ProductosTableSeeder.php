@@ -4,13 +4,14 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Sucursal;
+use Faker\Factory;
      
 class ProductosTableSeeder extends Seeder {
 
     public function run()
     {
 
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         Producto::create([
             'nombre'            => 'Flete',

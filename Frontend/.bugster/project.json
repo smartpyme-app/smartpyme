@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "timestamp": 1764185687730,
+    "git": {
+      "branch": "bk-main",
+      "commit": "793c6ccd5b6416a60b550f1d25108273b380d336"
+    }
+  },
+  "data": {
+    "frameworks": [
+      {
+        "id": "angular",
+        "name": "Angular",
+        "dir_path": "/Users/macbook/Documents/Projects/smartpyme/Frontend/"
+      }
+    ],
+    "commands": {
+      "test": {
+        "firstExecuted": true
+      }
+    }
+  }
+}

@@ -3,12 +3,13 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Compras\Proveedores\Proveedor;
+use Faker\Factory;
      
 class ProveedoresTableSeeder extends Seeder {
      
     public function run()
     {
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for($i = 0; $i < 20 ; $i++)
         {

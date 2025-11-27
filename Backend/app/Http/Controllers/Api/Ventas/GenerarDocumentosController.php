@@ -15,7 +15,7 @@ use App\Models\Admin\Documento;
 use App\Models\Ventas\Clientes\Cliente;
 use Luecano\NumeroALetras\NumeroALetras;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 use Auth;
 

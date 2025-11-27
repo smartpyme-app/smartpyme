@@ -6,13 +6,14 @@ use App\Models\Transporte\Mantenimientos\Mantenimiento;
 use App\Models\Transporte\Mantenimientos\Detalle;
 use App\Models\Transporte\Flotas\Flota;
 use App\Models\Inventario\Producto;
+use Faker\Factory;
      
 class MantenimientosTableSeeder extends Seeder {
 
     public function run()
     {
 
-        $faker = \Faker\Factory::create();
+        $faker = Factory::create();
 
         for($i = 0; $i < 20 ; $i++)
         {

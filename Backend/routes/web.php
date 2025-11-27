@@ -24,7 +24,6 @@ Route::get('/descargar-ticket/{id}', 	[AuthJWTController::class, 'suscription'])
 
 
 use App\Exports\TrasladosCombosExport;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -53,4 +52,4 @@ Route::post('/demo',       		[HomeController::class, 'demoPost'])->name('demo');
 Route::get('/api/external/documentation', [App\Http\Controllers\Api\External\DocumentationController::class, 'index'])->name('external-api.documentation');
 Route::get('/api/external/documentation/json', [App\Http\Controllers\Api\External\DocumentationController::class, 'json'])->name('external-api.json');
 
-Auth::routes();
+// Auth::routes(); // Comentado: No compatible con Laravel 9. Las rutas de autenticación se manejan en routes/modulos/auth.php con JWT
