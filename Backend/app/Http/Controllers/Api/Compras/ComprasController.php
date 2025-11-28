@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Services\Authorization\AuthorizationService;
+use App\Services\Compras\ComprasAuthorizationService;
 
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
@@ -38,12 +39,18 @@ class ComprasController extends Controller
     protected $transaccionesService;
     protected $chequesService;
     protected $authorizationService;
+    protected $comprasAuthorizationService;
 
-    public function __construct(TransaccionesService $transaccionesService, ChequesService $chequesService,AuthorizationService $authorizationService)
-    {
+    public function __construct(
+        TransaccionesService $transaccionesService,
+        ChequesService $chequesService,
+        AuthorizationService $authorizationService,
+        ComprasAuthorizationService $comprasAuthorizationService
+    ) {
         $this->transaccionesService = $transaccionesService;
         $this->chequesService = $chequesService;
         $this->authorizationService = $authorizationService;
+        $this->comprasAuthorizationService = $comprasAuthorizationService;
     }
 
     public function index(Request $request) {
@@ -280,20 +287,15 @@ class ComprasController extends Controller
 
         Log::info("Facturacion - iniciando proceso");
 
-        // VERIFICAR AUTORIZACIÓN - Solo para compras nuevas sin id_authorization
-        if (!$request->id && !$request->id_authorization) {
-            $total = $this->calcularTotalCompra($request);
+        // VERIFICAR AUTORIZACIÓN usando ComprasAuthorizationService
+        $authorizationResult = $this->comprasAuthorizationService->validarAutorizacionRequerida(
+            $request,
+            $request->id,
+            $request->id_authorization
+        );
 
-            if ($total > 3000) {
-                Log::info("Compra requiere autorización - Total: $" . $total);
-
-                return response()->json([
-                    'ok' => false,
-                    'requires_authorization' => true,
-                    'authorization_type' => 'compras_altas',
-                    'message' => "Esta compra de $" . number_format($total, 2) . " requiere autorización (supera los $3,000)"
-                ], 403);
-            }
+        if ($authorizationResult['requires_authorization']) {
+            return response()->json($authorizationResult, 403);
         }
 
         Log::info("Procesando compra normal o autorizada");
@@ -900,17 +902,6 @@ class ComprasController extends Controller
         }
     }
 
-    private function calcularTotalCompra($request)
-    {
-        $total = $request->total ?? $request->sub_total ?? 0;
-
-        // Si no hay total, calcularlo de los detalles
-        if ($total == 0 && isset($request->detalles)) {
-            $total = collect($request->detalles)->sum('total');
-        }
-
-        return $total;
-    }
 
     public function marcarRecurrente(Request $request)
 {
