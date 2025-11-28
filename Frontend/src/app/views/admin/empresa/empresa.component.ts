@@ -1055,7 +1055,8 @@ export class EmpresaComponent implements OnInit {
             modulos: {},
             configuraciones: {
                 ticket_en_pdf: false,
-                version_facturacion: 'original' // 'original' o 'v2'
+                version_facturacion: 'original', // 'original' o 'v2'
+                mostrar_campos_contables: true // Mostrar tipo de operación y tipo de ingreso
             },
             campos_personalizados: {}
         };
@@ -1182,6 +1183,30 @@ export class EmpresaComponent implements OnInit {
     // Método para verificar si está usando la versión v2
     public isVersionFacturacionV2(): boolean {
         return this.getVersionFacturacion() === 'v2';
+    }
+
+    // Método para verificar si los campos contables están habilitados
+    public isCamposContablesEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_campos_contables', true);
+    }
+
+    // Método para actualizar la configuración de campos contables
+    public updateCamposContables(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_campos_contables', enabled);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campos contables ${enabled ? 'habilitados' : 'deshabilitados'} correctamente`
+            );
+        });
+    }
+
+    // Método para alternar campos contables
+    public toggleCamposContables() {
+        const currentValue = this.isCamposContablesEnabled();
+        this.updateCamposContables(!currentValue);
     }
 
     setCamposRenta() {

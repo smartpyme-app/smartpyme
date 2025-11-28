@@ -336,7 +336,7 @@
             <textarea class="form-control" placeholder="Escribe aquí" [(ngModel)]="venta.descripcion_impresion" name="descripcion_impresion" rows="2"></textarea>
         </div>
     </div>
-    <div class="row">
+    <div class="row" *ngIf="(apiService.auth_user()?.empresa?.custom_empresa?.configuraciones?.mostrar_campos_contables ?? true)">
         <div class="form-group col-6 col-lg-4">
             <label for="tipo_operacion">Tipo de operación:</label>
             <select name="tipo_operacion" class="form-select" [(ngModel)]="venta.tipo_operacion">
