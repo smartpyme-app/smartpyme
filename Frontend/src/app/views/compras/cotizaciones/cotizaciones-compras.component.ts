@@ -134,6 +134,14 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
           .pipe(this.untilDestroyed())
           .toPromise();
       
+      // Invalidar cache después de actualizar estado
+      if (this.cacheService) {
+        this.cacheService.invalidatePattern('/ordenes-de-compras');
+        if (cotizacion?.id) {
+          this.cacheService.delete(`/orden-de-compra/${cotizacion.id}`);
+        }
+      }
+      
       this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
     } catch (error: any) {
       this.alertService.error(error);
@@ -160,6 +168,13 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
       if (index !== -1 && index >= 0) {
         this.compras.data.splice(index, 1);
       }
+      
+      // Invalidar cache después de eliminar
+      if (this.cacheService) {
+        this.cacheService.invalidatePattern('/ordenes-de-compras');
+        this.cacheService.delete(`/orden-de-compra/${itemToDelete}`);
+      }
+      
       this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
     } catch (error: any) {
       this.alertService.error(error);

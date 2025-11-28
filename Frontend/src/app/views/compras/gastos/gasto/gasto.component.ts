@@ -622,16 +622,15 @@ export class GastoComponent implements OnInit {
         .pipe(this.untilDestroyed())
         .toPromise();
       
-      // Invalidar cache del item específico si se está editando
+      // Invalidar cache después de guardar
       const isNew = !this.gasto.id;
-      if (!isNew && gastoGuardado?.id) {
-        this.cacheService.delete(`/gasto/${gastoGuardado.id}`);
+      if (this.cacheService) {
+        this.cacheService.invalidatePattern('/gastos');
+        if (gastoGuardado?.id) {
+          this.cacheService.delete(`/gasto/${gastoGuardado.id}`);
+        }
       }
-      // Invalidar cache de gastos para que aparezca en el listado
-      this.cacheService.invalidatePattern('/gastos');
-      this.cacheService.invalidatePattern('/gasto');
       
-      const isNew = !this.gasto.id;
       const titulo = isNew ? 'Gasto creado' : 'Gasto guardado';
       const mensaje = isNew 
         ? 'El gasto fue añadido exitosamente.' 

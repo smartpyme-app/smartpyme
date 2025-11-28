@@ -4,49 +4,20 @@ namespace Tests\Unit\Services\Compras;
 
 use Tests\TestCase;
 use App\Services\Compras\CompraService;
-use App\Models\Compras\Compra;
-use App\Models\Admin\Documento;
-use App\Models\Admin\Sucursal;
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Auth;
 
+/**
+ * IMPORTANTE: Estos tests NO usan RefreshDatabase ni ningún trait que afecte la base de datos.
+ * Los tests que requieren base de datos están marcados como skipped y se probarán en tests de integración.
+ * Estos tests unitarios solo prueban lógica sin acceso a base de datos.
+ */
 class CompraServiceTest extends TestCase
 {
-    // Solo usar RefreshDatabase para tests que realmente lo necesiten
-    // use RefreshDatabase;
-
     protected $compraService;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->compraService = new CompraService();
-    }
-
-    /**
-     * Helper para crear un usuario de prueba
-     */
-    protected function crearUsuarioPrueba($idSucursal = 1, $idEmpresa = 1)
-    {
-        return User::create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => bcrypt('password'),
-            'id_sucursal' => $idSucursal,
-            'id_empresa' => $idEmpresa,
-        ]);
-    }
-
-    /**
-     * Helper para crear una sucursal de prueba
-     */
-    protected function crearSucursalPrueba($idEmpresa = 1)
-    {
-        return Sucursal::create([
-            'nombre' => 'Sucursal Test',
-            'id_empresa' => $idEmpresa,
-        ]);
     }
 
     /**

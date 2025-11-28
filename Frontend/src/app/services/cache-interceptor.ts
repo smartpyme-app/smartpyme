@@ -224,5 +224,16 @@ export class CacheInterceptor implements HttpInterceptor {
         this.cacheService.delete(`/partida/${match[1]}`);
       }
     }
+
+    if (url.includes('/orden-de-compra') || url.includes('/ordenes-de-compras')) {
+      this.cacheService.invalidatePattern('/ordenes-de-compras');
+      this.cacheService.invalidatePattern('/orden-de-compra');
+      this.cacheService.invalidatePattern('/proveedores');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/orden-de-compra\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/orden-de-compra/${match[1]}`);
+      }
+    }
   }
 }

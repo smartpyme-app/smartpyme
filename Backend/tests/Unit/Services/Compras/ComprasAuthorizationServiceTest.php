@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 
+/**
+ * IMPORTANTE: Estos tests NO usan RefreshDatabase ni ningún trait que afecte la base de datos.
+ * Estos tests unitarios usan mocks y solo prueban lógica sin acceso a base de datos.
+ */
 class ComprasAuthorizationServiceTest extends TestCase
 {
     protected ComprasAuthorizationService $service;
