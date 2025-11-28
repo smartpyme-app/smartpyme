@@ -1054,7 +1054,8 @@ export class EmpresaComponent implements OnInit {
             },
             modulos: {},
             configuraciones: {
-                ticket_en_pdf: false
+                ticket_en_pdf: false,
+                version_facturacion: 'original' // 'original' o 'v2'
             },
             campos_personalizados: {}
         };
@@ -1158,6 +1159,29 @@ export class EmpresaComponent implements OnInit {
     public toggleTicketEnPdf() {
         const currentValue = this.isTicketEnPdfEnabled();
         this.updateTicketEnPdf(!currentValue);
+    }
+
+    // Método para obtener la versión de facturación configurada
+    public getVersionFacturacion(): string {
+        return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
+    }
+
+    // Método para actualizar la versión de facturación
+    public updateVersionFacturacion(version: string) {
+        this.addCustomConfig('configuraciones', 'version_facturacion', version);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Versión de facturación cambiada a ${version === 'v2' ? 'V2 (precios con IVA)' : 'Original'}`
+            );
+        });
+    }
+
+    // Método para verificar si está usando la versión v2
+    public isVersionFacturacionV2(): boolean {
+        return this.getVersionFacturacion() === 'v2';
     }
 
     setCamposRenta() {

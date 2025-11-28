@@ -2,6 +2,7 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LayoutComponent } from '../../layout/layout.component';
 import { AdminGuard } from '../../guards/admin.guard';
+import { FacturacionVersionGuard } from '../../guards/facturacion-version.guard';
 import { CotizacionesComponent } from '@views/ventas/cotizaciones/cotizaciones.component';
 import { SolicitudesCompraComponent } from '@views/ventas/solicitudes-compra/solicitudes-compra.component';
 
@@ -43,8 +44,8 @@ const routes: Routes = [
     children: [
 
         { path: 'ventas', canActivate: [AdminGuard], component: VentasComponent, title: 'Ventas'},
-        { path: 'venta/crear', component: FacturacionComponent, title: 'Facturación'},
-        { path: 'venta-v2/crear', component: FacturacionV2Component, title: 'Facturación V2'},
+        { path: 'venta/crear', canActivate: [FacturacionVersionGuard], component: FacturacionComponent, title: 'Facturación'},
+        { path: 'ventas-v2/crear', component: FacturacionV2Component, title: 'Facturación V2'},
         { path: 'venta/consigna/revisar/:id', component: FacturacionConsignaComponent, title: 'Facturación consigna'},
         { path: 'venta/:id', component: VentaComponent, title: 'Venta'},
 
