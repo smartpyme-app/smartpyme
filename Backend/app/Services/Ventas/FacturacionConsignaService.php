@@ -43,6 +43,10 @@ class FacturacionConsignaService
     {
         $consigna = new Venta();
         $consigna->fill($data);
+        // Asegurar que la consigna herede el id_empresa de la venta original
+        if (!isset($data['id_empresa'])) {
+            $consigna->id_empresa = $venta->id_empresa;
+        }
         $consigna->estado = 'Consigna';
         $consigna->sub_total = $venta->sub_total - $data['sub_total'];
         $consigna->total_costo = $venta->total_costo - $data['total_costo'];
