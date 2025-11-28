@@ -16,14 +16,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\Storage;
 
 class OrdenProduccionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = OrdenProduccion::with(['cliente', 'usuario', 'asesor'])
+        $query = OrdenProduccion::withAccessorRelations()
+            ->with(['asesor']) // Mantener asesor que se usa en filtros
             ->when($request->estado, function ($q, $estado) {
                 return $q->where('estado', $estado);
             })

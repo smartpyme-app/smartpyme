@@ -151,6 +151,9 @@ class VentaQueryService
                 $query->where('enable', 1);
             }], 'total');
 
+        // Cargar relaciones necesarias para accessors (evita N+1 queries)
+        $query->withAccessorRelations();
+
         // Ordenamiento
         $orden = $filtros['orden'] ?? 'id';
         $direccion = $filtros['direccion'] ?? 'desc';

@@ -111,7 +111,12 @@ class OrdenProduccion extends Model
 
     public function getNombreClienteAttribute()
     {
-        $cliente = $this->cliente()->first();
+        if (!$this->relationLoaded('cliente')) {
+            $cliente = $this->cliente()->first();
+        } else {
+            $cliente = $this->cliente;
+        }
+        
         if ($cliente) {
             return $cliente->tipo == 'Empresa' ? $cliente->nombre_empresa : $cliente->nombre . ' ' . $cliente->apellido;
         }
@@ -130,22 +135,34 @@ class OrdenProduccion extends Model
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if (!$this->relationLoaded('usuario')) {
+            return $this->usuario()->pluck('name')->first();
+        }
+        return $this->usuario ? $this->usuario->name : null;
     }
 
     public function getNombreVendedorAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if (!$this->relationLoaded('vendedor')) {
+            return $this->vendedor()->pluck('name')->first();
+        }
+        return $this->vendedor ? $this->vendedor->name : null;
     }
 
     public function getNombreSucursalAttribute()
     {
-        return $this->sucursal()->pluck('nombre')->first();
+        if (!$this->relationLoaded('sucursal')) {
+            return $this->sucursal()->pluck('nombre')->first();
+        }
+        return $this->sucursal ? $this->sucursal->nombre : null;
     }
 
     public function getNombreDocumentoAttribute()
     {
-        return $this->documento()->pluck('nombre')->first();
+        if (!$this->relationLoaded('documento')) {
+            return $this->documento()->pluck('nombre')->first();
+        }
+        return $this->documento ? $this->documento->nombre : null;
     }
 
     public function sucursal()
@@ -287,6 +304,39 @@ class OrdenProduccion extends Model
     public function scopeWithDetalleTextRelations($query)
     {
         return $query->with([
+            'detalles.producto.promocion.detalles.producto'
+        ]);
+    }
+
+    /**
+     * Scope para cargar todas las relaciones necesarias para los accessors
+     * Evita N+1 queries cuando se listan múltiples órdenes de producción
+     * Uso: OrdenProduccion::withAccessorRelations()->get()
+     */
+    public function scopeWithAccessorRelations($query)
+    {
+        return $query->with([
+            'cliente',
+            'usuario',
+            'vendedor',
+            'sucursal',
+            'documento'
+        ]);
+    }
+
+    /**
+     * Scope combinado para cargar todas las relaciones (accessors + detalleText)
+     * Útil cuando necesitas tanto los accessors como el método detalleText()
+     * Uso: OrdenProduccion::withAllRelations()->find($id)
+     */
+    public function scopeWithAllRelations($query)
+    {
+        return $query->with([
+            'cliente',
+            'usuario',
+            'vendedor',
+            'sucursal',
+            'documento',
             'detalles.producto.promocion.detalles.producto'
         ]);
     }
