@@ -10,6 +10,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 
 import * as moment from 'moment';
@@ -35,6 +36,7 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
       private apiService: ApiService,
       protected override alertService: AlertService,
       protected override modalManager: ModalManagerService,
+      private cacheService: HttpCacheService,
       private sumPipe:SumPipe,
       private route: ActivatedRoute, private router: Router
   ) {
@@ -91,7 +93,16 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
         this.apiService.store('partida', this.partida)
           .pipe(this.untilDestroyed())
           .subscribe(partida => {
-            if (!this.partida.id) {
+            // Invalidar cache del item específico si se está editando
+            const isNew = !this.partida.id;
+            if (!isNew && partida?.id) {
+              this.cacheService.delete(`/partida/${partida.id}`);
+            }
+            // Invalidar cache de listas relacionadas
+            this.cacheService.invalidatePattern('/partidas');
+            this.cacheService.invalidatePattern('/partida');
+            
+            if (!isNew) {
                 this.alertService.success('Partida guardada', 'La partida fue guardada exitosamente.');
             }else{
                 this.alertService.success('Partida creada', 'La partida fue añadida exitosamente.');

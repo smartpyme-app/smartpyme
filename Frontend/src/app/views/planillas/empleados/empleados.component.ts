@@ -139,9 +139,15 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
     const empleadoActualizado = { ...empleado, estado };
 
     try {
-      await this.apiService.store('empleados', empleadoActualizado)
+      const empleadoGuardado = await this.apiService.store('empleados', empleadoActualizado)
           .pipe(this.untilDestroyed())
           .toPromise();
+      
+      // Invalidar cache del item específico si se está editando
+      if (empleadoActualizado?.id && empleadoGuardado?.id) {
+        // El cacheService ya está disponible desde BaseCrudComponent
+        (this as any).cacheService.delete(`/empleado/${empleadoGuardado.id}`);
+      }
       
       this.alertService.success(
           'Estado actualizado correctamente',

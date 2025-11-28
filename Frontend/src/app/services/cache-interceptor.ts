@@ -107,12 +107,24 @@ export class CacheInterceptor implements HttpInterceptor {
     // Invalidar cache de listas relacionadas cuando se modifican datos
     if (url.includes('/venta') || url.includes('/ventas')) {
       this.cacheService.invalidatePattern('/ventas');
+      this.cacheService.invalidatePattern('/venta');
       this.cacheService.invalidatePattern('/clientes');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/venta\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/venta/${match[1]}`);
+      }
     }
 
     if (url.includes('/compra') || url.includes('/compras')) {
       this.cacheService.invalidatePattern('/compras');
+      this.cacheService.invalidatePattern('/compra');
       this.cacheService.invalidatePattern('/proveedores');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/compra\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/compra/${match[1]}`);
+      }
     }
 
     if (url.includes('/sucursal') || url.includes('/sucursales')) {
@@ -149,7 +161,13 @@ export class CacheInterceptor implements HttpInterceptor {
 
     if (url.includes('/gasto') || url.includes('/gastos')) {
       this.cacheService.invalidatePattern('/gastos');
+      this.cacheService.invalidatePattern('/gasto');
       this.cacheService.invalidatePattern('/proveedores');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/gasto\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/gasto/${match[1]}`);
+      }
     }
 
     if (url.includes('/bodega') || url.includes('/bodegas')) {
@@ -158,15 +176,53 @@ export class CacheInterceptor implements HttpInterceptor {
 
     if (url.includes('/planilla') || url.includes('/planillas')) {
       this.cacheService.invalidatePattern('/planillas');
+      this.cacheService.invalidatePattern('/planilla');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/planilla\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/planilla/${match[1]}`);
+      }
     }
 
     if (url.includes('/empleado') || url.includes('/empleados')) {
       this.cacheService.invalidatePattern('/empleados');
+      this.cacheService.invalidatePattern('/empleado');
       this.cacheService.invalidatePattern('/planillas');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/empleado\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/empleado/${match[1]}`);
+      }
     }
 
     if (url.includes('/producto') || url.includes('/productos')) {
       this.cacheService.invalidatePattern('/productos');
+      this.cacheService.invalidatePattern('/producto');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/producto\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/producto/${match[1]}`);
+      }
+    }
+
+    if (url.includes('/servicio') || url.includes('/servicios')) {
+      this.cacheService.invalidatePattern('/servicios');
+      this.cacheService.invalidatePattern('/servicio');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/servicio\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/servicio/${match[1]}`);
+      }
+    }
+
+    if (url.includes('/partida') || url.includes('/partidas')) {
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+      // Invalidar cache del item específico si se está editando
+      const match = url.match(/\/partida\/(\d+)/);
+      if (match) {
+        this.cacheService.delete(`/partida/${match[1]}`);
+      }
     }
   }
 }
