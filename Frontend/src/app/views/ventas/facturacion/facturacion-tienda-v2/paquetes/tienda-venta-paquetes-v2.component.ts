@@ -108,11 +108,31 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
         this.detalle.id_paquete    = paquete.id;
         this.detalle.descripcion   = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
         this.detalle.img            = paquete.img;
-        // En v2, el precio ya incluye IVA (no dividir por 1.13)
-        this.detalle.precio         = parseFloat(paquete.precio);
-        this.detalle.precios        = paquete.precios;
+        
+        // En v2, el precio del paquete ya incluye IVA, pero debemos guardarlo sin IVA
+        const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+        const precioConIva = parseFloat(paquete.precio);
+        const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
+        
+        // precio_iva: precio con IVA (para cálculos y visualización)
+        this.detalle.precio_iva     = precioConIva.toFixed(4);
+        // precio: precio sin IVA (para guardar en BD)
+        this.detalle.precio         = precioSinIva.toFixed(4);
+        
+        // Actualizar precios para el selector
+        this.detalle.precios        = paquete.precios ? paquete.precios.map((p: any) => {
+            const precioConIvaP = parseFloat(p.precio);
+            const precioSinIvaP = iva > 0 ? precioConIvaP / (1 + iva / 100) : precioConIvaP;
+            return {
+                ...p,
+                precio: precioConIvaP.toFixed(4),
+                precio_sin_iva: precioSinIvaP.toFixed(4)
+            };
+        }) : [];
+        
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio
+                'precio' : this.detalle.precio_iva,
+                'precio_sin_iva': precioSinIva.toFixed(4)
             });
         this.detalle.costo          = parseFloat(paquete.costo);
         paquete.inventarios        = paquete.inventarios.filter((item:any) => item.id_sucursal == this.venta.id_sucursal);
@@ -140,8 +160,17 @@ export class TiendaVentaPaquetesV2Component implements OnInit {
             this.detalle.descripcion = 'Número: ' + paquete.wr + ' Guia: ' + paquete.num_guia;
             this.detalle.img            = this.servicio.img;
             this.detalle.id_paquete    = paquete.id;
-            // En v2, el precio ya incluye IVA (no dividir por 1.13)
-            this.detalle.precio        = (parseFloat(paquete.precio) + parseFloat(paquete.otros)).toFixed(4);
+            
+            // En v2, el precio del paquete ya incluye IVA, pero debemos guardarlo sin IVA
+            const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+            const precioConIva = parseFloat(paquete.precio) + parseFloat(paquete.otros);
+            const precioSinIva = iva > 0 ? precioConIva / (1 + iva / 100) : precioConIva;
+            
+            // precio_iva: precio con IVA (para cálculos y visualización)
+            this.detalle.precio_iva    = precioConIva.toFixed(4);
+            // precio: precio sin IVA (para guardar en BD)
+            this.detalle.precio        = precioSinIva.toFixed(4);
+            
             this.detalle.total         = parseFloat(paquete.total).toFixed(4);
             this.detalle.cuenta_a_terceros        = parseFloat(paquete.cuenta_a_terceros);
             this.detalle.id_vendedor = paquete.id_asesor;

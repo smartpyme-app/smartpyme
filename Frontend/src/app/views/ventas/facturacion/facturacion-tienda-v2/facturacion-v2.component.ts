@@ -450,15 +450,24 @@ export class FacturacionV2Component implements OnInit {
           detalle.cantidad = detalleCompra.cantidad;
           detalle.descripcion = producto.nombre;
           detalle.id_producto = producto.id;
-          // En v2, el precio ya incluye IVA, así que lo guardamos tal cual
-          detalle.precio = parseFloat(producto.precio);
+          
+          // En v2, el precio se muestra con IVA pero se guarda sin IVA
+          const iva = this.apiService.auth_user()?.empresa?.iva || 0;
+          const precioSinIva = parseFloat(producto.precio);
+          const precioConIva = precioSinIva * (1 + iva / 100);
+          
+          // precio_iva: precio con IVA (para cálculos y visualización)
+          detalle.precio_iva = precioConIva.toFixed(4);
+          // precio: precio sin IVA (para guardar en BD)
+          detalle.precio = precioSinIva.toFixed(4);
+          
           detalle.costo = parseFloat(producto.costo);
-          detalle.gravada = detalle.total;
           detalle.id_vendedor = this.venta.id_vendedor;
           detalle.exenta = 0;
           detalle.no_sujeta = 0;
           detalle.cuenta_a_terceros = 0;
-          detalle.total = detalle.precio * detalle.cantidad;
+          detalle.total = precioConIva * detalle.cantidad;
+          detalle.gravada = detalle.total;
           this.venta.detalles.push(detalle);
           this.sumTotal();
         } else {
@@ -633,29 +642,16 @@ export class FacturacionV2Component implements OnInit {
       this.venta.impuestos = [];
     }
 
-    // En v2, el precio ya incluye IVA, así que necesitamos desglosarlo
+    // En v2, los detalles tienen total sin IVA, así que agregamos el IVA al calcular los totales
     // Usar el IVA de la empresa directamente
     const porcentajeIvaTotal = this.venta.cobrar_impuestos 
       ? (this.apiService.auth_user()?.empresa?.iva || 0)
       : 0;
 
-    // Calcular sub_total (precio sin IVA) y IVA desglosado para cada detalle
-    let subTotalSinIva = 0;
-    let ivaDesglosado = 0;
-
-    this.venta.detalles.forEach((detalle: any) => {
-      const precioConIva = parseFloat(detalle.total) || 0;
-      if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-        const precioSinIva = this.calcularPrecioSinIva(precioConIva, porcentajeIvaTotal);
-        const iva = this.calcularIvaDesdePrecioConIva(precioConIva, porcentajeIvaTotal);
-        subTotalSinIva += precioSinIva;
-        ivaDesglosado += iva;
-      } else {
-        subTotalSinIva += precioConIva;
-      }
-    });
-
-    this.venta.sub_total = subTotalSinIva.toFixed(4);
+    // El sub_total es la suma de los totales de los detalles (sin IVA)
+    this.venta.sub_total = parseFloat(
+      this.sumPipe.transform(this.venta.detalles, 'total')
+    ).toFixed(4);
 
     this.venta.exenta = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'exenta')
@@ -665,7 +661,9 @@ export class FacturacionV2Component implements OnInit {
     ).toFixed(4);
     
     // La gravada es el sub_total sin IVA
-    this.venta.gravada = this.venta.sub_total;
+    this.venta.gravada = parseFloat(
+      this.sumPipe.transform(this.venta.detalles, 'gravada')
+    ).toFixed(4);
     
     this.venta.cuenta_a_terceros = parseFloat(
       this.sumPipe.transform(this.venta.detalles, 'cuenta_a_terceros')
@@ -681,16 +679,14 @@ export class FacturacionV2Component implements OnInit {
       ? this.venta.sub_total * 0.10
       : 0;
 
-    // Calcular IVA desglosado
+    // Calcular IVA sobre el sub_total (agregar IVA como en la versión original)
     if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
       this.venta.impuestos.forEach((impuesto: any) => {
-        // Calcular el porcentaje proporcional del IVA
-        const porcentajeProporcional = porcentajeIvaTotal > 0 
-          ? (impuesto.porcentaje / porcentajeIvaTotal) 
-          : 0;
-        impuesto.monto = ivaDesglosado * porcentajeProporcional;
+        impuesto.monto = parseFloat(this.venta.sub_total) * (impuesto.porcentaje / 100);
       });
-      this.venta.iva = ivaDesglosado.toFixed(4);
+      this.venta.iva = parseFloat(
+        this.sumPipe.transform(this.venta.impuestos, 'monto')
+      ).toFixed(4);
     } else {
       this.venta.impuestos.forEach((impuesto: any) => {
         impuesto.monto = 0;
@@ -709,9 +705,10 @@ export class FacturacionV2Component implements OnInit {
       this.venta.propina = 0;
     }
     
-    // El total es el precio con IVA incluido (que ya está en los detalles)
+    // El total es sub_total + iva + otros impuestos (como en la versión original)
     this.venta.total = (
-      parseFloat(this.sumPipe.transform(this.venta.detalles, 'total')) +
+      parseFloat(this.venta.sub_total) +
+      parseFloat(this.venta.iva) +
       parseFloat(this.venta.cuenta_a_terceros) +
       parseFloat(this.venta.exenta) +
       parseFloat(this.venta.no_sujeta) +

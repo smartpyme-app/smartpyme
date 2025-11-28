@@ -74,19 +74,66 @@ export class VentaDetallesV2Component implements OnInit {
         return this.apiService.auth_user()?.empresa?.iva || 0;
     }
 
+    /**
+     * Maneja el cambio de precio desde el selector dropdown
+     */
+    public onPrecioSelectChange(detalle:any){
+        // Buscar el precio seleccionado en la lista de precios para obtener precio_sin_iva
+        if (detalle.precios && detalle.precio_iva) {
+            const precioSeleccionado = detalle.precios.find((p: any) => parseFloat(p.precio) == parseFloat(detalle.precio_iva));
+            if (precioSeleccionado && precioSeleccionado.precio_sin_iva) {
+                detalle.precio = parseFloat(precioSeleccionado.precio_sin_iva).toFixed(4);
+            } else {
+                // Si no tiene precio_sin_iva, calcularlo
+                const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
+                if (porcentajeIvaTotal > 0) {
+                    detalle.precio = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal).toFixed(4);
+                } else {
+                    detalle.precio = detalle.precio_iva;
+                }
+            }
+        }
+        this.updateTotal(detalle);
+    }
+
     public updateTotal(detalle:any){
         if(!detalle.cantidad){
             detalle.cantidad = 0;
         }
 
-        // En v2, el precio ya incluye IVA, así que los descuentos se aplican sobre el precio con IVA
+        // Obtener porcentaje de IVA una sola vez
         const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
+
+        // Asegurar que precio_iva existe (para compatibilidad con datos existentes)
+        if (!detalle.precio_iva) {
+            if (porcentajeIvaTotal > 0) {
+                detalle.precio_iva = (parseFloat(detalle.precio) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+            } else {
+                detalle.precio_iva = detalle.precio;
+            }
+        }
+
+        // Si se editó precio_iva manualmente, recalcular precio sin IVA
+        if (detalle.precio_iva && porcentajeIvaTotal > 0) {
+            // Verificar si el precio sin IVA actual no corresponde al precio con IVA
+            const precioSinIvaCalculado = this.calcularPrecioSinIva(parseFloat(detalle.precio_iva), porcentajeIvaTotal);
+            const diferencia = Math.abs(parseFloat(detalle.precio) - precioSinIvaCalculado);
+            // Si hay diferencia significativa (más de 0.01), actualizar precio sin IVA
+            if (diferencia > 0.01) {
+                detalle.precio = precioSinIvaCalculado.toFixed(4);
+            }
+        } else if (porcentajeIvaTotal === 0) {
+            detalle.precio = detalle.precio_iva;
+        }
+
+        // Usar precio sin IVA para cálculos
+        const precioSinIva = parseFloat(detalle.precio || 0);
         
         if(detalle.descuento_porcentaje){
-            // Descuento porcentual sobre precio con IVA incluido
-            detalle.descuento = Number((detalle.cantidad * (detalle.precio * (detalle.descuento_porcentaje / 100))).toFixed(4));
+            // Descuento porcentual sobre precio sin IVA
+            detalle.descuento = Number((detalle.cantidad * (precioSinIva * (detalle.descuento_porcentaje / 100))).toFixed(4));
         }else if(detalle.descuento_monto){
-            // Descuento monto sobre precio con IVA incluido
+            // Descuento monto sobre precio sin IVA
             detalle.descuento = Number((detalle.cantidad * detalle.descuento_monto).toFixed(4));
         }else{
             detalle.descuento = 0;
@@ -94,15 +141,17 @@ export class VentaDetallesV2Component implements OnInit {
 
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
         
-        // El total es precio con IVA * cantidad - descuento
-        detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
+        // El total es precio sin IVA * cantidad - descuento (usar precio)
+        detalle.total  = (parseFloat(detalle.cantidad) * precioSinIva - parseFloat(detalle.descuento)).toFixed(4);
         
-        // La gravada es el precio sin IVA (desglosado)
+        // La gravada es igual al total (ya que el total es sin IVA)
+        detalle.gravada = detalle.total;
+        
+        // Calcular total_iva (con IVA) solo para visualización
         if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-            const precioSinIva = this.calcularPrecioSinIva(parseFloat(detalle.total), porcentajeIvaTotal);
-            detalle.gravada = precioSinIva.toFixed(4);
+            detalle.total_iva = (parseFloat(detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
         } else {
-            detalle.gravada = detalle.total;
+            detalle.total_iva = detalle.total;
         }
         
         this.update.emit(this.venta);
@@ -236,20 +285,33 @@ export class VentaDetallesV2Component implements OnInit {
                 this.detalle.cuenta_a_terceros = 0;
             }
 
-            // En v2, el precio ya incluye IVA, así que el total es precio * cantidad - descuento
-            if(!this.detalle.total || detalle){
-                this.detalle.total = (parseFloat(this.detalle.cantidad) * parseFloat(this.detalle.precio) - parseFloat(this.detalle.descuento || 0)).toFixed(4);
+            // Asegurar que precio_iva existe (para compatibilidad con datos existentes)
+            if (!this.detalle.precio_iva) {
+                const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
+                if (porcentajeIvaTotal > 0) {
+                    this.detalle.precio_iva = (parseFloat(this.detalle.precio) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
+                } else {
+                    this.detalle.precio_iva = this.detalle.precio;
+                }
             }
 
-            // Calcular gravada (precio sin IVA)
+            // En v2, el total se calcula usando precio (sin IVA)
             const porcentajeIvaTotal = this.obtenerPorcentajeIvaTotal();
+            const precioSinIva = parseFloat(this.detalle.precio || 0);
+            if(!this.detalle.total || detalle){
+                this.detalle.total = (parseFloat(this.detalle.cantidad) * precioSinIva - parseFloat(this.detalle.descuento || 0)).toFixed(4);
+            }
+
+            // La gravada es igual al total (ya que el total es sin IVA)
+            if(!this.detalle.gravada){
+                this.detalle.gravada = this.detalle.total;
+            }
+
+            // Calcular total_iva (con IVA) solo para visualización
             if (this.venta.cobrar_impuestos && porcentajeIvaTotal > 0) {
-                const precioSinIva = this.calcularPrecioSinIva(parseFloat(this.detalle.total), porcentajeIvaTotal);
-                this.detalle.gravada = precioSinIva.toFixed(4);
+                this.detalle.total_iva = (parseFloat(this.detalle.total) * (1 + porcentajeIvaTotal / 100)).toFixed(4);
             } else {
-                if(!this.detalle.gravada){
-                    this.detalle.gravada = this.detalle.total;
-                }
+                this.detalle.total_iva = this.detalle.total;
             }
 
             if(!this.detalle.id_vendedor){

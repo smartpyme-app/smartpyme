@@ -139,22 +139,29 @@ export class TiendaVentaBuscadorV2Component implements OnInit {
         this.detalle.descripcion    = this.getNombreCompleto(producto);
         this.detalle.img            = producto.img;
         
-        // En v2, el precio ya incluye IVA
+        // En v2, el precio se muestra con IVA pero se guarda sin IVA
         const iva = this.apiService.auth_user()?.empresa?.iva || 0;
-        const precioConIva = parseFloat(producto.precio) * (1 + iva / 100);
-        this.detalle.precio         = precioConIva.toFixed(4);
+        const precioSinIva = parseFloat(producto.precio);
+        const precioConIva = precioSinIva * (1 + iva / 100);
+        
+        // precio_iva: precio con IVA (para cálculos y visualización)
+        this.detalle.precio_iva     = precioConIva.toFixed(4);
+        // precio: precio sin IVA (para guardar en BD)
+        this.detalle.precio         = precioSinIva.toFixed(4);
         
         // Guardar también el precio base para referencia
-        this.detalle.precio_base    = parseFloat(producto.precio);
+        this.detalle.precio_base    = precioSinIva;
         
-        // Actualizar precios con IVA incluido
+        // Actualizar precios con IVA incluido para el selector
         this.detalle.precios        = producto.precios ? producto.precios.map((p: any) => ({
             ...p,
-            precio: (parseFloat(p.precio) * (1 + iva / 100)).toFixed(4)
+            precio: (parseFloat(p.precio) * (1 + iva / 100)).toFixed(4),
+            precio_sin_iva: parseFloat(p.precio)
         })) : [];
         
         this.detalle.precios.unshift({
-                'precio' : this.detalle.precio
+                'precio' : this.detalle.precio_iva,
+                'precio_sin_iva': precioSinIva
             });
             
         if(this.apiService.auth_user().empresa.valor_inventario == 'promedio' && producto.costo_promedio > 0){

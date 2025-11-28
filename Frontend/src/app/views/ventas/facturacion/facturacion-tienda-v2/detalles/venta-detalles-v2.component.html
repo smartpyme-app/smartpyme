@@ -78,9 +78,9 @@
                         <div class="input-group" *ngIf="detalle?.precios?.length < 2">
                             <!-- <span class="input-group-text">$</span> -->
                             <span class="input-group-text">{{ apiService.auth_user().empresa.currency?.currency_symbol || '$' }}</span>
-                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio">
+                            <input type="number" [disabled]="!usuario.empresa.editar_precio_venta" [(ngModel)]="detalle.precio_iva" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control" name="precio_iva">
                         </div>
-                        <select [(ngModel)]="detalle.precio" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-select" name="precio" *ngIf="detalle?.precios?.length > 1">
+                        <select [(ngModel)]="detalle.precio_iva" (change)="onPrecioSelectChange(detalle)" class="form-select" name="precio_iva" *ngIf="detalle?.precios?.length > 1">
                             <option [value]="precio.precio" *ngFor="let precio of detalle.precios | filter: 'clasificacion':venta.cliente?.clasificacion || null">
                                 {{ precio.precio | currency}}
                             </option>
@@ -110,7 +110,9 @@
                             </div>
                         </div>
                     </td>
-                    <td style="width: 100px;" class="text-right">{{ detalle.total | currency}}</td>
+                    <td style="width: 100px;" class="text-right">
+                        <div>{{ detalle.total_iva | currency}}</div>
+                    </td>
                     <td style="width: 50px;" class="text-center">
                         <div class="btn-group">
                             <button class="btn btn-light" (click)="delete(detalle)">
