@@ -142,6 +142,7 @@ class VentasExport implements FromCollection, WithHeadings, WithMapping
                         ->orWhere('forma_pago', 'like', $buscador);
                 });
             })
+            ->withAccessorRelations()
             ->orderBy($request->orden, $request->direccion)
             ->orderBy('id', 'desc')
             ->get();

@@ -161,6 +161,7 @@ class SalesController extends Controller
             // Construir query
             $query = Venta::withoutGlobalScopes()
                           ->where('id_empresa', $empresa->id)
+                          ->withAccessorRelations()
                           ->with(['detalles']);
 
             // Aplicar filtros
