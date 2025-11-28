@@ -728,3 +728,4 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       );
   }
 }
+
