@@ -274,77 +274,92 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   // Editar
 
   public openModalEdit(template: TemplateRef<any>, venta: any) {
-    this.venta = venta;
+    // Cargar los datos completos de la venta antes de abrir el modal
+    this.loading = true;
+    this.apiService.read('venta/', venta.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (ventaCompleta) => {
+          this.loading = false;
 
-    if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
-      this.sharedDataService.getProyectos()
-        .pipe(this.untilDestroyed())
-        .subscribe({
-          next: (proyectos) => {
-            this.proyectos = proyectos;
-          },
-          error: (error) => {
-            this.alertService.error(error);
+          // Cargar datos auxiliares
+          if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
+            this.sharedDataService.getProyectos()
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (proyectos) => {
+                  this.proyectos = proyectos;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
           }
-        });
-    }
 
-    if (!this.documentos.length) {
-      this.sharedDataService.getDocumentos()
-        .pipe(this.untilDestroyed())
-        .subscribe({
-          next: (documentos) => {
-            this.documentos = documentos;
-            this.documentos = this.documentos.filter(
-              (x: any) => x.id_sucursal == this.venta.id_sucursal
-            );
-          },
-          error: (error) => {
-            this.alertService.error(error);
+          if (!this.documentos.length) {
+            this.sharedDataService.getDocumentos()
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (documentos) => {
+                  this.documentos = documentos;
+                  this.documentos = this.documentos.filter(
+                    (x: any) => x.id_sucursal == ventaCompleta.id_sucursal
+                  );
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
           }
-        });
-    }
 
-    if (!this.formaPagos.length) {
-      this.sharedDataService.getFormasDePago()
-        .pipe(this.untilDestroyed())
-        .subscribe({
-          next: (formaPagos) => {
-            this.formaPagos = formaPagos;
-          },
-          error: (error) => {
-            this.alertService.error(error);
+          if (!this.formaPagos.length) {
+            this.sharedDataService.getFormasDePago()
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (formaPagos) => {
+                  this.formaPagos = formaPagos;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
           }
-        });
-    }
 
-    if (!this.usuarios.length) {
-      this.sharedDataService.getUsuarios()
-        .pipe(this.untilDestroyed())
-        .subscribe({
-          next: (usuarios) => {
-            this.usuarios = usuarios;
-          },
-          error: (error) => {
-            this.alertService.error(error);
+          if (!this.usuarios.length) {
+            this.sharedDataService.getUsuarios()
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (usuarios) => {
+                  this.usuarios = usuarios;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
           }
-        });
-    }
 
-    if (!this.canales.length) {
-      this.sharedDataService.getCanales()
-        .pipe(this.untilDestroyed())
-        .subscribe({
-          next: (canales) => {
-            this.canales = canales;
-          },
-          error: (error) => {
-            this.alertService.error(error);
+          if (!this.canales.length) {
+            this.sharedDataService.getCanales()
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (canales) => {
+                  this.canales = canales;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
           }
-        });
-    }
 
-    this.openModal(template);
+          // Abrir el modal pasando ventaCompleta como parámetro
+          // BaseCrudComponent hará una copia con { ...item }, pero eso está bien para las propiedades de primer nivel
+          this.openModal(template, ventaCompleta);
+        },
+        error: (error) => {
+          this.alertService.error(error);
+          this.loading = false;
+        }
+      });
   }
 
   public openFilter(template: TemplateRef<any>) {

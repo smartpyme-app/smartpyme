@@ -126,8 +126,7 @@ class ComprasController extends Controller
 
     public function read($id)
     {
-
-        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos', 'devoluciones')->first();
+        $compra = Compra::where('id', $id)->with('detalles', 'proveedor', 'abonos', 'devoluciones')->firstOrFail();
         $compra->saldo = $compra->saldo;
         return Response()->json($compra, 200);
     }
