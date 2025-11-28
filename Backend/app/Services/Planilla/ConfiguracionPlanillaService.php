@@ -57,13 +57,28 @@ class ConfiguracionPlanillaService
         $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
         if ($esContratoSinPrestaciones) {
-            // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Solo renta del 10%
+
+            // Usar RentaHelper para mantener consistencia
+            $salarioGravado = RentaHelper::calcularSalarioGravado(
+                $totalIngresos,
+                0, // ISSS = 0 para contratos sin prestaciones
+                0, // AFP = 0 para contratos sin prestaciones
+                $tipoPlanilla,
+                $tipoContrato
+            );
+            
+            $renta = RentaHelper::calcularRetencionRenta(
+                $salarioGravado,
+                $tipoPlanilla,
+                $tipoContrato
+            );
+            
             $resultados = [
                 'isss_empleado' => 0,
                 'isss_patronal' => 0,
                 'afp_empleado' => 0,
                 'afp_patronal' => 0,
-                'renta' => round($totalIngresos * 0.10, 2)
+                'renta' => round($renta, 2)
             ];
         } else {
             // Usar constantes actuales de El Salvador

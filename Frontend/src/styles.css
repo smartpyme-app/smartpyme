@@ -164,3 +164,16 @@ a.fc-col-header-cell-cushion{
     max-width:180px;
   }
 
+  /* Modales con z-index mayor que las notificaciones */
+  .modal {
+    z-index: 10000 !important;
+  }
+
+  .modal-backdrop {
+    z-index: 9999 !important;
+  }
+
+  .modal-dialog {
+    z-index: 10001 !important;
+  }
+
