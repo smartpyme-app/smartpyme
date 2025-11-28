@@ -28,6 +28,7 @@ class BancosController extends Controller
         $bancos->push(['nombre' => 'Banco Atlántida', 'activo' => $listaDeBancos->where('nombre', 'Banco Atlántida')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banco Industrial', 'activo' => $listaDeBancos->where('nombre', 'Banco Industrial')->first() ? true : false ]);
         $bancos->push(['nombre' => 'Banrural', 'activo' => $listaDeBancos->where('nombre', 'Banrural')->first() ? true : false ]);
+        $bancos->push(['nombre' => 'Banco Hipotecario', 'activo' => $listaDeBancos->where('nombre', 'Banco Hipotecario')->first() ? true : false ]);
 
         return Response()->json($bancos, 200);
 
