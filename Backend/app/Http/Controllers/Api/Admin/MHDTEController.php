@@ -103,7 +103,10 @@ class MHDTEController extends Controller
 
     public function generarContingencia(Request $request){
 
-        $ventas = Venta::whereIn('id', [$request->id])->with('detalles', 'cliente', 'empresa')->get();
+        $ventas = Venta::whereIn('id', [$request->id])
+            ->withAccessorRelations()
+            ->with('detalles', 'empresa')
+            ->get();
         $empresa = $ventas[0]->empresa;
 
         $DTEs = collect();

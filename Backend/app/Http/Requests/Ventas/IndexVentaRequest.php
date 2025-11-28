@@ -17,6 +17,29 @@ class IndexVentaRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     *
+     * @return void
+     */
+    protected function prepareForValidation()
+    {
+        // Convertir recurrente a booleano si está presente
+        if ($this->has('recurrente')) {
+            $recurrente = $this->input('recurrente');
+            
+            // Si es null o string vacío, eliminar el campo
+            if ($recurrente === null || $recurrente === '') {
+                $this->offsetUnset('recurrente');
+            } elseif (!is_bool($recurrente)) {
+                // Convertir a booleano: acepta true, false, "true", "false", "1", "0", 1, 0
+                $this->merge([
+                    'recurrente' => filter_var($recurrente, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool) $recurrente
+                ]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

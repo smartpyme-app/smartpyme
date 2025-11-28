@@ -288,6 +288,7 @@ class ClientesController extends Controller
 
         $ventas = Venta::where('id_cliente', $id)
             ->where('estado', '!=', 'Anulada')
+            ->withAccessorRelations()
             ->orderBy('id', 'desc')
             ->paginate(10);
         return Response()->json($ventas, 200);
@@ -313,6 +314,7 @@ class ClientesController extends Controller
                 ->when($request->metodo_pago, function ($query) use ($request) {
                     return $query->where('metodo_pago', $request->metodo_pago);
                 })
+                ->withAccessorRelations()
                 ->orderBy('id', 'desc')->paginate(100000);
         } else {
 
@@ -324,6 +326,7 @@ class ClientesController extends Controller
                 ->when($request->metodo_pago, function ($query) use ($request) {
                     return $query->where('metodo_pago', $request->metodo_pago);
                 })
+                ->withAccessorRelations()
                 ->orderBy('id', 'desc')->paginate(100000);
         }
 
