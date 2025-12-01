@@ -13,7 +13,10 @@ class WompiController extends Controller
     
     public function wompiLink($id){
 
-        $venta = Venta::where('id', $id)->with('empresa')->firstOrFail();
+        $venta = Venta::where('id', $id)
+            ->with('empresa')
+            ->withDetalleTextRelations()
+            ->firstOrFail();
         $empresa = $venta->empresa;
         $wompi = new Wompi($empresa);
         $autenticate = $wompi->autenticate();
@@ -55,7 +58,9 @@ class WompiController extends Controller
 
 
     public function pagoWompi(Request $request){
-        $venta = Venta::where('id_wompi_link', $request->idEnlace)->firstOrFail();
+        $venta = Venta::where('id_wompi_link', $request->idEnlace)
+            ->withDetalleTextRelations()
+            ->firstOrFail();
         $venta->id_wompi_transaccion = $request->idTransaccion;
         $venta->estado = 'Pagada';
         $venta->save();

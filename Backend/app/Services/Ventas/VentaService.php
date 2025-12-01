@@ -13,6 +13,7 @@ use App\Models\Eventos\Evento;
 use App\Models\Contabilidad\Proyecto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class VentaService
 {
@@ -28,6 +29,11 @@ class VentaService
             $venta = Venta::findOrFail($data['id']);
         } else {
             $venta = new Venta();
+        }
+
+        // Asignar id_empresa automáticamente si no viene en los datos
+        if (!isset($data['id_empresa']) && Auth::check()) {
+            $data['id_empresa'] = Auth::user()->id_empresa;
         }
 
         $venta->fill($data);
