@@ -180,10 +180,33 @@ class OrdenProduccion extends Model
         $text = '';
 
         foreach ($this->detalles as $detalle) {
-            $text .= $detalle->nombre_producto . ' X ' . $detalle->cantidad . '. ';
-            if ($detalle->producto()->first()->promocion()->first()) {
-                foreach ($detalle->producto()->first()->promocion()->first()->detalles()->get() as $det) {
-                    $text .= ' - ' . $det->nombre_producto . ' X ' . $det->cantidad . '. ';
+            // Usar producto cargado si está disponible, sino usar descripción
+            $nombreProducto = $detalle->descripcion ?? 'Producto';
+            if ($detalle->relationLoaded('producto') && $detalle->producto) {
+                // Si el producto está cargado, usar directamente su nombre para evitar query adicional
+                $producto = $detalle->producto;
+                $nombreProducto = $detalle->descripcion ?: $producto->nombre;
+            }
+            
+            $text .= $nombreProducto . ' X ' . $detalle->cantidad . '. ';
+            
+            // Usar relaciones cargadas en lugar de queries N+1
+            if ($detalle->relationLoaded('producto') && $detalle->producto) {
+                $producto = $detalle->producto;
+                
+                if ($producto->relationLoaded('promocion') && $producto->promocion) {
+                    $promocion = $producto->promocion;
+                    
+                    if ($promocion->relationLoaded('detalles') && $promocion->detalles) {
+                        foreach ($promocion->detalles as $det) {
+                            // Usar producto cargado si está disponible
+                            $nombreDet = $det->nombre_producto ?? 'Producto';
+                            if ($det->relationLoaded('producto') && $det->producto) {
+                                $nombreDet = $det->producto->nombre;
+                            }
+                            $text .= ' - ' . $nombreDet . ' X ' . $det->cantidad . '. ';
+                        }
+                    }
                 }
             }
         }
@@ -275,8 +298,20 @@ class OrdenProduccion extends Model
     }
 
     /**
+     * Scope para cargar las relaciones necesarias para detalleText()
+     * Uso: OrdenProduccion::withDetalleTextRelations()->find($id)
+     */
+    public function scopeWithDetalleTextRelations($query)
+    {
+        return $query->with([
+            'detalles.producto.promocion.detalles.producto'
+        ]);
+    }
+
+    /**
      * Scope para cargar todas las relaciones necesarias para los accessors
      * Evita N+1 queries cuando se listan múltiples órdenes de producción
+     * Uso: OrdenProduccion::withAccessorRelations()->get()
      */
     public function scopeWithAccessorRelations($query)
     {
@@ -286,6 +321,23 @@ class OrdenProduccion extends Model
             'vendedor',
             'sucursal',
             'documento'
+        ]);
+    }
+
+    /**
+     * Scope combinado para cargar todas las relaciones (accessors + detalleText)
+     * Útil cuando necesitas tanto los accessors como el método detalleText()
+     * Uso: OrdenProduccion::withAllRelations()->find($id)
+     */
+    public function scopeWithAllRelations($query)
+    {
+        return $query->with([
+            'cliente',
+            'usuario',
+            'vendedor',
+            'sucursal',
+            'documento',
+            'detalles.producto.promocion.detalles.producto'
         ]);
     }
 }
