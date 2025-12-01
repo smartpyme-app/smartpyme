@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { N1coPaymentService } from '@services/n1co/N1coPaymentService';
+import { PromocionalService } from '@services/promocional.service';
 import { firstValueFrom } from 'rxjs';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Estado } from '../../../models/estado.interface';
@@ -37,19 +38,90 @@ export class PagoComponent implements OnInit {
     public estadoSeleccionado: any = null;
     public paises = [];
     public estados: Estado[] = [];
+    public tieneCodigoPromocional: boolean = false;
+    public totalOriginal: number = 0;
+    public tieneDescuento: boolean = false;
 
     constructor(
         private apiService: ApiService,
         private router: Router,
+        private route: ActivatedRoute,
         private alertService: AlertService,
         private n1coPaymentService: N1coPaymentService,
-        private sanitizer: DomSanitizer
+        private sanitizer: DomSanitizer,
+        private promocionalService: PromocionalService
         
     ) { }
 
     ngOnInit() {
         this.user = this.apiService.register_user();
         this.getPaises();
+        
+        // Verificar si hay código promocional en la URL
+        const codigoPromocional = this.route.snapshot.queryParamMap.get('promo');
+        if (codigoPromocional) {
+            this.tieneCodigoPromocional = true;
+            // Si hay código promocional, mostrar directamente el formulario de pago
+            this.showDirectPayment = true;
+        }
+        
+        // Calcular el total original y verificar descuento
+        this.calcularTotalOriginal();
+    }
+    
+    private calcularTotalOriginal() {
+        if (!this.user.empresa) return;
+        
+        const plan = this.user.empresa.plan;
+        const tipoPlan = this.user.empresa.tipo_plan;
+        const totalActual = this.user.empresa.total || 0;
+        
+        // Calcular precio original basado en el plan
+        let precioOriginal = 0;
+        
+        // El plan puede venir como número o como string (nombre del plan)
+        const planNumero = typeof plan === 'number' ? plan : parseInt(plan);
+        const planNombre = typeof plan === 'string' ? plan.toLowerCase() : '';
+        
+        // Verificar por número primero
+        if (planNumero == 1) { // Emprendedor
+            precioOriginal = tipoPlan === 'Mensual' ? 16.95 : 203.4;
+        } else if (planNumero == 2) { // Estándar
+            precioOriginal = tipoPlan === 'Mensual' ? 28.25 : 339;
+        } else if (planNumero == 3) { // Avanzado
+            precioOriginal = tipoPlan === 'Mensual' ? 56.5 : 678;
+        } else if (planNumero == 4) { // Pro
+            precioOriginal = tipoPlan === 'Mensual' ? 113 : 1220;
+        } else {
+            // Si no coincide con ningún número, buscar por nombre del plan
+            if (planNombre.includes('estándar') || planNombre.includes('estandar') || planNombre === 'estándar' || planNombre === 'estandar') {
+                precioOriginal = tipoPlan === 'Mensual' ? 28.25 : 339;
+            } else if (planNombre.includes('avanzado') || planNombre === 'avanzado') {
+                precioOriginal = tipoPlan === 'Mensual' ? 56.5 : 678;
+            } else if (planNombre.includes('pro') || planNombre === 'pro') {
+                precioOriginal = tipoPlan === 'Mensual' ? 113 : 1220;
+            } else if (planNombre.includes('emprendedor') || planNombre === 'emprendedor') {
+                precioOriginal = tipoPlan === 'Mensual' ? 16.95 : 203.4;
+            }
+        }
+        
+        this.totalOriginal = precioOriginal;
+        
+        // Verificar si hay descuento usando el servicio promocional
+        const codigoPromocional = this.user.empresa?.codigo_promocional || 
+                                  this.route.snapshot.queryParamMap.get('promo');
+        
+        if (codigoPromocional && this.promocionalService.esCodigoValido(codigoPromocional)) {
+            const codigoPromo = this.promocionalService.obtenerCodigoPromocional(codigoPromocional);
+            if (codigoPromo && precioOriginal > 0) {
+                this.tieneDescuento = true;
+                this.totalOriginal = precioOriginal;
+            }
+        } else if (precioOriginal > 0 && totalActual > 0 && totalActual < precioOriginal) {
+            // Verificar si hay descuento comparando totales (por si acaso)
+            this.tieneDescuento = true;
+            this.totalOriginal = precioOriginal;
+        }
     }
 
     // Método original para checkout N1co
