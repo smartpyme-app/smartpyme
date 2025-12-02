@@ -5,6 +5,13 @@ import { ApiService } from '@services/api.service';
 import { formatDate } from '@angular/common';
 import Swal from 'sweetalert2';
 import { AppConstants } from '../../../../app/constants/app.constants';
+import { Subject, Observable, of } from 'rxjs';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  switchMap,
+  catchError,
+} from 'rxjs/operators';
 
 interface Plan {
   id: number;
@@ -38,10 +45,15 @@ export class AdminSuscripcionesComponent implements OnInit {
   public nuevaSuscripcion: any = {};
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
   public editando: boolean = false;
-  public downloading:boolean = false;
+  public downloading: boolean = false;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
+
+  // Para lazy loading de campañas
+  public searchCampanias$ = new Subject<string>();
+  public campaniasResults: string[] = [];
+  public loadingCampanias: boolean = false;
 
   public planes: Plan[] = [
     {
@@ -77,6 +89,43 @@ export class AdminSuscripcionesComponent implements OnInit {
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadAll();
+    this.setupCampaniasSearch();
+  }
+
+  private setupCampaniasSearch() {
+    this.searchCampanias$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((term) => {
+          if (!term || term.length < 1) {
+            // Si no hay término, cargar las primeras campañas
+            this.loadingCampanias = true;
+            return this.apiService.getAll('suscripciones/campanias', {}).pipe(
+              catchError((error) => {
+                console.error('Error cargando campañas:', error);
+                return of([]);
+              })
+            );
+          }
+          this.loadingCampanias = true;
+          return this.apiService
+            .getAll('suscripciones/campanias', { search: term })
+            .pipe(
+              catchError((error) => {
+                console.error('Error buscando campañas:', error);
+                return of([]);
+              })
+            );
+        })
+      )
+      .subscribe((results) => {
+        this.campaniasResults = results || [];
+        this.loadingCampanias = false;
+      });
+
+    // Cargar campañas iniciales
+    this.searchCampanias$.next('');
   }
 
   public loadAll() {
@@ -86,6 +135,7 @@ export class AdminSuscripcionesComponent implements OnInit {
       orden: 'fecha_ultimo_pago',
       direccion: 'desc',
       paginate: 10,
+      campania: '',
     };
 
     this.filtrarSuscripciones();
@@ -444,19 +494,23 @@ export class AdminSuscripcionesComponent implements OnInit {
 
   public setOrden(columna: string) {
     if (this.filtros.orden === columna) {
-      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+      this.filtros.direccion =
+        this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
     }
-  
+
     this.filtrarSuscripciones();
   }
 
-  public descargar(){
+  public descargar() {
     this.downloading = true;
-    this.apiService.export('suscripciones/exportar', this.filtros).subscribe((data:Blob) => {
-        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    this.apiService.export('suscripciones/exportar', this.filtros).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -466,7 +520,11 @@ export class AdminSuscripcionesComponent implements OnInit {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         this.downloading = false;
-      }, (error) => { this.alertService.error(error); this.downloading = false; }
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloading = false;
+      }
     );
   }
 }

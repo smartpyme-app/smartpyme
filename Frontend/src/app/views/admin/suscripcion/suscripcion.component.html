@@ -219,7 +219,7 @@
             </div>
           </div>
         </div>
-        <hr>
+        <hr />
         <div
           class="col-md-12 mb-4"
           *ngIf="!showUpdateForm && suscripcion?.metodoPago"
@@ -414,10 +414,10 @@
                   }"
                   #countryCode="ngModel"
                 >
-                  <option value="" disabled selected>
-                    Seleccione un país
+                  <option value="" disabled selected>Seleccione un país</option>
+                  <option *ngFor="let pais of paises" [value]="pais.cod">
+                    {{ pais.nombre }}
                   </option>
-                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -447,7 +447,12 @@
                   #stateCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona estado</option>
-                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                  <option
+                    *ngFor="let estado of estados"
+                    [value]="estado.codigo"
+                  >
+                    {{ estado.nombre }}
+                  </option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -478,9 +483,7 @@
                 />
                 <div
                   class="invalid-feedback"
-                  *ngIf="
-                    zipCode.invalid && (zipCode.dirty || zipCode.touched)
-                  "
+                  *ngIf="zipCode.invalid && (zipCode.dirty || zipCode.touched)"
                 >
                   Código ZIP inválido
                 </div>
@@ -741,7 +744,9 @@
                   #countryCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona país</option>
-                  <option *ngFor="let pais of paises" [value]="pais.cod">{{ pais.nombre }}</option>
+                  <option *ngFor="let pais of paises" [value]="pais.cod">
+                    {{ pais.nombre }}
+                  </option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -771,7 +776,12 @@
                   #stateCode="ngModel"
                 >
                   <option value="" disabled selected>Selecciona estado</option>
-                  <option *ngFor="let estado of estados" [value]="estado.codigo">{{ estado.nombre }}</option>
+                  <option
+                    *ngFor="let estado of estados"
+                    [value]="estado.codigo"
+                  >
+                    {{ estado.nombre }}
+                  </option>
                 </select>
                 <div
                   class="invalid-feedback"
@@ -854,6 +864,7 @@
   *ngIf="mostrar3DSModal"
   [authUrl]="urlAutenticacion"
   (close)="mostrar3DSModal = false"
+  (messageReceived)="on3DSMessageReceived($event)"
 >
 </app-threeds-modal>
 

@@ -304,6 +304,7 @@
 <app-threeds-modal 
     *ngIf="mostrar3DSModal"
     [authUrl]="urlAutenticacion"
-    (close)="mostrar3DSModal = false">
+    (close)="mostrar3DSModal = false"
+    (messageReceived)="on3DSMessageReceived($event)">
 </app-threeds-modal>
 
