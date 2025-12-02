@@ -102,6 +102,9 @@ export class PartidaComponent implements OnInit {
             this.partida.detalles = [];
             this.partida.id_usuario = this.apiService.auth_user().id;
             this.partida.id_empresa = this.apiService.auth_user().id_empresa;
+            this.partida.debe = '0.00';
+            this.partida.haber = '0.00';
+            this.partida.diferencia = '0.00';
             this.partida.pagination = {
                 current_page: 1,
                 per_page: 100,
@@ -217,15 +220,18 @@ export class PartidaComponent implements OnInit {
         }
         
         // Solo recalcular para partidas nuevas sin totales del backend
-        this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe'))).toFixed(2);
-        this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber'))).toFixed(2);
+        this.partida.debe = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'debe')) || 0).toFixed(2);
+        this.partida.haber = (parseFloat(this.sumPipe.transform(this.partida.detalles, 'haber')) || 0).toFixed(2);
         this.partida.diferencia = (parseFloat(this.partida.debe) - parseFloat(this.partida.haber)).toFixed(2);
     }
 
     public updatePartida(partida:any) {
         this.partida = partida;
-        // NO recalcular totales aquí - mantener los del backend hasta que se guarde
-        // this.sumTotal(); // Comentado para mantener totales del backend
+        // Solo recalcular totales si es una partida nueva (sin ID)
+        // Para partidas existentes, los totales vienen del backend
+        if (!this.partida.id) {
+            this.sumTotal();
+        }
     }
     
     public onTotalesActualizados(totales: any) {
