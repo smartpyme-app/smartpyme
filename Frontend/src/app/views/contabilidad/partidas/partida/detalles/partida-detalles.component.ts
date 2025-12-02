@@ -1,5 +1,7 @@
 import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -18,10 +20,22 @@ export class PartidaDetallesComponent implements OnInit {
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
+    @Output() onTotalesActualizados = new EventEmitter<any>();
     modalRef!: BsModalRef;
 
     public buscador:string = '';
     public loading:boolean = false;
+    public loadingMasDetalles:boolean = false;
+    
+    // Tracking de detalles modificados
+    public detallesModificados: Set<number> = new Set();
+    
+    // Subject para debounce del recálculo de totales
+    private recalcularTotalesDebounced = new Subject<void>();
+
+    // Exponer Math y parseFloat para usar en el template
+    Math = Math;
+    parseFloat = parseFloat;
 
     constructor( 
         public apiService: ApiService, private alertService: AlertService,
@@ -32,6 +46,70 @@ export class PartidaDetallesComponent implements OnInit {
         this.apiService.getAll('catalogo/list').subscribe(catalogo => {
             this.catalogo = catalogo;
         }, error => {this.alertService.error(error);});
+        
+        // Suscribirse al subject para recálculo debounced de totales
+        this.recalcularTotalesDebounced.pipe(
+            debounceTime(500) // Esperar 500ms después del último cambio
+        ).subscribe(() => {
+            this.recalcularTotales();
+        });
+    }
+    
+    /**
+     * Obtener IDs de detalles modificados
+     */
+    public getDetallesModificados(): number[] {
+        return Array.from(this.detallesModificados);
+    }
+    
+    /**
+     * Limpiar el tracking de detalles modificados
+     */
+    public limpiarDetallesModificados(): void {
+        this.detallesModificados.clear();
+    }
+    
+    /**
+     * Recalcular totales llamando al backend
+     */
+    private recalcularTotales(): void {
+        if (!this.partida.id) {
+            // Si no tiene ID, es una partida nueva, usar cálculo local
+            return;
+        }
+        
+        // Obtener solo los detalles modificados con sus valores actuales
+        const detallesModificados = (this.partida.detalles || [])
+            .filter((d: any) => d.id && this.detallesModificados.has(d.id))
+            .map((d: any) => ({
+                id: d.id,
+                debe: d.debe,
+                haber: d.haber
+            }));
+        
+        if (detallesModificados.length === 0) {
+            return;
+        }
+        
+        console.log('Recalculando totales con detalles modificados:', detallesModificados.length);
+        
+        this.apiService.store(`partida/${this.partida.id}/recalcular-totales`, {
+            detalles_modificados: detallesModificados
+        }).subscribe({
+            next: (totales) => {
+                console.log('Totales recalculados:', totales);
+                // Emitir los nuevos totales al componente padre
+                this.onTotalesActualizados.emit({
+                    debe: parseFloat(totales.total_debe).toFixed(2),
+                    haber: parseFloat(totales.total_haber).toFixed(2),
+                    diferencia: parseFloat(totales.diferencia).toFixed(2)
+                });
+            },
+            error: (error) => {
+                console.error('Error al recalcular totales:', error);
+                // No mostrar error al usuario, solo loguear
+            }
+        });
     }
 
     public selectCuenta(){
@@ -41,6 +119,18 @@ export class PartidaDetallesComponent implements OnInit {
     }
 
     public updateTotal(detalle:any){
+        // Si el detalle tiene ID, marcarlo como modificado
+        if (detalle.id) {
+            this.detallesModificados.add(detalle.id);
+            console.log('Detalle marcado como modificado:', detalle.id);
+        }
+        
+        // Si es una partida existente, disparar recálculo debounced
+        if (this.partida.id) {
+            this.recalcularTotalesDebounced.next();
+        }
+        
+        // Mantener lógica original para partidas nuevas
         if(!detalle.cantidad){
             detalle.cantidad = 0;
         }
@@ -113,6 +203,13 @@ export class PartidaDetallesComponent implements OnInit {
     public sumTotalEmit(){
         this.sumTotal.emit();
     }
-
+    
+    /**
+     * Cargar más detalles - este método será sobrescrito por el componente padre
+     */
+    public cargarMasDetalles() {
+        // La implementación real está en el componente padre
+        // Este método existe solo para evitar errores de compilación
+    }
 
 }

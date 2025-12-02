@@ -1,9 +1,7 @@
 <div class="d-flex justify-content-end mb-3">
-    <div class="col-md-12 col-lg-8 justify-content-end d-flex gap-2">
-        <button type="button" (click)="openModal(mcuenta, {})" class="btn btn-default tcla-F6" title="Agregar cuenta" [disabled]="partida.estado === 'Cerrada'">
-            <img src="/assets/icons/list.png" class="icon">
-        </button>
-    </div>
+    <button type="button" (click)="openModal(mcuenta, {})" class="btn btn-default tcla-F6" title="Agregar cuenta" [disabled]="partida.estado === 'Cerrada'">
+        <img src="/assets/icons/list.png" class="icon">
+    </button>
 </div>
 
 <div class="row">
@@ -58,20 +56,6 @@
                     </td>
                 </tr>
             </tbody>
-            <tfoot class="mt-3">
-                <tr><th colspan="4"><br></th></tr>
-                <tr>
-                    <th></th>
-                    <th>Totales:</th>
-                    <th class="text-end" style="padding-right: 30px;">{{ partida.debe | currency }}</th>
-                    <th class="text-end" style="padding-right: 30px;">{{ partida.haber | currency }}</th>
-                </tr>
-                <tr>
-                    <th></th>
-                    <th>Diferencia:</th>
-                    <th class="text-end" colspan="2" style="padding-right: 30px;">{{ partida.diferencia | currency }}</th>
-                </tr>
-            </tfoot>
         </table>
     </div>
 </div>

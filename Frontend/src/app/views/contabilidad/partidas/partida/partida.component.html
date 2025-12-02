@@ -42,7 +42,88 @@
     </div>
 
     <div class="bg-white rounded p-3">
-        <app-partida-detalles [partida]="partida" (update)="updatePartida($event)" (sumTotal)="sumTotal()"></app-partida-detalles>
+        <app-partida-detalles 
+            #detallesComponent
+            [partida]="partida" 
+            (update)="updatePartida($event)" 
+            (sumTotal)="sumTotal()"
+            (onTotalesActualizados)="onTotalesActualizados($event)">
+        </app-partida-detalles>
+    </div>
+
+    <!-- Footer unificado con toda la información abajo -->
+    <div class="bg-white rounded p-3 mb-3 border-top">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Información de paginación -->
+                <div *ngIf="partida.id && partida.pagination" class="mb-3">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div>
+                            <strong>Detalles cargados:</strong> 
+                            <span class="badge bg-primary">{{ partida.detalles?.length || 0 }}</span> 
+                            de <span class="badge bg-secondary">{{ partida.pagination.total }}</span> total
+                        </div>
+                        <div class="text-muted">
+                            Página: <strong>{{ partida.pagination.current_page }}</strong> de <strong>{{ partida.pagination.last_page }}</strong>
+                        </div>
+                        <div *ngIf="partida.pagination.has_more" class="ms-auto">
+                            <span class="badge bg-warning text-dark">
+                                <i class="fa fa-info-circle"></i> Faltan {{ partida.pagination.total - (partida.detalles?.length || 0) }} detalles por cargar
+                            </span>
+                        </div>
+                    </div>
+                    <div *ngIf="partida.total_debe !== undefined && partida.total_haber !== undefined" class="mt-2">
+                        <small class="text-success">
+                            <i class="fa fa-check-circle"></i> Los totales se calculan desde todos los {{ partida.pagination.total }} detalles en la base de datos
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Totales y Diferencia -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-4">
+                            <div>
+                                <div class="text-muted small mb-1">Totales:</div>
+                                <div class="d-flex gap-3">
+                                    <div>
+                                        <span class="text-muted small">Debe:</span>
+                                        <strong class="text-success ms-2 fs-5">{{ partida.debe | currency }}</strong>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small">Haber:</span>
+                                        <strong class="text-danger ms-2 fs-5">{{ partida.haber | currency }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="text-muted small mb-1">Diferencia:</div>
+                        <div>
+                            <strong [ngClass]="{'text-success': Math.abs(parseFloat(partida.diferencia || 0)) < 0.01, 'text-danger': Math.abs(parseFloat(partida.diferencia || 0)) >= 0.01}" class="fs-4">
+                                {{ partida.diferencia | currency }}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón para cargar más detalles -->
+                <div *ngIf="partida.id && partida.pagination?.has_more" class="text-center pt-3 border-top">
+                    <button 
+                        type="button" 
+                        class="btn btn-outline-primary btn-lg" 
+                        (click)="cargarMasDetalles()" 
+                        [disabled]="loading || partida.estado === 'Cerrada'">
+                        <i class="fa fa-arrow-down me-2"></i>
+                        <span *ngIf="!loading">Cargar más detalles</span>
+                        <span *ngIf="loading">
+                            <i class="fa fa-spinner fa-spin me-2"></i>Cargando...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="bg-white rounded p-3 mb-3">
