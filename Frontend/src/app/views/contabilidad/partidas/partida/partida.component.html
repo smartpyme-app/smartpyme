@@ -44,7 +44,13 @@
     </div>
 
     <div class="bg-white rounded p-3">
-        <app-partida-detalles [partida]="partida" (update)="updatePartida($event)" (sumTotal)="sumTotal()"></app-partida-detalles>
+        <app-partida-detalles 
+            [partida]="partida" 
+            (update)="updatePartida($event)" 
+            (sumTotal)="sumTotal()" 
+            (cargarMas)="cargarMasDetalles()"
+            (totalesActualizados)="onTotalesActualizados($event)">
+        </app-partida-detalles>
     </div>
 
     <div class="bg-white rounded p-3 mb-3">

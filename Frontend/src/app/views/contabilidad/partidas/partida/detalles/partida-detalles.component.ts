@@ -27,9 +27,13 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
 
     @Output() update = new EventEmitter();
     @Output() sumTotal = new EventEmitter();
+    @Output() cargarMas = new EventEmitter();
+    @Output() totalesActualizados = new EventEmitter();
 
     public buscador:string = '';
     public override loading:boolean = false;
+    private detallesModificados: Set<number> = new Set(); // IDs de detalles modificados
+    private recalcularTotalesTimeout: any = null; // Para debounce
 
     constructor( 
         public apiService: ApiService,
@@ -66,6 +70,103 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
         this.update.emit(this.partida);
+    }
+    
+    /**
+     * Se llama cuando se modifica debe o haber de un detalle
+     */
+    public onDetalleChange(detalle: any) {
+        // Marcar el detalle como modificado
+        if (detalle.id) {
+            this.detallesModificados.add(detalle.id);
+        }
+        
+        // Debounce: esperar 500ms antes de recalcular para evitar demasiadas llamadas
+        if (this.recalcularTotalesTimeout) {
+            clearTimeout(this.recalcularTotalesTimeout);
+        }
+        
+        this.recalcularTotalesTimeout = setTimeout(() => {
+            this.recalcularTotales();
+        }, 500); // Esperar 500ms después del último cambio
+    }
+    
+    /**
+     * Recalcular totales llamando al backend
+     * Funciona tanto para partidas con muchos detalles como con pocos
+     */
+    private recalcularTotales() {
+        if (!this.partida.id || this.detallesModificados.size === 0) {
+            return;
+        }
+        
+        // Obtener solo los detalles modificados
+        const detallesModificados = (this.partida.detalles || [])
+            .filter((d: any) => d.id && this.detallesModificados.has(d.id))
+            .map((d: any) => ({
+                id: d.id,
+                debe: d.debe || null,
+                haber: d.haber || null
+            }));
+        
+        if (detallesModificados.length === 0) {
+            return;
+        }
+        
+        console.log('Recalculando totales con detalles modificados:', {
+            cantidad: detallesModificados.length,
+            total_detalles: this.partida.pagination?.total || this.partida.detalles?.length || 0
+        });
+        
+        // Llamar al backend para recalcular totales
+        // El backend calculará desde TODOS los detalles (modificados + no modificados)
+        this.apiService.store(`partida/${this.partida.id}/recalcular-totales`, {
+            detalles_modificados: detallesModificados
+        })
+        .pipe(this.untilDestroyed())
+        .subscribe({
+            next: (response) => {
+                // Actualizar los totales con la respuesta del backend
+                if (response.total_debe !== undefined && response.total_haber !== undefined) {
+                    this.partida.debe = parseFloat(response.total_debe).toFixed(2);
+                    this.partida.haber = parseFloat(response.total_haber).toFixed(2);
+                    this.partida.diferencia = parseFloat(response.diferencia).toFixed(2);
+                    
+                    // Emitir evento para que el componente padre sepa que los totales cambiaron
+                    this.totalesActualizados.emit({
+                        debe: this.partida.debe,
+                        haber: this.partida.haber,
+                        diferencia: this.partida.diferencia
+                    });
+                    
+                    console.log('Totales actualizados desde backend:', {
+                        debe: this.partida.debe,
+                        haber: this.partida.haber,
+                        diferencia: this.partida.diferencia,
+                        detalles_modificados: detallesModificados.length,
+                        total_detalles: this.partida.pagination?.total || this.partida.detalles?.length || 0
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('Error al recalcular totales:', error);
+                // No mostrar error al usuario, solo log
+            }
+        });
+    }
+    
+    /**
+     * Obtener lista de IDs de detalles modificados (para el guardado)
+     */
+    public getDetallesModificados(): number[] {
+        return Array.from(this.detallesModificados);
+    }
+    
+    /**
+     * Limpiar lista de detalles modificados
+     */
+    public limpiarDetallesModificados() {
+        this.detallesModificados.clear();
     }
 
     public override openModal(template: TemplateRef<any>, detalle:any){
@@ -126,6 +227,10 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
 
     public sumTotalEmit(){
         this.sumTotal.emit();
+    }
+    
+    public cargarMasDetalles(){
+        this.cargarMas.emit();
     }
 
 }
