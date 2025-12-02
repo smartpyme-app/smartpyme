@@ -3,12 +3,27 @@
 namespace App\Services\Compras;
 
 use App\Models\Compras\Compra;
+use App\Models\Compras\Detalle;
 use App\Models\Admin\Documento;
+use App\Models\Inventario\Producto;
+use App\Models\Inventario\Inventario;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class CompraService
 {
+    protected $transaccionesService;
+    protected $chequesService;
+
+    public function __construct(
+        TransaccionesService $transaccionesService,
+        ChequesService $chequesService
+    ) {
+        $this->transaccionesService = $transaccionesService;
+        $this->chequesService = $chequesService;
+    }
     /**
      * Calcula el total de una compra desde los datos del request
      *
@@ -74,6 +89,95 @@ class CompraService
                 'documento_id' => $documento->id,
                 'nuevo_correlativo' => $documento->correlativo
             ]);
+        }
+    }
+
+    /**
+     * Procesar detalles de compra con actualización de inventario y costo promedio
+     *
+     * @param Compra $compra Compra a la que pertenecen los detalles
+     * @param array $detalles Array de detalles a procesar
+     * @param bool $esNueva Indica si es una compra nueva
+     * @param bool $esCotizacion Indica si es una cotización (no actualiza inventario)
+     * @return void
+     */
+    public function procesarDetallesConInventario(Compra $compra, array $detalles, bool $esNueva, bool $esCotizacion = false): void
+    {
+        foreach ($detalles as $det) {
+            // Crear o actualizar detalle
+            if (isset($det['id'])) {
+                $detalle = Detalle::findOrFail($det['id']);
+            } else {
+                $detalle = new Detalle();
+            }
+
+            $det['id_compra'] = $compra->id;
+            $detalle->fill($det);
+
+            // Actualizar inventario solo si no es cotización
+            if (!$esCotizacion) {
+                $inventario = Inventario::where('id_producto', $det['id_producto'])
+                    ->where('id_bodega', $compra->id_bodega)
+                    ->first();
+
+                if ($inventario) {
+                    $inventario->stock += $det['cantidad'];
+                    $inventario->save();
+                    $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
+                }
+            }
+
+            $detalle->save();
+
+            // Calcular costo promedio solo para compras nuevas
+            if ($esNueva) {
+                $producto = $detalle->producto()->with('inventarios')->first();
+                if ($producto) {
+                    $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $det['cantidad'];
+                    $stock_actual = $det['cantidad']; // Cantidad comprada
+                    $stock_total = $stock_anterior + $stock_actual; // Nuevo stock total
+
+                    // Evitar división por cero
+                    if ($stock_total > 0) {
+                        $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $det['costo'])) / $stock_total;
+                    } else {
+                        $costo_promedio = $det['costo'];
+                    }
+
+                    $producto->costo_anterior = $producto->costo;
+                    $producto->costo = $det['costo'];
+                    $producto->costo_promedio = $costo_promedio;
+                    $producto->save();
+                }
+            }
+        }
+    }
+
+    /**
+     * Procesar pagos de la compra (transacciones bancarias y cheques)
+     *
+     * @param Compra $compra Compra a procesar
+     * @param bool $esNueva Indica si es una compra nueva
+     * @param bool $esCotizacion Indica si es una cotización (no crea pagos)
+     * @return void
+     */
+    public function procesarPagos(Compra $compra, bool $esNueva, bool $esCotizacion = false): void
+    {
+        // Solo procesar pagos para compras nuevas que no sean cotizaciones
+        if (!$esNueva || $esCotizacion) {
+            return;
+        }
+
+        // Crear transacción bancaria si no es efectivo ni cheque
+        if ($compra->forma_pago != 'Efectivo' && $compra->forma_pago != 'Cheque') {
+            $concepto = 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : '');
+            $this->transaccionesService->crear($compra, 'Cargo', $concepto, 'Compra');
+        }
+
+        // Crear cheque si la forma de pago es Cheque
+        if ($compra->forma_pago == 'Cheque') {
+            $concepto = 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : '');
+            $this->chequesService->crear($compra, $compra->nombre_proveedor, $concepto, 'Compra');
         }
     }
 }

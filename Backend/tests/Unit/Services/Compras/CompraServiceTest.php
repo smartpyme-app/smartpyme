@@ -4,6 +4,9 @@ namespace Tests\Unit\Services\Compras;
 
 use Tests\TestCase;
 use App\Services\Compras\CompraService;
+use App\Services\Bancos\TransaccionesService;
+use App\Services\Bancos\ChequesService;
+use Mockery;
 
 /**
  * IMPORTANTE: Estos tests NO usan RefreshDatabase ni ningún trait que afecte la base de datos.
@@ -17,7 +20,15 @@ class CompraServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->compraService = new CompraService();
+        $transaccionesService = Mockery::mock(TransaccionesService::class);
+        $chequesService = Mockery::mock(ChequesService::class);
+        $this->compraService = new CompraService($transaccionesService, $chequesService);
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     /**
@@ -120,6 +131,60 @@ class CompraServiceTest extends TestCase
      * NOTA: Este test requiere base de datos configurada
      */
     public function test_no_incrementar_correlativo_otros_tipos()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar detalles con inventario
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_detalles_con_inventario()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar detalles actualiza stock
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_detalles_actualiza_stock()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar detalles calcula costo promedio
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_detalles_calcula_costo_promedio()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar pagos crea transacción bancaria
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_pagos_crea_transaccion_bancaria()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar pagos crea cheque
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_pagos_crea_cheque()
+    {
+        $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
+    }
+
+    /**
+     * Test procesar pagos no crea nada si es efectivo
+     * NOTA: Este test requiere base de datos configurada
+     */
+    public function test_procesar_pagos_no_crea_nada_si_es_efectivo()
     {
         $this->markTestSkipped('Requiere base de datos configurada - Se probará en tests de integración');
     }

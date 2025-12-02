@@ -19,6 +19,8 @@ use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use App\Services\Authorization\AuthorizationService;
 use App\Services\Compras\ComprasAuthorizationService;
+use App\Services\Compras\CompraService;
+use App\Services\Compras\OrdenCompraService;
 
 use App\Exports\ComprasExport;
 use App\Exports\ComprasDetallesExport;
@@ -40,17 +42,23 @@ class ComprasController extends Controller
     protected $chequesService;
     protected $authorizationService;
     protected $comprasAuthorizationService;
+    protected $compraService;
+    protected $ordenCompraService;
 
     public function __construct(
         TransaccionesService $transaccionesService,
         ChequesService $chequesService,
         AuthorizationService $authorizationService,
-        ComprasAuthorizationService $comprasAuthorizationService
+        ComprasAuthorizationService $comprasAuthorizationService,
+        CompraService $compraService,
+        OrdenCompraService $ordenCompraService
     ) {
         $this->transaccionesService = $transaccionesService;
         $this->chequesService = $chequesService;
         $this->authorizationService = $authorizationService;
         $this->comprasAuthorizationService = $comprasAuthorizationService;
+        $this->compraService = $compraService;
+        $this->ordenCompraService = $ordenCompraService;
     }
 
     public function index(Request $request) {
@@ -303,106 +311,33 @@ class ComprasController extends Controller
         DB::beginTransaction();
 
         try {
-            // Compra
-            if ($request->id)
-                $compra = Compra::findOrFail($request->id);
-            else
-                $compra = new Compra;
+            // Crear o actualizar compra usando CompraService
+            $compra = $this->compraService->crearOActualizarCompra($request->all());
 
-            $compra->fill($request->merge(["id_sucursal" => Auth::user()->id_sucursal])->all());
-            $compra->save();
+            // Determinar si es una compra nueva
+            $esNueva = !$request->id;
+            $esCotizacion = $request->cotizacion == 1;
 
-            // Detalles
-            foreach ($request->detalles as $det) {
-                if (isset($det['id']))
-                    $detalle = Detalle::findOrFail($det['id']);
-                else
-                    $detalle = new Detalle;
-                $det['id_compra'] = $compra->id;
+            // Procesar detalles con inventario usando CompraService
+            $this->compraService->procesarDetallesConInventario(
+                $compra,
+                $request->detalles,
+                $esNueva,
+                $esCotizacion
+            );
 
-                $detalle->fill($det);
-
-                if ($request->cotizacion == 0) {
-                    // Actualizar inventario
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])->where('id_bodega', $compra->id_bodega)->first();
-
-                    if ($inventario) {
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
-                    }
-                }
-
-                $detalle->save();
-
-                if (!$request->id) {
-                    $producto = $detalle->producto()->with('inventarios')->first();
-                    if ($producto) {
-                        $stock_anterior = ($producto->inventarios->sum('stock') ?? 0) - $det['cantidad'];
-                        $stock_actual = $det['cantidad']; // Cantidad comprada
-                        $stock_total = $stock_anterior + $stock_actual; // Nuevo stock total
-
-                        // Evitar división por cero
-                        if ($stock_total > 0) {
-                            $costo_promedio = (($stock_anterior * $producto->costo) + ($stock_actual * $det['costo'])) / $stock_total;
-                        } else {
-                            $costo_promedio = $det['costo'];
-                        }
-
-                        $producto->costo_anterior   = $producto->costo;
-                        $producto->costo            = $det['costo'];
-                        $producto->costo_promedio   = $costo_promedio;
-                        $producto->save();
-                    }
-                }
-            }
-
-            //actualizar orden de compra
+            // Actualizar orden de compra si aplica usando OrdenCompraService
             if ($compra->num_orden_compra) {
-                $detCollection = collect($request->detalles);
-                $orden = OrdenCompra::where('id', $compra->num_orden_compra)->with("detalles")->first();
-                $finishOrder = true;
-                foreach ($orden->detalles as $detalle) {
-                    $det = $detCollection->where('id_producto', $detalle->id_producto)->first();
-                    if ($det) {
-                        $detalle->cantidad_procesada += $det['cantidad'];
-                        if ($detalle->cantidad_procesada < $detalle->cantidad) {
-                            $finishOrder = false;
-                        }
-                        $detalle->save();
-                    }
-                }
-                if ($detCollection->count() != $orden->detalles->count()) {
-                    $finishOrder = false;
-                }
-                if ($finishOrder)
-                    $orden->estado = 'Aceptada';
-
-                $orden->save();
+                $this->ordenCompraService->actualizarDesdeCompra($compra, $request->detalles);
             }
 
-            // Crear transaccion bancaria
-            if (!$request->id && $compra->cotizacion == 0 && $compra->forma_pago != 'Efectivo' && $compra->forma_pago != 'Cheque') {
-                $this->transaccionesService->crear($compra, 'Cargo', 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
+            // Procesar pagos usando CompraService
+            $this->compraService->procesarPagos($compra, $esNueva, $esCotizacion);
+
+            // Incrementar correlativo usando CompraService
+            if ($esNueva && $request->tipo_documento) {
+                $this->compraService->incrementarCorrelativo($compra, $request->tipo_documento);
             }
-
-            // Crear cheque
-            if (!$request->id && $compra->cotizacion == 0 && $compra->forma_pago == 'Cheque') {
-                $this->chequesService->crear($compra, $compra->nombre_proveedor, 'Compra: ' . $compra->tipo_documento . ' #' . ($compra->referencia ? $compra->referencia : ''), 'Compra');
-            }
-
-        // Incrementar el correlarivo de orden de compra
-        if (!$request->id && $request->tipo_documento == 'Orden de compra') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
-            $documento->increment('correlativo');
-        }
-
-
-        // Incrementar el correlarivo de Sujeto excluido
-        if (!$request->id && $request->tipo_documento == 'Sujeto excluido') {
-            $documento = Documento::where('nombre', $compra->tipo_documento)->where('id_sucursal', $compra->id_sucursal)->first();
-            $documento->increment('correlativo');
-        }
 
             DB::commit();
             return Response()->json($compra, 200);
