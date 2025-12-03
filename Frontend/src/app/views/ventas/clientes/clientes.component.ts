@@ -165,5 +165,8 @@ export class ClientesComponent implements OnInit {
         );
     }
 
+    public generarEstadoCuenta(cliente: any){
+        window.open(this.apiService.baseUrl + '/api/cliente/estado-de-cuenta/' + cliente.id + '?token=' + this.apiService.auth_token(), '_blank');
+    }
 
 }
