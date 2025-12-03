@@ -30,7 +30,14 @@
                                 </select>
                             </div>
                             <div class="form-group col-6 mb-4">
-                                <label class="w-100">Plan <span class="float-end">Total: {{ user.empresa.total  | currency:'USD':'symbol':'1.2'}}</span></label>
+                                <label class="w-100">Plan 
+                                    <span class="float-end" *ngIf="user.empresa.plan && user.empresa.plan !== '' && (user.empresa.total > 0 || totalOriginal > 0)">
+                                        <span *ngIf="tieneDescuento" style="text-decoration: line-through; color: red; margin-right: 8px;">
+                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                        </span>
+                                        Total: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
+                                    </span>
+                                </label>
                                 <div class="input-group">
                                     <select class="form-select" (change)="setPlan()" name="plan" [(ngModel)]="user.empresa.plan">
                                         <option value="">Selecciona aquí</option>
@@ -74,6 +81,18 @@
                                     </button>
                                 </div>
                                 <p>La contraseña debe tener entre 8 y 16 caracteres, al menos un dígito, un símbolo, una minúscula y una mayúscula.</p>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label>
+                                    Código promocional
+                                    <span class="text-success" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
+                                        ({{ promocionalService.obtenerPorcentajeDescuento(user.empresa.codigo_promocional) }}% de descuento)
+                                    </span>
+                                </label>
+                                <input type="text" class="form-control" name="codigo_promocional" [(ngModel)]="user.empresa.codigo_promocional" (input)="aplicarDescuento()" placeholder="Escribe aquí" #codigo_promocional="ngModel" [class.is-valid]="codigoPromocionalValido"/>
+                                <small class="text-success" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
+                                    <i class="fa fa-check-circle"></i> Código promocional aplicado
+                                </small>
                             </div>
                             <div class="d-grid gap-1">
                                 <button type="submit" [disabled]="loading" class="btn btn-primary d-block">

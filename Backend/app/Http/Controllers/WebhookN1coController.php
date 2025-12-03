@@ -147,7 +147,7 @@ class WebhookN1coController extends Controller
                 ]);
                 return response()->json(['status' => 'success']);
             }
-            
+
             $ordenPago->update([
                 'estado' => config('constants.ESTADO_ORDEN_PAGO_COMPLETADO'),
                 'item_id' => $metadata['orderDetail'][0]['itemId'] ?? null,
@@ -406,7 +406,7 @@ class WebhookN1coController extends Controller
             // Actualizar el estado de autenticación
             $ordenPago->update([
                 'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA'),
-                'authentication_id' => $payload['metadata']['authenticationId'],
+                'id_autorizacion_3ds' => $payload['metadata']['authenticationId'],
             ]);
 
             Log::channel('payments_success')->info('N1co Webhook: Estado de autenticación 3DS actualizado exitosamente', [
@@ -471,7 +471,7 @@ class WebhookN1coController extends Controller
             // Actualizar el estado de autenticación
             $ordenPago->update([
                 'estado' => config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA'),
-                'authentication_id' => $payload['metadata']['authenticationId'],
+                'id_autorizacion_3ds' => $payload['metadata']['authenticationId'],
             ]);
 
             $empresa = Empresa::find($usuario->id_empresa);
@@ -699,7 +699,7 @@ class WebhookN1coController extends Controller
 
     private function enviarCorreoSuscripcion($user, $suscripcion, $empresa)
     {
-        // $emailDestino = app()->environment('production') ? $user->email : 'joseespana94@gmail.com';
+        // $emailDestino = app()->environment('production') ? $user->email : 'jose.e@smartpyme.sv';
         $emailDestino = $user->email;
 
         try {
@@ -732,9 +732,9 @@ class WebhookN1coController extends Controller
     private function enviarNotificacionPagoAdmin($user, $suscripcion, $empresa, $ordenPago, $esNuevaSuscripcion)
     {
         $adminEmails = [
-            'joseespana94@gmail.com',
-            'gabrielaq@smartpyme.sv',
-            'alejandro.a@smartpyme.sv'
+            'jose.e@smartpyme.sv',
+            'jennifer.d@smartpyme.sv',
+            'alejandro.a@smartpyme.sv',
         ];
 
         // $fromAddress = env('MAIL_FROM_ADDRESS');
