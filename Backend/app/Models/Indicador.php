@@ -127,8 +127,7 @@ class Indicador extends Model
                         ->whereHas('venta', function($q){
                             $q->when($this->id_sucursal, function($q){
                                 $q->where('id_sucursal', $this->id_sucursal);
-                            })->where('id_empresa', $this->id_empresa)
-                            ->where('fecha', '<', date('Y-m-d'));
+                            })->where('id_empresa', $this->id_empresa);
                         })->get();
 
         $this->compras = Compra::where('id_empresa', $this->id_empresa)
@@ -378,20 +377,12 @@ class Indicador extends Model
         foreach ($formasDePago as $forma) {
             $forma->cantidad = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->count() 
                                 + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->count()
-                                + $this->abonos->where('forma_pago', $forma['nombre'])
-                                    ->reject(function ($abono) {
-                                        return Carbon::parse($abono->venta->fecha)->equalTo(Carbon::parse($abono->fecha));
-                                    })
-                                ->count()
+                                + $this->abonos->where('forma_pago', $forma['nombre'])->count()
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->count();
             
             $forma->total = $this->ventas_pagadas->where('forma_pago', $forma['nombre'])->sum('total') 
                                 + $this->detalles_metodos_de_pago->where('nombre', $forma['nombre'])->sum('total')
-                                + $this->abonos->where('forma_pago', $forma['nombre'])
-                                    ->reject(function ($abono) {
-                                        return Carbon::parse($abono->venta->fecha)->equalTo(Carbon::parse($abono->fecha));
-                                    })
-                                ->sum('total')
+                                + $this->abonos->where('forma_pago', $forma['nombre'])->sum('total')
                                 - $this->devoluciones_ventas->where('forma_pago', $forma['nombre'])->sum('total');
         }
 
