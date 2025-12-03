@@ -81,6 +81,13 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
             this.detallesModificados.add(detalle.id);
         }
         
+        // Si es una partida nueva (sin ID), recalcular localmente inmediatamente
+        if (!this.partida.id) {
+            this.sumTotal.emit();
+            return;
+        }
+        
+        // Para partidas existentes, usar debounce y recalcular desde el backend
         // Debounce: esperar 500ms antes de recalcular para evitar demasiadas llamadas
         if (this.recalcularTotalesTimeout) {
             clearTimeout(this.recalcularTotalesTimeout);
@@ -179,6 +186,12 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
         this.partida.detalles.push(this.detalle);
 
         this.update.emit(this.partida);
+        
+        // Si es una partida nueva, recalcular totales inmediatamente
+        if (!this.partida.id) {
+            this.sumTotal.emit();
+        }
+        
         this.detalle = {};
 
         if (this.modalRef) { this.closeModal(); }
@@ -200,24 +213,31 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
                         this.apiService.delete('partida/detalle/', detalle.id)
                           .pipe(this.untilDestroyed())
                           .subscribe(detalle => {
-                            let indexAEliminar;
+                            let indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
                             if (indexAEliminar !== -1) {
-                                indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
                                 this.partida.detalles.splice(indexAEliminar, 1);
                             }
                             this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+                            this.update.emit(this.partida);
+                            
+                            // Si es una partida nueva, recalcular totales después de eliminar
+                            if (!this.partida.id) {
+                                this.sumTotal.emit();
+                            }
                         }, error => {this.alertService.error(error); });
                     }else{
-                        let indexAEliminar;
+                        let indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
                         if (indexAEliminar !== -1) {
-                            indexAEliminar = this.partida.detalles.findIndex((item:any) => item.id_cuenta === detalle.id_cuenta);
                             this.partida.detalles.splice(indexAEliminar, 1);
                         }
-                        this.partida.detalles.splice(indexAEliminar, 1);
                         this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+                        this.update.emit(this.partida);
+                        
+                        // Si es una partida nueva, recalcular totales después de eliminar
+                        if (!this.partida.id) {
+                            this.sumTotal.emit();
+                        }
                     }
-
-                this.update.emit(this.partida);
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
               }
