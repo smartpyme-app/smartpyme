@@ -67,15 +67,20 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
             $cliente = optional($venta->cliente);
 
             $tipo = '01'; //CF
+            $esFacturaExportacion = $documento && strtolower(trim($documento->nombre ?? '')) === 'factura de exportación';
 
-            if ($documento && $documento->nombre == 'Factura de exportación') {
+            if ($esFacturaExportacion) {
                 $tipo = '11';
             }
 
-            if ($venta->iva > 0) {
+            // Para facturas de exportación, no asignar valores a gravada/exenta
+            if ($esFacturaExportacion) {
+                $venta->exenta = 0;
+                $venta->gravada = 0;
+            } elseif ($venta->iva > 0) {
                 $venta->exenta = 0;
                 $venta->gravada = $venta->total;
-            }else{
+            } else {
                 $venta->gravada = 0;
                 $venta->exenta = $venta->total;
             }
@@ -103,9 +108,9 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 $venta->exenta ? number_format($venta->exenta, 2, '.', '') : '0.00', //K Exentas
                 '0.00', //L No Exentas no sujetas a proporcionalidad
                 $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
-                $venta->documento->nombre === 'Factura de exportación' ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
+                $esFacturaExportacion ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
                 '0.00', //O Exportacion interna'
-                $venta->documento->nombre === 'Factura de exportación' ? number_format($venta->total, 2, '.', ''): '0', //P Exportacion externa'
+                $esFacturaExportacion ? number_format($venta->total, 2, '.', ''): '0', //P Exportacion externa'
                 '0.00', //Q Exportacion servicios'
                 '0.00', //R Ventas zonas francas'
                 '0.00', //S Ventas a terceros
