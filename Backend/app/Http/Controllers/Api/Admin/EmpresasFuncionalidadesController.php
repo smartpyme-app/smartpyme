@@ -10,6 +10,8 @@ use App\Models\Admin\EmpresaFuncionalidad;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarFuncionalidadRequest;
+use App\Http\Requests\Admin\EmpresasFuncionalidades\ActualizarMultipleFuncionalidadesRequest;
 
 class EmpresasFuncionalidadesController extends Controller
 {
@@ -58,15 +60,9 @@ class EmpresasFuncionalidadesController extends Controller
         }
     }
 
-    public function actualizarFuncionalidad(Request $request)
+    public function actualizarFuncionalidad(ActualizarFuncionalidadRequest $request)
     {
         try {
-            $request->validate([
-                'id_empresa' => 'required|integer|exists:empresas,id',
-                'id_funcionalidad' => 'required|integer|exists:funcionalidades,id',
-                'activo' => 'required|boolean',
-                'configuracion' => 'nullable|array'
-            ]);
 
             $empresaFunc = EmpresaFuncionalidad::updateOrCreate(
                 [
@@ -91,16 +87,9 @@ class EmpresasFuncionalidadesController extends Controller
         }
     }
 
-    public function actualizarMultiple(Request $request)
+    public function actualizarMultiple(ActualizarMultipleFuncionalidadesRequest $request)
     {
         try {
-            $request->validate([
-                'id_empresa' => 'required|integer|exists:empresas,id',
-                'funcionalidades' => 'required|array',
-                'funcionalidades.*.id' => 'required|integer|exists:funcionalidades,id',
-                'funcionalidades.*.activo' => 'required|boolean',
-                'funcionalidades.*.configuracion' => 'nullable|array'
-            ]);
 
             DB::beginTransaction();
 

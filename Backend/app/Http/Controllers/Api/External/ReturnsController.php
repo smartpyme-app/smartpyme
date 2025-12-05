@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Ventas\Devoluciones\Devolucion;
 use Illuminate\Http\Request;
 use App\Http\Resources\External\ReturnResource;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\External\Returns\IndexReturnsRequest;
+use App\Http\Requests\External\Returns\SummaryReturnsRequest;
 
 /**
  * @OA\Tag(
@@ -73,28 +74,10 @@ class ReturnsController extends Controller
      *     @OA\Response(response=500, ref="#/components/responses/ServerError")
      * )
      */
-    public function index(Request $request)
+    public function index(IndexReturnsRequest $request)
     {
         try {
             $empresa = $request->attributes->get('empresa');
-            
-            // Validar parámetros
-            $validator = Validator::make($request->all(), [
-                'fecha_inicio' => 'nullable|date|date_format:Y-m-d',
-                'fecha_fin' => 'nullable|date|date_format:Y-m-d|after_or_equal:fecha_inicio',
-                'id_venta' => 'nullable|integer|min:1',
-                'page' => 'nullable|integer|min:1',
-                'per_page' => 'nullable|integer|min:1|max:200'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors(),
-                    'code' => 400
-                ], 400);
-            }
 
             // Construir consulta
             $query = Devolucion::withoutGlobalScopes()
@@ -285,25 +268,10 @@ class ReturnsController extends Controller
      *     @OA\Response(response=500, ref="#/components/responses/ServerError")
      * )
      */
-    public function summary(Request $request)
+    public function summary(SummaryReturnsRequest $request)
     {
         try {
             $empresa = $request->attributes->get('empresa');
-            
-            // Validar parámetros
-            $validator = Validator::make($request->all(), [
-                'fecha_inicio' => 'nullable|date|date_format:Y-m-d',
-                'fecha_fin' => 'nullable|date|date_format:Y-m-d|after_or_equal:fecha_inicio'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors(),
-                    'code' => 400
-                ], 400);
-            }
 
             // Construir consulta
             $query = Devolucion::withoutGlobalScopes()

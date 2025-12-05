@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Contabilidad\Presupuesto;
 use Illuminate\Support\Facades\Crypt;
 use JWTAuth;
+use App\Http\Requests\Contabilidad\StorePresupuestoRequest;
 
 class PresupuestosController extends Controller
 {
@@ -49,18 +50,8 @@ class PresupuestosController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StorePresupuestoRequest $request)
     {
-        $request->validate([
-            'titulo'        => 'required|max:255',
-            'fecha_inicio'  => 'required|date',
-            'fecha_fin'     => 'required|date',
-            'ingresos'   => 'required|numeric',
-            'egresos'   => 'required|numeric',
-            'compras'   => 'required|numeric',
-            'utilidad'   => 'required|numeric',
-            'id_empresa'   => 'required|numeric',
-        ]);
 
         if($request->id)
             $presupuesto = Presupuesto::findOrFail($request->id);

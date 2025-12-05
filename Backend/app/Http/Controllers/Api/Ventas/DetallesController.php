@@ -10,6 +10,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Admin\Bomba;
 use App\Models\Admin\Tanque;
 use App\Models\Inventario\Inventario;
+use App\Http\Requests\Ventas\Detalles\StoreDetalleRequest;
 
 class DetallesController extends Controller
 {
@@ -32,15 +33,8 @@ class DetallesController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreDetalleRequest $request)
     {
-        $request->validate([
-            'producto_id'    => 'required',
-            'cantidad'    => 'required',
-            'precio'    => 'required',
-            'costo'    => 'required',
-            'venta_id'    => 'required'
-        ]);
         
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);

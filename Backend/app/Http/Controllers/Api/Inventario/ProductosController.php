@@ -35,6 +35,19 @@ use App\Exports\ShopifyExport;
 use App\Services\ShopifyTransformer;
 use App\Services\ImpuestosService;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\Inventario\Productos\StoreProductoRequest;
+use App\Http\Requests\Inventario\Productos\StoreProductoDesdeComprasRequest;
+use App\Http\Requests\Inventario\Productos\StoreProductoCompuestoRequest;
+use App\Http\Requests\Inventario\Productos\ImportProductosRequest;
+use App\Http\Requests\Inventario\Productos\ImportarAjustesRequest;
+use App\Http\Requests\Inventario\Productos\AjusteMasivoRequest;
+use App\Http\Requests\Inventario\Productos\TrasladoMasivoRequest;
+use App\Http\Requests\Inventario\Productos\ImportarTrasladosMasivosRequest;
+use App\Http\Requests\Inventario\Productos\BuscarModalRequest;
+use App\Http\Requests\Inventario\Productos\BuscarPorCodigoProveedorRequest;
+use App\Http\Requests\Inventario\Productos\BuscarPorNombreRequest;
+use App\Http\Requests\Inventario\Productos\BuscarSugerenciasRequest;
+use App\Http\Requests\Inventario\Productos\ImportarShopifyRequest;
 
 class ProductosController extends Controller
 {
@@ -329,23 +342,8 @@ class ProductosController extends Controller
         return Response()->json($productos, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreProductoRequest $request)
     {
-        if (empty($request->codigo)) {
-            $request['codigo'] = NULL;
-        }
-
-        $request->validate([
-            'nombre'            => 'required|max:255',
-            'precio'            => 'required|numeric',
-            'costo'             => 'required|numeric',
-            'id_categoria'      => 'required',
-            'id_empresa'        => 'required',
-        ], [
-            // 'nombre.required' => 'Agregue un nombre.',
-            'id_categoria.required' => 'El campo categoria es obligatorio.',
-            // 'costo.required' => 'Agregue el costo.'
-        ]);
 
         if ($request->id) {
             $producto = Producto::findOrFail($request->id);
@@ -393,22 +391,8 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
-    public function storeDesdeCompras(Request $request)
+    public function storeDesdeCompras(StoreProductoDesdeComprasRequest $request)
     {
-        if (empty($request->codigo)) {
-            $request['codigo'] = NULL;
-        }
-
-        $request->validate([
-            'nombre'    => 'required|max:255',
-            // 'codigo'    => 'nullable|unique:productos,codigo,'. $request->id,
-            'precio'    => 'required|numeric',
-            'costo'     => 'required|numeric',
-            'medida'     => 'required',
-            'categoria_id' => 'required',
-            'subcategoria_id' => 'required',
-            'empresa_id'    => 'required',
-        ]);
 
         if ($request->id)
             $producto = Producto::where('tipo', 'Producto')->findOrFail($request->id);
@@ -446,26 +430,9 @@ class ProductosController extends Controller
         return Response()->json($producto, 200);
     }
 
-    public function storeCompuesto(Request $request){
+    public function storeCompuesto(StoreProductoCompuestoRequest $request){
 
         DB::beginTransaction();
-        if(empty($request->codigo)) {
-            $request['codigo'] = NULL;
-        }
-
-        $request->validate([
-            'nombre'            => 'required|max:255',
-            'precio'            => 'required|numeric',
-            'costo'             => 'required|numeric',
-            'id_categoria'      => 'required',
-            'id_empresa'        => 'required',
-            'detalles'          => 'required',
-        ], [
-            // 'nombre.required' => 'Agregue un nombre.',
-            'id_categoria.required' => 'El campo categoria es obligatorio.',
-            'detalles.required' => 'Agrege los detalles del producto',
-            // 'costo.required' => 'Agregue el costo.'
-        ]);
 
         if ($request->id)
             $producto = Producto::findOrFail($request->id);
@@ -630,14 +597,8 @@ class ProductosController extends Controller
     }
 
 
-    public function import(Request $request)
+    public function import(ImportProductosRequest $request)
     {
-
-        $request->validate([
-            'file'          => 'required',
-        ], [
-            'file.required' => 'El documento es obligatorio.'
-        ]);
 
         $import = new Productos();
         Excel::import($import, $request->file);
@@ -684,13 +645,8 @@ class ProductosController extends Controller
         }
     }
 
-    public function importarAjustes(Request $request)
+    public function importarAjustes(ImportarAjustesRequest $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls,csv',
-            'detalle' => 'required|string',
-            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
-        ]);
 
         $importador = new InventarioImport($request->detalle, $request->id_bodega);
         Excel::import($importador, $request->file('archivo'));
@@ -718,19 +674,8 @@ class ProductosController extends Controller
     }
 
 
-    public function ajusteMasivo(Request $request)
+    public function ajusteMasivo(AjusteMasivoRequest $request)
     {
-        //return dd($request->all());
-        // Validar request
-        $request->validate([
-            'detalle' => 'required|string|max:255',
-            'productos' => 'required|array',
-            'productos.*.id_producto' => 'required|exists:productos,id',
-            'productos.*.id_bodega' => 'required|exists:sucursal_bodegas,id',
-            'productos.*.stock_actual' => 'required|numeric|min:0',
-            'productos.*.stock_nuevo' => 'required|numeric|min:0',
-            'productos.*.diferencia' => 'required|numeric',
-        ]);
 
         $productosActualizados = 0;
 
@@ -835,17 +780,8 @@ class ProductosController extends Controller
         );
     }
 
-    public function trasladoMasivo(Request $request)
+    public function trasladoMasivo(TrasladoMasivoRequest $request)
     {
-        $request->validate([
-            'concepto' => 'required|string',
-            'id_bodega_origen' => 'required|numeric',
-            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
-            'id_usuario' => 'required|numeric',
-            'productos' => 'required|array',
-            'productos.*.id_producto' => 'required|numeric',
-            'productos.*.cantidad' => 'required|numeric|min:0.01',
-        ]);
 
         if ($request->id_bodega_origen == $request->id_bodega_destino) {
             return response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
@@ -1012,14 +948,8 @@ class ProductosController extends Controller
         }
     }
 
-    public function importarTrasladosMasivos(Request $request)
+    public function importarTrasladosMasivos(ImportarTrasladosMasivosRequest $request)
     {
-        $request->validate([
-            'archivo' => 'required|file',
-            'concepto' => 'required|string',
-            'id_bodega_origen' => 'required|numeric',
-            'id_bodega_destino' => 'required|numeric|different:id_bodega_origen',
-        ]);
 
         $importador = new TrasladosImport($request->concepto);
         Excel::import($importador, $request->file('archivo'));
@@ -1074,13 +1004,8 @@ class ProductosController extends Controller
     /**
      * Búsqueda dinámica para modal de productos
      */
-    public function buscarModal(Request $request)
+    public function buscarModal(BuscarModalRequest $request)
     {
-        $request->validate([
-            'termino' => 'required|string|min:2',
-            'id_empresa' => 'required|integer',
-            'limite' => 'nullable|integer|max:50'
-        ]);
 
         $termino = $request->termino;
         $limite = $request->limite ?? 15;
@@ -1107,12 +1032,8 @@ class ProductosController extends Controller
     /**
      * Búsqueda por código de proveedor
      */
-    public function buscarPorCodigoProveedor(Request $request)
+    public function buscarPorCodigoProveedor(BuscarPorCodigoProveedorRequest $request)
     {
-        $request->validate([
-            'cod_proveed_prod' => 'required|string',
-            'id_empresa' => 'required|integer'
-        ]);
 
         $productos = Producto::where('enable', true)
             ->where('id_empresa', $request->id_empresa)
@@ -1129,13 +1050,8 @@ class ProductosController extends Controller
     /**
      * Búsqueda por nombre específico
      */
-    public function buscarPorNombre(Request $request)
+    public function buscarPorNombre(BuscarPorNombreRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|min:2',
-            'id_empresa' => 'required|integer',
-            'limite' => 'nullable|integer|max:20'
-        ]);
 
         $limite = $request->limite ?? 5;
 
@@ -1154,14 +1070,8 @@ class ProductosController extends Controller
     /**
      * Búsqueda de sugerencias con palabras clave
      */
-    public function buscarSugerencias(Request $request)
+    public function buscarSugerencias(BuscarSugerenciasRequest $request)
     {
-        $request->validate([
-            'termino' => 'required|string|min:2',
-            'palabras' => 'nullable|array',
-            'id_empresa' => 'required|integer',
-            'limite' => 'nullable|integer|max:20'
-        ]);
 
         $limite = $request->limite ?? 10;
         $termino = $request->termino;
@@ -1202,19 +1112,11 @@ class ProductosController extends Controller
         return response()->json($productos, 200);
     }
 
-    public function importarShopify(Request $request)
+    public function importarShopify(ImportarShopifyRequest $request)
     {
         try {
 
             $usuario = JWTAuth::parseToken()->authenticate();
-
-            // Validar datos requeridos
-            if (empty($request->shopify_store_url) || empty($request->shopify_consumer_secret)) {
-                return response()->json([
-                    'success' => false,
-                    'mensaje' => 'URL de la tienda y clave secreta de Shopify son requeridos'
-                ], 400);
-            }
 
             // Verificar si ya se realizó una importación exitosa
             $empresa = \App\Models\Admin\Empresa::find($request->id_empresa);

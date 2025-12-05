@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Constants\CotizacionConstants;
+use App\Http\Requests\Ventas\Cotizaciones\StoreCotizacionRequest;
+use App\Http\Requests\Ventas\Cotizaciones\FacturacionCotizacionRequest;
 
 
 class CotizacionesController extends Controller
@@ -115,16 +117,8 @@ class CotizacionesController extends Controller
         return Response()->json($ordenes, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreCotizacionRequest $request)
     {
-
-        $request->validate([
-            'fecha'         => 'required',
-            'estado'        => 'required|max:255',
-            'total'         => 'required|max:255',
-            'id_usuario'    => 'required|numeric',
-            'id_sucursal'   => 'required|numeric',
-        ]);
 
 
         if ($request->cotizacion_id != null) {
@@ -150,19 +144,8 @@ class CotizacionesController extends Controller
         return Response()->json($orden, 200);
     }
 
-    public function facturacion(Request $request)
+    public function facturacion(FacturacionCotizacionRequest $request)
     {
-
-        $request->validate([
-            'fecha'         => 'required',
-            'estado'        => 'required|max:255',
-            'mesa'          => 'required|numeric',
-            'cliente'       => 'required',
-            'detalles'      => 'required',
-            'total'         => 'required|numeric',
-            'usuario_id'    => 'required|numeric',
-            'sucursal_id'   => 'required|numeric',
-        ]);
 
         // Guardamos el cliente
         if (isset($request->cliente['id']) || isset($request->cliente['nombre'])) {

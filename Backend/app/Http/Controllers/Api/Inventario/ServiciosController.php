@@ -13,6 +13,8 @@ use App\Exports\ServiciosExport;
 use App\Exports\ServiciosPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\Servicios;
+use App\Http\Requests\Inventario\StoreServicioRequest;
+use App\Http\Requests\Inventario\ImportServiciosRequest;
 
 class ServiciosController extends Controller
 {
@@ -71,20 +73,8 @@ class ServiciosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreServicioRequest $request)
     {
-        if(empty($request->codigo)){
-            $request['codigo'] = NULL;
-        }
-
-        $request->validate([
-            'nombre'    => 'required|max:255',
-            // 'codigo'    => 'nullable|unique:productos,codigo,'. $request->id,
-            'precio'    => 'required|numeric',
-            'costo'     => 'required|numeric',
-            'categoria_id'    => 'required',
-            'empresa_id'    => 'required',
-        ]);
 
         if($request->id)
             $producto = Servicio::where('tipo', 'Servicio')->findOrFail($request->id);
@@ -202,13 +192,7 @@ class ServiciosController extends Controller
 
     }
 
-    public function import(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ],[
-            'file.required' => 'El documento es obligatorio.'
-        ]);
+    public function import(ImportServiciosRequest $request){
 
         $import = new Servicios();
         Excel::import($import, $request->file);

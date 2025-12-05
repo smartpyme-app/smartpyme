@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade as PDF;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\Ventas\OrdenProduccion\StoreOrdenProduccionRequest;
+use App\Http\Requests\Ventas\OrdenProduccion\UpdateOrdenProduccionRequest;
+use App\Http\Requests\Ventas\OrdenProduccion\CambiarEstadoOrdenRequest;
 
 class OrdenProduccionController extends Controller
 {
@@ -305,17 +308,12 @@ class OrdenProduccionController extends Controller
     //     }
     // }
 
-    public function store(Request $request)
+    public function store(StoreOrdenProduccionRequest $request)
     {
         try {
             DB::beginTransaction();
     
             $ordenData = json_decode($request->datos_orden, true);
-    
-            $request->validate([
-            // 'documento_pdf' => 'nullable|file|mimes:pdf|max:5120', // 5MB max
-                'datos_orden' => 'required|json'
-            ]);
     
             if (isset($ordenData['id'])) {
                 $orden = OrdenProduccion::findOrFail($ordenData['id']);
@@ -549,7 +547,7 @@ class OrdenProduccionController extends Controller
     }
 
 
-    public function update(Request $request, $id)
+    public function update(UpdateOrdenProduccionRequest $request, $id)
     {
         try {
             DB::beginTransaction();
@@ -560,12 +558,6 @@ class OrdenProduccionController extends Controller
             if ($orden->estado === 'anulada') {
                 throw new \Exception('No se puede modificar una orden anulada');
             }
-
-            $request->validate([
-                'fecha_entrega' => 'sometimes|date',
-                'observaciones' => 'sometimes|string',
-                'detalles' => 'sometimes|array'
-            ]);
 
             // Actualizar campos básicos
             $orden->update($request->only([
@@ -610,15 +602,10 @@ class OrdenProduccionController extends Controller
         }
     }
 
-    public function cambiarEstado(Request $request)
+    public function cambiarEstado(CambiarEstadoOrdenRequest $request)
     {
         try {
             DB::beginTransaction();
-
-            $request->validate([
-                'estado' => 'required',
-                'comentarios' => 'nullable|string'
-            ]);
 
             $orden = OrdenProduccion::findOrFail($request->id);
             $estadoAnterior = $orden->estado;
@@ -691,7 +678,7 @@ class OrdenProduccionController extends Controller
         return $pdf->stream('orden_produccion-' . $orden->id . '.pdf');
     }
 
-    public function changeStateOrden(Request $request)
+    public function changeStateOrden(CambiarEstadoOrdenRequest $request)
     {
         $orden = OrdenProduccion::findOrFail($request->id);
         

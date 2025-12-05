@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Inventario;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Codigo;
+use App\Http\Requests\Inventario\Codigos\StoreCodigoRequest;
 
 class CodigosController extends Controller
 {
@@ -17,15 +18,8 @@ class CodigosController extends Controller
 
     }
     
-    public function store(Request $request)
+    public function store(StoreCodigoRequest $request)
     {
-        $request->validate([
-            'producto_id'  => 'required|numeric',
-            'precio'       => 'required|numeric',
-            // 'inicio'       => 'required|after:' . \Carbon\Carbon::now(),
-            'inicio'       => 'required',
-            'fin'          => 'required|after:inicio'
-        ]);
 
         if($request->id)
             $promocion = Promocion::findOrFail($request->id);

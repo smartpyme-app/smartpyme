@@ -11,18 +11,14 @@ use Illuminate\Support\Facades\Crypt;
 use App\Imports\Precios;
 use Maatwebsite\Excel\Facades\Excel;
 use Auth;
+use App\Http\Requests\Inventario\Precios\StorePrecioRequest;
+use App\Http\Requests\Inventario\Precios\ImportPreciosRequest;
 
 class PreciosController extends Controller
 {
 
 
-    public function store(Request $request){
-
-        $this->validate($request, [
-            'precio'      => 'required|numeric',
-            'id_producto' => 'required|numeric',
-            'usuarios'    => 'required',
-        ]);
+    public function store(StorePrecioRequest $request){
 
         $precio = new Precio;
         $precio->fill($request->all());
@@ -52,13 +48,7 @@ class PreciosController extends Controller
         return Response()->json($precio, 201);
     }
 
-    public function import(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ],[
-            'file.required' => 'El documento es obligatorio.'
-        ]);
+    public function import(ImportPreciosRequest $request){
 
         $import = new Precios();
         Excel::import($import, $request->file);

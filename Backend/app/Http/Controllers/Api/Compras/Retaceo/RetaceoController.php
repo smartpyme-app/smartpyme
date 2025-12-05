@@ -16,6 +16,9 @@ use App\Models\Compras\Retaceo\RetaceoGasto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Compras\Retaceo\StoreRetaceoRequest;
+use App\Http\Requests\Compras\Retaceo\ActualizarEstadoRetaceoRequest;
+use App\Http\Requests\Compras\Retaceo\CalcularDistribucionRetaceoRequest;
 
 class RetaceoController extends Controller
 {
@@ -68,20 +71,8 @@ class RetaceoController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreRetaceoRequest $request)
     {
-        // Validar datos
-        $validator = Validator::make($request->all(), [
-            'id_compra' => 'required|exists:compras,id',
-            'fecha' => 'required|date',
-            'total_gastos' => 'required|numeric|min:0',
-            'gastos' => 'required|array|min:1',
-            'distribucion' => 'required|array|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
       //  dd($request->all());
       Log::info($request->id_usuario);
 
@@ -253,16 +244,8 @@ class RetaceoController extends Controller
     /**
      * Actualizar el estado del retaceo
      */
-    public function actualizarEstado(Request $request)
+    public function actualizarEstado(ActualizarEstadoRetaceoRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:retaceos,id',
-            'estado' => 'required|in:Borrador,Aplicado,Anulado',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
         try {
             DB::beginTransaction();
@@ -334,17 +317,8 @@ class RetaceoController extends Controller
         return $retaceoDistribucion;
     }
 
-    public function calcularDistribucion(Request $request)
+    public function calcularDistribucion(CalcularDistribucionRetaceoRequest $request)
     {
-        // Validar datos
-        $validator = Validator::make($request->all(), [
-            'gastos' => 'required|array',
-            'detalles' => 'required|array|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
         try {
             // Obtener los gastos

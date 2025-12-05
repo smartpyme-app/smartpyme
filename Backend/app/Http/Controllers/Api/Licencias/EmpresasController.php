@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Licencias\Empresa;
 use Auth;
+use App\Http\Requests\Licencias\StoreLicenciaEmpresaRequest;
 
 class EmpresasController extends Controller
 {
@@ -35,23 +36,13 @@ class EmpresasController extends Controller
         return Response()->json($empresas, 200);
     }
 
-    public function store(Request $request){
-
-        $this->validate($request, [
-            'id_licencia' => 'required|numeric',
-            'id_empresa' => 'required|numeric',
-        ]);
+    public function store(StoreLicenciaEmpresaRequest $request){
 
         if($request->id){
             $empresa = Empresa::findOrFail($request->id);
         }
         else{
-
             $empresa = new Empresa;
-            $existe = Empresa::where('id_empresa', $request->id_empresa)->where('id_licencia', $request->id_licencia)->first();
-
-            if($existe)
-                return  Response()->json(['error' => 'Ya ha sido agregada la empresa', 'code' => 400], 400);
         }
 
         $empresa->fill($request->all());

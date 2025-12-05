@@ -6,29 +6,24 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\Eventos\Detalle;
+use App\Http\Requests\Eventos\StoreDetalleEventoRequest;
 
 class DetallesController extends Controller
 {
 
-    public function store(Request $request)
+    public function store(StoreDetalleEventoRequest $request)
     {
-        $request->validate([
-            'id_producto'    => 'required',
-            'cantidad'    => 'required',
-            'id_evento'    => 'required'
-        ]);
-
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);
         }
         else{
             $detalle = new Detalle;
+        }
 
         $detalle->fill($request->all());
         $detalle->save();
 
         return Response()->json($detalle, 200);
-                }
 
     }
 

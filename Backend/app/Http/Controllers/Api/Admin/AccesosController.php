@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Acceso;
+use App\Http\Requests\Admin\Accesos\StoreAccesoRequest;
 
 class AccesosController extends Controller
 {
@@ -26,13 +27,8 @@ class AccesosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreAccesoRequest $request)
     {
-
-        $request->validate([
-            'fecha'        => 'required|datetime',
-            'usuario_id'    => 'required|numeric'
-        ]);
 
         if($request->id)
             $acceso = Acceso::findOrFail($request->id);

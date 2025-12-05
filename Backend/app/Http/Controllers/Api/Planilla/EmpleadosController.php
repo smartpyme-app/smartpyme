@@ -21,6 +21,12 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Imports\EmpleadosImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Planilla\StoreEmpleadoRequest;
+use App\Http\Requests\Planilla\UpdateEmpleadoRequest;
+use App\Http\Requests\Planilla\DarBajaEmpleadoRequest;
+use App\Http\Requests\Planilla\DarAltaEmpleadoRequest;
+use App\Http\Requests\Planilla\SubirDocumentosEmpleadoRequest;
+use App\Http\Requests\Planilla\ImportarEmpleadosRequest;
 
 class EmpleadosController extends Controller
 {
@@ -81,41 +87,8 @@ class EmpleadosController extends Controller
         return $query->paginate($perPage);
     }
 
-    public function store(Request $request)
+    public function store(StoreEmpleadoRequest $request)
     {
-        $request->validate([
-            'nombres' => 'required|string|max:100',
-            'apellidos' => 'required|string|max:100',
-            'dui' => 'required|string|unique:empleados,dui,' . $request->id,
-            'nit' => 'nullable|string',
-            'isss' => 'nullable|string',
-            'afp' => 'nullable|string',
-            'fecha_nacimiento' => 'required|date',
-            'direccion' => 'nullable|string',
-            'telefono' => 'nullable|string',
-            'email' => 'required|email',
-            'salario_base' => 'required|numeric|min:0',
-            'tipo_contrato' => 'required',
-            'tipo_jornada' => 'required',
-            'fecha_ingreso' => 'required|date',
-            'id_departamento' => 'required|exists:departamentos_empresa,id',
-            'id_cargo' => 'required|exists:cargos_de_empresa,id',
-            'forma_pago' => 'nullable|in:Transferencia,Cheque,Efectivo',
-
-            // Nuevos campos bancarios
-            'banco' => 'nullable|string|max:100',
-            'tipo_cuenta' => 'nullable|in:Ahorro,Corriente',
-            'numero_cuenta' => 'nullable|string|max:50',
-            'titular_cuenta' => 'nullable|string|max:100',
-            'forma_pago' => 'nullable|string|max:50',
-
-            // Contacto emergencia        
-            'contacto_emergencia' => 'nullable|array',
-            'contacto_emergencia.nombre' => 'nullable|string',
-            'contacto_emergencia.relacion' => 'nullable|string',
-            'contacto_emergencia.telefono' => 'nullable|string',
-            'contacto_emergencia.direccion' => 'nullable|string'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -199,7 +172,7 @@ class EmpleadosController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateEmpleadoRequest $request, $id)
     {
         // Obtener empleado existente
         $empleado = Empleado::findOrFail($id);
@@ -211,64 +184,6 @@ class EmpleadosController extends Controller
         ) {
             return response()->json(['error' => 'No tienes permiso para actualizar este empleado'], 403);
         }
-
-        // Preparar reglas de validación para DUI
-        // Solo validar unicidad si el DUI viene y es diferente al actual
-        $reglasDui = [];
-        if ($request->has('dui') && $request->dui !== null && trim($request->dui) !== '') {
-            $duiActual = trim($empleado->dui ?? '');
-            $duiNuevo = trim($request->dui);
-
-            if ($duiNuevo !== $duiActual) {
-                // Si el DUI cambió, validar unicidad
-                $reglasDui = [
-                    'sometimes',
-                    'string',
-                    Rule::unique('empleados', 'dui')->ignore($id)
-                ];
-            } else {
-                // Si es el mismo DUI, solo validar formato
-                $reglasDui = ['sometimes', 'string'];
-            }
-        }
-        // Si no viene DUI, no validar
-
-        // Validación con campos opcionales (sometimes)
-        $reglasValidacion = [
-            'nombres' => 'sometimes|string|max:100',
-            'apellidos' => 'sometimes|string|max:100',
-            'nit' => 'nullable|string',
-            'isss' => 'nullable|string',
-            'afp' => 'nullable|string',
-            'fecha_nacimiento' => 'sometimes|date',
-            'direccion' => 'nullable|string',
-            'telefono' => 'nullable|string',
-            'email' => 'sometimes|email',
-            'salario_base' => 'sometimes|numeric|min:0',
-            'tipo_contrato' => 'sometimes',
-            'tipo_jornada' => 'sometimes',
-            'fecha_ingreso' => 'sometimes|date',
-            'id_departamento' => 'sometimes|exists:departamentos_empresa,id',
-            'id_cargo' => 'sometimes|exists:cargos_de_empresa,id',
-            'forma_pago' => 'nullable|in:Transferencia,Cheque,Efectivo',
-            'banco' => 'nullable|string|max:100',
-            'tipo_cuenta' => 'nullable|in:Ahorro,Corriente',
-            'numero_cuenta' => 'nullable|string|max:50',
-            'titular_cuenta' => 'nullable|string|max:100',
-            'estado' => 'sometimes',
-            'contacto_emergencia' => 'nullable|array',
-            'contacto_emergencia.nombre' => 'nullable|string',
-            'contacto_emergencia.relacion' => 'nullable|string',
-            'contacto_emergencia.telefono' => 'nullable|string',
-            'contacto_emergencia.direccion' => 'nullable|string'
-        ];
-
-        // Agregar reglas de DUI solo si se definieron
-        if (!empty($reglasDui)) {
-            $reglasValidacion['dui'] = $reglasDui;
-        }
-
-        $request->validate($reglasValidacion);
 
         try {
             DB::beginTransaction();
@@ -562,15 +477,8 @@ class EmpleadosController extends Controller
         ])->findOrFail($id);
     }
 
-    public function darBaja(Request $request, $id)
+    public function darBaja(DarBajaEmpleadoRequest $request, $id)
     {
-        $request->validate([
-            'fecha_fin' => 'required|date',     // Fecha de notificación
-            'fecha_baja' => 'required|date',    // Fecha efectiva de baja
-            'tipo_baja' => 'required|in:Renuncia,Despido,Terminación de contrato',
-            'motivo' => 'required|string',
-            'documento_respaldo' => 'nullable|file|mimes:pdf,doc,docx|max:2048' // 2MB max
-        ]);
 
         try {
             DB::beginTransaction();
@@ -692,12 +600,8 @@ class EmpleadosController extends Controller
         }
     }
 
-    public function darAlta(Request $request, $id)
+    public function darAlta(DarAltaEmpleadoRequest $request, $id)
     {
-        $request->validate([
-            'fecha_alta' => 'required|date',
-            'documento_respaldo' => 'nullable|file|mimes:pdf,doc,docx|max:2048'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -853,14 +757,8 @@ class EmpleadosController extends Controller
         return $bajas;
     }
 
-    public function subirDocumentos(Request $request, $id)
+    public function subirDocumentos(SubirDocumentosEmpleadoRequest $request, $id)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:pdf,doc,docx|max:2048',
-            'tipo_documento' => 'required',
-            'fecha_documento' => 'required|date',
-            'fecha_vencimiento' => 'nullable|date'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -906,11 +804,8 @@ class EmpleadosController extends Controller
         }
     }
 
-    public function importar(Request $request)
+    public function importar(ImportarEmpleadosRequest $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls',
-        ]);
 
         try {
             $importData = [

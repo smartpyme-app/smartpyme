@@ -10,6 +10,7 @@ use JWTAuth;
 
 use App\Exports\AbonosGastosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Compras\Gastos\StoreAbonoGastoRequest;
 
 class AbonosController extends Controller
 {
@@ -64,23 +65,10 @@ class AbonosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreAbonoGastoRequest $request)
     {
 
         $gasto = Gasto::find($request->id_gasto);
-
-        $request->validate([
-            'fecha'       => 'required|date',
-            'concepto'    => 'required|max:255',
-            'nombre_de'    => 'required|max:255',
-            'estado'      => 'required|max:255',
-            'forma_pago' => 'required|max:255',
-            'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
-            'total'       => 'required|numeric',
-            'id_gasto'    => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $abono = Abono::findOrFail($request->id);

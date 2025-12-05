@@ -11,6 +11,17 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Log;
 use App\Models\Admin\ModulePermission;
+use App\Http\Requests\Admin\Roles\AssignRoleToUserRequest;
+use App\Http\Requests\Admin\Roles\RemoveRoleFromUserRequest;
+use App\Http\Requests\Admin\Roles\AssignPermissionToRoleRequest;
+use App\Http\Requests\Admin\Roles\RemovePermissionFromRoleRequest;
+use App\Http\Requests\Admin\Roles\AssignPermissionToUserRequest;
+use App\Http\Requests\Admin\Roles\RemovePermissionFromUserRequest;
+use App\Http\Requests\Admin\Roles\StoreRoleRequest;
+use App\Http\Requests\Admin\Roles\UpdateRolePermissionsRequest;
+use App\Http\Requests\Admin\Roles\SaveUserPermissionsRequest;
+use App\Http\Requests\Admin\Roles\StoreModuleRequest;
+use App\Http\Requests\Admin\Roles\UpdateModuleRequest;
 
 class RolePermissionController extends Controller
 {
@@ -88,12 +99,8 @@ class RolePermissionController extends Controller
     /**
      * Asignar rol a usuario
      */
-    public function assignRoleToUser(Request $request)
+    public function assignRoleToUser(AssignRoleToUserRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|exists:roles,name'
-        ]);
 
         $user = User::findOrFail($request->user_id);
         $user->assignRole($request->role);
@@ -107,12 +114,8 @@ class RolePermissionController extends Controller
     /**
      * Remover rol de usuario
      */
-    public function removeRoleFromUser(Request $request)
+    public function removeRoleFromUser(RemoveRoleFromUserRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|exists:roles,name'
-        ]);
 
         $user = User::findOrFail($request->user_id);
         $user->removeRole($request->role);
@@ -126,12 +129,8 @@ class RolePermissionController extends Controller
     /**
      * Asignar permiso a rol
      */
-    public function assignPermissionToRole(Request $request)
+    public function assignPermissionToRole(AssignPermissionToRoleRequest $request)
     {
-        $request->validate([
-            'role' => 'required|exists:roles,name',
-            'permission' => 'required|exists:permissions,name'
-        ]);
 
         $role = Role::findByName($request->role);
         $role->givePermissionTo($request->permission);
@@ -145,12 +144,8 @@ class RolePermissionController extends Controller
     /**
      * Remover permiso de rol
      */
-    public function removePermissionFromRole(Request $request)
+    public function removePermissionFromRole(RemovePermissionFromRoleRequest $request)
     {
-        $request->validate([
-            'role' => 'required|exists:roles,name',
-            'permission' => 'required|exists:permissions,name'
-        ]);
 
         $role = Role::findByName($request->role);
         $role->revokePermissionTo($request->permission);
@@ -164,12 +159,8 @@ class RolePermissionController extends Controller
     /**
      * Asignar permiso directo a usuario
      */
-    public function assignPermissionToUser(Request $request)
+    public function assignPermissionToUser(AssignPermissionToUserRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'permission' => 'required|exists:permissions,name'
-        ]);
 
         $user = User::findOrFail($request->user_id);
         $user->givePermissionTo($request->permission);
@@ -183,12 +174,8 @@ class RolePermissionController extends Controller
     /**
      * Remover permiso directo de usuario
      */
-    public function removePermissionFromUser(Request $request)
+    public function removePermissionFromUser(RemovePermissionFromUserRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'permission' => 'required|exists:permissions,name'
-        ]);
 
         $user = User::findOrFail($request->user_id);
         $user->revokePermissionTo($request->permission);
@@ -217,13 +204,8 @@ class RolePermissionController extends Controller
     //     return response()->json(['message' => 'Rol creado correctamente', 'role' => $role], 201);
     // }
 
-    public function store(Request $request)
+    public function store(StoreRoleRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'permissions' => 'present|array',
-            'is_global' => 'boolean'
-        ]);
 
         $user = auth()->user();
 
@@ -277,12 +259,8 @@ class RolePermissionController extends Controller
     //     return response()->json(['message' => 'Permisos actualizados correctamente', 'role' => $role], 200);
     // }
 
-    public function updateRolePermissions(Request $request)
+    public function updateRolePermissions(UpdateRolePermissionsRequest $request)
     {
-        $request->validate([
-            'role' => 'required|exists:roles,name',
-            'permissions' => 'required|array'
-        ]);
 
         $user = auth()->user();
 
@@ -503,17 +481,12 @@ class RolePermissionController extends Controller
     //     }
     // }
 
-    public function saveUserPermissions(Request $request, $userId)
+    public function saveUserPermissions(SaveUserPermissionsRequest $request, $userId)
     {
         try {
             DB::beginTransaction();
 
             $user = User::findOrFail($userId);
-
-            $request->validate([
-                'added_permissions' => 'present|array',
-                'removed_permissions' => 'present|array'
-            ]);
 
             // Manejar permisos a remover
             foreach ($request->removed_permissions ?? [] as $permission) {
@@ -588,7 +561,7 @@ class RolePermissionController extends Controller
     // }
 
 
-    public function storeModule(Request $request)
+    public function storeModule(StoreModuleRequest $request)
     {
         DB::beginTransaction();
         try {
@@ -695,7 +668,7 @@ class RolePermissionController extends Controller
         return response()->json($module, 200);
     }
 
-    public function updateModule(Request $request, $id)
+    public function updateModule(UpdateModuleRequest $request, $id)
     {
         DB::beginTransaction();
         try {

@@ -9,6 +9,7 @@ use JWTAuth;
 use App\Models\Admin\Empresa;
 //use App\Models\Admin\Bodega;
 use App\Models\Inventario\Bodega;
+use App\Http\Requests\Admin\Bodegas\StoreBodegaRequest;
 
 class BodegasController extends Controller
 {
@@ -35,13 +36,7 @@ class BodegasController extends Controller
 
     }
 
-    public function store(Request $request) {
-    	
-        $request->validate([
-            'nombre'       => 'required|max:255',
-            //'descripcion'  => 'sometimes|max:255',
-            'sucursal_id'  => 'required|numeric',
-        ]);
+    public function store(StoreBodegaRequest $request) {
 
         if($request->id)
             $bodega = Bodega::findOrFail($request->id);

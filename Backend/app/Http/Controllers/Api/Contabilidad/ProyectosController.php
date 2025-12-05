@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Contabilidad\Proyecto;
 use Illuminate\Support\Facades\Crypt;
 use JWTAuth;
+use App\Http\Requests\Contabilidad\StoreProyectoRequest;
 
 class ProyectosController extends Controller
 {
@@ -68,20 +69,8 @@ class ProyectosController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreProyectoRequest $request)
     {
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'fecha_inicio'  => 'required|date',
-            'fecha_fin'     => 'required|date',
-            'estado'        => 'required|max:255',
-            'id_cliente'   => 'required|numeric',
-            'id_usuario'   => 'required|numeric',
-            'id_sucursal'   => 'required|numeric',
-            'id_empresa'   => 'required|numeric',
-        ], [
-            'id_cliente.required' => 'El cliente es requerido.'
-        ]);
 
         if ($request->id)
             $proyecto = Proyecto::findOrFail($request->id);

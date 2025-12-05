@@ -8,6 +8,7 @@ use App\Models\Bancos\Conciliacion;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Bancos\ConciliacionExport;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Bancos\StoreConciliacionRequest;
 
 class ConciliacionesController extends Controller
 {
@@ -61,19 +62,8 @@ class ConciliacionesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreConciliacionRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required|date',
-            'desde'         => 'required|date',
-            'hasta'         => 'required|date',
-            'id_cuenta'     => 'required|numeric',
-            // 'saldo_anterior' => 'required|numeric',
-            'saldo_actual'  => 'required|numeric',
-            'nota'          => 'sometimes|max:255',
-            'id_usuario'    => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $conciliacion = Conciliacion::findOrFail($request->id);

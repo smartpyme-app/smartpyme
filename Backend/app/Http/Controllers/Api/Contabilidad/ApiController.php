@@ -23,7 +23,7 @@ use App\Services\Contabilidad\OtrasSalidasService;
 
 use App\Models\Bancos\Cuenta;
 use App\Models\Compras\Retaceo\Retaceo;
-use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Contabilidad\RetaceoRequest;
 
 class ApiController extends Controller
 {
@@ -207,16 +207,8 @@ class ApiController extends Controller
     }
 
 
-    public function retaceo(Request $request)
+    public function retaceo(RetaceoRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_retaceo' => 'required|exists:retaceos,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         try {
             $retaceoService = new RetaceoService();
             $resultado = $retaceoService->crearPartida($request->id_retaceo);

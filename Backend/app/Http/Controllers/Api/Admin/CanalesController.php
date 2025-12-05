@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Canal;
+use App\Http\Requests\Admin\Canales\StoreCanalRequest;
 
 class CanalesController extends Controller
 {
@@ -35,14 +36,8 @@ class CanalesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCanalRequest $request)
     {
-
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'descripcion'   => 'required|max:255',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $canal = Canal::findOrFail($request->id);

@@ -9,6 +9,7 @@ use App\Models\Admin\Empresa;
 use App\Models\Admin\Corte;
 use App\Models\Ventas\Detalle;
 use App\Models\User;
+use App\Http\Requests\Admin\Cortes\StoreCorteRequest;
 
 class CortesController extends Controller
 {
@@ -29,15 +30,8 @@ class CortesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCorteRequest $request)
     {
-
-        $request->validate([
-            'apertura'      => 'required',
-            'fecha'         => 'required',
-            'caja_id'       => 'required',
-            'usuario_id'    => 'required'
-        ]);
 
         if($request->id)
             $corte = Corte::findOrFail($request->id);

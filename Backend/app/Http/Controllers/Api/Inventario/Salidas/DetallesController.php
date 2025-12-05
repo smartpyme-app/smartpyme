@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Salidas\Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Http\Requests\Inventario\Salidas\StoreDetalleSalidaRequest;
 
 class DetallesController extends Controller
 {
@@ -30,15 +31,8 @@ class DetallesController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreDetalleSalidaRequest $request)
     {
-        $request->validate([
-            'id_producto'       => 'required',
-            'cantidad'          => 'required',
-            'costo'             => 'required',
-            'total'             => 'required',
-            'id_salida'       => 'required'
-        ]);
 
         if($request->id)
             $detalle = Detalle::findOrFail($request->id);

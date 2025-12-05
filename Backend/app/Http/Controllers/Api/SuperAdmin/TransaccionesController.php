@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\SuperAdmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\OrdenPago as Transaccion;
+use App\Http\Requests\SuperAdmin\Transacciones\StoreTransaccionRequest;
 
 class TransaccionesController extends Controller
 {
@@ -26,15 +27,8 @@ class TransaccionesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreTransaccionRequest $request)
     {
-
-        $request->validate([
-            'fecha'        => 'required|date',
-            'total'         => 'required|numeric',
-            'empresa_id'    => 'required|numeric',
-            'usuario_id'    => 'required|numeric'
-        ]);
 
         if($request->id)
             $transaccion = Transaccion::findOrFail($request->id);

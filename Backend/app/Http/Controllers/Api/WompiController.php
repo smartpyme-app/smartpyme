@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Admin\Empresa;
 use App\Models\Ventas\Venta;
 use App\Models\Wompi;
+use App\Http\Requests\Wompi\PagoWompiRequest;
 
 class WompiController extends Controller
 { 
@@ -57,7 +58,7 @@ class WompiController extends Controller
     }
 
 
-    public function pagoWompi(Request $request){
+    public function pagoWompi(PagoWompiRequest $request){
         $venta = Venta::where('id_wompi_link', $request->idEnlace)
             ->withDetalleTextRelations()
             ->firstOrFail();

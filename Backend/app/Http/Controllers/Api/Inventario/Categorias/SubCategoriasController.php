@@ -8,6 +8,9 @@ use App\Models\Inventario\Categorias\SubCategoria;
 
 use App\Imports\SubCategorias;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Inventario\Categorias\SubCategorias\StoreSubCategoriaRequest;
+use App\Http\Requests\Inventario\Categorias\SubCategorias\ChangeSubCategoriaRequest;
+use App\Http\Requests\Inventario\Categorias\SubCategorias\ImportSubCategoriasRequest;
 
 class SubCategoriasController extends Controller
 {
@@ -30,12 +33,8 @@ class SubCategoriasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreSubCategoriaRequest $request)
     {
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'categoria_id'  => 'required|numeric',
-        ]);
 
         if($request->id)
             $subcategoria = SubCategoria::findOrFail($request->id);
@@ -67,12 +66,7 @@ class SubCategoriasController extends Controller
     }
 
 
-    public function change(Request $request){
-
-        $request->validate([
-            'subcategoria_anterior'  => 'required|numeric',
-            'subcategoria_nueva'  => 'required|numeric',
-        ]);
+    public function change(ChangeSubCategoriaRequest $request){
 
         $subcategoriaAnterior = SubCategoria::findOrFail($request->subcategoria_anterior);
         $subcategoriaNueva = SubCategoria::findOrFail($request->subcategoria_nueva);
@@ -88,11 +82,7 @@ class SubCategoriasController extends Controller
 
     }
 
-    public function import(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ]);
+    public function import(ImportSubCategoriasRequest $request){
 
         $import = new SubCategorias();
         Excel::import($import, $request->file);

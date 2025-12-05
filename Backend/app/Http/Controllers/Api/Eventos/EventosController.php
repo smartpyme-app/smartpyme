@@ -11,6 +11,7 @@ use App\Models\Eventos\Detalle;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
+use App\Http\Requests\Eventos\StoreEventoRequest;
 
 class EventosController extends Controller
 {
@@ -144,21 +145,8 @@ class EventosController extends Controller
         return Response()->json($evento, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreEventoRequest $request)
     {
-
-        $request->validate([
-            'descripcion' => 'required|string',
-            'id_cliente'  => 'required|numeric',
-            // 'id_servicio' => 'required|numeric',
-            'frecuencia_fin' => 'required_with:frecuencia',
-            'inicio' => 'required|date',
-        ], [
-            "descripcion.required" => "El campo titulo es obligatorio.",
-            'id_cliente.required' => 'El campo cliente es obligatorio.',
-            'id_servicio.required' => 'El campo servicio es obligatorio.',
-            'frecuencia_fin.required_with' => 'El campo terminar de repetir es obligatorio.'
-        ]);
 
         DB::beginTransaction();
 
