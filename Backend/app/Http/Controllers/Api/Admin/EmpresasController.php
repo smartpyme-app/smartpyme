@@ -28,6 +28,10 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use App\Models\EmpresaConfiguracionPlanilla;
 use App\Services\Planilla\PlanillaTemplatesService;
+use App\Http\Requests\Admin\Empresas\StoreEmpresaRequest;
+use App\Http\Requests\Admin\Empresas\UpdatePagoRecurrenteRequest;
+use App\Http\Requests\Admin\Empresas\UpdateCustomConfigRequest;
+use App\Http\Requests\Admin\Empresas\StoreImagenesRequest;
 
 class EmpresasController extends Controller
 {
@@ -97,12 +101,8 @@ class EmpresasController extends Controller
         return Response()->json($empresa, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreEmpresaRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|max:255',
-            'iva' => 'required|numeric',
-        ]);
 
         if ($request->id) {
             $empresa = $this->updateEmpresa($request);
@@ -636,15 +636,10 @@ class EmpresasController extends Controller
         return $plan;
     }
 
-    public function updatePagoRecurrente(Request $request)
+    public function updatePagoRecurrente(UpdatePagoRecurrenteRequest $request)
     {
-        $validated = $request->validate([
-            'id_empresa' => 'required|exists:empresas,id',
-            'pago_recurrente' => 'required|boolean',
-        ]);
-
-        $empresa = Empresa::findOrFail($validated['id_empresa']);
-        $empresa->pago_recurrente = $validated['pago_recurrente'];
+        $empresa = Empresa::findOrFail($request->id_empresa);
+        $empresa->pago_recurrente = $request->pago_recurrente;
         $empresa->save();
 
         return response()->json([
@@ -781,21 +776,9 @@ class EmpresasController extends Controller
         return $validatedConfig;
     }
 
-    public function updateCustomConfig(Request $request)
+    public function updateCustomConfig(UpdateCustomConfigRequest $request)
     {
-        $request->validate([
-            'section' => 'required|string|in:columnas,modulos,configuraciones,campos_personalizados',
-            'key' => 'required|string',
-            'value' => 'required'
-        ]);
-
         $empresa = Auth::user()->empresa;
-
-        if ($request->input('section') === 'configuraciones' && $request->input('key') === 'ticket_en_pdf') {
-            $request->validate([
-                'value' => 'boolean'
-            ]);
-        }
 
         $empresa->updateCustomConfig(
             $request->input('section'),
@@ -841,9 +824,9 @@ class EmpresasController extends Controller
     }
 
 
-    public function storeImagenes(Request $request)
+    public function storeImagenes(StoreImagenesRequest $request)
     {
-        $empresa = Empresa::where("id", $request->id)->first();
+        $empresa = Empresa::findOrFail($request->id);
 
         $type = $request->type;
 

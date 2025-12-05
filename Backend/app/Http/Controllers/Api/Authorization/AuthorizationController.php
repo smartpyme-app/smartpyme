@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
+use App\Http\Requests\Authorization\ApproveAuthorizationRequest;
+use App\Http\Requests\Authorization\RejectAuthorizationRequest;
+use App\Http\Requests\Authorization\RequestAuthorizationRequest;
+use App\Http\Requests\Authorization\CheckRequirementRequest;
 
 class AuthorizationController extends Controller
 {
@@ -45,12 +49,8 @@ class AuthorizationController extends Controller
         ]);
     }
 
-    public function approve(Request $request, $code)
+    public function approve(ApproveAuthorizationRequest $request, $code)
     {
-        $request->validate([
-            'authorization_code' => 'required|string',
-            'notes' => 'nullable|string'
-        ]);
 
         try {
             $authorization = $this->authorizationService->approveAuthorization(
@@ -72,12 +72,8 @@ class AuthorizationController extends Controller
         }
     }
 
-    public function reject(Request $request, $code)
+    public function reject(RejectAuthorizationRequest $request, $code)
     {
-        $request->validate([
-            'authorization_code' => 'required|string',
-            'notes' => 'nullable|string'
-        ]);
 
         try {
             $authorization = $this->authorizationService->rejectAuthorization(
@@ -118,15 +114,8 @@ class AuthorizationController extends Controller
         ]);
     }
 
-    public function request(Request $request)
+    public function request(RequestAuthorizationRequest $request)
     {
-       $request->validate([
-           'type' => 'required|string',
-           'model_type' => 'required|string',
-           'model_id' => 'nullable|integer',
-           'description' => 'required|string',
-           'data' => 'nullable|array'
-       ]);
 
        try {
 
@@ -538,12 +527,8 @@ class AuthorizationController extends Controller
         );
     }
 
-    public function checkRequirement(Request $request)
+    public function checkRequirement(CheckRequirementRequest $request)
     {
-        $request->validate([
-            'type' => 'required|string',
-            'data' => 'nullable|array'
-        ]);
 
         $required = $this->authorizationService->requiresAuthorization(
             $request->type,

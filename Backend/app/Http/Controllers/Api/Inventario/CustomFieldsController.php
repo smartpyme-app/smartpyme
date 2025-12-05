@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\CustomFields\CustomField;
 use App\Models\Inventario\CustomFields\CustomFieldValue;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Inventario\StoreCustomFieldRequest;
+use App\Http\Requests\Inventario\UpdateCustomFieldRequest;
 
 class CustomFieldsController extends Controller
 {
@@ -40,20 +42,8 @@ class CustomFieldsController extends Controller
         return response()->json($customFields);
     }
 
-    public function store(Request $request)
+    public function store(StoreCustomFieldRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'field_type' => 'required|in:select,text,number',
-            'is_required' => 'required|boolean',
-        ]);
-
-        if ($request->field_type === 'select') {
-            $request->validate([
-                'values' => 'required|array|min:1',
-                'values.*.value' => 'required|string|max:255'
-            ]);
-        }
         $user = auth()->user();
         $empresa = $user->empresa;
 
@@ -86,22 +76,9 @@ class CustomFieldsController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCustomFieldRequest $request, $id)
     {
         $customField = CustomField::findOrFail($id);
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'field_type' => 'required|in:select,text,number',
-            'is_required' => 'required|boolean',
-        ]);
-
-        if ($request->field_type === 'select') {
-            $request->validate([
-                'values' => 'required|array|min:1',
-                'values.*.value' => 'required|string|max:255'
-            ]);
-        }
 
         try {
             $customField->update([

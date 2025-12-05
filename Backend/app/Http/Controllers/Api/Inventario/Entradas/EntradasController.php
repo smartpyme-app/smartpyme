@@ -12,6 +12,7 @@ use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Inventario;
 use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Inventario\Entradas\StoreEntradaRequest;
 
 class EntradasController extends Controller
 {
@@ -64,16 +65,9 @@ class EntradasController extends Controller
     }
     
     
-    public function store(Request $request)
+    public function store(StoreEntradaRequest $request)
     {
         $usuario = auth()->user();
-        $request->validate([
-            'fecha'         => 'required',
-            'id_bodega'     =>  'required|numeric',
-            'concepto'      => 'required|max:255',
-            'detalles'      => 'required|array',
-            'id_usuario'     => 'required|numeric',
-        ]);
 
         DB::beginTransaction();
          

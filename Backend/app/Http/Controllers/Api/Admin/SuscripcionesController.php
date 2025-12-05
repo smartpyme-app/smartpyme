@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use JWTAuth;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Admin\Suscripciones\CreateSuscriptionRequest;
+use App\Http\Requests\Admin\Suscripciones\EditSuscriptionRequest;
 
 class SuscripcionesController extends Controller
 {
@@ -169,24 +171,10 @@ class SuscripcionesController extends Controller
         return $query;
     }
 
-    public function createSuscription(Request $request)
+    public function createSuscription(CreateSuscriptionRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'empresa_id' => 'required|exists:empresas,id',
-                'plan_id' => 'required|exists:planes,id',
-                'usuario_id' => 'required|exists:users,id',
-                'tipo_plan' => 'required|in:Mensual,Anual',
-                'estado' => 'required|in:Activo,Cancelado,Vencido,En prueba,Pendiente',
-                'monto' => 'required|numeric|min:0',
-                'fecha_proximo_pago' => 'required|date',
-                'fin_periodo_prueba' => 'required|date',
-                'nit' => 'nullable|string|max:20',
-                'nombre_factura' => 'nullable|string|max:255',
-                'direccion_factura' => 'nullable|string|max:500',
-                'requiere_factura' => 'boolean',
-                'motivo_cancelacion' => 'nullable|string|max:500'
-            ]);
+            $validated = $request->validated();
 
             $existingSuscripcion = Suscripcion::where('empresa_id', $request->empresa_id)
                 ->whereIn('estado', ['Activo', 'En prueba'])
@@ -220,12 +208,6 @@ class SuscripcionesController extends Controller
             }
 
             if ($validated['estado'] === 'Cancelado') {
-                if (empty($request->motivo_cancelacion)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'El motivo de cancelación es requerido'
-                    ], 422);
-                }
                 $suscripcion->motivo_cancelacion = $request->motivo_cancelacion;
                 $suscripcion->fecha_cancelacion = now();
             }
@@ -256,23 +238,10 @@ class SuscripcionesController extends Controller
         }
     }
 
-    public function editSuscription(Request $request)
+    public function editSuscription(EditSuscriptionRequest $request)
     {
         try {
-            $validated = $request->validate([
-                'id' => 'required|exists:suscripciones,id',
-                'usuario_id' => 'required|exists:users,id',
-                'fecha_proximo_pago' => 'required|date',
-                'fin_periodo_prueba' => 'required|date',
-                'estado' => 'required|string',
-                'monto' => 'required|numeric',
-                'plan_id' => 'required|exists:planes,id',
-                'tipo_plan' => 'required|string',
-                'nombre_factura' => 'nullable|string',
-                'direccion_factura' => 'nullable|string',
-                'motivo_cancelacion' => 'nullable|string',
-                'nit' => 'nullable|string'
-            ]);
+            $validated = $request->validated();
 
             $suscripcion = Suscripcion::findOrFail($validated['id']);
 

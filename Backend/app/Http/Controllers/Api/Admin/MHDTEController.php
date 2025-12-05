@@ -28,12 +28,24 @@ use App\Models\Compras\Compra;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
 use App\Models\Compras\Gastos\Gasto;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Http\Requests\MH\GenerarDTERequest;
+use App\Http\Requests\MH\GenerarDTENotaCreditoRequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoGastoRequest;
+use App\Http\Requests\MH\GenerarDTESujetoExcluidoCompraRequest;
+use App\Http\Requests\MH\GenerarContingenciaRequest;
+use App\Http\Requests\MH\GenerarDTEAnuladoRequest;
+use App\Http\Requests\MH\AnularDTERequest;
+use App\Http\Requests\MH\AnularDTESujetoExcluidoRequest;
+use App\Http\Requests\MH\GenerarDTEPDFRequest;
+use App\Http\Requests\MH\GenerarDTEJSONRequest;
+use App\Http\Requests\MH\EnviarDTERequest;
+use App\Http\Requests\MH\ConsultarDTERequest;
 
 class MHDTEController extends Controller
 {
     
 
-    public function generarDTE(Request $request){
+    public function generarDTE(GenerarDTERequest $request){
         $venta = Venta::where('id', $request->id)->with('detalles', 'cliente', 'empresa')->firstOrFail();
 
         if (!$venta->sucursal()->pluck('cod_estable_mh')->first()) {
@@ -61,7 +73,7 @@ class MHDTEController extends Controller
         return Response()->json($DTE, 200);
     }
 
-    public function generarDTENotaCredito(Request $request){
+    public function generarDTENotaCredito(GenerarDTENotaCreditoRequest $request){
         $devolucion = DevolucionVenta::where('id', $request->id)->with('detalles', 'cliente', 'empresa', 'venta')->firstOrFail();
         
         // if (!$devolucion->venta || !$devolucion->venta->sello_mh) {
@@ -85,7 +97,7 @@ class MHDTEController extends Controller
         return Response()->json($DTE, 200);
     }
 
-    public function generarDTESujetoExcluidoGasto(Request $request){
+    public function generarDTESujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request){
         $gasto = Gasto::where('id', $request->id)->with('proveedor', 'empresa')->firstOrFail();
         $mh = new MHSujetoExcluidoGasto;
         $DTE = $mh->generarDTE($gasto);
@@ -93,7 +105,7 @@ class MHDTEController extends Controller
         return Response()->json($DTE, 200);
     }
 
-    public function generarDTESujetoExcluidoCompra(Request $request){
+    public function generarDTESujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request){
         $compra = Compra::where('id', $request->id)->with('detalles', 'proveedor', 'empresa')->firstOrFail();
         $mh = new MHSujetoExcluidoCompra;
         $DTE = $mh->generarDTE($compra);
@@ -101,7 +113,7 @@ class MHDTEController extends Controller
         return Response()->json($DTE, 200);
     }
 
-    public function generarContingencia(Request $request){
+    public function generarContingencia(GenerarContingenciaRequest $request){
 
         $ventas = Venta::whereIn('id', [$request->id])
             ->withAccessorRelations()
@@ -137,7 +149,7 @@ class MHDTEController extends Controller
         return Response()->json($response, 200);
     }
 
-    public function generarDTEAnulado(Request $request){
+    public function generarDTEAnulado(GenerarDTEAnuladoRequest $request){
 
         if ($request->tipo_dte == '05' || $request->tipo_dte == '06') {
             $venta = DevolucionVenta::where('id', $request->id)->firstOrFail();
@@ -152,7 +164,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEAnuladoSujetoExcluidoCompra(Request $request){
+    public function generarDTEAnuladoSujetoExcluidoCompra(GenerarDTESujetoExcluidoCompraRequest $request){
         $compra = Compra::where('id', $request->id)->firstOrFail();
         
         $mh = new MHAnulacion;
@@ -162,7 +174,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEAnuladoSujetoExcluidoGasto(Request $request){
+    public function generarDTEAnuladoSujetoExcluidoGasto(GenerarDTESujetoExcluidoGastoRequest $request){
         $gasto = Gasto::where('id', $request->id)->firstOrFail();
         
         $mh = new MHAnulacion;
@@ -185,7 +197,7 @@ class MHDTEController extends Controller
     }
 
 
-    public function anularDTE(Request $request){
+    public function anularDTE(AnularDTERequest $request){
         $venta = Venta::where('id', $request->id)->firstOrFail();
         $DTE = json_decode($venta->dte, true);
 
@@ -232,7 +244,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function anularDTESujetoExcluido(Request $request){
+    public function anularDTESujetoExcluido(AnularDTESujetoExcluidoRequest $request){
         $gasto = Gasto::where('id', $request->id)->firstOrFail();
         $DTE = json_decode($gasto->dte, true);
 
@@ -279,7 +291,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEPDF($id, $tipo, Request $request){
+    public function generarDTEPDF($id, $tipo, GenerarDTEPDFRequest $request){
 
         if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
@@ -357,7 +369,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function generarDTEJSON($id, $tipo, Request $request){
+    public function generarDTEJSON($id, $tipo, GenerarDTEJSONRequest $request){
 
         if ($tipo == '01' || $tipo == '03' || $tipo == '11') {
             $registro = Venta::findOrFail($id);
@@ -390,7 +402,7 @@ class MHDTEController extends Controller
     }
 
 
-    public function enviarDTE(Request $request){
+    public function enviarDTE(EnviarDTERequest $request){
         
         if ($request->tipo_dte == '01' || $request->tipo_dte == '03' || $request->tipo_dte == '11') {
             $registro = Venta::with('cliente')->where('id', $request->id)->firstOrFail();
@@ -503,7 +515,7 @@ class MHDTEController extends Controller
 
     }
 
-    public function consultarDTE(Request $request)
+    public function consultarDTE(ConsultarDTERequest $request)
     {
         $response = Http::get('https://admin.factura.gob.sv/prod/consultas/publica/simple/1', [
             'codigoGeneracion' => $request->codigoGeneracion,

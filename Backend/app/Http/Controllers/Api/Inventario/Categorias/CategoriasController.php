@@ -11,6 +11,10 @@ use App\Models\Compras\Detalle as DetalleCompra;
 use App\Imports\Categorias;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Inventario\Categorias\StoreCategoriaRequest;
+use App\Http\Requests\Inventario\Categorias\ImportCategoriasRequest;
+use App\Http\Requests\Inventario\Categorias\HistorialVentasCategoriaRequest;
+use App\Http\Requests\Inventario\Categorias\HistorialComprasCategoriaRequest;
 
 class CategoriasController extends Controller
 {
@@ -86,13 +90,8 @@ class CategoriasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreCategoriaRequest $request)
     {
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'descripcion'   => 'sometimes|max:255',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $categoria = Categoria::findOrFail($request->id);
@@ -118,7 +117,7 @@ class CategoriasController extends Controller
     }
 
 
-    public function historialVentas(Request $request) {
+    public function historialVentas(HistorialVentasCategoriaRequest $request) {
 
         $ventas = DetalleVenta::with('producto.categoria')
                         ->whereHas('venta', function($query) use ($request){
@@ -147,7 +146,7 @@ class CategoriasController extends Controller
 
     }
 
-    public function historialCompras(Request $request) {
+    public function historialCompras(HistorialComprasCategoriaRequest $request) {
 
         $compras = DetalleCompra::with('producto.categoria')
                         ->whereHas('compra', function($query) use ($request){
@@ -176,11 +175,7 @@ class CategoriasController extends Controller
     }
 
 
-    public function import(Request $request){
-
-        $request->validate([
-            'file'          => 'required',
-        ]);
+    public function import(ImportCategoriasRequest $request){
 
         $import = new Categorias();
         Excel::import($import, $request->file);

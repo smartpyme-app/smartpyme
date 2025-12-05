@@ -6,6 +6,7 @@ use App\Constants\PlanillaConstants;
 use App\Http\Controllers\Controller;
 use App\Models\Planilla\CargoEmpresa;
 use Illuminate\Http\Request;
+use App\Http\Requests\Planilla\StoreCargoEmpresaRequest;
 
 class CargosEmpresaController extends Controller
 {
@@ -35,14 +36,8 @@ class CargosEmpresaController extends Controller
         return $query->paginate($request->get('paginate', 10));
     }
 
-    public function store(Request $request)
+    public function store(StoreCargoEmpresaRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string',
-            'salario_base' => 'nullable|numeric|min:0',
-            'activo' => 'required|boolean'
-        ]);
 
         $cargo = CargoEmpresa::updateOrCreate(
             ['id' => $request->id],

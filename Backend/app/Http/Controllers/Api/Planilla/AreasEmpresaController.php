@@ -12,6 +12,8 @@ use App\Models\Planilla\DepartamentoEmpresa;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Planilla\StoreAreaEmpresaRequest;
+use App\Http\Requests\Planilla\CambiarEstadoMultipleAreasRequest;
 
 class AreasEmpresaController extends Controller
 {
@@ -82,15 +84,8 @@ class AreasEmpresaController extends Controller
         return $query->paginate($request->get('paginate', 10));
     }
 
-    public function store(Request $request)
+    public function store(StoreAreaEmpresaRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string|max:500',
-            'id_departamento' => 'required|exists:departamentos_empresa,id',
-            'activo' => 'sometimes|in:0,1,true,false',
-            'estado' => 'sometimes|integer|in:0,1'
-        ]);
 
         // Verificar que el departamento pertenezca a la empresa del usuario
         $departamento = DepartamentoEmpresa::where('id', $request->id_departamento)
@@ -247,13 +242,8 @@ class AreasEmpresaController extends Controller
         return Excel::download(new AreasEmpresaExport($areas), 'areas-empresa.xlsx');
     }
 
-    public function cambiarEstadoMultiple(Request $request)
+    public function cambiarEstadoMultiple(CambiarEstadoMultipleAreasRequest $request)
     {
-        $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'exists:areas_empresa,id',
-            'activo' => 'required|in:0,1,true,false'
-        ]);
 
         $activo = $request->activo;
         if (is_string($activo)) {

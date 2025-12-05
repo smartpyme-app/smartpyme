@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Planilla\DepartamentoEmpresa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Planilla\StoreDepartamentoEmpresaRequest;
+use App\Http\Requests\Planilla\UpdateDepartamentoEmpresaRequest;
 
 class DepartamentosEmpresaController extends Controller
 {
@@ -38,13 +40,8 @@ class DepartamentosEmpresaController extends Controller
         return $query->paginate($request->get('paginate', 10));
     }
 
-    public function store(Request $request)
+    public function store(StoreDepartamentoEmpresaRequest $request)
     {
-        $request->validate([
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string',
-            'activo' => 'required|boolean'
-        ]);
 
         $departamento = DepartamentoEmpresa::updateOrCreate(
             ['id' => $request->id],
@@ -59,15 +56,8 @@ class DepartamentosEmpresaController extends Controller
         return $departamento;
     }
 
-    public function update(Request $request)
+    public function update(UpdateDepartamentoEmpresaRequest $request)
     {
-
-        $request->validate([
-            'id' => 'required|exists:departamentos_empresa,id',
-            'nombre' => 'required|string|max:100',
-            'descripcion' => 'nullable|string',
-            'estado' => 'required|integer|in:0,1'
-        ]);
 
         $departamento = DepartamentoEmpresa::updateOrCreate(
             ['id' => $request->id],

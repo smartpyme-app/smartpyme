@@ -6,6 +6,9 @@ use App\Models\ComboProducto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\StoreComboProductoRequest;
+use App\Http\Requests\UpdateComboProductoRequest;
+use App\Http\Requests\ChangeStateComboProductoRequest;
 
 class ComboProductoController extends Controller
 {
@@ -33,21 +36,8 @@ class ComboProductoController extends Controller
             ->paginate($request->paginate);
         return response()->json($combos, 200);
     }
-    public function store(Request $request)
+    public function store(StoreComboProductoRequest $request)
     {
-        $request->validate([
-            "codigo_combo" => "required",
-            "descripcion" => "required",
-            'nombre' => 'required',
-            'detalles' => 'required|array',
-            "precio" => "required",
-            "cantidad" => "required",
-            "id_bodega" => "required",
-        ]);
-
-        if (ComboProducto::where('codigo_combo', $request->codigo_combo)->exists()) {
-            return response()->json(["error" => "Un combo con codigo $request->codigo_combo ya fue registrado anteriormente"], 400);
-        }
 
         DB::beginTransaction();
 
@@ -116,17 +106,8 @@ class ComboProductoController extends Controller
         return response()->json(["message" => "Combo creado con éxito", "data" => compact("newcombo")], 201);
     }
 
-    public function update(Request $request)
+    public function update(UpdateComboProductoRequest $request)
     {
-        $request->validate([
-            "id" => "required",
-            "codigo_combo" => "required",
-            "descripcion" => "required",
-            'nombre' => 'required',
-            'detalles' => 'required|array',
-            "id_bodega" => "required",
-            "cantidad" => "required",
-        ]);
 
         $combo = ComboProducto::find($request->id);
         $cantidadActualCombo = $combo->cantidad;
@@ -243,12 +224,8 @@ class ComboProductoController extends Controller
         return response()->json($combo, 200);
     }
 
-    public function changeState(Request $request)
+    public function changeState(ChangeStateComboProductoRequest $request)
     {
-        $request->validate([
-            "id" => "required",
-            "estado" => "required",
-        ]);
         $combo = ComboProducto::find($request->id);
         $cantidadActualCombo = $combo->cantidad;
         $combo->update([

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use JWTAuth;
 use App\Models\Admin\Banco;
+use App\Http\Requests\Admin\Bancos\StoreOrDeleteBancoRequest;
 
 class BancosController extends Controller
 {
@@ -41,7 +42,7 @@ class BancosController extends Controller
 
     }
 
-    public function storeOrDelete(Request $request)
+    public function storeOrDelete(StoreOrDeleteBancoRequest $request)
     {
 
         if (Banco::where('nombre', $request->nombre)->first()) {
@@ -50,11 +51,6 @@ class BancosController extends Controller
             return Response()->json($banco, 201);
         }
 
-        $this->validate($request, [
-            'nombre'        => 'required|string|max:150',
-            'orden'         => 'numeric|nullable',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         $banco = new Banco();
 

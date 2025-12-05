@@ -5,26 +5,18 @@ namespace App\Http\Controllers\Api\Inventario\Categorias;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Inventario\Categorias\Cuenta;
+use App\Http\Requests\Inventario\Categorias\Cuenta\StoreCuentaRequest;
 
 class CuentaController extends Controller
 {
 
-    public function store(Request $request)
+    public function store(StoreCuentaRequest $request)
     {
-        $request->validate([
-            'id_categoria'          => 'required|numeric',
-            'id_sucursal'           => 'required|numeric',
-        ]);
-
         if($request->id){
             $cuenta = Cuenta::findOrFail($request->id);
         }
         else{
             $cuenta = new Cuenta;
-            $existe = Cuenta::where('id_categoria', $request->id_categoria)->where('id_sucursal', $request->id_sucursal)->first();
-
-            if($existe)
-                return  Response()->json(['error' => 'Ya ha sido configurada una cuenta en esta sucursal', 'code' => 400], 400);
         }
 
         $cuenta->fill($request->all());

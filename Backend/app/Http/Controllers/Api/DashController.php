@@ -18,11 +18,13 @@ use App\Models\Compras\Proveedores\Proveedor;
 use App\Models\Inventario\Producto;
 
 use JWTAuth;
+use App\Http\Requests\Dash\IndexDashRequest;
+use App\Http\Requests\Dash\CorteDashRequest;
 
 class DashController extends Controller
 {
 
-    public function index(Request $request) {
+    public function index(IndexDashRequest $request) {
 
         $usuario = JWTAuth::parseToken()->authenticate();
         $tiempo = 'DAY';
@@ -88,7 +90,7 @@ class DashController extends Controller
         return Response()->json($indicadores, 200);
     }
 
-    public function corte(Request $request){
+    public function corte(CorteDashRequest $request){
         $usuario = JWTAuth::parseToken()->authenticate();
 
         $indicadores = new Indicador(['inicio' => $request->fecha, 'fin' => $request->fecha, 'id_empresa' => $usuario->id_empresa, 'id_sucursal' => $request->id_sucursal, 'id_usuario' => $request->id_usuario]);

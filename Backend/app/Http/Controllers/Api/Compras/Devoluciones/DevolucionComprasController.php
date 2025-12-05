@@ -15,6 +15,8 @@ use App\Models\Inventario\Kardex;
 use Illuminate\Support\Facades\DB;
 use App\Exports\DevolucionesComprasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Compras\Devoluciones\StoreDevolucionCompraRequest;
+use App\Http\Requests\Compras\Devoluciones\FacturacionDevolucionCompraRequest;
 
 class DevolucionComprasController extends Controller
 {
@@ -78,16 +80,8 @@ class DevolucionComprasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreDevolucionCompraRequest $request)
     {
-
-        $request->validate([
-            'fecha'             => 'required',
-            'enable'            => 'required',
-            'id_proveedor'      => 'required',
-            'id_usuario'        => 'required',
-            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
-        ]);
 
         if($request->id)
             $compra = Devolucion::findOrFail($request->id);
@@ -146,24 +140,7 @@ class DevolucionComprasController extends Controller
     }
 
 
-    public function facturacion(Request $request){
-        $request->validate([
-            'fecha'             => 'required',
-            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
-            'id_proveedor'      => 'required',
-            'detalles'          => 'required',
-            'iva'               => 'required|numeric',
-            // 'subcosto'          => 'required|numeric',
-            'sub_total'          => 'required|numeric',
-            'total'             => 'required|numeric',
-            'observaciones'     => 'required|max:255',
-            'id_compra'         => 'required',
-            'id_usuario'        => 'required',
-            'id_bodega'        => 'required',
-            'id_empresa'        => 'required',
-        ],[
-            'detalles.required' => 'No hay detalles agregados'
-        ]);
+    public function facturacion(FacturacionDevolucionCompraRequest $request){
 
 
         DB::beginTransaction();

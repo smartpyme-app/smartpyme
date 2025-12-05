@@ -11,6 +11,7 @@ use App\Models\Inventario\Bodega;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Inventario\StoreBodegaRequest;
 
 class BodegasController extends Controller
 {
@@ -56,15 +57,8 @@ class BodegasController extends Controller
         return Response()->json($bodega, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreBodegaRequest $request)
     {
-
-        $request->validate([
-            'nombre'       => 'required|max:255',
-            'descripcion'  => 'sometimes|max:255',
-            'id_sucursal'  => 'required|numeric',
-            'id_empresa'  => 'required|numeric',
-        ]);
 
         if ($request->id)
             $bodega = Bodega::findOrFail($request->id);

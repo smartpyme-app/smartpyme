@@ -8,18 +8,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Inventario\Imagen;
 use Intervention\Image\ImageManagerStatic as Image;
+use App\Http\Requests\Inventario\Imagenes\StoreImagenRequest;
 
 class ImagenesController extends Controller
 {
 
-    public function store(Request $request)
+    public function store(StoreImagenRequest $request)
     {
-        $request->validate([
-            // 'file'          => 'required_without:img|image|mimes:jpeg,png,jpg|max:3000|dimensions:ratio=1/1',
-            'file'          => 'required_without:img|image|mimes:jpeg,png,jpg|max:2000',
-            'img'           => 'sometimes|max:255',
-            'id_producto'   => 'required',
-        ]);
 
         if($request->id)
             $imagen = Imagen::findOrFail($request->id);

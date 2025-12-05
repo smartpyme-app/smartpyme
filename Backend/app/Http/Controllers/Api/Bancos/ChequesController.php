@@ -12,6 +12,7 @@ use App\Exports\Bancos\ChequesExport;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Luecano\NumeroALetras\NumeroALetras;
 use Auth;
+use App\Http\Requests\Bancos\StoreChequeRequest;
 
 class ChequesController extends Controller
 {
@@ -67,27 +68,8 @@ class ChequesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreChequeRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required|date',
-            'id_cuenta'     => 'required|numeric',
-            'correlativo'   => 'required|numeric',
-            'anombrede'     => 'required|max:255',
-            'concepto'      => 'required|max:255',
-            'total'         => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
-
-        // Validar que la cuenta existe y pertenece a la empresa
-        $cuentaExists = \App\Models\Bancos\Cuenta::where('id', $request->id_cuenta)
-                                                 ->where('id_empresa', $request->id_empresa)
-                                                 ->exists();
-
-        if (!$cuentaExists) {
-            return Response()->json(['error' => 'La cuenta bancaria seleccionada no existe o no pertenece a su empresa'], 400);
-        }
 
         if($request->id)
             $cheque = Cheque::findOrFail($request->id);

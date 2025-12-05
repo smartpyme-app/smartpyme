@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\Inventario\Shopify\IniciarImportacionShopifyRequest;
 
 class ShopifyQueueController extends Controller
 {
@@ -22,18 +23,10 @@ class ShopifyQueueController extends Controller
     /**
      * Iniciar importación por trabajos pendientes (compatible con Hostinger)
      */
-    public function iniciarImportacion(Request $request)
+    public function iniciarImportacion(IniciarImportacionShopifyRequest $request)
     {
         try {
             $usuario = JWTAuth::parseToken()->authenticate();
-            
-            // Validar datos requeridos
-            if (empty($request->shopify_store_url) || empty($request->shopify_consumer_secret)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'URL de tienda y Consumer Secret son requeridos'
-                ], 400);
-            }
 
             // Obtener productos de Shopify
             $productosShopify = $this->obtenerProductosShopify($request);

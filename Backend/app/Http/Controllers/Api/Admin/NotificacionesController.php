@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Notificacion;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Admin\Notificaciones\StoreNotificacionRequest;
 
 class NotificacionesController extends Controller
 {
@@ -45,18 +46,8 @@ class NotificacionesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreNotificacionRequest $request)
     {
-
-        $request->validate([
-            'descripcion'   => 'required|max:500',
-            'titulo'        => 'sometimes|max:255',
-            'tipo'          => 'required|max:255',
-            'categoria'     => 'sometimes|max:255',
-            'prioridad'    => 'required|max:255',
-            'id_empresa'    => 'required|numeric',
-            // 'id_sucursal'    => 'required|numeric'
-        ]);
 
         if($request->id)
             $notificacion = Notificacion::findOrFail($request->id);

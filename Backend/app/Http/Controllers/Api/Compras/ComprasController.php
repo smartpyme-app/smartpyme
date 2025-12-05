@@ -28,6 +28,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\Compras\StoreCompraRequest;
+use App\Http\Requests\Compras\FacturacionCompraRequest;
+use App\Http\Requests\Compras\FacturacionConsignaRequest;
+use App\Http\Requests\Compras\GenerarCompraDesdeOrdenCompraRequest;
 
 
 class ComprasController extends Controller
@@ -167,19 +171,10 @@ class ComprasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreCompraRequest $request)
     {
         DB::beginTransaction();
-        $data = $request->validate([
-            'fecha'             => 'required',
-            'estado'            => 'required',
-            'forma_pago'        => 'required',
-            'id_proveedor'      => 'required',
-            'id_empresa'        => 'required',
-            'id_bodega'       => 'required',
-            'id_sucursal'       => 'required',
-            'id_usuario'        => 'required',
-        ]);
+        $data = $request->validated();
 
         if ($response = $this->checkAuth('store', $data)) {
             return $response;
@@ -261,23 +256,8 @@ class ComprasController extends Controller
         return Response()->json($compra, 201);
     }
 
-    public function facturacion(Request $request)
+    public function facturacion(FacturacionCompraRequest $request)
     {
-        $request->validate([
-            'fecha'             => 'required',
-            'estado'            => 'required',
-            'tipo_documento'    => 'required',
-            'forma_pago'        => 'required',
-            'id_proveedor'      => 'required',
-            'detalles'          => 'required',
-            'referencia'        => 'required_if:estado,"Pre-compra"',
-            'tipo_documento'    => 'required_if:estado,"Pre-compra"',
-            'id_usuario'        => 'required',
-            'id_empresa'        => 'required',
-        ], [
-            'id_proveedor.required' => 'El campo proveedor es obligatorio.',
-            'detalles.required' => 'Los detalles son obligatorios.'
-        ]);
 
         Log::info("Facturacion - iniciando proceso");
 
@@ -415,27 +395,8 @@ class ComprasController extends Controller
         }
     }
 
-    public function facturacionConsigna(Request $request)
+    public function facturacionConsigna(FacturacionConsignaRequest $request)
     {
-        $request->validate([
-            'id'                => 'required',
-            'fecha'             => 'required',
-            'estado'            => 'required|max:255',
-            // 'referencia'        => 'required|numeric',
-            'tipo_documento'    => 'required|max:255',
-            'id_proveedor'      => 'required',
-            'detalles'          => 'required',
-            'iva'               => 'required|numeric',
-            'forma_pago'        => 'required_if:metodo_pago,"Crédito"',
-            'sub_total'         => 'required|numeric',
-            'total'             => 'required|numeric',
-            'nota'              => 'max:255',
-            'id_usuario'        => 'required|numeric',
-            'id_bodega'       => 'required|numeric',
-            'id_sucursal'       => 'required|numeric',
-        ], [
-            'detalles.required' => 'Tiene que agregar productos a la venta',
-        ]);
 
         DB::beginTransaction();
 
@@ -739,11 +700,7 @@ class ComprasController extends Controller
         }
     }
 
-    public function generarCompraDesdeOrdenCompra(Request $request){
-        $request->validate([
-            'id' => 'required', // ID de la venta
-            'num_orden' => 'required',
-        ]);
+    public function generarCompraDesdeOrdenCompra(GenerarCompraDesdeOrdenCompraRequest $request){
 
         DB::beginTransaction();
 

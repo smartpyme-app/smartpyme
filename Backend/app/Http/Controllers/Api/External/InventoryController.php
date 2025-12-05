@@ -7,9 +7,10 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Http\Request;
 use App\Http\Resources\External\InventoryResource;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\External\IndexInventoryRequest;
+use App\Http\Requests\External\SummaryInventoryRequest;
 
 class InventoryController extends Controller
 {
@@ -19,32 +20,9 @@ class InventoryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index(IndexInventoryRequest $request)
     {
         try {
-            // Validar parámetros de entrada
-            $validator = Validator::make($request->all(), [
-                'codigo' => 'nullable|string',
-                'nombre' => 'nullable|string',
-                'categoria' => 'nullable|string',
-                'marca' => 'nullable|string',
-                'tipo' => 'nullable|string|in:Producto,Servicio',
-                'enable' => 'nullable|string|in:0,1',
-                'con_stock' => 'nullable|boolean',
-                'stock_minimo' => 'nullable|boolean', // Productos con stock bajo el mínimo
-                'page' => 'nullable|integer|min:1',
-                'per_page' => 'nullable|integer|min:1|max:200',
-                'order_by' => 'nullable|string|in:nombre,codigo,precio,costo,created_at',
-                'order_direction' => 'nullable|string|in:asc,desc',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors()
-                ], 400);
-            }
 
             // Obtener empresa desde el middleware
             $empresa = $request->attributes->get('empresa');
@@ -224,23 +202,9 @@ class InventoryController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function summary(Request $request)
+    public function summary(SummaryInventoryRequest $request)
     {
         try {
-            // Validar parámetros de entrada
-            $validator = Validator::make($request->all(), [
-                'categoria' => 'nullable|string',
-                'tipo' => 'nullable|string|in:Producto,Servicio',
-                'enable' => 'nullable|string|in:0,1',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors()
-                ], 400);
-            }
 
             // Obtener empresa desde el middleware
             $empresa = $request->attributes->get('empresa');

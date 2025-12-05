@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 use App\Http\Controllers\Controller;
 use App\Services\Planilla\PlanillaTemplatesService;
 use App\Models\Admin\Empresa;
+use App\Http\Requests\Planilla\UpdateConfiguracionPlanillaRequest;
+use App\Http\Requests\Planilla\ProbarCalculoPlanillaRequest;
 
 class   ConfiguracionPlanillaController extends Controller
 {
@@ -70,14 +72,8 @@ class   ConfiguracionPlanillaController extends Controller
     /**
      * Actualizar configuración de la empresa
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateConfiguracionPlanillaRequest $request): JsonResponse
     {
-        $request->validate([
-            'configuracion' => 'required|array',
-            'configuracion.conceptos' => 'required|array',
-            'cod_pais' => 'sometimes|string|max:3',
-            'fecha_vigencia_desde' => 'sometimes|date'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -256,14 +252,8 @@ class   ConfiguracionPlanillaController extends Controller
     /**
      * Probar cálculo con configuración actual
      */
-    public function probarCalculo(Request $request): JsonResponse
+    public function probarCalculo(ProbarCalculoPlanillaRequest $request): JsonResponse
     {
-        $request->validate([
-            'salario_base' => 'required|numeric|min:0',
-            'dias_laborados' => 'sometimes|integer|min:1|max:31',
-            'tipo_planilla' => 'sometimes|in:mensual,quincenal,semanal',
-            'tipo_contrato' => 'sometimes|integer'
-        ]);
 
         try {
             $empresaId = $request->user()->id_empresa;

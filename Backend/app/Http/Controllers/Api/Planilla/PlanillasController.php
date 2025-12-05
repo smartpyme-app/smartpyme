@@ -26,6 +26,12 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Helpers\RentaHelper;
 use App\Services\Planilla\ConfiguracionPlanillaService;
 use App\Services\Planilla\PlanillaTemplatesService;
+use App\Http\Requests\Planilla\StorePlanillaRequest;
+use App\Http\Requests\Planilla\UpdatePlanillaRequest;
+use App\Http\Requests\Planilla\UpdateDetailsPayrollRequest;
+use App\Http\Requests\Planilla\ImportarPlanillasRequest;
+use App\Http\Requests\Planilla\ValidarCalculoRentaRequest;
+use App\Http\Requests\Planilla\ActualizarDetallePlanillaRequest;
 
 class PlanillasController extends Controller
 {
@@ -161,14 +167,8 @@ class PlanillasController extends Controller
         }
     }
 
-    public function store(Request $request)
+    public function store(StorePlanillaRequest $request)
     {
-        $request->validate([
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date',
-            'tipo_planilla' => 'required|in:quincenal,mensual,semanal',
-            'planillaTemplate' => 'nullable|exists:planillas,id'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -305,13 +305,8 @@ class PlanillasController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdatePlanillaRequest $request, $id)
     {
-        $request->validate([
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'tipo_planilla' => 'required|in:quincenal,mensual,semanal'
-        ]);
 
         try {
             DB::beginTransaction();
@@ -908,22 +903,8 @@ class PlanillasController extends Controller
         }
     }
 
-    public function updateDetailsPayroll(Request $request, $id)
+    public function updateDetailsPayroll(UpdateDetailsPayrollRequest $request, $id)
     {
-        $request->validate([
-            'horas_extra' => 'nullable|numeric|min:0',
-            'monto_horas_extra' => 'nullable|numeric|min:0',
-            'comisiones' => 'nullable|numeric|min:0',
-            'bonificaciones' => 'nullable|numeric|min:0',
-            'otros_ingresos' => 'nullable|numeric|min:0',
-            'dias_laborados' => 'nullable|numeric|min:0|max:31',
-            'prestamos' => 'nullable|numeric|min:0',
-            'anticipos' => 'nullable|numeric|min:0',
-            'otros_descuentos' => 'nullable|numeric|min:0',
-            'descuentos_judiciales' => 'nullable|numeric|min:0',
-            'detalle_otras_deducciones' => 'nullable|string',
-            'salario_base' => 'nullable|numeric|min:0' // ✅ Permitir editar salario_base para contratos por obra
-        ]);
 
         try {
             DB::beginTransaction();
@@ -1525,14 +1506,8 @@ class PlanillasController extends Controller
         }
     }
 
-    public function importar(Request $request)
+    public function importar(ImportarPlanillasRequest $request)
     {
-        $request->validate([
-            'archivo' => 'required|file|mimes:xlsx,xls',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date',
-            'tipo_planilla' => 'required|in:quincenal,mensual'
-        ]);
 
         try {
             $importData = [
@@ -2367,14 +2342,8 @@ class PlanillasController extends Controller
         }
     }
 
-    public function validarCalculoRenta(Request $request)
+    public function validarCalculoRenta(ValidarCalculoRentaRequest $request)
     {
-        $request->validate([
-            'salario_devengado' => 'required|numeric|min:0',
-            'isss_empleado' => 'required|numeric|min:0',
-            'afp_empleado' => 'required|numeric|min:0',
-            'tipo_planilla' => 'required|in:mensual,quincenal,semanal'
-        ]);
 
         try {
             $validacion = \App\Helpers\RentaHelper::validarCalculoRenta(
@@ -2663,25 +2632,11 @@ class PlanillasController extends Controller
         return $detalle;
     }
 
-    public function actualizarDetalle(Request $request, $detalleId)
+    public function actualizarDetalle(ActualizarDetallePlanillaRequest $request, $detalleId)
     {
         try {
             $detalle = PlanillaDetalle::findOrFail($detalleId);
             $planilla = $detalle->planilla;
-
-            // Validar datos de entrada
-            $request->validate([
-                'salario_devengado' => 'sometimes|numeric|min:0',
-                'horas_extra' => 'sometimes|numeric|min:0',
-                'monto_horas_extra' => 'sometimes|numeric|min:0',
-                'comisiones' => 'sometimes|numeric|min:0',
-                'bonificaciones' => 'sometimes|numeric|min:0',
-                'otros_ingresos' => 'sometimes|numeric|min:0',
-                'prestamos' => 'sometimes|numeric|min:0',
-                'anticipos' => 'sometimes|numeric|min:0',
-                'otros_descuentos' => 'sometimes|numeric|min:0',
-                'descuentos_judiciales' => 'sometimes|numeric|min:0',
-            ]);
 
             // Preparar datos del empleado con valores actualizados
             $datosEmpleado = [

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Ventas\DevolucionDetalle as Detalle;
 use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
+use App\Http\Requests\Ventas\Devoluciones\StoreDetalleDevolucionVentaRequest;
 
 class DevolucionDetallesController extends Controller
 {
@@ -30,7 +31,7 @@ class DevolucionDetallesController extends Controller
     }
 
 
-    public function store(DetalleRequest $request)
+    public function store(StoreDetalleDevolucionVentaRequest $request)
     {
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);

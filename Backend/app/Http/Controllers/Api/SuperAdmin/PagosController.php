@@ -12,6 +12,9 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Http\Requests\SuperAdmin\Pagos\NewPaymentRequest;
+use App\Http\Requests\SuperAdmin\Pagos\UpdatePaymentRequest;
+use App\Http\Requests\SuperAdmin\Pagos\StorePagoRequest;
 
 class PagosController extends Controller
 {
@@ -30,22 +33,8 @@ class PagosController extends Controller
         return Response()->json($pago, 200);
     }
 
-    public function newPayment(Request $request)
+    public function newPayment(NewPaymentRequest $request)
     {
-        // Validación de datos
-        $validator = Validator::make($request->all(), [
-            'empresa_id' => 'required|exists:empresas,id',
-            'plan_id' => 'required|exists:planes,id',
-            'metodo_pago' => 'required|string',
-            'monto' => 'required|numeric|min:0',
-            'estado' => 'required|in:Completado,Rechazado,Pendiente',
-            'fecha_transaccion' => 'required|date',
-            'fecha_proximo_pago' => 'required|date'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
         // Obtener el usuario asociado a la empresa
         $empresa = Empresa::findOrFail($request->empresa_id);
@@ -100,23 +89,9 @@ class PagosController extends Controller
         return response()->json($ordenPago, 201);
     }
 
-    public function updatePayment(Request $request, $id)
+    public function updatePayment(UpdatePaymentRequest $request, $id)
     {
         $ordenPago = OrdenPago::findOrFail($id);
-        
-        // Validación de datos
-        $validator = Validator::make($request->all(), [
-            'plan_id' => 'required|exists:planes,id',
-            'metodo_pago' => 'required|string',
-            'monto' => 'required|numeric|min:0',
-            'estado' => 'required|in:Completado,Rechazado,Pendiente',
-            'fecha_transaccion' => 'required|date',
-            'fecha_proximo_pago' => 'required|date'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
         // Actualizar orden de pago
         $ordenPago->id_plan = $request->plan_id;
@@ -159,13 +134,8 @@ class PagosController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StorePagoRequest $request)
     {
-        $request->validate([
-            'nombre'          => 'required|max:255',
-            'precio'          => 'required',
-            'id_producto'     => 'required',
-        ]);
 
         if($request->id)
             $pago = Pago::findOrFail($request->id);

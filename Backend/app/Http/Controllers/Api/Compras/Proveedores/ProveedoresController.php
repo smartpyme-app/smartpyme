@@ -14,6 +14,8 @@ use App\Exports\ProveedoresEmpresasExport;
 use App\Exports\ProveedoresPersonasPlantillaExport;
 use App\Exports\ProveedoresEmpresasPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Compras\Proveedores\StoreProveedorRequest;
+use App\Http\Requests\Compras\Proveedores\ImportProveedoresRequest;
 
 class ProveedoresController extends Controller
 {
@@ -68,23 +70,8 @@ class ProveedoresController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreProveedorRequest $request)
     {
-
-        $request->validate([
-            'nombre'    => 'required_if:tipo,"Persona"|max:255',
-            'apellido'       => 'required_if:tipo,"Persona"|max:255',
-            'nombre_empresa'    => 'required_if:tipo,"Empresa"',
-            'tipo'    => 'required|max:255',
-            // 'ncr'  => 'nullable|unique:proveedores,ncr,'. $request->id,
-            // 'dui'       => 'nullable|unique:proveedores,dui,'. $request->id,
-            // 'nit'       => 'nullable|unique:proveedores,nit,'. $request->id,
-            // 'id_usuario'     => 'required|integer|exists:users,id',
-            'id_empresa'     => 'required|integer|exists:empresas,id',
-        ],[
-            'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo nombre_empresa es obligatorio.'
-        ]);
 
         if($request->id)
             $proveedor = Proveedor::findOrFail($request->id);
@@ -160,11 +147,7 @@ class ProveedoresController extends Controller
 
     }
 
-    public function importPersonas(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ]);
+    public function importPersonas(ImportProveedoresRequest $request){
 
         $import = new ProveedoresPersonas();
         Excel::import($import, $request->file);
@@ -173,11 +156,7 @@ class ProveedoresController extends Controller
 
     }
 
-    public function importEmpresas(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ]);
+    public function importEmpresas(ImportProveedoresRequest $request){
 
         $import = new ProveedoresEmpresas();
         Excel::import($import, $request->file);

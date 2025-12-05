@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Planilla;
 
 use App\Http\Controllers\Controller;
 use App\Services\Planilla\PlanillaExportService;
+use App\Http\Requests\Planilla\ExportarDetallesPlanillaRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -95,7 +96,7 @@ class PlanillaExportController extends Controller
     /**
      * Exportar detalles de planilla
      */
-    public function exportarDetallesPlanilla(Request $request)
+    public function exportarDetallesPlanilla(ExportarDetallesPlanillaRequest $request)
     {
         try {
             $filtros = $request->only(['vista', 'buscador', 'id_departamento', 'id_cargo', 'estado']);

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Validation\Rules\Password;
 use JWTAuth;
+use App\Http\Requests\SuperAdmin\StoreUsuarioRequest;
 
 class UsuariosController extends Controller
 {
@@ -79,25 +80,8 @@ class UsuariosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreUsuarioRequest $request)
     {
-        $request->validate([
-            'name'          => 'required|max:255',
-            'email'         => 'required|unique:users,email,'.$request->id,
-            'rol_id'        => 'required',
-            'id_empresa'    => 'required',
-            'id_bodega'     => 'required',
-            'id_sucursal'   => 'required',
-            'password'      => [
-                'required_if:id,null',
-                'confirmed',
-                'min:8',
-                'regex:/[a-z]/',
-                'regex:/[A-Z]/',
-                'regex:/[0-9]/',
-                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
-            ],
-        ]);
 
         if($request->id)
             $usuario = Usuario::findOrFail($request->id);
