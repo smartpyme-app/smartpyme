@@ -47,7 +47,7 @@ class StoreOpcionRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Validar que no exista otra opción para el mismo producto y composición (solo si es nuevo)
-            if (!$this->has('id')) {
+            if (!$this->filled('id')) {
                 $existe = \App\Models\Inventario\Composiciones\Opcion::where('id_producto', $this->id_producto)
                     ->where('id_composicion', $this->id_composicion)
                     ->exists();

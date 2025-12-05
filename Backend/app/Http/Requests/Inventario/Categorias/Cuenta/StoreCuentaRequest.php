@@ -48,7 +48,7 @@ class StoreCuentaRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             // Validar que no exista otra cuenta para la misma categoría y sucursal (solo si es nuevo)
-            if (!$this->has('id')) {
+            if (!$this->filled('id')) {
                 $existe = \App\Models\Inventario\Categorias\Cuenta::where('id_categoria', $this->id_categoria)
                     ->where('id_sucursal', $this->id_sucursal)
                     ->exists();
