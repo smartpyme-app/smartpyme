@@ -108,12 +108,13 @@ class PlanillasController extends Controller
             // Aplicar filtros
             if ($request->has('buscador')) {
                 $busqueda = $request->buscador;
-                $query->where(function ($q) use ($busqueda) {
-                    $q->where('empleados.nombres', 'LIKE', "%$busqueda%")
-                        ->orWhere('empleados.apellidos', 'LIKE', "%$busqueda%")
-                        ->orWhere('empleados.codigo', 'LIKE', "%$busqueda%")
-                        ->orWhere('empleados.dui', 'LIKE', "%$busqueda%")
-                        ->orWhereRaw("CONCAT(empleados.nombres, ' ', empleados.apellidos) LIKE '%$busqueda%'");
+                $busquedaLike = "%$busqueda%";
+                $query->where(function ($q) use ($busqueda, $busquedaLike) {
+                    $q->where('empleados.nombres', 'LIKE', $busquedaLike)
+                        ->orWhere('empleados.apellidos', 'LIKE', $busquedaLike)
+                        ->orWhere('empleados.codigo', 'LIKE', $busquedaLike)
+                        ->orWhere('empleados.dui', 'LIKE', $busquedaLike)
+                        ->orWhereRaw("CONCAT(empleados.nombres, ' ', empleados.apellidos) LIKE ?", [$busquedaLike]);
                 });
             }
 
