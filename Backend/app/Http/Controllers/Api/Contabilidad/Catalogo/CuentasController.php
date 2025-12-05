@@ -9,6 +9,8 @@ use App\Models\Contabilidad\Catalogo\Cuenta;
 use App\Imports\Catalogo;
 use App\Exports\CatalogoCuentasPlantillaExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Contabilidad\Catalogo\StoreCuentaRequest;
+use App\Http\Requests\Contabilidad\Catalogo\ImportCuentasRequest;
 
 class CuentasController extends Controller
 {
@@ -78,41 +80,9 @@ class CuentasController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCuentaRequest $request)
     {
         $empresa_id = $request->id_empresa ?? auth()->user()->id_empresa;
-
-        // ✅ VALIDACIÓN MEJORADA: Incluir unicidad por empresa
-        $rules = [
-            'codigo' => [
-                'required',
-                'max:50',
-                'unique:catalogo_cuentas,codigo,' . ($request->id ?? 'NULL') . ',id,id_empresa,' . $empresa_id
-            ],
-            'nombre' => 'required|max:255',
-            'naturaleza' => 'required|max:255|in:Deudor,Acreedor',
-            'id_cuenta_padre' => 'nullable',
-            'rubro' => 'required|max:255',
-            'nivel' => 'required|numeric|min:0|max:10',
-            'id_empresa' => 'required|numeric',
-        ];
-
-        $messages = [
-            'codigo.required' => 'El código es obligatorio',
-            'codigo.unique' => 'Ya existe una cuenta con este código en la empresa',
-            'codigo.max' => 'El código no puede exceder 50 caracteres',
-            'nombre.required' => 'El nombre es obligatorio',
-            'naturaleza.required' => 'La naturaleza es obligatoria',
-            'naturaleza.in' => 'La naturaleza debe ser Deudor o Acreedor',
-            'rubro.required' => 'El rubro es obligatorio',
-            'nivel.required' => 'El nivel es obligatorio',
-            'nivel.numeric' => 'El nivel debe ser numérico',
-            'nivel.min' => 'El nivel no puede ser menor a 0',
-            'nivel.max' => 'El nivel no puede exceder 10',
-            'id_empresa.required' => 'La empresa es obligatoria',
-        ];
-
-        $request->validate($rules, $messages);
 
         if($request->id)
             $cuenta = Cuenta::findOrFail($request->id);
@@ -169,16 +139,8 @@ class CuentasController extends Controller
 
     }
 
-    public function importCuentas(Request $request)
+    public function importCuentas(ImportCuentasRequest $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // Máximo 10MB
-        ], [
-            'file.required' => 'El archivo es obligatorio.',
-            'file.file' => 'Debe ser un archivo válido.',
-            'file.mimes' => 'El archivo debe ser Excel (.xlsx, .xls) o CSV.',
-            'file.max' => 'El archivo no puede exceder 10MB.'
-        ]);
 
         try {
             $import = new CatalogoImport();

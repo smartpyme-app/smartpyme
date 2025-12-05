@@ -24,6 +24,9 @@ use Maatwebsite\Excel\Facades\Excel;
 use Auth;
 use Illuminate\Support\Facades\Log;
 use PgSql\Lob;
+use App\Http\Requests\Ventas\Clientes\StoreClienteRequest;
+use App\Http\Requests\Ventas\Clientes\UpdateClienteRequest;
+use App\Http\Requests\Ventas\Clientes\ImportClientesRequest;
 
 class ClientesController extends Controller
 {
@@ -145,27 +148,8 @@ class ClientesController extends Controller
         return Response()->json($cliente, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreClienteRequest $request)
     {
-        $rules = [
-            'nombre'         => 'required_if:tipo,"Persona"',
-            'apellido'       => 'required_if:tipo,"Persona"',
-            'nombre_empresa' => 'required_if:tipo,"Empresa"',
-            'id_empresa'     => 'required|numeric|exists:empresas,id',
-        ];
-
-        // Si es creación (no hay id), id_usuario es requerido
-        if (!$request->id) {
-            $rules['id_usuario'] = 'required|numeric';
-        } else {
-            // Si es edición (hay id), id_usuario debe existir y ser numérico si se envía
-            $rules['id_usuario'] = 'sometimes';
-        }
-
-        $request->validate($rules, [
-            'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.'
-        ]);
 
         if ($request->id)
             $cliente = Cliente::findOrFail($request->id);
@@ -202,23 +186,9 @@ class ClientesController extends Controller
         return Response()->json($cliente, 200);
     }
 
-    public function update(Request $request)
+    public function update(UpdateClienteRequest $request)
     {
         $cliente = Cliente::findOrFail($request->id);
-        
-        $rules = [
-            'nombre'         => 'required_if:tipo,"Persona"',
-            'apellido'       => 'required_if:tipo,"Persona"',
-            'nombre_empresa' => 'required_if:tipo,"Empresa"',
-            'id_empresa'     => 'required|numeric|exists:empresas,id',
-        ];
-        
-        $request->validate($rules, [
-            'nombre.required_if' => 'El campo nombre es obligatorio.',
-            'nombre_empresa.required_if' => 'El campo empresa es obligatorio.',
-            'id_empresa.required' => 'El campo empresa es obligatorio.',
-            'id_empresa.exists' => 'La empresa seleccionada no es válida.',
-        ]);
         
         $cliente->fill($request->except('contactos'));
         $cliente->save();
@@ -404,11 +374,8 @@ class ClientesController extends Controller
         return Response()->json($datos, 200);
     }
 
-    public function importPersonas(Request $request)
+    public function importPersonas(ImportClientesRequest $request)
     {
-        $request->validate([
-            'file' => 'required',
-        ]);
 
         try {
             $import = new ClientesPersonas();
@@ -458,12 +425,8 @@ class ClientesController extends Controller
         }
     }
 
-    public function importEmpresas(Request $request)
+    public function importEmpresas(ImportClientesRequest $request)
     {
-
-        $request->validate([
-            'file'          => 'required',
-        ]);
 
         $import = new ClientesEmpresas();
         Excel::import($import, $request->file);
@@ -471,11 +434,8 @@ class ClientesController extends Controller
         return Response()->json($import->getRowCount(), 200);
     }
 
-    public function importExtranjeros(Request $request)
+    public function importExtranjeros(ImportClientesRequest $request)
     {
-        $request->validate([
-            'file' => 'required'
-        ]);
         $import = new ClientesExtranjeros();
 
         Excel::import($import, $request->file);

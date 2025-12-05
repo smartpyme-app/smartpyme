@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Compras\Cotizaciones\StoreOrdenCompraRequest;
+use App\Http\Requests\Compras\Cotizaciones\FacturacionCotizacionCompraRequest;
 
 class CotizacionesController extends Controller
 {
@@ -113,20 +115,8 @@ class CotizacionesController extends Controller
         return Response()->json($cotizaciones, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreOrdenCompraRequest $request)
     {
-
-        $request->validate([
-            'fecha'         => 'required',
-            'id_usuario'    => 'required|numeric',
-            "id_proveedor"  => "required|numeric",
-            "id_bodega"     => "required|numeric",
-        ], [
-            'fecha.required' => 'La fecha es requerida',
-            'id_usuario.required' => 'El usuario es requerido',
-            'id_proveedor.required' => 'El proveedor es requerido',
-            'id_bodega.required' => 'La bodega es requerida',
-        ]);
 
         // VERIFICAR AUTORIZACIÓN por niveles de monto
         if (!$request->id && !$request->id_authorization) {
@@ -234,19 +224,8 @@ class CotizacionesController extends Controller
         return Response()->json($cotizacion, 200);
     }
 
-    public function facturacion(Request $request)
+    public function facturacion(FacturacionCotizacionCompraRequest $request)
     {
-
-        $request->validate([
-            'fecha'         => 'required',
-            'estado'        => 'required|max:255',
-            'mesa'          => 'required|numeric',
-            'proveedor'       => 'required',
-            'detalles'      => 'required',
-            'total'         => 'required|numeric',
-            'usuario_id'    => 'required|numeric',
-            'sucursal_id'   => 'required|numeric',
-        ]);
 
         // Guardamos el proveedor
         if (isset($request->proveedor['id']) || isset($request->proveedor['nombre'])) {

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 
 use App\Exports\ConsignasExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Inventario\Consignas\StoreAjusteRequest;
 
 class ConsignasController extends Controller
 {
@@ -88,18 +89,8 @@ class ConsignasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreAjusteRequest $request)
     {
-        $request->validate([
-            'id_producto'       => 'required|numeric',
-            'id_sucursal'       => 'required|numeric',
-            'stock_actual'      => 'required|numeric',
-            'stock_real'        => 'required|numeric',
-            'ajuste'            => 'required|numeric',
-            'concepto'          => 'required|max:255',
-            'id_empresa'        => 'required|numeric',
-            'id_usuario'        => 'required|numeric',
-        ]);
 
         if($request->id)
             $ajuste = Ajuste::findOrFail($request->id);

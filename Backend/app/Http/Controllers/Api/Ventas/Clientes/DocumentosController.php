@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Ventas\Clientes\Documento;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
+use App\Http\Requests\Ventas\Clientes\StoreDocumentoRequest;
 
 class DocumentosController extends Controller
 {
@@ -45,14 +46,8 @@ class DocumentosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreDocumentoRequest $request)
     {
-        $request->validate([
-            'nombre'        => 'sometimes|max:255',
-            'file'          => 'required_without:url|mimes:jpeg,png,jpg,ppt,pptx,doc,docx,pdf,xls,xlsx|max:3000',
-            'url'           => 'sometimes|max:255',
-            'cliente_id'   => 'required',
-        ]);
 
         if($request->id)
             $documento = Documento::findOrFail($request->id);

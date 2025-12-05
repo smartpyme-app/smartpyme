@@ -14,6 +14,8 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Services\Bancos\TransaccionesService;
 use App\Services\Bancos\ChequesService;
 use JWTAuth;
+use App\Http\Requests\Ventas\Abonos\StoreAbonoRequest;
+use App\Http\Requests\Ventas\Abonos\UpdateAbonoRequest;
 
 class AbonosController extends Controller
 {
@@ -90,23 +92,9 @@ class AbonosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreAbonoRequest $request)
     {
-
         $venta = Venta::find($request->id_venta);
-
-        $request->validate([
-            'fecha'       => 'required|date',
-            'concepto'    => 'required|max:255',
-            'nombre_de'    => 'required|max:255',
-            'estado'      => 'required|max:255',
-            'forma_pago' => 'required|max:255',
-            'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
-            'total'       => 'required|numeric',
-            'id_venta'    => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric',
-        ]);
 
         DB::beginTransaction();
 
@@ -181,23 +169,10 @@ class AbonosController extends Controller
 
     }
 
-    public function update(Request $request)
+    public function update(UpdateAbonoRequest $request)
     {
         try {
             DB::beginTransaction();
-
-            $request->validate([
-                'id'          => 'required|numeric|exists:abonos_ventas,id',
-                'fecha'       => 'required|date',
-                'concepto'    => 'required|max:255',
-                'nombre_de'   => 'required|max:255',
-                'estado'      => 'required|max:255',
-                'forma_pago'  => 'required|max:255',
-                'total'       => 'required|numeric',
-                'id_venta'    => 'required|numeric',
-                'id_usuario'  => 'required|numeric',
-                'id_sucursal' => 'required|numeric',
-            ]);
 
 
             $abono = Abono::findOrFail($request->id);

@@ -14,6 +14,7 @@ use App\Models\Admin\Corte;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\DevolucionVenta;
 use App\Models\Ventas\Detalle;
+use App\Http\Requests\Admin\Cajas\StoreCajaRequest;
 
 class CajasController extends Controller
 {
@@ -35,14 +36,8 @@ class CajasController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCajaRequest $request)
     {
-
-        $request->validate([
-            'nombre'    => 'required|max:255',
-            'tipo'    => 'required|max:255',
-            'sucursal_id'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $caja = Caja::findOrFail($request->id);

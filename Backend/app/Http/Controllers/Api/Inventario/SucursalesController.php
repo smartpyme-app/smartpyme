@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Models\Inventario\Sucursal;
 use App\Models\Inventario\Inventario;
+use App\Http\Requests\Inventario\StoreSucursalRequest;
 
 class SucursalesController extends Controller
 {
@@ -60,25 +61,13 @@ class SucursalesController extends Controller
 
     }
 
-    public function store(Request $request) {
+    public function store(StoreSucursalRequest $request) {
         
-        $request->validate([
-            'producto_id'    => 'required|numeric',
-            'activo'          => 'required|boolean',
-            'sucursal_id'    => 'required|numeric',
-        ]);
-
-
         if($request->id){
             $sucursal = Sucursal::findOrFail($request->id);
         }
         else{
-
             $sucursal = new Sucursal;
-            $existe = Sucursal::where('sucursal_id', $request->sucursal_id)->where('producto_id', $request->producto_id)->first();
-
-            if($existe)
-                return  Response()->json(['error' => 'Ya ha sido configurada la sucursal', 'code' => 400], 400);
         }
         
         $sucursal->fill($request->all());

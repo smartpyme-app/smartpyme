@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Compras\Gastos\Categoria;
+use App\Http\Requests\Compras\Gastos\StoreCategoriaRequest;
 
 class CategoriasController extends Controller
 {
@@ -28,12 +29,8 @@ class CategoriasController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoriaRequest $request)
     {
-        $request->validate([
-            'nombre'  => 'required',
-            'id_empresa'   => 'required',
-        ]);
 
         if($request->id)
             $categoria = Categoria::findOrFail($request->id);

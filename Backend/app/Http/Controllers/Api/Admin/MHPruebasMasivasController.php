@@ -10,6 +10,7 @@ use App\Services\MHPruebasMasivasService;
 use App\Models\Ventas\Venta;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Admin\MHPruebasMasivas\EjecutarPruebasMasivasRequest;
 
 class MHPruebasMasivasController extends Controller
 {
@@ -53,15 +54,9 @@ class MHPruebasMasivasController extends Controller
         }
     }
 
-    public function ejecutar(Request $request)
+    public function ejecutar(EjecutarPruebasMasivasRequest $request)
     {
         try {
-            $request->validate([
-                'tipo' => 'required|string|in:facturas,creditosFiscales,notasCredito,notasDebito,facturasExportacion,sujetoExcluido',
-                'cantidad' => 'required|integer|min:1|max:100',
-                'id_documento_base' => 'nullable|integer|exists:ventas,id',
-                'correlativo_inicial' => 'nullable|integer|min:1'
-            ]);
 
             // Comprobar autenticación
             if (!Auth::user()) {

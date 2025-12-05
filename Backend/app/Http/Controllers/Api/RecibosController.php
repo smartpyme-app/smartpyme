@@ -7,19 +7,12 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use App\Models\Ventas\Venta;
 use App\Models\Recibo;
+use App\Http\Requests\Recibos\StoreReciboRequest;
 
 class RecibosController extends Controller
 {
     
-    public function store(Request $request){
-
-        $request->validate([
-            'fecha'       => 'required|date',
-            'monto'       => 'required|numeric',
-            'forma_pago'     => 'required|max:255',
-            'concepto'       => 'required|max:255',
-            'id_venta'        => 'required|numeric',
-        ]);
+    public function store(StoreReciboRequest $request){
 
         $recibo = new Recibo();
         $recibo->estado = 'Confirmado';

@@ -8,53 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\StoreCotizacionVentaRequest;
 
 class CotizacionVentaController extends Controller
 {
-    public function store(Request $request)
+    public function store(StoreCotizacionVentaRequest $request)
     {
-        $request->validate([
-            "observaciones" => "required",
-            "fecha_expiracion" => "required",
-            "fecha" => "required",
-            "total" => "required",
-            "id_cliente" => "required",
-            "id_proyecto" => "required",
-            "id_usuario" => "required",
-            "id_vendedor" => "required",
-            "id_empresa" => "required",
-            "id_sucursal" => "required",
-            "cobrar_impuestos" => "required|boolean",
-            "retencion" => "required|boolean",
-            "detalles" => "required|array",
-            "detalles.*.cantidad" => "required",
-            "detalles.*.precio" => "required",
-            "detalles.*.total" => "required",
-            "detalles.*.total_costo" => "required",
-            "detalles.*.descuento" => "required",
-            "detalles.*.no_sujeta" => "required",
-            "detalles.*.exenta" => "required",
-            "detalles.*.cuenta_a_terceros" => "required",
-            "detalles.*.gravada" => "required",
-            "detalles.*.iva" => "required",
-            "detalles.*.descripcion" => "required",
-            "detalles.*.id_producto" => "required",
-        ], [
-            "observaciones.required" => "Las observaciones son requeridas",
-            "fecha_expiracion.required" => "La fecha de expiración es requerida",
-            "fecha.required" => "La fecha es requerida",
-            "total.required" => "El total es requerido",
-            "correlativo.required" => "El correlativo es requerido",
-            "id_documento.required" => "El documento es requerido",
-            "id_cliente.required" => "El cliente es requerido",
-            "id_proyecto.required" => "El proyecto es requerido",
-            "id_usuario.required" => "El usuario es requerido",
-            "id_vendedor.required" => "El vendedor es requerido",
-            "id_empresa.required" => "La empresa es requerida",
-            "id_sucursal.required" => "La sucursal es requerida",
-            "detalles.required" => "Ingresa por lo menos 1 detalle",
-
-        ]);
 
         DB::beginTransaction();
         try {

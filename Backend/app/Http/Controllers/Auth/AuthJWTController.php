@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterRequest;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\JWTException;
+use App\Http\Requests\Auth\SendResetLinkEmailRequest;
+use App\Http\Requests\Auth\CancelarSuscripcionRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Crypt;
 use App\Models\Admin\Acceso;
@@ -133,32 +135,8 @@ class AuthJWTController extends Controller
 
     }
 
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
-
-        $request->validate([
-            'name'      => 'required',
-            'email'     => 'required|unique:users,email,' . $request->id,
-            'password'  => [
-                'required_if:id,null',
-                // 'confirmed',
-                'min:8',
-                'regex:/[a-z]/',
-                'regex:/[A-Z]/',
-                'regex:/[0-9]/',
-                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
-            ],
-            'telefono'  => 'required',
-            'empresa.nombre'   => 'required',
-            'empresa.industria' => 'required',
-            'empresa.iva'       => 'required',
-            'empresa.moneda'    => 'required',
-            'empresa.plan'      => 'required',
-            'empresa.tipo_plan' => 'required',
-            'empresa.total'     => 'required',
-            'empresa.user_limit'     => 'required',
-            'empresa.sucursal_limit'     => 'required',
-        ]);
 
         DB::beginTransaction();
 
@@ -382,16 +360,8 @@ class AuthJWTController extends Controller
         }
     }
 
-    public function sendResetLinkEmail(Request $request)
+    public function sendResetLinkEmail(SendResetLinkEmailRequest $request)
     {
-        // Validar email
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()->first()], 422);
-        }
 
         // Enviar link de reset
         $response = Password::sendResetLink(
@@ -507,15 +477,9 @@ class AuthJWTController extends Controller
     //     return response()->json($usuario, 200);
     // }
 
-    public function cancelarSuscripcion(Request $request)
+    public function cancelarSuscripcion(CancelarSuscripcionRequest $request)
     {
         try {
-            $request->validate([
-                'password'      => 'required',
-                'id'            => 'required|exists:users,id',
-                'id_empresa'    => 'required|exists:empresas,id',
-                'motivo_cancelacion' => 'required|string|max:500',
-            ]);
 
             // Verificar contraseña
             $usuario = User::findOrFail($request->id);

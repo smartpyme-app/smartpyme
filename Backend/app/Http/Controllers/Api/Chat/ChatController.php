@@ -12,6 +12,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Chat\BedrockChatRequest;
+use App\Http\Requests\Chat\NewConversationRequest;
 
 class ChatController extends Controller
 {
@@ -35,20 +37,11 @@ class ChatController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function bedrockChat(Request $request, $source = 'Web')
+    public function bedrockChat(BedrockChatRequest $request, $source = 'Web')
     {
         try {
-            // Validar la solicitud
-            $validated = $request->validate([
-                'prompt' => 'required|string',
-                'history' => 'nullable|array',
-                'conversationId' => 'nullable|integer',
-                'maxTokens' => 'nullable|integer|min:1|max:4000',
-                'temperature' => 'nullable|numeric|min:0|max:1',
-                'topP' => 'nullable|numeric|min:0|max:1',
-                'topK' => 'nullable|integer|min:0',
-                'user_id' => 'nullable|integer',
-            ]);
+            // Datos ya validados por el FormRequest
+            $validated = $request->validated();
 
             $user = User::findOrFail($validated['user_id'] ?? $request->user()->id);
             $conversation = $this->getActiveConversation($user->id, $user->id_empresa);
@@ -211,13 +204,11 @@ class ChatController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function newConversation(Request $request)
+    public function newConversation(NewConversationRequest $request)
     {
         try {
-            // Validar la solicitud
-            $validated = $request->validate([
-                'title' => 'nullable|string|max:255',
-            ]);
+            // Datos ya validados por el FormRequest
+            $validated = $request->validated();
 
             // Generar un título si no se proporcionó uno
             $title = $validated['title'] ?? 'Nueva conversación - ' . now()->format('d/m/Y H:i');

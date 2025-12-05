@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
 use Auth;
+use App\Http\Requests\Licencias\StoreLicenciaRequest;
 
 class LicenciasController extends Controller
 {
@@ -41,14 +42,7 @@ class LicenciasController extends Controller
 
     }
 
-    public function store(Request $request){
-
-        $request->validate([
-            'num_licencias' => 'required|numeric',
-            'id_empresa'  => 'required|numeric',
-        ],[
-            'id_empresa.required' => 'El campo empresa es obligatorio.',
-        ]);
+    public function store(StoreLicenciaRequest $request){
 
         if($request->id)
             $licencia = Licencia::findOrFail($request->id);

@@ -14,15 +14,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
+use App\Http\Requests\Ventas\Import\ImportVentasRequest;
 
 
 class VentasImportController extends Controller
 {
-    public function importar(Request $request)
+    public function importar(ImportVentasRequest $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
-        ]);
 
         $file = $request->file('file');
 

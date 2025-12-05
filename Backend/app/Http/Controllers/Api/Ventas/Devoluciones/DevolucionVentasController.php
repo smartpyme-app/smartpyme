@@ -25,6 +25,9 @@ use Carbon\Carbon;
 use JWTAuth;
 use Auth;
 use Illuminate\Support\Str;
+use App\Http\Requests\Ventas\Devoluciones\StoreDevolucionRequest;
+use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
+use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
 
 class DevolucionVentasController extends Controller
 {
@@ -94,16 +97,8 @@ class DevolucionVentasController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreDevolucionRequest $request)
     {
-        $request->validate([
-            'fecha'             => 'required',
-            'enable'            => 'required',
-            'observaciones'     => 'required',
-            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
-            // 'id_cliente'        => 'required',
-            'id_usuario'        => 'required',
-        ]);
 
         if($request->id)
             $venta = Devolucion::findOrFail($request->id);
@@ -176,22 +171,8 @@ class DevolucionVentasController extends Controller
 
     }
 
-    public function update(Request $request)
+    public function update(UpdateDevolucionRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-            'id_documento' => 'nullable|exists:documentos,id',
-            'correlativo' => 'nullable|string|max:255',
-            'id_usuario' => 'required|exists:users,id',
-            'observaciones' => 'required|string|max:255',
-        ], [
-            'fecha.required' => 'La fecha es requerida.',
-            'fecha.date' => 'La fecha debe tener un formato válido.',
-            'id_usuario.required' => 'El usuario es requerido.',
-            'id_usuario.exists' => 'El usuario seleccionado no existe.',
-            'observaciones.required' => 'Las observaciones son requeridas.',
-            'observaciones.max' => 'Las observaciones no pueden exceder los 255 caracteres.',
-        ]);
 
         DB::beginTransaction();
 
@@ -241,29 +222,7 @@ class DevolucionVentasController extends Controller
     }
 
 
-    public function facturacion(Request $request){
-
-        $request->validate([
-            'fecha'             => 'required',
-            'tipo'              => 'required|in:devolucion,descuento_ajuste,anulacion_factura',
-            // 'id_documento'      => 'required|max:255',
-            // 'id_cliente'        => 'required',
-            'detalles'          => 'required',
-            'iva'               => 'required|numeric',
-            'total_costo'       => 'required|numeric',
-            'sub_total'         => 'required|numeric',
-            'total'             => 'required|numeric',
-            'observaciones'     => 'required|max:255',
-            'id_venta'          => 'required|numeric',
-            // 'id_caja'           => 'required|numeric',
-            // 'id_corte'          => 'required|numeric',
-            'id_usuario'        => 'required|numeric',
-            'id_bodega'       => 'required|numeric',
-            'id_sucursal'       => 'required|numeric',
-            'id_empresa'       => 'required|numeric',
-        ],[
-            'detalles.required' => 'Tienes que ingresar los detalles a devolver.'
-        ]);
+    public function facturacion(FacturacionDevolucionRequest $request){
 
         // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
             $venta = Venta::findOrFail($request->id_venta);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Impuesto;
+use App\Http\Requests\Admin\Impuestos\StoreImpuestoRequest;
 
 class ImpuestosController extends Controller
 {
@@ -27,14 +28,8 @@ class ImpuestosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreImpuestoRequest $request)
     {
-
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'porcentaje'        => 'required|numeric',
-            'id_empresa'       => 'required|numeric'
-        ]);
 
         if($request->id)
             $impuesto = Impuesto::findOrFail($request->id);

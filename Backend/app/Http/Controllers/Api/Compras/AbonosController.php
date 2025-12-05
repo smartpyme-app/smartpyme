@@ -13,6 +13,7 @@ use App\Exports\AbonosComprasExport;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use JWTAuth;
+use App\Http\Requests\Compras\Abonos\StoreAbonoCompraRequest;
 
 class AbonosController extends Controller
 {
@@ -74,23 +75,9 @@ class AbonosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreAbonoCompraRequest $request)
     {
-
         $compra = Compra::find($request->id_compra);
-
-        $request->validate([
-            'fecha'       => 'required|date',
-            'concepto'    => 'required|max:255',
-            'nombre_de'    => 'required|max:255',
-            'estado'      => 'required|max:255',
-            'forma_pago' => 'required|max:255',
-            // 'detalle_banco' => 'required_unless:forma_pago,"Efectivo"',
-            'total'       => 'required|numeric',
-            'id_compra'    => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_sucursal'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $abono = Abono::findOrFail($request->id);

@@ -23,6 +23,18 @@ use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Http\Requests\Contabilidad\Partidas\StorePartidaRequest;
+use App\Http\Requests\Contabilidad\Partidas\ReordenarCorrelativosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarIngresosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarCxCRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarEgresosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarCxPRequest;
+use App\Http\Requests\Contabilidad\Partidas\CerrarPartidasRequest;
+use App\Http\Requests\Contabilidad\Partidas\AbrirPartidaRequest;
+use App\Http\Requests\Contabilidad\Partidas\ReabrirPeriodoRequest;
+use App\Http\Requests\Contabilidad\Partidas\VerificarEstadoPeriodoRequest;
+use App\Http\Requests\Contabilidad\Partidas\ObtenerBalanceComprobacionRequest;
+use App\Http\Requests\Contabilidad\Partidas\SimularCierreMesRequest;
 
 class PartidasController extends Controller
 {
@@ -145,17 +157,8 @@ class PartidasController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StorePartidaRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required|date',
-            'tipo'          => 'required|max:255',
-            'concepto'      => 'required|max:255',
-            'estado'        => 'required|max:255',
-            'detalles'      => 'required',
-            'id_usuario'    => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         DB::beginTransaction();
 
@@ -264,7 +267,7 @@ class PartidasController extends Controller
     /**
     * Método para reordenar correlativos
     */
-    public function reordenarCorrelativos(Request $request)
+    public function reordenarCorrelativos(ReordenarCorrelativosRequest $request)
     {
         // Si viene el parámetro 'todos', reordenar toda la empresa
         if ($request->has('todos') && $request->todos) {
@@ -308,13 +311,6 @@ class PartidasController extends Controller
             }
         }
 
-        // Reordenamiento específico por mes/tipo - SOLO validar si NO es 'todos'
-        $request->validate([
-            'anio' => 'required|integer|min:2020|max:2030',
-            'mes' => 'required|integer|min:1|max:12',
-            'tipo' => 'required|in:Ingreso,Egreso,Diario,CxC,CxP,Cierre'
-        ]);
-
         try {
             $partidasReordenadas = Partida::reordenarCorrelativos(
                 $request->anio,
@@ -335,11 +331,8 @@ class PartidasController extends Controller
         }
     }
 
-    public function generarIngresos(Request $request)
+    public function generarIngresos(GenerarIngresosRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $ventas = Venta::where('estado','!=', 'Anulada')
@@ -550,11 +543,8 @@ class PartidasController extends Controller
 
     }
 
-    public function generarCxC(Request $request)
+    public function generarCxC(GenerarCxCRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $ventas = Venta::where('estado', 'Pendiente')
@@ -733,11 +723,8 @@ class PartidasController extends Controller
 
     }
 
-    public function generarEgresos(Request $request)
+    public function generarEgresos(GenerarEgresosRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
@@ -900,11 +887,8 @@ class PartidasController extends Controller
 
     }
 
-    public function generarCxP(Request $request)
+    public function generarCxP(GenerarCxPRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pendiente')->where('fecha', $request->fecha)->get();
@@ -1055,18 +1039,11 @@ class PartidasController extends Controller
 
     }
 
-    public function cerrarPartidas(Request $request)
+    public function cerrarPartidas(CerrarPartidasRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            // Validar que el mes y año sean válidos
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $cierreMesService = new CierreMesService();
 
@@ -1087,7 +1064,7 @@ class PartidasController extends Controller
         }
     }
 
-    public function abrirPartida(Request $request)
+    public function abrirPartida(AbrirPartidaRequest $request)
     {
         try {
             $user = auth()->user();
@@ -1098,11 +1075,6 @@ class PartidasController extends Controller
             }
 
             $id = $request->input('id');
-            if (!$id) {
-                return response()->json([
-                    'error' => 'ID de partida no proporcionado.'
-                ], 400);
-            }
 
             $partida = Partida::find($id);
             if (!$partida) {
@@ -1131,18 +1103,11 @@ class PartidasController extends Controller
         }
     }
 
-    public function reabrirPeriodo(Request $request)
+    public function reabrirPeriodo(ReabrirPeriodoRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            // Validar que el mes y año sean válidos
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $cierreMesService = new CierreMesService();
 
@@ -1162,17 +1127,11 @@ class PartidasController extends Controller
         }
     }
 
-    public function verificarEstadoPeriodo(Request $request)
+    public function verificarEstadoPeriodo(VerificarEstadoPeriodoRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $empresa_id = auth()->user()->id_empresa;
 
@@ -1217,17 +1176,11 @@ class PartidasController extends Controller
         }
     }
 
-      public function obtenerBalanceComprobacion(Request $request)
+      public function obtenerBalanceComprobacion(ObtenerBalanceComprobacionRequest $request)
   {
       try {
           $month = $request->input('month');
           $year = $request->input('year');
-
-          if (!$month || !$year || $month < 1 || $month > 12) {
-              return response()->json([
-                  'error' => 'Mes y año inválidos'
-              ], 400);
-          }
 
           $cierreMesService = new CierreMesService();
 
@@ -1246,17 +1199,11 @@ class PartidasController extends Controller
       }
   }
 
-  public function simularCierreMes(Request $request)
+  public function simularCierreMes(SimularCierreMesRequest $request)
   {
       try {
           $month = $request->input('month');
           $year = $request->input('year');
-
-          if (!$month || !$year || $month < 1 || $month > 12) {
-              return response()->json([
-                  'error' => 'Mes y año inválidos'
-              ], 400);
-          }
 
           $simulacionService = new SimulacionCierreService();
 

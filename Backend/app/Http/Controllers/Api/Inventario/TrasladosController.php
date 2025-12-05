@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Exports\TrasladosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Inventario\StoreTrasladoRequest;
 
 
 class TrasladosController extends Controller
@@ -53,18 +54,7 @@ class TrasladosController extends Controller
         return Response()->json($traslados, 200);
     }
 
-    public function store(Request $request){
-
-        $request->validate([
-          // 'fecha'         => 'required',
-          'estado'          => 'required',
-          'id_producto'     => 'required',
-          'id_bodega_de' => 'required|numeric',
-          'id_bodega'     => 'required|numeric',
-          'concepto'        => 'required',
-          'cantidad'      => 'required|numeric',
-          'id_usuario'      => 'required|numeric'
-        ]);
+    public function store(StoreTrasladoRequest $request){
 
         $traslado = new Traslado();
         $traslado->fill($request->all());
@@ -72,10 +62,6 @@ class TrasladosController extends Controller
         DB::beginTransaction();
          
         try {
-
-        if ($request->id_bodega == $request->id_bodega_de) {
-            return  Response()->json(['error' => 'Has seleccionado la misma sucursal.', 'code' => 400], 400);
-        }
 
         $producto = Producto::where('id', $request->id_producto)->with('composiciones')->firstOrFail();
         $origen = Inventario::where('id_producto', $producto->id)->where('id_bodega', $request->id_bodega_de)->first();

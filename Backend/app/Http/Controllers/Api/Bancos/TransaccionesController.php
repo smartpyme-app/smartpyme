@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Bancos\TransaccionesExport;
+use App\Http\Requests\Bancos\StoreTransaccionRequest;
 
 class TransaccionesController extends Controller
 {
@@ -66,19 +67,8 @@ class TransaccionesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreTransaccionRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required|date',
-            'id_cuenta'     => 'required|numeric',
-            'concepto'      => 'required|max:255',
-            'tipo_operacion' => 'required|max:255',
-            'tipo'          => 'required|max:255',
-            'estado'          => 'required|max:255',
-            'total'         => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         DB::beginTransaction();
 

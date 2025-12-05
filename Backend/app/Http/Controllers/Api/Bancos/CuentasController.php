@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Bancos\Cuenta;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Http\Requests\Bancos\StoreCuentaRequest;
 
 class CuentasController extends Controller
 {
@@ -45,15 +46,8 @@ class CuentasController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreCuentaRequest $request)
     {
-        $request->validate([
-            'numero'        => 'required_unless:tipo,"Efectivo"',
-            'nombre_banco'  => 'required|max:255',
-            'tipo'          => 'required|max:255',
-            'saldo'         => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $cuenta = Cuenta::findOrFail($request->id);

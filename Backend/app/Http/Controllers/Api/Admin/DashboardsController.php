@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\Dashboard;
 use JWTAuth;
+use App\Http\Requests\Admin\Dashboards\StoreDashboardRequest;
 
 class DashboardsController extends Controller
 {
@@ -37,14 +38,8 @@ class DashboardsController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreDashboardRequest $request)
     {
-        $request->validate([
-            'titulo'        => 'required|max:255',
-            'tipo'          => 'required|max:255',
-            'codigo_embed'  => 'required|max:900',
-            'id_empresa'  => 'required|numeric',
-        ]);
 
         if($request->id)
             $dashboard = Dashboard::findOrFail($request->id);
