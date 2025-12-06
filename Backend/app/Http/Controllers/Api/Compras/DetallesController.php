@@ -9,6 +9,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Inventario;
 use App\Models\Admin\Bomba;
 use App\Models\Admin\Tanque;
+use App\Http\Requests\Compras\Detalles\StoreDetalleCompraRequest;
 
 class DetallesController extends Controller
 {
@@ -25,13 +26,13 @@ class DetallesController extends Controller
 
     public function read($id) {
        
-        $detalle = Detalle::findOrFail($request->id);
+        $detalle = Detalle::findOrFail($id);
         return Response()->json($detalle, 200);
 
     }
 
 
-    public function store(Request $request)
+    public function store(StoreDetalleCompraRequest $request)
     {
         if($request->id){
             $detalle = Detalle::findOrFail($request->id);

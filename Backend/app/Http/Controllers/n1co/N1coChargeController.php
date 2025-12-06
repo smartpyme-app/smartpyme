@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\N1co\CreatePaymentMethodRequest;
+use App\Http\Requests\N1co\UpdateMethodPaymentRequest;
+use App\Http\Requests\N1co\ProcessChargeReadyRequest;
+use App\Http\Requests\N1co\ProcessChargeRequest;
 
 class N1coChargeController extends Controller
 {
@@ -43,28 +47,9 @@ class N1coChargeController extends Controller
         ]);
     }
 
-    public function createPaymentMethod(Request $request)
+    public function createPaymentMethod(CreatePaymentMethodRequest $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'customer.id' => 'required|integer',
-                'customer.name' => 'required|string',
-                'customer.email' => 'required|email',
-                'customer.phoneNumber' => 'nullable|string',
-                'card.number' => 'required|string|min:13|max:16',
-                'card.expirationMonth' => 'required|string|size:2|in:01,02,03,04,05,06,07,08,09,10,11,12',
-                'card.expirationYear' => 'required|string|size:2',
-                'card.cvv' => 'required|string|min:3|max:4',
-                'card.cardHolder' => 'required|string|min:3'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
 
             $customerId = $request->input('customer.id');
             
@@ -447,32 +432,9 @@ class N1coChargeController extends Controller
         });
     }
 
-    public function updateMethodPayment(Request $request)
+    public function updateMethodPayment(UpdateMethodPaymentRequest $request)
     {
         try {
-            // Validación de los datos de entrada
-            $validator = Validator::make($request->all(), [
-                'customer.id' => 'required|integer',
-                'customer.name' => 'required|string',
-                'customer.email' => 'required|email',
-                'customer.phoneNumber' => 'required|string',
-                'card.number' => 'required|string|min:13|max:16',
-                'card.expirationMonth' => 'required|string|size:2|in:01,02,03,04,05,06,07,08,09,10,11,12',
-                'card.expirationYear' => 'required|string|size:2',
-                'card.cvv' => 'required|string|min:3|max:4',
-                'card.cardHolder' => 'required|string|min:3',
-                'billingInfo.countryCode' => 'required|string',
-                'billingInfo.stateCode' => 'required|string',
-                'billingInfo.zipCode' => 'required|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
 
             // Primero crear el nuevo método de pago
             $paymentData = [
@@ -557,26 +519,9 @@ class N1coChargeController extends Controller
         }
     }
 
-    public function processChargeReady(Request $request)
+    public function processChargeReady(ProcessChargeReadyRequest $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'metodo_pago_id' => 'required|integer',
-                'id_usuario' => 'required|integer',
-                'empresa_id' => 'required|integer',
-                'plan_id' => 'required|integer',
-                'customer_name' => 'required|string',
-                'customer_email' => 'required|email',
-                'customer_phone' => 'nullable|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 400);
-            }
 
             return DB::transaction(function () use ($request) {
                 // Obtener el método de pago
@@ -741,26 +686,9 @@ class N1coChargeController extends Controller
         }
     }
 
-    public function processCharge(Request $request)
+    public function processCharge(ProcessChargeRequest $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'token' => 'required|string',
-                'customer_name' => 'required|string',
-                'customer_email' => 'required|email',
-                'customer_phone' => 'required|string',
-                'amount' => 'required|numeric|min:0.01',
-                'card_id' => 'required|string',
-                'authentication_id' => 'nullable|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Error de validación',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
 
             $result = $this->n1coGateway->processCharge(
                 $request->all(),

@@ -11,6 +11,7 @@ use App\Models\Inventario\Producto;
 use App\Models\Inventario\Kardex;
 use App\Models\Inventario\Inventario;
 use App\Models\Admin\Empresa;
+use App\Http\Requests\Inventario\Traslados\StoreTrasladoRequest;
 
 class TrasladosController extends Controller
 {
@@ -58,19 +59,8 @@ class TrasladosController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreTrasladoRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required',
-            'estado'        => 'required',
-            'id_bodega_de'     => 'required|numeric',
-            'id_bodega'    => 'required|numeric',
-            'detalles'     => 'required',
-            'concepto'     => 'required',
-            'id_usuario'    => 'required|numeric'
-        ],[
-            'concepto.required' => 'El campo nota es obligatorio.'
-        ]);
 
         if($request->id)
             $traslado = Traslado::findOrFail($request->id);

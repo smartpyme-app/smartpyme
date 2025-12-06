@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Planilla;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Planilla\StorePlanillaRequest;
 use App\Http\Requests\Planilla\UpdatePlanillaRequest;
+use App\Http\Requests\Planilla\IndexPlanillaRequest;
+use App\Http\Requests\Planilla\ShowPlanillaRequest;
 use App\Http\Resources\Planilla\PlanillaResource;
 use App\Http\Resources\Planilla\PlanillaResumenResource;
 use App\Services\Planilla\PlanillaService;
@@ -23,7 +25,7 @@ class PlanillaController extends Controller
     /**
      * Listar planillas
      */
-    public function index(Request $request)
+    public function index(IndexPlanillaRequest $request)
     {
         try {
             $filtros = $request->only(['anio', 'mes', 'estado', 'tipo_planilla', 'buscador']);
@@ -66,7 +68,7 @@ class PlanillaController extends Controller
     /**
      * Obtener detalles de una planilla
      */
-    public function show(Request $request)
+    public function show(ShowPlanillaRequest $request)
     {
         try {
             $filtros = $request->only(['buscador', 'id_departamento', 'id_cargo', 'paginate']);

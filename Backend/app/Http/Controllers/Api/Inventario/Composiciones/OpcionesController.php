@@ -5,28 +5,19 @@ namespace App\Http\Controllers\Api\Inventario\Composiciones;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventario\Composiciones\Opcion;
+use App\Http\Requests\Inventario\Composiciones\Opciones\StoreOpcionRequest;
 
 class OpcionesController extends Controller
 {
 
 
-    public function store(Request $request)
+    public function store(StoreOpcionRequest $request)
     {
-        $request->validate([
-            'id_producto'   => 'required|numeric',
-            'id_composicion'  => 'required|numeric',
-        ]);
-
         if($request->id){
             $opcion = Opcion::findOrFail($request->id);
         }
         else{
             $opcion = new Opcion;
-
-            $existe = Opcion::where('id_producto', $request->id_producto)->where('id_composicion', $request->id_composicion)->first();
-
-            if($existe)
-                return  Response()->json(['error' => 'Ya ha sido agregado el producto.', 'code' => 400], 400);
         }
         
         $opcion->fill($request->all());

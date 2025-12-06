@@ -11,6 +11,8 @@ use App\Imports\Paquetes;
 use App\Exports\PaquetesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Inventario\Paquetes\StorePaqueteRequest;
+use App\Http\Requests\Inventario\Paquetes\ImportPaquetesRequest;
 
 class PaquetesController extends Controller
 {
@@ -103,30 +105,8 @@ class PaquetesController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StorePaqueteRequest $request)
     {
- 
-        $request->validate([
-            'fecha' => 'required|max:255',
-            'wr' => 'required|max:255',
-            // 'transportista' => 'required|max:255',
-            // 'consignatario' => 'required|max:255',
-            // 'transportador' => 'required|max:255',
-            'estado' => 'required|max:255',
-            // 'num_seguimiento' => 'required|max:255',
-            'num_guia' => 'required|max:255',
-            'piezas' => 'required',
-            'peso'  => 'required',
-            'precio'  => 'required',
-            // 'volumen'  => 'required',
-            'id_cliente'  => 'required',
-            'id_usuario'  => 'required',
-            'id_sucursal' => 'required',
-            'id_empresa' => 'required',
-        ],[
-            // 'nombre.required' => 'Agregue un nombre.',
-            // 'costo.required' => 'Agregue el costo.'
-        ]);
 
         if($request->id)
             $paquete = Paquete::findOrFail($request->id);
@@ -175,13 +155,7 @@ class PaquetesController extends Controller
     }
 
 
-    public function import(Request $request){
-        
-        $request->validate([
-            'file'          => 'required',
-        ],[
-            'file.required' => 'El documento es obligatorio.'
-        ]);
+    public function import(ImportPaquetesRequest $request){
 
         $import = new Paquetes();
         Excel::import($import, $request->file);

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Authorization\AuthorizationType;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Http\Requests\Authorization\StoreAuthorizationTypeRequest;
+use App\Http\Requests\Authorization\AssignUsersRequest;
 
 class AuthorizationTypeController extends Controller
 {
@@ -18,15 +20,8 @@ class AuthorizationTypeController extends Controller
         return response()->json($types);
     }
 
-    public function store(Request $request)
+    public function store(StoreAuthorizationTypeRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|unique:authorization_types',
-            'display_name' => 'required|string',
-            'description' => 'nullable|string',
-            'conditions' => 'nullable|array',
-            'expiration_hours' => 'required|integer|min:1'
-        ]);
 
         $type = AuthorizationType::create($request->all());
 
@@ -37,12 +32,8 @@ class AuthorizationTypeController extends Controller
         ]);
     }
 
-    public function assignUsers(Request $request, $typeId)
+    public function assignUsers(AssignUsersRequest $request, $typeId)
     {
-        $request->validate([
-            'user_ids' => 'required|array',
-            'user_ids.*' => 'exists:users,id'
-        ]);
 
         $type = AuthorizationType::findOrFail($typeId);
         $type->users()->sync($request->user_ids);

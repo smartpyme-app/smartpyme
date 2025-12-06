@@ -14,24 +14,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\WebhookN1coRequest;
 
 class WebhookN1coController extends Controller
 {
-    public function handle(Request $request)
+    public function handle(WebhookN1coRequest $request)
     {
         try {
-
-            // Log::debug('N1co Webhook: Configuration', [
-            //     'secret_configured' => !empty(config('services.nico.webhook_secret')),
-            //     'secret_length' => strlen(config('services.nico.webhook_secret'))
-            // ]);
-            // // Log inicial de la solicitud
-            // Log::info('N1co Webhook: Request received', [
-            //     'headers' => $request->headers->all(),
-            //     'content' => $request->getContent(),
-            //     'raw_payload' => $request->all()
-            // ]);
-
             // Verificar la firma del webhook
             $signature = $request->header('X-H4B-Hmac-Sha256');
             if (!$signature) {
@@ -48,15 +37,6 @@ class WebhookN1coController extends Controller
             }
 
             $payload = $request->all();
-
-            // Validar estructura del payload
-            $requiredFields = ['orderId', 'description', 'level', 'type'];
-            foreach ($requiredFields as $field) {
-                if (!isset($payload[$field])) {
-                    Log::error('N1co Webhook: Missing required field', ['field' => $field]);
-                    return response()->json(['error' => "Missing required field: {$field}"], 400);
-                }
-            }
 
             // Registrar la recepción del webhook
             Log::info('N1co Webhook: Processing event', [

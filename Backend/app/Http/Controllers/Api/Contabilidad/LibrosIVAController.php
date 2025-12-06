@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Contabilidad;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Http\Requests\Contabilidad\LibrosIVA\BaseLibroIVARequest;
 
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Devoluciones\Devolucion as DevolucionVenta;
@@ -208,7 +209,7 @@ class LibrosIVAController extends Controller
         return null;
     }
 
-    public function consumidores(Request $request)
+    public function consumidores(BaseLibroIVARequest $request)
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
@@ -332,7 +333,7 @@ class LibrosIVAController extends Controller
         return response()->json($libroconsumidores, 200);
     }
 
-    public function consumidoresLibroExport(Request $request)
+    public function consumidoresLibroExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
@@ -344,7 +345,7 @@ class LibrosIVAController extends Controller
         return Excel::download($consumidores, 'LibroConsumidoresExport.xlsx');
     }
 
-    public function consumidoresAnexoExport(Request $request)
+    public function consumidoresAnexoExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request, ['Factura', 'Factura de exportación'])) {
             return $alerta;
@@ -356,7 +357,7 @@ class LibrosIVAController extends Controller
         return Excel::download($consumidores, 'AnexoConsumidoresExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
-    public function contribuyentes(Request $request)
+    public function contribuyentes(BaseLibroIVARequest $request)
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
@@ -492,7 +493,7 @@ class LibrosIVAController extends Controller
         return response()->json($librocontribuyentes, 200);
     }
 
-    public function contribuyentesLibroExport(Request $request)
+    public function contribuyentesLibroExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
@@ -504,7 +505,7 @@ class LibrosIVAController extends Controller
         return Excel::download($contribuyentes, 'LibroContribuyentesExport.xlsx');
     }
 
-    public function contribuyentesAnexoExport(Request $request)
+    public function contribuyentesAnexoExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request, ['Crédito fiscal'])) {
             return $alerta;
@@ -517,7 +518,7 @@ class LibrosIVAController extends Controller
 
     }
 
-    public function anulados(Request $request)
+    public function anulados(BaseLibroIVARequest $request)
     {
 
         $ventas = Venta::with(['cliente', 'documento'])
@@ -559,7 +560,7 @@ class LibrosIVAController extends Controller
         return response()->json($ivas, 200);
     }
 
-    public function anuladosLibroExport(Request $request)
+    public function anuladosLibroExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -571,7 +572,7 @@ class LibrosIVAController extends Controller
         return Excel::download($anulados, 'LibroAnuladosExport.xlsx');
     }
 
-    public function anuladosAnexoExport(Request $request)
+    public function anuladosAnexoExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -583,7 +584,7 @@ class LibrosIVAController extends Controller
         return Excel::download($anulados, 'AnexoAnuladosExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
-    public function compras(Request $request)
+    public function compras(BaseLibroIVARequest $request)
     {
 
         // Obtener las compras
@@ -775,7 +776,7 @@ class LibrosIVAController extends Controller
     }
 
 
-    public function comprasLibroExport(Request $request)
+    public function comprasLibroExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -787,7 +788,7 @@ class LibrosIVAController extends Controller
         return Excel::download($compras, 'LibroComprasExport.xlsx');
     }
 
-    public function comprasAnexoExport(Request $request)
+    public function comprasAnexoExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -799,7 +800,7 @@ class LibrosIVAController extends Controller
         return Excel::download($compras, 'AnexoComprasExport.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
-    public function comprasSujetosExcluidos(Request $request)
+    public function comprasSujetosExcluidos(BaseLibroIVARequest $request)
     {
 
         // Obtener las compras
@@ -889,7 +890,7 @@ class LibrosIVAController extends Controller
     }
 
 
-    public function comprasSujetosExcluidosLibroExport(Request $request)
+    public function comprasSujetosExcluidosLibroExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -901,7 +902,7 @@ class LibrosIVAController extends Controller
         return Excel::download($compras, 'LibroSujetosExcluidos.xlsx');
     }
 
-    public function comprasSujetosExcluidosAnexoExport(Request $request)
+    public function comprasSujetosExcluidosAnexoExport(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -913,7 +914,7 @@ class LibrosIVAController extends Controller
         return Excel::download($compras, 'AnexoSujetosExcluidos.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
-    public function GlobalDttesExport(Request $request)
+    public function GlobalDttesExport(BaseLibroIVARequest $request)
     {
         try {
 
@@ -967,7 +968,7 @@ class LibrosIVAController extends Controller
         }
     }
 
-    public function libroRetencion1Export(Request $request)
+    public function libroRetencion1Export(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -980,7 +981,7 @@ class LibrosIVAController extends Controller
     }
 
 
-    public function libroPercepcion1Export(Request $request)
+    public function libroPercepcion1Export(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -992,7 +993,7 @@ class LibrosIVAController extends Controller
         return Excel::download($percepcion, 'LibroPercepcion1.xlsx');
     }
 
-    public function anexoRetencion1Export(Request $request)
+    public function anexoRetencion1Export(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;
@@ -1004,7 +1005,7 @@ class LibrosIVAController extends Controller
         return Excel::download($retencion, 'AnexoRetencion1.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 
-    public function anexoPercepcion1Export(Request $request)
+    public function anexoPercepcion1Export(BaseLibroIVARequest $request)
     {
         if ($alerta = $this->validarVentasPendientes($request)) {
             return $alerta;

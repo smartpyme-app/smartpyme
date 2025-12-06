@@ -9,6 +9,8 @@ use JWTAuth;
 use App\Models\Admin\Empresa;
 use App\Models\Admin\FormaDePago;
 use App\Models\Wompi;
+use App\Http\Requests\Admin\FormasDePagos\StoreFormaDePagoRequest;
+use App\Http\Requests\Admin\FormasDePagos\WompiRequest;
 
 class FormasDePagosController extends Controller
 {
@@ -43,14 +45,8 @@ class FormasDePagosController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreFormaDePagoRequest $request)
     {
-
-        $this->validate($request, [
-            'nombre'        => 'required|string|max:150',
-            'orden'         => 'numeric|nullable',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if($request->id)
             $formasDePago = FormaDePago::findOrFail($request->id);
@@ -75,13 +71,7 @@ class FormasDePagosController extends Controller
     }
 
 
-    public function wompi(Request $request){
-
-        $this->validate($request, [
-            'wompi_id'              => 'required|string|max:255',
-            'wompi_aplicativo'      => 'required|string|max:255',
-            'wompi_secret'          => 'required|string|max:255',
-        ]);
+    public function wompi(WompiRequest $request){
 
         $empresa = Empresa::findOrfail($request->id);
         $empresa->fill($request->all());

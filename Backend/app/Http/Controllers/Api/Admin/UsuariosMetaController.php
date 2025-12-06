@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Admin\EmpleadoMeta;
+use App\Http\Requests\Admin\UsuariosMeta\StoreEmpleadoMetaRequest;
 
 class UsuariosMetaController extends Controller
 {
@@ -27,14 +28,8 @@ class UsuariosMetaController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreEmpleadoMetaRequest $request)
     {
-        $request->validate([
-            'mes'   => 'required|numeric',
-            'ano'   => 'required|numeric',
-            'meta'  => 'required|numeric',
-            'usuario_id' => 'required|numeric'
-        ]);
 
         if($request->id)
             $meta = EmpleadoMeta::findOrFail($request->id);

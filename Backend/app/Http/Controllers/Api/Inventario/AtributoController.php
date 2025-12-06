@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\Inventario\StoreAtributoRequest;
 
 class AtributoController extends Controller
 {
@@ -38,20 +39,8 @@ class AtributoController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreAtributoRequest $request)
     {
-        $request->validate(
-            [
-                'tipo' => 'required|max:255',
-                'valor' => 'required|max:255',
-            ],
-            [
-                'tipo.required' => 'El tipo es obligatorio.',
-                'tipo.max' => 'El tipo no debe superar los 255 caracteres.',
-                'valor.required' => 'El valor es obligatorio.',
-                'valor.max' => 'El valor no debe superar los 255 caracteres.',
-            ]
-        );
 
         try {
             //DB

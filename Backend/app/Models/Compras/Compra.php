@@ -88,14 +88,20 @@ class Compra extends Model {
 
     public function getNombreSucursalAttribute()
     {
-        if ($this->sucursal()->first()) {
-            return $this->sucursal()->pluck('nombre')->first();
+        if (!$this->relationLoaded('sucursal')) {
+            return $this->sucursal()->pluck('nombre')->first() ?? '';
         }
-        return '';
+        return $this->sucursal ? $this->sucursal->nombre : '';
     }
 
     public function getNombreProveedorAttribute()
-    {   $proveedor = $this->proveedor()->first();
+    {
+        if (!$this->relationLoaded('proveedor')) {
+            $proveedor = $this->proveedor()->first();
+        } else {
+            $proveedor = $this->proveedor;
+        }
+        
         if ($proveedor) {
             return $proveedor->tipo == 'Empresa' ? $proveedor->nombre_empresa : $proveedor->nombre . ' ' . $proveedor->apellido;
         }
@@ -104,17 +110,26 @@ class Compra extends Model {
 
     public function getNombreUsuarioAttribute()
     {
-        return $this->usuario()->pluck('name')->first();
+        if (!$this->relationLoaded('usuario')) {
+            return $this->usuario()->pluck('name')->first();
+        }
+        return $this->usuario ? $this->usuario->name : null;
     }
 
     public function getNombreProyectoAttribute()
     {
+        if (!$this->relationLoaded('proyecto')) {
+            return $this->proyecto()->pluck('nombre')->first();
+        }
         return $this->proyecto ? $this->proyecto->nombre : null;
     }
 
     public function getEmpresaNombreAttribute()
     {
-        return $this->empresa->nombre ?? '';
+        if (!$this->relationLoaded('empresa')) {
+            return $this->empresa()->pluck('nombre')->first() ?? '';
+        }
+        return $this->empresa ? $this->empresa->nombre : '';
     }
 
     public function bodega(){
@@ -158,5 +173,19 @@ class Compra extends Model {
         return $this->hasOne('App\Models\Compras\Retaceo\Retaceo', 'id_compra');
     }
 
+    /**
+     * Scope para cargar todas las relaciones necesarias para los accessors
+     * Evita N+1 queries cuando se listan múltiples compras
+     */
+    public function scopeWithAccessorRelations($query)
+    {
+        return $query->with([
+            'proveedor',
+            'usuario',
+            'sucursal',
+            'proyecto',
+            'empresa'
+        ]);
+    }
 
 }

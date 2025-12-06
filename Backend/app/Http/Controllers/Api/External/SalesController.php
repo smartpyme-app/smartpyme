@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Ventas\Venta;
 use Illuminate\Http\Request;
 use App\Http\Resources\External\SaleResource;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\External\Sales\IndexSalesRequest;
+use App\Http\Requests\External\Sales\SummarySalesRequest;
 
 /**
  * @OA\Info(
@@ -129,27 +130,9 @@ class SalesController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request)
+    public function index(IndexSalesRequest $request)
     {
         try {
-            // Validar parámetros de entrada
-            $validator = Validator::make($request->all(), [
-                'fecha_inicio' => 'nullable|date|date_format:Y-m-d',
-                'fecha_fin' => 'nullable|date|date_format:Y-m-d|after_or_equal:fecha_inicio',
-                'estado' => 'nullable|string|in:Completada,Pendiente,Anulada,Cotizacion',
-                'page' => 'nullable|integer|min:1',
-                'per_page' => 'nullable|integer|min:1|max:200',
-                'order_by' => 'nullable|string|in:fecha,total,correlativo,created_at',
-                'order_direction' => 'nullable|string|in:asc,desc',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors()
-                ], 400);
-            }
 
             // Obtener empresa desde el middleware
             $empresa = $request->attributes->get('empresa');
@@ -302,23 +285,9 @@ class SalesController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function summary(Request $request)
+    public function summary(SummarySalesRequest $request)
     {
         try {
-            // Validar parámetros de entrada
-            $validator = Validator::make($request->all(), [
-                'fecha_inicio' => 'nullable|date|date_format:Y-m-d',
-                'fecha_fin' => 'nullable|date|date_format:Y-m-d|after_or_equal:fecha_inicio',
-                'estado' => 'nullable|string|in:Completada,Pendiente,Anulada,Cotizacion',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Parámetros inválidos',
-                    'details' => $validator->errors()
-                ], 400);
-            }
 
             // Obtener empresa desde el middleware
             $empresa = $request->attributes->get('empresa');

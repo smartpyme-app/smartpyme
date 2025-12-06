@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Ventas\Venta as Cotizacion;
 use App\Models\Ventas\Detalle;
 use Carbon\Carbon;
+use App\Http\Requests\Ventas\Cotizaciones\StoreDetalleCotizacionRequest;
 
 class DetallesController extends Controller
 {
@@ -58,20 +59,8 @@ class DetallesController extends Controller
             return Response()->json($detalles, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreDetalleCotizacionRequest $request)
     {
-
-        $request->validate([
-            'producto_id'   => 'required|numeric',
-            // 'estado'        => 'required|max:255',
-            'cantidad'      => 'required|numeric',
-            'precio'        => 'required|numeric',
-            'costo'         => 'required|numeric',
-            'descuento'     => 'required|numeric',
-            'total'         => 'required|numeric',
-            'nota'          => 'sometimes|max:255',
-            'venta_id'    => 'required|required'
-        ]);
 
         if($request->id)
             $detalle = Detalle::findOrFail($request->id);

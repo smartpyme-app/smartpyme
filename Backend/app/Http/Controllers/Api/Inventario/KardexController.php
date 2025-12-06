@@ -13,6 +13,9 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\Inventario\KardexExport;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Inventario\Kardex\StoreKardexRequest;
+use App\Http\Requests\Inventario\Kardex\SolicitarMasivoKardexRequest;
+use App\Http\Requests\Inventario\Kardex\EstadoColaKardexRequest;
 
 class KardexController extends Controller
 {
@@ -55,22 +58,8 @@ class KardexController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreKardexRequest $request)
     {
-        $request->validate([
-            'fecha'         => 'required',
-            'id_producto'   => 'required',
-            'id_sucursal' => 'required|numeric',
-            'detalle'       => 'required',
-            'referencia'    => 'sometimes|max:255',
-            'entrada_cantidad'      => 'required|numeric',
-            'entrada_valor'         => 'required|numeric',
-            'salida_cantidad'      => 'required|numeric',
-            'salida_valor'         => 'required|numeric',
-            'total_cantidad'      => 'required|numeric',
-            'total_valor'         => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-        ]);
 
         if ($request->id)
             $kardex = Kardex::findOrFail($request->id);
@@ -135,16 +124,8 @@ class KardexController extends Controller
         }
     }
 
-    public function solicitarMasivo(Request $request)
+    public function solicitarMasivo(SolicitarMasivoKardexRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'id_empresa' => 'required|integer'
-        ], [
-            'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email' => 'Debe ser un correo electrónico válido.',
-            'id_empresa.required' => 'El ID de empresa es obligatorio.'
-        ]);
 
         try {
             // Crear registro en la cola para procesamiento en segundo plano
@@ -168,11 +149,8 @@ class KardexController extends Controller
         }
     }
 
-    public function estadoCola(Request $request)
+    public function estadoCola(EstadoColaKardexRequest $request)
     {
-        $request->validate([
-            'id_empresa' => 'required|integer'
-        ]);
 
         try {
             $estados = KardexMasivoQueue::where('id_empresa', $request->id_empresa)

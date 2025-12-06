@@ -14,6 +14,8 @@ use App\Exports\GastosExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Compras\Proveedores\Proveedor as ProveedorToGasto;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Compras\Gastos\StoreGastoRequest;
+use App\Http\Requests\Compras\Gastos\ImportarJsonGastoRequest;
 
 class GastosController extends Controller
 {
@@ -142,30 +144,8 @@ class GastosController extends Controller
         return Response()->json($gastos, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreGastoRequest $request)
     {
-
-        $request->validate([
-            'fecha'         => 'required|date',
-            'concepto'      => 'sometimes|max:255',
-            'tipo_documento'     => 'required|max:255',
-            'forma_pago'     => 'required|max:255',
-            'estado'     => 'required|max:255',
-            'total'         => 'required|numeric',
-            'id_categoria'    => 'required|numeric',
-            'id_proveedor'    => 'required|numeric',
-            'id_usuario'    => 'required|numeric',
-            'id_sucursal'   => 'required|numeric',
-            'id_empresa'   => 'required|numeric',
-            'otros_impuestos' => 'nullable',
-            'area_empresa'   => 'nullable',
-            'id_area_empresa'   => 'nullable',
-        ],[
-            'id_categoria.required' => 'El campo categoria es obligatorio.',
-            'id_proveedor.required' => 'El campo proveedor es obligatorio.',
-            'id_usuario.required' => 'El campo usuario es obligatorio.',
-            'id_empresa.required' => 'El campo empresa es obligatorio.'
-        ]);
 
         if ($request->id)
             $gasto = Gasto::findOrFail($request->id);
@@ -254,11 +234,8 @@ class GastosController extends Controller
      * @param Request $request
      * @return Response
      */
-    public function importarJson(Request $request)
+    public function importarJson(ImportarJsonGastoRequest $request)
     {
-        $request->validate([
-            'json_data' => 'required|json',
-        ]);
 
         try {
             $jsonData = json_decode($request->json_data, true);

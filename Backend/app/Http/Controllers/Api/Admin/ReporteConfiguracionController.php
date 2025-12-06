@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Requests\Admin\ReporteConfiguracion\StoreReporteConfiguracionRequest;
+use App\Http\Requests\Admin\ReporteConfiguracion\UpdateEstadoReporteConfiguracionRequest;
+use App\Http\Requests\Admin\ReporteConfiguracion\EnviarPruebaReporteRequest;
+use App\Http\Requests\Admin\ReporteConfiguracion\ExportarReporteRequest;
+use App\Http\Requests\Admin\ReporteConfiguracion\ExportarPDFReporteRequest;
 
 
 class ReporteConfiguracionController extends Controller
@@ -42,32 +47,8 @@ class ReporteConfiguracionController extends Controller
         return $query->paginate($paginate);
     }
 
-    public function store(Request $request)
+    public function store(StoreReporteConfiguracionRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nombre_reporte' => 'nullable|string',
-            'tipo_reporte' => 'required|string',
-            'frecuencia' => 'required|in:diario,semanal,mensual',
-            'destinatarios' => 'required|array|min:1',
-            'destinatarios.*' => 'email',
-            'sucursales' => 'nullable|array',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
-        }
-
-        if ($request->frecuencia === 'semanal' && empty($request->dias_semana)) {
-            return response()->json(['error' => 'Debe seleccionar al menos un día de la semana'], 422);
-        }
-
-        if ($request->frecuencia === 'mensual' && !$request->dia_mes) {
-            return response()->json(['error' => 'Debe seleccionar un día del mes'], 422);
-        }
-
-        if (!$request->envio_matutino && !$request->envio_mediodia && !$request->envio_nocturno) {
-            return response()->json(['error' => 'Debe seleccionar al menos un horario de envío'], 422);
-        }
 
         $datos = $request->all();
         $datos['id_empresa'] = Auth::user()->id_empresa;
@@ -138,19 +119,11 @@ class ReporteConfiguracionController extends Controller
         return response()->json($configuracion, 200);
     }
 
-    public function updateEstado(Request $request, $id)
+    public function updateEstado(UpdateEstadoReporteConfiguracionRequest $request, $id)
     {
         $configuracion = ReporteConfiguracion::findOrFail($id);
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para modificar esta configuración'], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'activo' => 'required|boolean',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
         }
 
         if ($request->activo) {
@@ -253,25 +226,12 @@ class ReporteConfiguracionController extends Controller
     }
 
 
-    public function enviarPrueba(Request $request)
+    public function enviarPrueba(EnviarPruebaReporteRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id_configuracion' => 'required|exists:reporte_configuraciones,id',
-            'email_prueba' => 'nullable|email',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
-        }
-
         $configuracion = ReporteConfiguracion::findOrFail($request->id_configuracion);
 
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
-        }
-
-        if (!$request->fecha_inicio || !$request->fecha_fin) {
-            return response()->json(['error' => 'Debe seleccionar un período válido'], 422);
         }
 
         $fecha_inicio = $request->fecha_inicio;
@@ -338,29 +298,16 @@ class ReporteConfiguracionController extends Controller
         }
     }
 
-    public function exportar(Request $request)
+    public function exportar(ExportarReporteRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'id' => 'required|exists:reporte_configuraciones,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['error' => $validator->errors()], 422);
-        }
-
         $configuracion = ReporteConfiguracion::findOrFail($request->id);
 
         if ($configuracion->id_empresa !== Auth::user()->id_empresa) {
             return response()->json(['error' => 'No tiene permiso para usar esta configuración'], 403);
         }
 
-
         $fecha_inicio = $request->fecha_inicio;
         $fecha_fin = $request->fecha_fin;
-
-        if (!$fecha_inicio || !$fecha_fin) {
-            return response()->json(['error' => 'Debe especificar fechas de inicio y fin'], 422);
-        }
 
         try {
             switch ($configuracion->tipo_reporte) {
@@ -392,7 +339,7 @@ class ReporteConfiguracionController extends Controller
         }
     }
 
-    public function exportarPDF(Request $request)
+    public function exportarPDF(ExportarPDFReporteRequest $request)
     {
         // Iniciar el registro de logs
         Log::info('Iniciando exportación de PDF', [
@@ -400,13 +347,8 @@ class ReporteConfiguracionController extends Controller
         ]);
         
         try {
-            // Validar datos de entrada
-            $validatedData = $request->validate([
-                'id' => 'required|integer',
-                'fecha_inicio' => 'required|date',
-                'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-                'sucursales' => 'sometimes|array',
-            ]);
+            // Datos ya validados por el FormRequest
+            $validatedData = $request->validated();
             
             Log::info('Datos validados correctamente', [
                 'validatedData' => $validatedData

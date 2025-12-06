@@ -9,17 +9,14 @@ use App\Models\Inventario\Proveedor;
 use App\Models\Compras\Proveedores\Proveedor as ProveedorToGasto;
 use Illuminate\Support\Facades\Crypt;
 use Auth;
+use App\Http\Requests\Inventario\Proveedor\StoreProveedorRequest;
+use App\Http\Requests\Inventario\Proveedor\BuscarPorNitProveedorRequest;
 
 class ProveedorController extends Controller
 {
 
 
-    public function store(Request $request){
-
-        $this->validate($request, [
-            'id_proveedor'  => 'required|numeric',
-            'id_producto'   => 'required|numeric',
-        ]);
+    public function store(StoreProveedorRequest $request){
 
         $proveedor = new Proveedor;
         $proveedor->fill($request->all());
@@ -31,11 +28,8 @@ class ProveedorController extends Controller
 
     }
 
-    public function buscarPorNit(Request $request)
+    public function buscarPorNit(BuscarPorNitProveedorRequest $request)
     {
-        $request->validate([
-            'nit' => 'required|string',
-        ]);
         
         $proveedor = ProveedorToGasto::where('nit', $request->nit)->first();
         

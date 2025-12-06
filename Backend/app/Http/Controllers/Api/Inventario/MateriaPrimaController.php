@@ -11,6 +11,7 @@ use App\Models\Compras\Compra;
 use App\Models\Compras\Detalle as DetalleCompra;
 use App\Models\Ventas\Venta;
 use App\Models\Ventas\Detalle as DetalleVenta;
+use App\Http\Requests\Inventario\MateriaPrima\StoreMateriaPrimaRequest;
 
 class MateriaPrimaController extends Controller
 {
@@ -70,13 +71,8 @@ class MateriaPrimaController extends Controller
             return Response()->json($materiaPrima, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreMateriaPrimaRequest $request)
     {
-        $request->validate([
-            'nombre'    => 'required|max:255',
-            // 'codigo'     => 'sometimes|unique:productos,codigo,'. $request->id,
-            'empresa_id'    => 'required',
-        ]);
 
         if($request->id)
             $materiaPrima = MateriaPrima::where('tipo', 'Materia Prima')->findOrFail($request->id);

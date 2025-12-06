@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Inventario\Inventario;
 use App\Exports\Inventario\InventarioAFechaExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Requests\Inventario\StoreInventarioRequest;
+use App\Http\Requests\Inventario\ExportInventarioRequest;
 
 class InventariosController extends Controller
 {
@@ -62,29 +64,14 @@ class InventariosController extends Controller
 
     }
 
-    public function store(Request $request) {
+    public function store(StoreInventarioRequest $request) {
 
         try {
-        $request->validate([
-            'id_producto'    => 'required|numeric',
-            'id_sucursal'    => 'nullable|numeric',
-            'id_bodega'      => 'required|numeric',
-            'stock'          => 'required|numeric',
-            'stock_minimo'      => 'required|numeric',
-            'stock_maximo'      => 'required|numeric',
-        ]);
-
-
         if($request->id){
             $inventario = Inventario::findOrFail($request->id);
         }
         else{
-
             $inventario = new Inventario;
-            $existe = Inventario::where('id_producto', $request->id_producto)->where('id_bodega', $request->id_bodega)->first();
-
-            if($existe)
-                return  Response()->json(['error' => 'Ya ha sido configurado el producto en esta bodega', 'code' => 400], 400);
         }
 
         $inventario->fill($request->all());
@@ -139,11 +126,7 @@ class InventariosController extends Controller
 
     }
 
-    public function export(Request $request){
-       $request->validate([
-           'fecha'    => 'required|date',
-       ]);
-
+    public function export(ExportInventarioRequest $request){
         $inventario = new InventarioAFechaExport();
         $inventario->filter($request);
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use JWTAuth;
 use App\Models\Admin\Retencion;
+use App\Http\Requests\Admin\Retenciones\StoreRetencionRequest;
 
 class RetencionesController extends Controller
 {
@@ -27,14 +28,8 @@ class RetencionesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreRetencionRequest $request)
     {
-
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'porcentaje'        => 'required|numeric',
-            'id_empresa'       => 'required|numeric'
-        ]);
 
         if($request->id)
             $retencion = Retencion::findOrFail($request->id);

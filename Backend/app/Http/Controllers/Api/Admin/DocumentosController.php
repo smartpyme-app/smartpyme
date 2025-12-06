@@ -8,6 +8,7 @@ use App\Models\Admin\Documento;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Requests\Admin\Documentos\StoreDocumentoRequest;
 
 class DocumentosController extends Controller
 {
@@ -159,20 +160,8 @@ class DocumentosController extends Controller
     //     }
     // }
 
-    public function store(Request $request)
+    public function store(StoreDocumentoRequest $request)
     {
-        $validated = $request->validate([
-            'nombre' => 'required|max:255',
-            'correlativo' => 'required|max:255',
-            'rangos' => 'sometimes|max:255',
-            'numero_autorizacion' => 'sometimes|max:255',
-            'resolucion' => 'sometimes|max:255',
-            'nota' => 'sometimes|max:500',
-            'id_empresa' => 'required|numeric',
-            'id_sucursal' => 'required|numeric',
-            'nuevaResolucion' => 'sometimes|boolean',
-            'predeterminado' => 'sometimes|boolean',
-        ]);
 
         try {
             DB::beginTransaction();

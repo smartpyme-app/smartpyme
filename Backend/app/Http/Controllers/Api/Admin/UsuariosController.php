@@ -18,8 +18,12 @@ use JWTAuth;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use App\Traits\Authorization\HasAutoAuthorization;
+use App\Http\Requests\Admin\Usuarios\StoreUsuarioRequest;
+use App\Http\Requests\Admin\Usuarios\SaveCredentialsRequest;
+use App\Http\Requests\Admin\Usuarios\UpdateAuthCodeRequest;
+use App\Http\Requests\Admin\Usuarios\UpdateInfoRequest;
+use App\Http\Requests\Admin\Usuarios\UpdateAvatarRequest;
 
 class UsuariosController extends Controller
 {
@@ -117,27 +121,8 @@ class UsuariosController extends Controller
     }
 
 
-    public function store(Request $request)
+    public function store(StoreUsuarioRequest $request)
     {
-        $request->validate([
-            'name'          => 'required|max:255',
-            'email'         => 'required|unique:users,email,'.$request->id,
-            'tipo'          => 'required',
-            'id_empresa'    => 'required',
-            'id_sucursal'   => 'required',
-            'id_bodega'     => 'required',
-            'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
-            'password'      => [
-                'required_if:id,null',
-                'confirmed',
-                'min:8',
-                'regex:/[a-z]/',
-                'regex:/[A-Z]/',
-                'regex:/[0-9]/',
-                'regex:/[!@#$%^&*()_+{}\[\]:;<>,.?~\\-]/',
-            ],
-
-        ]);
 
         if ($request->id && $request->rol_id) {
             $usuario = Usuario::findOrFail($request->id);
@@ -159,12 +144,6 @@ class UsuariosController extends Controller
 
         if ($request->password) {
             $request['password'] = Hash::make($request->password);
-        }
-
-        if ($request->has('whatsapp_verified')) {
-            $request->merge([
-                'whatsapp_verified' => filter_var($request->whatsapp_verified, FILTER_VALIDATE_BOOLEAN)
-            ]);
         }
 
         $usuario->fill($request->all());
@@ -235,40 +214,10 @@ class UsuariosController extends Controller
     }
 
 
-    public function saveCredentials(Request $request)
+    public function saveCredentials(SaveCredentialsRequest $request)
     {
         try {
-
-            $rules = [
-                'tipo' => 'required|in:woocommerce,shopify',
-                'canal_id' => 'required|numeric'
-            ];
-
-            $messages = [
-                'tipo.required' => 'El tipo de integración es obligatorio',
-                'tipo.in' => 'El tipo debe ser woocommerce o shopify',
-                'canal_id.required' => 'El Canal es obligatorio',
-                'canal_id.numeric' => 'El Canal debe ser numérico'
-            ];
-
-            if ($request->tipo === 'woocommerce') {
-                $rules['store_url'] = 'required|url';
-                $rules['consumer_key'] = 'required|string';
-                $rules['consumer_secret'] = 'required|string';
-
-                $messages['store_url.required'] = 'La URL de la tienda es obligatoria';
-                $messages['store_url.url'] = 'La URL de la tienda debe ser una dirección válida';
-                $messages['consumer_key.required'] = 'La Consumer Key es obligatoria';
-                $messages['consumer_secret.required'] = 'El Consumer Secret es obligatorio';
-            } else { // shopify
-                $rules['store_url'] = 'required|string';
-                $rules['consumer_secret'] = 'required|string';
-
-                $messages['store_url.required'] = 'La URL de la tienda es obligatoria';
-                $messages['consumer_secret.required'] = 'El Consumer Secret es obligatorio';
-            }
-
-            $request->validate($rules, $messages);
+            // La validación se maneja automáticamente por el FormRequest
 
             $id_usuario = Auth::user()->id;
             $empresa = Empresa::find(Auth::user()->id_empresa);
@@ -358,12 +307,6 @@ class UsuariosController extends Controller
                     'platform' => $tipo
                 ], 500);
             }
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'mensaje' => 'Error de validación',
-                'errors' => $e->errors(),
-            ], 422);
         } catch (\Exception $e) {
             if (isset($empresa) && isset($tipo)) {
                 $statusField = $tipo . '_status';
@@ -503,16 +446,12 @@ class UsuariosController extends Controller
     }
 
 
-    public function updateAuthCode(Request $request, $id)
+    public function updateAuthCode(UpdateAuthCodeRequest $request, $id)
     {
 
         if ($response = $this->checkAuth('change_auth_code', ['id_usuario' => $id])) {
             return $response;
         }
-
-        $request->validate([
-            'codigo_autorizacion' => 'required|numeric|digits_between:3,10'
-        ]);
 
         $user = User::findOrFail($id);
         $user->codigo_autorizacion = $request->codigo_autorizacion;
@@ -530,16 +469,9 @@ class UsuariosController extends Controller
         ], 403);
     }
 
-    public function updateInfo(Request $request)
+    public function updateInfo(UpdateInfoRequest $request)
     {
         Log::info('updateInfo', $request->all());
-        $request->validate([
-            'name' => 'required',
-            'telefono'      => 'sometimes|nullable|unique:users,telefono,' . $request->id,
-            'tipo' => 'required',
-            'codigo' => 'sometimes|nullable',
-            'id_sucursal' => 'required',
-        ]);
 
 
         $user = Usuario::findOrFail($request->id);
@@ -548,11 +480,8 @@ class UsuariosController extends Controller
         return Response()->json($user, 200);
     }
 
-    public function updateAvatar(Request $request)
+    public function updateAvatar(UpdateAvatarRequest $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:jpeg,png,jpg,gif,svg'
-        ]);
         $user = Usuario::findOrFail($request->id);
 
         if ($request->hasFile('file')) {

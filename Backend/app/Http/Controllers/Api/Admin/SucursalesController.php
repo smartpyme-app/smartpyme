@@ -10,6 +10,7 @@ use App\Models\Inventario\Inventario;
 use App\Models\Inventario\Producto;
 use Illuminate\Support\Facades\Log;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\Admin\Sucursales\StoreSucursalRequest;
 
 class SucursalesController extends Controller
 {
@@ -93,12 +94,8 @@ class SucursalesController extends Controller
         return Response()->json($sucursal, 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreSucursalRequest $request)
     {
-        $request->validate([
-            'nombre'        => 'required|max:255',
-            'id_empresa'    => 'required|numeric',
-        ]);
 
         if ($request->id)
             $sucursal = Sucursal::findOrFail($request->id);

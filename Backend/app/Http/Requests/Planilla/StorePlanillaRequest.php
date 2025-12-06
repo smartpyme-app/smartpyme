@@ -20,10 +20,10 @@ class StorePlanillaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'fecha_inicio' => 'required|date',
-            'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'tipo_planilla' => 'required|in:quincenal,mensual,semanal',
-            'planillaTemplate' => 'nullable|exists:planillas,id'
+            'fecha_inicio' => ['required', 'date'],
+            'fecha_fin' => ['required', 'date'],
+            'tipo_planilla' => ['required', 'string', 'in:quincenal,mensual,semanal'],
+            'planillaTemplate' => ['nullable', 'integer', 'exists:planillas,id'],
         ];
     }
 
@@ -33,15 +33,13 @@ class StorePlanillaRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'fecha_inicio.required' => 'La fecha de inicio es requerida',
-            'fecha_inicio.date' => 'La fecha de inicio debe ser una fecha válida',
-            'fecha_fin.required' => 'La fecha de fin es requerida',
-            'fecha_fin.date' => 'La fecha de fin debe ser una fecha válida',
-            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
-            'tipo_planilla.required' => 'El tipo de planilla es requerido',
-            'tipo_planilla.in' => 'El tipo de planilla debe ser: quincenal, mensual o semanal',
-            'planillaTemplate.exists' => 'La planilla template seleccionada no existe'
+            'fecha_inicio.required' => 'La fecha de inicio es requerida.',
+            'fecha_inicio.date' => 'La fecha de inicio debe ser una fecha válida.',
+            'fecha_fin.required' => 'La fecha de fin es requerida.',
+            'fecha_fin.date' => 'La fecha de fin debe ser una fecha válida.',
+            'tipo_planilla.required' => 'El tipo de planilla es requerido.',
+            'tipo_planilla.in' => 'El tipo de planilla debe ser: quincenal, mensual o semanal.',
+            'planillaTemplate.exists' => 'La planilla plantilla seleccionada no existe.',
         ];
     }
 }
-

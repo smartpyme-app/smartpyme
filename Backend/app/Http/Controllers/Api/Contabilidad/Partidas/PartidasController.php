@@ -23,6 +23,18 @@ use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Http\Requests\Contabilidad\Partidas\StorePartidaRequest;
+use App\Http\Requests\Contabilidad\Partidas\ReordenarCorrelativosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarIngresosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarCxCRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarEgresosRequest;
+use App\Http\Requests\Contabilidad\Partidas\GenerarCxPRequest;
+use App\Http\Requests\Contabilidad\Partidas\CerrarPartidasRequest;
+use App\Http\Requests\Contabilidad\Partidas\AbrirPartidaRequest;
+use App\Http\Requests\Contabilidad\Partidas\ReabrirPeriodoRequest;
+use App\Http\Requests\Contabilidad\Partidas\VerificarEstadoPeriodoRequest;
+use App\Http\Requests\Contabilidad\Partidas\ObtenerBalanceComprobacionRequest;
+use App\Http\Requests\Contabilidad\Partidas\SimularCierreMesRequest;
 
 class PartidasController extends Controller
 {
@@ -141,27 +153,27 @@ class PartidasController extends Controller
     public function read($id) {
         // Optimizar carga de detalles para evitar problemas con partidas grandes
         $partida = Partida::where('id', $id)->firstOrFail();
-        
+
         // Contar total de detalles
         $totalDetalles = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)->count();
-        
+
         // Calcular totales desde la base de datos (más eficiente)
         $totales = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)
             ->selectRaw('COALESCE(SUM(debe), 0) as total_debe, COALESCE(SUM(haber), 0) as total_haber')
             ->first();
-        
+
         // Cargar solo los primeros 100 detalles para evitar problemas de memoria
         $perPage = 100;
         $detalles = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)
-            ->select(['id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 
+            ->select(['id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta',
                      'concepto', 'debe', 'haber', 'saldo', 'created_at', 'updated_at'])
             ->orderBy('id')
             ->limit($perPage)
             ->get();
-        
+
         // Asignar detalles a la partida
         $partida->setRelation('detalles', $detalles);
-        
+
         // Agregar información de paginación y totales
         $partida->total_detalles = $totalDetalles;
         $partida->detalles_cargados = $detalles->count();
@@ -169,7 +181,7 @@ class PartidasController extends Controller
         $partida->per_page = $perPage;
         $partida->total_debe = $totales->total_debe ?? 0;
         $partida->total_haber = $totales->total_haber ?? 0;
-        
+
         \Log::info('Partida cargada', [
             'partida_id' => $id,
             'total_detalles' => $totalDetalles,
@@ -177,10 +189,10 @@ class PartidasController extends Controller
             'tiene_mas_detalles' => $partida->tiene_mas_detalles,
             'memoria_mb' => round(memory_get_usage(true) / 1024 / 1024, 2)
         ]);
-        
+
         return Response()->json($partida, 200);
     }
-    
+
     /**
      * Obtener detalles paginados de una partida
      */
@@ -189,32 +201,32 @@ class PartidasController extends Controller
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100'
         ]);
-        
+
         $page = $request->get('page', 1);
         $perPage = $request->get('per_page', 100);
         $offset = ($page - 1) * $perPage;
-        
+
         // Verificar que la partida existe
         $partida = Partida::where('id', $id)->firstOrFail();
-        
+
         // Contar total de detalles
         $totalDetalles = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)->count();
-        
+
         // Calcular última página correctamente
         $lastPage = (int)ceil($totalDetalles / $perPage);
-        
+
         // Obtener detalles paginados
         $detalles = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)
-            ->select(['id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 
+            ->select(['id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta',
                      'concepto', 'debe', 'haber', 'saldo', 'created_at', 'updated_at'])
             ->orderBy('id')
             ->offset($offset)
             ->limit($perPage)
             ->get();
-        
+
         // Calcular si hay más páginas
         $hasMore = $page < $lastPage;
-        
+
         \Log::info('Detalles paginados solicitados', [
             'partida_id' => $id,
             'page' => $page,
@@ -225,7 +237,7 @@ class PartidasController extends Controller
             'last_page' => $lastPage,
             'has_more' => $hasMore
         ]);
-        
+
         return Response()->json([
             'detalles' => $detalles,
             'pagination' => [
@@ -237,7 +249,7 @@ class PartidasController extends Controller
             ]
         ], 200);
     }
-    
+
     /**
      * Recalcular totales considerando detalles modificados
      * Recibe los detalles modificados y recalcula los totales sumando:
@@ -251,13 +263,13 @@ class PartidasController extends Controller
             'detalles_modificados.*.debe' => 'sometimes|nullable|numeric',
             'detalles_modificados.*.haber' => 'sometimes|nullable|numeric',
         ]);
-        
+
         // Obtener todos los detalles de la partida desde la BD
         $todosDetallesBD = \App\Models\Contabilidad\Partidas\Detalle::where('id_partida', $id)
             ->select(['id', 'debe', 'haber'])
             ->get()
             ->keyBy('id');
-        
+
         // Crear un mapa de los detalles modificados
         $detallesModificadosMap = [];
         foreach ($request->detalles_modificados as $detalleModificado) {
@@ -268,11 +280,11 @@ class PartidasController extends Controller
                 ];
             }
         }
-        
+
         // Calcular totales: usar valores modificados si existen, sino usar valores de BD
         $totalDebe = 0;
         $totalHaber = 0;
-        
+
         foreach ($todosDetallesBD as $idDetalle => $detalleBD) {
             if (isset($detallesModificadosMap[$idDetalle])) {
                 // Usar valor modificado
@@ -283,15 +295,15 @@ class PartidasController extends Controller
                 $debe = $detalleBD->debe;
                 $haber = $detalleBD->haber;
             }
-            
+
             // Normalizar valores null a 0
             $debe = $debe === null || $debe === '' ? 0 : (float)$debe;
             $haber = $haber === null || $haber === '' ? 0 : (float)$haber;
-            
+
             $totalDebe += $debe;
             $totalHaber += $haber;
         }
-        
+
         \Log::info('Totales recalculados', [
             'partida_id' => $id,
             'detalles_modificados' => count($detallesModificadosMap),
@@ -300,7 +312,7 @@ class PartidasController extends Controller
             'total_haber' => $totalHaber,
             'diferencia' => $totalDebe - $totalHaber
         ]);
-        
+
         return Response()->json([
             'total_debe' => round($totalDebe, 2),
             'total_haber' => round($totalHaber, 2),
@@ -308,27 +320,18 @@ class PartidasController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
+    public function store(StorePartidaRequest $request)
     {
+
+        DB::beginTransaction();
+
         $startTime = microtime(true);
-        
+
         \Log::info('=== INICIO store partida ===', [
             'partida_id' => $request->id,
             'total_detalles_recibidos' => count($request->detalles ?? []),
             'memoria_inicial_mb' => round(memory_get_usage(true) / 1024 / 1024, 2)
         ]);
-        
-        $request->validate([
-            'fecha'         => 'required|date',
-            'tipo'          => 'required|max:255',
-            'concepto'      => 'required|max:255',
-            'estado'        => 'required|max:255',
-            'detalles'      => 'required',
-            'id_usuario'    => 'required|numeric',
-            'id_empresa'    => 'required|numeric',
-        ]);
-
-        DB::beginTransaction();
 
         try {
 
@@ -341,7 +344,7 @@ class PartidasController extends Controller
 
             $partida->fill($request->all());
             $partida->save();
-            
+
             \Log::info('Partida guardada', [
                 'partida_id' => $partida->id,
                 'tiempo_desde_inicio' => microtime(true) - $startTime
@@ -376,20 +379,20 @@ class PartidasController extends Controller
 
             // Si solo se están enviando detalles modificados, procesar solo esos
             $soloModificados = $request->has('solo_detalles_modificados') && $request->solo_detalles_modificados === true;
-            
+
             $totalDetalles = count($request->detalles);
             $detallesProcesados = 0;
-            
+
             \Log::info('Iniciando procesamiento de detalles', [
                 'partida_id' => $partida->id,
                 'total_detalles_a_procesar' => $totalDetalles,
                 'solo_modificados' => $soloModificados,
                 'tiempo_desde_inicio' => microtime(true) - $startTime
             ]);
-            
+
             foreach ($request->detalles as $index => $det) {
                 $detallesProcesados++;
-                
+
                 // Log cada 100 detalles para monitorear progreso
                 if ($detallesProcesados % 100 == 0) {
                     \Log::info('Procesando detalles', [
@@ -397,7 +400,7 @@ class PartidasController extends Controller
                         'tiempo_desde_inicio' => round(microtime(true) - $startTime, 2)
                     ]);
                 }
-                
+
                 if(isset($det['id'])) {
                     $detalle = Detalle::findOrFail($det['id']);
                     $cuenta = Cuenta::findOrFail($det['id_cuenta']);
@@ -456,13 +459,13 @@ class PartidasController extends Controller
             ]);
 
             DB::commit();
-            
+
             \Log::info('=== FIN store partida (EXITOSO) ===', [
                 'partida_id' => $partida->id,
                 'tiempo_total_segundos' => round(microtime(true) - $startTime, 2),
                 'memoria_final_mb' => round(memory_get_usage(true) / 1024 / 1024, 2)
             ]);
-            
+
             return Response()->json($partida, 200);
 
         } catch (\Exception $e) {
@@ -489,7 +492,7 @@ class PartidasController extends Controller
     /**
     * Método para reordenar correlativos
     */
-    public function reordenarCorrelativos(Request $request)
+    public function reordenarCorrelativos(ReordenarCorrelativosRequest $request)
     {
         // Si viene el parámetro 'todos', reordenar toda la empresa
         if ($request->has('todos') && $request->todos) {
@@ -533,13 +536,6 @@ class PartidasController extends Controller
             }
         }
 
-        // Reordenamiento específico por mes/tipo - SOLO validar si NO es 'todos'
-        $request->validate([
-            'anio' => 'required|integer|min:2020|max:2030',
-            'mes' => 'required|integer|min:1|max:12',
-            'tipo' => 'required|in:Ingreso,Egreso,Diario,CxC,CxP,Cierre'
-        ]);
-
         try {
             $partidasReordenadas = Partida::reordenarCorrelativos(
                 $request->anio,
@@ -560,21 +556,22 @@ class PartidasController extends Controller
         }
     }
 
-    public function generarIngresos(Request $request)
+    public function generarIngresos(GenerarIngresosRequest $request)
     {
+
         // Aumentar límites para respuestas grandes desde el inicio
         ini_set('memory_limit', '512M');
         ini_set('max_execution_time', '300'); // 5 minutos
         ini_set('post_max_size', '100M');
         ini_set('upload_max_filesize', '100M');
-        
+
         // Deshabilitar output buffering para respuestas grandes
         if (ob_get_level()) {
             ob_end_clean();
         }
         ini_set('output_buffering', 'Off');
         ini_set('zlib.output_compression', 'Off');
-        
+
         $startTime = microtime(true);
         \Log::info('=== INICIO generarIngresos ===', [
             'fecha' => $request->fecha,
@@ -582,23 +579,19 @@ class PartidasController extends Controller
             'max_execution_time' => ini_get('max_execution_time'),
             'output_buffering' => ini_get('output_buffering')
         ]);
-        
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         try {
             // Cargar configuración una sola vez
             $configuracion = Configuracion::first();
             \Log::info('Configuración cargada', ['tiempo' => microtime(true) - $startTime]);
-            
+
             // OPTIMIZACIÓN 1: Eager loading optimizado - solo campos necesarios
             // Solo cargamos id_categoria del producto, no toda la relación categoria
             // NOTA: nombre_documento es un accessor, no una columna, por eso cargamos la relación 'documento'
             $ventas = Venta::where('estado','!=', 'Anulada')
                         ->where('fecha', $request->fecha)
-                        ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago', 
-                                 'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo', 
+                        ->select(['id', 'fecha', 'correlativo', 'id_documento', 'forma_pago',
+                                 'total', 'sub_total', 'iva', 'iva_retenido', 'total_costo',
                                  'id_sucursal', 'estado'])
                         ->with([
                             'documento' => function($query) {
@@ -612,12 +605,12 @@ class PartidasController extends Controller
                             }
                         ])
                         ->get();
-            
+
             \Log::info('Ventas cargadas', [
                 'cantidad' => $ventas->count(),
                 'tiempo' => microtime(true) - $startTime
             ]);
-            
+
             // OPTIMIZACIÓN 2: Eager loading optimizado para abonos
             $abonos_ventas = AbonoVenta::where('estado', 'Confirmado')
                         ->where('fecha', $request->fecha)
@@ -628,7 +621,7 @@ class PartidasController extends Controller
                             }
                         ])
                         ->get();
-            
+
             \Log::info('Abonos cargados', [
                 'cantidad' => $abonos_ventas->count(),
                 'tiempo' => microtime(true) - $startTime
@@ -668,7 +661,7 @@ class PartidasController extends Controller
                 'cantidad' => $formasPagoNombres->count(),
                 'nombres' => $formasPagoNombres->toArray()
             ]);
-            
+
             $formasPago = FormaDePago::select(['id', 'nombre', 'id_banco'])
                         ->with(['banco' => function($query) {
                             $query->select(['id', 'id_cuenta_contable']);
@@ -676,7 +669,7 @@ class PartidasController extends Controller
                         ->whereIn('nombre', $formasPagoNombres)
                         ->get()
                         ->keyBy('nombre');
-            
+
             \Log::info('Formas de pago cargadas', [
                 'cantidad' => $formasPago->count(),
                 'tiempo' => microtime(true) - $startTime
@@ -691,7 +684,7 @@ class PartidasController extends Controller
                 $configuracion->id_cuenta_inventario,
                 $configuracion->id_cuenta_cxc
             ];
-            
+
             $cuentasConfig = Cuenta::whereIn('id', array_filter($cuentasConfigIds))
                         ->get()
                         ->keyBy('id');
@@ -721,7 +714,7 @@ class PartidasController extends Controller
                     }
                 }
             }
-            
+
             \Log::info('Categorías y sucursales recopiladas', [
                 'total_detalles' => $totalDetalles,
                 'combinaciones_unicas' => count($categoriasSucursales),
@@ -732,12 +725,12 @@ class PartidasController extends Controller
             $cuentasCategorias = [];
             if (!empty($categoriasSucursales)) {
                 $categoriaSucursalIds = array_values($categoriasSucursales);
-                
+
                 // Optimizar consulta usando whereIn con múltiples columnas
                 $cuentasCategoriasQuery = CuentaCategoria::select([
-                    'id', 'id_categoria', 'id_sucursal', 
-                    'id_cuenta_contable_ingresos', 
-                    'id_cuenta_contable_costo', 
+                    'id', 'id_categoria', 'id_sucursal',
+                    'id_cuenta_contable_ingresos',
+                    'id_cuenta_contable_costo',
                     'id_cuenta_contable_inventario'
                 ])
                 ->where(function($query) use ($categoriaSucursalIds) {
@@ -753,7 +746,7 @@ class PartidasController extends Controller
                     $key = $cc->id_categoria . '_' . $cc->id_sucursal;
                     $cuentasCategorias[$key] = $cc;
                 }
-                
+
                 \Log::info('Cuentas de categorías cargadas', [
                     'cantidad' => count($cuentasCategorias),
                     'tiempo' => microtime(true) - $startTime
@@ -772,18 +765,18 @@ class PartidasController extends Controller
                 if ($cc->id_cuenta_contable_costo) $cuentasContablesIds[] = $cc->id_cuenta_contable_costo;
                 if ($cc->id_cuenta_contable_inventario) $cuentasContablesIds[] = $cc->id_cuenta_contable_inventario;
             }
-            
+
             $cuentasContablesIds = array_unique(array_filter($cuentasContablesIds));
             \Log::info('IDs de cuentas contables recopilados', [
                 'cantidad' => count($cuentasContablesIds),
                 'tiempo' => microtime(true) - $startTime
             ]);
-            
+
             $cuentasContables = Cuenta::select(['id', 'codigo', 'nombre'])
                         ->whereIn('id', $cuentasContablesIds)
                         ->get()
                         ->keyBy('id');
-            
+
             \Log::info('Cuentas contables cargadas', [
                 'cantidad' => $cuentasContables->count(),
                 'tiempo' => microtime(true) - $startTime
@@ -801,7 +794,7 @@ class PartidasController extends Controller
             $detalles = [];
             $ingresoIndex = 0;
             $totalIngresos = $ingresos->count();
-            
+
             \Log::info('Iniciando procesamiento de detalles', [
                 'total_ingresos' => $totalIngresos,
                 'tiempo' => microtime(true) - $startTime
@@ -820,8 +813,8 @@ class PartidasController extends Controller
 
                 if(!$formapago || !$formapago->banco || !$formapago->banco->id_cuenta_contable){
                     return Response()->json([
-                        'titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.', 
-                        'error' => 'Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo, 
+                        'titulo' => 'La forma de pago ' . $ingreso->forma_pago . ' no tiene cuenta contable.',
+                        'error' => 'Venta: ' . $ingreso->nombre_documento . ' #' . $ingreso->correlativo,
                         'code' => 400
                     ], 400);
                 }
@@ -837,8 +830,8 @@ class PartidasController extends Controller
 
                 if (!$cuenta) {
                     return Response()->json([
-                        'titulo' => 'La cuenta contable no existe.', 
-                        'error' => 'Forma de pago: ' . $ingreso->forma_pago, 
+                        'titulo' => 'La cuenta contable no existe.',
+                        'error' => 'Forma de pago: ' . $ingreso->forma_pago,
                         'code' => 400
                     ], 400);
                 }
@@ -859,15 +852,15 @@ class PartidasController extends Controller
 
                     foreach ($productos_venta as $detalle) {
                         $id_categoria = $detalle->producto ? $detalle->producto->id_categoria : null;
-                        
+
                         if($id_categoria && $ingreso->id_sucursal){
                             $key = $id_categoria . '_' . $ingreso->id_sucursal;
                             $cuenta_categoria_sucursal = $cuentasCategorias[$key] ?? null;
 
                             if(!$cuenta_categoria_sucursal){
                                 return Response()->json([
-                                    'titulo' => 'La categoria no tiene cuenta contable.', 
-                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'), 
+                                    'titulo' => 'La categoria no tiene cuenta contable.',
+                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'),
                                     'code' => 400
                                 ], 400);
                             }
@@ -882,8 +875,8 @@ class PartidasController extends Controller
 
                             if(!$cuenta){
                                 return Response()->json([
-                                    'titulo' => 'La categoria no tiene cuenta contable.', 
-                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'), 
+                                    'titulo' => 'La categoria no tiene cuenta contable.',
+                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'),
                                     'code' => 400
                                 ], 400);
                             }
@@ -954,15 +947,15 @@ class PartidasController extends Controller
 
                     foreach ($productos_venta as $detalle) {
                         $id_categoria = $detalle->producto ? $detalle->producto->id_categoria : null;
-                        
+
                         if($id_categoria && $ingreso->id_sucursal){
                             $key = $id_categoria . '_' . $ingreso->id_sucursal;
                             $cuenta_categoria_sucursal = $cuentasCategorias[$key] ?? null;
 
                             if(!$cuenta_categoria_sucursal){
                                 return Response()->json([
-                                    'titulo' => 'La categoria no tiene cuenta contable.', 
-                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'), 
+                                    'titulo' => 'La categoria no tiene cuenta contable.',
+                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'),
                                     'code' => 400
                                 ], 400);
                             }
@@ -977,8 +970,8 @@ class PartidasController extends Controller
 
                             if(!$cuenta_costos){
                                 return Response()->json([
-                                    'titulo' => 'La categoria no tiene cuenta de costo contable.', 
-                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'), 
+                                    'titulo' => 'La categoria no tiene cuenta de costo contable.',
+                                    'error' => 'Categoria: ' . ($detalle->producto->nombre_categoria ?? 'N/A'),
                                     'code' => 400
                                 ], 400);
                             }
@@ -1000,7 +993,7 @@ class PartidasController extends Controller
                                     $cuentasContables->put($cuenta_inventarios->id, $cuenta_inventarios);
                                 }
                             }
-                            
+
                             $detalles[] = [
                                 'id_cuenta' => $cuenta_inventarios->id,
                                 'codigo' => $cuenta_inventarios->codigo,
@@ -1036,11 +1029,11 @@ class PartidasController extends Controller
 
             $totalDetalles = count($detalles);
             $tiempoTotal = microtime(true) - $startTime;
-            
+
             // Aumentar límites para respuestas grandes
             ini_set('memory_limit', '512M');
             set_time_limit(300); // 5 minutos
-            
+
             \Log::info('=== FIN generarIngresos ===', [
                 'fecha' => $request->fecha,
                 'total_ventas' => $ventas->count(),
@@ -1059,12 +1052,12 @@ class PartidasController extends Controller
             $cuentasCategorias = null;
             $cuentasContables = null;
             $cuentasConfig = null;
-            
+
             // Forzar recolección de basura
             if (function_exists('gc_collect_cycles')) {
                 gc_collect_cycles();
             }
-            
+
             \Log::info('Preparando respuesta JSON', [
                 'total_detalles' => $totalDetalles,
                 'memoria_antes_serializar_mb' => round(memory_get_usage(true) / 1024 / 1024, 2)
@@ -1073,9 +1066,9 @@ class PartidasController extends Controller
             // SOLUCIÓN: Guardar la partida temporalmente en la base de datos
             // y retornar solo el ID para que el frontend la cargue después
             // Esto evita problemas con respuestas JSON muy grandes (>200KB)
-            
+
             DB::beginTransaction();
-            
+
             try {
                 // Crear la partida temporalmente
                 $partidaModel = new Partida;
@@ -1083,7 +1076,7 @@ class PartidasController extends Controller
                 $partida['id_empresa'] = auth()->user()->id_empresa;
                 $partidaModel->fill($partida);
                 $partidaModel->save();
-                
+
                 // Guardar los detalles
                 foreach ($detalles as $det) {
                     $detalle = new Detalle;
@@ -1091,28 +1084,28 @@ class PartidasController extends Controller
                     $detalle->fill($det);
                     $detalle->save();
                 }
-                
+
                 DB::commit();
-                
+
                 \Log::info('Partida guardada temporalmente', [
                     'partida_id' => $partidaModel->id,
                     'total_detalles' => count($detalles)
                 ]);
-                
+
                 // Retornar solo el ID de la partida para que el frontend la cargue
                 return response()->json([
                     'partida_id' => $partidaModel->id,
                     'message' => 'Partida generada exitosamente. Cargando detalles...',
                     'total_detalles' => count($detalles)
                 ], 200);
-                
+
             } catch (\Exception $e) {
                 DB::rollback();
                 \Log::error('Error al guardar partida temporal', [
                     'mensaje' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                
+
                 // Si falla al guardar, intentar retornar los datos directamente
                 // pero limitando el tamaño de la respuesta
                 if (count($detalles) > 500) {
@@ -1122,13 +1115,13 @@ class PartidasController extends Controller
                         'sugerencia' => 'Intenta generar la partida en días más pequeños o contacta al administrador para aumentar los límites del servidor.'
                     ], 413); // 413 Payload Too Large
                 }
-                
+
                 // Si tiene menos de 500 detalles, intentar retornar normalmente
                 $data = [
                     'partida' => $partida,
                     'detalles' => $detalles,
                 ];
-                
+
                 return response()->json($data, 200);
             }
 
@@ -1142,7 +1135,7 @@ class PartidasController extends Controller
                 'fecha' => $request->fecha,
                 'tiempo_hasta_error' => round($tiempoTotal, 2)
             ]);
-            
+
             return Response()->json([
                 'error' => 'Error al generar ingresos: ' . $e->getMessage(),
                 'code' => 500
@@ -1150,11 +1143,8 @@ class PartidasController extends Controller
         }
     }
 
-    public function generarCxC(Request $request)
+    public function generarCxC(GenerarCxCRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $ventas = Venta::where('estado', 'Pendiente')
@@ -1333,11 +1323,8 @@ class PartidasController extends Controller
 
     }
 
-    public function generarEgresos(Request $request)
+    public function generarEgresos(GenerarEgresosRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pagada')
@@ -1500,11 +1487,8 @@ class PartidasController extends Controller
 
     }
 
-    public function generarCxP(Request $request)
+    public function generarCxP(GenerarCxPRequest $request)
     {
-        $request->validate([
-            'fecha' => 'required|date',
-        ]);
 
         $configuracion = Configuracion::first();
         $compras = Compra::where('estado', 'Pendiente')->where('fecha', $request->fecha)->get();
@@ -1655,18 +1639,11 @@ class PartidasController extends Controller
 
     }
 
-    public function cerrarPartidas(Request $request)
+    public function cerrarPartidas(CerrarPartidasRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            // Validar que el mes y año sean válidos
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $cierreMesService = new CierreMesService();
 
@@ -1687,7 +1664,7 @@ class PartidasController extends Controller
         }
     }
 
-    public function abrirPartida(Request $request)
+    public function abrirPartida(AbrirPartidaRequest $request)
     {
         try {
             $user = auth()->user();
@@ -1698,11 +1675,6 @@ class PartidasController extends Controller
             }
 
             $id = $request->input('id');
-            if (!$id) {
-                return response()->json([
-                    'error' => 'ID de partida no proporcionado.'
-                ], 400);
-            }
 
             $partida = Partida::find($id);
             if (!$partida) {
@@ -1731,18 +1703,11 @@ class PartidasController extends Controller
         }
     }
 
-    public function reabrirPeriodo(Request $request)
+    public function reabrirPeriodo(ReabrirPeriodoRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            // Validar que el mes y año sean válidos
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $cierreMesService = new CierreMesService();
 
@@ -1762,17 +1727,11 @@ class PartidasController extends Controller
         }
     }
 
-    public function verificarEstadoPeriodo(Request $request)
+    public function verificarEstadoPeriodo(VerificarEstadoPeriodoRequest $request)
     {
         try {
             $month = $request->input('month');
             $year = $request->input('year');
-
-            if (!$month || !$year || $month < 1 || $month > 12) {
-                return response()->json([
-                    'error' => 'Mes y año inválidos'
-                ], 400);
-            }
 
             $empresa_id = auth()->user()->id_empresa;
 
@@ -1817,17 +1776,11 @@ class PartidasController extends Controller
         }
     }
 
-      public function obtenerBalanceComprobacion(Request $request)
+      public function obtenerBalanceComprobacion(ObtenerBalanceComprobacionRequest $request)
   {
       try {
           $month = $request->input('month');
           $year = $request->input('year');
-
-          if (!$month || !$year || $month < 1 || $month > 12) {
-              return response()->json([
-                  'error' => 'Mes y año inválidos'
-              ], 400);
-          }
 
           $cierreMesService = new CierreMesService();
 
@@ -1846,17 +1799,11 @@ class PartidasController extends Controller
       }
   }
 
-  public function simularCierreMes(Request $request)
+  public function simularCierreMes(SimularCierreMesRequest $request)
   {
       try {
           $month = $request->input('month');
           $year = $request->input('year');
-
-          if (!$month || !$year || $month < 1 || $month > 12) {
-              return response()->json([
-                  'error' => 'Mes y año inválidos'
-              ], 400);
-          }
 
           $simulacionService = new SimulacionCierreService();
 

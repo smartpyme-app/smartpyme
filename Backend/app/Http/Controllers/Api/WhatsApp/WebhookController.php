@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\WhatsApp\GetStatsWhatsAppRequest;
+use App\Http\Requests\WhatsApp\GetSessionsWhatsAppRequest;
+use App\Http\Requests\WhatsApp\GetExecutiveSummaryWhatsAppRequest;
+use App\Http\Requests\WhatsApp\GetSessionMessagesWhatsAppRequest;
 
 class WebhookController extends Controller
 {
@@ -97,7 +101,7 @@ class WebhookController extends Controller
             && count($data['entry'][0]['changes']) > 0;
     }
 
-    public function getStats(Request $request)
+    public function getStats(GetStatsWhatsAppRequest $request)
     {
         try {
             $days = $request->get('days', 30);
@@ -166,7 +170,7 @@ class WebhookController extends Controller
     }
 
 
-    public function getSessions(Request $request)
+    public function getSessions(GetSessionsWhatsAppRequest $request)
     {
         try {
            
@@ -418,7 +422,7 @@ class WebhookController extends Controller
 
 
 
-    public function getSessionMessages(int $sessionId, Request $request): JsonResponse
+    public function getSessionMessages(int $sessionId, GetSessionMessagesWhatsAppRequest $request): JsonResponse
     {
         try {
             $session = WhatsAppSession::findOrFail($sessionId);
@@ -465,7 +469,7 @@ class WebhookController extends Controller
     }
 
 
-    public function getExecutiveSummary(Request $request): JsonResponse
+    public function getExecutiveSummary(GetExecutiveSummaryWhatsAppRequest $request): JsonResponse
     {
         try {
             $days = $request->get('days', 7);

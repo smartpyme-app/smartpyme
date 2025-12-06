@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Contabilidad\Catalogo\Cuenta;
 use Illuminate\Http\Request;
 use App\Models\Contabilidad\Partidas\Detalle;
+use App\Http\Requests\Contabilidad\Partidas\StoreDetallePartidaRequest;
 
 class DetallesController extends Controller
 {
@@ -17,18 +18,8 @@ class DetallesController extends Controller
 
     }
 
-    public function store(Request $request)
+    public function store(StoreDetallePartidaRequest $request)
     {
-        $request->validate([
-            'id_cuenta'     => 'required|numeric',
-            'codigo'     => 'required|numeric',
-            'nombre_cuenta'     => 'required|numeric',
-            'id_partida'    => 'required|numeric',
-            'concepto'      => 'required|max:255',
-            'cargo'         => 'required|numeric',
-            'abono'         => 'required|numeric',
-            'saldo'         => 'required|numeric',
-        ]);
 
         if($request->id) {
             $detalle = Detalle::findOrFail($request->id);

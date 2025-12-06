@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Mail;
+use App\Http\Requests\DemoPostRequest;
 
 class HomeController extends Controller
 {
@@ -14,13 +15,8 @@ class HomeController extends Controller
         return view('index');
     }
 
-    public function demoPost(Request $request)
+    public function demoPost(DemoPostRequest $request)
     {
-
-        $request->validate([
-            'nombre'    => 'required|max:255',
-            'correo'    => 'required|email|max:255'
-        ]);
 
 
         try {
