@@ -114,19 +114,14 @@
                 "
                 >Estado Financiero Consolidado por Sucursales</span
               >
-              <span
-                *ngIf="
-                  config.tipo_reporte ===
-                  'detalle-ventas-vendedor'
-                "
+              <span *ngIf="config.tipo_reporte === 'detalle-ventas-vendedor'"
                 >Detalle de Ventas por Vendedor</span
               >
-              <span
-                *ngIf="
-                  config.tipo_reporte ===
-                  'inventario-por-sucursal'
-                "
+              <span *ngIf="config.tipo_reporte === 'inventario-por-sucursal'"
                 >Inventario por Sucursal</span
+              >
+              <span *ngIf="config.tipo_reporte === 'ventas-por-utilidades'"
+                >Ventas por Utilidades</span
               >
               <span
                 *ngIf="
@@ -137,7 +132,8 @@
                   config.tipo_reporte !==
                     'estado-financiero-consolidado-sucursales' &&
                   config.tipo_reporte !== 'detalle-ventas-vendedor' &&
-                  config.tipo_reporte !== 'inventario-por-sucursal'
+                  config.tipo_reporte !== 'inventario-por-sucursal' &&
+                  config.tipo_reporte !== 'ventas-por-utilidades'
                 "
                 >{{ config.tipo_reporte }}</span
               >
@@ -238,25 +234,20 @@
       <i class="fa fa-fw fa-trash"></i> Eliminar
     </a>
     <!--descargar reporte por configuracion-->
-    <a 
+    <a
       (click)="descargarReporte(config, mSeleccionarFechas)"
       *ngIf="config.activo"
       class="list-group-item list-group-item-action border-0 click text-success"
     >
-    <span>
-      <i class="fa fa-fw fa-download"></i> Descargar
-    </span>
-
+      <span> <i class="fa fa-fw fa-download"></i> Descargar </span>
     </a>
 
-    <a 
-      (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
+    <a
+      (click)="descargarReporte(config, mSeleccionarFechas, 'pdf')"
       *ngIf="config.activo && getPermissionsPDf(config.tipo_reporte)"
       class="list-group-item list-group-item-action border-0 click text-primary"
     >
-    <span>
-      <i class="fa fa-fw fa-download"></i> Descargar PDF
-    </span>
+      <span> <i class="fa fa-fw fa-download"></i> Descargar PDF </span>
     </a>
   </div>
 </ng-template>
@@ -279,7 +270,6 @@
     <app-notificaciones-container></app-notificaciones-container>
 
     <form (ngSubmit)="guardarConfiguracion()">
-
       <!-- Nombre del reporte -->
       <div class="form-group mb-3">
         <label for="nombre_reporte" class="form-label fw-bold"
