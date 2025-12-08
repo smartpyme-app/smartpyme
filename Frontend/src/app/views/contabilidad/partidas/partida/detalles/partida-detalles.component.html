@@ -37,7 +37,7 @@
                     <tr>
                         <!-- detalle de vendedor  -->
                         <td>
-                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
+                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="onCuentaChange(detalle)" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
                                 <ng-option value="">Seleccione aquí</ng-option>
                                 @for (cuenta of catalogo; track cuenta.id) {
                                     <ng-option [value]="cuenta.id">
@@ -50,7 +50,7 @@
                             </ng-select>
                         </td>
                         <td>
-                            <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
+                            <input type="text" [(ngModel)]="detalle.concepto" (change)="marcarComoModificado(detalle)" (blur)="marcarComoModificado(detalle)" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
                         </td>
                         <td>
                             <input type="number" [(ngModel)]="detalle.debe" (change)="onDetalleChange(detalle)" (blur)="onDetalleChange(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">

@@ -53,8 +53,34 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
 
     public selectCuenta(){
         let cuenta = this.catalogo.find((item:any) => item.id == this.detalle.id_cuenta);
-        this.detalle.codigo = cuenta.codigo;
-        this.detalle.nombre_cuenta = cuenta.nombre;
+        if (cuenta) {
+            this.detalle.codigo = cuenta.codigo;
+            this.detalle.nombre_cuenta = cuenta.nombre;
+        }
+    }
+    
+    /**
+     * Se llama cuando se cambia la cuenta de un detalle en la tabla
+     */
+    public onCuentaChange(detalle: any) {
+        // Actualizar código y nombre de cuenta
+        let cuenta = this.catalogo.find((item:any) => item.id == detalle.id_cuenta);
+        if (cuenta) {
+            detalle.codigo = cuenta.codigo;
+            detalle.nombre_cuenta = cuenta.nombre;
+        }
+        // Marcar como modificado
+        this.marcarComoModificado(detalle);
+    }
+    
+    /**
+     * Marcar un detalle como modificado cuando se edita cualquier campo
+     */
+    public marcarComoModificado(detalle: any) {
+        if (detalle && detalle.id) {
+            this.detallesModificados.add(detalle.id);
+            console.log('Detalle marcado como modificado:', detalle.id);
+        }
     }
 
     public updateTotal(detalle:any){
@@ -77,9 +103,7 @@ export class PartidaDetallesComponent extends BaseModalComponent implements OnIn
      */
     public onDetalleChange(detalle: any) {
         // Marcar el detalle como modificado
-        if (detalle.id) {
-            this.detallesModificados.add(detalle.id);
-        }
+        this.marcarComoModificado(detalle);
         
         // Si es una partida nueva (sin ID), recalcular localmente inmediatamente
         if (!this.partida.id) {

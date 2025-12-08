@@ -278,23 +278,33 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
         // Obtener IDs de detalles modificados desde el componente de detalles
         const detallesModificadosIds = this.detallesComponent?.getDetallesModificados() || [];
         
-        // Filtrar solo los detalles modificados o nuevos (sin ID)
-        const detallesParaEnviar = (this.partida.detalles || []).filter((detalle: any) => {
-            // Incluir si no tiene ID (es nuevo) o si está en la lista de modificados
-            return !detalle.id || detallesModificadosIds.includes(detalle.id);
-        });
+        // Para partidas nuevas, enviar todos los detalles
+        // Para partidas existentes, enviar todos los detalles visibles en el array actual
+        // Esto asegura que se envíen todos los cambios, incluso si no se marcaron como modificados
+        let detallesParaEnviar = [];
+        
+        if (!this.partida.id) {
+            // Partida nueva: enviar todos los detalles
+            detallesParaEnviar = this.partida.detalles || [];
+        } else {
+            // Partida existente: enviar todos los detalles visibles en el array actual
+            // Esto incluye los modificados, los nuevos (sin ID), y todos los que están en el array
+            // porque pueden haber sido editados directamente en la tabla
+            detallesParaEnviar = this.partida.detalles || [];
+        }
 
         console.log('Guardando partida:', {
             partida_id: this.partida.id,
             detalles_modificados: detallesModificadosIds.length,
             detalles_a_enviar: detallesParaEnviar.length,
+            total_detalles_visibles: (this.partida.detalles || []).length,
             total_detalles_en_bd: this.partida.pagination?.total || 0
         });
 
-        // Preparar datos para enviar - solo detalles modificados
+        // Preparar datos para enviar - asegurarse de que detalles siempre sea un array
         const datosParaEnviar = {
             ...this.partida,
-            detalles: detallesParaEnviar,
+            detalles: Array.isArray(detallesParaEnviar) ? detallesParaEnviar : [],
             // Indicar al backend que solo debe actualizar estos detalles
             solo_detalles_modificados: true
         };
@@ -304,6 +314,11 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
           .subscribe({
             next: (partida) => {
                 console.log('Partida guardada exitosamente:', partida);
+                
+                // Limpiar detalles modificados después de guardar
+                if (this.detallesComponent?.limpiarDetallesModificados) {
+                    this.detallesComponent.limpiarDetallesModificados();
+                }
                 
                 // Invalidar cache del item específico si se está editando
                 const isNew = !this.partida.id;
