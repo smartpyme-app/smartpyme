@@ -319,12 +319,19 @@ class PartidasController extends Controller
             'memoria_inicial_mb' => round(memory_get_usage(true) / 1024 / 1024, 2)
         ]);
         
+        // Validar que detalles esté presente y sea un array (puede estar vacío)
+        if (!$request->has('detalles') || !is_array($request->detalles)) {
+            return Response()->json([
+                'error' => ['El campo detalles es obligatorio.'],
+                'code' => 422
+            ], 422);
+        }
+        
         $request->validate([
             'fecha'         => 'required|date',
             'tipo'          => 'required|max:255',
             'concepto'      => 'required|max:255',
             'estado'        => 'required|max:255',
-            'detalles'      => 'required',
             'id_usuario'    => 'required|numeric',
             'id_empresa'    => 'required|numeric',
         ]);

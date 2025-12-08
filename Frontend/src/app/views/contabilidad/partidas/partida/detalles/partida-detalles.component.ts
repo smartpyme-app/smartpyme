@@ -114,8 +114,20 @@ export class PartidaDetallesComponent implements OnInit {
 
     public selectCuenta(){
         let cuenta = this.catalogo.find((item:any) => item.id == this.detalle.id_cuenta);
-        this.detalle.codigo = cuenta.codigo;
-        this.detalle.nombre_cuenta = cuenta.nombre;
+        if (cuenta) {
+            this.detalle.codigo = cuenta.codigo;
+            this.detalle.nombre_cuenta = cuenta.nombre;
+        }
+    }
+    
+    /**
+     * Marcar un detalle como modificado cuando se edita cualquier campo
+     */
+    public marcarComoModificado(detalle: any) {
+        if (detalle && detalle.id) {
+            this.detallesModificados.add(detalle.id);
+            console.log('Detalle marcado como modificado:', detalle.id);
+        }
     }
 
     public updateTotal(detalle:any){
