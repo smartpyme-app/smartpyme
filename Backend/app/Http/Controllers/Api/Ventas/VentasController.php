@@ -1279,8 +1279,17 @@ class VentasController extends Controller
                 $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $empresa->id);
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
                 $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion->sucursales);
-            }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
+            } elseif ($configuracion->tipo_reporte === 'inventario-por-sucursal') {
                 $export = new InventarioExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-utilidades') {
+                $request = new Request([
+                    'id_empresa' => $empresa->id,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
             }
             $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
 
@@ -1404,9 +1413,19 @@ class VentasController extends Controller
             } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
                 $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
                 $filename = "detalle-ventas-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
-            }elseif($configuracion->tipo_reporte === 'inventario-por-sucursal'){
+            } elseif ($configuracion->tipo_reporte === 'inventario-por-sucursal') {
                 $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
                 $filename = "inventario-por-sucursal-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-utilidades') {
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                $filename = "ventas-por-utilidades-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
             }
 
             $relativePath = "reportes/{$filename}";
@@ -1469,7 +1488,10 @@ class VentasController extends Controller
                 'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
                 'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
                 'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
             ];
+
+            $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
 
             $datos = [
                 'fecha' => Carbon::today()->format('d/m/Y'),
@@ -1480,7 +1502,7 @@ class VentasController extends Controller
                 'vendedoresConVentas' => $vendedoresConVentas,
                 'archivoPath' => $filePath,
                 'nombreArchivo' => basename($filePath),
-                'asunto' => $configuracion->asunto_correo ?: "Reporte de Prueba: Ventas por Vendedor - " . Carbon::today()->format('d/m/Y'),
+                'asunto' => $asunto ?: "Reporte de Prueba: " . $configuracion->tipo_reporte . " - " . Carbon::today()->format('d/m/Y'),
                 'esPrueba' => true,
                 'tipo_reporte' => $configuracion->tipo_reporte,
                 'empresa' => $empresa->nombre
@@ -1542,6 +1564,16 @@ class VentasController extends Controller
                 break;
             case 'inventario-por-sucursal':
                 $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                break;
+            case 'ventas-por-utilidades':
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
                 break;
             default:
                 return response()->json(['error' => 'Tipo de reporte no implementado'], 422);

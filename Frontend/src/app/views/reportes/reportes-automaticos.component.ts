@@ -75,6 +75,10 @@ export class ReportesAutomaticosComponent implements OnInit {
       tipo: 'inventario-por-sucursal',
       nombre: 'Inventario por Sucursal',
     },
+    {
+      tipo: 'ventas-por-utilidades',
+      nombre: 'Ventas por Utilidades',
+    },
   ];
   public modalRefFechas!: BsModalRef;
   public fechaInicio: string = '';
