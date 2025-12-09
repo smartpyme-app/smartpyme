@@ -135,6 +135,10 @@ class EnviarReportesAutomaticos extends Command
                 $controller = new VentasController();
                 $empresa = Empresa::find($configuracion->id_empresa);
                 return $controller->enviarReporteProgramado($configuracion, $empresa, $fecha_inicio, $fecha_fin);
+            case 'ventas-por-utilidades':
+                $controller = new VentasController();
+                $empresa = Empresa::find($configuracion->id_empresa);
+                return $controller->enviarReporteProgramado($configuracion, $empresa, $fecha_inicio, $fecha_fin);
             default:
                 throw new \Exception("Tipo de reporte no implementado: {$configuracion->tipo_reporte}");
         }
