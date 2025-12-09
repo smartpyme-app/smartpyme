@@ -263,19 +263,17 @@ export class VentasComponent implements OnInit {
       );
     }
 
-    if (!this.documentos.length) {
-      this.apiService.getAll('documentos/list').subscribe(
-        (documentos) => {
-          this.documentos = documentos;
-          this.documentos = this.documentos.filter(
-            (x: any) => x.id_sucursal == this.venta.id_sucursal
-          );
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
+    // Cargar documentos filtrados por sucursal de la venta
+    this.apiService.getAll('documentos/list').subscribe(
+      (documentos) => {
+        this.documentos = documentos.filter(
+          (x: any) => x.id_sucursal == this.venta.id_sucursal
+        );
+      },
+      (error) => {
+        this.alertService.error(error);
+      }
+    );
 
     if (!this.formaPagos.length) {
       this.apiService.getAll('formas-de-pago/list').subscribe(
@@ -510,6 +508,15 @@ export class VentasComponent implements OnInit {
 
   public linkWompi(venta: any) {
     window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
+  }
+
+  public setDocumento(id_documento: any) {
+    let documento = this.documentos.find((x: any) => x.id == id_documento);
+    if (documento) {
+      this.venta.nombre_documento = documento.nombre;
+      this.venta.id_documento = documento.id;
+      this.venta.correlativo = documento.correlativo;
+    }
   }
 
   public onSubmit() {
