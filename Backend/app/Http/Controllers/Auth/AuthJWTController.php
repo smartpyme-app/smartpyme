@@ -219,7 +219,20 @@ class AuthJWTController extends Controller
             $empresa->validador_nit = $mascara_nit;
             $empresa->validador_nrc = $mascara_nrc;
             $empresa->validador_telefono = $mascara_telefono;
-            $empresa->total   = $request['empresa']['total'];
+            
+            // Calcular el total original basándose en el plan y tipo_plan
+            // No confiar en el total del frontend ya que puede venir con descuento aplicado
+            $plan = $this->getPlan($request['empresa']['plan']);
+            $totalOriginal = $this->calcularTotalOriginal($plan, $request['empresa']['tipo_plan']);
+            
+            // Aplicar código promocional si viene en el request
+            $codigoPromocional = isset($request['empresa']['codigo_promocional']) && !empty($request['empresa']['codigo_promocional']) 
+                ? $request['empresa']['codigo_promocional'] 
+                : null;
+            
+            $resultadoPromocional = $this->aplicarCodigoPromocional($empresa, $codigoPromocional, $totalOriginal);
+            
+            $empresa->total = $resultadoPromocional['total'];
             $empresa->moneda = $request['empresa']['moneda'];
             $empresa->save();
 
@@ -275,13 +288,16 @@ class AuthJWTController extends Controller
             DB::commit();
 
             $plan = $this->getPlan($request['empresa']['plan']);
+            // Usar el total con descuento aplicado en lugar del precio original del plan
+            $montoSuscripcion = $empresa->total;
+            
             $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
                 'plan_id' => $plan->id,
                 'usuario_id' => $usuario->id,
                 'tipo_plan' => $empresa->tipo_plan,
                 'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
-                'monto' => $plan->precio,
+                'monto' => $montoSuscripcion, // Usar el total con descuento aplicado
                 'id_pago' => null,
                 'id_orden' => null,
                 'estado_ultimo_pago' => null,
@@ -301,34 +317,6 @@ class AuthJWTController extends Controller
 
             $usuario->empresa = $usuario->empresa()->first();
 
-            // if ($empresa->plan == config('constants.PLAN_EMPRENDEDOR')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_ESTANDAR')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_ESTANDAR');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_AVANZADO')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_AVANZADO');
-            // }
-            // if ($empresa->plan == config('constants.PLAN_PRO')){
-            //     $usuario->url_n1co = config('constants.URL_N1CO_PRO');
-            // }
-
-
-            // $paymentLink = $this->createPaymentLink([
-            //     'name' => "SmartPyme Plan " . $empresa->plan,
-            //     'description' => "Suscripción SmartPyme - Plan " . $empresa->plan,
-            //     'amount' => $empresa->total,
-            //     'user_id' => $usuario->id,
-            //     'plan' => $empresa->plan
-            // ]);
-
-            // if ($paymentLink['success']) {
-            //     $usuario->url_n1co = $paymentLink['paymentLinkUrl'];
-            //     Log::info('URL de pago generada:', ['url' => $usuario->url_n1co]);
-            // } else {
-            // Log::error('Error al generar la URL de pago:', ['error' => $paymentLink['error']]);
-            // Usar URLs por defecto como fallback
             switch ($empresa->plan) {
                 case config('constants.PLAN_EMPRENDEDOR'):
                     $usuario->url_n1co = config('constants.URL_N1CO_EMPRENDEDOR');
@@ -693,6 +681,9 @@ class AuthJWTController extends Controller
     private function createSuscripcion(array $data): array
     {
         $plan = Plan::find($data['plan_id']);
+        
+        // Preservar el monto con descuento si ya viene en los datos
+        $monto = $data['monto'] ?? $plan->precio;
 
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
@@ -703,7 +694,7 @@ class AuthJWTController extends Controller
                 'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
                 'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
                 'fin_periodo_prueba' => now()->addDays($diasPrueba),
-                'monto' => $plan->precio, // Sin costo durante el período de prueba
+                'monto' => $monto, // Usar el monto con descuento aplicado
                 'intentos_cobro' => 0,
                 'ultimo_intento_cobro' => null,
                 'historial_pagos' => null,
@@ -718,7 +709,8 @@ class AuthJWTController extends Controller
                 'estado' => config('constants.ESTADO_SUSCRIPCION_ACTIVO'),
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => null
+                'fin_periodo_prueba' => null,
+                'monto' => $monto // Usar el monto con descuento aplicado
             ]);
         }
 
@@ -735,6 +727,120 @@ class AuthJWTController extends Controller
         }
 
         return $plan;
+    }
+
+    /**
+     * Calcula el total original basándose en el plan y tipo de plan
+     * 
+     * @param Plan $plan
+     * @param string $tipoPlan
+     * @return float
+     */
+    private function calcularTotalOriginal($plan, $tipoPlan)
+    {
+        if (!$plan) {
+            return 0;
+        }
+
+        // Si el plan tiene precio definido, usarlo
+        if ($plan->precio) {
+            return floatval($plan->precio);
+        }
+
+        // Si no tiene precio, calcular basándose en el nombre del plan y tipo
+        $planNombre = strtolower($plan->nombre ?? '');
+        $esMensual = strtolower($tipoPlan) === 'mensual';
+
+        // Precios por plan (Mensual / Anual)
+        $precios = [
+            'emprendedor' => ['mensual' => 16.95, 'anual' => 203.4],
+            'estándar' => ['mensual' => 28.25, 'anual' => 339],
+            'estandar' => ['mensual' => 28.25, 'anual' => 339],
+            'avanzado' => ['mensual' => 56.5, 'anual' => 678],
+            'pro' => ['mensual' => 113, 'anual' => 1220]
+        ];
+
+        foreach ($precios as $nombre => $precio) {
+            if (strpos($planNombre, $nombre) !== false) {
+                return $esMensual ? $precio['mensual'] : $precio['anual'];
+            }
+        }
+
+        // Si no se encuentra, usar el precio del plan si existe
+        return $plan->precio ?? 0;
+    }
+
+    /**
+     * Obtiene la configuración de un código promocional
+     * 
+     * @param string $codigo
+     * @return array|null ['descuento' => float, 'campania' => string|null]
+     */
+    private function obtenerConfiguracionCodigoPromocional($codigo)
+    {
+        if (empty($codigo)) {
+            return null;
+        }
+
+        $codigoUpper = strtoupper(trim($codigo));
+        
+        // Configuración de códigos promocionales
+        // Para agregar nuevos códigos, simplemente agregarlos al array
+        $codigosPromocionales = [
+            'SMARTPYME2025' => [
+                'descuento' => 0.5, // 50% de descuento
+                'campania' => 'Boxful'
+            ],
+            // ejemplos de codigos más códigos promocionales en el futuro:
+            // 'DESCUENTO20' => [
+            //     'descuento' => 0.2, // 20% de descuento
+            //     'campania' => 'Verano2025'
+            // ],
+            // 'PRIMERMES' => [
+            //     'descuento' => 0.3, // 30% de descuento
+            //     'campania' => 'NuevosUsuarios'
+            // ]
+        ];
+
+        return $codigosPromocionales[$codigoUpper] ?? null;
+    }
+
+    /**
+     * Aplica las reglas de códigos promocionales a la empresa
+     * 
+     * @param Empresa $empresa
+     * @param string|null $codigoPromocional
+     * @param float $totalOriginal
+     * @return array ['total' => float, 'campania' => string|null]
+     */
+    private function aplicarCodigoPromocional($empresa, $codigoPromocional, $totalOriginal)
+    {
+        $total = $totalOriginal;
+        $campania = null;
+
+        if (!empty($codigoPromocional)) {
+            // Guardar código promocional en la empresa
+            $empresa->codigo_promocional = $codigoPromocional;
+
+            // Obtener configuración del código promocional
+            $config = $this->obtenerConfiguracionCodigoPromocional($codigoPromocional);
+            
+            if ($config) {
+                // Aplicar descuento
+                $total = $totalOriginal * (1 - $config['descuento']);
+                
+                // Establecer campaña si está definida
+                if (isset($config['campania'])) {
+                    $empresa->campania = $config['campania'];
+                    $campania = $config['campania'];
+                }
+            }
+        }
+
+        return [
+            'total' => $total,
+            'campania' => $campania
+        ];
     }
 
     public function me($id)

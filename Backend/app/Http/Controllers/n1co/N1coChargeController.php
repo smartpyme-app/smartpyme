@@ -52,10 +52,10 @@ class N1coChargeController extends Controller
         try {
 
             $customerId = $request->input('customer.id');
-            
+
             // Verificar si se fuerza un nuevo método de pago (desde paywall)
             $forceNewPaymentMethod = $request->input('forceNewPaymentMethod', false);
-            
+
             // Solo buscar método existente si NO se fuerza nuevo método
             $metodoPago = null;
             if (!$forceNewPaymentMethod) {
@@ -66,10 +66,10 @@ class N1coChargeController extends Controller
             }
 
             // Usar método existente solo en casos específicos (pago inicial, reintentos)
-            $useExistingMethod = !$forceNewPaymentMethod && 
-                            $metodoPago && 
-                            $request->input('updatePaymentMethod') == false && 
-                            $request->input('showPaymentForm') == false;
+            $useExistingMethod = !$forceNewPaymentMethod &&
+                $metodoPago &&
+                $request->input('updatePaymentMethod') == false &&
+                $request->input('showPaymentForm') == false;
 
             if ($useExistingMethod) {
                 Log::channel('payments_success')->info('Usando método de pago existente', [
@@ -96,7 +96,6 @@ class N1coChargeController extends Controller
 
                 return $this->createNewPaymentMethodAndCharge($request);
             }
-
         } catch (\Exception $e) {
             Log::channel('payments_error')->error('Error en createPaymentMethod controller:', [
                 'message' => $e->getMessage(),
@@ -260,11 +259,11 @@ class N1coChargeController extends Controller
                 $authenticationId = $chargeResult['data']['authentication']['id'];
                 $authenticationUrl = $chargeResult['data']['authentication']['url'];
 
-                $order->updateStatusAuthentication3DS(
-                    $authenticationId, 
-                    $authenticationUrl, 
-                    config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
-                );
+            $order->updateStatusAuthentication3DS(
+                $authenticationId,
+                $authenticationUrl,
+                config('constants.ESTADO_ORDEN_AUTENTICACION_PENDIENTE')
+            );
 
                 return response()->json([
                     'success' => true,
@@ -540,35 +539,44 @@ class N1coChargeController extends Controller
                 // Obtener el plan
                 $plan = Plan::find($request->plan_id);
 
-                // Obtener la suscripción
-                $usuario = User::find($request->id_usuario);
-                $suscripcion = Suscripcion::where('empresa_id', $usuario->id_empresa)
-                    ->where('plan_id', $request->plan_id)
-                    ->first();
+            if (!$plan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Plan no encontrado'
+                ], 404);
+            }
 
-                if (!$plan) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Plan no encontrado'
-                    ], 404);
-                }
+            // Obtener la suscripción
+            $usuario = User::find($request->id_usuario);
+            $suscripcion = Suscripcion::where('empresa_id', $usuario->id_empresa)
+                ->where('plan_id', $request->plan_id)
+                ->first();
 
-                // Crear orden de pago
-                $ordenPago = OrdenPago::create([
-                    'id_usuario' => $request->id_usuario,
-                    'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
-                    'id_orden_n1co' => null,
-                    'id_autorizacion_3ds' => null,
-                    'autorizacion_url' => null,
-                    'id_plan' => $plan->id,
-                    'nombre_cliente' => $request->customer_name,
-                    'email_cliente' => $request->customer_email,
-                    'telefono_cliente' => $request->customer_phone,
-                    'plan' => $plan->nombre,
-                    'monto' => $suscripcion->monto,
-                    'estado' => 'pendiente',
-                    'divisa' => 'USD'
-                ]);
+            // Determinar el monto: usar el de la suscripción si existe, sino el del plan, o el del request
+            $monto = $request->input('amount');
+            if (!$monto && $suscripcion) {
+                $monto = $suscripcion->monto;
+            }
+            if (!$monto) {
+                $monto = $plan->precio;
+            }
+
+            // Crear orden de pago
+            $ordenPago = OrdenPago::create([
+                'id_usuario' => $request->id_usuario,
+                'id_orden' => 'ORD-' . time() . '-' . Str::random(8),
+                'id_orden_n1co' => null,
+                'id_autorizacion_3ds' => null,
+                'autorizacion_url' => null,
+                'id_plan' => $plan->id,
+                'nombre_cliente' => $request->customer_name,
+                'email_cliente' => $request->customer_email,
+                'telefono_cliente' => $request->customer_phone,
+                'plan' => $plan->nombre,
+                'monto' => $monto,
+                'estado' => 'pendiente',
+                'divisa' => 'USD'
+            ]);
 
                 // Preparar datos para el cargo
                 $chargeData = [
@@ -653,16 +661,16 @@ class N1coChargeController extends Controller
                         );
                     }
 
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Pago procesado exitosamente',
-                        'data' => $chargeResult['data']
-                    ]);
-                } else {
-                    // Si hubo un error en el cargo
-                    $ordenPago->update([
-                        'estado' => 'fallido'
-                    ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pago procesado exitosamente',
+                    'data' => $chargeResult['data']
+                ]);
+            } else {
+                // Si hubo un error en el cargo
+                $ordenPago->update([
+                    'estado' => 'fallido'
+                ]);
 
                     return response()->json([
                         'success' => false,
@@ -811,7 +819,6 @@ class N1coChargeController extends Controller
                     'esta_activo' => $metodoPago->esta_activo
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::channel('payments_error')->error('Error al obtener método de pago:', [
                 'message' => $e->getMessage(),
@@ -821,6 +828,92 @@ class N1coChargeController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener método de pago',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function changeStatusAuthentication3DS(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'authentication_id' => 'required|string',
+                'order_id' => 'required|string',
+                'status' => 'nullable|string|in:success,failed' // Estado opcional: success o failed
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error de validación',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Buscar la orden primero por authentication_id
+            $ordenPago = OrdenPago::where('id_autorizacion_3ds', $request->authentication_id)
+                ->first();
+
+            // Si no se encuentra por authentication_id, intentar buscar por order_id
+            if (!$ordenPago) {
+                $orderIdToSearch = $request->order_id;
+                $ordPosition = strpos($orderIdToSearch, 'ORD-');
+
+                if ($ordPosition !== false) {
+                    $orderIdToSearch = substr($orderIdToSearch, $ordPosition);
+                }
+
+                $ordenPago = OrdenPago::where('id_orden', $orderIdToSearch)
+                    ->first();
+            }
+
+            if (!$ordenPago) {
+                Log::channel('payments_error')->error('Orden no encontrada para actualizar estado', [
+                    'authentication_id' => $request->authentication_id,
+                    'order_id' => $request->order_id
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Orden no encontrada'
+                ], 404);
+            }
+
+            // Determinar el estado según el parámetro recibido
+            $status = $request->input('status', 'success'); // Por defecto success
+            $estado = $status === 'failed'
+                ? config('constants.ESTADO_ORDEN_AUTENTICACION_FALLIDA')
+                : config('constants.ESTADO_ORDEN_AUTENTICACION_EXITOSA');
+
+            // Actualizar el estado de la orden
+            $ordenPago->update([
+                'estado' => $estado
+            ]);
+
+            $logChannel = $status === 'failed' ? 'payments_error' : 'payments_success';
+            Log::channel($logChannel)->info('Estado de orden actualizado', [
+                'orden_id' => $ordenPago->id,
+                'id_orden' => $ordenPago->id_orden,
+                'authentication_id' => $request->authentication_id,
+                'estado' => $estado
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Estado de orden actualizado exitosamente',
+                'data' => [
+                    'id_orden' => $ordenPago->id_orden,
+                    'estado' => $ordenPago->estado
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::channel('payments_error')->error('Error al actualizar estado de autenticación:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el estado de la orden',
                 'error' => $e->getMessage()
             ], 500);
         }

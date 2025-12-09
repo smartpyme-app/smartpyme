@@ -44,36 +44,39 @@ class SuscripcionesController extends Controller
                         ->orWhere('nombre_propietario', 'like', '%' . $request->buscador . '%');
                 });
             })
-            ->when($request->suscripcion_inicio, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('created_at', '>=', $request->suscripcion_inicio);
+                ->when($request->suscripcion_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('created_at', '>=', $request->suscripcion_inicio);
+                    });
+                })
+                ->when($request->suscripcion_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('created_at', '<=', $request->suscripcion_fin);
+                    });
+                })
+                ->when($request->pago_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_ultimo_pago', '>=', $request->pago_inicio);
+                    });
+                })
+                ->when($request->pago_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
+                    });
+                })
+                ->when($request->plan, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
+                        $query->where('nombre', $request->plan);
+                    });
+                })
+                ->when($request->forma_pago, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->where('metodo_pago', $request->forma_pago);
+                    });
+                })
+                ->when($request->campania, function ($q) use ($request) {
+                    return $q->where('campania', 'like', '%' . $request->campania . '%');
                 });
-            })
-            ->when($request->suscripcion_fin, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('created_at', '<=', $request->suscripcion_fin);
-                });
-            })
-            ->when($request->pago_inicio, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('fecha_ultimo_pago', '>=', $request->pago_inicio);
-                });
-            })
-            ->when($request->pago_fin, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
-                });
-            })
-            ->when($request->plan, function ($q) use ($request) {
-                return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
-                    $query->where('nombre', $request->plan);
-                });
-            })
-            ->when($request->forma_pago, function ($q) use ($request) {
-                return $q->whereHas('suscripcion', function ($query) use ($request) {
-                    $query->where('metodo_pago', $request->forma_pago);
-                });
-            });
 
             if (!$request->estado) {
                 $query->withCount('suscripcion');
@@ -92,7 +95,7 @@ class SuscripcionesController extends Controller
                 }
                 return $empresa;
             });
-            
+
             return response()->json($empresas, 200);
         } catch (\Exception $e) {
             Log::error('Error en SuscripcionesController@index: ' . $e->getMessage());
@@ -127,42 +130,42 @@ class SuscripcionesController extends Controller
                     ->orderBy('s1.estado', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'estado_pago':
                 $query->leftJoin('suscripciones as s2', 'empresas.id', '=', 's2.empresa_id')
                     ->orderBy('s2.estado_ultimo_pago', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'fecha_proximo_pago':
                 $query->leftJoin('suscripciones as s3', 'empresas.id', '=', 's3.empresa_id')
                     ->orderBy('s3.fecha_proximo_pago', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'fecha_ultimo_pago':
                 $query->leftJoin('suscripciones as s4', 'empresas.id', '=', 's4.empresa_id')
                     ->orderBy('s4.fecha_ultimo_pago', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'plan':
                 $query->leftJoin('suscripciones as s5', 'empresas.id', '=', 's5.empresa_id')
                     ->leftJoin('planes as p1', 's5.plan_id', '=', 'p1.id')
                     ->orderBy('p1.nombre', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'tipo_plan':
                 $query->leftJoin('suscripciones as s6', 'empresas.id', '=', 's6.empresa_id')
                     ->orderBy('s6.tipo_plan', $direccion)
                     ->select('empresas.*');
                 break;
-                
+
             case 'metodo_pago':
                 $query->orderBy('metodo_pago', $direccion);
                 break;
-                
+
             default:
                 $query->orderBy($orden, $direccion);
                 break;
@@ -337,7 +340,7 @@ class SuscripcionesController extends Controller
             if ($request->input('empresa.suscripcion.id')) {
                 $suscripcion = Suscripcion::find($request->input('empresa.suscripcion.id'));
             }
-            
+
             if (!$suscripcion) {
                 $user = User::where('id_empresa', $request->input('empresa.id'))->first();
                 if ($user) {
@@ -368,7 +371,6 @@ class SuscripcionesController extends Controller
             }
 
             return response()->json($suscripcion ?? ['message' => 'Sistema suspendido'], 200);
-
         } catch (\Throwable $th) {
             Log::error('Error en SuscripcionesController@suspendSystem: ' . $th->getMessage());
             return response()->json([
@@ -381,7 +383,7 @@ class SuscripcionesController extends Controller
     public function getHistorialPagos($id)
     {
         $suscripcion = Suscripcion::findOrFail($id);
-        
+
         return $suscripcion->ordenesPago()
             ->select([
                 'id',
@@ -407,7 +409,8 @@ class SuscripcionesController extends Controller
             ->get();
     }
 
-    private function addOrderPayment(Suscripcion $suscripcion){
+    private function addOrderPayment(Suscripcion $suscripcion)
+    {
         try {
             $ordenPago = new OrdenPago();
             $ordenPago->id_usuario = $suscripcion->usuario_id;
@@ -417,12 +420,10 @@ class SuscripcionesController extends Controller
             $ordenPago->save();
 
             return $ordenPago;
-
         } catch (\Throwable $th) {
             Log::error('Error en SuscripcionesController@addOrderPayment: ' . $th->getMessage());
             return null;
         }
-       
     }
 
     // public function export(Request $request)
@@ -438,14 +439,40 @@ class SuscripcionesController extends Controller
         try {
             $export = new SuscripcionesExport();
             $export->filter($request);
-            
+
             $filename = 'suscripciones_empresas_' . date('Y-m-d_H-i-s') . '.xlsx';
-            
+
             return Excel::download($export, $filename);
-            
         } catch (\Exception $e) {
             Log::error('Error en export de suscripciones: ' . $e->getMessage());
             return response()->json(['error' => 'Error al exportar datos'], 500);
+        }
+    }
+
+    public function getCampanias(Request $request)
+    {
+        try {
+            $searchTerm = $request->input('search', '');
+
+            $query = Empresa::select('campania')
+                ->whereNotNull('campania')
+                ->where('campania', '!=', '');
+
+            if ($searchTerm) {
+                $query->where('campania', 'like', '%' . $searchTerm . '%');
+            }
+
+            $campanias = $query->distinct()
+                ->orderBy('campania', 'asc')
+                ->limit(50)
+                ->pluck('campania')
+                ->filter()
+                ->values();
+
+            return response()->json($campanias, 200);
+        } catch (\Exception $e) {
+            Log::error('Error en SuscripcionesController@getCampanias: ' . $e->getMessage());
+            return response()->json(['error' => 'Error al obtener campañas'], 500);
         }
     }
 }

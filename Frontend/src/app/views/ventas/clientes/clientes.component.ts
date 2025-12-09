@@ -28,9 +28,9 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     public producto:any = {};
     public categorias:any = [];
 
-    constructor( 
-        apiService:ApiService, 
-        alertService:AlertService, 
+    constructor(
+        apiService:ApiService,
+        alertService:AlertService,
         modalManager: ModalManagerService
     ){
         super(apiService, alertService, modalManager, {
@@ -88,7 +88,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
             this.loading = false;
         }
     }
-    
+
     public setOrden(columna: string) {
         if (this.filtros.orden === columna) {
           this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
@@ -113,7 +113,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -123,7 +123,7 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
             const deletedItem = await this.apiService.delete('cliente/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const index = this.clientes.data?.findIndex((c: any) => c.id === deletedItem.id);
             if (index !== -1 && index >= 0) {
                 this.clientes.data.splice(index, 1);
@@ -182,6 +182,10 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
         } finally {
             this.downloading = false;
         }
+    }
+
+    public generarEstadoCuenta(cliente: any){
+        window.open(this.apiService.baseUrl + '/api/cliente/estado-de-cuenta/' + cliente.id + '?token=' + this.apiService.auth_token(), '_blank');
     }
 
 }

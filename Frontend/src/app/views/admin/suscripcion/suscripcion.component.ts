@@ -24,10 +24,10 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './suscripcion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+
 })
 export class SuscripcionComponent extends BaseModalComponent implements OnInit {
-  
+
   public suscripcion: any = {};
   public usuario: any = {};
   public override loading = false;
@@ -43,6 +43,9 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   public processingPayment = false;
   public mostrar3DSModal = false;
   public urlAutenticacion!: SafeResourceUrl;
+  public authenticationId: string = '';
+  public orderId: string = '';
+  private authCheckInterval: any = null;
 
   @ViewChild('updatePaymentForm') updatePaymentForm!: NgForm;
 
@@ -54,7 +57,8 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     cvv: '',
   };
 
-  public pagoRecurrente = this.apiService.auth_user().empresa.pago_recurrente || false;
+  public pagoRecurrente =
+    this.apiService.auth_user().empresa.pago_recurrente || false;
 
   public billingInfo = {
     countryCode: '',
@@ -116,13 +120,12 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     );
 
     this.getPaises();
-
   }
 
   getPaises() {
     this.apiService.getAll('paises-suscripcion', this.paises)
       .pipe(this.untilDestroyed())
-      .subscribe(paises => { 
+      .subscribe(paises => {
       this.paises = paises;
     }, error => {this.alertService.error(error); });
   }
@@ -131,10 +134,10 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     this.apiService.getAll(`estados-por-pais/${countryCode}`, [])
       .pipe(this.untilDestroyed())
       .subscribe(
-      estados => { 
+      estados => {
         this.estados = estados;
-      }, 
-      error => {
+      },
+      (error) => {
         this.alertService.error(error);
       }
     );
@@ -142,16 +145,18 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
 
   onPaisChange() {
     if (this.billingInfo.countryCode) {
-      this.getEstados(this.billingInfo.countryCode);      
-      this.billingInfo.stateCode = '';      
+      this.getEstados(this.billingInfo.countryCode);
+      this.billingInfo.stateCode = '';
       this.billingInfo.zipCode = '';
     }
   }
 
   onEstadoChange() {
     if (this.billingInfo.stateCode) {
-      const estadoSeleccionado = this.estados.find(estado => estado.codigo === this.billingInfo.stateCode);
-      
+      const estadoSeleccionado = this.estados.find(
+        (estado) => estado.codigo === this.billingInfo.stateCode
+      );
+
       if (estadoSeleccionado && estadoSeleccionado.codigo_postal) {
         this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;
       }
@@ -178,6 +183,9 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       );
 
       if (chargeResult.requires_3ds) {
+        // Guardar los IDs para usar cuando llegue el mensaje del iframe
+        this.authenticationId = chargeResult.authentication_id;
+        this.orderId = chargeResult.order_id;
         this.handleThreeDSAuthentication(chargeResult);
         return;
       }
@@ -224,7 +232,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       const suscripcionGuardada = await this.apiService.store('suscripcion', this.suscripcion)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       this.suscripcion = suscripcionGuardada;
       this.alertService.success(
         'Suscripción guardada',
@@ -278,7 +286,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
         }
       );
   }
-  
+
   public async onUpdatePaymentMethod() {
     setTimeout(() => {
       if (!this.isFormValid()) {
@@ -328,6 +336,9 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       );
 
       if (result.requires_3ds) {
+        // Guardar los IDs para usar cuando llegue el mensaje del iframe
+        this.authenticationId = result.authentication_id;
+        this.orderId = result.order_id;
         this.handleThreeDSAuthentication(result);
         return;
       }
@@ -381,72 +392,128 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     );
     this.mostrar3DSModal = true;
 
-    // Configurar el intervalo para verificar la autenticación
+    // Timeout máximo de seguridad (2 minutos)
+    // Si no llega ningún mensaje del iframe, cerrar el modal
     setTimeout(() => {
-      const interval = setInterval(async () => {
-        try {
-          const authStatus = await firstValueFrom(
-            this.n1coPaymentService.checkAuthenticationStatus({
-              authentication_id: result.authentication_id,
-              order_id: result.order_id,
-            })
-          );
-
-          if (authStatus.estado === 'autenticacion_exitosa') {
-            clearInterval(interval);
-            this.mostrar3DSModal = false;
-            await this.processThreeDSPayment(result);
-          } else if (
-            [
-              'autenticacion_rechazada',
-              'autenticacion_cancelada',
-              'autenticacion_fallida',
-            ].includes(authStatus.estado)
-          ) {
-            clearInterval(interval);
-            this.mostrar3DSModal = false;
-            this.alertService.error('La autenticación ha fallado');
-            this.saving = false;
-          }
-        } catch (error) {
-          clearInterval(interval);
-          this.mostrar3DSModal = false;
-          this.alertService.error('Error en la autenticación');
-          this.saving = false;
-        }
-      }, 3000);
-    }, 10000);
+      if (this.mostrar3DSModal) {
+        this.stopAuthCheck();
+        this.mostrar3DSModal = false;
+        this.saving = false;
+        this.alertService.error('El tiempo de autenticación ha expirado');
+      }
+    }, 120000);
   }
 
-  private async processThreeDSPayment(result: any) {
-    try {
-      const response = await firstValueFrom(
-        this.n1coPaymentService.processDirectPayment3DS({
-          authentication_id: result.authentication_id,
-          order_id: result.order_id,
-        })
-      );
+  public async on3DSMessageReceived(messageData: any) {
+    console.log('📨 Mensaje recibido del modal 3DS:', messageData);
+    console.log('MessageType:', messageData.messageType);
+    console.log('Status:', messageData.status);
 
-      if (response.success) {
-        await this.refreshUserData();
-        this.alertService.success('Éxito', 'Suscripción creada exitosamente');
-        this.showUpdateForm = false;
-        this.closeModal();
-        this.loadAll();
+    // Verificar que sea autenticación completa exitosa
+    if (
+      messageData.messageType === 'authentication.complete' &&
+      messageData.status === 'SUCCESS'
+    ) {
+      // Detener el polling ya que recibimos el mensaje directo del iframe
+      this.stopAuthCheck();
 
-        window.location.reload();
-      } else {
+      // Esperar 500ms para que el usuario vea la confirmación (check) en el iframe
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Cerrar el modal después de mostrar la confirmación
+      this.mostrar3DSModal = false;
+
+      // Esperar 100ms antes de procesar el pago
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      try {
+        // Procesar el pago usando los datos del mensaje
+        const response = await firstValueFrom(
+          this.n1coPaymentService.processDirectPayment3DS({
+            authentication_id: messageData.authenticationId,
+            order_id: messageData.orderId,
+          })
+        );
+
+        if (response.success) {
+          await this.refreshUserData();
+          this.alertService.success('Éxito', 'Suscripción creada exitosamente');
+          this.showUpdateForm = false;
+          this.closeModal();
+          this.loadAll();
+          window.location.reload();
+        } else {
+          this.alertService.error(
+            response.message || 'Error al procesar el pago'
+          );
+        }
+
+        this.saving = false;
+      } catch (error: any) {
+        console.error('Error procesando pago 3DS:', error);
         this.alertService.error(
-          response.message || 'Error al procesar el pago'
+          'Error al procesar el pago: ' +
+            (error.error?.message || error.message || 'Error desconocido')
+        );
+        this.saving = false;
+      }
+    }
+    // Manejar autenticación fallida
+    else if (
+      messageData.messageType === 'authentication.failed' &&
+      messageData.status === 'FAILED'
+    ) {
+      // Detener el polling ya que recibimos el mensaje directo del iframe
+      this.stopAuthCheck();
+
+      try {
+        // Actualizar el estado en el backend a fallida
+        await firstValueFrom(
+          this.n1coPaymentService.changeStatusAuthentication3DS({
+            authentication_id: messageData.authenticationId,
+            order_id: messageData.orderId,
+            status: 'failed',
+          })
+        );
+
+        // Cerrar el modal
+        this.mostrar3DSModal = false;
+        this.saving = false;
+
+        // Mostrar alerta de error
+        this.alertService.error(
+          'No fue posible procesar el pago. Por favor, reintenta nuevamente con otra tarjeta o comunícate con soporte.'
+        );
+      } catch (error: any) {
+        console.error(
+          'Error actualizando estado de autenticación fallida:',
+          error
+        );
+        // Cerrar el modal de todas formas
+        this.mostrar3DSModal = false;
+        this.saving = false;
+
+        // Mostrar alerta de error
+        this.alertService.error(
+          'No fue posible procesar el pago. Por favor, reintenta nuevamente con otra tarjeta o comunícate con soporte.'
         );
       }
-    } catch (error: any) {
-      this.alertService.error(
-        'Error al procesar el pago: ' +
-          (error.error?.message || error.message || 'Error desconocido')
+    }
+    // Si el mensaje no coincide con ningún caso conocido, loguear pero no detener el polling
+    else {
+      console.warn('⚠️ Mensaje recibido pero no reconocido:', messageData);
+      console.warn(
+        'MessageType esperado: authentication.complete o authentication.failed'
       );
-    } finally {
-      this.saving = false;
+      console.warn('Status esperado: SUCCESS o FAILED');
+      // No detener el polling, puede que llegue otro mensaje
+    }
+  }
+
+  private stopAuthCheck() {
+    if (this.authCheckInterval) {
+      clearInterval(this.authCheckInterval);
+      this.authCheckInterval = null;
     }
   }
 
@@ -509,42 +576,48 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   // }
 
   public imprimirRecibo(pago: any) {
-
     if (!pago) {
       console.error('Error: El objeto pago es nulo o indefinido');
-      this.alertService.error('No se puede imprimir el recibo: Datos de pago no disponibles');
+      this.alertService.error(
+        'No se puede imprimir el recibo: Datos de pago no disponibles'
+      );
       return;
     }
-    
+
     if (!this.suscripcion) {
       console.error('Error: El objeto suscripcion es nulo o indefinido');
-      this.alertService.error('No se puede imprimir el recibo: Datos de suscripción no disponibles');
+      this.alertService.error(
+        'No se puede imprimir el recibo: Datos de suscripción no disponibles'
+      );
       return;
     }
-    
+
     const idSuscripcion = this.suscripcion.suscripcion?.id;
-    
+
     if (!idSuscripcion) {
       console.error('Error: El ID de suscripción no está definido');
-      this.alertService.error('No se puede imprimir el recibo: ID de suscripción no disponible');
+      this.alertService.error(
+        'No se puede imprimir el recibo: ID de suscripción no disponible'
+      );
       return;
     }
-  
+
     const queryParams = [
       `fecha=${encodeURIComponent(pago.fecha_transaccion || '')}`,
       `monto=${encodeURIComponent(pago.monto || '')}`,
       `estado=${encodeURIComponent(pago.estado || '')}`,
-      `plan=${encodeURIComponent(pago.plan || '')}`
+      `plan=${encodeURIComponent(pago.plan || '')}`,
     ].join('&');
-    
-    const url = this.apiService.baseUrl +
-      '/api/suscripcion/' + 
-      idSuscripcion + 
+
+    const url =
+      this.apiService.baseUrl +
+      '/api/suscripcion/' +
+      idSuscripcion +
       '/recibo-suscripcion?' +
       queryParams +
       '&token=' +
       this.apiService.auth_token();
-    
+
     // console.log('URL generada:', url);
     window.open(url);
   }
@@ -833,30 +906,32 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
   public onRecurrentPaymentChange(event: any): void {
     this.saving = true;
     const isRecurrent = event.target.checked;
-    
-    this.apiService.store('suscripcion/pago-recurrente', {
-      id_empresa: this.usuario.empresa.id,
-      pago_recurrente: isRecurrent
-    })
-      .pipe(this.untilDestroyed())
+
+    this.apiService
+      .store('suscripcion/pago-recurrente', {
+        id_empresa: this.usuario.empresa.id,
+        pago_recurrente: isRecurrent,
+      })
       .subscribe(
-      (response) => {
-        this.suscripcion.pago_recurrente = isRecurrent;
-        this.alertService.success(
-          'Éxito', 
-          `Pago recurrente ${isRecurrent ? 'activado' : 'desactivado'} exitosamente.`
-        );
-        this.saving = false;
-        this.loadAll(); // Para actualizar los datos desde el servidor
-      },
-      (error) => {
-        this.alertService.error(
-          error.error?.message || 'Error al actualizar el pago recurrente'
-        );
-        this.saving = false;
-        // Restaurar el estado anterior del interruptor
-        event.target.checked = !isRecurrent;
-      }
-    );
+        (response) => {
+          this.suscripcion.pago_recurrente = isRecurrent;
+          this.alertService.success(
+            'Éxito',
+            `Pago recurrente ${
+              isRecurrent ? 'activado' : 'desactivado'
+            } exitosamente.`
+          );
+          this.saving = false;
+          this.loadAll(); // Para actualizar los datos desde el servidor
+        },
+        (error) => {
+          this.alertService.error(
+            error.error?.message || 'Error al actualizar el pago recurrente'
+          );
+          this.saving = false;
+          // Restaurar el estado anterior del interruptor
+          event.target.checked = !isRecurrent;
+        }
+      );
   }
 }

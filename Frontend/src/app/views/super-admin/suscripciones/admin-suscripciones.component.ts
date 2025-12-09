@@ -11,6 +11,13 @@ import { RouterModule } from '@angular/router';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
 import { LazyImageDirective } from '../../../directives/lazy-image.directive';
+import { Subject, Observable, of } from 'rxjs';
+import {
+  debounceTime,
+  distinctUntilChanged,
+  switchMap,
+  catchError,
+} from 'rxjs/operators';
 
 interface Plan {
   id: number;
@@ -33,7 +40,7 @@ interface OrdenPago {
     templateUrl: './admin-suscripciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, LazyImageDirective],
-    
+
 })
 export class AdminSuscripcionesComponent extends BasePaginatedComponent implements OnInit {
   public suscripciones: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -46,10 +53,15 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   public nuevaSuscripcion: any = {};
   public tabActivo: 'n1co' | 'transferencia' = 'n1co';
   public editando: boolean = false;
-  public downloading:boolean = false;
+  public downloading: boolean = false;
 
   public historialPagos: OrdenPago[] = [];
   public loadingHistorial: boolean = false;
+
+  // Para lazy loading de campañas
+  public searchCampanias$ = new Subject<string>();
+  public campaniasResults: string[] = [];
+  public loadingCampanias: boolean = false;
 
   public planes: Plan[] = [
     {
@@ -95,6 +107,43 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
     this.loadAll();
+    this.setupCampaniasSearch();
+  }
+
+  private setupCampaniasSearch() {
+    this.searchCampanias$
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((term) => {
+          if (!term || term.length < 1) {
+            // Si no hay término, cargar las primeras campañas
+            this.loadingCampanias = true;
+            return this.apiService.getAll('suscripciones/campanias', {}).pipe(
+              catchError((error) => {
+                console.error('Error cargando campañas:', error);
+                return of([]);
+              })
+            );
+          }
+          this.loadingCampanias = true;
+          return this.apiService
+            .getAll('suscripciones/campanias', { search: term })
+            .pipe(
+              catchError((error) => {
+                console.error('Error buscando campañas:', error);
+                return of([]);
+              })
+            );
+        })
+      )
+      .subscribe((results) => {
+        this.campaniasResults = results || [];
+        this.loadingCampanias = false;
+      });
+
+    // Cargar campañas iniciales
+    this.searchCampanias$.next('');
   }
 
   public loadAll() {
@@ -104,6 +153,7 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       orden: 'fecha_ultimo_pago',
       direccion: 'desc',
       paginate: 10,
+      campania: '',
     };
 
     this.filtrarSuscripciones();
@@ -328,7 +378,7 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
       const response = await this.apiService.store('suscripcion/create', datosSuscripcion)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       this.alertService.success('Éxito', 'Suscripción creada correctamente');
       this.modalRef.hide();
       this.filtrarSuscripciones();
@@ -451,36 +501,37 @@ export class AdminSuscripcionesComponent extends BasePaginatedComponent implemen
 
   public setOrden(columna: string) {
     if (this.filtros.orden === columna) {
-      this.filtros.direccion = this.filtros.direccion === 'asc' ? 'desc' : 'asc';
+      this.filtros.direccion =
+        this.filtros.direccion === 'asc' ? 'desc' : 'asc';
     } else {
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
     }
-  
+
     this.filtrarSuscripciones();
   }
 
-  public descargar(){
+  public descargar() {
     this.downloading = true;
-    this.apiService.export('suscripciones/exportar', this.filtros)
-      .pipe(this.untilDestroyed())
-      .subscribe({
-        next: (data: Blob) => {
-          const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'suscripciones.xlsx';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          this.downloading = false;
-        },
-        error: (error) => {
-          this.alertService.error(error);
-          this.downloading = false;
-        }
-      });
+    this.apiService.export('suscripciones/exportar', this.filtros).subscribe(
+      (data: Blob) => {
+        const blob = new Blob([data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'suscripciones.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloading = false;
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.downloading = false;
+      }
+    );
   }
 }

@@ -243,26 +243,26 @@ class LibrosIVAController extends Controller
 
                 // Primero identificar exportaciones (sin importar el IVA)
                 $exportaciones = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = optional($venta->documento)->nombre;
-                    return $documentoNombre === 'Factura de exportación'
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
+                    return strtolower($documentoNombre) === 'factura de exportación'
                         ? (float) $venta->total
                         : 0;
                 });
 
                 // Luego clasificar las ventas restantes (excluyendo exportaciones)
                 $ventasExentas = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = optional($venta->documento)->nombre;
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     // Excluir exportaciones
-                    if ($documentoNombre === 'Factura de exportación') {
+                    if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
                     return $venta->iva == 0 ? (float) $venta->total : 0;
                 });
 
                 $ventasGravadas = $ventasDia->sum(function ($venta) {
-                    $documentoNombre = optional($venta->documento)->nombre;
+                    $documentoNombre = trim(optional($venta->documento)->nombre ?? '');
                     // Excluir exportaciones
-                    if ($documentoNombre === 'Factura de exportación') {
+                    if (strtolower($documentoNombre) === 'factura de exportación') {
                         return 0;
                     }
                     return $venta->iva > 0 ? (float) $venta->total : 0;

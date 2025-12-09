@@ -335,7 +335,6 @@ class ClientesController extends Controller
 
         $cliente = Cliente::where('id', $id)->with('empresa')->firstOrFail();
         $cliente->ventas = $cliente->ventas()->where('estado', 'Pendiente')->get();
-        $cliente->fletes = $cliente->fletes()->where('estado', 'Pendiente')->get();
         // return $cliente;
         $reportes = \PDF::loadView('reportes.clientes.estado-cuenta', compact('cliente'))->setPaper('letter', 'landscape');
         return $reportes->stream();
@@ -498,15 +497,11 @@ class ClientesController extends Controller
         $cliente = Cliente::where('id', $request->id)->firstOrFail();
 
         $ventas = $cliente->ventas()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
-        $fletes = $cliente->fletes()->whereBetween('fecha', [$request->inicio, $request->fin])->get();
 
         $cliente->total_ventas_pagadas = $ventas->where('estado', 'Pagada')->sum('total');
         $cliente->total_ventas_pendientes = $ventas->where('estado', 'Pendiente')->sum('total');
 
-        $cliente->total_fletes_pagados = $fletes->where('estado', 'Pagado')->sum('total');
-        $cliente->total_fletes_pendientes = $fletes->where('estado', 'Pendiente')->sum('total');
-
-        $cliente->total_balance = $cliente->total_ventas_pagadas - $cliente->total_ventas_pendientes - $cliente->total_fletes_pendientes;
+        $cliente->total_balance = $cliente->total_ventas_pagadas - $cliente->total_ventas_pendientes;
 
 
         return Response()->json($cliente, 200);
