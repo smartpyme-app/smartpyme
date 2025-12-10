@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -23,6 +24,7 @@ export class VentaComponent implements OnInit {
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private location: Location
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
     }
@@ -71,6 +73,10 @@ export class VentaComponent implements OnInit {
     public openAbono(template: TemplateRef<any>, venta:any){
         this.venta = venta;
         this.modalRef = this.modalService.show(template);
+    }
+
+    public goBack() {
+        this.location.back();
     }
 
 }
