@@ -279,8 +279,12 @@ class AuthJWTController extends Controller
             DB::commit();
 
             $plan = $this->getPlan($request['empresa']['plan']);
+            
             // Usar el total con descuento aplicado en lugar del precio original del plan
             $montoSuscripcion = $empresa->total;
+            
+            // Calcular fin_periodo_prueba: si hay código promocional válido, usar el día actual
+            $finPeriodoPrueba = $this->calcularFinPeriodoPrueba($codigoPromocional, $plan);
             
             $suscripcion = $this->createSuscripcion([
                 'empresa_id' => $empresa->id,
@@ -294,7 +298,7 @@ class AuthJWTController extends Controller
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null,
                 'fecha_proximo_pago' => null,
-                'fin_periodo_prueba' => now()->addDays($this->getPlan($request['empresa']['plan'])->duracion_dias),
+                'fin_periodo_prueba' => $finPeriodoPrueba,
                 'fecha_cancelacion' => null,
                 'motivo_cancelacion' => null,
                 'requiere_factura' => false,
@@ -695,13 +699,16 @@ class AuthJWTController extends Controller
 
         if ($plan && $plan->permite_periodo_prueba) {
             $diasPrueba = $plan->dias_periodo_prueba;
+            
+            // Preservar fin_periodo_prueba si ya viene en los datos (útil para códigos promocionales)
+            $finPeriodoPrueba = $data['fin_periodo_prueba'] ?? now()->addDays($diasPrueba);
 
             $data = array_merge($data, [
                 'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA'), // Cambiar estado a 'prueba'
                 'estado_ultimo_pago' => null,
                 'fecha_ultimo_pago' => null, // No hay pago inicial en período de prueba
                 'fecha_proximo_pago' => now()->addDays($diasPrueba), // Próximo pago al finalizar la prueba
-                'fin_periodo_prueba' => now()->addDays($diasPrueba),
+                'fin_periodo_prueba' => $finPeriodoPrueba,
                 'monto' => $monto, // Usar el monto con descuento aplicado
                 'intentos_cobro' => 0,
                 'ultimo_intento_cobro' => null,
@@ -849,6 +856,21 @@ class AuthJWTController extends Controller
             'total' => $total,
             'campania' => $campania
         ];
+    }
+
+    /**
+     * Calcula la fecha de fin del período de prueba
+     * Si hay código promocional válido, retorna la fecha actual (sin período de prueba)
+     * Si no hay código promocional, retorna la fecha actual más los días de duración del plan
+     */
+    private function calcularFinPeriodoPrueba($codigoPromocional, $plan)
+    {
+        $tieneCodigoPromocional = !empty($codigoPromocional) && 
+                                  $this->obtenerConfiguracionCodigoPromocional($codigoPromocional) !== null;
+        
+        return $tieneCodigoPromocional 
+            ? now() 
+            : now()->addDays($plan->duracion_dias);
     }
 
     public function me($id)
