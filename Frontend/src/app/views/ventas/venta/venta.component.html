@@ -7,7 +7,7 @@
         <a *ngIf="venta.saldo > 0 && venta.estado == 'Pendiente'" (click)="openAbono(mabono, venta)" class="btn btn-default me-2">
             <i class="fas fa-fw fa-hand-holding-usd"></i> Pagar
         </a>
-        <button class="btn btn-light text-danger" routerLink="/ventas"><i class="fa fa-arrow-left"></i> Regresar</button>
+        <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
     </div>
 </section>
 
