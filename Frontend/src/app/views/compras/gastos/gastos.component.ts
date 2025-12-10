@@ -72,6 +72,11 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtrarGastos();
     }
 
+    public override setPagination(event: any): void {
+        this.filtros.page = event.page;
+        this.filtrarGastos();
+    }
+
     ngOnInit() {
         this.route.queryParams
             .pipe(this.untilDestroyed())
@@ -87,10 +92,14 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 tipo: params['tipo'] || '',
                 dte: params['dte'] || '',
                 estado: params['estado'] || '',
+                id_area_empresa: +params['id_area_empresa'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                num_identificacion: params['num_identificacion'] || '',
                 orden: params['orden'] || 'id',
                 direccion: params['direccion'] || 'desc',
-                paginate: params['paginate'] || 10,
-                page: params['page'] || 1,
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
             };
 
             this.filtrarGastos();
@@ -120,9 +129,12 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         this.filtros.tipo = '';
         this.filtros.id_area_empresa = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
         this.filtros.num_identificacion = '';
 
         this.loading = true;
@@ -131,10 +143,18 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
     }
 
     public filtrarGastos(){
+        // Limpiar valores vacíos antes de navegar
+        const queryParams: any = {};
+        Object.keys(this.filtros).forEach(key => {
+            const value = this.filtros[key];
+            if (value !== '' && value !== null && value !== undefined) {
+                queryParams[key] = value;
+            }
+        });
+
         this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: this.filtros,
-            queryParamsHandling: 'merge',
+            queryParams: queryParams,
         });
 
         this.loading = true;

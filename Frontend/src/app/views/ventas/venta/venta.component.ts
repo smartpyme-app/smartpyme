@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -18,7 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './venta.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, CrearAbonoVentaComponent, LazyImageDirective],
-    
+
 })
 export class VentaComponent implements OnInit {
 
@@ -41,6 +42,7 @@ export class VentaComponent implements OnInit {
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private location: Location
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         this.route.data
@@ -59,7 +61,7 @@ export class VentaComponent implements OnInit {
     //     if(this.modalRef){
     //         this.modalRef.hide();
     //     }
-        
+
     //     this.venta.id = +this.route.snapshot.paramMap.get('id')!;
     //     this.loading = true;
     //     const endpoint = this.type === 'cotizacion' ? 'cotizacion/' : 'venta/';
@@ -94,7 +96,7 @@ export class VentaComponent implements OnInit {
         if (this.modalRef) {
             this.modalRef.hide();
         }
-        
+
         this.venta.id = +this.route.snapshot.paramMap.get('id')!;
         this.loading = true;
         const endpoint = this.type === 'cotizacion' ? 'cotizacion/' : 'venta/';
@@ -156,7 +158,7 @@ export class VentaComponent implements OnInit {
     }
 
 
-    
+
 
     public setEstado(abono:any){
         this.saving = false;
@@ -179,7 +181,7 @@ export class VentaComponent implements OnInit {
 
     hasCustomField(fieldId: number): boolean {
 
-        return this.venta.detalles?.some((detalle: any) => 
+        return this.venta.detalles?.some((detalle: any) =>
             detalle.custom_fields?.some((cf: any) => cf.custom_field?.id === fieldId)
         ) || false;
     }
@@ -189,6 +191,10 @@ export class VentaComponent implements OnInit {
             (cf: any) => cf.custom_field?.id === fieldId
         );
         return customField ? customField.value : '';
+    }
+
+    public goBack() {
+        this.location.back();
     }
 
 }

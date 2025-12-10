@@ -1,10 +1,11 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
@@ -70,6 +71,9 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     protected override apiService: ApiService,
     private mhService: MHService,
     protected override alertService: AlertService,
+    private modalService: BsModalService,
+    private router: Router,
+    private route: ActivatedRoute,
     protected override modalManager: ModalManagerService,
     private sharedDataService: SharedDataService
   ) {
@@ -101,7 +105,37 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
-    this.loadAll();
+
+    this.route.queryParams.subscribe(params => {
+      this.filtros = {
+        buscador: params['buscador'] || '',
+        id_proyecto: +params['id_proyecto'] || '',
+        id_documento: +params['id_documento'] || '',
+        id_cliente: +params['id_cliente'] || '',
+        id_sucursal: +params['id_sucursal'] || '',
+        id_usuario: +params['id_usuario'] || '',
+        id_vendedor: +params['id_vendedor'] || '',
+        id_canal: +params['id_canal'] || '',
+        forma_pago: params['forma_pago'] || '',
+        dte: params['dte'] || '',
+        estado: params['estado'] || '',
+        num_identificacion: params['num_identificacion'] || '',
+        inicio: params['inicio'] || '',
+        fin: params['fin'] || '',
+        orden: params['orden'] || 'fecha',
+        direccion: params['direccion'] || 'desc',
+        paginate: +params['paginate'] || 10,
+        page: +params['page'] || 1,
+      };
+
+      // Aplicar filtro de sucursal para usuarios no administradores si no hay filtro en URL
+      if (this.apiService.auth_user().tipo != 'Administrador' && !params['id_sucursal']) {
+        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+      }
+
+      this.filtrarVentas();
+    });
+
     this.getNumsIds();
 
     // Cargar datos compartidos usando SharedDataService
@@ -186,43 +220,66 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   }
 
   public override loadAll() {
-    const filtrosGuardados = localStorage.getItem('ventasFiltros');
-
-    if (filtrosGuardados) {
-      this.filtros = JSON.parse(filtrosGuardados);
-      // console.log(this.filtros);
-    } else {
-
-      this.filtros = {
-        id_sucursal: '',
-        id_cliente: '',
-        id_usuario: '',
-        id_vendedor: '',
-        id_canal: '',
-        id_documento: '',
-        id_proyecto: '',
-        num_identificacion: '',
-        dte: '',
-        forma_pago: '',
-        estado: '',
-        buscador: '',
-        orden: 'fecha',
-        direccion: 'desc',
-        paginate: 10
-      };
+    this.filtros = {
+      buscador: '',
+      id_proyecto: '',
+      id_documento: '',
+      id_cliente: '',
+      id_sucursal: '',
+      id_usuario: '',
+      id_vendedor: '',
+      id_canal: '',
+      forma_pago: '',
+      dte: '',
+      estado: '',
+      num_identificacion: '',
+      inicio: '',
+      fin: '',
+      orden: 'fecha',
+      direccion: 'desc',
+      paginate: 10,
+      page: 1,
+    };
 
       // Aplicar filtro de sucursal para usuarios no administradores
       if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) ){
         this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
       }
+
+      this.filtrarVentas();
+      
     }
 
-        this.filtrarVentas();
-    }
 
   public filtrarVentas() {
-    localStorage.setItem('ventasFiltros', JSON.stringify(this.filtros));
+    // Limpiar valores vacíos antes de navegar
+    const queryParams: any = {};
+    Object.keys(this.filtros).forEach(key => {
+      const value = this.filtros[key];
+      if (value !== '' && value !== null && value !== undefined) {
+        queryParams[key] = value;
+      }
+    });
+
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: queryParams,
+    });
+
     this.loading = true;
+
+    if (!this.filtros.id_cliente) {
+      this.filtros.id_cliente = '';
+    }
+
+    if (!this.filtros.id_usuario) {
+      this.filtros.id_usuario = '';
+    }
+
+    if (!this.filtros.id_vendedor) {
+      this.filtros.id_vendedor = '';
+    }
+
     this.apiService.getAll('ventas', this.filtros).subscribe(
       (ventas) => {
         this.ventas = ventas;
@@ -258,6 +315,10 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   }
 
   // setPagination() ahora se hereda de BasePaginatedComponent
+  public override setPagination(event: any): void {
+    this.filtros.page = event.page;
+    this.filtrarVentas();
+  }
 
   public reemprimir(venta: any) {
     window.open(
@@ -782,7 +843,6 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   }
 
   public limpiarFiltros() {
-    localStorage.removeItem('ventasFiltros');
     this.loadAll();
   }
 

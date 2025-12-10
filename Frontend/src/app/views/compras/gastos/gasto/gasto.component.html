@@ -8,8 +8,8 @@
       </button>
     }
 
-    <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
-  </div>
+        <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
+    </div>
 </div>
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">
@@ -453,7 +453,7 @@
         </select>
       </div>
       <div class="form-group col-md-12 col-lg-12">
-      
+
         <div class="form-group col-md-4 col-lg-2">
           <label for="">Otros impuestos:</label>
           <input type='number' class="form-control" step="any" (change)="setImpuesto('otros')" name="otros_impuestos"

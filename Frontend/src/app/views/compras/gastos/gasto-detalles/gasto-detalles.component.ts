@@ -1,5 +1,5 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -29,7 +29,8 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private location: Location
 	) {
         super();
     }
@@ -69,6 +70,10 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
             .subscribe(abono => {
                 this.loadAll();
             }, error => {this.alertService.error(error); });
+    }
+
+    public goBack() {
+        this.location.back();
     }
 
 }

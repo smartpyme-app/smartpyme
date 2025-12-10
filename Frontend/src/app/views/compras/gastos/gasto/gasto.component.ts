@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
@@ -25,7 +26,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     templateUrl: './gasto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CrearAreaEmpresaComponent, CrearImpuestoComponent, CrearDepartamentoComponent, CrearAbonoGastoComponent, LazyImageDirective],
-    
+
 })
 export class GastoComponent implements OnInit {
   public gasto: any = {iva: 0, renta_retenida: 0, iva_percibido: 0, otros_impuestos: 0};
@@ -66,7 +67,8 @@ export class GastoComponent implements OnInit {
     private router: Router,
     private modalService: BsModalService,
     private sharedDataService: SharedDataService,
-    private cacheService: HttpCacheService
+    private cacheService: HttpCacheService,
+    private location: Location
   ) {}
 
   public openAbono(template: TemplateRef<any>, gasto:any){
@@ -469,7 +471,7 @@ export class GastoComponent implements OnInit {
     // El toggle representa "Pendiente": cuando está encendido (true), está pendiente
     // Cuando está apagado (false), no está pendiente (ya pagado)
     const estaPendiente = event.target.checked;
-    
+
     if (estaPendiente) {
       // Si está pendiente (toggle encendido), deshabilitar fecha de pago y limpiar el valor
       this.gasto.estado = 'Pendiente';
@@ -621,7 +623,7 @@ export class GastoComponent implements OnInit {
       const gastoGuardado = await this.apiService.store('gasto', this.gasto)
         .pipe(this.untilDestroyed())
         .toPromise();
-      
+
       // Invalidar cache después de guardar
       const isNew = !this.gasto.id;
       if (this.cacheService) {
@@ -630,12 +632,12 @@ export class GastoComponent implements OnInit {
           this.cacheService.delete(`/gasto/${gastoGuardado.id}`);
         }
       }
-      
+
       const titulo = isNew ? 'Gasto creado' : 'Gasto guardado';
-      const mensaje = isNew 
-        ? 'El gasto fue añadido exitosamente.' 
+      const mensaje = isNew
+        ? 'El gasto fue añadido exitosamente.'
         : 'El gasto fue guardado exitosamente.';
-      
+
       this.alertService.success(titulo, mensaje);
       this.router.navigate(['/gastos']);
     } catch (error: any) {
@@ -646,7 +648,7 @@ export class GastoComponent implements OnInit {
       }
       // Asegurar que el alert se muestre
       this.alertService.modal = false;
-      
+
       // El AlertService ya maneja los errores 422 con mensajes detallados
       this.alertService.error(error);
     } finally {
@@ -1190,5 +1192,7 @@ export class GastoComponent implements OnInit {
     this.areasDisponibles.push(area);
     this.gasto.id_area_empresa = area.id.toString();
   }
-
+  public goBack() {
+    this.location.back();
+  }
 }
