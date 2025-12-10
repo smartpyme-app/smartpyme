@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Constants\ShopifyConstant;
+use App\Models\Admin\Empresa;
 use Illuminate\Support\Facades\Log;
 
 class ShopifyTransformer
@@ -59,7 +61,7 @@ class ShopifyTransformer
             'municipio' => $primaryAddress['city'] ?? '',
             'departamento' => $primaryAddress['province'] ?? '',
             'cod_municipio' => substr($primaryAddress['city'] ?? '', 0, 10),
-            'cod_departamento' => substr($primaryAddress['province_code'] ?? '', 0, 10),
+            'cod_departamento' => $this->obtenerCodigoDepartamento($primaryAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
             'tipo' => 'Persona',
             'empresa_telefono' => $primaryAddress['phone'] ?? $customer['phone'] ?? '',
             'empresa_direccion' => $direccionCompleta,
@@ -122,7 +124,7 @@ class ShopifyTransformer
             'municipio' => $defaultAddress['city'] ?? '',
             'departamento' => $defaultAddress['province'] ?? '',
             'cod_municipio' => substr($defaultAddress['city'] ?? '', 0, 10),
-            'cod_departamento' => substr($defaultAddress['province_code'] ?? '', 0, 10),
+            'cod_departamento' => $this->obtenerCodigoDepartamento($defaultAddress['province_code'] ?? '', $shopifyData['id_empresa'] ?? null),
             'tipo' => 'Persona',
             'empresa_telefono' => $defaultAddress['phone'] ?? $customer['phone'] ?? '',
             'empresa_direccion' => $direccionCompleta,
@@ -571,14 +573,6 @@ class ShopifyTransformer
         return $tituloLimpio;
     }
 
-    /**
-     * Calcula el subtotal sin impuesto basado en los line_items y shipping_lines de Shopify
-     *
-     * @param array $lineItems Line items de Shopify
-     * @param array $shippingLines Shipping lines de Shopify
-     * @param int $empresaId ID de la empresa para obtener el porcentaje de impuesto
-     * @return float Subtotal sin impuesto
-     */
     private function calcularSubtotalSinImpuesto($lineItems, $shippingLines = [], $empresaId = null)
     {
         $subtotalSinImpuesto = 0;
@@ -613,44 +607,6 @@ class ShopifyTransformer
         return round($subtotalSinImpuesto, 2);
     }
 
-    /**
-     * Calcula el IVA total de los envíos
-     * 
-     * @param array $shippingLines Líneas de envío de Shopify
-     * @return float IVA total de envíos
-     */
-    private function calcularIVAEnvio($shippingLines)
-    {
-        $ivaEnvio = 0;
-        
-        foreach ($shippingLines as $shipping) {
-            // Usar el precio con descuento si está disponible, sino el precio original
-            $precioConIVA = floatval($shipping['discounted_price'] ?? $shipping['price'] ?? 0);
-            if ($precioConIVA > 0) {
-                // Solo calcular IVA si el envío tiene tax_lines
-                if (!empty($shipping['tax_lines']) && is_array($shipping['tax_lines'])) {
-                    $precioSinIVA = $this->calcularPrecioSinIVA($precioConIVA);
-                    $ivaEnvio += $precioConIVA - $precioSinIVA;
-                }
-            }
-        }
-        
-        Log::info("IVA de envío calculado", [
-            'iva_envio' => $ivaEnvio,
-            'shipping_lines_count' => count($shippingLines)
-        ]);
-        
-        return round($ivaEnvio, 2);
-    }
-
-    /**
-     * Calcula el precio sin impuesto desde el precio con impuesto de Shopify
-     * DEPRECATED: Usa ImpuestosService::calcularPrecioSinImpuesto en su lugar
-     *
-     * @param float|string $precioConImpuesto Precio con impuesto desde Shopify
-     * @param int $empresaId ID de la empresa para obtener el porcentaje de impuesto
-     * @return float Precio sin impuesto para SmartPyme
-     */
     private function calcularPrecioSinImpuesto($precioConImpuesto, $empresaId = null)
     {
         // Delegar al servicio de impuestos si se proporciona empresaId
@@ -715,5 +671,47 @@ class ShopifyTransformer
         }
         
         return null;
+    }
+
+    //Obtiene el código de departamento mapeado desde Shopify si la facturación electrónica está activada
+    private function obtenerCodigoDepartamento($provinceCode, $empresaId = null)
+    {
+        if (empty($provinceCode)) {
+            return '';
+        }
+
+        if (!$empresaId) {
+            return substr($provinceCode, 0, 10);
+        }
+
+        $empresa = Empresa::find($empresaId);
+        if (!$empresa || !$empresa->facturacion_electronica) {
+            // Si no tiene facturación electrónica, retornar el código original
+            return substr($provinceCode, 0, 10);
+        }
+
+        // Si tiene facturación electrónica, mapear el código
+        $codigoMapeado = $this->mapearCodigoDepartamentoShopify($provinceCode);
+
+        return $codigoMapeado;
+    }
+
+ // Se mapearn los codigos de shopify a codigo de FA
+    private function mapearCodigoDepartamentoShopify($provinceCode)
+    {
+        // funcion de ShopifyConstant para obtener el código
+        $codigoMapeado = ShopifyConstant::obtenerCodigoDepartamento($provinceCode);
+
+        // Si se encontró el código mapeado, retornarlo
+        if ($codigoMapeado !== null) {
+            return $codigoMapeado;
+        }
+
+        Log::warning('Código de departamento de Shopify no encontrado en el mapeo', [
+            'province_code' => $provinceCode,
+            'province_code_upper' => strtoupper(trim($provinceCode))
+        ]);
+
+        return substr($provinceCode, 0, 10);
     }
 }
