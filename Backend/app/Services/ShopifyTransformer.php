@@ -351,6 +351,7 @@ class ShopifyTransformer
             'kueskipay' => 'KueskiPay',
             'kueski pay' => 'KueskiPay',
             'manual' => 'Manual',
+            'cash' => 'Efectivo',
             'cash on delivery (cod)' => 'Contra entrega',
             'pago contra entrega' => 'Contra entrega',
             'bank_transfer' => 'Transferencia bancaria',
