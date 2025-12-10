@@ -90,10 +90,18 @@ export class ComprasComponent implements OnInit {
     }
 
     public filtrarCompras(){
+        // Limpiar valores vacíos antes de navegar
+        const queryParams: any = {};
+        Object.keys(this.filtros).forEach(key => {
+            const value = this.filtros[key];
+            if (value !== '' && value !== null && value !== undefined) {
+                queryParams[key] = value;
+            }
+        });
+
         this.router.navigate([], {
             relativeTo: this.route,
-            queryParams: this.filtros,
-            queryParamsHandling: 'merge',
+            queryParams: queryParams,
         });
 
         this.loading = true;

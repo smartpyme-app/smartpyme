@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
@@ -18,7 +19,8 @@ export class GastoDetallesComponent implements OnInit {
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+	    private location: Location
 	) { }
 
 	ngOnInit() {
@@ -39,6 +41,10 @@ export class GastoDetallesComponent implements OnInit {
                 this.gasto.id_usuario = this.apiService.auth_user().id;
             }
         });
+    }
+
+    public goBack() {
+        this.location.back();
     }
 
 }
