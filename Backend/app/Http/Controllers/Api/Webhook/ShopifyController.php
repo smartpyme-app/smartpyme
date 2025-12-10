@@ -518,28 +518,58 @@ class ShopifyController extends Controller
 
         // Log::info("Usuario encontrado", ['usuario_id' => $usuario->id, 'usuario_nombre' => $usuario->name]);
 
+        // Verificar primero si debe crearse como cotización
+        $financialStatus = $request->financial_status ?? 'pending';
+        $esPagada = ($financialStatus === 'paid' || $financialStatus === 'partially_paid');
+        $debeCrearCotizacion = $empresa->facturacion_electronica && !$esPagada;
+
+        Log::info("Verificando si debe crearse como cotización", [
+            'empresa_id' => $empresa->id,
+            'facturacion_electronica' => $empresa->facturacion_electronica,
+            'financial_status' => $financialStatus,
+            'es_pagada' => $esPagada,
+            'debe_crear_cotizacion' => $debeCrearCotizacion
+        ]);
+
         // Log::info("Buscando documento", [
         //     'facturacion_electronica' => $empresa->facturacion_electronica,
         //     'id_sucursal' => $usuario->id_sucursal
         // ]);
 
-        if ($empresa->facturacion_electronica) {
+        // Para cotizaciones, buscar cualquier documento activo o usar uno por defecto
+        if ($debeCrearCotizacion) {
+            // Para cotizaciones, buscar cualquier documento activo
             $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                ->where('nombre', 'Factura')
                 ->where('activo', true)
                 ->first();
             
+            // Si no encuentra ningún documento, buscar en toda la empresa
+            if (!$documento) {
+                $documento = Documento::where('id_empresa', $empresa->id)
+                    ->where('activo', true)
+                    ->first();
+            }
         } else {
-            $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
-                ->where('nombre', 'Ticket')
-                ->where('activo', true)
-                ->first();
+            // Para ventas normales, usar la lógica original
+            if ($empresa->facturacion_electronica) {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('nombre', 'Factura')
+                    ->where('activo', true)
+                    ->first();
+                
+            } else {
+                $documento = Documento::where('id_sucursal', $usuario->id_sucursal)
+                    ->where('nombre', 'Ticket')
+                    ->where('activo', true)
+                    ->first();
+            }
         }
 
         if (!$documento) {
             Log::error("Ningún documento encontrado", [
                 'id_sucursal' => $usuario->id_sucursal,
-                'facturacion_electronica' => $empresa->facturacion_electronica
+                'facturacion_electronica' => $empresa->facturacion_electronica,
+                'debe_crear_cotizacion' => $debeCrearCotizacion
             ]);
             return response()->json([
                 'status' => 'error',
@@ -666,6 +696,16 @@ class ShopifyController extends Controller
                 $documento->id,
                 $documento->correlativo
             );
+            
+            // Si debe crearse como cotización, marcar el campo cotizacion = 1
+            if ($debeCrearCotizacion) {
+                $ventaData['cotizacion'] = 1;
+                Log::info("Creando cotización en lugar de venta", [
+                    'shopify_order_id' => $request->id,
+                    'financial_status' => $financialStatus
+                ]);
+            }
+            
             // Log::info("Datos de la venta transformados", $ventaData);
             $venta = Venta::create($ventaData);
             
@@ -720,17 +760,27 @@ class ShopifyController extends Controller
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
-                // Actualizar inventario
-                Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $venta->id_bodega)
-                    ->decrement('stock', $item['quantity']);
+                // Solo actualizar inventario si NO es una cotización
+                // Las cotizaciones no afectan el inventario
+                if (!$debeCrearCotizacion) {
+                    // Actualizar inventario
+                    Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->decrement('stock', $item['quantity']);
 
-                $inventario = Inventario::where('id_producto', $producto->id)
-                    ->where('id_bodega', $venta->id_bodega)
-                    ->first();
+                    $inventario = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->first();
 
-                if ($inventario) {
-                    $inventario->kardex($venta, $item['quantity'], $item['price']);
+                    if ($inventario) {
+                        $inventario->kardex($venta, $item['quantity'], $item['price']);
+                    }
+                } else {
+                    Log::info("Cotización creada - no se actualiza inventario", [
+                        'venta_id' => $venta->id,
+                        'producto_id' => $producto->id,
+                        'cantidad' => $item['quantity']
+                    ]);
                 }
             }
 
@@ -771,15 +821,38 @@ class ShopifyController extends Controller
             //     ]);
             // }
 
-            $documento = Documento::findOrfail($venta->id_documento);
-            $documento->increment('correlativo');
+            // Solo incrementar correlativo si NO es una cotización
+            // Las cotizaciones no deben asignar correlativo
+            if (!$debeCrearCotizacion) {
+                $documento = Documento::findOrfail($venta->id_documento);
+                $documento->increment('correlativo');
+                
+                Log::info("Correlativo incrementado para venta", [
+                    'venta_id' => $venta->id,
+                    'documento_id' => $documento->id,
+                    'nuevo_correlativo' => $documento->correlativo
+                ]);
+            } else {
+                Log::info("Cotización creada - no se incrementa correlativo", [
+                    'venta_id' => $venta->id,
+                    'documento_id' => $venta->id_documento
+                ]);
+            }
 
             DB::commit();
 
+            $mensaje = $debeCrearCotizacion 
+                ? 'Cotización procesada correctamente' 
+                : 'Venta procesada correctamente';
+            
+            $tipoDocumento = $debeCrearCotizacion ? 'cotizacion' : 'venta';
+
             return response()->json([
                 'status' => 'success',
-                'mensaje' => 'Venta procesada correctamente',
-                'venta_id' => $venta->id
+                'mensaje' => $mensaje,
+                'venta_id' => $venta->id,
+                'tipo' => $tipoDocumento,
+                'es_cotizacion' => $debeCrearCotizacion
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
