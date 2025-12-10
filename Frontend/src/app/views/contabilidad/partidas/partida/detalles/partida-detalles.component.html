@@ -37,7 +37,7 @@
                     <tr>
                         <!-- detalle de vendedor  -->
                         <td>
-                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="selectCuenta()" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
+                            <ng-select [(ngModel)]="detalle.id_cuenta" (change)="onCuentaChange(detalle)" class="form-select p-0" name="detalle.id_cuenta" [disabled]="partida.estado === 'Cerrada'">
                                 <ng-option value="">Seleccione aquí</ng-option>
                                 @for (cuenta of catalogo; track cuenta.id) {
                                     <ng-option [value]="cuenta.id">
@@ -50,13 +50,13 @@
                             </ng-select>
                         </td>
                         <td>
-                            <input type="text" [(ngModel)]="detalle.concepto" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
+                            <input type="text" [(ngModel)]="detalle.concepto" (change)="marcarComoModificado(detalle)" (blur)="marcarComoModificado(detalle)" class="form-control" name="concepto" [disabled]="partida.estado === 'Cerrada'">
                         </td>
                         <td>
-                            <input type="number" [(ngModel)]="detalle.debe" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">
+                            <input type="number" [(ngModel)]="detalle.debe" (change)="onDetalleChange(detalle)" (blur)="onDetalleChange(detalle)" class="form-control text-end" name="debe" [disabled]="partida.estado === 'Cerrada'">
                         </td>
                         <td>
-                            <input type="number" [(ngModel)]="detalle.haber" (change)="updateTotal(detalle)" (keyup)="updateTotal(detalle)" class="form-control text-end" name="haber" [disabled]="partida.estado === 'Cerrada'">
+                            <input type="number" [(ngModel)]="detalle.haber" (change)="onDetalleChange(detalle)" (blur)="onDetalleChange(detalle)" class="form-control text-end" name="haber" [disabled]="partida.estado === 'Cerrada'">
                         </td>
                         <td>
                           <div class="d-flex gap-2 justify-content-center">
@@ -69,18 +69,77 @@
                 }
             </tbody>
             <tfoot class="mt-3">
-                <tr><th colspan="4"><br></th></tr>
+                <tr><th colspan="5"><br></th></tr>
                 <tr>
                     <th></th>
                     <th>Totales:</th>
                     <th class="text-end" style="padding-right: 30px;">{{ partida.debe | currency }}</th>
                     <th class="text-end" style="padding-right: 30px;">{{ partida.haber | currency }}</th>
+                    <th></th>
                 </tr>
                 <tr>
                     <th></th>
                     <th>Diferencia:</th>
-                    <th class="text-end" colspan="2" style="padding-right: 30px;">{{ partida.diferencia | currency }}</th>
+                    <th class="text-end" colspan="3" style="padding-right: 30px;">{{ partida.diferencia | currency }}</th>
                 </tr>
+                @if (partida.id && partida.total_debe !== undefined) {
+                    <tr>
+                        <td colspan="5" class="text-center py-2">
+                            <p class="text-info small mb-0">
+                                <i class="fa fa-info-circle me-1"></i>
+                                Los totales mostrados son calculados desde todos los {{ partida.pagination?.total || partida.total_detalles || 0 }} detalles en la base de datos.
+                                Se actualizarán al guardar los cambios.
+                            </p>
+                        </td>
+                    </tr>
+                }
+                @if (partida.pagination && partida.pagination.has_more) {
+                    <tr>
+                        <td colspan="5" class="text-center py-3">
+                            <button 
+                                type="button" 
+                                class="btn btn-outline-primary" 
+                                (click)="cargarMasDetalles()"
+                                [disabled]="loading">
+                                @if (!loading) {
+                                    <span>
+                                        <i class="fa fa-chevron-down me-2"></i>
+                                        Cargar más detalles
+                                    </span>
+                                }
+                                @if (loading) {
+                                    <span>
+                                        <i class="fa fa-spinner fa-spin me-2"></i>
+                                        Cargando...
+                                    </span>
+                                }
+                            </button>
+                            <p class="text-muted small mt-2 mb-0">
+                                <strong>Detalles cargados:</strong> {{ partida.detalles?.length || 0 }} de {{ partida.pagination.total }} total
+                            </p>
+                            <p class="text-muted small mt-1 mb-0">
+                                <strong>Página:</strong> {{ partida.pagination.current_page }} de {{ partida.pagination.last_page }}
+                            </p>
+                            <p class="text-info small mt-1 mb-0">
+                                <i class="fa fa-info-circle me-1"></i>
+                                Faltan {{ partida.pagination.total - (partida.detalles?.length || 0) }} detalles por cargar
+                            </p>
+                            <p class="text-success small mt-1 mb-0">
+                                <i class="fa fa-check-circle me-1"></i>
+                                Los totales se calculan desde todos los {{ partida.pagination.total }} detalles en la base de datos
+                            </p>
+                        </td>
+                    </tr>
+                } @else if (partida.pagination && !partida.pagination.has_more && partida.pagination.total > 0) {
+                    <tr>
+                        <td colspan="5" class="text-center py-2">
+                            <p class="text-success small mb-0">
+                                <i class="fa fa-check-circle me-1"></i>
+                                Todos los detalles están cargados ({{ partida.pagination.total }} detalles)
+                            </p>
+                        </td>
+                    </tr>
+                }
             </tfoot>
         </table>
     </div>

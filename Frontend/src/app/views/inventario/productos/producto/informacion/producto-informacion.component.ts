@@ -12,6 +12,7 @@ import { CrearCategoriaComponent } from '@shared/modals/crear-categoria/crear-ca
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -56,6 +57,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
+    private cacheService: HttpCacheService,
     private route: ActivatedRoute,
     private router: Router,
     private cdr: ChangeDetectorRef,
@@ -235,7 +237,16 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
       )
       .subscribe({
         next: (producto) => {
-          if (!this.producto.id) this.producto = producto;
+          // Invalidar cache del item específico si se está editando
+          const isNew = !this.producto.id;
+          if (!isNew && producto?.id) {
+            this.cacheService.delete(`/producto/${producto.id}`);
+          }
+          // Invalidar cache de listas relacionadas
+          this.cacheService.invalidatePattern('/productos');
+          this.cacheService.invalidatePattern('/producto');
+          
+          if (!isNew) this.producto = producto;
 
           // Navegación + alertas
           const tipo = this.producto.tipo;

@@ -7,6 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { lastValueFrom } from 'rxjs';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-proveedor.component';
@@ -46,6 +47,7 @@ export class OrdenCompraFormComponent implements OnInit {
   deletedDetalles: number[] = [];
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cacheService = inject(HttpCacheService, { optional: true });
 
   constructor(private _fb: FormBuilder, public apiService: ApiService, private alertService: AlertService, private router: Router, private activatedRoute: ActivatedRoute) {
     this.ordenCompraForm = this._fb.group({
@@ -142,6 +144,14 @@ export class OrdenCompraFormComponent implements OnInit {
       const res = await this.apiService.store("orden-de-compra", postData)
         .pipe(this.untilDestroyed())
         .toPromise();
+      
+      // Invalidar cache después de guardar
+      if (this.cacheService) {
+        this.cacheService.invalidatePattern('/ordenes-de-compras');
+        if (res?.id) {
+          this.cacheService.delete(`/orden-de-compra/${res.id}`);
+        }
+      }
       
       this.router.navigate(['/ordenes-de-compras']);
       this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');

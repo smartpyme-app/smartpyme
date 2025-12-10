@@ -204,59 +204,74 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
     }
 
     public openModalEdit(template: TemplateRef<any>, compra:any) {
-        this.compra = compra;
-
-        if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
-            this.sharedDataService.getProyectos()
-                .pipe(this.untilDestroyed())
-                .subscribe({
-                    next: (proyectos) => {
-                        this.proyectos = proyectos;
-                    },
-                    error: (error) => {
-                        this.alertService.error(error);
-                    }
-                });
-        }
-
-        this.sharedDataService.getDocumentos()
+        // Cargar los datos completos de la compra antes de abrir el modal
+        this.loading = true;
+        this.apiService.read('compra/', compra.id)
             .pipe(this.untilDestroyed())
             .subscribe({
-                next: (documentos) => {
-                    this.documentos = documentos;
+                next: (compraCompleta) => {
+                    this.loading = false;
+
+                    // Cargar datos auxiliares
+                    if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
+                        this.sharedDataService.getProyectos()
+                            .pipe(this.untilDestroyed())
+                            .subscribe({
+                                next: (proyectos) => {
+                                    this.proyectos = proyectos;
+                                },
+                                error: (error) => {
+                                    this.alertService.error(error);
+                                }
+                            });
+                    }
+
+                    this.sharedDataService.getDocumentos()
+                        .pipe(this.untilDestroyed())
+                        .subscribe({
+                            next: (documentos) => {
+                                this.documentos = documentos;
+                            },
+                            error: (error) => {
+                                this.alertService.error(error);
+                            }
+                        });
+
+                    if(!this.formaPagos.length){
+                        this.sharedDataService.getFormasDePago()
+                            .pipe(this.untilDestroyed())
+                            .subscribe({
+                                next: (formaPagos) => {
+                                    this.formaPagos = formaPagos;
+                                },
+                                error: (error) => {
+                                    this.alertService.error(error);
+                                }
+                            });
+                    }
+
+                    if(!this.usuarios.length){
+                        this.sharedDataService.getUsuarios()
+                            .pipe(this.untilDestroyed())
+                            .subscribe({
+                                next: (usuarios) => {
+                                    this.usuarios = usuarios;
+                                },
+                                error: (error) => {
+                                    this.alertService.error(error);
+                                }
+                            });
+                    }
+
+                    // Abrir el modal pasando compraCompleta como parámetro
+                    // BaseCrudComponent hará una copia con { ...item }, pero eso está bien para las propiedades de primer nivel
+                    this.openModal(template, compraCompleta);
                 },
                 error: (error) => {
                     this.alertService.error(error);
+                    this.loading = false;
                 }
             });
-
-        if(!this.formaPagos.length){
-            this.sharedDataService.getFormasDePago()
-                .pipe(this.untilDestroyed())
-                .subscribe({
-                    next: (formaPagos) => {
-                        this.formaPagos = formaPagos;
-                    },
-                    error: (error) => {
-                        this.alertService.error(error);
-                    }
-                });
-        }
-
-        if(!this.usuarios.length){
-            this.sharedDataService.getUsuarios()
-                .pipe(this.untilDestroyed())
-                .subscribe({
-                    next: (usuarios) => {
-                        this.usuarios = usuarios;
-                    },
-                    error: (error) => {
-                        this.alertService.error(error);
-                    }
-                });
-        }
-
-        this.openModal(template);
     }
 
 

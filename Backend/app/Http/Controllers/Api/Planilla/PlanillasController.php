@@ -32,15 +32,28 @@ use App\Http\Requests\Planilla\UpdateDetailsPayrollRequest;
 use App\Http\Requests\Planilla\ImportarPlanillasRequest;
 use App\Http\Requests\Planilla\ValidarCalculoRentaRequest;
 use App\Http\Requests\Planilla\ActualizarDetallePlanillaRequest;
+use App\Services\Planilla\PlanillaService;
+use App\Services\Planilla\PlanillaAprobacionService;
+use App\Services\Planilla\PlanillaDetalleService;
 
 class PlanillasController extends Controller
 {
 
     protected $configuracionPlanillaService;
+    protected $planillaService;
+    protected $planillaAprobacionService;
+    protected $planillaDetalleService;
 
-    public function __construct(ConfiguracionPlanillaService $configuracionPlanillaService)
-    {
+    public function __construct(
+        ConfiguracionPlanillaService $configuracionPlanillaService,
+        PlanillaService $planillaService,
+        PlanillaAprobacionService $planillaAprobacionService,
+        PlanillaDetalleService $planillaDetalleService
+    ) {
         $this->configuracionPlanillaService = $configuracionPlanillaService;
+        $this->planillaService = $planillaService;
+        $this->planillaAprobacionService = $planillaAprobacionService;
+        $this->planillaDetalleService = $planillaDetalleService;
     }
 
 
@@ -172,137 +185,33 @@ class PlanillasController extends Controller
     {
 
         try {
-            DB::beginTransaction();
-
-            $fechaInicio = Carbon::parse($request->fecha_inicio);
-            $fechaFin = Carbon::parse($request->fecha_fin);
-
-            // Validar que no exista una planilla para ese período
-            $planillaExistente = Planilla::where('id_empresa', auth()->user()->id_empresa)
-                ->where('id_sucursal', auth()->user()->id_sucursal)
-                ->where('fecha_inicio', $fechaInicio)
-                ->where('fecha_fin', $fechaFin)
-                ->first();
-
-            if ($planillaExistente) {
-                return response()->json([
-                    'error' => 'Ya existe una planilla para este período'
-                ], 422);
-            }
-
-            // Generar código único
-            $codigo = 'PLA-' . $fechaInicio->format('Ym') .
-                ($fechaInicio->day <= 15 ? '1-' : '2-') .
-                auth()->user()->id_sucursal;
-
-            // Crear nueva planilla con valores iniciales
-            $planilla = new Planilla([
-                'codigo' => $codigo,
-                'fecha_inicio' => $fechaInicio,
-                'fecha_fin' => $fechaFin,
+            // Usar PlanillaService para crear la planilla
+            $resultado = $this->planillaService->crear([
+                'fecha_inicio' => $request->fecha_inicio,
+                'fecha_fin' => $request->fecha_fin,
                 'tipo_planilla' => $request->tipo_planilla,
-                'estado' => PlanillaConstants::PLANILLA_BORRADOR,
-                'id_empresa' => auth()->user()->id_empresa,
-                'id_sucursal' => auth()->user()->id_sucursal,
-                'anio' => $fechaInicio->year,
-                'mes' => $fechaInicio->month,
-                'total_salarios' => 0,
-                'total_deducciones' => 0,
-                'total_neto' => 0,
-                'total_aportes_patronales' => 0
+                'planillaTemplate' => $request->planillaTemplate
             ]);
-
-            $planilla->save();
-
-            $empleadosIncluidos = 0;
-            $empleadosOmitidos = 0;
-
-            if ($request->planillaTemplate) {
-                $templatePlanilla = Planilla::with(['detalles' => function ($query) {
-                    $query->with(['empleado' => function ($q) {
-                        $q->where('estado', PlanillaConstants::ESTADO_EMPLEADO_ACTIVO);
-                    }]);
-                }])->findOrFail($request->planillaTemplate);
-
-                foreach ($templatePlanilla->detalles as $detalleTemplate) {
-                    if ($detalleTemplate->empleado) {
-                        $detalle = $this->crearDetallePlanilla(
-                            $detalleTemplate->empleado,
-                            $planilla->id,
-                            $request->tipo_planilla
-                        );
-
-                        // Solo guardar si el detalle no es null
-                        if ($detalle) {
-                            $detalle->save();
-                            $empleadosIncluidos++;
-                        } else {
-                            $empleadosOmitidos++;
-                            // Log::info("Empleado ID: {$detalleTemplate->empleado->id} omitido de la planilla por tener fecha de baja/fin");
-                        }
-                    }
-                }
-            } else {
-                $empleados = Empleado::where('id_empresa', auth()->user()->id_empresa)
-                    ->where('id_sucursal', auth()->user()->id_sucursal)
-                    ->where('estado', PlanillaConstants::ESTADO_EMPLEADO_ACTIVO)
-                    ->get();
-
-                foreach ($empleados as $empleado) {
-                    $detalle = $this->crearDetallePlanilla($empleado, $planilla->id, $request->tipo_planilla);
-
-                    // Solo guardar si el detalle no es null
-                    if ($detalle) {
-                        $detalle->save();
-                        $empleadosIncluidos++;
-                    } else {
-                        $empleadosOmitidos++;
-                        // Log::info("Empleado ID: {$empleado->id} omitido de la planilla por tener fecha de baja/fin");
-                    }
-                }
-            }
-
-            // Verificar si se incluyó al menos un empleado
-            if ($empleadosIncluidos === 0) {
-                DB::rollback();
-                return response()->json([
-                    'error' => 'No se pudo generar la planilla porque no hay empleados activos para el período indicado'
-                ], 422);
-            }
-
-            // Usar el método del modelo para actualizar totales
-            $planilla->actualizarTotales();
-
-            // Recargar la planilla con sus relaciones
-            $planilla = $planilla->fresh(['detalles']);
-
-            // // Verificar los totales calculados
-            // Log::info('Totales de planilla actualizados', [
-            //     'id_planilla' => $planilla->id,
-            //     'total_salarios' => $planilla->total_salarios,
-            //     'total_deducciones' => $planilla->total_deducciones,
-            //     'total_neto' => $planilla->total_neto,
-            //     'total_aportes_patronales' => $planilla->total_aportes_patronales,
-            //     'empleados_incluidos' => $empleadosIncluidos,
-            //     'empleados_omitidos' => $empleadosOmitidos
-            // ]);
-
-            DB::commit();
 
             return response()->json([
                 'message' => 'Planilla generada exitosamente',
-                'planilla' => $planilla,
-                'estadisticas' => [
-                    'empleados_incluidos' => $empleadosIncluidos,
-                    'empleados_omitidos' => $empleadosOmitidos
-                ]
-            ]);
+                'planilla' => $resultado['planilla'],
+                'estadisticas' => $resultado['estadisticas']
+            ], 201);
         } catch (\Exception $e) {
-            DB::rollback();
             Log::error('Error generando planilla: ' . $e->getMessage());
+
+            // Manejar errores específicos con códigos HTTP apropiados
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'Ya existe una planilla')) {
+                $statusCode = 422;
+            } elseif (str_contains($e->getMessage(), 'No se pudo generar')) {
+                $statusCode = 422;
+            }
+
             return response()->json([
-                'error' => 'Error al generar la planilla: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
@@ -310,53 +219,30 @@ class PlanillasController extends Controller
     {
 
         try {
-            DB::beginTransaction();
-
-            $planilla = Planilla::findOrFail($id);
-
-            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
-                return response()->json([
-                    'error' => 'Solo se pueden modificar planillas en estado borrador'
-                ], 422);
-            }
-
-            $planillaExistente = Planilla::where('id_empresa', auth()->user()->id_empresa)
-                ->where('id_sucursal', auth()->user()->id_sucursal)
-                ->where('id', '!=', $id)
-                ->where(function ($query) use ($request) {
-                    $query->whereBetween('fecha_inicio', [$request->fecha_inicio, $request->fecha_fin])
-                        ->orWhereBetween('fecha_fin', [$request->fecha_inicio, $request->fecha_fin]);
-                })
-                ->first();
-
-            if ($planillaExistente) {
-                return response()->json([
-                    'error' => 'Ya existe una planilla para este período'
-                ], 422);
-            }
-
-            $planilla->update([
+            // Usar PlanillaService para actualizar la planilla
+            $planilla = $this->planillaService->actualizar($id, [
                 'fecha_inicio' => $request->fecha_inicio,
                 'fecha_fin' => $request->fecha_fin,
-                'tipo_planilla' => $request->tipo_planilla,
-                'anio' => Carbon::parse($request->fecha_inicio)->year,
-                'mes' => Carbon::parse($request->fecha_inicio)->month
+                'tipo_planilla' => $request->tipo_planilla
             ]);
-
-            $this->updatePayrollTotals($planilla->id);
-
-            DB::commit();
 
             return response()->json([
                 'message' => 'Planilla actualizada exitosamente',
-                'planilla' => $planilla->fresh()
+                'planilla' => $planilla
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
             Log::error('Error al actualizar planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'Solo se pueden modificar')) {
+                $statusCode = 422;
+            } elseif (str_contains($e->getMessage(), 'Ya existe una planilla')) {
+                $statusCode = 422;
+            }
+
             return response()->json([
-                'error' => 'Error al actualizar la planilla: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
@@ -908,163 +794,29 @@ class PlanillasController extends Controller
     {
 
         try {
-            DB::beginTransaction();
-
-            $detalle = PlanillaDetalle::findOrFail($id);
-            $planilla = $detalle->planilla;
-
-            // Verificar que la planilla esté en estado editable
-            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
-                return response()->json([
-                    'error' => 'No se puede modificar una planilla aprobada o pagada'
-                ], 422);
-            }
-
-            // Determinar días de referencia y factor de ajuste según tipo de planilla
-            $diasReferencia = 30;
-            $factorAjuste = 1;
-
-            if ($planilla->tipo_planilla === 'quincenal') {
-                $diasReferencia = 15;
-                $factorAjuste = 2;
-            } elseif ($planilla->tipo_planilla === 'semanal') {
-                $diasReferencia = 7;
-                $factorAjuste = 4.33;
-            }
-
-            // Verificar tipo de contrato primero
-            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
-
-            // Actualizar campos básicos
-            $detalle->dias_laborados = $request->dias_laborados ?? $diasReferencia;
-            $detalle->horas_extra = $request->horas_extra ?? 0;
-            $detalle->comisiones = $request->comisiones ?? 0;
-            $detalle->bonificaciones = $request->bonificaciones ?? 0;
-            $detalle->otros_ingresos = $request->otros_ingresos ?? 0;
-            $detalle->prestamos = $request->prestamos ?? 0;
-            $detalle->anticipos = $request->anticipos ?? 0;
-            $detalle->otros_descuentos = $request->otros_descuentos ?? 0;
-            $detalle->descuentos_judiciales = $request->descuentos_judiciales ?? 0;
-            $detalle->detalle_otras_deducciones = $request->detalle_otras_deducciones;
-
-            // ✅ PERMITIR EDITAR SALARIO_BASE SOLO PARA CONTRATOS POR OBRA (tipo 3)
-            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA && $request->has('salario_base') && $request->salario_base !== null) {
-                // Para contratos Por obra, permitir editar el monto total del período
-                $detalle->salario_base = $request->salario_base;
-            }
-
-            // Calcular salario devengado
-            $salarioBaseMensual = $detalle->salario_base;
-
-            if ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_POR_OBRA) {
-                // Para contratos Por Obra, el salario base ES el monto total del período
-                // NO se divide proporcionalmente
-                $salarioDevengado = $salarioBaseMensual;
-                $salarioBaseAjustado = $salarioBaseMensual;
-            } elseif ($tipoContrato === PlanillaConstants::TIPO_CONTRATO_SERVICIOS_PROFESIONALES) {
-                // Para Servicios Profesionales, el salario base es MENSUAL
-                // Se divide según tipo de planilla pero NO usa días laborados
-                if ($planilla->tipo_planilla === 'quincenal') {
-                    $salarioDevengado = $salarioBaseMensual / 2;
-                    $salarioBaseAjustado = $salarioBaseMensual / 2;
-                } elseif ($planilla->tipo_planilla === 'semanal') {
-                    $salarioDevengado = $salarioBaseMensual / 4.33;
-                    $salarioBaseAjustado = $salarioBaseMensual / 4.33;
-                } else {
-                    $salarioDevengado = $salarioBaseMensual; // mensual
-                    $salarioBaseAjustado = $salarioBaseMensual;
-                }
-            } else {
-                // Para empleados asalariados regulares, calcular proporcionalmente según días laborados
-                $salarioBaseAjustado = $planilla->tipo_planilla !== 'mensual' ?
-                    $salarioBaseMensual / $factorAjuste : $salarioBaseMensual;
-                $salarioDevengado = ($salarioBaseAjustado / $diasReferencia) * $detalle->dias_laborados;
-            }
-            $detalle->salario_devengado = round($salarioDevengado, 2);
-
-            // Calcular monto de horas extra si aplica
-            if ($detalle->horas_extra > 0) {
-                $valorHoraNormal = $salarioBaseAjustado / $diasReferencia / 8;
-                $detalle->monto_horas_extra = round($detalle->horas_extra * ($valorHoraNormal * 1.25), 2);
-            } else {
-                $detalle->monto_horas_extra = 0;
-            }
-
-            // Calcular total de ingresos
-            $detalle->total_ingresos = round($detalle->salario_devengado +
-                $detalle->monto_horas_extra +
-                $detalle->comisiones +
-                $detalle->bonificaciones +
-                $detalle->otros_ingresos, 2);
-
-            // ✅ OBTENER TIPO DE CONTRATO DEL EMPLEADO
-            $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
-            $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
-
-            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
-            if ($esContratoSinPrestaciones) {
-                // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
-                $detalle->isss_empleado = 0;
-                $detalle->isss_patronal = 0;
-                $detalle->afp_empleado = 0;
-                $detalle->afp_patronal = 0;
-            } else {
-                // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
-            }
-
-            // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
-            $salarioGravado = RentaHelper::calcularSalarioGravado(
-                $detalle->total_ingresos,
-                $detalle->isss_empleado,
-                $detalle->afp_empleado,
-                $planilla->tipo_planilla,
-                $tipoContrato
-            );
-
-            $detalle->renta = RentaHelper::calcularRetencionRenta(
-                $salarioGravado,
-                $planilla->tipo_planilla,
-                $tipoContrato
-            );
-
-            // Calcular total de deducciones
-            $detalle->total_descuentos = round($detalle->isss_empleado +
-                $detalle->afp_empleado +
-                $detalle->renta +
-                $detalle->prestamos +
-                $detalle->anticipos +
-                $detalle->otros_descuentos +
-                $detalle->descuentos_judiciales, 2);
-
-            // Calcular sueldo neto
-            $detalle->sueldo_neto = round($detalle->total_ingresos - $detalle->total_descuentos, 2);
-
-            // Guardar cambios
-            $detalle->save();
+            // Usar PlanillaDetalleService para actualizar el detalle
+            $detalle = $this->planillaDetalleService->actualizar($id, $request->all());
 
             // Actualizar totales de la planilla
-            $this->updatePayrollTotals($planilla->id);
-
-            DB::commit();
+            $this->planillaService->actualizarTotales($detalle->planilla->id);
 
             return response()->json([
-                'message' => 'Detalle actualizado exitosamente con nuevas tablas 2025',
+                'message' => 'Detalle actualizado exitosamente',
                 'detalle' => $detalle,
                 'empleado' => $detalle->empleado,
-                'planilla' => $planilla->fresh(['empresa'])
+                'planilla' => $detalle->planilla
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
             Log::error('Error actualizando detalle de planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'No se puede modificar')) {
+                $statusCode = 422;
+            }
+
             return response()->json([
-                'error' => 'Error al actualizar el detalle: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
@@ -1072,269 +824,79 @@ class PlanillasController extends Controller
     public function approvePayroll($id)
     {
         try {
-            DB::beginTransaction();
-
-            $planilla = Planilla::with('detalles')->findOrFail($id);
-
-            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
-                return response()->json([
-                    'error' => 'Solo se pueden aprobar planillas en estado borrador'
-                ], 422);
-            }
-
-            // Actualizar el estado de la planilla principal
-            $planilla->estado = PlanillaConstants::PLANILLA_APROBADA; // Aprobada
-            $planilla->save();
-
-            // Inicializar contador de detalles actualizados
-            $detallesActualizados = 0;
-
-            // Actualizar el estado de todos los detalles activos
-            foreach ($planilla->detalles as $detalle) {
-                // Solo actualizamos los detalles que están en estado borrador o activo
-                if ($detalle->estado == PlanillaConstants::PLANILLA_BORRADOR ||
-                    $detalle->estado == PlanillaConstants::PLANILLA_ACTIVA) {
-
-                    $detalle->estado = PlanillaConstants::PLANILLA_APROBADA;
-                    $detalle->save();
-                    $detallesActualizados++;
-                }
-            }
-
-            DB::commit();
-
-            // Log::info('Planilla aprobada exitosamente', [
-            //     'planilla_id' => $id,
-            //     'detalles_actualizados' => $detallesActualizados
-            // ]);
+            // Usar PlanillaAprobacionService para aprobar la planilla
+            $resultado = $this->planillaAprobacionService->aprobar($id);
 
             return response()->json([
                 'message' => 'Planilla aprobada exitosamente',
-                'detalles_actualizados' => $detallesActualizados
+                'detalles_actualizados' => $resultado['detalles_actualizados']
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error al aprobar la planilla', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error al aprobar la planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'Solo se pueden aprobar')) {
+                $statusCode = 422;
+            }
 
             return response()->json([
-                'error' => 'Error al aprobar la planilla: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
     public function revertPayroll($id)
     {
         try {
-            DB::beginTransaction();
+            // Usar PlanillaAprobacionService para revertir la planilla
+            $resultado = $this->planillaAprobacionService->revertir($id);
 
-            $planilla = Planilla::with('detalles')->findOrFail($id);
-
-            if ($planilla->estado != PlanillaConstants::PLANILLA_APROBADA) {
-                return response()->json([
-                    'error' => 'Solo se pueden revertir planillas en estado aprobado'
-                ], 422);
-            }
-
-            // Actualizar el estado de la planilla principal
-            $planilla->estado = PlanillaConstants::PLANILLA_BORRADOR; // Aprobada
-            $planilla->save();
-
-            // Inicializar contador de detalles actualizados
-            $detallesActualizados = 0;
-
-            // Actualizar el estado de todos los detalles activos
-            foreach ($planilla->detalles as $detalle) {
-                // Solo actualizamos los detalles que están en estado borrador o activo
-                if ($detalle->estado == PlanillaConstants::PLANILLA_APROBADA) {
-
-                    $detalle->estado = PlanillaConstants::PLANILLA_BORRADOR;
-                    $detalle->save();
-                    $detallesActualizados++;
-                }
-            }
-
-            DB::commit();
             return response()->json([
-                'message' => 'Planilla aprobada exitosamente',
-                'detalles_actualizados' => $detallesActualizados
+                'message' => 'Planilla revertida exitosamente',
+                'detalles_actualizados' => $resultado['detalles_actualizados']
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error al aprobar la planilla', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error al revertir la planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'Solo se pueden revertir')) {
+                $statusCode = 422;
+            }
 
             return response()->json([
-                'error' => 'Error al aprobar la planilla: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
-
     }
 
     public function processPayment($id)
     {
         try {
-            DB::beginTransaction();
-
-            $planilla = Planilla::with(['detalles.empleado', 'empresa'])->findOrFail($id);
-
-            // Log inicial
-            // Log::info('Iniciando procesamiento de planilla', [
-            //     'planilla_id' => $id,
-            //     'total_detalles' => $planilla->detalles->count()
-            // ]);
-
-            if ($planilla->estado != PlanillaConstants::PLANILLA_APROBADA) {
-                return response()->json([
-                    'error' => 'Solo se pueden pagar planillas aprobadas'
-                ], 422);
-            }
-
-            // Verificar configuración de correo
-            $this->verificarConfiguracionCorreo();
-
-            // 1. Registrar gastos en contabilidad ANTES de cambiar estado
-            $resultadoGastos = $this->registrarGastosPlanilla($planilla);
-
-            if (!$resultadoGastos) {
-                throw new \Exception('Error al registrar los gastos de planilla');
-            }
-
-            // 2. Actualizar estado de la planilla y sus detalles
-            $planilla->estado = PlanillaConstants::PLANILLA_PAGADA;
-            $planilla->save();
-
-            // Actualizar detalles masivamente
-            PlanillaDetalle::where('id_planilla', $planilla->id)
-                ->whereIn('estado', [PlanillaConstants::PLANILLA_BORRADOR, PlanillaConstants::PLANILLA_APROBADA])
-                ->update(['estado' => PlanillaConstants::PLANILLA_PAGADA]);
-
-            // 3. Enviar correos tras el registro exitoso de gastos
-            $emailsEnviados = 0;
-            $errores = [];
-            $detallesProcesados = 0;
-            $empleadosSinEmail = 0;
-            $empleadosInactivos = 0;
-
-            // Recargar planilla con detalles actualizados
-            $planilla = $planilla->fresh(['detalles.empleado', 'empresa']);
-
-            // Enviar boletas por correo a cada empleado
-            foreach ($planilla->detalles as $detalle) {
-                $detallesProcesados++;
-
-                // Log de cada detalle
-                // Log::info('Procesando detalle de planilla', [
-                //     'detalle_id' => $detalle->id,
-                //     'empleado_id' => $detalle->empleado->id ?? 'No tiene empleado',
-                //     'estado_detalle' => $detalle->estado,
-                //     'tiene_empleado' => isset($detalle->empleado),
-                //     'email_empleado' => $detalle->empleado->email ?? 'No tiene email'
-                // ]);
-
-                if (!isset($detalle->empleado)) {
-                    Log::warning('Detalle sin empleado asociado', ['detalle_id' => $detalle->id]);
-                    $errores[] = "Detalle ID {$detalle->id} no tiene empleado asociado";
-                    continue;
-                }
-
-                if ($detalle->estado == PlanillaConstants::ESTADO_INACTIVO) {
-                    $empleadosInactivos++;
-                    // Log::info('Empleado inactivo en planilla', [
-                    //     'empleado_id' => $detalle->empleado->id,
-                    //     'estado' => $detalle->estado
-                    // ]);
-                    continue;
-                }
-
-                if (empty($detalle->empleado->email)) {
-                    $empleadosSinEmail++;
-                    Log::warning('Empleado sin email', [
-                        'empleado_id' => $detalle->empleado->id,
-                        'nombre' => $detalle->empleado->nombres . ' ' . $detalle->empleado->apellidos
-                    ]);
-                    $errores[] = "Empleado {$detalle->empleado->nombres} {$detalle->empleado->apellidos} no tiene correo electrónico";
-                    continue;
-                }
-
-                $periodo = [
-                    'inicio' => $planilla->fecha_inicio,
-                    'fin' => $planilla->fecha_fin
-                ];
-
-                try {
-                    // Log::info('Intentando enviar correo', [
-                    //     'empleado_email' => $detalle->empleado->email,
-                    //     'empleado_id' => $detalle->empleado->id
-                    // ]);
-
-                    // Enviar correo de forma síncrona para mejor debugging
-                    Mail::to($detalle->empleado->email)
-                        ->send(new BoletaPagoMailable(
-                            $detalle,
-                            $planilla,
-                            $planilla->empresa,
-                            $periodo
-                        ));
-
-                    $emailsEnviados++;
-
-                    // Log::info('Correo enviado exitosamente', [
-                    //     'empleado_email' => $detalle->empleado->email,
-                    //     'empleado_id' => $detalle->empleado->id
-                    // ]);
-                } catch (\Exception $e) {
-                    Log::error('Error enviando correo', [
-                        'empleado_email' => $detalle->empleado->email,
-                        'empleado_id' => $detalle->empleado->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
-
-                    $errores[] = "Error enviando correo a {$detalle->empleado->email}: {$e->getMessage()}";
-                }
-            }
-
-            DB::commit();
-
-            // Log final con estadísticas
-            // Log::info('Finalizado procesamiento de planilla', [
-            //     'detalles_procesados' => $detallesProcesados,
-            //     'emails_enviados' => $emailsEnviados,
-            //     'empleados_sin_email' => $empleadosSinEmail,
-            //     'empleados_inactivos' => $empleadosInactivos,
-            //     'total_errores' => count($errores)
-            // ]);
+            // Usar PlanillaAprobacionService para procesar el pago
+            $resultado = $this->planillaAprobacionService->procesarPago($id);
 
             return response()->json([
-                'message' => "Pago procesado exitosamente. Correos enviados: {$emailsEnviados}",
-                'emails_enviados' => $emailsEnviados,
-                'detalles_procesados' => $detallesProcesados,
-                'empleados_sin_email' => $empleadosSinEmail,
-                'empleados_inactivos' => $empleadosInactivos,
-                'errores' => $errores,
-                'estadisticas' => [
-                    'total_detalles' => $planilla->detalles->count(),
-                    'detalles_procesados' => $detallesProcesados,
-                    'emails_enviados' => $emailsEnviados,
-                    'empleados_sin_email' => $empleadosSinEmail,
-                    'empleados_inactivos' => $empleadosInactivos
-                ]
+                'message' => "Pago procesado exitosamente. Correos enviados: {$resultado['emails_enviados']}",
+                'emails_enviados' => $resultado['emails_enviados'],
+                'detalles_procesados' => $resultado['detalles_procesados'],
+                'empleados_sin_email' => $resultado['empleados_sin_email'],
+                'empleados_inactivos' => $resultado['empleados_inactivos'],
+                'errores' => $resultado['errores'],
+                'estadisticas' => $resultado['estadisticas']
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error al procesar pago de planilla', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Error al procesar pago de planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'Solo se pueden pagar')) {
+                $statusCode = 422;
+            } elseif (str_contains($e->getMessage(), 'Configuración de correo')) {
+                $statusCode = 500;
+            }
 
             return response()->json([
-                'error' => 'Error al procesar el pago: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
@@ -1387,41 +949,25 @@ class PlanillasController extends Controller
     public function destroy($id)
     {
         try {
-            DB::beginTransaction();
-
-            $planilla = Planilla::findOrFail($id);
-
-            // Verificar que la planilla pertenece a la empresa y sucursal del usuario
-            if ($planilla->id_empresa !== auth()->user()->id_empresa ||
-                $planilla->id_sucursal !== auth()->user()->id_sucursal) {
-                return response()->json([
-                    'error' => 'No tiene permisos para eliminar esta planilla'
-                ], 403);
-            }
-
-            if ($planilla->estado != PlanillaConstants::PLANILLA_BORRADOR) {
-                return response()->json([
-                    'error' => 'Solo se pueden eliminar planillas en estado borrador'
-                ], 422);
-            }
-
-            // Eliminar detalles
-            PlanillaDetalle::where('id_planilla', $id)->delete();
-
-            // Eliminar planilla
-            $planilla->delete();
-
-            DB::commit();
+            // Usar PlanillaService para eliminar la planilla
+            $this->planillaService->eliminar($id);
 
             return response()->json([
                 'message' => 'Planilla eliminada exitosamente'
             ]);
         } catch (\Exception $e) {
-            DB::rollback();
-            Log::error($e->getMessage());
+            Log::error('Error al eliminar planilla: ' . $e->getMessage());
+
+            $statusCode = 500;
+            if (str_contains($e->getMessage(), 'No tiene permisos')) {
+                $statusCode = 403;
+            } elseif (str_contains($e->getMessage(), 'Solo se pueden eliminar')) {
+                $statusCode = 422;
+            }
+
             return response()->json([
-                'error' => 'Error al eliminar la planilla: ' . $e->getMessage()
-            ], 500);
+                'error' => $e->getMessage()
+            ], $statusCode);
         }
     }
 
@@ -1471,18 +1017,19 @@ class PlanillasController extends Controller
     public function withdrawPayroll(Request $request)
     {
         try {
-            $detalle = PlanillaDetalle::findOrFail($request->id);
-            $detalle->update(['estado' => 0]);
+            // Usar PlanillaDetalleService para retirar el detalle
+            $detalle = $this->planillaDetalleService->retirar($request->id);
 
-            $this->updatePayrollTotals($detalle->id_planilla);
+            // Actualizar totales de la planilla
+            $this->planillaService->actualizarTotales($detalle->id_planilla);
 
             return response()->json([
                 'message' => 'Detalle de planilla retirado exitosamente'
             ]);
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
+            Log::error('Error al retirar detalle de planilla: ' . $e->getMessage());
             return response()->json([
-                'error' => 'Error al retirar detalle de planilla: '
+                'error' => 'Error al retirar detalle de planilla: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1490,19 +1037,19 @@ class PlanillasController extends Controller
     public function includePayroll(Request $request)
     {
         try {
-            $detalle = PlanillaDetalle::findOrFail($request->id);
-            $detalle->update(['estado' => 2]);
+            // Usar PlanillaDetalleService para incluir el detalle
+            $detalle = $this->planillaDetalleService->incluir($request->id);
 
-            $this->updatePayrollTotals($detalle->id_planilla);
+            // Actualizar totales de la planilla
+            $this->planillaService->actualizarTotales($detalle->id_planilla);
 
             return response()->json([
                 'message' => 'Detalle de planilla incluido exitosamente'
             ]);
         } catch (\Exception $e) {
-
-            Log::error($e->getMessage());
+            Log::error('Error al incluir detalle de planilla: ' . $e->getMessage());
             return response()->json([
-                'error' => 'Error al incluir detalle de planilla: '
+                'error' => 'Error al incluir detalle de planilla: ' . $e->getMessage()
             ], 500);
         }
     }

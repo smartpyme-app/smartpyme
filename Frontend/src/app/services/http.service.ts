@@ -58,9 +58,33 @@ export class HttpService {
   }
 
   storeWithTimeout(url: string, model: any, timeoutMs: number = 300000): Observable<any> {
-    return this.http.post<any>(this.apiUrl + url, model).pipe(
+    // Para respuestas grandes, usar 'text' y parsear manualmente para evitar problemas de parsing
+    return this.http.post(this.apiUrl + url, model, {
+      observe: 'response',
+      responseType: 'text' as 'json' // Forzar como texto para parsear manualmente
+    }).pipe(
       timeout(timeoutMs),
       retry(0),
+      map(response => {
+        // Si el status es 200, intentar parsear el texto como JSON
+        if (response.status === 200 && response.body) {
+          try {
+            const bodyText = typeof response.body === 'string' 
+              ? response.body 
+              : String(response.body);
+            const parsed = JSON.parse(bodyText);
+            return parsed;
+          } catch (e: any) {
+            console.error('Error al parsear JSON:', e);
+            const bodyText = typeof response.body === 'string' 
+              ? response.body 
+              : String(response.body);
+            console.error('Respuesta recibida (primeros 500 caracteres):', bodyText.substring(0, 500));
+            throw new Error('Error al parsear la respuesta del servidor: ' + (e?.message || String(e)));
+          }
+        }
+        return response.body;
+      }),
       catchError(this.handleError)
     );
   }
