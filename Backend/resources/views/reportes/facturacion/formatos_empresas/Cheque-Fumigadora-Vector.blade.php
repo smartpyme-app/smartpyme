@@ -38,11 +38,11 @@
 <section id="factura">
     <div id="header">
 
-        {{-- <p id="lugarfecha">{{ \Carbon\Carbon::parse($cheque->fecha)->format('d/m/Y') }}</p> --}}
+        <p id="lugarfecha">{{ \Carbon\Carbon::now()->format('d/m/Y') }}</p>
         <p id="anio">{{ \Carbon\Carbon::parse($cheque->fecha)->format('Y') }}</p>
         <p id="anombrede">{{ $cheque->anombrede }}</p>
         {{-- <p id="nombre_cuenta">{{ $cheque->nombre_cuenta }}</p> --}}
-        {{-- <p id="concepto">{{ $cheque->concepto }}</p> --}}
+        <p id="concepto">{{ $cheque->concepto }}</p>
         <p id="total">{{ $cheque->total }}</p>
 
         <p id="letras"> {{$dolares}} DÓLARES CON {{$centavos}} CENTAVOS.</p>

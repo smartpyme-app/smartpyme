@@ -201,6 +201,17 @@ class PartidasController extends Controller
                 }
             }
 
+            // Si se está editando una partida existente, eliminar detalles antiguos que no están en el request
+            if ($request->id) {
+                // Obtener IDs de los detalles que vienen en el request
+                $idsDetallesRequest = collect($request->detalles)->pluck('id')->filter()->toArray();
+                
+                // Eliminar detalles que no están en el request
+                Detalle::where('id_partida', $partida->id)
+                    ->whereNotIn('id', $idsDetallesRequest)
+                    ->delete();
+            }
+
             foreach ($request->detalles as $det) {
                 if(isset($det['id'])) {
                     $detalle = Detalle::findOrFail($det['id']);
