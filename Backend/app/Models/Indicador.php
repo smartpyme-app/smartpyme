@@ -231,7 +231,7 @@ class Indicador extends Model
 
     public function getTotalDevolucionesCompra(){
 
-        return $this->devoluciones_compras->count();
+        return $this->devoluciones_compras->sum('total');
     }
 
     public function getVentasAnuladas(){

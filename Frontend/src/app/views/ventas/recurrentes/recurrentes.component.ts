@@ -16,7 +16,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './recurrentes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, LazyImageDirective],
-    
+
 })
 
 export class RecurrentesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -67,7 +67,7 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
 
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
-            .subscribe(sucursales => { 
+            .subscribe(sucursales => {
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); });
     }
@@ -111,7 +111,7 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
         this.loading = true;
         this.apiService.getAll('ventas', this.filtros)
             .pipe(this.untilDestroyed())
-            .subscribe(ventas => { 
+            .subscribe(ventas => {
                 this.ventas = ventas;
                 this.loading = false;
                 if(this.modalRef){
@@ -120,19 +120,17 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
             }, error => {this.alertService.error(error); this.loading = false; });
     }
 
-    public setEstado(venta:any, estado:any){
+    public async setEstado(venta:any, estado:any){
         if(estado == 'Pagada'){
             if(confirm('¿Confirma el pago de la venta?')){
-                this.venta = venta;
-                this.venta.estado = estado;
-                this.onSubmit();
+                venta.estado = estado;
+                await this.onSubmit(venta, true);
             }
         }
         if(estado == 'Anulada'){
             if(confirm('¿Confirma la anulación de la venta?')){
-                this.venta = venta;
-                this.venta.estado = estado;
-                this.onSubmit();
+                venta.estado = estado;
+                await this.onSubmit(venta, true);
             }
         }
     }
@@ -140,12 +138,12 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
     public async setRecurrencia(venta:any){
         this.venta = venta;
         this.venta.recurrente = false;
-        
+
         try {
             await this.apiService.store('venta', this.venta)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             this.venta = {};
             this.loadAll();
             this.alertService.success('Venta guardada', 'La venta se marco como no recurrente exitosamente.');
@@ -157,7 +155,7 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
 
     public override async delete(item: any | number): Promise<void> {
         const itemToDelete = typeof item === 'number' ? item : (item as any).id;
-        
+
         if (!confirm('¿Desea eliminar el Registro?')) {
             return;
         }
@@ -167,7 +165,7 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
             const deletedItem = await this.apiService.delete('venta/', itemToDelete)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const index = this.ventas.data?.findIndex((v: any) => v.id === deletedItem.id);
             if (index !== -1 && index >= 0) {
                 this.ventas.data.splice(index, 1);
@@ -186,7 +184,7 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
 
     public openModalEdit(template: TemplateRef<any>, venta:any) {
         this.venta = venta;
-        
+
         this.apiService.getAll('documentos')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
@@ -195,38 +193,38 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
 
         this.apiService.getAll('formas-de-pago')
             .pipe(this.untilDestroyed())
-            .subscribe(formaPagos => { 
+            .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
 
         this.openModal(template, venta);
     }
-    
+
     public openFilter(template: TemplateRef<any>) {
         this.apiService.getAll('clientes/list')
             .pipe(this.untilDestroyed())
-            .subscribe(clientes => { 
+            .subscribe(clientes => {
                 this.clientes = clientes;
             }, error => {this.alertService.error(error); });
 
         this.apiService.getAll('formas-de-pago')
             .pipe(this.untilDestroyed())
-            .subscribe(formaPagos => { 
+            .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
             }, error => {this.alertService.error(error); });
-        
+
         this.apiService.getAll('documentos/list-nombre')
             .pipe(this.untilDestroyed())
-            .subscribe(documentos => { 
+            .subscribe(documentos => {
                 this.documentos = documentos;
             }, error => {this.alertService.error(error); });
 
         this.apiService.getAll('canales')
             .pipe(this.untilDestroyed())
-            .subscribe(canales => { 
+            .subscribe(canales => {
                 this.canales = canales;
             }, error => {this.alertService.error(error); });
-        
+
         this.openModal(template);
     }
 
@@ -293,6 +291,34 @@ export class RecurrentesComponent extends BaseCrudComponent<any> implements OnIn
 
     public linkWompi(venta:any){
         window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
+    }
+
+    public setDocumento(id_documento: any) {
+        let documento = this.documentos.find((x: any) => x.id == id_documento);
+        if (documento) {
+            this.venta.nombre_documento = documento.nombre;
+            this.venta.id_documento = documento.id;
+            this.venta.correlativo = documento.correlativo;
+        }
+    }
+
+    public override async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
+        const ventaToSave = item || this.venta;
+        this.saving = true;
+        try {
+            const venta = await this.apiService.store('venta', ventaToSave)
+                .pipe(this.untilDestroyed())
+                .toPromise();
+            this.venta = {};
+            this.saving = false;
+            if(this.modalRef){
+                this.closeModal();
+            }
+            this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+        } catch (error: any) {
+            this.alertService.error(error);
+            this.saving = false;
+        }
     }
 
     public limpiarFiltros() {

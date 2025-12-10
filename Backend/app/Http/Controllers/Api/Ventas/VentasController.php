@@ -351,12 +351,263 @@ class VentasController extends Controller
 
     public function enviarReporteProgramado($configuracion, $empresa, $fechaInicio, $fechaFin)
     {
-        return $this->reporteEmailService->enviarReporteProgramado($configuracion, $empresa, $fechaInicio, $fechaFin);
+        try {
+            // $fecha = Carbon::today()->format('Y-m-d');
+            if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $empresa->id);
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
+            } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $empresa->id);
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $empresa->id, $configuracion->sucursales);
+            } elseif ($configuracion->tipo_reporte === 'inventario-por-sucursal') {
+                $export = new InventarioExport($fechaInicio, $fechaFin, $empresa->id, $configuracion);
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-utilidades') {
+                $request = new Request([
+                    'id_empresa' => $empresa->id,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+            }
+            $filename = "{$configuracion->tipo_reporte}-{$fechaInicio}.xlsx";
+
+
+            $relativePath = "reportes/{$filename}";
+            $empresa = Empresa::find($empresa->id);
+
+
+            $directory = public_path('img/reportes');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            Storage::disk('public')->put($relativePath, '');
+
+            Excel::store($export, $relativePath, 'public');
+
+            $filePath = public_path('img/' . $relativePath);
+
+            if (!file_exists($filePath)) {
+                Log::error("Archivo no encontrado en: {$filePath}");
+                $alternativePath = storage_path('app/public/' . $relativePath);
+                Log::info("Intentando ruta alternativa: {$alternativePath}");
+
+                if (file_exists($alternativePath)) {
+                    $filePath = $alternativePath;
+                } else {
+                    throw new \Exception("El archivo no fue generado correctamente. No se encuentra en ninguna de las rutas esperadas.");
+                }
+            }
+
+            if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('id_empresa', $empresa->id)
+                    ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
+                    ->count();
+
+                $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('id_empresa', $empresa->id)
+                    ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
+                    ->sum('total');
+
+                $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('id_empresa', $empresa->id)
+                    ->where('cotizacion', 0)
+                    ->distinct('id_vendedor')
+                    ->where('estado', '!=', 'Anulada')
+                    ->count('id_vendedor');
+            } else {
+                $ventasDelDia = 0;
+                $totalVentas = 0;
+                $vendedoresConVentas = 0;
+            }
+
+            $asuntos_correos = [
+                'ventas-por-vendedor' => 'Reporte de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+            ];
+
+            $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
+
+
+
+            $datos = [
+                'fecha' => $fechaInicio,
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
+                'ventasDelDia' => $ventasDelDia,
+                'totalVentas' => $totalVentas,
+                'vendedoresConVentas' => $vendedoresConVentas,
+                'archivoPath' => $filePath,
+                'nombreArchivo' => basename($filePath),
+                'asunto' => $asunto,
+                'automatico' => true,
+                'tipo_reporte' => $configuracion->tipo_reporte,
+                'empresa' => $empresa->nombre
+            ];
+
+            $destinatarios = $configuracion->destinatarios;
+
+            Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));
+
+            // Registrar que se envió el reporte
+            Log::info("Reporte enviado: {$configuracion->tipo_reporte}", [
+                'configuracion_id' => $configuracion->id,
+                'destinatarios' => $destinatarios,
+                'fecha' => $fechaInicio . ' al ' . $fechaFin
+            ]);
+
+
+            unlink($filePath);
+
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar reporte programado: ' . $e->getMessage(), [
+                'configuracion_id' => $configuracion->id ?? null,
+                'tipo_reporte' => $configuracion->tipo_reporte ?? null
+            ]);
+            throw $e;
+        }
     }
 
     public function enviarReporteProgramadoTest($configuracion, $destinatarios, $fechaInicio, $fechaFin)
     {
-        return $this->reporteEmailService->enviarReportePrueba($configuracion, $destinatarios, $fechaInicio, $fechaFin);
+        try {
+            if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                $filename = "ventas-por-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "ventas-por-categoria-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "estado-financiero-consolidado-sucursales-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'detalle-ventas-vendedor') {
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
+                $filename = "detalle-ventas-vendedor-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'inventario-por-sucursal') {
+                $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                $filename = "inventario-por-sucursal-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            } elseif ($configuracion->tipo_reporte === 'ventas-por-utilidades') {
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                $filename = "ventas-por-utilidades-prueba-{$fechaInicio}-{$fechaFin}-" . time() . ".xlsx";
+            }
+
+            $relativePath = "reportes/{$filename}";
+            $empresa = Empresa::find($configuracion->id_empresa);
+
+            $directory = public_path('img/reportes');
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+
+            Storage::disk('public')->put($relativePath, '');
+
+            Excel::store($export, $relativePath, 'public');
+
+
+            $filePath = public_path('img/' . $relativePath);
+
+
+            if (!file_exists($filePath)) {
+
+                Log::error("Archivo no encontrado en: {$filePath}");
+
+                $alternativePath = storage_path('app/public/' . $relativePath);
+                Log::info("Intentando ruta alternativa: {$alternativePath}");
+
+                if (file_exists($alternativePath)) {
+                    $filePath = $alternativePath;
+                } else {
+                    throw new \Exception("El archivo no fue generado correctamente. No se encuentra en ninguna de las rutas esperadas.");
+                }
+            }
+
+            // Obtener estadísticas para incluir en el correo
+            if($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+                $ventasDelDia = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
+                    ->count();
+
+                $totalVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('cotizacion', 0)
+                    ->where('estado', '!=', 'Anulada')
+                    ->sum('total');
+
+                $vendedoresConVentas = Venta::whereBetween('fecha', [$fechaInicio, $fechaFin])
+                    ->where('cotizacion', 0)
+                    ->distinct('id_vendedor')
+                    ->where('estado', '!=', 'Anulada')
+                    ->count('id_vendedor');
+            }else{
+                $ventasDelDia = 0;
+                $totalVentas = 0;
+                $vendedoresConVentas = 0;
+            }
+
+            $asuntos_correos = [
+                'ventas-por-vendedor' => 'Reporte de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-categoria-vendedor' => 'Reporte de Ventas por Categoría y Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'estado-financiero-consolidado-sucursales' => 'Reporte de Estado Financiero Consolidado por Sucursales ' . $fechaInicio . ' al ' . $fechaFin,
+                'detalle-ventas-vendedor' => 'Reporte de Detalle de Ventas por Vendedor ' . $fechaInicio . ' al ' . $fechaFin,
+                'inventario-por-sucursal' => 'Reporte de Inventario por Sucursal ' . $fechaInicio . ' al ' . $fechaFin,
+                'ventas-por-utilidades' => 'Reporte de Ventas por Utilidades ' . $fechaInicio . ' al ' . $fechaFin,
+            ];
+
+            $asunto = $asuntos_correos[$configuracion->tipo_reporte] ?? $configuracion->asunto_correo;
+
+            $datos = [
+                'fecha' => Carbon::today()->format('d/m/Y'),
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
+                'ventasDelDia' => $ventasDelDia,
+                'totalVentas' => $totalVentas,
+                'vendedoresConVentas' => $vendedoresConVentas,
+                'archivoPath' => $filePath,
+                'nombreArchivo' => basename($filePath),
+                'asunto' => $asunto ?: "Reporte de Prueba: " . $configuracion->tipo_reporte . " - " . Carbon::today()->format('d/m/Y'),
+                'esPrueba' => true,
+                'tipo_reporte' => $configuracion->tipo_reporte,
+                'empresa' => $empresa->nombre
+            ];
+
+            Mail::to($destinatarios)->send(new ReporteVentasPorVendedor($datos));
+
+            Log::info("Reporte de prueba enviado: {$configuracion->tipo_reporte}", [
+                'configuracion_id' => $configuracion->id,
+                'destinatarios' => $destinatarios,
+                'fecha' => $fechaInicio . ' al ' . $fechaFin
+            ]);
+
+            unlink($filePath);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al enviar reporte de prueba: ' . $e->getMessage(), [
+                'configuracion_id' => $configuracion->id ?? null,
+                'tipo_reporte' => $configuracion->tipo_reporte ?? null
+            ]);
+            throw $e;
+        }
     }
 
     public function exportarReporteProgramado($configuracion, $fechaInicio, $fechaFin)
@@ -366,7 +617,45 @@ class VentasController extends Controller
             'fecha' => $fechaInicio . ' al ' . $fechaFin,
         ]);
 
-        $export = $this->reporteService->crearExportPorTipo($configuracion, $fechaInicio, $fechaFin, $configuracion->id_empresa);
+        // if ($configuracion->tipo_reporte === 'ventas-por-vendedor') {
+        //     $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+        // } elseif ($configuracion->tipo_reporte === 'ventas-por-categoria-vendedor') {
+        //     $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+        // } elseif ($configuracion->tipo_reporte === 'estado-financiero-consolidado-sucursales') {
+        //     $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+        // } else {
+        //     return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        // }
+
+        switch ($configuracion->tipo_reporte) {
+            case 'ventas-por-vendedor':
+                $export = new VentasPorVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                break;
+            case 'ventas-por-categoria-vendedor':
+                $export = new VentasPorCategoriaVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                break;
+            case 'estado-financiero-consolidado-sucursales':
+                $export = new EstadoFinancieroConsolidadoSucursalesExport($fechaInicio, $fechaFin, $configuracion->id_empresa);
+                break;
+            case 'detalle-ventas-vendedor':
+                $export = new DetalleVentasVendedorExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion->sucursales);
+                break;
+            case 'inventario-por-sucursal':
+                $export = new InventarioExport($fechaInicio, $fechaFin, $configuracion->id_empresa, $configuracion);
+                break;
+            case 'ventas-por-utilidades':
+                $request = new Request([
+                    'id_empresa' => $configuracion->id_empresa,
+                    'inicio' => $fechaInicio,
+                    'fin' => $fechaFin,
+                    'sucursales' => $configuracion->sucursales ?? [],
+                ]);
+                $export = new VentasPorUtilidadesExport();
+                $export->filter($request);
+                break;
+            default:
+                return response()->json(['error' => 'Tipo de reporte no implementado'], 422);
+        }
 
         return \Maatwebsite\Excel\Facades\Excel::download($export, $configuracion->tipo_reporte . '-' . $fechaInicio . '-' . $fechaFin . '.xlsx');
     }

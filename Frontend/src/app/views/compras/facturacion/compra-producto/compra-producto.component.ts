@@ -37,7 +37,8 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
     public override filtros:any = {};
     public buscador:any = '';
     public search:any = '';
-    private tieneShopify: boolean = false;
+    public tieneShopify: boolean = false;
+    public descripcionesExpandidas: { [key: number]: boolean } = {};
 
     constructor(
         protected override apiService: ApiService,
@@ -259,6 +260,47 @@ export class CompraProductoComponent extends BasePaginatedModalComponent impleme
             return `${producto.nombre} ${producto.nombre_variante}`;
         }
         return producto.nombre;
+    }
+
+    /**
+     * Obtiene la descripción del producto (completa o truncada según el estado)
+     */
+    getDescripcion(producto: any): string {
+        if (!producto.descripcion) {
+            return '';
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        if (estaExpandida || producto.descripcion.length <= 20) {
+            return producto.descripcion;
+        }
+        return producto.descripcion.substring(0, 20) + '...';
+    }
+
+    /**
+     * Verifica si la descripción está truncada (necesita "ver más")
+     */
+    necesitaVerMas(producto: any): boolean {
+        if (!producto.descripcion) {
+            return false;
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        return !estaExpandida && producto.descripcion.length > 20;
+    }
+
+    /**
+     * Verifica si la descripción está expandida (muestra "ver menos")
+     */
+    estaExpandida(producto: any): boolean {
+        return this.descripcionesExpandidas[producto.id] || false;
+    }
+
+    /**
+     * Alterna el estado de expansión de la descripción
+     */
+    toggleDescripcion(event: Event, producto: any): void {
+        event.stopPropagation(); // Previene que se seleccione el producto
+        const estadoActual = this.descripcionesExpandidas[producto.id] || false;
+        this.descripcionesExpandidas[producto.id] = !estadoActual;
     }
 
 }
