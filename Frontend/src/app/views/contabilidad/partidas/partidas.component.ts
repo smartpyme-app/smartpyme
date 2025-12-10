@@ -7,6 +7,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 
 import * as moment from 'moment';
@@ -59,6 +60,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     protected override apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
+    private cacheService: HttpCacheService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -270,6 +272,13 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         .pipe(this.untilDestroyed())
         .toPromise();
       
+      // Invalidar cache del item específico y listas relacionadas
+      if (partida?.id) {
+        this.cacheService.delete(`/partida/${partida.id}`);
+      }
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+      
       this.alertService.success(
         'Partida actualizada',
         'El estado de la partida fue actualizado.'
@@ -297,6 +306,13 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
           .pipe(this.untilDestroyed())
           .toPromise();
         
+        // Invalidar cache del item eliminado y listas relacionadas
+        if (partida?.id) {
+          this.cacheService.delete(`/partida/${partida.id}`);
+        }
+        this.cacheService.invalidatePattern('/partidas');
+        this.cacheService.invalidatePattern('/partida');
+        
         for (let i = 0; i < this.partidas.data.length; i++) {
           if (this.partidas.data[i].id == data.id)
             this.partidas.data.splice(i, 1);
@@ -310,11 +326,20 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public async onSubmit(partidaData?: any) {
     this.saving = true;
     try {
-      const partidaGuardada = await this.apiService.store('partida', partidaData || this.partida)
+      const partidaToSave = partidaData || this.partida;
+      const partidaGuardada = await this.apiService.store('partida', partidaToSave)
         .pipe(this.untilDestroyed())
         .toPromise();
       
-      const isNew = !this.partida.id;
+      // Invalidar cache del item específico si se está editando
+      const isNew = !partidaToSave.id;
+      if (!isNew && partidaGuardada?.id) {
+        this.cacheService.delete(`/partida/${partidaGuardada.id}`);
+      }
+      // Invalidar cache de listas relacionadas
+      this.cacheService.invalidatePattern('/partidas');
+      this.cacheService.invalidatePattern('/partida');
+      
       if (isNew) {
         this.loadAll();
         this.alertService.success(

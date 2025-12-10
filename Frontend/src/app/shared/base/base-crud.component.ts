@@ -1,8 +1,9 @@
-import { TemplateRef } from '@angular/core';
+import { TemplateRef, inject } from '@angular/core';
 import { BaseFilteredPaginatedModalComponent } from './base-filtered-paginated-modal.component';
 import { ApiService } from '../../services/api.service';
 import { AlertService } from '../../services/alert.service';
 import { ModalManagerService } from '../../services/modal-manager.service';
+import { HttpCacheService } from '../../services/http-cache.service';
 
 /**
  * Configuración para el componente CRUD base
@@ -117,6 +118,7 @@ export interface CrudConfig<T = any> {
  */
 export abstract class BaseCrudComponent<T = any> extends BaseFilteredPaginatedModalComponent {
   protected config: CrudConfig<T>;
+  protected cacheService = inject(HttpCacheService);
   
   constructor(
     protected override apiService: ApiService,
@@ -196,6 +198,19 @@ export abstract class BaseCrudComponent<T = any> extends BaseFilteredPaginatedMo
         .pipe(this.untilDestroyed())
         .toPromise();
 
+      // Invalidar cache del item específico si se está editando
+      if (!isNew && savedItem?.id) {
+        const itemUrl = `${this.config.endpoint}/${savedItem.id}`;
+        this.cacheService.delete(itemUrl);
+        // También invalidar el patrón de listas relacionadas
+        this.cacheService.invalidatePattern(`/${this.config.endpoint}s`);
+        this.cacheService.invalidatePattern(`/${this.config.endpoint}`);
+      }
+
+      // Invalidar cache de listas relacionadas
+      this.cacheService.invalidatePattern(`/${this.config.endpoint}s`);
+      this.cacheService.invalidatePattern(`/${this.config.endpoint}`);
+
       // Actualizar el item en el componente
       (this as any)[this.config.itemProperty] = savedItem;
 
@@ -259,6 +274,12 @@ export abstract class BaseCrudComponent<T = any> extends BaseFilteredPaginatedMo
     if (!confirm(this.config.messages!.deleteConfirm!)) {
       return;
     }
+
+    // Invalidar cache antes de eliminar
+    const itemUrl = `${this.config.endpoint}/${itemToDelete}`;
+    this.cacheService.delete(itemUrl);
+    this.cacheService.invalidatePattern(`/${this.config.endpoint}s`);
+    this.cacheService.invalidatePattern(`/${this.config.endpoint}`);
 
     this.loading = true;
 

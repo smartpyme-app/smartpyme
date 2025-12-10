@@ -9,6 +9,7 @@ import {AlertService} from '@services/alert.service';
 import {ApiService} from '@services/api.service';
 import {PlanillaConstants} from '../../constants/planilla.constants';
 import { ModalManagerService } from '@services/modal-manager.service';
+import { HttpCacheService } from '@services/http-cache.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
 import Swal from 'sweetalert2';
@@ -65,7 +66,8 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    modalManager: ModalManagerService
+    modalManager: ModalManagerService,
+    private cacheService: HttpCacheService
   ) {
     super(apiService, alertService, modalManager);
     this.generarPeriodos();
@@ -191,6 +193,13 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         .pipe(this.untilDestroyed())
         .subscribe({
       next: (response) => {
+        // Invalidar cache de planillas después de generar
+        this.cacheService.invalidatePattern('/planillas');
+        this.cacheService.invalidatePattern('/planilla');
+        if (response?.id) {
+          this.cacheService.delete(`/planilla/${response.id}`);
+        }
+        
         this.alertService.success('Exito', 'Planilla generada exitosamente');
         this.loadPlanillas();
         this.closeModal();
@@ -222,6 +231,13 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (response) => {
+              // Invalidar cache del item específico y listas relacionadas
+              if (planilla?.id) {
+                this.cacheService.delete(`/planilla/${planilla.id}`);
+              }
+              this.cacheService.invalidatePattern('/planillas');
+              this.cacheService.invalidatePattern('/planilla');
+              
               this.alertService.success(
                 'Éxito',
                 'Planilla aprobada exitosamente'
@@ -255,6 +271,13 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             .pipe(this.untilDestroyed())
             .subscribe({
           next: (response) => {
+            // Invalidar cache del item específico y listas relacionadas
+            if (planilla?.id) {
+              this.cacheService.delete(`/planilla/${planilla.id}`);
+            }
+            this.cacheService.invalidatePattern('/planillas');
+            this.cacheService.invalidatePattern('/planilla');
+            
             this.alertService.success('Éxito', 'Planilla revertida exitosamente');
             this.loadPlanillas();
             this.procesando = false;

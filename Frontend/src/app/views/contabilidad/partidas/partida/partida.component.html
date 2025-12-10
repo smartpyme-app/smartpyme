@@ -44,13 +44,19 @@
     </div>
 
     <div class="bg-white rounded p-3">
-        <app-partida-detalles [partida]="partida" (update)="updatePartida($event)" (sumTotal)="sumTotal()"></app-partida-detalles>
+        <app-partida-detalles 
+            [partida]="partida" 
+            (update)="updatePartida($event)" 
+            (sumTotal)="sumTotal()" 
+            (cargarMas)="cargarMasDetalles()"
+            (totalesActualizados)="onTotalesActualizados($event)">
+        </app-partida-detalles>
     </div>
 
     <div class="bg-white rounded p-3 mb-3">
         <div class="form-group col-sm-12 pt-2 pb-4">
             @if (partida.estado !== 'Cerrada') {
-              <button type="submit" [disabled]="saving || (partida.diferencia != 0)" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
+              <button type="submit" [disabled]="saving || (parseFloat(partida.diferencia || 0) != 0) || !partida.detalles || partida.detalles.length === 0" class="btn btn-primary float-end tcla-F8" tooltip="Guardar (F8)">
                   @if (!saving) {
                     <span>Guardar partida  <img src="assets/icons/arrow-right-stroke.png" class="icon2 ms-2"></span>
                   }
