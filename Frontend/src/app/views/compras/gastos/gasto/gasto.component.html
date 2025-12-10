@@ -1,6 +1,6 @@
 <div class="d-flex justify-content-between bg-white rounded p-3 mb-3">
     <h3 (click)="loadAll()">{{ gasto.id ? 'Editar ' : 'Crear ' }} Gasto</h3>
-    <button class="btn btn-light text-danger" routerLink="/gastos"><i class="fa fa-arrow-left"></i> Regresar</button>
+    <button class="btn btn-light text-danger" (click)="goBack()"><i class="fa fa-arrow-left"></i> Regresar</button>
 </div>
 
 <form autocomplete="off" (ngSubmit)="onSubmit()">

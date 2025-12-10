@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { SumPipe }     from '@pipes/sum.pipe';
@@ -29,6 +30,7 @@ export class VentaComponent implements OnInit {
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private location: Location
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         this.route.data.subscribe(data => {
@@ -168,6 +170,10 @@ export class VentaComponent implements OnInit {
             (cf: any) => cf.custom_field?.id === fieldId
         );
         return customField ? customField.value : '';
+    }
+
+    public goBack() {
+        this.location.back();
     }
 
 }

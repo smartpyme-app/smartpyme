@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -33,12 +34,41 @@ export class VentasComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, private mhService: MHService, public alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
         this.usuario = this.apiService.auth_user();
-        this.loadAll();
+
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_proyecto: +params['id_proyecto'] || '',
+                id_documento: +params['id_documento'] || '',
+                id_cliente: +params['id_cliente'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                id_usuario: +params['id_usuario'] || '',
+                id_vendedor: +params['id_vendedor'] || '',
+                id_canal: +params['id_canal'] || '',
+                forma_pago: params['forma_pago'] || '',
+                dte: params['dte'] || '',
+                estado: params['estado'] || '',
+                num_identificacion: params['num_identificacion'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                orden: params['orden'] || 'fecha',
+                direccion: params['direccion'] || 'desc',
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
+            };
+
+            // Aplicar filtro de sucursal para usuarios no administradores si no hay filtro en URL
+            if ((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && !params['id_sucursal']) {
+                this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+            }
+
+            this.filtrarVentas();
+        });
 
         this.apiService.getAll('sucursales/list').subscribe(sucursales => {
             this.sucursales = sucursales;
@@ -68,23 +98,43 @@ export class VentasComponent implements OnInit {
         this.filtros.forma_pago = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
+        this.filtros.num_identificacion = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
-        // if(this.apiService.auth_user().tipo != 'Administrador'){
-        //     this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
-        // }
+        // Aplicar filtro de sucursal para usuarios no administradores
         if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) ){
             this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
         }
-
 
         this.filtrarVentas();
     }
 
     public filtrarVentas(){
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge',
+        });
+
         this.loading = true;
+
+        if (!this.filtros.id_cliente) {
+            this.filtros.id_cliente = '';
+        }
+
+        if (!this.filtros.id_usuario) {
+            this.filtros.id_usuario = '';
+        }
+
+        if (!this.filtros.id_vendedor) {
+            this.filtros.id_vendedor = '';
+        }
+
         this.apiService.getAll('ventas', this.filtros).subscribe(ventas => {
             this.ventas = ventas;
             this.loading = false;
@@ -127,11 +177,8 @@ export class VentasComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.ventas.path + '?page='+ event.page, this.filtros).subscribe(ventas => {
-            this.ventas = ventas;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarVentas();
     }
 
     public reemprimir(venta:any){

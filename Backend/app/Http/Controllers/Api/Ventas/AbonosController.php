@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Ventas\Abono;
 use App\Models\Ventas\Venta;
 use App\Models\Inventario\Paquete;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Support\Facades\DB;
 use App\Exports\AbonosVentasExport;
 use Maatwebsite\Excel\Facades\Excel;

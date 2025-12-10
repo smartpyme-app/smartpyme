@@ -1,5 +1,6 @@
 import { Component, OnInit,TemplateRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+import { Location } from '@angular/common';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -32,7 +33,7 @@ export class GastoComponent implements OnInit {
     public loadingAreas: boolean = false;
     public departamentos: any[] = [];
 
-	constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService) {}
+	constructor(public apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService, private location: Location) {}
 
 	ngOnInit(){
         this.loadAll();
@@ -317,6 +318,9 @@ export class GastoComponent implements OnInit {
     this.areasDisponibles.push(area);
     this.gasto.id_area_empresa = area.id.toString();
   }
-  
+
+  public goBack() {
+    this.location.back();
+  }
 
 }

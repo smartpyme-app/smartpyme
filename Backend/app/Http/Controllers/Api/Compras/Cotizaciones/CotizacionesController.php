@@ -9,7 +9,7 @@ use App\Models\Registros\Cliente;
 use App\Models\Compras\Compra as Cotizacion;
 use App\Models\Admin\Empresa;
 use App\Models\Compras\Detalle;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use JWTAuth;
 use App\Exports\OrdenesDeComprasExport;

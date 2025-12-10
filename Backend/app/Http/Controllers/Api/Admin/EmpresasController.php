@@ -9,7 +9,7 @@ use App\Models\Admin\Sucursal;
 use App\Models\Inventario\Bodega;
 use App\Models\Transaccion;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Support\Facades\DB;
 use Intervention\Image\ImageManagerStatic as Image;
 use Carbon\Carbon;

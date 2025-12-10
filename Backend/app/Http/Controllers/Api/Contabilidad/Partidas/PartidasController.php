@@ -22,7 +22,7 @@ use App\Models\Inventario\Categorias\Cuenta as CuentaCategoria;
 use App\Services\Contabilidad\CierreMesService;
 use App\Services\Contabilidad\SimulacionCierreService;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class PartidasController extends Controller
 {

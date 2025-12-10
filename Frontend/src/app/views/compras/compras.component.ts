@@ -1,4 +1,5 @@
 import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -33,11 +34,33 @@ export class ComprasComponent implements OnInit {
     modalRef!: BsModalRef;
 
     constructor(public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService, private router: Router, private route: ActivatedRoute
     ){}
 
     ngOnInit() {
-        this.loadAll();
+        this.route.queryParams.subscribe(params => {
+            this.filtros = {
+                buscador: params['buscador'] || '',
+                id_proyecto: +params['id_proyecto'] || '',
+                id_documento: +params['id_documento'] || '',
+                id_proveedor: +params['id_proveedor'] || '',
+                id_sucursal: +params['id_sucursal'] || '',
+                id_usuario: +params['id_usuario'] || '',
+                forma_pago: params['forma_pago'] || '',
+                dte: params['dte'] || '',
+                estado: params['estado'] || '',
+                inicio: params['inicio'] || '',
+                fin: params['fin'] || '',
+                num_identificacion: params['num_identificacion'] || '',
+                orden: params['orden'] || 'id',
+                direccion: params['direccion'] || 'desc',
+                paginate: +params['paginate'] || 10,
+                page: +params['page'] || 1,
+            };
+
+            this.filtrarCompras();
+        });
+
         this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
             this.proveedores = proveedores;
         }, error => {this.alertService.error(error); });
@@ -55,14 +78,24 @@ export class ComprasComponent implements OnInit {
         this.filtros.dte = '';
         this.filtros.estado = '';
         this.filtros.buscador = '';
+        this.filtros.inicio = '';
+        this.filtros.fin = '';
+        this.filtros.num_identificacion = '';
         this.filtros.orden = 'fecha';
         this.filtros.direccion = 'desc';
         this.filtros.paginate = 10;
+        this.filtros.page = 1;
 
         this.filtrarCompras();
     }
 
     public filtrarCompras(){
+        this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: this.filtros,
+            queryParamsHandling: 'merge',
+        });
+
         this.loading = true;
         
         if(!this.filtros.id_proveedor){
@@ -181,11 +214,8 @@ export class ComprasComponent implements OnInit {
     }
 
     public setPagination(event:any):void{
-        this.loading = true;
-        this.apiService.paginate(this.compras.path + '?page='+ event.page, this.filtros).subscribe(compras => { 
-            this.compras = compras;
-            this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+        this.filtros.page = event.page;
+        this.filtrarCompras();
     }
 
     public openDescargar(template: TemplateRef<any>) {
