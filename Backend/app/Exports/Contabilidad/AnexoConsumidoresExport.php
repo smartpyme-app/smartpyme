@@ -109,8 +109,8 @@ class AnexoConsumidoresExport implements FromCollection, WithMapping, WithCustom
                 '0.00', //L No Exentas no sujetas a proporcionalidad
                 $venta->no_sujeta ? number_format($venta->no_sujeta, 2, '.', '') : '0.00', //M No Sujetas
                 $esFacturaExportacion ? '0.00' : number_format($venta->gravada, 2, '.', ''), //N Gravadas'
-                $esFacturaExportacion ? nugit mber_format($venta->total, 2, '.', ''): '0', //P Exportacion externa'
-                '0.00', //O Exportacion interna'
+                $esFacturaExportacion ? nugit mber_format($venta->total, 2, '.', ''): '0', //O Exportacion internas'
+                '0.00', //P Exportacion externas'
                 '0.00', //Q Exportacion servicios'
                 '0.00', //R Ventas zonas francas'
                 '0.00', //S Ventas a terceros
