@@ -238,17 +238,17 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     );
   }
 
-  public setEstado(venta: any, estado: any) {
+  public async setEstado(venta: any, estado: any) {
     if (estado == 'Pagada') {
       if (confirm('¿Confirma el pago de la venta?')) {
         venta.estado = estado;
-        this.onSubmit(venta, true);
+        await this.onSubmit(venta, true);
       }
     }
     if (estado == 'Anulada') {
       if (confirm('¿Confirma la anulación de la venta?')) {
         venta.estado = estado;
-        this.onSubmit(venta, true);
+        await this.onSubmit(venta, true);
       }
     }
   }
@@ -575,9 +575,33 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     window.open(this.apiService.baseUrl + '/api/venta/wompi-link/' + venta.id + '?token=' + this.apiService.auth_token());
   }
 
-    public override async onSubmit(item?: any, isStatusChange: boolean = false) {
-        await super.onSubmit(item, isStatusChange);
+  public setDocumento(id_documento: any) {
+    let documento = this.documentos.find((x: any) => x.id == id_documento);
+    if (documento) {
+      this.venta.nombre_documento = documento.nombre;
+      this.venta.id_documento = documento.id;
+      this.venta.correlativo = documento.correlativo;
     }
+  }
+
+  public override async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
+    const ventaToSave = item || this.venta;
+    this.saving = true;
+    try {
+      const venta = await this.apiService.store('venta', ventaToSave)
+        .pipe(this.untilDestroyed())
+        .toPromise();
+      this.venta = {};
+      this.saving = false;
+      if (this.modalRef) {
+        this.closeModal();
+      }
+      this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+    } catch (error: any) {
+      this.alertService.error(error);
+      this.saving = false;
+    }
+  }
 
     public setRecurrencia(venta:any){
         this.venta = venta;

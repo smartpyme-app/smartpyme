@@ -40,7 +40,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->emailOutputOnFailure(
                 // env('ADMIN_EMAIL')
-                'joseespana94@gmail.com'
+                'jose.e@smartpyme.sv'
             );
 
         // Programar la actualización de métricas para todas las sucursales a las 4:00 AM
@@ -49,7 +49,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->withoutOverlapping()
             ->emailOutputOnFailure(
-                'joseespana94@gmail.com'
+                'jose.e@smartpyme.sv'
                 // env('ADMIN_EMAIL')
             );
 
@@ -58,7 +58,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->withoutOverlapping()
             ->emailOutputOnFailure(
-                'joseespana94@gmail.com'
+                'jose.e@smartpyme.sv'
                 // env('ADMIN_EMAIL')
             );
 
@@ -67,7 +67,7 @@ class Kernel extends ConsoleKernel
             ->runInBackground()
             ->withoutOverlapping()
             ->emailOutputOnFailure(
-                'joseespana94@gmail.com'
+                'jose.e@smartpyme.sv'
                 // env('ADMIN_EMAIL')
             );
 

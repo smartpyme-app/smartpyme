@@ -94,7 +94,7 @@
                     <tr><td>Abonos</td><td class="text-right">{{ indicadores.cantidadRecibos }}</td><td class="text-right">{{ indicadores.totalRecibos | currency}}</td></tr>
                     <tr><td>Devoluciones</td><td class="text-right">{{ indicadores.cantidadDevolucionesVenta }}</td><td class="text-right">{{ indicadores.totalDevolucionesVenta | currency}}</td></tr>
                     @if (usuario.tipo == 'Administrador') {
-                        <tr><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastos }}</td><td class="text-right">{{ indicadores.totalGastos | currency}}</td></tr>
+                        <tr><td>Gastos</td><td class="text-right">{{ indicadores.cantidadGastosPagados }}</td><td class="text-right">{{ indicadores.totalGastosPagados | currency}}</td></tr>
                     }
                     <tr><td>Cuentas por cobrar</td><td class="text-right">{{ indicadores.cantidadVentasPendientes }}</td><td class="text-right">{{ indicadores.totalVentasPendientes | currency}}</td></tr>
                     </tbody>

@@ -13,13 +13,17 @@
           @if (showAllPlans) {
               <div class="list-group mt-3 mb-2">
             <h4>Plan actual:</h4>
-            <div class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible">
+            <div
+              class="list-group-item border mb-2 rounded-3 selected-plan hover-highlight plan-container visible"
+            >
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 class="mb-1">Plan {{ planName }}</h6>
                   <p class="mb-1 text-muted small">{{ planFeatures[0] }}</p>
                 </div>
-                <span class="badge bg-primary rounded-pill">${{ this.montoPlanActual }}/mes</span>
+                <span class="badge bg-primary rounded-pill"
+                  >${{ this.montoPlanActual }}/mes</span
+                >
               </div>
             </div>
               </div>
@@ -43,11 +47,11 @@
           @if (showPaymentOptions) {
               <div class="payment-options-container">
               <h5 class="mb-3">Selecciona tu método de pago</h5>
-              
+
               <!-- Opción: Método de pago existente -->
               @if (paymentMethodExists) {
                   <div class="mb-3">
-                      <button 
+                      <button
                           class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
                           (click)="selectPaymentOption('existing')"
                           [disabled]="loading">
@@ -57,7 +61,7 @@
                                   <strong>Usar tarjeta guardada</strong>
                                   <br>
                                   <small class="text-muted">
-                                      {{ existingPaymentMethod?.marca_tarjeta }} 
+                                      {{ existingPaymentMethod?.marca_tarjeta }}
                                       ****{{ existingPaymentMethod?.ultimos_cuatro }}
                                   </small>
                               </div>
@@ -69,7 +73,7 @@
 
               <!-- Opción: Nueva tarjeta -->
               <div class="mb-3">
-                  <button 
+                  <button
                       class="btn btn-outline-secondary btn-no-hover-white w-100 p-3 text-start"
                       (click)="selectPaymentOption('new')"
                       [disabled]="loading">
@@ -86,7 +90,7 @@
               </div>
 
               <!-- Botón cancelar -->
-              <button 
+              <button
                   class="btn btn-outline-secondary w-100"
                   (click)="cancelPayment()">
                   Cancelar
@@ -100,7 +104,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h5 class="mb-0">Nueva tarjeta de pago</h5>
               @if (paymentMethodExists) {
-                  <button 
+                  <button
                       class="btn btn-sm btn-outline-secondary"
                       (click)="backToPaymentOptions()">
                       <i class="fas fa-arrow-left me-1"></i>
@@ -267,7 +271,11 @@
                 <button
                   type="button"
                   class="btn btn-outline-secondary"
-                  (click)="paymentMethodExists ? backToPaymentOptions() : cancelPayment()"
+                  (click)="
+                    paymentMethodExists
+                      ? backToPaymentOptions()
+                      : cancelPayment()
+                  "
                 >
                   Cancelar
                 </button>
@@ -305,6 +313,7 @@
     <app-threeds-modal
         [authUrl]="urlAutenticacion"
         (close)="mostrar3DSModal = false"
+        (messageReceived)="on3DSMessageReceived($event)"
     >
     </app-threeds-modal>
 }

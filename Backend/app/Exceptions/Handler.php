@@ -46,6 +46,12 @@ class Handler extends ExceptionHandler
      */
     public function report(Throwable $exception)
     {
+        // Filtrar warnings de deprecación de PHP 8.1+ con Laravel 8.0
+        if ($exception instanceof \ErrorException && 
+            strpos($exception->getMessage(), 'Implicitly marking parameter') !== false) {
+            return;
+        }
+        
         parent::report($exception);
     }
 

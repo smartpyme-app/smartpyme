@@ -11,14 +11,13 @@ import { SumPipe }     from '@pipes/sum.pipe';
 import { ApiService } from '@services/api.service';
 import { AlertService } from '@services/alert.service';
 import { ModalManagerService } from '@services/modal-manager.service';
-import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
 @Component({
     selector: 'app-tienda-venta-buscador',
     templateUrl: './tienda-venta-buscador.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
-    
+    imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
+
 })
 export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -35,9 +34,11 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
     public override filtros:any = {};
     public buscador:any = '';
     private tieneShopify: boolean = false;
+    public override loading:boolean = false;
+    public descripcionesExpandidas: { [key: number]: boolean } = {};
 
-    constructor( 
-        apiService: ApiService, 
+    constructor(
+        apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
         private sumPipe:SumPipe
@@ -62,7 +63,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
           .pipe(
             debounceTime(500),
             filter((query: string) => query?.trim().length > 0), // Validación para evitar errores con `null` o `undefined`.
-            switchMap((query: any) => 
+            switchMap((query: any) =>
               this.apiService.getAll(`productos/buscar-by-query?query=${encodeURIComponent(query)}`).pipe(
                 catchError(error => {
                   console.error('Error en la búsqueda:', error);
@@ -119,7 +120,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
 
     public filtrarProductos(){
         this.loading = true;
-        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
+        this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => {
             this.productosData = productos;
             this.loading = false;
         }, error => {this.alertService.error(error); this.loading = false;});
@@ -192,7 +193,7 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
     }
 
     agregarDetalles(){
-        for (let i = 0; i < this.detalles.length; i++) { 
+        for (let i = 0; i < this.detalles.length; i++) {
             this.productoSelect.emit(this.detalles[i]);
         }
 
@@ -210,6 +211,47 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
             return `${producto.nombre} ${producto.nombre_variante}`;
         }
         return producto.nombre;
+    }
+
+    /**
+     * Obtiene la descripción del producto (completa o truncada según el estado)
+     */
+    getDescripcion(producto: any): string {
+        if (!producto.descripcion) {
+            return '';
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        if (estaExpandida || producto.descripcion.length <= 20) {
+            return producto.descripcion;
+        }
+        return producto.descripcion.substring(0, 20) + '...';
+    }
+
+    /**
+     * Verifica si la descripción está truncada (necesita "ver más")
+     */
+    necesitaVerMas(producto: any): boolean {
+        if (!producto.descripcion) {
+            return false;
+        }
+        const estaExpandida = this.descripcionesExpandidas[producto.id] || false;
+        return !estaExpandida && producto.descripcion.length > 20;
+    }
+
+    /**
+     * Verifica si la descripción está expandida (muestra "ver menos")
+     */
+    estaExpandida(producto: any): boolean {
+        return this.descripcionesExpandidas[producto.id] || false;
+    }
+
+    /**
+     * Alterna el estado de expansión de la descripción
+     */
+    toggleDescripcion(event: Event, producto: any): void {
+        event.stopPropagation(); // Previene que se seleccione el producto
+        const estadoActual = this.descripcionesExpandidas[producto.id] || false;
+        this.descripcionesExpandidas[producto.id] = !estadoActual;
     }
 
 }

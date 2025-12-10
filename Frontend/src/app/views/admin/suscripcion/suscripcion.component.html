@@ -827,11 +827,12 @@
   <app-threeds-modal
     [authUrl]="urlAutenticacion"
     (close)="mostrar3DSModal = false"
+    (messageReceived)="on3DSMessageReceived($event)"
   >
   </app-threeds-modal>
 }
 
-<!-- 
+<!--
 <section class="bg-white p-4 rounded mb-3">
     <h2 class="page-heading">Pagos</h2>
 
@@ -858,7 +859,7 @@
                     </tr>
 
                     <tr *ngFor=" let recibo of suscripcion?.pagos">
-                        
+
                         <td>{{recibo.fecha | date:'dd/MM/yyyy'}}</td>
                         <td>{{recibo.descripcion }}</td>
                         <td>

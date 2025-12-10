@@ -157,8 +157,23 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
            $venta = $row->venta()->first();
            $documentoNombre = $venta ? $venta->documento()->pluck('nombre')->first() : null;
            $esFacturaExportacion = strtolower($documentoNombre) === 'factura de exportación';
-           $calcularIva = $venta && $venta->iva && !$esFacturaExportacion;
-           $iva = $calcularIva ? $row->total * 0.13 : 0;
+           
+           // Calcular IVA: usar el IVA del detalle si existe, solo si la venta tiene IVA y no es exportación
+           $iva = 0;
+           if ($venta && $venta->iva > 0 && !$esFacturaExportacion) {
+               // Usar el IVA del detalle si está disponible y es mayor a 0
+               // El IVA del detalle puede ser null o 0, por eso verificamos explícitamente
+               $ivaDetalle = $row->iva ?? 0;
+               if ($ivaDetalle > 0) {
+                   $iva = $ivaDetalle;
+               }
+           }
+           
+           // Calcular el total del detalle: subtotal + IVA del detalle
+           // Esto coincide con cómo VentasExport calcula el total (sub_total + iva)
+           // Nota: El total de la venta puede incluir conceptos adicionales (propina, cuenta_a_terceros, etc.)
+           // que no se pueden distribuir por detalle, por eso puede haber diferencias menores
+           $totalConIva = $row->total + $iva;
            
            $fields = [
               $row->venta()->pluck('fecha')->first(),
@@ -184,7 +199,7 @@ class VentasDetallesExport implements FromCollection, WithHeadings, WithMapping
               round($row->descuento,2),
               round($iva,2),
               round($row->total - ($row->costo * $row->cantidad),2),
-              round($row->total + $iva,2),
+              round($totalConIva,2),
               $venta ? $venta->sucursal()->first()->empresa()->pluck('nombre')->first() : null,
               $row->venta()->pluck('observaciones')->first(),
               $venta ? $venta->usuario()->pluck('name')->first() : null,

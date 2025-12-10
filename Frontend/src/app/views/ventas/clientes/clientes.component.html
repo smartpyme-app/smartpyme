@@ -10,7 +10,7 @@
         <div class="col-md-6 mb-3">
             @if (clientes?.total) {
                 <span class="text-muted d-flex align-items-center gap-2">
-                    Mostrando 
+                    Mostrando
                     <select name="paginate" class="form-select w-auto" (change)="filtrarClientes()" [(ngModel)]="filtros.paginate">
                         <option value="10">10</option>
                         <option value="25">25</option>
@@ -112,6 +112,9 @@
                                     <a routerLink="/cliente/detalles/{{cliente.id}}" class="list-group-item list-group-item-action border-0 click">
                                         <i class="fa fa-fw fa-magnifying-glass"></i> Detalles
                                     </a>
+                                    <a (click)="generarEstadoCuenta(cliente)" class="list-group-item list-group-item-action border-0 click">
+                                        <i class="fa fa-fw fa-file-pdf"></i> Estado de cuenta
+                                    </a>
                                     @if (cliente.enable && apiService.canEditTest('ventas.clientes.editar')) {
                                         <a (click)="setActivo(cliente, false)" class="list-group-item list-group-item-action border-0 click">
                                             <i class="fa fa-ban"></i> Deshabilitar
@@ -183,7 +186,7 @@
                 <input type='date' class="form-control" name="filtros.fecha_cumpleanos" [(ngModel)]="filtros.fecha_cumpleanos"/>
             </div>
         </div>
-        
+
         <br><br>
         <div class="d-grid">
             <button type="submit" [disabled]="loading" class="btn btn-primary btn-block">
@@ -252,7 +255,7 @@
       </div>
       <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
-  
+
     <div class="modal-body p-4">
       <div class="container-fluid">
         <div class="row">
@@ -266,7 +269,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Empresa -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
@@ -277,7 +280,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Extranjeros -->
           <div class="col-12">
             <div class="card border-0 shadow-sm hover-effect">
@@ -292,7 +295,7 @@
       </div>
     </div>
   </ng-template>
-  
+
 <!-- <ng-template #mexportar>
   <div class="modal-header">
     <div class="modal-title text-center">
@@ -325,12 +328,12 @@
       </div>
       <button type="button" class="btn-close" (click)="modalRef.hide(); this.alertService.modal = false;" aria-label="Close"></button>
     </div>
-  
+
     <div class="modal-body p-4">
       <div class="container-fluid">
         <div class="row">
           <app-notificaciones-container></app-notificaciones-container>
-          
+
           <!-- Persona Natural -->
           <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm hover-effect">
@@ -340,8 +343,8 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-3">Clientes Persona Natural</h5>
-                  <button [disabled]="downloading" tooltip="Descargar clientes persona" 
-                          (click)="descargarPersonas()" 
+                  <button [disabled]="downloading" tooltip="Descargar clientes persona"
+                          (click)="descargarPersonas()"
                           class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
@@ -350,7 +353,7 @@
               </div>
             </div>
           </div>
-  
+
           <!-- Empresa -->
           <div class="col-12">
             <div class="card border-0 shadow-sm hover-effect">
@@ -360,8 +363,8 @@
                 </div>
                 <div class="flex-grow-1">
                   <h5 class="fw-bold mb-3">Clientes Empresa</h5>
-                  <button [disabled]="downloading" tooltip="Descargar clientes empresa" 
-                          (click)="descargarEmpresas()" 
+                  <button [disabled]="downloading" tooltip="Descargar clientes empresa"
+                          (click)="descargarEmpresas()"
                           class="btn btn-default tcla-F6">
                     <i class="fas fa-download me-2"></i>
                     Exportar
@@ -378,8 +381,8 @@
                     </div>
                     <div class="flex-grow-1">
                         <h5 class="fw-bold mb-3">Clientes Extranjeros</h5>
-                        <button [disabled]="downloading" tooltip="Descargar clientes internacionales" 
-                                (click)="descargarExtranjeros()" 
+                        <button [disabled]="downloading" tooltip="Descargar clientes internacionales"
+                                (click)="descargarExtranjeros()"
                                 class="btn btn-default tcla-F6">
                           <i class="fas fa-download me-2"></i>
                           Exportar
@@ -392,4 +395,4 @@
       </div>
     </div>
   </ng-template>
-  
+

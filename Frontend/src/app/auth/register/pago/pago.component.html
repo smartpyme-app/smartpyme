@@ -38,7 +38,12 @@
                                 <tr>
                                     <td>{{ user.empresa.plan }}</td>
                                     <td>{{ user.empresa.tipo_plan }}</td>
-                                    <td class="text-end">{{ user.empresa.total | currency:'USD':'symbol':'1.2' }}</td>
+                                    <td class="text-end">
+                                        <span *ngIf="tieneDescuento && totalOriginal > 0" style="text-decoration: line-through; color: red; margin-right: 8px;">
+                                            {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
+                                        </span>
+                                        {{ user.empresa.total | currency:'USD':'symbol':'1.2' }}
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -82,9 +87,9 @@
                             <div class="mb-3">
                                 <label class="form-label">Número de Tarjeta</label>
                                 <div class="input-group">
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
+                                    <input
+                                        type="text"
+                                        class="form-control"
                                         [(ngModel)]="paymentData.cardNumber"
                                         name="cardNumber"
                                         required
@@ -107,9 +112,9 @@
                             <!-- Nombre del titular -->
                             <div class="mb-3">
                                 <label class="form-label">Nombre del Titular</label>
-                                <input 
-                                    type="text" 
-                                    class="form-control" 
+                                <input
+                                    type="text"
+                                    class="form-control"
                                     [(ngModel)]="paymentData.cardHolder"
                                     name="cardHolder"
                                     required
@@ -127,9 +132,9 @@
                                 <!-- Mes de expiración -->
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Mes de expiración</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
+                                    <input
+                                        type="text"
+                                        class="form-control"
                                         [(ngModel)]="paymentData.expirationMonth"
                                         name="expirationMonth"
                                         required
@@ -148,9 +153,9 @@
                                 <!-- Año de expiración -->
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">Año de expiración</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
+                                    <input
+                                        type="text"
+                                        class="form-control"
                                         [(ngModel)]="paymentData.expirationYear"
                                         name="expirationYear"
                                         required
@@ -169,9 +174,9 @@
                                 <!-- CVV -->
                                 <div class="col-md-4 mb-3">
                                     <label class="form-label">CVV</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
+                                    <input
+                                        type="text"
+                                        class="form-control"
                                         [(ngModel)]="paymentData.cvv"
                                         name="cvv"
                                         required
@@ -274,15 +279,15 @@
 
                             <!-- Botones de acción -->
                             <div class="d-grid gap-2">
-                                <button 
-                                    type="submit" 
+                                <button
+                                    type="submit"
                                     class="btn btn-primary"
                                     [disabled]="!paymentForm.form.valid || processingPayment">
                                     <i class="fas fa-lock me-2"></i>
                                     {{ processingPayment ? 'Procesando...' : 'Procesar Pago' }}
                                 </button>
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     class="btn btn-outline-secondary"
                                     (click)="showDirectPayment = false">
                                     <i class="fas fa-times me-2"></i>
@@ -307,9 +312,10 @@
     </div>
 </div>
 @if (mostrar3DSModal) {
-    <app-threeds-modal 
+    <app-threeds-modal
         [authUrl]="urlAutenticacion"
-        (close)="mostrar3DSModal = false">
+        (close)="mostrar3DSModal = false"
+        (messageReceived)="on3DSMessageReceived($event)">
     </app-threeds-modal>
 }
 

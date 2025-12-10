@@ -16,6 +16,7 @@ Route::group(['prefix' => 'payment'], function () {
 	Route::post('process/3ds', [N1coChargeController::class, 'processCharge3DS']);
 	Route::post('update-method-payment', [N1coChargeController::class, 'updateMethodPayment']);
 	Route::post('check-auth-status', [N1coChargeController::class, 'checkAuthenticationStatus']);
+	Route::post('change-status-authentication-3ds', [N1coChargeController::class, 'changeStatusAuthentication3DS']);
 	Route::get('validate/{paymentId}', [N1coChargeController::class, 'validatePayment']);
 	Route::get('{empresaId}', [N1coChargeController::class, 'checkout']);
 

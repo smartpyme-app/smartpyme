@@ -9,6 +9,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { PromocionalService } from '@services/promocional.service';
 
 
 @Component({
@@ -26,13 +27,17 @@ export class RegisterComponent implements OnInit {
     public saludo:string = '';
     public anio:any = '';
     public showpassword:boolean = false;
+    public totalOriginal: number = 0;
+    public tieneDescuento: boolean = false;
+    public codigoPromocionalValido: boolean = false;
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( 
+    constructor(
         public apiService: ApiService, private alertService: AlertService,
         private route: ActivatedRoute, private router: Router,
+        public promocionalService: PromocionalService
     ) { }
 
     ngOnInit() {
@@ -56,8 +61,8 @@ export class RegisterComponent implements OnInit {
             this.user.empresa = {};
 
             this.user.empresa.industria = '';
-            this.user.empresa.iva = 13; 
-            this.user.empresa.plan = 'Emprendedor';
+            this.user.empresa.iva = 13;
+            this.user.empresa.plan = '';
             this.user.empresa.tipo_plan = 'Mensual';
             this.user.empresa.pais = 'El Salvador';
             this.user.empresa.moneda = 'USD';
@@ -79,7 +84,21 @@ export class RegisterComponent implements OnInit {
                 this.user.empresa.campania = this.route.snapshot.queryParamMap.get('campania')!;
             }
 
+            if (this.route.snapshot.queryParamMap.get('promo')!) {
+                this.user.empresa.codigo_promocional = this.route.snapshot.queryParamMap.get('promo')!;
+            }
+
             this.setPlan();
+            this.aplicarDescuento();
+
+            // Inicializar tieneDescuento y codigoPromocionalValido si ya hay un código promocional
+            const codigoPromo = this.promocionalService.obtenerCodigoPromocional(
+                this.user.empresa.codigo_promocional
+            );
+            if (codigoPromo) {
+                this.tieneDescuento = true;
+                this.codigoPromocionalValido = true;
+            }
 
         }
 
@@ -91,9 +110,9 @@ export class RegisterComponent implements OnInit {
             this.user.empresa.sucursal_limit = 1;
 
             if(this.user.empresa.tipo_plan == 'Mensual'){
-                this.user.empresa.total = 16.95;
+                this.totalOriginal = 16.95;
             }else{
-                this.user.empresa.total = 203.4;
+                this.totalOriginal = 203.4;
             }
         }
 
@@ -102,9 +121,9 @@ export class RegisterComponent implements OnInit {
             this.user.empresa.sucursal_limit = 1;
 
             if(this.user.empresa.tipo_plan == 'Mensual'){
-                this.user.empresa.total = 28.25;
+                this.totalOriginal = 28.25;
             }else{
-                this.user.empresa.total = 339;
+                this.totalOriginal = 339;
             }
         }
 
@@ -113,9 +132,9 @@ export class RegisterComponent implements OnInit {
             this.user.empresa.sucursal_limit = 2;
 
             if(this.user.empresa.tipo_plan == 'Mensual'){
-                this.user.empresa.total = 56.5;
+                this.totalOriginal = 56.5;
             }else{
-                this.user.empresa.total = 678;
+                this.totalOriginal = 678;
             }
         }
 
@@ -124,12 +143,38 @@ export class RegisterComponent implements OnInit {
             this.user.empresa.sucursal_limit = 2;
 
             if(this.user.empresa.tipo_plan == 'Mensual'){
-                this.user.empresa.total = 113;
+                this.totalOriginal = 113;
             }else{
-                this.user.empresa.total = 1220;
+                this.totalOriginal = 1220;
             }
         }
 
+        this.aplicarDescuento();
+    }
+
+    public aplicarDescuento(){
+        const codigo = this.user.empresa.codigo_promocional;
+        const codigoPromo = this.promocionalService.obtenerCodigoPromocional(codigo);
+
+        if(codigoPromo){
+            this.codigoPromocionalValido = true;
+
+            if(this.totalOriginal > 0){
+                // Aplicar descuento según el código promocional
+                this.user.empresa.total = this.promocionalService.calcularPrecioConDescuento(
+                    this.totalOriginal,
+                    codigo
+                );
+                this.tieneDescuento = true;
+            }
+        }else{
+            this.codigoPromocionalValido = false;
+            this.tieneDescuento = false;
+
+            if(this.totalOriginal > 0){
+                this.user.empresa.total = this.totalOriginal;
+            }
+        }
     }
 
     setModeda(){
@@ -167,22 +212,39 @@ export class RegisterComponent implements OnInit {
     submit() {
         this.loading = true;
 
+        // Guardar el total con descuento para mostrar después, pero enviar el original al backend
+        const totalConDescuento = this.user.empresa.total;
+        const totalOriginalParaEnviar = this.totalOriginal;
+
+        // Enviar el total original al backend (sin descuento aplicado)
+        // El backend aplicará el descuento basándose en el código promocional
+        this.user.empresa.total = totalOriginalParaEnviar;
+
         this.apiService.register(this.user)
-            .pipe(this.untilDestroyed())
-            .subscribe({
-                next: (data) => {
-                    this.router.navigate(['/pago']);
-                    this.loading = false;
-                },
-                error: (error) => {
-                    this.alertService.error(error);
-                    this.loading = false;
+        .subscribe(
+            data => {
+                // Restaurar el total con descuento para la navegación
+                this.user.empresa.total = totalConDescuento;
+
+                // Si hay código promocional, agregarlo a la URL
+                const navigationExtras: any = {};
+                if (this.user.empresa.codigo_promocional) {
+                    navigationExtras.queryParams = { promo: this.user.empresa.codigo_promocional };
                 }
+                this.router.navigate(['/pago'], navigationExtras);
+                this.loading = false;
+            },
+            error => {
+                // Restaurar el total con descuento en caso de error
+                this.user.empresa.total = totalConDescuento;
+                this.alertService.error(error);
+                this.loading = false;
             });
     }
 
     public mostrarPassword(){
         this.showpassword = !this.showpassword;
-    }  
+    }
 
 }
+

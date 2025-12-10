@@ -123,6 +123,9 @@
               @if (config.tipo_reporte === 'inventario-por-sucursal') {
                 <span>Inventario por Sucursal</span>
               }
+              @if (config.tipo_reporte === 'ventas-por-utilidades') {
+                <span>Ventas por Utilidades</span>
+              }
               @if (
                 config.tipo_reporte !== 'ventas-por-vendedor' &&
                 config.tipo_reporte !== 'ventas-diarias' &&
@@ -130,7 +133,8 @@
                 config.tipo_reporte !== 'ventas-por-categoria-vendedor' &&
                 config.tipo_reporte !== 'estado-financiero-consolidado-sucursales' &&
                 config.tipo_reporte !== 'detalle-ventas-vendedor' &&
-                config.tipo_reporte !== 'inventario-por-sucursal'
+                config.tipo_reporte !== 'inventario-por-sucursal' &&
+                config.tipo_reporte !== 'ventas-por-utilidades'
               ) {
                 <span>{{ config.tipo_reporte }}</span>
               }
@@ -251,7 +255,7 @@
     }
     <!--descargar reporte por configuracion-->
     @if (config.activo) {
-      <a 
+      <a
         (click)="descargarReporte(config, mSeleccionarFechas)"
         class="list-group-item list-group-item-action border-0 click text-success"
       >
@@ -262,7 +266,7 @@
     }
 
     @if (config.activo && getPermissionsPDf(config.tipo_reporte)) {
-      <a 
+      <a
         (click)="descargarReporte(config, mSeleccionarFechas,'pdf')"
         class="list-group-item list-group-item-action border-0 click text-primary"
       >
@@ -292,7 +296,6 @@
     <app-notificaciones-container></app-notificaciones-container>
 
     <form (ngSubmit)="guardarConfiguracion()">
-
       <!-- Nombre del reporte -->
       <div class="form-group mb-3">
         <label for="nombre_reporte" class="form-label fw-bold"
@@ -599,7 +602,7 @@
 
         <!-- Alerta informativa -->
         <!-- <div class="alert alert-info mt-3 py-2 small">
-          <i class="fa fa-info-circle me-2"></i> 
+          <i class="fa fa-info-circle me-2"></i>
           Los porcentajes se utilizarán para ponderar las ventas en cada categoría dentro del reporte.
           Por ejemplo, un porcentaje del 90% para "Servicios" significa que se reportará el 90% de las ventas en esa categoría.
         </div> -->
