@@ -153,7 +153,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     super();
   }
   public authUser: any = {};
-  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543,569,657];
+  public empresas_supervisor_limitado = [13, 396, 397, 398, 427, 428, 429, 432, 438, 488, 543,569,657,538];
 
 
   ngOnInit() {

@@ -33,7 +33,7 @@ export class ReportesComponent implements OnInit {
     }
 
     loadAll(){
-        this.filtros.id_empresa = '';
+        this.filtros.id_empresa = this.usuario.id_empresa;
         this.filtros.tipo = '';
         this.filtros.buscador = '';
         this.filtros.orden = 'id';
