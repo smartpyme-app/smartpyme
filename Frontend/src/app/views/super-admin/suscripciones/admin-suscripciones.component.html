@@ -590,6 +590,7 @@
               step="0.01"
               min="0"
               required
+              (ngModelChange)="onMontoChange($event, true)"
             />
           </div>
         </div>
@@ -856,6 +857,7 @@
               min="0"
               required
               [class.bg-light]="true"
+              (ngModelChange)="onMontoChange($event, false)"
             />
           </div>
           <small class="text-muted"

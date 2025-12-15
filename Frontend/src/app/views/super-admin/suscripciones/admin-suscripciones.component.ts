@@ -431,6 +431,11 @@ export class AdminSuscripcionesComponent implements OnInit {
     if (planSeleccionado) {
       this.nuevaSuscripcion.plan_id = planSeleccionado.id;
       this.nuevaSuscripcion.monto = planSeleccionado.monto;
+      // Calcular montos si hay frecuencia de pago establecida
+      if (this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan) {
+        const frecuencia = this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
+        this.calcularMontos(planSeleccionado.monto, frecuencia, false);
+      }
     }
   }
 
@@ -444,6 +449,11 @@ export class AdminSuscripcionesComponent implements OnInit {
       }
       this.suscripcion.plan.id = planSeleccionado.id;
       this.suscripcion.monto = planSeleccionado.monto;
+      // Calcular montos si hay frecuencia de pago establecida
+      if (this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan) {
+        const frecuencia = this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan;
+        this.calcularMontos(planSeleccionado.monto, frecuencia, true);
+      }
     }
   }
 
@@ -453,11 +463,79 @@ export class AdminSuscripcionesComponent implements OnInit {
       if (frecuencia) {
         this.suscripcion.tipo_plan = frecuencia;
       }
+      // Recalcular montos si hay un monto establecido
+      if (this.suscripcion.monto) {
+        this.calcularMontos(this.suscripcion.monto, frecuencia, true);
+      }
     } else {
       // Sincronizar tipo_plan con frecuencia_pago en creación
       if (frecuencia) {
         this.nuevaSuscripcion.tipo_plan = frecuencia;
       }
+      // Recalcular montos si hay un monto establecido
+      if (this.nuevaSuscripcion.monto) {
+        this.calcularMontos(this.nuevaSuscripcion.monto, frecuencia, false);
+      }
+    }
+  }
+
+  public onMontoChange(monto: number, isEdit: boolean = false) {
+    if (!monto || monto <= 0) {
+      return;
+    }
+
+    const frecuencia = isEdit 
+      ? this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan
+      : this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
+
+    if (frecuencia) {
+      this.calcularMontos(monto, frecuencia, isEdit);
+    }
+  }
+
+  private calcularMontos(monto: number, frecuenciaPago: string, isEdit: boolean) {
+    if (!monto || monto <= 0 || !frecuenciaPago) {
+      return;
+    }
+
+    let montoMensual: number = 0;
+    let montoAnual: number = 0;
+
+    switch (frecuenciaPago.toLowerCase()) {
+      case 'mensual':
+        // Si el monto es mensual: monto_mensual = monto, monto_anual = monto * 12
+        montoMensual = monto;
+        montoAnual = monto * 12;
+        break;
+
+      case 'anual':
+        // Si el monto es anual (con descuento del 20%): 
+        // monto_anual = monto, monto_mensual = (monto / 12) / 0.80
+        montoAnual = monto;
+        montoMensual = (monto / 12) / 0.80;
+        break;
+
+      case 'trimestral':
+        // Si el monto es trimestral: monto_mensual = monto / 3, monto_anual = monto_mensual * 12
+        montoMensual = monto / 3;
+        montoAnual = montoMensual * 12;
+        break;
+
+      default:
+        return;
+    }
+
+    // Redondear a 2 decimales
+    montoMensual = Math.round(montoMensual * 100) / 100;
+    montoAnual = Math.round(montoAnual * 100) / 100;
+
+    // Asignar los valores calculados
+    if (isEdit) {
+      this.suscripcion.monto_mensual = montoMensual;
+      this.suscripcion.monto_anual = montoAnual;
+    } else {
+      this.nuevaSuscripcion.monto_mensual = montoMensual;
+      this.nuevaSuscripcion.monto_anual = montoAnual;
     }
   }
 
