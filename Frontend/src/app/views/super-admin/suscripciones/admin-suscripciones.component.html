@@ -595,6 +595,42 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Mensual:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="suscripcion.monto_mensual"
+              name="monto_mensual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto mensual de la empresa
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Anual:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="suscripcion.monto_anual"
+              name="monto_anual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto anual de la empresa
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Fecha Próximo Pago:</label>
           <input
             type="date"
@@ -826,6 +862,42 @@
             >El monto se establece automáticamente según el plan
             seleccionado</small
           >
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Mensual:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="nuevaSuscripcion.monto_mensual"
+              name="monto_mensual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto mensual de la empresa
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Monto Anual:</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input
+              type="number"
+              class="form-control"
+              [(ngModel)]="nuevaSuscripcion.monto_anual"
+              name="monto_anual"
+              step="0.01"
+              min="0"
+            />
+          </div>
+          <small class="text-muted">
+            Monto anual de la empresa
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
