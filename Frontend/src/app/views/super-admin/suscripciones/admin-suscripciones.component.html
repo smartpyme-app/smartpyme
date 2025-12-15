@@ -507,6 +507,24 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Frecuencia de Pago:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.frecuencia_pago"
+            name="frecuencia_pago"
+            (change)="onFrecuenciaPagoChange(suscripcion.frecuencia_pago, true)"
+          >
+            <option value="">Seleccione frecuencia</option>
+            <option value="Mensual">Mensual</option>
+            <option value="Trimestral">Trimestral</option>
+            <option value="Anual">Anual</option>
+          </select>
+          <small class="text-muted">
+            Frecuencia de pago de la suscripción
+          </small>
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
           <label class="form-label">Estado:</label>
           <select
             class="form-select"
@@ -597,6 +615,32 @@
             required
           />
         </div>
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Código Promocional:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="suscripcion.codigo_promocional"
+            name="codigo_promocional"
+          >
+            <option value="">Ninguno (sin código promocional)</option>
+            <option
+              *ngFor="let codigo of codigosPromocionales"
+              [value]="codigo.codigo"
+            >
+              {{ getCodigoPromocionalDisplay(codigo) }}
+            </option>
+          </select>
+          <small class="text-muted" *ngIf="!suscripcion.codigo_promocional">
+            Código promocional aplicado a esta suscripción
+          </small>
+          <small class="text-success" *ngIf="suscripcion.codigo_promocional">
+            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(suscripcion.codigo_promocional, true) }}
+          </small>
+          <div *ngIf="loadingCodigosPromocionales" class="text-muted mt-1">
+            <i class="fas fa-spinner fa-spin"></i> Cargando códigos...
+          </div>
+        </div>
+
         <div class="form-group col-md-6 mb-3">
           <label class="form-label">NIT:</label>
           <input
@@ -691,17 +735,22 @@
         </div>
 
         <div class="form-group col-md-6 mb-3">
-          <label class="form-label">Tipo pago:</label>
+          <label class="form-label">Frecuencia de Pago:</label>
           <select
             class="form-select"
-            [(ngModel)]="nuevaSuscripcion.tipo_plan"
-            name="tipo_plan"
+            [(ngModel)]="nuevaSuscripcion.frecuencia_pago"
+            name="frecuencia_pago"
             required
+            (change)="onFrecuenciaPagoChange(nuevaSuscripcion.frecuencia_pago, false)"
           >
-            <option value="">Seleccione tipo de pago</option>
+            <option value="">Seleccione frecuencia</option>
             <option value="Mensual">Mensual</option>
+            <option value="Trimestral">Trimestral</option>
             <option value="Anual">Anual</option>
           </select>
+          <small class="text-muted">
+            Frecuencia de pago de la suscripción
+          </small>
         </div>
 
         <div class="form-group col-md-6 mb-3">
@@ -799,6 +848,32 @@
             name="fin_periodo_prueba"
             required
           />
+        </div>
+
+        <div class="form-group col-md-6 mb-3">
+          <label class="form-label">Código Promocional:</label>
+          <select
+            class="form-select"
+            [(ngModel)]="nuevaSuscripcion.codigo_promocional"
+            name="codigo_promocional"
+          >
+            <option value="">Ninguno (sin código promocional)</option>
+            <option
+              *ngFor="let codigo of codigosPromocionales"
+              [value]="codigo.codigo"
+            >
+              {{ getCodigoPromocionalDisplay(codigo) }}
+            </option>
+          </select>
+          <small class="text-muted" *ngIf="!nuevaSuscripcion.codigo_promocional">
+            Código promocional aplicado a esta suscripción
+          </small>
+          <small class="text-success" *ngIf="nuevaSuscripcion.codigo_promocional">
+            <i class="fa fa-check-circle"></i> {{ getDescuentoCodigoPromocional(nuevaSuscripcion.codigo_promocional, false) }}
+          </small>
+          <div *ngIf="loadingCodigosPromocionales" class="text-muted mt-1">
+            <i class="fas fa-spinner fa-spin"></i> Cargando códigos...
+          </div>
         </div>
 
         <div class="form-group col-md-6 mb-3">
