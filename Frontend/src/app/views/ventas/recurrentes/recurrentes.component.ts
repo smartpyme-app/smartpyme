@@ -2,6 +2,7 @@ import { Component, OnInit, TemplateRef } from '@angular/core';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import Swal from 'sweetalert2';
 
 
 @Component({
@@ -206,32 +207,132 @@ export class RecurrentesComponent implements OnInit {
     }
 
     public descargarVentas(){
-        this.apiService.export('ventas/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ventas.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+        this.descargarVentasConManejo();
+    }
+
+    private descargarVentasConManejo() {
+        this.apiService.exportWithResponse('ventas/exportar', this.filtros).subscribe(
+            (response: any) => {
+                const contentType = response.headers.get('content-type') || '';
+                
+                if (contentType.includes('application/json')) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const jsonResponse = JSON.parse(reader.result as string);
+                            if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Procesando reporte',
+                                    html: jsonResponse.message,
+                                    confirmButtonText: 'Entendido'
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error al procesar respuesta:', e);
+                        }
+                    };
+                    reader.readAsText(response.body);
+                } else {
+                    const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'ventas.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            },
+            (error: any) => {
+                if (error.error instanceof Blob) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const jsonResponse = JSON.parse(reader.result as string);
+                            if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Procesando reporte',
+                                    html: jsonResponse.message,
+                                    confirmButtonText: 'Entendido'
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error al exportar ventas:', error);
+                        }
+                    };
+                    reader.readAsText(error.error);
+                } else {
+                    console.error('Error al exportar ventas:', error);
+                }
+            }
         );
     }
 
     public descargarDetalles(){
-        this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
-            const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'ventas-detalles.xlsx';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
+        this.descargarDetallesConManejo();
+    }
+
+    private descargarDetallesConManejo() {
+        this.apiService.exportWithResponse('ventas-detalles/exportar', this.filtros).subscribe(
+            (response: any) => {
+                const contentType = response.headers.get('content-type') || '';
+                
+                if (contentType.includes('application/json')) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const jsonResponse = JSON.parse(reader.result as string);
+                            if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Procesando reporte',
+                                    html: jsonResponse.message,
+                                    confirmButtonText: 'Entendido'
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error al procesar respuesta:', e);
+                        }
+                    };
+                    reader.readAsText(response.body);
+                } else {
+                    const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'ventas-detalles.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }
+            },
+            (error: any) => {
+                if (error.error instanceof Blob) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        try {
+                            const jsonResponse = JSON.parse(reader.result as string);
+                            if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Procesando reporte',
+                                    html: jsonResponse.message,
+                                    confirmButtonText: 'Entendido'
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Error al exportar ventas:', error);
+                        }
+                    };
+                    reader.readAsText(error.error);
+                } else {
+                    console.error('Error al exportar ventas:', error);
+                }
+            }
         );
     }
 

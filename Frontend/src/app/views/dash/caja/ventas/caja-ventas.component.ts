@@ -3,6 +3,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-caja-ventas',
@@ -181,6 +182,34 @@ export class CajaVentasComponent implements OnInit {
     }
 
     public descargarDetalles(){
+        this.descargarDetallesConManejo();
+    }
+
+    private descargarDetallesConManejo() {
+        // Primero intentar obtener la respuesta como JSON para verificar si se procesará por job
+        this.apiService.exportWithUrl('ventas-detalles/exportar', this.filtros).subscribe(
+            (response: any) => {
+                // Si la respuesta es JSON con mensaje de job
+                if (response && typeof response === 'object' && response.success && response.message) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Procesando reporte',
+                        html: response.message,
+                        confirmButtonText: 'Entendido'
+                    });
+                } else {
+                    // Si no es JSON válido, intentar descargar como blob
+                    this.descargarDetallesComoBlob();
+                }
+            },
+            (error: any) => {
+                // Si hay error al obtener como JSON, intentar descargar como blob
+                this.descargarDetallesComoBlob();
+            }
+        );
+    }
+
+    private descargarDetallesComoBlob() {
         this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data:Blob) => {
             const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const url = window.URL.createObjectURL(blob);
@@ -191,8 +220,9 @@ export class CajaVentasComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar ventas:', error); }
-        );
+        }, (error) => {
+            console.error('Error al exportar ventas:', error);
+        });
     }
 
     public imprimir(venta:any){

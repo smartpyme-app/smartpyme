@@ -55,6 +55,16 @@ export class ApiService {
         return this.http.get(this.apiUrl + url, { params: filtros });
     }
 
+    exportWithResponse(url: string, filtros: any): Observable<any> {
+        return this.http.get(this.apiUrl + url, { 
+            params: filtros,
+            observe: 'response',
+            responseType: 'blob'
+        }).pipe(
+            timeout(60000) // 60 segundos de timeout
+        );
+    }
+
     exportAcumulado(url: string, filtros: any): Observable<Blob> {
         return this.http.post(this.apiUrl + url, filtros, {
             responseType: 'blob',

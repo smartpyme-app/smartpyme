@@ -4,6 +4,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { MHService } from '@services/MH.service';
+import { HttpClient } from '@angular/common/http';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -60,7 +61,8 @@ export class VentasComponent implements OnInit {
     private alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private http: HttpClient
   ) { }
 
   ngOnInit() {
@@ -428,27 +430,161 @@ export class VentasComponent implements OnInit {
 
   public descargarVentas() {
     this.downloadingVentas = true;
-    this.saving = true;
-    this.apiService.export('ventas/exportar', this.filtros).subscribe(
-      (data: Blob) => {
-        const blob = new Blob([data], {
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ventas.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        this.downloadingVentas = false;
-        this.saving = false;
+    this.saving = false;
+    
+    // Usar el método del ApiService que pasa por los interceptores
+    this.apiService.exportWithResponse('ventas/exportar', this.filtros).subscribe(
+      (response: any) => {
+        const contentType = response.headers.get('content-type') || '';
+        console.log('Content-Type recibido:', contentType);
+        console.log('Tamaño del body:', response.body?.size);
+        
+        // Si el Content-Type es JSON, leer el blob como texto y parsear JSON
+        if (contentType.includes('application/json')) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const textResult = reader.result as string;
+              console.log('Texto leído del blob:', textResult.substring(0, 200));
+              const jsonResponse = JSON.parse(textResult);
+              console.log('JSON parseado:', jsonResponse);
+              if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                this.downloadingVentas = false;
+                this.saving = false;
+                Swal.fire({
+                  icon: 'info',
+                  title: 'Procesando reporte',
+                  html: jsonResponse.message,
+                  confirmButtonText: 'Entendido'
+                });
+              } else if (jsonResponse && jsonResponse.error) {
+                this.alertService.error(jsonResponse.message || 'Error al procesar la solicitud');
+                this.downloadingVentas = false;
+                this.saving = false;
+              } else {
+                console.error('Respuesta JSON sin success ni error:', jsonResponse);
+                this.alertService.error('Error al procesar la respuesta del servidor');
+                this.downloadingVentas = false;
+                this.saving = false;
+              }
+            } catch (e) {
+              console.error('Error al parsear JSON:', e, reader.result);
+              this.alertService.error('Error al procesar la respuesta del servidor');
+              this.downloadingVentas = false;
+              this.saving = false;
+            }
+          };
+          reader.onerror = () => {
+            console.error('Error en FileReader');
+            this.alertService.error('Error al leer la respuesta del servidor');
+            this.downloadingVentas = false;
+            this.saving = false;
+          };
+          reader.readAsText(response.body);
+        } else {
+          // Verificar si el blob es pequeño y podría ser JSON
+          if (response.body && response.body.size < 1000) {
+            // Si es pequeño, podría ser JSON aunque el Content-Type no lo indique
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const textResult = reader.result as string;
+                if (textResult.trim().startsWith('{') || textResult.trim().startsWith('[')) {
+                  const jsonResponse = JSON.parse(textResult);
+                  if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                    this.downloadingVentas = false;
+                    this.saving = false;
+                    Swal.fire({
+                      icon: 'info',
+                      title: 'Procesando reporte',
+                      html: jsonResponse.message,
+                      confirmButtonText: 'Entendido'
+                    });
+                    return;
+                  }
+                }
+              } catch (e) {
+                // No es JSON, continuar con el procesamiento normal de blob
+              }
+              // Si no es JSON, procesar como Excel
+              const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'ventas.xlsx';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+              this.downloadingVentas = false;
+              this.saving = false;
+            };
+            reader.readAsText(response.body);
+          } else {
+            // Si el Content-Type es Excel, procesar como blob
+            const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ventas.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingVentas = false;
+            this.saving = false;
+          }
+        }
       },
-      (error) => {
-        this.alertService.error(error);
-        this.downloadingVentas = false;
-        this.saving = false;
+      (error: any) => {
+        console.error('Error en la petición:', error);
+        console.error('Error status:', error.status);
+        console.error('Error headers:', error.headers);
+        // Si hay error, verificar si es un error JSON
+        if (error.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const textResult = reader.result as string;
+              console.log('Texto del error blob:', textResult);
+              const jsonResponse = JSON.parse(textResult);
+              if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                this.downloadingVentas = false;
+                this.saving = false;
+                Swal.fire({
+                  icon: 'info',
+                  title: 'Procesando reporte',
+                  html: jsonResponse.message,
+                  confirmButtonText: 'Entendido'
+                });
+              } else if (jsonResponse && jsonResponse.error) {
+                this.alertService.error(jsonResponse.message || 'Error al procesar la solicitud');
+                this.downloadingVentas = false;
+                this.saving = false;
+              } else {
+                this.alertService.error('Error desconocido');
+                this.downloadingVentas = false;
+                this.saving = false;
+              }
+            } catch (e) {
+              console.error('Error al parsear JSON del error:', e, reader.result);
+              this.alertService.error(error.message || 'Error al procesar la respuesta del servidor');
+              this.downloadingVentas = false;
+              this.saving = false;
+            }
+          };
+          reader.onerror = () => {
+            this.alertService.error('Error al leer la respuesta del servidor');
+            this.downloadingVentas = false;
+            this.saving = false;
+          };
+          reader.readAsText(error.error);
+        } else {
+          console.error('Error completo:', error);
+          this.alertService.error(error.message || error.error?.message || 'Error al descargar el reporte');
+          this.downloadingVentas = false;
+          this.saving = false;
+        }
       }
     );
   }
@@ -504,19 +640,148 @@ export class VentasComponent implements OnInit {
 
 
   public descargarDetalles() {
-    this.downloadingDetalles = true; this.saving = true;
-    this.apiService.export('ventas-detalles/exportar', this.filtros).subscribe((data: Blob) => {
-      const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ventas-detalles.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      this.downloadingDetalles = false; this.saving = false;
-    }, (error) => { this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+    this.downloadingDetalles = true; this.saving = false;
+    
+    // Usar el método del ApiService que pasa por los interceptores
+    this.apiService.exportWithResponse('ventas-detalles/exportar', this.filtros).subscribe(
+      (response: any) => {
+        const contentType = response.headers.get('content-type') || '';
+        console.log('Content-Type recibido:', contentType);
+        console.log('Tamaño del body:', response.body?.size);
+        
+        // Si el Content-Type es JSON, leer el blob como texto y parsear JSON
+        if (contentType.includes('application/json')) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const textResult = reader.result as string;
+              console.log('Texto leído del blob:', textResult.substring(0, 200));
+              const jsonResponse = JSON.parse(textResult);
+              console.log('JSON parseado:', jsonResponse);
+              if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                this.downloadingDetalles = false; this.saving = false;
+                Swal.fire({
+                  icon: 'info',
+                  title: 'Procesando reporte',
+                  html: jsonResponse.message,
+                  confirmButtonText: 'Entendido'
+                });
+              } else if (jsonResponse && jsonResponse.error) {
+                this.alertService.error(jsonResponse.message || 'Error al procesar la solicitud');
+                this.downloadingDetalles = false; this.saving = false;
+              } else {
+                console.error('Respuesta JSON sin success ni error:', jsonResponse);
+                this.alertService.error('Error al procesar la respuesta del servidor');
+                this.downloadingDetalles = false; this.saving = false;
+              }
+            } catch (e) {
+              console.error('Error al parsear JSON:', e, reader.result);
+              this.alertService.error('Error al procesar la respuesta del servidor');
+              this.downloadingDetalles = false; this.saving = false;
+            }
+          };
+          reader.onerror = () => {
+            console.error('Error en FileReader');
+            this.alertService.error('Error al leer la respuesta del servidor');
+            this.downloadingDetalles = false; this.saving = false;
+          };
+          reader.readAsText(response.body);
+        } else {
+          // Verificar si el blob es pequeño y podría ser JSON
+          if (response.body && response.body.size < 1000) {
+            // Si es pequeño, podría ser JSON aunque el Content-Type no lo indique
+            const reader = new FileReader();
+            reader.onload = () => {
+              try {
+                const textResult = reader.result as string;
+                if (textResult.trim().startsWith('{') || textResult.trim().startsWith('[')) {
+                  const jsonResponse = JSON.parse(textResult);
+                  if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                    this.downloadingDetalles = false; this.saving = false;
+                    Swal.fire({
+                      icon: 'info',
+                      title: 'Procesando reporte',
+                      html: jsonResponse.message,
+                      confirmButtonText: 'Entendido'
+                    });
+                    return;
+                  }
+                }
+              } catch (e) {
+                // No es JSON, continuar con el procesamiento normal de blob
+              }
+              // Si no es JSON, procesar como Excel
+              const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'ventas-detalles.xlsx';
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(url);
+              this.downloadingDetalles = false; this.saving = false;
+            };
+            reader.readAsText(response.body);
+          } else {
+            // Si el Content-Type es Excel, procesar como blob
+            const blob = new Blob([response.body], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ventas-detalles.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            this.downloadingDetalles = false; this.saving = false;
+          }
+        }
+      },
+      (error: any) => {
+        console.error('Error en la petición:', error);
+        console.error('Error status:', error.status);
+        console.error('Error headers:', error.headers);
+        // Si hay error, verificar si es un error JSON
+        if (error.error instanceof Blob) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const textResult = reader.result as string;
+              console.log('Texto del error blob:', textResult);
+              const jsonResponse = JSON.parse(textResult);
+              if (jsonResponse && jsonResponse.success && jsonResponse.message) {
+                this.downloadingDetalles = false; this.saving = false;
+                Swal.fire({
+                  icon: 'info',
+                  title: 'Procesando reporte',
+                  html: jsonResponse.message,
+                  confirmButtonText: 'Entendido'
+                });
+              } else if (jsonResponse && jsonResponse.error) {
+                this.alertService.error(jsonResponse.message || 'Error al procesar la solicitud');
+                this.downloadingDetalles = false; this.saving = false;
+              } else {
+                this.alertService.error('Error desconocido');
+                this.downloadingDetalles = false; this.saving = false;
+              }
+            } catch (e) {
+              console.error('Error al parsear JSON del error:', e, reader.result);
+              this.alertService.error(error.message || 'Error al procesar la respuesta del servidor');
+              this.downloadingDetalles = false; this.saving = false;
+            }
+          };
+          reader.onerror = () => {
+            this.alertService.error('Error al leer la respuesta del servidor');
+            this.downloadingDetalles = false; this.saving = false;
+          };
+          reader.readAsText(error.error);
+        } else {
+          console.error('Error completo:', error);
+          this.alertService.error(error.message || error.error?.message || 'Error al descargar el reporte');
+          this.downloadingDetalles = false; this.saving = false;
+        }
+      }
     );
   }
 

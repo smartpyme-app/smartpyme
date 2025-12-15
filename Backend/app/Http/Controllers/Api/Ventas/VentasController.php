@@ -37,6 +37,8 @@ use App\Exports\ReportesAutomaticos\VentasPorVendedor\VentasPorVendedorExport;
 use App\Exports\VentasPorUtilidadesExport;
 use App\Exports\VentasPorMarcasExport;
 use App\Mail\ReporteVentasPorVendedor;
+use App\Jobs\GenerarVentasDetallesExport;
+use App\Jobs\GenerarVentasExport;
 use Maatwebsite\Excel\Facades\Excel;
 // use Auth;
 use Illuminate\Support\Facades\Log;
@@ -1102,18 +1104,341 @@ class VentasController extends Controller
 
     public function export(Request $request)
     {
+        // Contar registros que cumplen con los filtros
+        $totalRegistros = $this->contarRegistrosVentas($request);
+        
+        // Si son más de 250 registros, procesar como job y enviar por correo
+        if ($totalRegistros > 250) {
+            $user = JWTAuth::parseToken()->authenticate();
+            $empresa = Empresa::find($user->id_empresa);
+            
+            // Obtener email de la empresa o del usuario como fallback
+            $email = $empresa->correo ?? $user->email;
+            
+            if (!$email) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'No se encontró un correo electrónico configurado para enviar el reporte.'
+                ], 400);
+            }
+            
+            // Crear job para procesar el reporte
+            GenerarVentasExport::dispatch($email, $request->all(), $user->id);
+            
+            Log::info("Job creado para exportar ventas", [
+                'email' => $email,
+                'total_registros' => $totalRegistros,
+                'user_id' => $user->id
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Se encontraron {$totalRegistros} registros. El reporte se está procesando y se enviará al correo {$email} cuando esté listo.",
+                'total_registros' => $totalRegistros,
+                'email' => $email
+            ], 200)->header('Content-Type', 'application/json; charset=utf-8');
+        }
+        
+        // Si son pocos registros, descargar normalmente
         $ventas = new VentasExport();
         $ventas->filter($request);
 
         return Excel::download($ventas, 'ventas.xlsx');
     }
+    
+    /**
+     * Cuenta los registros de ventas que cumplen con los filtros
+     * Optimizado para ser más rápido usando select count directamente
+     */
+    private function contarRegistrosVentas(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        
+        $query = Venta::selectRaw('COUNT(*) as total')
+            ->where('id_empresa', $user->id_empresa)
+            ->where('cotizacion', 0);
+        
+        // Aplicar filtros simples primero (más rápidos)
+        if ($request->inicio ?? null) {
+            $query->where('fecha', '>=', $request->inicio);
+        }
+        if ($request->fin ?? null) {
+            $query->where('fecha', '<=', $request->fin);
+        }
+        if (isset($request->recurrente) && $request->recurrente !== null) {
+            $query->where('recurrente', !!$request->recurrente);
+        }
+        if ($request->num_identificacion ?? null) {
+            $query->where('num_identificacion', $request->num_identificacion);
+        }
+        if ($request->id_sucursal ?? null) {
+            $query->where('id_sucursal', $request->id_sucursal);
+        }
+        if ($request->id_bodega ?? null) {
+            $query->where('id_bodega', $request->id_bodega);
+        }
+        if ($request->id_cliente ?? null) {
+            $query->where('id_cliente', $request->id_cliente);
+        }
+        if ($request->id_usuario ?? null) {
+            $query->where('id_usuario', $request->id_usuario);
+        }
+        if ($request->id_canal ?? null) {
+            $query->where('id_canal', $request->id_canal);
+        }
+        if ($request->id_proyecto ?? null) {
+            $query->where('id_proyecto', $request->id_proyecto);
+        }
+        if ($request->estado ?? null) {
+            $query->where('estado', $request->estado);
+        }
+        if ($request->metodo_pago ?? null) {
+            $query->where('metodo_pago', $request->metodo_pago);
+        }
+        if (isset($request->dte) && $request->dte == 1) {
+            $query->whereNull('sello_mh');
+        }
+        if (isset($request->dte) && $request->dte == 2) {
+            $query->whereNotNull('sello_mh');
+        }
+        
+        // Filtros más complejos (más lentos) solo si son necesarios
+        if ($request->forma_pago ?? null) {
+            $query->where(function($q) use ($request) {
+                $q->where('forma_pago', $request->forma_pago)
+                    ->orWhereExists(function($subQuery) use ($request) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('metodos_de_pago')
+                            ->whereColumn('metodos_de_pago.id_venta', 'ventas.id')
+                            ->where('metodos_de_pago.nombre', $request->forma_pago);
+                    });
+            });
+        }
+        
+        if ($request->id_vendedor ?? null) {
+            $query->where(function($q) use ($request) {
+                $q->where('id_vendedor', $request->id_vendedor)
+                    ->orWhereExists(function($subQuery) use ($request) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('detalles_venta')
+                            ->whereColumn('detalles_venta.id_venta', 'ventas.id')
+                            ->where('detalles_venta.id_vendedor', $request->id_vendedor);
+                    });
+            });
+        }
+        
+        if ($request->id_documento ?? null) {
+            $documento = Documento::find($request->id_documento);
+            if ($documento) {
+                $query->whereExists(function($subQuery) use ($documento) {
+                    $subQuery->select(DB::raw(1))
+                        ->from('documentos')
+                        ->whereColumn('documentos.id', 'ventas.id_documento')
+                        ->whereRaw('LOWER(documentos.nombre) = LOWER(?)', [$documento->nombre]);
+                });
+            } else {
+                $query->where('id_documento', $request->id_documento);
+            }
+        }
+        
+        if ($request->tipo_documento ?? null) {
+            $query->whereExists(function($subQuery) use ($request) {
+                $subQuery->select(DB::raw(1))
+                    ->from('documentos')
+                    ->whereColumn('documentos.id', 'ventas.id_documento')
+                    ->where('documentos.nombre', $request->tipo_documento);
+            });
+        }
+        
+        if ($request->buscador ?? null) {
+            $buscador = '%' . $request->buscador . '%';
+            $query->where(function ($q) use ($buscador) {
+                $q->where('correlativo', 'like', $buscador)
+                    ->orWhere('estado', 'like', $buscador)
+                    ->orWhere('observaciones', 'like', $buscador)
+                    ->orWhere('forma_pago', 'like', $buscador)
+                    ->orWhereExists(function($subQuery) use ($buscador) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('clientes')
+                            ->whereColumn('clientes.id', 'ventas.id_cliente')
+                            ->where(function($qCliente) use ($buscador) {
+                                $qCliente->where('clientes.nombre', 'like', $buscador)
+                                    ->orWhere('clientes.nombre_empresa', 'like', $buscador)
+                                    ->orWhere('clientes.ncr', 'like', $buscador)
+                                    ->orWhere('clientes.nit', 'like', $buscador);
+                            });
+                    });
+            });
+        }
+        
+        return $query->value('total') ?? 0;
+    }
 
     public function exportDetalles(Request $request)
     {
+        // Contar registros que cumplen con los filtros
+        $totalRegistros = $this->contarRegistrosDetalles($request);
+        
+        // Si son más de 250 registros, procesar como job y enviar por correo
+        if ($totalRegistros > 250) {
+            $user = JWTAuth::parseToken()->authenticate();
+            $empresa = Empresa::find($user->id_empresa);
+            
+            // Obtener email de la empresa o del usuario como fallback
+            $email = $empresa->correo ?? $user->email;
+            
+            if (!$email) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'No se encontró un correo electrónico configurado para enviar el reporte.'
+                ], 400);
+            }
+            
+            // Crear job para procesar el reporte
+            GenerarVentasDetallesExport::dispatch($email, $request->all(), $user->id);
+            
+            Log::info("Job creado para exportar detalles de ventas", [
+                'email' => $email,
+                'total_registros' => $totalRegistros,
+                'user_id' => $user->id
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => "Se encontraron {$totalRegistros} registros. El reporte se está procesando y se enviará al correo {$email} cuando esté listo.",
+                'total_registros' => $totalRegistros,
+                'email' => $email
+            ], 200)->header('Content-Type', 'application/json; charset=utf-8');
+        }
+        
+        // Si son pocos registros, descargar normalmente
         $ventas = new VentasDetallesExport();
         $ventas->filter($request);
 
         return Excel::download($ventas, 'ventas-detalles.xlsx');
+    }
+    
+    /**
+     * Cuenta los registros de detalles de ventas que cumplen con los filtros
+     * Optimizado para ser más rápido usando join en lugar de whereHas
+     */
+    private function contarRegistrosDetalles(Request $request)
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        
+        $query = Detalle::selectRaw('COUNT(DISTINCT detalles_venta.id) as total')
+            ->join('ventas', 'detalles_venta.id_venta', '=', 'ventas.id')
+            ->where('ventas.id_empresa', $user->id_empresa)
+            ->where('ventas.cotizacion', 0);
+        
+        // Aplicar filtros simples primero (más rápidos)
+        if ($request->inicio ?? null) {
+            $query->where('ventas.fecha', '>=', $request->inicio);
+        }
+        if ($request->fin ?? null) {
+            $query->where('ventas.fecha', '<=', $request->fin);
+        }
+        if (isset($request->recurrente) && $request->recurrente !== null) {
+            $query->where('ventas.recurrente', !!$request->recurrente);
+        }
+        if ($request->num_identificacion ?? null) {
+            $query->where('ventas.num_identificacion', $request->num_identificacion);
+        }
+        if ($request->id_sucursal ?? null) {
+            $query->where('ventas.id_sucursal', $request->id_sucursal);
+        }
+        if ($request->id_bodega ?? null) {
+            $query->where('ventas.id_bodega', $request->id_bodega);
+        }
+        if ($request->id_cliente ?? null) {
+            $query->where('ventas.id_cliente', $request->id_cliente);
+        }
+        if ($request->id_usuario ?? null) {
+            $query->where('ventas.id_usuario', $request->id_usuario);
+        }
+        if ($request->id_canal ?? null) {
+            $query->where('ventas.id_canal', $request->id_canal);
+        }
+        if ($request->id_proyecto ?? null) {
+            $query->where('ventas.id_proyecto', $request->id_proyecto);
+        }
+        if ($request->estado ?? null) {
+            $query->where('ventas.estado', $request->estado);
+        }
+        if ($request->metodo_pago ?? null) {
+            $query->where('ventas.metodo_pago', $request->metodo_pago);
+        }
+        if (isset($request->dte) && $request->dte == 1) {
+            $query->whereNull('ventas.sello_mh');
+        }
+        if (isset($request->dte) && $request->dte == 2) {
+            $query->whereNotNull('ventas.sello_mh');
+        }
+        if ($request->id_vendedor ?? null) {
+            $query->where(function($q) use ($request) {
+                $q->where('ventas.id_vendedor', $request->id_vendedor)
+                    ->orWhere('detalles_venta.id_vendedor', $request->id_vendedor);
+            });
+        }
+        
+        // Filtros más complejos solo si son necesarios
+        if ($request->forma_pago ?? null) {
+            $query->where(function($q) use ($request) {
+                $q->where('ventas.forma_pago', $request->forma_pago)
+                    ->orWhereExists(function($subQuery) use ($request) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('metodos_de_pago')
+                            ->whereColumn('metodos_de_pago.id_venta', 'ventas.id')
+                            ->where('metodos_de_pago.nombre', $request->forma_pago);
+                    });
+            });
+        }
+        
+        if ($request->id_documento ?? null) {
+            $documento = Documento::find($request->id_documento);
+            if ($documento) {
+                $query->whereExists(function($subQuery) use ($documento) {
+                    $subQuery->select(DB::raw(1))
+                        ->from('documentos')
+                        ->whereColumn('documentos.id', 'ventas.id_documento')
+                        ->whereRaw('LOWER(documentos.nombre) = LOWER(?)', [$documento->nombre]);
+                });
+            } else {
+                $query->where('ventas.id_documento', $request->id_documento);
+            }
+        }
+        
+        if ($request->tipo_documento ?? null) {
+            $query->whereExists(function($subQuery) use ($request) {
+                $subQuery->select(DB::raw(1))
+                    ->from('documentos')
+                    ->whereColumn('documentos.id', 'ventas.id_documento')
+                    ->where('documentos.nombre', $request->tipo_documento);
+            });
+        }
+        
+        if ($request->buscador ?? null) {
+            $buscador = '%' . $request->buscador . '%';
+            $query->where(function ($q) use ($buscador) {
+                $q->where('ventas.correlativo', 'like', $buscador)
+                    ->orWhere('ventas.estado', 'like', $buscador)
+                    ->orWhere('ventas.observaciones', 'like', $buscador)
+                    ->orWhere('ventas.forma_pago', 'like', $buscador)
+                    ->orWhereExists(function($subQuery) use ($buscador) {
+                        $subQuery->select(DB::raw(1))
+                            ->from('clientes')
+                            ->whereColumn('clientes.id', 'ventas.id_cliente')
+                            ->where(function($qCliente) use ($buscador) {
+                                $qCliente->where('clientes.nombre', 'like', $buscador)
+                                    ->orWhere('clientes.nombre_empresa', 'like', $buscador)
+                                    ->orWhere('clientes.ncr', 'like', $buscador)
+                                    ->orWhere('clientes.nit', 'like', $buscador);
+                            });
+                    });
+            });
+        }
+        
+        return $query->value('total') ?? 0;
     }
 
 
