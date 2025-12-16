@@ -197,6 +197,8 @@ export class AdminSuscripcionesComponent implements OnInit {
           // Obtener código promocional desde la relación empresa del modelo Suscripcion
           const codigoPromocional = suscripcionCompleta.empresa?.codigo_promocional || '';
           const frecuenciaPago = suscripcionCompleta.empresa?.frecuencia_pago || suscripcionCompleta.tipo_plan || '';
+          const montoMensual = suscripcionCompleta.empresa?.monto_mensual || null;
+          const montoAnual = suscripcionCompleta.empresa?.monto_anual || null;
           
           this.getUsersForSelect(empresaId)
             .then(() => {
@@ -211,6 +213,8 @@ export class AdminSuscripcionesComponent implements OnInit {
                 ),
                 frecuencia_pago: frecuenciaPago,
                 codigo_promocional: codigoPromocional,
+                monto_mensual: montoMensual,
+                monto_anual: montoAnual,
               };
               this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
             })
@@ -225,6 +229,8 @@ export class AdminSuscripcionesComponent implements OnInit {
               this.editando = true;
               const codigoPromocional = suscripcion.empresa?.codigo_promocional || '';
               const frecuenciaPago = suscripcion.empresa?.frecuencia_pago || suscripcion.tipo_plan || '';
+              const montoMensual = suscripcion.empresa?.monto_mensual || null;
+              const montoAnual = suscripcion.empresa?.monto_anual || null;
               
               this.suscripcion = {
                 ...suscripcion,
@@ -236,6 +242,8 @@ export class AdminSuscripcionesComponent implements OnInit {
                 ),
                 frecuencia_pago: frecuenciaPago,
                 codigo_promocional: codigoPromocional,
+                monto_mensual: montoMensual,
+                monto_anual: montoAnual,
               };
               this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
             })
@@ -251,6 +259,8 @@ export class AdminSuscripcionesComponent implements OnInit {
           this.editando = true;
           const codigoPromocional = suscripcion.empresa?.codigo_promocional || '';
           const frecuenciaPago = suscripcion.empresa?.frecuencia_pago || suscripcion.tipo_plan || '';
+          const montoMensual = suscripcion.empresa?.monto_mensual || null;
+          const montoAnual = suscripcion.empresa?.monto_anual || null;
           
           this.suscripcion = {
             ...suscripcion,
@@ -262,6 +272,8 @@ export class AdminSuscripcionesComponent implements OnInit {
             ),
             frecuencia_pago: frecuenciaPago,
             codigo_promocional: codigoPromocional,
+            monto_mensual: montoMensual,
+            monto_anual: montoAnual,
           };
           this.modalRef = this.modalService.show(template, { class: 'modal-lg' });
         })
@@ -331,6 +343,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       fin_periodo_prueba: new Date(this.suscripcion.fin_periodo_prueba),
       frecuencia_pago: this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan,
       codigo_promocional: this.suscripcion.codigo_promocional || null,
+      monto_mensual: this.suscripcion.monto_mensual || null,
+      monto_anual: this.suscripcion.monto_anual || null,
     };
 
     this.apiService.store('suscripcion/edit', datosSuscripcion).subscribe(
@@ -392,6 +406,8 @@ export class AdminSuscripcionesComponent implements OnInit {
             tipo_plan: empresa.tipo_plan || empresa.frecuencia_pago || '',
             frecuencia_pago: empresa.frecuencia_pago || empresa.tipo_plan || '',
             codigo_promocional: empresa.codigo_promocional || '',
+            monto_mensual: empresa.monto_mensual || null,
+            monto_anual: empresa.monto_anual || null,
             estado: 'En prueba',
             monto: 0,
             fecha_proximo_pago: this.formatearFecha(new Date().toISOString()),
@@ -415,6 +431,11 @@ export class AdminSuscripcionesComponent implements OnInit {
     if (planSeleccionado) {
       this.nuevaSuscripcion.plan_id = planSeleccionado.id;
       this.nuevaSuscripcion.monto = planSeleccionado.monto;
+      // Calcular montos si hay frecuencia de pago establecida
+      if (this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan) {
+        const frecuencia = this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
+        this.calcularMontos(planSeleccionado.monto, frecuencia, false);
+      }
     }
   }
 
@@ -428,6 +449,11 @@ export class AdminSuscripcionesComponent implements OnInit {
       }
       this.suscripcion.plan.id = planSeleccionado.id;
       this.suscripcion.monto = planSeleccionado.monto;
+      // Calcular montos si hay frecuencia de pago establecida
+      if (this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan) {
+        const frecuencia = this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan;
+        this.calcularMontos(planSeleccionado.monto, frecuencia, true);
+      }
     }
   }
 
@@ -437,11 +463,79 @@ export class AdminSuscripcionesComponent implements OnInit {
       if (frecuencia) {
         this.suscripcion.tipo_plan = frecuencia;
       }
+      // Recalcular montos si hay un monto establecido
+      if (this.suscripcion.monto) {
+        this.calcularMontos(this.suscripcion.monto, frecuencia, true);
+      }
     } else {
       // Sincronizar tipo_plan con frecuencia_pago en creación
       if (frecuencia) {
         this.nuevaSuscripcion.tipo_plan = frecuencia;
       }
+      // Recalcular montos si hay un monto establecido
+      if (this.nuevaSuscripcion.monto) {
+        this.calcularMontos(this.nuevaSuscripcion.monto, frecuencia, false);
+      }
+    }
+  }
+
+  public onMontoChange(monto: number, isEdit: boolean = false) {
+    if (!monto || monto <= 0) {
+      return;
+    }
+
+    const frecuencia = isEdit 
+      ? this.suscripcion.frecuencia_pago || this.suscripcion.tipo_plan
+      : this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan;
+
+    if (frecuencia) {
+      this.calcularMontos(monto, frecuencia, isEdit);
+    }
+  }
+
+  private calcularMontos(monto: number, frecuenciaPago: string, isEdit: boolean) {
+    if (!monto || monto <= 0 || !frecuenciaPago) {
+      return;
+    }
+
+    let montoMensual: number = 0;
+    let montoAnual: number = 0;
+
+    switch (frecuenciaPago.toLowerCase()) {
+      case 'mensual':
+        // Si el monto es mensual: monto_mensual = monto, monto_anual = monto * 12
+        montoMensual = monto;
+        montoAnual = monto * 12;
+        break;
+
+      case 'anual':
+        // Si el monto es anual (con descuento del 20%): 
+        // monto_anual = monto, monto_mensual = (monto / 12) / 0.80
+        montoAnual = monto;
+        montoMensual = (monto / 12) / 0.80;
+        break;
+
+      case 'trimestral':
+        // Si el monto es trimestral: monto_mensual = monto / 3, monto_anual = monto_mensual * 12
+        montoMensual = monto / 3;
+        montoAnual = montoMensual * 12;
+        break;
+
+      default:
+        return;
+    }
+
+    // Redondear a 2 decimales
+    montoMensual = Math.round(montoMensual * 100) / 100;
+    montoAnual = Math.round(montoAnual * 100) / 100;
+
+    // Asignar los valores calculados
+    if (isEdit) {
+      this.suscripcion.monto_mensual = montoMensual;
+      this.suscripcion.monto_anual = montoAnual;
+    } else {
+      this.nuevaSuscripcion.monto_mensual = montoMensual;
+      this.nuevaSuscripcion.monto_anual = montoAnual;
     }
   }
 
@@ -510,6 +604,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       fin_periodo_prueba: new Date(this.nuevaSuscripcion.fin_periodo_prueba),
       frecuencia_pago: this.nuevaSuscripcion.frecuencia_pago || this.nuevaSuscripcion.tipo_plan,
       codigo_promocional: this.nuevaSuscripcion.codigo_promocional || null,
+      monto_mensual: this.nuevaSuscripcion.monto_mensual || null,
+      monto_anual: this.nuevaSuscripcion.monto_anual || null,
       nit: this.nuevaSuscripcion.nit || null,
       nombre_factura: this.nuevaSuscripcion.nombre_factura || null,
       direccion_factura: this.nuevaSuscripcion.direccion_factura || null,
