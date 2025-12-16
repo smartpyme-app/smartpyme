@@ -198,6 +198,48 @@ class ShopifyTransformer
         // Usar el total exacto de Shopify para evitar diferencias de redondeo
         $totalShopify = floatval($shopifyData['current_total_price'] ?? $shopifyData['total_price'] ?? ($subtotalSinImpuesto + $impuestoTotal));
         
+        // Verificar si los impuestos están incluidos en los precios
+        $taxesIncluded = $shopifyData['taxes_included'] ?? false;
+        
+        // Calcular descuento total sin impuesto
+        // Primero intentar calcular desde total_discounts
+        $descuentoTotalConImpuesto = floatval($shopifyData['total_discounts'] ?? 0);
+        
+        // También calcular sumando los descuentos de todas las líneas para verificar
+        $descuentoTotalLineasConImpuesto = 0;
+        foreach ($shopifyData['line_items'] ?? [] as $item) {
+            $discountAllocations = $item['discount_allocations'] ?? [];
+            foreach ($discountAllocations as $discountAllocation) {
+                $descuentoTotalLineasConImpuesto += floatval($discountAllocation['amount'] ?? 0);
+            }
+        }
+        
+        // Usar el mayor de los dos valores (total_discounts puede incluir descuentos a nivel de orden)
+        $descuentoFinal = max($descuentoTotalConImpuesto, $descuentoTotalLineasConImpuesto);
+        
+        // Calcular descuento sin impuesto
+        // IMPORTANTE: Cuando taxes_included es true, Shopify ya proporciona el descuento SIN impuesto incluido
+        // Cuando taxes_included es false, el descuento viene CON impuesto incluido y debemos convertirlo
+        $descuentoTotalSinImpuesto = 0;
+        if ($descuentoFinal > 0) {
+            if ($taxesIncluded) {
+                // El descuento ya viene sin impuesto, usarlo directamente
+                $descuentoTotalSinImpuesto = $descuentoFinal;
+            } else {
+                // El descuento viene con impuesto, calcular el descuento sin impuesto
+                $descuentoTotalSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($descuentoFinal, $empresaId);
+            }
+        }
+        
+        Log::info("Descuento calculado para venta", [
+            'total_discounts_shopify' => $descuentoTotalConImpuesto,
+            'descuento_total_lineas_con_impuesto' => $descuentoTotalLineasConImpuesto,
+            'descuento_final' => $descuentoFinal,
+            'descuento_total_sin_impuesto' => $descuentoTotalSinImpuesto,
+            'taxes_included' => $taxesIncluded,
+            'empresa_id' => $empresaId
+        ]);
+        
         return [
             'codigo_generacion' => null,
             'estado' => $estado,
@@ -213,7 +255,7 @@ class ShopifyTransformer
             'iva' => $impuestoTotal, // Impuesto total incluyendo envíos
             'iva_retenido' => 0,
             'iva_percibido' => 0,
-            'descuento' => $shopifyData['total_discounts'] ?? 0,
+            'descuento' => $descuentoTotalSinImpuesto, // Descuento sin impuesto calculado correctamente
             'id_cliente' => $clienteId,
             'correlativo' => $correlativo,
             'id_documento' => $documentoId,
@@ -227,40 +269,90 @@ class ShopifyTransformer
         ];
     }
 
-    public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null)
+    public function transformarDetallesVenta($lineItem, $ventaId, $empresaId = null, $taxesIncluded = false)
     {
         // Calcular precio sin impuesto y impuesto por línea de producto
         $precioConImpuesto = floatval($lineItem['price']);
 
+        // Procesar descuentos personalizados desde discount_allocations
+        $descuentoTotal = 0;
+        $discountAllocations = $lineItem['discount_allocations'] ?? [];
+        
+        foreach ($discountAllocations as $discountAllocation) {
+            $descuentoTotal += floatval($discountAllocation['amount'] ?? 0);
+        }
+
+        // Calcular el precio original antes del descuento
+        // El precio en Shopify ya viene con el descuento aplicado, así que necesitamos calcular el precio original
+        $precioOriginalConImpuesto = $precioConImpuesto;
+        $cantidad = floatval($lineItem['quantity'] ?? 1);
+        
+        // Si hay descuento, el precio original sería: precio_actual + (descuento_total / cantidad)
+        if ($descuentoTotal > 0 && $cantidad > 0) {
+            $descuentoPorUnidad = $descuentoTotal / $cantidad;
+            $precioOriginalConImpuesto = $precioConImpuesto + $descuentoPorUnidad;
+        }
+
         // Si se proporciona empresaId, usar el servicio de impuestos, sino usar el método antiguo
         if ($empresaId) {
             $precioSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+            $precioOriginalSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($precioOriginalConImpuesto, $empresaId);
         } else {
             // Fallback al método antiguo si no se proporciona empresaId
             $precioSinImpuesto = $this->calcularPrecioSinImpuesto($precioConImpuesto, $empresaId);
+            $precioOriginalSinImpuesto = $this->calcularPrecioSinImpuesto($precioOriginalConImpuesto, $empresaId);
+        }
+
+        // Calcular descuento sin impuesto
+        // IMPORTANTE: Cuando taxes_included es true, Shopify ya proporciona el descuento SIN impuesto incluido
+        // Cuando taxes_included es false, el descuento viene CON impuesto incluido y debemos convertirlo
+        $descuentoTotalSinImpuesto = 0;
+        if ($descuentoTotal > 0) {
+            if ($taxesIncluded) {
+                // El descuento ya viene sin impuesto, usarlo directamente
+                $descuentoTotalSinImpuesto = $descuentoTotal;
+            } else {
+                // El descuento viene con impuesto, calcular el descuento sin impuesto
+                if ($empresaId) {
+                    $descuentoTotalSinImpuesto = $this->impuestosService->calcularPrecioSinImpuesto($descuentoTotal, $empresaId);
+                } else {
+                    $descuentoTotalSinImpuesto = $this->calcularPrecioSinImpuesto($descuentoTotal, $empresaId);
+                }
+            }
         }
 
         $impuestoPorUnidad = $precioConImpuesto - $precioSinImpuesto;
 
         // Calcular totales
-        $totalConImpuesto = $lineItem['quantity'] * $precioConImpuesto;
-        $totalSinImpuesto = $lineItem['quantity'] * $precioSinImpuesto;
-        $totalImpuesto = $lineItem['quantity'] * $impuestoPorUnidad;
+        $totalConImpuesto = $cantidad * $precioConImpuesto;
+        $totalSinImpuesto = $cantidad * $precioSinImpuesto;
+        $totalImpuesto = $cantidad * $impuestoPorUnidad;
+
+        Log::info("Procesando descuento personalizado en línea de item", [
+            'line_item_title' => $lineItem['title'] ?? 'N/A',
+            'precio_con_impuesto' => $precioConImpuesto,
+            'precio_original_con_impuesto' => $precioOriginalConImpuesto,
+            'descuento_total' => $descuentoTotal,
+            'descuento_total_sin_impuesto' => $descuentoTotalSinImpuesto,
+            'cantidad' => $cantidad,
+            'taxes_included' => $taxesIncluded,
+            'discount_allocations_count' => count($discountAllocations)
+        ]);
 
         return [
             'cantidad' => $lineItem['quantity'],
             'costo' => 0,
-            'precio' => $precioSinImpuesto, // Precio sin impuesto para SmartPyme
-            'precio_sin_iva' => $precioSinImpuesto, // Precio sin IVA por unidad
-            'precio_con_iva' => $precioConImpuesto, // Precio con IVA por unidad (precio original de Shopify)
-            'total' => $totalSinImpuesto, // Total sin impuesto
+            'precio' => $precioSinImpuesto, // Precio sin impuesto para SmartPyme (después del descuento)
+            'precio_sin_iva' => $precioSinImpuesto, // Precio sin IVA por unidad (después del descuento)
+            'precio_con_iva' => $precioConImpuesto, // Precio con IVA por unidad (después del descuento)
+            'total' => $totalSinImpuesto, // Total sin impuesto (después del descuento)
             'total_costo' => 0,
-            'descuento' => 0, // Shopify maneja descuentos a nivel de orden
+            'descuento' => $descuentoTotalSinImpuesto, // Descuento sin impuesto aplicado a esta línea
             'no_sujeta' => 0,
             'exenta' => 0,
             'cuenta_a_terceros' => 0,
-            'subtotal' => $totalSinImpuesto, // Subtotal sin impuesto
-            'gravada' => $totalSinImpuesto, // Gravada sin impuesto
+            'subtotal' => $totalSinImpuesto, // Subtotal sin impuesto (después del descuento)
+            'gravada' => $totalSinImpuesto, // Gravada sin impuesto (después del descuento)
             'iva' => $totalImpuesto, // Impuesto calculado por línea
             'descripcion' => $lineItem['title'],
             'id_producto' => null,

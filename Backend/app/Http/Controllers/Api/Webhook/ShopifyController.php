@@ -756,7 +756,8 @@ class ShopifyController extends Controller
                     // Log::info("Producto creado", ['producto_id' => $producto->id]);
                 }
 
-                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
+                $taxesIncluded = $request->taxes_included ?? false;
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
                 $detalleData['id_producto'] = $producto->id;
                 $venta->detalles()->create($detalleData);
 
@@ -2214,7 +2215,8 @@ class ShopifyController extends Controller
                     }
 
                     // Crear detalle de venta
-                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa);
+                    $taxesIncluded = $request->taxes_included ?? false;
+                    $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
                     $detalleData['id_producto'] = $producto->id;
                     $venta->detalles()->create($detalleData);
 
