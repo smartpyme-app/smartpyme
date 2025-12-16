@@ -215,12 +215,23 @@
       </div>
       <div class="form-group col-md-4 col-lg-3">
         <label for="forma_pago">Forma de pago:</label>
-        <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select" id="forma_pago">
+        <select name="forma_pago" (change)="cambioFormaPago()" [(ngModel)]="gasto.forma_pago" class="form-select" id="forma_pago">
           @for (forma of formaspago; track forma.nombre || $index) {
             <option value="{{ forma.nombre }}">{{ forma.nombre }}</option>
           }
         </select>
       </div>
+      @if (gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi') {
+        <div class="form-group col-md-4 col-lg-3">
+          <label for="detalle_banco">Bancos</label>
+          <select name="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
+            <option value="">Seleccione aquí</option>
+            @for (banco of bancos; track banco.nombre || $index) {
+              <option [value]="banco.nombre">{{ banco.nombre }}</option>
+            }
+          </select>
+        </div>
+      }
       <div class="form-group col-md-3 col-lg-2 without-label">
         <div class="form-switch border rounded">
           <label for="pendiente">Pendiente</label>
@@ -254,19 +265,6 @@
         <label for="" class="fw-medium">Total:</label>
         <input type='number' class="form-control" name="total" (change)="setSubTotal()" [(ngModel)]="gasto.total"/>
       </div>
-      <!--            <div class="form-group col-md-4 col-lg-3">-->
-      <!--                <label for="forma_pago">Forma de pago:</label>-->
-      <!--                <select name="forma_pago" [(ngModel)]="gasto.forma_pago" class="form-select" id="forma_pago">-->
-      <!--                    <option value="{{ forma.nombre }}" *ngFor="let forma of formaspago">{{ forma.nombre }}</option>-->
-      <!--                </select>-->
-      <!--            </div>-->
-      <!-- <div class="form-group col-md-4 col-lg-3" *ngIf="gasto.forma_pago != 'Efectivo' && gasto.forma_pago != 'Wompi'">
-          <label for="detalle_banco">Bancos:</label>
-          <select name="detalle_banco" [(ngModel)]="gasto.detalle_banco" class="form-select">
-              <option value="">Seleccione aquí</option>
-              <option [value]="banco.nombre" *ngFor="let banco of bancos">{{ banco.nombre }}</option>
-          </select>
-      </div> -->
       <div class="form-group col-md-3 col-lg-2">
         <label for="fecha_pago">Fecha de pago:</label><br>
         <input [disabled]="gasto.estado !== 'Pendiente'" type="date" class="form-control" [(ngModel)]="gasto.fecha_pago"
