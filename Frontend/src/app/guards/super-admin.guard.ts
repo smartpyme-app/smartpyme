@@ -3,7 +3,9 @@ import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/ro
 import { Observable } from 'rxjs';
 import { ApiService } from '@services/api.service';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SuperAdminGuard  {
 
     constructor(private router: Router, private apiService: ApiService){}

@@ -220,6 +220,20 @@ class SuscripcionesController extends Controller
 
             $suscripcion->save();
 
+            // Actualizar campos monto_mensual y monto_anual en la empresa
+            $empresa = Empresa::findOrFail($validated['empresa_id']);
+            if ($request->has('monto_mensual')) {
+                $empresa->monto_mensual = $request->input('monto_mensual');
+            }
+            if ($request->has('monto_anual')) {
+                $empresa->monto_anual = $request->input('monto_anual');
+            }
+            // Actualizar frecuencia_pago si viene en el request
+            if ($request->has('frecuencia_pago')) {
+                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            $empresa->save();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Suscripción creada exitosamente',
@@ -273,6 +287,20 @@ class SuscripcionesController extends Controller
                 'direccion_factura' => $request->input('direccion_factura'),
                 'motivo_cancelacion' => $request->input('motivo_cancelacion'),
             ]);
+
+            // Actualizar campos monto_mensual y monto_anual en la empresa
+            $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+            if ($request->has('monto_mensual')) {
+                $empresa->monto_mensual = $request->input('monto_mensual');
+            }
+            if ($request->has('monto_anual')) {
+                $empresa->monto_anual = $request->input('monto_anual');
+            }
+            // Actualizar frecuencia_pago si viene en el request
+            if ($request->has('frecuencia_pago')) {
+                $empresa->frecuencia_pago = $request->input('frecuencia_pago');
+            }
+            $empresa->save();
 
             // if ($request->input('estado_ultimo_pago') === config('constants.ESTADO_ORDEN_PAGO_COMPLETADO')) {
             //    $this->addOrderPayment($suscripcion);

@@ -11,14 +11,15 @@
                         <h2>Registro</h2>
                         <p>¡Bienvenido a SmartPyme!</p>
                         <form class="row mt-3" name="form" (ngSubmit)="f.form.valid && submit()" #f="ngForm" novalidate>
+                            <div class="form-group col-12 mb-4">
+                                <label>Nombre de la empresa</label>
+                                <input type="text" class="form-control" name="empresa" [(ngModel)]="user.empresa.nombre" #empresa="ngModel" placeholder="Escribe aquí" required/>
+                            </div>
                             <div class="form-group col-6 mb-4">
                                 <label>Nombre y apellido</label>
                                 <input type="text" class="form-control" name="name" [(ngModel)]="user.name" #name="ngModel" placeholder="Escribe aquí" required focus="true"/>
                             </div>
-                            <div class="form-group col-6 mb-4">
-                                <label>Nombre de la empresa</label>
-                                <input type="text" class="form-control" name="empresa" [(ngModel)]="user.empresa.nombre" #empresa="ngModel" placeholder="Escribe aquí" required/>
-                            </div>
+                            
                             <div class="form-group col-6 mb-4">
                                 <label>Tipo de negocio</label>
                                 <select class="form-select" name="industria" [(ngModel)]="user.empresa.industria">
@@ -29,13 +30,24 @@
                                     <option value="Otro">Otro</option>
                                 </select>
                             </div>
+ 
+                            
+                            <div class="form-group col-6 mb-4">
+                                <label>Tipo de plan</label>
+                                <select class="form-select" name="frecuencia_pago" [(ngModel)]="user.empresa.frecuencia_pago" (change)="onFrecuenciaPagoChange()">
+                                    <option value="">Selecciona aquí</option>
+                                    <option value="Mensual">Mensual</option>
+                                    <option value="Trimestral">Trimestral</option>
+                                    <option value="Anual">Anual</option>
+                                </select>
+                            </div>
                             <div class="form-group col-6 mb-4">
                                 <label class="w-100">Plan 
                                     <span class="float-end" *ngIf="user.empresa.plan && user.empresa.plan !== '' && (user.empresa.total > 0 || totalOriginal > 0)">
                                         <span *ngIf="tieneDescuento" style="text-decoration: line-through; color: red; margin-right: 8px;">
                                             {{ totalOriginal | currency:'USD':'symbol':'1.2'}}
                                         </span>
-                                        Total: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
+                                        Precio: {{ user.empresa.total | currency:'USD':'symbol':'1.2'}}
                                     </span>
                                 </label>
                                 <div class="input-group">
@@ -52,6 +64,14 @@
                                         <option value="Anual">Anual</option>
                                     </select> -->
                                 </div>
+                            </div>
+                            <div  class="form-group col-12 mb-4" *ngIf="user.empresa.total > 0">
+                                <label>
+                                    Total {{ getFrecuenciaPago(user.empresa.frecuencia_pago) }}: {{ getTotalAPagar() | currency:'USD':'symbol':'1.2'}}
+                                    <span class="text-success ms-2" *ngIf="esPlanAnual()">
+                                        <i class="fa fa-check-circle"></i> ¡Obtienes un 20% de descuento en tu suscripción anual!
+                                    </span>
+                                </label>
                             </div>
                             <div class="form-group col-6 mb-4">
                                 <label>Correo</label>
@@ -85,11 +105,11 @@
                             <div class="form-group mb-4">
                                 <label>
                                     Código promocional
-                                    <span class="text-success" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
-                                        ({{ promocionalService.obtenerPorcentajeDescuento(user.empresa.codigo_promocional) }}% de descuento)
+                                    <span class="text-success" *ngIf="codigoPromocionalValido && codigoPromocionalValidado">
+                                        ({{ obtenerPorcentajeDescuentoCodigo() }}% de descuento)
                                     </span>
                                 </label>
-                                <input type="text" class="form-control" name="codigo_promocional" [(ngModel)]="user.empresa.codigo_promocional" (input)="aplicarDescuento()" placeholder="Escribe aquí" #codigo_promocional="ngModel" [class.is-valid]="codigoPromocionalValido"/>
+                                <input type="text" class="form-control" name="codigo_promocional" [(ngModel)]="user.empresa.codigo_promocional" (input)="aplicarDescuento()" placeholder="Escribe aquí" #codigo_promocional="ngModel" [class.is-valid]="codigoPromocionalValido" [class.is-invalid]="mensajeErrorCodigo && !codigoPromocionalValido"/>
                                 <small class="text-success" *ngIf="codigoPromocionalValido && user.empresa.codigo_promocional">
                                     <i class="fa fa-check-circle"></i> Código promocional aplicado
                                 </small>

@@ -86,11 +86,12 @@ export class PagoComponent implements OnInit {
     if (!this.user.empresa) return;
 
     const plan = this.user.empresa.plan;
-    const tipoPlan = this.user.empresa.tipo_plan;
+    // Obtener tipo_plan de empresa, puede venir como tipo_plan o frecuencia_pago
+    const tipoPlan = this.user.empresa.tipo_plan || this.user.empresa.frecuencia_pago || 'Mensual';
     const totalActual = this.user.empresa.total || 0;
 
-    // Calcular precio original basado en el plan
-    let precioOriginal = 0;
+    // Calcular precio mensual base del plan
+    let precioMensual = 0;
 
     // El plan puede venir como número o como string (nombre del plan)
     const planNumero = typeof plan === 'number' ? plan : parseInt(plan);
@@ -99,16 +100,16 @@ export class PagoComponent implements OnInit {
     // Verificar por número primero
     if (planNumero == 1) {
       // Emprendedor
-      precioOriginal = tipoPlan === 'Mensual' ? 16.95 : 203.4;
+      precioMensual = 16.95;
     } else if (planNumero == 2) {
       // Estándar
-      precioOriginal = tipoPlan === 'Mensual' ? 28.25 : 339;
+      precioMensual = 28.25;
     } else if (planNumero == 3) {
       // Avanzado
-      precioOriginal = tipoPlan === 'Mensual' ? 56.5 : 678;
+      precioMensual = 56.5;
     } else if (planNumero == 4) {
       // Pro
-      precioOriginal = tipoPlan === 'Mensual' ? 113 : 1220;
+      precioMensual = 113;
     } else {
       // Si no coincide con ningún número, buscar por nombre del plan
       if (
@@ -117,17 +118,31 @@ export class PagoComponent implements OnInit {
         planNombre === 'estándar' ||
         planNombre === 'estandar'
       ) {
-        precioOriginal = tipoPlan === 'Mensual' ? 28.25 : 339;
+        precioMensual = 28.25;
       } else if (planNombre.includes('avanzado') || planNombre === 'avanzado') {
-        precioOriginal = tipoPlan === 'Mensual' ? 56.5 : 678;
+        precioMensual = 56.5;
       } else if (planNombre.includes('pro') || planNombre === 'pro') {
-        precioOriginal = tipoPlan === 'Mensual' ? 113 : 1220;
+        precioMensual = 113;
       } else if (
         planNombre.includes('emprendedor') ||
         planNombre === 'emprendedor'
       ) {
-        precioOriginal = tipoPlan === 'Mensual' ? 16.95 : 203.4;
+        precioMensual = 16.95;
       }
+    }
+
+    // Calcular precio original según la frecuencia de pago
+    let precioOriginal = 0;
+    if (tipoPlan === 'Mensual') {
+      precioOriginal = precioMensual;
+    } else if (tipoPlan === 'Trimestral') {
+      precioOriginal = precioMensual * 3;
+    } else if (tipoPlan === 'Anual') {
+      // Aplicar 20% de descuento al plan anual
+      precioOriginal = (precioMensual * 12) * 0.8;
+    } else {
+      // Por defecto, mensual
+      precioOriginal = precioMensual;
     }
 
     this.totalOriginal = precioOriginal;
@@ -137,16 +152,28 @@ export class PagoComponent implements OnInit {
       this.user.empresa?.codigo_promocional ||
       this.route.snapshot.queryParamMap.get('promo');
 
-    if (
-      codigoPromocional &&
-      this.promocionalService.esCodigoValido(codigoPromocional)
-    ) {
-      const codigoPromo =
-        this.promocionalService.obtenerCodigoPromocional(codigoPromocional);
+    if (codigoPromocional) {
+      const tipoPlan = this.user.empresa?.tipo_plan;
+      this.promocionalService.validarCodigo(codigoPromocional, tipoPlan).subscribe(
+        codigoPromo => {
       if (codigoPromo && precioOriginal > 0) {
         this.tieneDescuento = true;
         this.totalOriginal = precioOriginal;
       }
+        },
+        error => {
+          console.error('Error al validar código promocional:', error);
+          // Si hay descuento comparando totales (por si acaso)
+          if (
+            precioOriginal > 0 &&
+            totalActual > 0 &&
+            totalActual < precioOriginal
+          ) {
+            this.tieneDescuento = true;
+            this.totalOriginal = precioOriginal;
+          }
+        }
+      );
     } else if (
       precioOriginal > 0 &&
       totalActual > 0 &&
