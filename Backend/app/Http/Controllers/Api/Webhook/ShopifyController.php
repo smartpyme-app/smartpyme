@@ -1322,8 +1322,9 @@ class ShopifyController extends Controller
                     'telefono' => $cliente->telefono
                 ]);
                 
-                // Actualizar datos del cliente
-                $cliente->update($clienteData);
+                // Actualizar datos del cliente excluyendo campos protegidos
+                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
+                $cliente->update($clienteDataProtegido);
                 return $cliente;
             }
         }
@@ -1356,8 +1357,9 @@ class ShopifyController extends Controller
                     'telefono_nuevo' => $telefono
                 ]);
                 
-                // Actualizar datos incluyendo el shopify_customer_id
-                $cliente->update($clienteData);
+                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
+                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
+                $cliente->update($clienteDataProtegido);
                 return $cliente;
             }
         }
@@ -1403,8 +1405,9 @@ class ShopifyController extends Controller
                     'correo_nuevo' => $correo
                 ]);
                 
-                // Actualizar datos incluyendo el shopify_customer_id
-                $cliente->update($clienteData);
+                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
+                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
+                $cliente->update($clienteDataProtegido);
                 return $cliente;
             }
         }
@@ -1417,6 +1420,51 @@ class ShopifyController extends Controller
         ]);
         
         return Cliente::create($clienteData);
+    }
+
+    /**
+     * Excluye campos protegidos del array de datos del cliente
+     * Estos campos no deben ser actualizados desde Shopify cuando el cliente ya existe
+     * Solo aplica si la empresa tiene facturación electrónica activa
+     */
+    private function excluirCamposProtegidos($clienteData, $empresaId)
+    {
+        // Verificar si la empresa tiene facturación electrónica activa
+        $empresa = Empresa::find($empresaId);
+        
+        if (!$empresa || !$empresa->facturacion_electronica) {
+            // Si no tiene facturación electrónica, retornar todos los datos sin excluir nada
+            Log::info('Empresa sin facturación electrónica - no se excluyen campos protegidos', [
+                'empresa_id' => $empresaId,
+                'facturacion_electronica' => $empresa ? $empresa->facturacion_electronica : false
+            ]);
+            return $clienteData;
+        }
+        
+        // Campos que no deben ser actualizados desde Shopify cuando el cliente ya existe
+        // Estos campos son importantes para facturación de crédito fiscal
+        $camposProtegidos = [
+            'cod_departamento',
+            'departamento',
+            'municipio',
+            'cod_municipio',
+            'pais'
+        ];
+        
+        // Crear una copia del array sin los campos protegidos
+        $clienteDataProtegido = $clienteData;
+        foreach ($camposProtegidos as $campo) {
+            unset($clienteDataProtegido[$campo]);
+        }
+        
+        // Log::info('Campos protegidos excluidos de actualización desde Shopify', [
+        //     'empresa_id' => $empresaId,
+        //     'facturacion_electronica' => true,
+        //     'campos_excluidos' => $camposProtegidos,
+        //     'campos_que_se_actualizaran' => array_keys($clienteDataProtegido)
+        // ]);
+        
+        return $clienteDataProtegido;
     }
 
     /**
