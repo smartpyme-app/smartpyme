@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective, FilterPipe],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
     
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
