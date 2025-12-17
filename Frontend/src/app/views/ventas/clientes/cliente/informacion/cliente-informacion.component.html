@@ -114,7 +114,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
-                            @for (distrito of distritos | filter:'cod_departamento':cliente.cod_departamento; track distrito.cod) {
+                            @for (distrito of distritosFiltrados; track distrito.cod) {
                                 <ng-option [value]="distrito.cod">
                                     {{ distrito.nombre }}
                                 </ng-option>
@@ -131,7 +131,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
-                            @for (municipio of municipios | filter:'nombre_departamento':cliente.departamento; track municipio.cod) {
+                            @for (municipio of municipiosFiltrados; track municipio.cod) {
                                 <ng-option [value]="municipio.cod">
                                     {{ municipio.nombre }}
                                 </ng-option>
@@ -281,7 +281,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_distrito" (change)="setDistrito()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_distrito">
-                            @for (distrito of distritos | filter:'cod_departamento':cliente.cod_departamento; track distrito.cod) {
+                            @for (distrito of distritosFiltrados; track distrito.cod) {
                                 <ng-option [value]="distrito.cod">
                                     {{ distrito.nombre }}
                                 </ng-option>
@@ -300,7 +300,7 @@
                     }
                     @if (apiService.auth_user().empresa.facturacion_electronica && apiService.auth_user().empresa.pais == 'El Salvador') {
                         <ng-select [(ngModel)]="cliente.cod_municipio" (change)="setMunicipio()" placeholder="Escribe aquí" class="form-control form-select p-0" name="cliente.cod_municipio">
-                            @for (municipio of municipios | filter:'nombre_departamento':cliente.departamento; track municipio.cod) {
+                            @for (municipio of municipiosFiltrados; track municipio.cod) {
                                 <ng-option [value]="municipio.cod">
                                     {{ municipio.nombre }}
                                 </ng-option>
@@ -326,25 +326,27 @@
 
     </div>
     }
-    <div class="row">
-        <div class="col-md-8 col-lg-6">
-            <h6>Configuración Contable</h6>
-            <div class="form-group col-md-12">
-                <label for="cliente.id_cuenta_contable">Cuenta contable:</label>
-                <ng-select [(ngModel)]="cliente.id_cuenta_contable" class="form-select p-0" name="cliente.id_cuenta_contable">
-                    <ng-option value="">Seleccione aquí</ng-option>
-                    @for (cuenta of catalogo; track cuenta.id) {
-                        <ng-option [value]="cuenta.id">
-                            <div class="d-flex align-items-center">
-                                <span style="width: 75px;">{{ cuenta.codigo }} </span>
-                                <span class="col-8"> - {{ cuenta.nombre }}</span>
-                            </div>
-                        </ng-option>
-                    }
-                </ng-select>
+    @if (contabilidadHabilitada) {
+        <div class="row">
+            <div class="col-md-8 col-lg-6">
+                <h6>Configuración Contable</h6>
+                <div class="form-group col-md-12">
+                    <label for="cliente.id_cuenta_contable">Cuenta contable:</label>
+                    <ng-select [(ngModel)]="cliente.id_cuenta_contable" class="form-select p-0" name="cliente.id_cuenta_contable">
+                        <ng-option value="">Seleccione aquí</ng-option>
+                        @for (cuenta of catalogo; track cuenta.id) {
+                            <ng-option [value]="cuenta.id">
+                                <div class="d-flex align-items-center">
+                                    <span style="width: 75px;">{{ cuenta.codigo }} </span>
+                                    <span class="col-8"> - {{ cuenta.nombre }}</span>
+                                </div>
+                            </ng-option>
+                        }
+                    </ng-select>
+                </div>
             </div>
         </div>
-    </div>
+    }
     @if (cliente.tipo == 'Empresa') {
     <div class="row mt-4">
         <!-- <div class="col-12 d-flex justify-content-between align-items-center mb-3">

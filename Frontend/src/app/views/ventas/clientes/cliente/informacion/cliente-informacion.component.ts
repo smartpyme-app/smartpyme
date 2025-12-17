@@ -11,6 +11,8 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { FuncionalidadesService } from '@services/functionalities.service';
+import { FilterPipe } from '@pipes/filter.pipe';
 import Swal from 'sweetalert2';
 import { LazyImageDirective } from '../../../../../directives/lazy-image.directive';
 
@@ -18,7 +20,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     selector: 'app-cliente-informacion',
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
+    imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective, FilterPipe],
     
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
@@ -38,13 +40,15 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public esNuevo = false;
   public tipoAnterior = '';
   public catalogo:any = [];
+  public contabilidadHabilitada: boolean = false;
 
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private funcionalidadesService: FuncionalidadesService
   ) {
     super(modalManager, alertService);
   }
@@ -57,9 +61,30 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
         this.municipios = JSON.parse(localStorage.getItem('municipios')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
 
-        this.apiService.getAll('catalogo/list').pipe(this.untilDestroyed()).subscribe(catalogo => {
-            this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+        // Verificar si tiene contabilidad habilitada
+        this.verificarAccesoContabilidad();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    // Solo cargar catálogo si tiene contabilidad habilitada
+                    if (acceso) {
+                        this.apiService.getAll('catalogo/list')
+                            .pipe(this.untilDestroyed())
+                            .subscribe(catalogo => {
+                                this.catalogo = catalogo;
+                            }, error => {this.alertService.error(error);});
+                    }
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
   public loadAll() {
@@ -138,6 +163,25 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
       this.cliente.distrito = '';
       this.cliente.cod_distrito = '';
     }
+  }
+
+  // Métodos getter para filtrar distritos y municipios
+  get distritosFiltrados(): any[] {
+    if (!this.distritos || !this.cliente.cod_departamento) {
+      return [];
+    }
+    return this.distritos.filter((distrito: any) => 
+      distrito.cod_departamento == this.cliente.cod_departamento
+    );
+  }
+
+  get municipiosFiltrados(): any[] {
+    if (!this.municipios || !this.cliente.cod_departamento) {
+      return [];
+    }
+    return this.municipios.filter((municipio: any) => 
+      municipio.cod_departamento == this.cliente.cod_departamento
+    );
   }
 
   setDepartamento() {

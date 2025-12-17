@@ -30,6 +30,7 @@ class StoreClienteRequest extends FormRequest
             'tipo' => 'required|string|in:Persona,Empresa',
             'id_empresa' => 'required|integer|exists:empresas,id',
             'id_usuario' => $isUpdate ? 'sometimes|nullable|integer|exists:users,id' : 'required|integer|exists:users,id',
+            'id_cuenta_contable' => 'sometimes|nullable|integer|exists:catalogo_cuentas,id',
             'contactos' => 'sometimes|array',
             'contactos.*.nombre' => 'sometimes|nullable|string|max:255',
             'contactos.*.name' => 'sometimes|nullable|string|max:255',
