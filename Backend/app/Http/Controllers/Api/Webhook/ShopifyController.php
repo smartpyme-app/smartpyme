@@ -1615,7 +1615,7 @@ class ShopifyController extends Controller
      * @param Request $request
      * @return void
      */
-    private function actualizarCantidadesProductos($venta, $request)
+    private function actualizarCantidadesProductos($venta, $request, $usuario)
     {
         Log::info("Iniciando actualización de cantidades de productos", [
             'venta_id' => $venta->id,
@@ -1625,43 +1625,199 @@ class ShopifyController extends Controller
 
         $lineItems = $request->line_items ?? [];
         
+        // Crear un mapa de variant_ids a current_quantity para búsqueda O(1) en lugar de O(n)
+        $variantIdsMap = [];
         foreach ($lineItems as $item) {
+            $variantId = $item['variant_id'] ?? null;
+            if ($variantId) {
+                $variantIdsMap[$variantId] = $item['current_quantity'] ?? $item['quantity'] ?? 0;
+            }
+        }
+        
+        // Obtener todos los detalles de venta que son productos de Shopify (tienen shopify_variant_id)
+        // Esto excluye automáticamente los servicios de envío que no tienen variant_id
+        $detallesExistentes = $venta->detalles()
+            ->whereHas('producto', function($query) {
+                $query->whereNotNull('shopify_variant_id');
+            })
+            ->get();
+        
+        // Eliminar detalles que ya no están en Shopify o tienen current_quantity = 0
+        foreach ($detallesExistentes as $detalle) {
+            $producto = $detalle->producto;
+            $variantId = $producto->shopify_variant_id ?? null;
+            
+            // Buscar en el mapa en lugar de hacer un loop (más eficiente)
+            $encontradoEnShopify = isset($variantIdsMap[$variantId]);
+            $currentQuantity = $encontradoEnShopify ? $variantIdsMap[$variantId] : 0;
+            
+            // Si no está en Shopify o tiene cantidad 0, eliminarlo
+            if (!$encontradoEnShopify || $currentQuantity == 0) {
+                Log::info("Eliminando detalle de producto removido de Shopify", [
+                    'detalle_id' => $detalle->id,
+                    'producto_id' => $producto->id,
+                    'producto_nombre' => $producto->nombre,
+                    'cantidad_anterior' => $detalle->cantidad,
+                    'encontrado_en_shopify' => $encontradoEnShopify,
+                    'current_quantity' => $currentQuantity,
+                    'venta_id' => $venta->id
+                ]);
+                
+                // Ajustar inventario si no es cotización
+                if ($venta->cotizacion != 1) {
+                    $inventario = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->first();
+                    
+                    if ($inventario) {
+                        // Incrementar stock porque se está eliminando el producto
+                        $inventario->increment('stock', $detalle->cantidad);
+                        
+                        // Registrar en el kardex (con cantidad negativa para indicar devolución)
+                        $inventario->kardex($venta, $detalle->cantidad, $detalle->precio, $producto->costo);
+                        
+                        Log::info("Inventario ajustado por eliminación de producto", [
+                            'producto_id' => $producto->id,
+                            'cantidad_devuelta' => $detalle->cantidad,
+                            'stock_actual' => $inventario->stock,
+                            'venta_id' => $venta->id
+                        ]);
+                    }
+                }
+                
+                // Eliminar el detalle
+                $detalle->delete();
+            }
+        }
+        
+        // Procesar los line_items de Shopify
+        foreach ($lineItems as $item) {
+            // Validar que el item tenga los datos mínimos necesarios
+            if (empty($item) || !is_array($item)) {
+                Log::warning("Line item inválido o vacío", ['item' => $item]);
+                continue;
+            }
+
+            // Verificar current_quantity - si es 0, el detalle ya debería haber sido eliminado arriba
+            // Saltar este item para evitar recrearlo
+            $currentQuantity = $item['current_quantity'] ?? $item['quantity'] ?? 0;
+            if ($currentQuantity == 0) {
+                Log::info("Saltando item con cantidad 0 - detalle ya eliminado", [
+                    'variant_id' => $item['variant_id'] ?? 'N/A',
+                    'title' => $item['title'] ?? 'N/A',
+                    'venta_id' => $venta->id
+                ]);
+                continue;
+            }
+
             // Buscar el producto por variant_id o SKU
+            // Si hay múltiples productos con el mismo variant_id, usar el más reciente
             $producto = null;
             
             if (!empty($item['variant_id'])) {
                 $producto = Producto::where('shopify_variant_id', $item['variant_id'])
                     ->where('id_empresa', $venta->id_empresa)
+                    ->orderBy('id', 'desc') // Usar el más reciente si hay duplicados
                     ->first();
             }
             
             if (!$producto && !empty($item['sku'])) {
                 $producto = Producto::where('codigo', $item['sku'])
                     ->where('id_empresa', $venta->id_empresa)
+                    ->orderBy('id', 'desc') // Usar el más reciente si hay duplicados
                     ->first();
             }
             
+            // Si no se encuentra el producto, crearlo
             if (!$producto) {
-                Log::warning("Producto no encontrado para actualizar cantidad", [
+                Log::info("Producto no encontrado, creando nuevo producto durante actualización", [
                     'variant_id' => $item['variant_id'] ?? 'N/A',
                     'sku' => $item['sku'] ?? 'N/A',
                     'title' => $item['title'] ?? 'N/A'
                 ]);
-                continue;
+                
+                $productoData = $this->transformer->transformarProducto(
+                    $item,
+                    $usuario->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+                $producto = Producto::create($productoData);
+                
+                Log::info("Producto creado durante actualización", ['producto_id' => $producto->id]);
             }
             
-            // Buscar el detalle de venta existente
-            $detalle = $venta->detalles()
-                ->where('id_producto', $producto->id)
-                ->first();
-                
+            // Buscar el detalle de venta existente por variant_id para evitar duplicados
+            // Esto es importante porque puede haber múltiples productos con el mismo variant_id
+            $variantId = $item['variant_id'] ?? null;
+            $detalle = null;
+            
+            if ($variantId) {
+                // Buscar detalle que tenga un producto con este variant_id
+                $detalle = $venta->detalles()
+                    ->whereHas('producto', function($query) use ($variantId) {
+                        $query->where('shopify_variant_id', $variantId);
+                    })
+                    ->first();
+            }
+            
+            // Si no se encontró por variant_id, buscar por id_producto como fallback
             if (!$detalle) {
-                Log::warning("Detalle de venta no encontrado para producto", [
+                $detalle = $venta->detalles()
+                    ->where('id_producto', $producto->id)
+                    ->first();
+            }
+                
+            // Si no existe el detalle, crearlo (producto nuevo agregado al pedido)
+            if (!$detalle) {
+                Log::info("Detalle de venta no encontrado - creando nuevo detalle para producto agregado", [
                     'venta_id' => $venta->id,
                     'producto_id' => $producto->id,
-                    'producto_nombre' => $producto->nombre
+                    'producto_nombre' => $producto->nombre,
+                    'variant_id' => $variantId
                 ]);
+                
+                // Crear el detalle usando el transformer
+                $taxesIncluded = $request->taxes_included ?? false;
+                $detalleData = $this->transformer->transformarDetallesVenta($item, $venta->id, $usuario->id_empresa, $taxesIncluded);
+                $detalleData['id_producto'] = $producto->id;
+                $detalle = $venta->detalles()->create($detalleData);
+                
+                // Actualizar inventario para el nuevo producto
+                if ($venta->cotizacion != 1) {
+                    Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->decrement('stock', $item['quantity']);
+
+                    $inventario = Inventario::where('id_producto', $producto->id)
+                        ->where('id_bodega', $venta->id_bodega)
+                        ->first();
+
+                    if ($inventario) {
+                        $inventario->kardex($venta, $item['quantity'], $item['price']);
+                    }
+                    
+                    Log::info("Inventario actualizado para producto nuevo agregado", [
+                        'producto_id' => $producto->id,
+                        'cantidad' => $item['quantity'],
+                        'venta_id' => $venta->id
+                    ]);
+                }
+                
+                // Continuar al siguiente item ya que este es nuevo
                 continue;
+            } else {
+                // Si se encontró un detalle pero con un producto diferente (mismo variant_id), actualizar el id_producto
+                if ($detalle->id_producto != $producto->id) {
+                    Log::info("Detalle encontrado con producto diferente - actualizando id_producto", [
+                        'detalle_id' => $detalle->id,
+                        'producto_anterior_id' => $detalle->id_producto,
+                        'producto_nuevo_id' => $producto->id,
+                        'variant_id' => $variantId,
+                        'venta_id' => $venta->id
+                    ]);
+                    $detalle->update(['id_producto' => $producto->id]);
+                }
             }
             
             $cantidadAnterior = $detalle->cantidad;
@@ -1784,6 +1940,153 @@ class ShopifyController extends Controller
         }
         
         // Recalcular totales de la venta
+        $this->recalcularTotalesVenta($venta);
+    }
+
+    /**
+     * Actualiza los envíos de una venta cuando cambian en Shopify
+     * 
+     * @param Venta $venta
+     * @param Request $request
+     * @param User $usuario
+     * @return void
+     */
+    private function actualizarEnvio($venta, $request, $usuario)
+    {
+        Log::info("Iniciando actualización de envíos", [
+            'venta_id' => $venta->id,
+            'shopify_order_id' => $request->id,
+            'shipping_lines_count' => count($request->shipping_lines ?? [])
+        ]);
+
+        // Obtener shipping_lines del request
+        $shippingLines = $request->shipping_lines ?? [];
+        
+        if (empty($shippingLines)) {
+            Log::info("No hay shipping_lines para actualizar", [
+                'venta_id' => $venta->id
+            ]);
+            return;
+        }
+
+        // Obtener todos los detalles de envío existentes (productos tipo Servicio en categoría envios)
+        $detallesEnvioExistentes = $venta->detalles()
+            ->whereHas('producto', function($query) use ($venta) {
+                $query->where('tipo', 'Servicio')
+                    ->whereHas('categoria', function($q) {
+                        $q->where('nombre', 'envios');
+                    });
+            })
+            ->get();
+
+        // Crear un mapa de envíos de Shopify por título
+        $enviosShopify = [];
+        foreach ($shippingLines as $shippingLine) {
+            $title = $shippingLine['title'] ?? '';
+            $isRemoved = $shippingLine['is_removed'] ?? false;
+            
+            if (!empty($title) && !$isRemoved) {
+                $enviosShopify[$title] = $shippingLine;
+            }
+        }
+
+        // Eliminar envíos que ya no están en Shopify (is_removed: true o no están en la lista)
+        foreach ($detallesEnvioExistentes as $detalleEnvio) {
+            $tituloEnvio = $detalleEnvio->descripcion;
+            
+            // Verificar si el envío fue removido o ya no existe en Shopify
+            $fueRemovido = false;
+            foreach ($shippingLines as $shippingLine) {
+                if (($shippingLine['title'] ?? '') === $tituloEnvio && ($shippingLine['is_removed'] ?? false)) {
+                    $fueRemovido = true;
+                    break;
+                }
+            }
+            
+            if ($fueRemovido || !isset($enviosShopify[$tituloEnvio])) {
+                Log::info("Eliminando detalle de envío removido", [
+                    'detalle_id' => $detalleEnvio->id,
+                    'titulo_envio' => $tituloEnvio,
+                    'venta_id' => $venta->id
+                ]);
+                $detalleEnvio->delete();
+            }
+        }
+
+        // Procesar envíos nuevos o actualizados
+        $enviosProcesados = [];
+        foreach ($shippingLines as $shippingLine) {
+            $title = $shippingLine['title'] ?? '';
+            $isRemoved = $shippingLine['is_removed'] ?? false;
+            
+            if (empty($title) || $isRemoved) {
+                continue;
+            }
+
+            // Buscar si ya existe un detalle con este título
+            $detalleExistente = $venta->detalles()
+                ->where('descripcion', $title)
+                ->whereHas('producto', function($query) {
+                    $query->where('tipo', 'Servicio')
+                        ->whereHas('categoria', function($q) {
+                            $q->where('nombre', 'envios');
+                        });
+                })
+                ->first();
+
+            if ($detalleExistente) {
+                // Actualizar el detalle existente si el precio cambió
+                $precioNuevo = floatval($shippingLine['discounted_price'] ?? $shippingLine['price'] ?? 0);
+                $precioSinIVA = $this->impuestosService->calcularPrecioSinImpuesto($precioNuevo, $venta->id_empresa);
+                $ivaNuevo = $precioNuevo - $precioSinIVA;
+                
+                if (abs($detalleExistente->precio_sin_iva - $precioSinIVA) > 0.01) {
+                    Log::info("Actualizando precio de envío existente", [
+                        'detalle_id' => $detalleExistente->id,
+                        'titulo_envio' => $title,
+                        'precio_anterior' => $detalleExistente->precio_sin_iva,
+                        'precio_nuevo' => $precioSinIVA,
+                        'venta_id' => $venta->id
+                    ]);
+                    
+                    $detalleExistente->update([
+                        'precio_sin_iva' => $precioSinIVA,
+                        'precio_con_iva' => $precioNuevo,
+                        'total' => $precioSinIVA,
+                        'gravada' => $precioSinIVA,
+                        'iva' => $ivaNuevo
+                    ]);
+                }
+                
+                $enviosProcesados[] = $detalleExistente->id;
+            } else {
+                // Crear nuevo detalle de envío
+                $detallesEnvio = $this->shippingService->procesarTiposEnvio(
+                    [$shippingLine],
+                    $venta->id,
+                    $venta->id_empresa,
+                    $usuario->id,
+                    $usuario->id_sucursal
+                );
+                
+                if (!empty($detallesEnvio)) {
+                    $enviosProcesados[] = $detallesEnvio[0]->id;
+                    Log::info("Nuevo detalle de envío creado durante actualización", [
+                        'detalle_id' => $detallesEnvio[0]->id,
+                        'titulo_envio' => $title,
+                        'venta_id' => $venta->id
+                    ]);
+                }
+            }
+        }
+
+        Log::info("Actualización de envíos completada", [
+            'venta_id' => $venta->id,
+            'envios_procesados' => count($enviosProcesados),
+            'envios_eliminados' => count($detallesEnvioExistentes) - count($enviosProcesados)
+        ]);
+
+        // Recalcular totales después de actualizar envíos
         $this->recalcularTotalesVenta($venta);
     }
 
@@ -1938,8 +2241,27 @@ class ShopifyController extends Controller
                 ]);
             }
 
-            // Actualizar cantidades de productos si han cambiado
-            $this->actualizarCantidadesProductos($venta, $request);
+            // Obtener usuario para procesar envíos y productos nuevos
+            $usuario = User::where('id_empresa', $empresa->id)
+                ->where('shopify_status', 'connected')
+                ->first();
+
+            if (!$usuario) {
+                Log::warning("Usuario no encontrado para actualizar venta", [
+                    'empresa_id' => $empresa->id,
+                    'venta_id' => $venta->id
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'mensaje' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            // Actualizar envíos si han cambiado
+            $this->actualizarEnvio($venta, $request, $usuario);
+
+            // Actualizar cantidades de productos y crear productos nuevos si han cambiado
+            $this->actualizarCantidadesProductos($venta, $request, $usuario);
 
             return response()->json([
                 'status' => 'success',
