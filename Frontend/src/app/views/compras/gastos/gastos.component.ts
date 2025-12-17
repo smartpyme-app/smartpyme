@@ -10,6 +10,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { TruncatePipe } from '@pipes/truncate.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { MHService } from '@services/MH.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -40,6 +41,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
     public areas:any = [];
     public numeros_ids:any = [];
     public override modalRef!: BsModalRef;
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService,
@@ -48,7 +50,8 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         modalManager: ModalManagerService,
         private router: Router,
         private route: ActivatedRoute,
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'gasto',
@@ -78,6 +81,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
     }
 
     ngOnInit() {
+        this.verificarAccesoContabilidad();
         this.route.queryParams
             .pipe(this.untilDestroyed())
             .subscribe(params => {
@@ -433,6 +437,20 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 },
                 error: (error) => {
                     this.alertService.error(error);
+                }
+            });
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
                 }
             });
     }
