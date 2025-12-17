@@ -7,12 +7,14 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
+import { CategoriaCuentasComponent } from './cuentas/categoria-cuentas.component';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-categorias',
     templateUrl: './categorias.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, CategoriaCuentasComponent],
     
 })
 
@@ -22,11 +24,13 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     public categoria: any = {};
     public sucursales: any = [];
     public catalogo: any = [];
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'categoria',
@@ -51,6 +55,9 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     ngOnInit() {
+        // Verificar si tiene contabilidad habilitada
+        this.verificarAccesoContabilidad();
+
         // Cargar datos adicionales necesarios para el componente
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
@@ -58,14 +65,39 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('catalogo/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(catalogo => {
-                this.catalogo = catalogo;
-            }, error => { this.alertService.error(error); });
+        // Solo cargar catálogo si tiene contabilidad habilitada
+        if (this.contabilidadHabilitada) {
+            this.apiService.getAll('catalogo/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(catalogo => {
+                    this.catalogo = catalogo;
+                }, error => { this.alertService.error(error); });
+        }
 
         // Cargar categorías usando el método heredado
         this.loadAll();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    // Si tiene acceso y aún no se cargó el catálogo, cargarlo
+                    if (acceso && !this.catalogo.length) {
+                        this.apiService.getAll('catalogo/list')
+                            .pipe(this.untilDestroyed())
+                            .subscribe(catalogo => {
+                                this.catalogo = catalogo;
+                            }, error => { this.alertService.error(error); });
+                    }
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
     public override loadAll() {
@@ -90,12 +122,33 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     // setPagination() ahora se hereda de BaseFilteredPaginatedComponent
 
     override openModal(template: TemplateRef<any>, categoria?: any) {
-        // Usar el método heredado que maneja la inicialización del item
-        // y pasar la configuración del modal
-        super.openModal(template, categoria, {
-            class: 'modal-lg',
-            backdrop: 'static'
-        });
+        // Si se está editando una categoría existente, cargar las cuentas
+        if (categoria?.id) {
+            this.loading = true;
+            this.apiService.read('categoria/', categoria.id)
+                .pipe(this.untilDestroyed())
+                .subscribe({
+                    next: (categoriaCompleta) => {
+                        this.loading = false;
+                        // Usar el método heredado con la categoría completa que incluye las cuentas
+                        super.openModal(template, categoriaCompleta, {
+                            class: 'modal-lg',
+                            backdrop: 'static'
+                        });
+                    },
+                    error: (error) => {
+                        this.loading = false;
+                        this.alertService.error(error);
+                    }
+                });
+        } else {
+            // Usar el método heredado que maneja la inicialización del item
+            // y pasar la configuración del modal
+            super.openModal(template, categoria, {
+                class: 'modal-lg',
+                backdrop: 'static'
+            });
+        }
     }
 
     public setEstado(categoria: any) {
@@ -104,8 +157,18 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
         this.onSubmit();
     }
 
-    // Los métodos onSubmit() y delete() ahora se heredan de BaseCrudComponent
-    // No es necesario redefinirlos a menos que necesites comportamiento personalizado
+    // Asegurar que id_empresa siempre esté presente antes de guardar
+    public override async onSubmit(item?: any, isStatusChange: boolean = false): Promise<void> {
+        const categoriaToSave = item || this.categoria;
+        
+        // Asegurar que id_empresa esté presente si no existe
+        if (!categoriaToSave.id_empresa) {
+            categoriaToSave.id_empresa = this.apiService.auth_user()?.id_empresa;
+        }
+        
+        // Llamar al método heredado
+        await super.onSubmit(categoriaToSave, isStatusChange);
+    }
 
     public verificarSiExiste() {
         if (this.categoria.nombre) {

@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Inventario\Categorias\Categoria;
 use App\Models\Ventas\Detalle as DetalleVenta;
 use App\Models\Compras\Detalle as DetalleCompra;
+use App\Models\Admin\Funcionalidad;
+use App\Models\Admin\EmpresaFuncionalidad;
 
 use App\Imports\Categorias;
 use Illuminate\Support\Facades\Log;
@@ -22,16 +24,29 @@ class CategoriasController extends Controller
     public function index(Request $request)
     {
         try {
-            $categorias = Categoria::with(['cuentas' => function($q) use ($request) {
+            $tieneContabilidad = $this->tieneContabilidadHabilitada();
+            
+            $query = Categoria::query();
+            
+            // Solo cargar cuentas si tiene contabilidad habilitada
+            if ($tieneContabilidad) {
+                $query->with(['cuentas' => function($q) use ($request) {
                     if ($request->id_sucursal) {
                         $q->where('id_sucursal', $request->id_sucursal);
                     }
-                }])
-                ->when($request->id_sucursal, function ($q) use ($request) {
-                    $q->whereHas('cuentas', function ($subQ) use ($request) {
-                        $subQ->where('id_sucursal', $request->id_sucursal);
+                }]);
+                
+                // Solo filtrar por cuentas si tiene contabilidad
+                if ($request->id_sucursal) {
+                    $query->when($request->id_sucursal, function ($q) use ($request) {
+                        $q->whereHas('cuentas', function ($subQ) use ($request) {
+                            $subQ->where('id_sucursal', $request->id_sucursal);
+                        });
                     });
-                })
+                }
+            }
+            
+            $categorias = $query
                 ->when($request->nombre, function ($q) use ($request) {
                     $q->where('nombre', 'like', '%' . $request->nombre . '%');
                 })
@@ -71,8 +86,16 @@ class CategoriasController extends Controller
 
 
     public function read($id) {
-
-        $categoria = Categoria::findOrFail($request->id);
+        $tieneContabilidad = $this->tieneContabilidadHabilitada();
+        
+        $query = Categoria::query();
+        
+        // Solo cargar cuentas si tiene contabilidad habilitada
+        if ($tieneContabilidad) {
+            $query->with('cuentas');
+        }
+        
+        $categoria = $query->findOrFail($id);
         return Response()->json($categoria, 200);
 
     }
@@ -210,6 +233,34 @@ class CategoriasController extends Controller
 
         return Response()->json($categorias, 200);
 
+    }
+
+    /**
+     * Verifica si la empresa del usuario tiene contabilidad habilitada
+     */
+    private function tieneContabilidadHabilitada(): bool
+    {
+        try {
+            $idEmpresa = auth()->user()->id_empresa ?? null;
+            
+            if (!$idEmpresa) {
+                return false;
+            }
+
+            $funcionalidad = Funcionalidad::where('slug', 'contabilidad')->first();
+            
+            if (!$funcionalidad) {
+                return false;
+            }
+
+            return EmpresaFuncionalidad::where('id_empresa', $idEmpresa)
+                ->where('id_funcionalidad', $funcionalidad->id)
+                ->where('activo', 1)
+                ->exists();
+        } catch (\Exception $e) {
+            Log::error('Error al verificar acceso a contabilidad: ' . $e->getMessage());
+            return false;
+        }
     }
 
 

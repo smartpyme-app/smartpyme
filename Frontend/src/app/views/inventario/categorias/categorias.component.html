@@ -138,7 +138,7 @@
 
         </div>
 
-        @if (categoria?.id) {
+        @if (categoria?.id && contabilidadHabilitada) {
             <app-categoria-cuentas [categoria]="categoria"></app-categoria-cuentas>
         }
 

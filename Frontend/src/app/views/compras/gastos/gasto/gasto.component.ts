@@ -14,6 +14,7 @@ import { CrearDepartamentoComponent } from '@shared/modals/crear-departamento-em
 import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear-abono-gasto.component';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { SharedDataService } from '@services/shared-data.service';
 import { HttpCacheService } from '@services/http-cache.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -54,6 +55,7 @@ export class GastoComponent implements OnInit {
   public areasDisponibles: any[] = [];
   public loadingAreas: boolean = false;
   public departamentos: any[] = [];
+  public contabilidadHabilitada: boolean = false;
 
   modalRef?: BsModalRef;
 
@@ -68,7 +70,8 @@ export class GastoComponent implements OnInit {
     private modalService: BsModalService,
     private sharedDataService: SharedDataService,
     private cacheService: HttpCacheService,
-    private location: Location
+    private location: Location,
+    private funcionalidadesService: FuncionalidadesService
   ) {}
 
   public openAbono(template: TemplateRef<any>, gasto:any){
@@ -85,7 +88,7 @@ export class GastoComponent implements OnInit {
 	ngOnInit(){
         this.loadAll();
         this.loadDepartamentos();
-
+        this.verificarAccesoContabilidad();
 
     this.mostrar_otros_impuestos = false;
     this.impuestos_seleccionados = [];
@@ -1201,5 +1204,19 @@ export class GastoComponent implements OnInit {
   }
   public goBack() {
     this.location.back();
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.contabilidadHabilitada = acceso;
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+        }
+      });
   }
 }

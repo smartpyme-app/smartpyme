@@ -10,6 +10,7 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { BaseComponent } from '@shared/base/base.component';
 
 @Component({
@@ -30,6 +31,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
     public catalogo:any = [];
     public loading = false;
     public saving = false;
+    public contabilidadHabilitada: boolean = false;
 
     modalRef?: BsModalRef;
 
@@ -38,7 +40,8 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         protected alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router, 
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private funcionalidadesService: FuncionalidadesService
     ) {
         super();
     }
@@ -50,13 +53,32 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         this.distritos = JSON.parse(localStorage.getItem('distritos')!);
         this.actividad_economicas = JSON.parse(localStorage.getItem('actividad_economicas')!);
         
-        this.apiService.getAll('catalogo/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(catalogo => {
-                this.catalogo = catalogo;
-            }, error => {this.alertService.error(error);});
+        // Verificar si tiene contabilidad habilitada
+        this.verificarAccesoContabilidad();
         
         this.loadAll();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    // Solo cargar catálogo si tiene contabilidad habilitada
+                    if (acceso) {
+                        this.apiService.getAll('catalogo/list')
+                            .pipe(this.untilDestroyed())
+                            .subscribe(catalogo => {
+                                this.catalogo = catalogo;
+                            }, error => {this.alertService.error(error);});
+                    }
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
     setPais(){

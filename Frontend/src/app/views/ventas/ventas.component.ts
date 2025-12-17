@@ -8,6 +8,7 @@ import { NgSelectModule } from '@ng-select/ng-select';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
@@ -48,6 +49,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   public categorias: any[] = [];
   public marcas: any[] = [];
   public numeros_ids: any = [];
+  public contabilidadHabilitada: boolean = false;
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -75,7 +77,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     protected override modalManager: ModalManagerService,
-    private sharedDataService: SharedDataService
+    private sharedDataService: SharedDataService,
+    private funcionalidadesService: FuncionalidadesService
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'venta',
@@ -105,6 +108,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
+    this.verificarAccesoContabilidad();
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -870,6 +874,20 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
       this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
     },error => {this.alertService.error(error);});
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.contabilidadHabilitada = acceso;
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+        }
+      });
   }
 
   descargarPorMarcasPorMes() {
