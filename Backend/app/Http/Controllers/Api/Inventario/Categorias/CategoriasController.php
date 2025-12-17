@@ -72,7 +72,7 @@ class CategoriasController extends Controller
 
     public function read($id) {
 
-        $categoria = Categoria::findOrFail($request->id);
+        $categoria = Categoria::with('cuentas')->findOrFail($id);
         return Response()->json($categoria, 200);
 
     }

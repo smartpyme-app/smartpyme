@@ -21,7 +21,7 @@ class StoreCuentaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id' => ['nullable', 'integer', 'exists:categoria_cuentas,id'],
+            'id' => ['nullable', 'integer', 'exists:categoria_sucursal_cuenta,id'],
             'id_categoria' => ['required', 'integer', 'exists:categorias,id'],
             'id_sucursal' => ['required', 'integer', 'exists:sucursales,id'],
         ];
