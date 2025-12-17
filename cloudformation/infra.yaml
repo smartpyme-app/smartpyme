@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme Infrastructure - SQS Queues for Laravel Application'
+
+Resources:
+  # Main SmartPyme Queue
+  SmartPymeQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-main
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SmartPymeDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  SmartPymeDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-main-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Daily Reports Queue
+  DailyReportsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-daily-reports
+      VisibilityTimeout: 3600
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DailyReportsDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  DailyReportsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-daily-reports-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Invoice Processing Queue
+  InvoiceProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-invoice-processing
+      VisibilityTimeout: 300
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt InvoiceProcessingDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  InvoiceProcessingDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-invoice-processing-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Shopify Sync Queue
+  ShopifySyncQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-shopify-sync
+      VisibilityTimeout: 1800
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ShopifySyncDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  ShopifySyncDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-shopify-sync-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Email Notifications Queue
+  EmailNotificationsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-email-notifications
+      VisibilityTimeout: 120
+      MessageRetentionPeriod: 1209600
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt EmailNotificationsDeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  EmailNotificationsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: smartpyme-email-notifications-dlq
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+Outputs:
+  # Main SmartPyme Queue Exports
+  SmartPymeQueueArn:
+    Description: Main SmartPyme SQS Queue ARN
+    Value: !GetAtt SmartPymeQueue.Arn
+    Export:
+      Name: smartpyme-queue-arn
+
+  SmartPymeQueueName:
+    Description: Main SmartPyme SQS Queue Name
+    Value: !Ref SmartPymeQueue
+    Export:
+      Name: smartpyme-queue-name
+
+  # Queue Name Aliases for Worker App Compatibility
+  EmailQueueName:
+    Description: Email Queue Name (alias for Email Notifications Queue)
+    Value: !Ref EmailNotificationsQueue
+    Export:
+      Name: smartpyme-email-queue-name
+
+  SyncQueueName:
+    Description: Sync Queue Name (alias for Shopify Sync Queue)
+    Value: !Ref ShopifySyncQueue
+    Export:
+      Name: smartpyme-sync-queue-name
+
+  ReportsQueueName:
+    Description: Reports Queue Name (alias for Daily Reports Queue)
+    Value: !Ref DailyReportsQueue
+    Export:
+      Name: smartpyme-reports-queue-name
+
+  # Daily Reports Queue Exports
+  DailyReportsQueueArn:
+    Description: Daily Reports SQS Queue ARN
+    Value: !GetAtt DailyReportsQueue.Arn
+    Export:
+      Name: smartpyme-daily-reports-queue-arn
+
+  DailyReportsQueueName:
+    Description: Daily Reports SQS Queue Name
+    Value: !Ref DailyReportsQueue
+    Export:
+      Name: smartpyme-daily-reports-queue-name
+
+  # Invoice Processing Queue Exports
+  InvoiceProcessingQueueArn:
+    Description: Invoice Processing SQS Queue ARN
+    Value: !GetAtt InvoiceProcessingQueue.Arn
+    Export:
+      Name: smartpyme-invoice-processing-queue-arn
+
+  InvoiceProcessingQueueName:
+    Description: Invoice Processing SQS Queue Name
+    Value: !Ref InvoiceProcessingQueue
+    Export:
+      Name: smartpyme-invoice-processing-queue-name
+
+  # Shopify Sync Queue Exports
+  ShopifySyncQueueArn:
+    Description: Shopify Sync SQS Queue ARN
+    Value: !GetAtt ShopifySyncQueue.Arn
+    Export:
+      Name: smartpyme-shopify-sync-queue-arn
+
+  ShopifySyncQueueName:
+    Description: Shopify Sync SQS Queue Name
+    Value: !Ref ShopifySyncQueue
+    Export:
+      Name: smartpyme-shopify-sync-queue-name
+
+  # Email Notifications Queue Exports
+  EmailNotificationsQueueArn:
+    Description: Email Notifications SQS Queue ARN
+    Value: !GetAtt EmailNotificationsQueue.Arn
+    Export:
+      Name: smartpyme-email-notifications-queue-arn
+
+  EmailNotificationsQueueName:
+    Description: Email Notifications SQS Queue Name
+    Value: !Ref EmailNotificationsQueue
+    Export:
+      Name: smartpyme-email-notifications-queue-name

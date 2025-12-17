@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme Laravel SQS Worker App Runner Service with ECR Auto-deployment'
+
+Parameters:
+  ECRRepositoryURI:
+    Type: String
+    Description: ECR Repository URI (e.g., 123456789.dkr.ecr.us-east-1.amazonaws.com/smartpyme-backend)
+  
+  AppKey:
+    Type: String
+    NoEcho: true
+    Description: Laravel APP_KEY (base64 encoded)
+
+Resources:
+  # IAM Role for App Runner Worker
+  WorkerAppRunnerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SQSWorkerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:ChangeMessageVisibility
+                Resource:
+                  - !ImportValue smartpyme-queue-arn
+                  - !ImportValue smartpyme-daily-reports-queue-arn
+                  - !ImportValue smartpyme-invoice-processing-queue-arn
+                  - !ImportValue smartpyme-shopify-sync-queue-arn
+                  - !ImportValue smartpyme-email-notifications-queue-arn
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # IAM Role for ECR Access
+  ECRAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: build.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # App Runner Worker Service
+  WorkerAppRunnerService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: !Sub 'smartpyme-worker-${AWS::StackName}'
+      SourceConfiguration:
+        ImageRepository:
+          ImageIdentifier: !Sub '${ECRRepositoryURI}:latest'
+          ImageConfiguration:
+            Port: '80'
+            RuntimeEnvironmentVariables:
+              - Name: APP_NAME
+                Value: SmartPyme Worker
+              - Name: APP_ENV
+                Value: production
+              - Name: APP_KEY
+                Value: !Ref AppKey
+              - Name: APP_DEBUG
+                Value: 'false'
+              - Name: LOG_CHANNEL
+                Value: stderr
+              - Name: LOG_LEVEL
+                Value: info
+              - Name: QUEUE_CONNECTION
+                Value: sqs
+              - Name: AWS_DEFAULT_REGION
+                Value: !Ref AWS::Region
+
+              - Name: SQS_QUEUE
+                Value: !ImportValue smartpyme-queue-name
+              - Name: SQS_EMAIL_QUEUE
+                Value: !ImportValue smartpyme-email-queue-name
+              - Name: SQS_SYNC_QUEUE
+                Value: !ImportValue smartpyme-sync-queue-name
+              - Name: SQS_REPORTS_QUEUE
+                Value: !ImportValue smartpyme-reports-queue-name
+              - Name: SQS_INVOICE_QUEUE
+                Value: !ImportValue smartpyme-invoice-processing-queue-name
+              - Name: WORKER_ONLY
+                Value: 'true'
+          ImageRepositoryType: ECR
+        AutoDeploymentsEnabled: true
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt ECRAccessRole.Arn
+      InstanceConfiguration:
+        Cpu: 0.25 vCPU
+        Memory: 0.5 GB
+        InstanceRoleArn: !GetAtt WorkerAppRunnerRole.Arn
+      NetworkConfiguration:
+        IngressConfiguration:
+          IsPubliclyAccessible: false
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /api/prueba
+        Interval: 20
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+Outputs:
+  WorkerServiceArn:
+    Description: SmartPyme Worker App Runner Service ARN
+    Value: !Ref WorkerAppRunnerService
+    Export:
+      Name: !Sub '${AWS::StackName}-WorkerServiceArn'

@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme Laravel Web App Runner Service with ECR Auto-deployment'
+
+Parameters:
+  ECRRepositoryURI:
+    Type: String
+    Description: ECR Repository URI (e.g., 123456789.dkr.ecr.us-east-1.amazonaws.com/smartpyme-backend)
+  
+  AppKey:
+    Type: String
+    NoEcho: true
+    Description: Laravel APP_KEY (base64 encoded)
+
+Resources:
+  # IAM Role for App Runner
+  AppRunnerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SQSSendOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !ImportValue smartpyme-queue-arn
+                  - !ImportValue smartpyme-daily-reports-queue-arn
+                  - !ImportValue smartpyme-invoice-processing-queue-arn
+                  - !ImportValue smartpyme-shopify-sync-queue-arn
+                  - !ImportValue smartpyme-email-notifications-queue-arn
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # IAM Role for ECR Access
+  ECRAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: build.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSAppRunnerServicePolicyForECRAccess
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # App Runner Service
+  WebAppRunnerService:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: smartpyme-web-app
+      SourceConfiguration:
+        ImageRepository:
+          ImageIdentifier: !Sub '${ECRRepositoryURI}:latest'
+          ImageConfiguration:
+            Port: '80'
+            RuntimeEnvironmentVariables:
+              - Name: APP_NAME
+                Value: SmartPyme
+              - Name: APP_ENV
+                Value: production
+              - Name: APP_KEY
+                Value: !Ref AppKey
+              - Name: APP_DEBUG
+                Value: 'false'
+              - Name: LOG_CHANNEL
+                Value: stderr
+              - Name: LOG_LEVEL
+                Value: info
+              - Name: QUEUE_CONNECTION
+                Value: sqs
+              - Name: AWS_DEFAULT_REGION
+                Value: !Ref AWS::Region
+
+              - Name: SQS_QUEUE
+                Value: !ImportValue smartpyme-queue-name
+              - Name: SQS_EMAIL_QUEUE
+                Value: !ImportValue smartpyme-email-queue-name
+              - Name: SQS_SYNC_QUEUE
+                Value: !ImportValue smartpyme-sync-queue-name
+              - Name: SQS_REPORTS_QUEUE
+                Value: !ImportValue smartpyme-reports-queue-name
+              - Name: SQS_INVOICE_QUEUE
+                Value: !ImportValue smartpyme-invoice-processing-queue-name
+
+          ImageRepositoryType: ECR
+        AutoDeploymentsEnabled: true
+        AuthenticationConfiguration:
+          AccessRoleArn: !GetAtt ECRAccessRole.Arn
+      InstanceConfiguration:
+        Cpu: 0.25 vCPU
+        Memory: 0.5 GB
+        InstanceRoleArn: !GetAtt AppRunnerRole.Arn
+      HealthCheckConfiguration:
+        Protocol: HTTP
+        Path: /api/prueba
+        Interval: 10
+        Timeout: 5
+        HealthyThreshold: 1
+        UnhealthyThreshold: 5
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+Outputs:
+  ServiceUrl:
+    Description: SmartPyme Web App Runner Service URL
+    Value: !Sub 'https://${WebAppRunnerService.ServiceUrl}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceUrl'
+  
+  ServiceArn:
+    Description: SmartPyme Web App Runner Service ARN
+    Value: !Ref WebAppRunnerService
+    Export:
+      Name: !Sub '${AWS::StackName}-ServiceArn'
