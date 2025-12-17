@@ -169,12 +169,6 @@
                     </button>
                     <div [collapse]="finanzasIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            @if (apiService.hasPermission('finanzas.bancos.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
-                            }
-                            @if (apiService.hasPermission('finanzas.documentos.ver')) {
-                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/documentos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/file-text.png" class="icon me-2">Reportería</a></li>
-                            }
                             @if (apiService.hasPermission('finanzas.libro_iva.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/libro-iva/contribuyentes']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book.png" class="icon me-2">Libros de IVA</a></li>
                             }
@@ -225,6 +219,9 @@
                     </button>
                     <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                            @if (apiService.hasPermission('finanzas.bancos.ver')) {
+                                <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
+                            }
                             @if (apiService.hasPermission('contabilidad.partidas.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/contabilidad/partidas']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/columns.png" class="icon me-2">Partidas</a></li>
                             }
