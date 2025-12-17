@@ -113,7 +113,7 @@ export class GastoComponent implements OnInit {
         }
       });
 
-    this.apiService.getAll('bancos/list')
+    this.apiService.getAll('banco/cuentas/list')
       .pipe(this.untilDestroyed())
       .subscribe(
       (bancos) => {
@@ -595,6 +595,13 @@ export class GastoComponent implements OnInit {
       );
       // console.log(documento);
       this.gasto.referencia = documento.correlativo;
+    }
+  }
+
+  public cambioFormaPago() {
+    // Limpiar banco si la forma de pago no requiere banco
+    if (this.gasto.forma_pago == 'Efectivo' || this.gasto.forma_pago == 'Wompi') {
+      this.gasto.detalle_banco = '';
     }
   }
 
