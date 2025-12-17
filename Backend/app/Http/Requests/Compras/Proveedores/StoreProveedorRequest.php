@@ -20,8 +20,6 @@ class StoreProveedorRequest extends FormRequest
      */
     public function rules(): array
     {
-        $id = $this->input('id');
-        
         return [
             'id' => 'sometimes|nullable|integer|exists:proveedores,id',
             'nombre' => 'required_if:tipo,"Persona"|nullable|string|max:255',
@@ -34,22 +32,20 @@ class StoreProveedorRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('proveedores', 'ncr')->ignore($id),
             ],
             'dui' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('proveedores', 'dui')->ignore($id),
             ],
             'nit' => [
                 'sometimes',
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('proveedores', 'nit')->ignore($id),
             ],
+            'id_cuenta_contable' => 'sometimes|nullable|integer|exists:catalogo_cuentas,id',
         ];
     }
 
@@ -120,6 +116,63 @@ class StoreProveedorRequest extends FormRequest
                 'nombre_empresa' => trim($this->nombre_empresa),
             ]);
         }
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $id = $this->input('id');
+            $idEmpresa = $this->input('id_empresa') ?? (auth()->check() ? auth()->user()->id_empresa : null);
+            
+            if (!$idEmpresa) {
+                return;
+            }
+            
+            // Validar unicidad de NCR solo si tiene valor
+            if ($this->filled('ncr') && trim($this->input('ncr')) !== '') {
+                $query = \App\Models\Compras\Proveedores\Proveedor::where('ncr', $this->input('ncr'))
+                    ->where('id_empresa', $idEmpresa);
+                
+                if ($id) {
+                    $query->where('id', '!=', $id);
+                }
+                
+                if ($query->exists()) {
+                    $validator->errors()->add('ncr', 'El NCR ya está registrado.');
+                }
+            }
+            
+            // Validar unicidad de DUI solo si tiene valor
+            if ($this->filled('dui') && trim($this->input('dui')) !== '') {
+                $query = \App\Models\Compras\Proveedores\Proveedor::where('dui', $this->input('dui'))
+                    ->where('id_empresa', $idEmpresa);
+                
+                if ($id) {
+                    $query->where('id', '!=', $id);
+                }
+                
+                if ($query->exists()) {
+                    $validator->errors()->add('dui', 'El DUI ya está registrado.');
+                }
+            }
+            
+            // Validar unicidad de NIT solo si tiene valor
+            if ($this->filled('nit') && trim($this->input('nit')) !== '') {
+                $query = \App\Models\Compras\Proveedores\Proveedor::where('nit', $this->input('nit'))
+                    ->where('id_empresa', $idEmpresa);
+                
+                if ($id) {
+                    $query->where('id', '!=', $id);
+                }
+                
+                if ($query->exists()) {
+                    $validator->errors()->add('nit', 'El NIT ya está registrado.');
+                }
+            }
+        });
     }
 }
 
