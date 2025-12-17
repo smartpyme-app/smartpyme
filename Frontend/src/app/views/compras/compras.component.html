@@ -222,9 +222,11 @@
                                             <i class="fa fa-folder-plus"></i> Hacer nota de débito
                                         </a>
                                     }
-                                    <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">
-                                      <i class="fa fa-edit"></i> Generar partida contable
-                                    </a>
+                                    @if (contabilidadHabilitada) {
+                                        <a (click)="generarPartidaContable(compra)" class="list-group-item list-group-item-action border-0 click">
+                                          <i class="fa fa-edit"></i> Generar partida contable
+                                        </a>
+                                    }
                                 </div>
                             </ng-template>
                         </td>
@@ -514,6 +516,28 @@
                         }
                     </ng-select>
                 </div>
+            }
+            @if (contabilidadHabilitada) {
+                <div class="form-group col-md-6 without-label">
+                    <div class="form-switch border rounded">
+                        <label for="es_retaceo">Es para retaceo</label>
+                        <input
+                            class="form-check-input float-end"
+                            type="checkbox"
+                            role="switch"
+                            [(ngModel)]="compra.es_retaceo"
+                            name="es_retaceo"
+                            id="es_retaceo">
+                    </div>
+                </div>
+                @if (compra.es_retaceo) {
+                    <div class="form-group col-md-12">
+                        <div class="alert alert-info py-2 px-3 mt-2 mb-0">
+                            <i class="fa fa-info-circle me-2"></i>
+                            <small>Las compras marcadas como "para retaceo" aparecerán automáticamente en la selección de gastos al crear un retaceo.</small>
+                        </div>
+                    </div>
+                }
             }
             @if (isColumnEnabled('columna_proyecto')) {
                 <div class="form-group col-md-6 col-lg-6">

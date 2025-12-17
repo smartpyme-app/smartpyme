@@ -8,6 +8,7 @@ import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { SharedDataService } from '@services/shared-data.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
 import { Subject, Observable } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs/operators';
@@ -58,6 +59,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public modalProductos!: any; // BsModalRef
     public productosEncontrados: any[] = []; // Cache de productos ya encontrados
     public buscandoProductos: boolean = false;
+    public contabilidadHabilitada: boolean = false;
 
     // Propiedades para la búsqueda dinámica
     public searchTerm: string = '';
@@ -90,7 +92,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         private sumPipe:SumPipe,
         private route: ActivatedRoute, 
         private router: Router,
-        private sharedDataService: SharedDataService
+        private sharedDataService: SharedDataService,
+        private funcionalidadesService: FuncionalidadesService
     ) {
         super(modalManager, alertService);
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -128,6 +131,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     ngOnInit() {
 
         this.cargarDatosIniciales();
+        this.verificarAccesoContabilidad();
 
         // Cargar datos compartidos usando SharedDataService
         this.sharedDataService.getSucursales()
@@ -299,7 +303,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         });
 
         // Duplicar compra
-
         if (this.route.snapshot.queryParamMap.get('recurrente')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
             this.duplicarcompra = true;
             this.apiService.read('compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
@@ -323,44 +326,58 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.compra.id_proyecto = +this.route.snapshot.queryParamMap.get('id_proyecto')!;
         }
 
-    // Facturar cotizacion
-    if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
-      this.facturarCotizacion = true;
-      this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
-        .pipe(this.untilDestroyed())
-        .subscribe(compra => {
-        this.cotizacion = Object.assign({}, {
-          ...compra, cotizacion: 1,
-          detalles: compra.detalles.map((_d: any) => {
-            return {
-              cantidad: _d.cantidad,
-              costo: _d.costo,
-              descuento: _d.descuento,
-              id_producto: _d.id_producto,
-              producto: _d.producto,
-              total: _d.total,
-              img: _d.img,
-              cantidad_procesada: _d.cantidad_procesada,
-              nombre_producto: _d.nombre_producto,
-            }
-          })
-        });
-        this.compra = compra;
-        this.compra.fecha = this.apiService.date();
-        this.compra.fecha_pago = this.apiService.date();
-        this.compra.tipo_documento = null;
-        this.compra.referencia = null;
-        this.compra.estado = 'Pagada';
-        this.compra.cotizacion = 0;
-        this.compra.num_orden_compra = this.compra.id;
-        this.compra.id = null;
-        this.compra.detalles.forEach((detalle: any) => {
-          detalle.id = null;
-        });
-      }, error => { this.alertService.error(error); this.loading = false; });
-    }
+        // Facturar cotizacion
+        if (this.route.snapshot.queryParamMap.get('facturar_cotizacion')! && this.route.snapshot.queryParamMap.get('id_compra')!) {
+          this.facturarCotizacion = true;
+          this.apiService.read('orden-de-compra/', +this.route.snapshot.queryParamMap.get('id_compra')!)
+            .pipe(this.untilDestroyed())
+            .subscribe(compra => {
+            this.cotizacion = Object.assign({}, {
+              ...compra, cotizacion: 1,
+              detalles: compra.detalles.map((_d: any) => {
+                return {
+                  cantidad: _d.cantidad,
+                  costo: _d.costo,
+                  descuento: _d.descuento,
+                  id_producto: _d.id_producto,
+                  producto: _d.producto,
+                  total: _d.total,
+                  img: _d.img,
+                  cantidad_procesada: _d.cantidad_procesada,
+                  nombre_producto: _d.nombre_producto,
+                }
+              })
+            });
+            this.compra = compra;
+            this.compra.fecha = this.apiService.date();
+            this.compra.fecha_pago = this.apiService.date();
+            this.compra.tipo_documento = null;
+            this.compra.referencia = null;
+            this.compra.estado = 'Pagada';
+            this.compra.cotizacion = 0;
+            this.compra.num_orden_compra = this.compra.id;
+            this.compra.id = null;
+            this.compra.detalles.forEach((detalle: any) => {
+              detalle.id = null;
+            });
+          }, error => { this.alertService.error(error); this.loading = false; });
+        }
 
         this.cargarDocumentos();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
   public sumTotal() {
