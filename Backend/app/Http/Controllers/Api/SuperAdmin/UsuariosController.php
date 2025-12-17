@@ -14,8 +14,7 @@ use App\Http\Requests\SuperAdmin\StoreUsuarioRequest;
 
 class UsuariosController extends Controller
 {
-    
-
+    CONST EMPRESA_SP = 2;   
     public function index(Request $request) {
        
         $usuarios = Usuario::with('empresa','roles')
@@ -35,6 +34,15 @@ class UsuariosController extends Controller
                                 // ->orderBy('enable', 'desc')
                                 ->orderBy($request->orden, $request->direccion)
                                 ->paginate($request->paginate);
+
+        return Response()->json($usuarios, 200);
+
+    }
+
+    public function listVendedores() {
+        $usuarios = Usuario::where('id_empresa', self::EMPRESA_SP)
+        ->where('enable', true)
+        ->orderBy('name','asc')->get();
 
         return Response()->json($usuarios, 200);
 

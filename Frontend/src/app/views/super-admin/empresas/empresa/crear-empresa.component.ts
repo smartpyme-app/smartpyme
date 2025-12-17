@@ -18,7 +18,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './crear-empresa.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, FilterPipe, NgxMaskDirective],
-    
+
 })
 
 export class CrearEmpresaComponent extends BaseModalComponent implements OnInit {
@@ -26,6 +26,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public empresa:any = {};
     public clientes:any = [];
     public documentos:any = [];
+    public vendedores:any = [];
     public override loading:boolean = false;
     public override saving:boolean = false;
     public licencia:boolean = false;
@@ -34,7 +35,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
     public municipios:any = [];
     public actividad_economicas:any = [];
 
-    constructor( 
+    constructor(
         private apiService: ApiService,
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
@@ -59,6 +60,19 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             this.loading = false;
         }, (error) => {this.alertService.error(error); this.loading = false; } );
 
+        this.apiService.getAll('admin-usuarios/list-vendedores').subscribe((response) => {
+            let usuarios = [];
+            if (response && response.data) {
+                usuarios = response.data;
+            } else if (Array.isArray(response)) {
+                usuarios = response;
+            }
+            this.vendedores = usuarios.map((usuario: any) => ({
+                id: usuario.id,
+                nombre: usuario.name
+            }));
+        }, (error) => {this.alertService.error(error); } );
+
     }
 
     public loadAll(){
@@ -72,7 +86,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         }else{
             this.empresa = {};
             this.empresa.industria = '';
-            this.empresa.iva = 13; 
+            this.empresa.iva = 13;
             this.empresa.moneda = 'USD';
             this.empresa.plan = 'Emprendedor';
             this.empresa.tipo_plan = 'Mensual';
@@ -106,7 +120,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
                 .toPromise();
-            
+
             const isNew = !this.empresa.id;
             if (isNew) {
                 this.empresa = empresaGuardada;
@@ -115,13 +129,13 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
             } else {
                 this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
             }
-            
+
             if (this.licencia) {
                 const data: any = {
                     id_empresa: empresaGuardada.id,
                     id_licencia: this.apiService.auth_user().empresa.licencia.id
                 };
-                
+
                 try {
                     await this.apiService.store('licencia/empresa', data)
                         .pipe(this.untilDestroyed())
@@ -237,7 +251,7 @@ export class CrearEmpresaComponent extends BaseModalComponent implements OnInit 
         this.empresa = empresa;
         if (!this.empresa.id) {
             this.empresa.industria = '';
-            this.empresa.iva = 13; 
+            this.empresa.iva = 13;
             this.empresa.moneda = 'USD';
             this.empresa.plan = 'Emprendedor';
             this.empresa.tipo_plan = 'Mensual';
