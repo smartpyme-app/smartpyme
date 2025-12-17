@@ -17,6 +17,8 @@ class ProcessShopifyProductBatch implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+
+
     protected $userId;
     protected $sucursalId;
     protected $productIds;
@@ -38,6 +40,7 @@ class ProcessShopifyProductBatch implements ShouldQueue
         $this->bodegaId = $bodegaId;
         $this->batchNumber = $batchNumber;
         $this->totalBatches = $totalBatches;
+        $this->onQueue('smartpyme-shopify-sync');
     }
 
     /**

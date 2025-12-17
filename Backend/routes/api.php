@@ -24,6 +24,18 @@ Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
 
+Route::get('/prueba-nova', function () {
+	\Illuminate\Support\Facades\Log::info('prueba-nova route visited at: ' . now()->toDateTimeString());
+	
+	\App\Jobs\TestNovaJob::dispatch('Test message from prueba-nova route at ' . now()->toDateTimeString())->onQueue('smartpyme-main');
+	
+	return Response()->json([
+		'message' => 'NOVA test route visited and job dispatched',
+		'timestamp' => now()->toDateTimeString(),
+		'queue' => 'smartpyme-main'
+	], 200);
+});
+
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
 

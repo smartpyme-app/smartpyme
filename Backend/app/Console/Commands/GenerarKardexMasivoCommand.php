@@ -168,13 +168,10 @@ class GenerarKardexMasivoCommand extends Command
             $this->info("Archivo generado: {$filePath}");
             $this->info("Total de registros procesados: {$totalProcessed}");
 
-            // Enviar por correo
-            Mail::to($email)->send(new KardexMasivoMail($filePath, $fileName));
+            // Enviar por correo usando cola
+            \App\Jobs\SendKardexMasivoEmail::dispatch($email, $filePath, $fileName);
 
-            $this->info("Correo enviado exitosamente a: {$email}");
-
-            // Limpiar archivo temporal
-            unlink($filePath);
+            $this->info("Correo encolado exitosamente para: {$email}");
 
             return 0;
         } catch (\Exception $e) {

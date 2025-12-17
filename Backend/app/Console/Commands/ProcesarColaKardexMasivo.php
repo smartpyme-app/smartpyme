@@ -91,11 +91,11 @@ class ProcesarColaKardexMasivo extends Command
                     'completed_at' => now()
                 ]);
                 
-                // Enviar correo de error
+                // Enviar correo de error usando cola
                 try {
-                    Mail::to($item->email)->send(new KardexMasivoErrorMail($e->getMessage()));
+                    \App\Jobs\SendKardexMasivoErrorEmail::dispatch($item->email, $e->getMessage());
                 } catch (\Exception $mailError) {
-                    Log::error("Error al enviar correo de error: " . $mailError->getMessage());
+                    Log::error("Error al encolar correo de error: " . $mailError->getMessage());
                 }
                 
                 $this->error("Error al procesar kardex masivo para empresa: {$item->id_empresa} - " . $e->getMessage());

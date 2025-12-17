@@ -17,6 +17,8 @@ class ExportProductsToShopify implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+
+
     protected $userId;
     protected $sucursalId;
     protected $limit = 50; // Cantidad de productos por job trabajador
@@ -29,6 +31,7 @@ class ExportProductsToShopify implements ShouldQueue
     {
         $this->userId = $userId;
         $this->sucursalId = $sucursalId;
+        $this->onQueue('smartpyme-shopify-sync');
     }
 
     /**
