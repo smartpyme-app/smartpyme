@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseCrudComponent } from '@shared/base/base-crud.component';
 import { CategoriaCuentasComponent } from './cuentas/categoria-cuentas.component';
+import { FuncionalidadesService } from '@services/functionalities.service';
 
 @Component({
     selector: 'app-categorias',
@@ -23,11 +24,13 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     public categoria: any = {};
     public sucursales: any = [];
     public catalogo: any = [];
+    public contabilidadHabilitada: boolean = false;
 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private funcionalidadesService: FuncionalidadesService
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'categoria',
@@ -52,6 +55,9 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
     }
 
     ngOnInit() {
+        // Verificar si tiene contabilidad habilitada
+        this.verificarAccesoContabilidad();
+
         // Cargar datos adicionales necesarios para el componente
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
@@ -59,14 +65,39 @@ export class CategoriasComponent extends BaseCrudComponent<any> implements OnIni
                 this.sucursales = sucursales;
             }, error => {this.alertService.error(error); });
 
-        this.apiService.getAll('catalogo/list')
-            .pipe(this.untilDestroyed())
-            .subscribe(catalogo => {
-                this.catalogo = catalogo;
-            }, error => { this.alertService.error(error); });
+        // Solo cargar catálogo si tiene contabilidad habilitada
+        if (this.contabilidadHabilitada) {
+            this.apiService.getAll('catalogo/list')
+                .pipe(this.untilDestroyed())
+                .subscribe(catalogo => {
+                    this.catalogo = catalogo;
+                }, error => { this.alertService.error(error); });
+        }
 
         // Cargar categorías usando el método heredado
         this.loadAll();
+    }
+
+    verificarAccesoContabilidad() {
+        this.funcionalidadesService.verificarAcceso('contabilidad')
+            .pipe(this.untilDestroyed())
+            .subscribe({
+                next: (acceso) => {
+                    this.contabilidadHabilitada = acceso;
+                    // Si tiene acceso y aún no se cargó el catálogo, cargarlo
+                    if (acceso && !this.catalogo.length) {
+                        this.apiService.getAll('catalogo/list')
+                            .pipe(this.untilDestroyed())
+                            .subscribe(catalogo => {
+                                this.catalogo = catalogo;
+                            }, error => { this.alertService.error(error); });
+                    }
+                },
+                error: (error) => {
+                    console.error('Error al verificar acceso a contabilidad:', error);
+                    this.contabilidadHabilitada = false;
+                }
+            });
     }
 
     public override loadAll() {
