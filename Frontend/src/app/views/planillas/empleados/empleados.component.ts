@@ -6,6 +6,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { PaginationComponent } from '@shared/parts/pagination/pagination.component';
@@ -30,12 +31,14 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
     archivo: null as File | null,
   };
   public procesandoImportacion = false;
+  public contabilidadHabilitada: boolean = false;
   ESTADO_EMPLEADO = PlanillaConstants.ESTADOS_EMPLEADO;
 
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    modalManager: ModalManagerService
+    modalManager: ModalManagerService,
+    private funcionalidadesService: FuncionalidadesService
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'empleados',
@@ -59,6 +62,21 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
   ngOnInit() {
     this.loadEmpleados();
     this.loadCatalogos();
+    this.verificarAccesoContabilidad();
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.contabilidadHabilitada = acceso;
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+        }
+      });
   }
   
   public override loadAll() {

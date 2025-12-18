@@ -60,7 +60,7 @@
                             @if (apiService.hasPermission('productos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorías</a></li>
                             }
-                            @if (apiService.hasPermission('productos.campos_personalizados.ver')) {
+                            @if (contabilidadHabilitada && apiService.hasPermission('productos.campos_personalizados.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/custom-fields']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/settings.png" class="icon me-2">Campos personalizados</a></li>
                             }
                             @if (usuario.empresa.modulo_paquetes && apiService.hasPermission('productos.paquetes.ver')) {
@@ -103,7 +103,7 @@
                             @if (usuario.empresa.modulo_proyectos && apiService.hasPermission('ventas.proyectos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proyectos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/share-2.png" class="icon me-2">Proyectos</a></li>
                             }
-                            @if (apiService.hasPermission('ventas.ordenes_produccion.ver')) {
+                            @if (contabilidadHabilitada && apiService.hasPermission('ventas.ordenes_produccion.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/ordenes/produccion']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/share-2.png" class="icon me-2">Órdenes de producción</a></li>
                             }
                         </ul>
@@ -126,7 +126,7 @@
                             @if (apiService.hasPermission('compras.proveedores.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/proveedores']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/user-check.png" class="icon me-2">Proveedores</a></li>
                             }
-                            @if (apiService.hasPermission('compras.retaceo.ver')) {
+                            @if (contabilidadHabilitada && apiService.hasPermission('compras.retaceo.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/retaceos']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/book-open.png" class="icon me-2">Retaceo</a></li>
                             }
                         </ul>
@@ -146,7 +146,7 @@
                             @if (apiService.hasPermission('gastos.categorias.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/gastos/categorias']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/folder.png" class="icon me-2">Categorias</a></li>
                             }
-                            @if (apiService.hasPermission('gastos.departamentos.ver')) {
+                            @if (contabilidadHabilitada && apiService.hasPermission('gastos.departamentos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/departamentos-empresa']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/building-cog.png" class="icon me-2">Departamentos</a></li>
                             }
                         </ul>

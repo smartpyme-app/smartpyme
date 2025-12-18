@@ -110,27 +110,29 @@
           <!-- <a routerLink="/gastos/categorias" class="btn btn-default"><i class="fa fa-cog"></i></a> -->
         </div>
       </div>
-      <div class="form-group col-md-6 col-lg-4">
-        <label for="id_departamento">Departamento:</label>
-        <div class="input-group flex-nowrap">
-          <select
-            [(ngModel)]="gasto.id_departamento"
-            name="id_departamento"
-            class="form-select"
-            id="id_departamento"
-            (change)="onDepartamentoChangeGasto()">
-            <option value="">Seleccione departamento</option>
-            @for (departamento of departamentos; track departamento.id) {
-              <option [value]="departamento.id"
-                      [selected]="gasto.id_departamento == departamento.id">
-                {{ departamento.nombre }}
-              </option>
-            }
-          </select>
-          <app-crear-departamento [id_departamento]="gasto.id_departamento"
-                                  (update)="setDepartamento($event)"></app-crear-departamento>
+      @if (contabilidadHabilitada) {
+        <div class="form-group col-md-6 col-lg-4">
+          <label for="id_departamento">Departamento:</label>
+          <div class="input-group flex-nowrap">
+            <select
+              [(ngModel)]="gasto.id_departamento"
+              name="id_departamento"
+              class="form-select"
+              id="id_departamento"
+              (change)="onDepartamentoChangeGasto()">
+              <option value="">Seleccione departamento</option>
+              @for (departamento of departamentos; track departamento.id) {
+                <option [value]="departamento.id"
+                        [selected]="gasto.id_departamento == departamento.id">
+                  {{ departamento.nombre }}
+                </option>
+              }
+            </select>
+            <app-crear-departamento [id_departamento]="gasto.id_departamento"
+                                    (update)="setDepartamento($event)"></app-crear-departamento>
+          </div>
         </div>
-      </div>
+      }
 
       <div class="form-group col-md-6 col-lg-4">
         <label for="id_area_empresa">Área empresa:</label>

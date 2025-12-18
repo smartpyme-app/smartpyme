@@ -928,18 +928,20 @@
         </div>
 
         <!-- Departamento -->
-        <div class="form-group col-md-6 mb-3">
-          <label>Departamento:</label>
-          <select [(ngModel)]="filtros.id_departamento" (ngModelChange)="onDepartamentoChange()" name="id_departamento"
-            class="form-select">
-            <option value="">Todos los departamentos</option>
-            @for (depto of departamentos; track depto.id) {
-              <option [value]="depto.id">
-                {{ depto.nombre }}
-              </option>
-            }
-          </select>
-        </div>
+        @if (contabilidadHabilitada) {
+          <div class="form-group col-md-6 mb-3">
+            <label>Departamento:</label>
+            <select [(ngModel)]="filtros.id_departamento" (ngModelChange)="onDepartamentoChange()" name="id_departamento"
+              class="form-select">
+              <option value="">Todos los departamentos</option>
+              @for (depto of departamentos; track depto.id) {
+                <option [value]="depto.id">
+                  {{ depto.nombre }}
+                </option>
+              }
+            </select>
+          </div>
+        }
 
         <!-- Cargo -->
         <div class="form-group col-md-6 mb-3">

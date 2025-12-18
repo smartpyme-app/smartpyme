@@ -429,24 +429,26 @@
           </div>
   
           <!-- Información Laboral -->
-          <div class="form-group col-md-6">
-            <label for="id_departamento">Departamento:</label>
-            <select
-              [(ngModel)]="empleado.id_departamento"
-              name="id_departamento"
-              class="form-select"
-              required
-            >
-              <option value="">Seleccione...</option>
-              @for (departamento of departamentos; track departamento.id) {
-                <option
-                  [value]="departamento.id"
-                >
-                  {{ departamento.nombre }}
-                </option>
-              }
-            </select>
-          </div>
+          @if (contabilidadHabilitada) {
+            <div class="form-group col-md-6">
+              <label for="id_departamento">Departamento:</label>
+              <select
+                [(ngModel)]="empleado.id_departamento"
+                name="id_departamento"
+                class="form-select"
+                required
+              >
+                <option value="">Seleccione...</option>
+                @for (departamento of departamentos; track departamento.id) {
+                  <option
+                    [value]="departamento.id"
+                  >
+                    {{ departamento.nombre }}
+                  </option>
+                }
+              </select>
+            </div>
+          }
           <div class="form-group col-md-6">
             <label for="id_cargo">Cargo:</label>
             <select

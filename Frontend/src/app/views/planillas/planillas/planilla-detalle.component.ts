@@ -8,6 +8,7 @@ import { PopoverModule } from 'ngx-bootstrap/popover';
 import { TooltipModule } from 'ngx-bootstrap/tooltip';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { PlanillaConstants } from '../../../constants/planilla.constants';
 import { ConceptoPlanilla, ConfiguracionPlanillaService } from '@services/configuracion-planilla.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
@@ -55,6 +56,7 @@ export class PlanillaDetalleComponent implements OnInit {
     isss_pat: 'isss_patronal',
     afp_pat: 'afp_patronal',
   };
+  public contabilidadHabilitada: boolean = false;
 
 
   modalRef!: BsModalRef;
@@ -68,7 +70,8 @@ export class PlanillaDetalleComponent implements OnInit {
     public apiService: ApiService,
     private alertService: AlertService,
     private modalService: BsModalService,
-    private configPlanillaService: ConfiguracionPlanillaService
+    private configPlanillaService: ConfiguracionPlanillaService,
+    private funcionalidadesService: FuncionalidadesService
   ) { }
 
   ngOnInit() {
@@ -84,6 +87,21 @@ export class PlanillaDetalleComponent implements OnInit {
     );
 
     this.cargarCatalogos();
+    this.verificarAccesoContabilidad();
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso) => {
+          this.contabilidadHabilitada = acceso;
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+        }
+      });
   }
 
   public cargarCatalogos() {
