@@ -219,7 +219,7 @@
                     </button>
                     <div [collapse]="contabilidadIsCollapsed" [isAnimated]="true">
                         <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                            @if (apiService.hasPermission('finanzas.bancos.ver')) {
+                            @if (apiService.hasPermission('contabilidad.bancos.ver')) {
                                 <li routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a [routerLink]="['/bancos/conciliaciones']" class="link-body-emphasis d-inline-flex text-decoration-none"><img appLazyImage="/assets/icons/home.png" class="icon me-2">Bancos</a></li>
                             }
                             @if (apiService.hasPermission('contabilidad.partidas.ver')) {
