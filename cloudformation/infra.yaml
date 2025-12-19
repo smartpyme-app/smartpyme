@@ -2,6 +2,21 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'SmartPyme Infrastructure - SQS Queues for Laravel Application'
 
 Resources:
+  # Cron API Key Secret
+  CronApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/cron-api-key
+      Description: API Key for SmartPyme cron endpoints
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: 'api_key'
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
   # Main SmartPyme Queue
   SmartPymeQueue:
     Type: AWS::SQS::Queue
@@ -206,3 +221,10 @@ Outputs:
     Value: !Ref EmailNotificationsQueue
     Export:
       Name: smartpyme-email-notifications-queue-name
+
+  # Cron API Key Secret Export
+  CronApiKeySecretArn:
+    Description: Cron API Key Secret ARN
+    Value: !Ref CronApiKeySecret
+    Export:
+      Name: smartpyme-cron-api-key-secret-arn

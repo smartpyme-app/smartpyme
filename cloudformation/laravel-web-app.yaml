@@ -32,12 +32,14 @@ Resources:
                 Action:
                   - sqs:SendMessage
                   - sqs:GetQueueAttributes
+                  - secretsmanager:GetSecretValue
                 Resource:
                   - !ImportValue smartpyme-queue-arn
                   - !ImportValue smartpyme-daily-reports-queue-arn
                   - !ImportValue smartpyme-invoice-processing-queue-arn
                   - !ImportValue smartpyme-shopify-sync-queue-arn
                   - !ImportValue smartpyme-email-notifications-queue-arn
+                  - !ImportValue smartpyme-cron-api-key-secret-arn
       Tags:
         - Key: Project
           Value: NOVA
@@ -97,6 +99,8 @@ Resources:
                 Value: !ImportValue smartpyme-reports-queue-name
               - Name: SQS_INVOICE_QUEUE
                 Value: !ImportValue smartpyme-invoice-processing-queue-name
+              - Name: CRON_API_KEY_SECRET_ARN
+                Value: !ImportValue smartpyme-cron-api-key-secret-arn
 
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true

@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartPyme EventBridge API Destinations - Cron Jobs Migration'
+
+Parameters:
+  WebAppUrl:
+    Type: String
+    Description: SmartPyme Web App URL (e.g., https://abc123.us-east-2.awsapprunner.com)
+
+Resources:
+  # EventBridge Connection (for authentication)
+  SmartPymeConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: smartpyme-app-connection
+      Description: Connection to SmartPyme App Runner
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: X-Cron-API-Key
+          ApiKeyValue: !Sub 
+            - '{{resolve:secretsmanager:${SecretArn}:SecretString:api_key}}'
+            - SecretArn: !ImportValue smartpyme-cron-api-key-secret-arn
+
+  # API Destination for SmartPyme test endpoint
+  SmartPymeTestDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-test-destination
+      Description: SmartPyme test endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/test'
+      HttpMethod: POST
+      
+  # API Destination for generate:notificaciones
+  GenerateNotificacionesDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-generate-notificaciones-destination
+      Description: Generate notificaciones endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/generate-notificaciones'
+      HttpMethod: POST
+      
+  # API Destination for suscripciones:verificar
+  SuscripcionesVerificarDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-suscripciones-verificar-destination
+      Description: Suscripciones verificar endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/suscripciones-verificar'
+      HttpMethod: POST
+      
+  # API Destination for suscripciones:procesar-cargos
+  SuscripcionesProcesarCargosDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-suscripciones-procesar-cargos-destination
+      Description: Suscripciones procesar cargos endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/suscripciones-procesar-cargos'
+      HttpMethod: POST
+      
+  # API Destination for kardex:procesar-cola
+  KardexProcesarColaDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-kardex-procesar-cola-destination
+      Description: Kardex procesar cola endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/kardex-procesar-cola'
+      HttpMethod: POST
+      
+  # API Destination for trabajos:procesar Shopify
+  TrabajosProcesarShopifyDestination:
+    Type: AWS::Events::ApiDestination
+    Properties:
+      Name: smartpyme-trabajos-procesar-shopify-destination
+      Description: Trabajos procesar Shopify images endpoint
+      ConnectionArn: !GetAtt SmartPymeConnection.Arn
+      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/trabajos-procesar-shopify'
+      HttpMethod: POST
+
+  # IAM Role for EventBridge to invoke API Destination
+  EventBridgeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: EventBridgeInvokeApiDestination
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:InvokeApiDestination
+                Resource: 
+                  - !GetAtt SmartPymeTestDestination.Arn
+                  - !GetAtt GenerateNotificacionesDestination.Arn
+                  - !GetAtt SuscripcionesVerificarDestination.Arn
+                  - !GetAtt SuscripcionesProcesarCargosDestination.Arn
+                  - !GetAtt KardexProcesarColaDestination.Arn
+                  - !GetAtt TrabajosProcesarShopifyDestination.Arn
+
+  # EventBridge Rule: Test API Authentication (Every minute)
+  TestApiRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-test-api
+      Description: 'Test API authentication every minute'
+      ScheduleExpression: 'rate(1 minute)'
+      State: ENABLED
+      Targets:
+        - Id: TestApiTarget
+          Arn: !GetAtt SmartPymeTestDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+  # EventBridge Rule: generate:notificaciones (Daily at midnight)
+  GenerateNotificacionesRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-generate-notificaciones
+      Description: 'Generate notificaciones - Daily at midnight (0 0 * * *)'
+      ScheduleExpression: 'cron(0 0 * * ? *)'
+      State: DISABLED
+      Targets:
+        - Id: GenerateNotificacionesTarget
+          Arn: !GetAtt GenerateNotificacionesDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+  # EventBridge Rule: suscripciones:verificar (Daily at midnight)
+  SuscripcionesVerificarRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-suscripciones-verificar
+      Description: 'Suscripciones verificar - Daily at midnight (0 0 * * *)'
+      ScheduleExpression: 'cron(0 0 * * ? *)'
+      State: DISABLED
+      Targets:
+        - Id: SuscripcionesVerificarTarget
+          Arn: !GetAtt SuscripcionesVerificarDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+  # EventBridge Rule: suscripciones:procesar-cargos (Daily at midnight)
+  SuscripcionesProcesarCargosRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-suscripciones-procesar-cargos
+      Description: 'Suscripciones procesar cargos - Daily at midnight (0 0 * * *)'
+      ScheduleExpression: 'cron(0 0 * * ? *)'
+      State: DISABLED
+      Targets:
+        - Id: SuscripcionesProcesarCargosTarget
+          Arn: !GetAtt SuscripcionesProcesarCargosDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+  # EventBridge Rule: kardex:procesar-cola (Every 30 minutes)
+  KardexProcesarColaRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-kardex-procesar-cola
+      Description: 'Kardex procesar cola - Every 30 minutes (0,30 * * * *)'
+      ScheduleExpression: 'cron(0,30 * * * ? *)'
+      State: DISABLED
+      Targets:
+        - Id: KardexProcesarColaTarget
+          Arn: !GetAtt KardexProcesarColaDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+  # EventBridge Rule: trabajos:procesar Shopify (Daily at 2 AM)
+  TrabajosProcesarShopifyRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: smartpyme-trabajos-procesar-shopify
+      Description: 'Trabajos procesar Shopify images - Daily at 2 AM (0 2 * * *)'
+      ScheduleExpression: 'cron(0 2 * * ? *)'
+      State: DISABLED
+      Targets:
+        - Id: TrabajosProcesarShopifyTarget
+          Arn: !GetAtt TrabajosProcesarShopifyDestination.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          HttpParameters:
+            HeaderParameters:
+              Content-Type: application/json
+
+Outputs:
+  ConnectionArn:
+    Description: SmartPyme Connection ARN
+    Value: !GetAtt SmartPymeConnection.Arn
+    
+  TestDestinationArn:
+    Description: SmartPyme Test API Destination ARN
+    Value: !GetAtt SmartPymeTestDestination.Arn
+    
+  GenerateNotificacionesDestinationArn:
+    Description: Generate Notificaciones API Destination ARN
+    Value: !GetAtt GenerateNotificacionesDestination.Arn
+    Export:
+      Name: smartpyme-generate-notificaciones-destination-arn
+      
+  SuscripcionesVerificarDestinationArn:
+    Description: Suscripciones Verificar API Destination ARN
+    Value: !GetAtt SuscripcionesVerificarDestination.Arn
+    Export:
+      Name: smartpyme-suscripciones-verificar-destination-arn
+      
+  SuscripcionesProcesarCargosDestinationArn:
+    Description: Suscripciones Procesar Cargos API Destination ARN
+    Value: !GetAtt SuscripcionesProcesarCargosDestination.Arn
+    Export:
+      Name: smartpyme-suscripciones-procesar-cargos-destination-arn
+      
+  KardexProcesarColaDestinationArn:
+    Description: Kardex Procesar Cola API Destination ARN
+    Value: !GetAtt KardexProcesarColaDestination.Arn
+    Export:
+      Name: smartpyme-kardex-procesar-cola-destination-arn
+      
+  TrabajosProcesarShopifyDestinationArn:
+    Description: Trabajos Procesar Shopify API Destination ARN
+    Value: !GetAtt TrabajosProcesarShopifyDestination.Arn
+    Export:
+      Name: smartpyme-trabajos-procesar-shopify-destination-arn
+    
+  TestApiRuleArn:
+    Description: Test API Rule ARN
+    Value: !GetAtt TestApiRule.Arn
+    
+  GenerateNotificacionesRuleArn:
+    Description: Generate Notificaciones Rule ARN
+    Value: !GetAtt GenerateNotificacionesRule.Arn
+    Export:
+      Name: smartpyme-generate-notificaciones-rule-arn
+      
+  SuscripcionesVerificarRuleArn:
+    Description: Suscripciones Verificar Rule ARN
+    Value: !GetAtt SuscripcionesVerificarRule.Arn
+    Export:
+      Name: smartpyme-suscripciones-verificar-rule-arn
+      
+  SuscripcionesProcesarCargosRuleArn:
+    Description: Suscripciones Procesar Cargos Rule ARN
+    Value: !GetAtt SuscripcionesProcesarCargosRule.Arn
+    Export:
+      Name: smartpyme-suscripciones-procesar-cargos-rule-arn
+      
+  KardexProcesarColaRuleArn:
+    Description: Kardex Procesar Cola Rule ARN
+    Value: !GetAtt KardexProcesarColaRule.Arn
+    Export:
+      Name: smartpyme-kardex-procesar-cola-rule-arn
+      
+  TrabajosProcesarShopifyRuleArn:
+    Description: Trabajos Procesar Shopify Rule ARN
+    Value: !GetAtt TrabajosProcesarShopifyRule.Arn
+    Export:
+      Name: smartpyme-trabajos-procesar-shopify-rule-arn
