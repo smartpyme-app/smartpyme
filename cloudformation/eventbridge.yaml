@@ -21,16 +21,7 @@ Resources:
             - '{{resolve:secretsmanager:${SecretArn}:SecretString:api_key}}'
             - SecretArn: !ImportValue smartpyme-cron-api-key-secret-arn
 
-  # API Destination for SmartPyme test endpoint
-  SmartPymeTestDestination:
-    Type: AWS::Events::ApiDestination
-    Properties:
-      Name: smartpyme-test-destination
-      Description: SmartPyme test endpoint
-      ConnectionArn: !GetAtt SmartPymeConnection.Arn
-      InvocationEndpoint: !Sub '${WebAppUrl}/api/cron/test'
-      HttpMethod: POST
-      
+
   # API Destination for generate:notificaciones
   GenerateNotificacionesDestination:
     Type: AWS::Events::ApiDestination
@@ -101,28 +92,11 @@ Resources:
                 Action:
                   - events:InvokeApiDestination
                 Resource: 
-                  - !GetAtt SmartPymeTestDestination.Arn
                   - !GetAtt GenerateNotificacionesDestination.Arn
                   - !GetAtt SuscripcionesVerificarDestination.Arn
                   - !GetAtt SuscripcionesProcesarCargosDestination.Arn
                   - !GetAtt KardexProcesarColaDestination.Arn
                   - !GetAtt TrabajosProcesarShopifyDestination.Arn
-
-  # EventBridge Rule: Test API Authentication (Every minute)
-  TestApiRule:
-    Type: AWS::Events::Rule
-    Properties:
-      Name: smartpyme-test-api
-      Description: 'Test API authentication every minute'
-      ScheduleExpression: 'rate(1 minute)'
-      State: ENABLED
-      Targets:
-        - Id: TestApiTarget
-          Arn: !GetAtt SmartPymeTestDestination.Arn
-          RoleArn: !GetAtt EventBridgeRole.Arn
-          HttpParameters:
-            HeaderParameters:
-              Content-Type: application/json
 
   # EventBridge Rule: generate:notificaciones (Daily at midnight)
   GenerateNotificacionesRule:
@@ -209,10 +183,6 @@ Outputs:
     Description: SmartPyme Connection ARN
     Value: !GetAtt SmartPymeConnection.Arn
     
-  TestDestinationArn:
-    Description: SmartPyme Test API Destination ARN
-    Value: !GetAtt SmartPymeTestDestination.Arn
-    
   GenerateNotificacionesDestinationArn:
     Description: Generate Notificaciones API Destination ARN
     Value: !GetAtt GenerateNotificacionesDestination.Arn
@@ -243,10 +213,7 @@ Outputs:
     Export:
       Name: smartpyme-trabajos-procesar-shopify-destination-arn
     
-  TestApiRuleArn:
-    Description: Test API Rule ARN
-    Value: !GetAtt TestApiRule.Arn
-    
+
   GenerateNotificacionesRuleArn:
     Description: Generate Notificaciones Rule ARN
     Value: !GetAtt GenerateNotificacionesRule.Arn

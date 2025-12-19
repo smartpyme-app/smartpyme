@@ -24,18 +24,6 @@ Route::get('/prueba', function () {
 	return Response()->json(['message' => 'Success'], 200);
 });
 
-Route::get('/prueba-nova', function () {
-	\Illuminate\Support\Facades\Log::info('prueba-nova route visited at: ' . now()->toDateTimeString());
-	
-	\App\Jobs\TestNovaJob::dispatch('Test message from prueba-nova route at ' . now()->toDateTimeString())->onQueue('smartpyme-main');
-	
-	return Response()->json([
-		'message' => 'NOVA test route visited and job dispatched',
-		'timestamp' => now()->toDateTimeString(),
-		'queue' => 'smartpyme-main'
-	], 200);
-});
-
 Route::get('verificar-acceso/{slug}', [EmpresasFuncionalidadesController::class, 'verificarAcceso']);
 
 // EventBridge Cron Endpoints
@@ -51,21 +39,6 @@ Route::prefix('cron')->middleware(\App\Http\Middleware\CronApiKeyMiddleware::cla
 			'timestamp' => now(),
 			'output' => \Illuminate\Support\Facades\Artisan::output()
 		]);
-	});
-	
-	Route::post('/test', function () {
-		\Illuminate\Support\Facades\Log::info('EventBridge test endpoint called at ' . now());
-		
-		$response = [
-			'status' => 'success',
-			'message' => 'API key authentication working correctly',
-			'timestamp' => now(),
-			'environment' => app()->environment()
-		];
-		
-		\Illuminate\Support\Facades\Log::info('EventBridge test response: ' . json_encode($response));
-		
-		return response()->json($response);
 	});
 	
 	Route::post('/suscripciones-verificar', function () {
