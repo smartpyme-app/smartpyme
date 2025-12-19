@@ -874,6 +874,11 @@ export class FacturacionCompraComponent implements OnInit {
             this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
         }
     
+        // Ahora se asigna el  código de generación como numero de referencia
+        if (jsonData.identificacion.codigoGeneracion) {
+            this.compra.referencia = jsonData.identificacion.codigoGeneracion;
+        }
+    
         let proveedor = this.getProveedor(jsonData.emisor);
         if(proveedor && proveedor.id){
             this.compra.id_proveedor = proveedor.id;
