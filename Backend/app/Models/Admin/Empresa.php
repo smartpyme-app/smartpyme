@@ -56,6 +56,7 @@ class Empresa extends Model
         'editar_descripcion_venta',
         'impresion_en_facturacion',
         'vendedor_detalle_venta',
+        'vendedor_asignado',
         'venta_consigna',
         'plan',
         'cobra_iva',

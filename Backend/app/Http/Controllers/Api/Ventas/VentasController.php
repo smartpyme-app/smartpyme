@@ -148,6 +148,7 @@ class VentasController extends Controller
                             ->orWhere('nit', 'like', $buscador);
                     })
                         ->orWhere('correlativo', 'like', $buscador)
+                        ->orWhere('num_orden', 'like', $buscador)
                         ->orWhere('estado', 'like', $buscador)
                         ->orWhere('observaciones', 'like', $buscador)
                         ->orWhere('forma_pago', 'like', $buscador);
