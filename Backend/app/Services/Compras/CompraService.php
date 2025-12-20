@@ -116,13 +116,19 @@ class CompraService
 
             // Actualizar inventario solo si no es cotización
             if (!$esCotizacion) {
+                // Actualizar inventario solo si existe (si no existe, el producto no lleva inventario)
                 $inventario = Inventario::where('id_producto', $det['id_producto'])
                     ->where('id_bodega', $compra->id_bodega)
+                    ->lockForUpdate() // Bloquear fila para evitar condiciones de carrera
                     ->first();
 
                 if ($inventario) {
+                    // Actualizar stock de forma atómica
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
+                    
+                    // Registrar kardex
+                    // Si falla el kardex, la transacción hará rollback automáticamente
                     $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
                 }
             }

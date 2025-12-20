@@ -207,14 +207,20 @@ class ComprasController extends Controller
             $producto = Producto::where('id', $detalle->id_producto)
                 ->with('composiciones')->firstOrFail();
 
-            $inventario = Inventario::where('id_producto', $detalle->id_producto)->where('id_bodega', $compra->id_bodega)->first();
+            // Bloquear fila para evitar condiciones de carrera
+            $inventario = Inventario::where('id_producto', $detalle->id_producto)
+                ->where('id_bodega', $compra->id_bodega)
+                ->lockForUpdate()
+                ->first();
 
             // Anular compra y regresar stock
             if (($compra->estado != 'Anulada') && ($request['estado'] == 'Anulada')) {
 
                 if ($inventario) {
+                    // Actualizar stock de forma atómica
                     $inventario->stock -= $detalle->cantidad;
                     $inventario->save();
+                    // Registrar kardex - si falla, la transacción hará rollback
                     $inventario->kardex($compra, $detalle->cantidad * -1);
                 }
                 //restaurar cantidad ingresada en orden de compra
@@ -239,8 +245,10 @@ class ComprasController extends Controller
             if (($compra->estado == 'Anulada') && ($request['estado'] != 'Anulada')) {
                 // Aplicar stock
                 if ($inventario) {
+                    // Actualizar stock de forma atómica
                     $inventario->stock += $detalle->cantidad;
                     $inventario->save();
+                    // Registrar kardex - si falla, la transacción hará rollback
                     $inventario->kardex($compra, $detalle->cantidad);
                 }
 
@@ -584,13 +592,17 @@ class ComprasController extends Controller
             // Actualizar inventarios (que no se hizo cuando estaba pendiente)
             foreach ($compra->detalles as $detalle) {
                 if ($compra->cotizacion == 0) {
+                    // Bloquear fila para evitar condiciones de carrera
                     $inventario = Inventario::where('id_producto', $detalle->id_producto)
                                            ->where('id_bodega', $compra->id_bodega)
+                                           ->lockForUpdate()
                                            ->first();
 
                     if ($inventario) {
+                        // Actualizar stock de forma atómica
                         $inventario->stock += $detalle->cantidad;
                         $inventario->save();
+                        // Registrar kardex - si falla, la transacción hará rollback
                         $inventario->kardex($compra, $detalle->cantidad, null, $detalle->costo);
                     }
 
@@ -712,13 +724,17 @@ class ComprasController extends Controller
                     $producto_venta->save();
 
                     // Actualizar inventario
+                    // Bloquear fila para evitar condiciones de carrera
                     $inventario = Inventario::withoutGlobalScope('empresa')->where('id_producto', $producto_venta->id)
                         ->where('id_bodega', $compra->id_bodega)
+                        ->lockForUpdate()
                         ->first();
 
                     if ($inventario) {
+                        // Actualizar stock de forma atómica
                         $inventario->stock += $detalle_venta->cantidad;
                         $inventario->save();
+                        // Registrar kardex - si falla, la transacción hará rollback
                         $inventario->kardex($compra, $detalle_venta->cantidad);
                     }
 
