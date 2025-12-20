@@ -826,6 +826,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 this.sumTotal();
             }
 
+            // Si el cliente tiene tiempo_pago configurado, ajustar la fecha de pago
+            if (cliente.tiempo_pago && this.venta.credito) {
+                const fechaBase = this.venta.fecha ? moment(this.venta.fecha) : moment();
+                this.venta.fecha_pago = fechaBase.add(cliente.tiempo_pago, 'days').format('YYYY-MM-DD');
+            }
+
             // Limpiar mensaje de validación al cambiar cliente
             this.mensajeValidacionFecha = '';
         }
@@ -850,7 +856,13 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         if (this.venta.credito) {
             this.venta.estado = 'Pendiente';
             this.venta.condicion = 'Crédito';
-            this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+            // Si el cliente tiene tiempo_pago configurado, usarlo; si no, usar 1 mes por defecto
+            if (this.venta.cliente?.tiempo_pago) {
+                const fechaBase = this.venta.fecha ? moment(this.venta.fecha) : moment();
+                this.venta.fecha_pago = fechaBase.add(this.venta.cliente.tiempo_pago, 'days').format('YYYY-MM-DD');
+            } else {
+                this.venta.fecha_pago = moment().add(1, 'month').format('YYYY-MM-DD');
+            }
         } else {
             this.venta.estado = 'Pagada';
             this.venta.condicion = 'Contado';

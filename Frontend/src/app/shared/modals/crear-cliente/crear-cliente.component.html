@@ -50,6 +50,18 @@
                         <option value="C">C</option>
                     </select>
                 </div>
+                <div class="form-group col-12 col-md-6 col-lg-4">
+                    <label for="tiempo_pago" class="form-label">Tiempo de Pago (días)</label>
+                    <select class="form-select" name="tiempo_pago" [(ngModel)]="cliente.tiempo_pago">
+                        <option [ngValue]="null">Seleccione aquí</option>
+                        <option [value]="8">8 días</option>
+                        <option [value]="15">15 días</option>
+                        <option [value]="30">30 días</option>
+                        <option [value]="60">60 días</option>
+                        <option [value]="90">90 días</option>
+                        <option [value]="180">180 días</option>
+                    </select>
+                </div>
             </div>
             @if (cliente.tipo != 'Extranjero') {
                 <div class="row">
