@@ -257,7 +257,7 @@ class MHNotaCredito extends Model
                 "numItem" => $index + 1,
                 "tipoItem" => $detalle->tipo_item,
                 "numeroDocumento" => $this->devolucion->venta->sello_mh ? $this->devolucion->venta->dte['identificacion']['codigoGeneracion'] : "" . $this->devolucion->venta->correlativo . "",
-                "cantidad" => floatval(number_format($detalle->cantidad,2)),
+                "cantidad" => floatval(number_format($detalle->cantidad,2, '.', '')),
                 "codigo" => $detalle->codigo,
                 "codTributo" => $detalle->codTributo,
                 "uniMedida" => $detalle->cod_medida,
