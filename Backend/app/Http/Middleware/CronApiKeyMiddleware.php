@@ -5,7 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Aws\SecretsManager\SecretsManagerClient;
+use App\Helpers\AwsConfigHelper;
 
 class CronApiKeyMiddleware
 {
@@ -13,18 +13,11 @@ class CronApiKeyMiddleware
     {
         $apiKey = $request->header('X-Cron-API-Key');
         
-        // Get API key from AWS Secrets Manager
-        try {
-            $secretArn = env('CRON_API_KEY_SECRET_ARN', 'smartpyme/cron-api-key');
-            $client = new SecretsManagerClient([
-                'region' => env('AWS_DEFAULT_REGION', 'us-east-2'),
-                'version' => 'latest'
-            ]);
-            $result = $client->getSecretValue(['SecretId' => $secretArn]);
-            $secret = json_decode($result['SecretString'], true);
-            $expectedKey = $secret['api_key'];
-        } catch (\Exception $e) {
-            Log::error('Failed to get cron API key from Secrets Manager: ' . $e->getMessage());
+        $secretId = env('CRON_API_KEY_SECRET_ARN', 'smartpyme/cron-api-key');
+        $expectedKey = AwsConfigHelper::getSecret($secretId, 'api_key');
+        
+        if (!$expectedKey) {
+            Log::error('Failed to get cron API key from Secrets Manager');
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
         
