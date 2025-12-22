@@ -10,8 +10,62 @@ Parameters:
     Type: String
     NoEcho: true
     Description: Laravel APP_KEY (base64 encoded)
+  
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where RDS is located
+  
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Subnet IDs where RDS is located (minimum 2)
+  
+  RDSSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security Group ID of the RDS instance
 
 Resources:
+  # Security Group for App Runner
+  AppRunnerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: App Runner access to RDS
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          DestinationSecurityGroupId: !Ref RDSSecurityGroupId
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS for AWS APIs
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP for general internet access
+        - IpProtocol: udp
+          FromPort: 53
+          ToPort: 53
+          CidrIp: 0.0.0.0/0
+          Description: DNS resolution
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # VPC Connector
+  VpcConnector:
+    Type: AWS::AppRunner::VpcConnector
+    Properties:
+      VpcConnectorName: smartpyme-vpc-connector
+      Subnets: !Ref SubnetIds
+      SecurityGroups:
+        - !Ref AppRunnerSecurityGroup
+      Tags:
+        - Key: Project
+          Value: NOVA
+
   # IAM Role for App Runner
   AppRunnerRole:
     Type: AWS::IAM::Role
@@ -32,14 +86,31 @@ Resources:
                 Action:
                   - sqs:SendMessage
                   - sqs:GetQueueAttributes
-                  - secretsmanager:GetSecretValue
                 Resource:
                   - !ImportValue smartpyme-queue-arn
                   - !ImportValue smartpyme-daily-reports-queue-arn
                   - !ImportValue smartpyme-invoice-processing-queue-arn
                   - !ImportValue smartpyme-shopify-sync-queue-arn
                   - !ImportValue smartpyme-email-notifications-queue-arn
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
+                  - !ImportValue smartpyme-database-secret-arn
+        - PolicyName: ParameterStoreAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/*'
       Tags:
         - Key: Project
           Value: NOVA
@@ -117,6 +188,10 @@ Resources:
         Timeout: 5
         HealthyThreshold: 1
         UnhealthyThreshold: 5
+      NetworkConfiguration:
+        EgressConfiguration:
+          EgressType: VPC
+          VpcConnectorArn: !GetAtt VpcConnector.VpcConnectorArn
       Tags:
         - Key: Project
           Value: NOVA
@@ -133,3 +208,9 @@ Outputs:
     Value: !Ref WebAppRunnerService
     Export:
       Name: !Sub '${AWS::StackName}-ServiceArn'
+  
+  VpcConnectorArn:
+    Description: VPC Connector ARN for sharing
+    Value: !GetAtt VpcConnector.VpcConnectorArn
+    Export:
+      Name: smartpyme-vpc-connector-arn

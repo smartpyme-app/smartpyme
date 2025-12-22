@@ -49,6 +49,16 @@ Resources:
                   - secretsmanager:GetSecretValue
                 Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
+                  - !ImportValue smartpyme-database-secret-arn
+        - PolicyName: ParameterStoreAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                Resource:
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/*'
       Tags:
         - Key: Project
           Value: NOVA
@@ -120,9 +130,6 @@ Resources:
         Cpu: 0.25 vCPU
         Memory: 0.5 GB
         InstanceRoleArn: !GetAtt WorkerAppRunnerRole.Arn
-      NetworkConfiguration:
-        IngressConfiguration:
-          IsPubliclyAccessible: false
       HealthCheckConfiguration:
         Protocol: HTTP
         Path: /api/prueba
@@ -130,6 +137,12 @@ Resources:
         Timeout: 5
         HealthyThreshold: 1
         UnhealthyThreshold: 5
+      NetworkConfiguration:
+        IngressConfiguration:
+          IsPubliclyAccessible: false
+        EgressConfiguration:
+          EgressType: VPC
+          VpcConnectorArn: !ImportValue smartpyme-vpc-connector-arn
       Tags:
         - Key: Project
           Value: NOVA

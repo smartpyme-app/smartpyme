@@ -183,6 +183,7 @@ return [
         Milon\Barcode\BarcodeServiceProvider::class,
 
         App\Providers\AIServiceProvider::class,
+        App\Providers\DatabaseConfigProvider::class,
 
 
     ],

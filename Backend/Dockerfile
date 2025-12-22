@@ -30,6 +30,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Download RDS CA certificate bundle for secure SSL connections
+RUN curl -o /opt/rds-combined-ca-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+
 # Set working directory
 WORKDIR /var/www/html
 

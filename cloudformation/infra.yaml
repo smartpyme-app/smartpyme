@@ -1,7 +1,65 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'SmartPyme Infrastructure - SQS Queues for Laravel Application'
 
+Parameters:
+  DatabaseHost:
+    Type: String
+    Description: Database host endpoint
+    NoEcho: false
+  
+  DatabaseName:
+    Type: String
+    Description: Database name
+    Default: smartpyme
+    NoEcho: false
+  
+  DatabaseUsername:
+    Type: String
+    Description: Database username
+    NoEcho: false
+  
+  DatabasePassword:
+    Type: String
+    Description: Database password
+    NoEcho: true
+
 Resources:
+  # Database Credentials Secret
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/database-credentials
+      Description: Database credentials for SmartPyme
+      SecretString: !Sub |
+        {
+          "username": "${DatabaseUsername}",
+          "password": "${DatabasePassword}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  # Database Configuration Parameters
+  DatabaseHostParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/database/host
+      Type: String
+      Value: !Ref DatabaseHost
+      Description: Database host endpoint
+      Tags:
+        Project: NOVA
+
+  DatabaseNameParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/database/name
+      Type: String
+      Value: !Ref DatabaseName
+      Description: Database name
+      Tags:
+        Project: NOVA
+
   # Cron API Key Secret
   CronApiKeySecret:
     Type: AWS::SecretsManager::Secret
@@ -221,6 +279,26 @@ Outputs:
     Value: !Ref EmailNotificationsQueue
     Export:
       Name: smartpyme-email-notifications-queue-name
+
+  # Database Secret Export
+  DatabaseSecretArn:
+    Description: Database Secret ARN
+    Value: !Ref DatabaseSecret
+    Export:
+      Name: smartpyme-database-secret-arn
+
+  # Database Parameters Exports
+  DatabaseHostParameterName:
+    Description: Database Host Parameter Name
+    Value: !Ref DatabaseHostParameter
+    Export:
+      Name: smartpyme-database-host-parameter
+
+  DatabaseNameParameterName:
+    Description: Database Name Parameter Name
+    Value: !Ref DatabaseNameParameter
+    Export:
+      Name: smartpyme-database-name-parameter
 
   # Cron API Key Secret Export
   CronApiKeySecretArn:
