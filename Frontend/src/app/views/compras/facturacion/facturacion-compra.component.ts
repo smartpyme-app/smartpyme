@@ -148,6 +148,17 @@ export class FacturacionCompraComponent implements OnInit {
     }
 
     public cargarDocumentos(){
+        // Lista de documentos permitidos para compras
+        const documentosPermitidos = [
+            'Factura',
+            'Crédito fiscal',
+            'Ticket',
+            'Recibo',
+            'Sujeto excluido',
+            'Recibo',
+            'Factura de exportación'
+        ];
+
         this.apiService.getAll('documentos/list').subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
@@ -159,7 +170,12 @@ export class FacturacionCompraComponent implements OnInit {
                     this.compra.referencia = documento.correlativo;
                 }
             }else{
-                this.documentos = this.documentos.filter((x:any) => x.nombre != 'Cotización' && x.nombre != 'Orden de compra');
+                // Filtrar solo los documentos permitidos, excluyendo notas de débito y crédito
+                this.documentos = this.documentos.filter((x:any) => 
+                    documentosPermitidos.includes(x.nombre) && 
+                    x.nombre != 'Nota de crédito' && 
+                    x.nombre != 'Nota de débito'
+                );
             }
         }, error => {this.alertService.error(error);});
     }
