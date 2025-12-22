@@ -114,7 +114,10 @@ class EmpleadosController extends Controller
             'contacto_emergencia.nombre' => 'nullable|string',
             'contacto_emergencia.relacion' => 'nullable|string',
             'contacto_emergencia.telefono' => 'nullable|string',
-            'contacto_emergencia.direccion' => 'nullable|string'
+            'contacto_emergencia.direccion' => 'nullable|string',
+            'configuracion_descuentos' => 'nullable|array',
+            'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
+            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
         ]);
 
         try {
@@ -128,24 +131,35 @@ class EmpleadosController extends Controller
                 }
             }
 
+            // Preparar datos para crear/actualizar
+            $datosEmpleado = $request->all() + [
+                'id_empresa' => auth()->user()->id_empresa,
+                'id_sucursal' => auth()->user()->id_sucursal,
+                'id_departamento' => $request->id_departamento,
+                'id_cargo' => $request->id_cargo,
+                'tipo_contrato' => intval($request->tipo_contrato),
+                'tipo_jornada' => intval($request->tipo_jornada),
+                'fecha_ingreso' => $request->fecha_ingreso,
+                'fecha_nacimiento' => $request->fecha_nacimiento,
+                'direccion' => $request->direccion,
+                'telefono' => $request->telefono,
+                'email' => $request->email,
+                'salario_base' => $request->salario_base,
+                'estado' => $request->estado ?? PlanillaConstants::ESTADO_EMPLEADO_ACTIVO,
+            ];
+
+            // Manejar configuracion_descuentos si viene en el request
+            if ($request->has('configuracion_descuentos') && is_array($request->configuracion_descuentos)) {
+                $datosEmpleado['configuracion_descuentos'] = [
+                    'aplicar_afp' => $request->configuracion_descuentos['aplicar_afp'] ?? true,
+                    'aplicar_isss' => $request->configuracion_descuentos['aplicar_isss'] ?? true,
+                ];
+            }
+
             // Crear o actualizar empleado
             $empleado = Empleado::updateOrCreate(
                 ['id' => $request->id],
-                $request->all() + [
-                    'id_empresa' => auth()->user()->id_empresa,
-                    'id_sucursal' => auth()->user()->id_sucursal,
-                    'id_departamento' => $request->id_departamento,
-                    'id_cargo' => $request->id_cargo,
-                    'tipo_contrato' => intval($request->tipo_contrato),
-                    'tipo_jornada' => intval($request->tipo_jornada),
-                    'fecha_ingreso' => $request->fecha_ingreso,
-                    'fecha_nacimiento' => $request->fecha_nacimiento,
-                    'direccion' => $request->direccion,
-                    'telefono' => $request->telefono,
-                    'email' => $request->email,
-                    'salario_base' => $request->salario_base,
-                    'estado' => $request->estado ?? PlanillaConstants::ESTADO_EMPLEADO_ACTIVO,
-                ]
+                $datosEmpleado
             );
 
             // Verificar si hubo cambio en el salario
@@ -260,7 +274,10 @@ class EmpleadosController extends Controller
             'contacto_emergencia.nombre' => 'nullable|string',
             'contacto_emergencia.relacion' => 'nullable|string',
             'contacto_emergencia.telefono' => 'nullable|string',
-            'contacto_emergencia.direccion' => 'nullable|string'
+            'contacto_emergencia.direccion' => 'nullable|string',
+            'configuracion_descuentos' => 'nullable|array',
+            'configuracion_descuentos.aplicar_afp' => 'nullable|boolean',
+            'configuracion_descuentos.aplicar_isss' => 'nullable|boolean'
         ];
 
         // Agregar reglas de DUI solo si se definieron
@@ -301,13 +318,20 @@ class EmpleadosController extends Controller
                 'tipo_cuenta',
                 'numero_cuenta',
                 'titular_cuenta',
-                'estado'
+                'estado',
+                'configuracion_descuentos'
             ];
 
             foreach ($camposPermitidos as $campo) {
                 if ($request->has($campo) && $request->$campo !== null) {
                     if (in_array($campo, ['tipo_contrato', 'tipo_jornada'])) {
                         $datosActualizar[$campo] = intval($request->$campo);
+                    } elseif ($campo === 'configuracion_descuentos' && is_array($request->$campo)) {
+                        // Asegurar que configuracion_descuentos tenga el formato correcto
+                        $datosActualizar[$campo] = [
+                            'aplicar_afp' => $request->$campo['aplicar_afp'] ?? true,
+                            'aplicar_isss' => $request->$campo['aplicar_isss'] ?? true,
+                        ];
                     } else {
                         $datosActualizar[$campo] = $request->$campo;
                     }
@@ -480,7 +504,7 @@ class EmpleadosController extends Controller
                 $detalle->bonificaciones +
                 $detalle->otros_ingresos, 2);
 
-            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO Y CONFIGURACIÓN DEL EMPLEADO
             if ($esContratoSinPrestaciones) {
                 // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $detalle->isss_empleado = 0;
@@ -488,12 +512,31 @@ class EmpleadosController extends Controller
                 $detalle->afp_empleado = 0;
                 $detalle->afp_patronal = 0;
             } else {
+                // Obtener configuración de descuentos del empleado
+                $configDescuentos = $empleado->configuracion_descuentos ?? [];
+                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
+
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales (usar total_ingresos)
-                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                // Verificar configuración antes de calcular
+                if ($aplicarIsss) {
+                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                } else {
+                    // No aplicar ISSS si está desactivado en la configuración
+                    $detalle->isss_empleado = 0;
+                    $detalle->isss_patronal = 0;
+                }
+
+                if ($aplicarAfp) {
+                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                } else {
+                    // No aplicar AFP si está desactivado en la configuración
+                    $detalle->afp_empleado = 0;
+                    $detalle->afp_patronal = 0;
+                }
             }
 
             // ✅ CALCULAR RENTA CON TIPO DE CONTRATO (usar total_ingresos)
