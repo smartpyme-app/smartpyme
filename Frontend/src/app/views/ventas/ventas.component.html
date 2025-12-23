@@ -376,6 +376,16 @@
                     <label for="correlativo">Correlativo:</label>
                     <input type="number" class="form-control" [(ngModel)]="venta.correlativo" name="correlativo">
                 </div>
+                <div class="form-group col-md-6">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" [(ngModel)]="venta.estado" class="form-select">
+                        <option value="">Estado</option>
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Anulada">Anulada</option>
+                        <option value="Consigna">Consigna</option>
+                        <option value="Pagada">Pagada</option>
+                    </select>
+                </div>
                 <div class="form-group col-sm-6">
                     <label for="venta.id_canal">Canal:</label>
                     <select [(ngModel)]="venta.id_canal" class="form-control form-select" name="venta.id_canal">
