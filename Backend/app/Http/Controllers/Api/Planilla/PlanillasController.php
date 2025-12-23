@@ -1020,7 +1020,7 @@ class PlanillasController extends Controller
             $tipoContrato = $detalle->empleado->tipo_contrato ?? PlanillaConstants::TIPO_CONTRATO_PERMANENTE;
             $esContratoSinPrestaciones = PlanillaConstants::esContratoSinPrestaciones($tipoContrato);
 
-            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO
+            // ✅ CALCULAR DEDUCCIONES SEGÚN TIPO DE CONTRATO Y CONFIGURACIÓN DEL EMPLEADO
             if ($esContratoSinPrestaciones) {
                 // CONTRATOS SIN PRESTACIONES (Por obra y Servicios Profesionales): Sin ISSS ni AFP
                 $detalle->isss_empleado = 0;
@@ -1028,12 +1028,32 @@ class PlanillasController extends Controller
                 $detalle->afp_empleado = 0;
                 $detalle->afp_patronal = 0;
             } else {
+                // Obtener configuración de descuentos del empleado
+                $empleado = $detalle->empleado;
+                $configDescuentos = $empleado->configuracion_descuentos ?? [];
+                $aplicarAfp = $configDescuentos['aplicar_afp'] ?? true; // Por defecto true
+                $aplicarIsss = $configDescuentos['aplicar_isss'] ?? true; // Por defecto true
+
                 // EMPLEADOS ASALARIADOS: Con ISSS y AFP normales
-                $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
-                $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
-                $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
-                $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
-                $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                // Verificar configuración antes de calcular
+                if ($aplicarIsss) {
+                    $baseISSSEmpleado = min($detalle->total_ingresos, 1000);
+                    $detalle->isss_empleado = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_EMPLEADO, 2);
+                    $detalle->isss_patronal = round($baseISSSEmpleado * PlanillaConstants::DESCUENTO_ISSS_PATRONO, 2);
+                } else {
+                    // No aplicar ISSS si está desactivado en la configuración
+                    $detalle->isss_empleado = 0;
+                    $detalle->isss_patronal = 0;
+                }
+
+                if ($aplicarAfp) {
+                    $detalle->afp_empleado = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_EMPLEADO, 2);
+                    $detalle->afp_patronal = round($detalle->total_ingresos * PlanillaConstants::DESCUENTO_AFP_PATRONO, 2);
+                } else {
+                    // No aplicar AFP si está desactivado en la configuración
+                    $detalle->afp_empleado = 0;
+                    $detalle->afp_patronal = 0;
+                }
             }
 
             // ✅ CALCULAR RENTA CON TIPO DE CONTRATO
