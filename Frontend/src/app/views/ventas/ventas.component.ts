@@ -1,17 +1,21 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component, OnInit, OnDestroy, TemplateRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
+import { FuncionalidadesService } from '@services/functionalities.service';
 import { MHService } from '@services/MH.service';
 import Swal from 'sweetalert2';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-ventas',
-  templateUrl: './ventas.component.html',
+    selector: 'app-ventas',
+    templateUrl: './ventas.component.html'
 })
-export class VentasComponent implements OnInit {
-  public ventas: any = [];
+export class VentasComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  public ventas: any = {};
   public venta: any = {};
   public loading: boolean = false;
   public saving: boolean = false;
@@ -34,6 +38,7 @@ export class VentasComponent implements OnInit {
   public categorias: any[] = [];
   public marcas: any[] = [];
   public numeros_ids: any = [];
+  public contabilidadHabilitada: boolean = false;
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -48,11 +53,12 @@ export class VentasComponent implements OnInit {
     id_empresa: this.apiService.auth_user().empresa.id,
   };
 
-  modalRef!: BsModalRef;
-  modalRefDescargar!: BsModalRef;
-  modalRefAcumulado!: BsModalRef;
-  modalRefPorMarca!: BsModalRef;
+  public modalRefDescargar!: any; // BsModalRef
+  public modalRefAcumulado!: any; // BsModalRef
+  public modalRefPorMarca!: any; // BsModalRef
   downloadingPorMarca: boolean = false;
+
+  public modalRef!: BsModalRef;
 
   constructor(
     public apiService: ApiService,
@@ -60,11 +66,37 @@ export class VentasComponent implements OnInit {
     private alertService: AlertService,
     private modalService: BsModalService,
     private router: Router,
-    private route: ActivatedRoute
-  ) { }
+    private route: ActivatedRoute,
+    private funcionalidadesService: FuncionalidadesService
+  ) {
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  protected untilDestroyed() {
+    return takeUntil(this.destroy$);
+  }
+
+  protected openModal(template: TemplateRef<any>, item?: any) {
+    if (item) {
+      this.venta = item;
+    }
+    this.modalRef = this.modalService.show(template);
+  }
+
+  protected closeModal() {
+    if (this.modalRef) {
+      this.modalRef.hide();
+    }
+  }
+
 
   ngOnInit() {
     this.usuario = this.apiService.auth_user();
+    this.verificarAccesoContabilidad();
 
     this.route.queryParams.subscribe(params => {
       this.filtros = {
@@ -98,32 +130,39 @@ export class VentasComponent implements OnInit {
 
     this.getNumsIds();
 
-    this.apiService.getAll('sucursales/list').subscribe(
-      (sucursales) => {
-        this.sucursales = sucursales;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    // Cargar datos compartidos
+    this.apiService.getAll('sucursales/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (sucursales) => {
+          this.sucursales = sucursales;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
-    this.apiService.getAll('categorias/list').subscribe(
-      (categorias) => {
-        this.categorias = categorias;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('categorias/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (categorias: any) => {
+          this.categorias = categorias;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
 
-    this.apiService.getAll('marcas/list').subscribe(
-      (marcas) => {
-        this.marcas = marcas;
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
+    this.apiService.getAll('marcas/list')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (marcas: any) => {
+          this.marcas = marcas;
+        },
+        error: (error) => {
+          this.alertService.error(error);
+        }
+      });
   }
 
   public abrirModalFiltrosAcumulado(template: TemplateRef<any>) {
@@ -133,7 +172,10 @@ export class VentasComponent implements OnInit {
   }
 
   public abrirModalFiltrosPorMarca(template: TemplateRef<any>) {
-    this.modalRefDescargar.hide();
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
 
     setTimeout(() => {
       this.modalRefPorMarca = this.modalService.show(template, {
@@ -144,7 +186,10 @@ export class VentasComponent implements OnInit {
   }
 
   public abrirModalFiltrosPorUtilidades(template: TemplateRef<any>) {
-    this.modalRefDescargar.hide();
+    if (this.modalRefDescargar) {
+      this.modalRefDescargar.hide();
+      this.modalRefDescargar = undefined;
+    }
 
     setTimeout(() => {
       this.modalRefPorMarca = this.modalService.show(template, {
@@ -188,19 +233,30 @@ export class VentasComponent implements OnInit {
       page: 1,
     };
 
-    // Aplicar filtro de sucursal para usuarios no administradores
-    if (this.apiService.auth_user().tipo != 'Administrador') {
-      this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+      // Aplicar filtro de sucursal para usuarios no administradores
+      const userTipo = this.apiService.auth_user().tipo;
+      if((userTipo === 'Super Admin' || userTipo === 'Administrador') ){
+        this.filtros.id_sucursal = this.apiService.auth_user().id_sucursal;
+      }
+
+      this.filtrarVentas();
+      
     }
 
-    this.filtrarVentas();
-  }
 
   public filtrarVentas() {
+    // Limpiar valores vacíos antes de navegar
+    const queryParams: any = {};
+    Object.keys(this.filtros).forEach(key => {
+      const value = this.filtros[key];
+      if (value !== '' && value !== null && value !== undefined) {
+        queryParams[key] = value;
+      }
+    });
+
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: this.filtros,
-      queryParamsHandling: 'merge',
+      queryParams: queryParams,
     });
 
     this.loading = true;
@@ -222,7 +278,7 @@ export class VentasComponent implements OnInit {
         this.ventas = ventas;
         this.loading = false;
         if (this.modalRef) {
-          this.modalRef.hide();
+          this.closeModal();
         }
       },
       (error) => {
@@ -232,19 +288,17 @@ export class VentasComponent implements OnInit {
     );
   }
 
-  public setEstado(venta: any, estado: any) {
+  public async setEstado(venta: any, estado: any) {
     if (estado == 'Pagada') {
       if (confirm('¿Confirma el pago de la venta?')) {
-        this.venta = venta;
-        this.venta.estado = estado;
-        this.onSubmit();
+        venta.estado = estado;
+        await this.onSubmit(venta, true);
       }
     }
     if (estado == 'Anulada') {
       if (confirm('¿Confirma la anulación de la venta?')) {
-        this.venta = venta;
-        this.venta.estado = estado;
-        this.onSubmit();
+        venta.estado = estado;
+        await this.onSubmit(venta, true);
       }
     }
   }
@@ -257,6 +311,7 @@ export class VentasComponent implements OnInit {
             if (this.ventas['data'][i].id == data.id)
               this.ventas['data'].splice(i, 1);
           }
+          this.alertService.success('Venta eliminada', 'Venta eliminada exitosamente.');
         },
         (error) => {
           this.alertService.error(error);
@@ -265,6 +320,7 @@ export class VentasComponent implements OnInit {
     }
   }
 
+  // setPagination() ahora se hereda de BasePaginatedComponent
   public setPagination(event: any): void {
     this.filtros.page = event.page;
     this.filtrarVentas();
@@ -285,141 +341,181 @@ export class VentasComponent implements OnInit {
   // Editar
 
   public openModalEdit(template: TemplateRef<any>, venta: any) {
-    this.venta = venta;
+    // Cargar los datos completos de la venta antes de abrir el modal
+    this.loading = true;
+    this.apiService.read('venta/', venta.id)
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (ventaCompleta: any) => {
+          this.loading = false;
 
-    if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
-      this.apiService.getAll('proyectos/list').subscribe(
-        (proyectos) => {
-          this.proyectos = proyectos;
+          // Cargar datos auxiliares
+          if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
+            this.apiService.getAll('proyectos/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (proyectos) => {
+                  this.proyectos = proyectos;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
+          }
+
+          if (!this.documentos.length) {
+            this.apiService.getAll('documentos/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (documentos) => {
+                  this.documentos = documentos;
+                  this.documentos = this.documentos.filter(
+                    (x: any) => x.id_sucursal == ventaCompleta.id_sucursal
+                  );
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
+          }
+
+          if (!this.formaPagos.length) {
+            this.apiService.getAll('formas-de-pago/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (formaPagos) => {
+                  this.formaPagos = formaPagos;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
+          }
+
+          if (!this.usuarios.length) {
+            this.apiService.getAll('usuarios/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (usuarios) => {
+                  this.usuarios = usuarios;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
+          }
+
+          if (!this.canales.length) {
+            this.apiService.getAll('canales/list')
+              .pipe(this.untilDestroyed())
+              .subscribe({
+                next: (canales) => {
+                  this.canales = canales;
+                },
+                error: (error) => {
+                  this.alertService.error(error);
+                }
+              });
+          }
+
+          // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
+          const ventaCopia = JSON.parse(JSON.stringify(ventaCompleta));
+          // Abrir el modal pasando la copia como parámetro
+          this.openModal(template, ventaCopia);
         },
-        (error) => {
+        error: (error) => {
           this.alertService.error(error);
+          this.loading = false;
         }
-      );
-    }
-
-    // Cargar documentos filtrados por sucursal de la venta
-    this.apiService.getAll('documentos/list').subscribe(
-      (documentos) => {
-        this.documentos = documentos.filter(
-          (x: any) => x.id_sucursal == this.venta.id_sucursal
-        );
-      },
-      (error) => {
-        this.alertService.error(error);
-      }
-    );
-
-    if (!this.formaPagos.length) {
-      this.apiService.getAll('formas-de-pago/list').subscribe(
-        (formaPagos) => {
-          this.formaPagos = formaPagos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
-
-    if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(
-        (usuarios) => {
-          this.usuarios = usuarios;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
-
-    if (!this.canales.length) {
-      this.apiService.getAll('canales/list').subscribe(
-        (canales) => {
-          this.canales = canales;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
-    }
-
-    this.modalRef = this.modalService.show(template);
+      });
   }
 
   public openFilter(template: TemplateRef<any>) {
     if (!this.clientes.length) {
-      this.apiService.getAll('clientes/list').subscribe(
-        (clientes) => {
-          this.clientes = clientes;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('clientes/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (clientes) => {
+            this.clientes = clientes;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.documentos.length) {
-      this.apiService.getAll('documentos/list-nombre').subscribe(
-        (documentos) => {
-          this.documentos = documentos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('documentos/list-nombre')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (documentos) => {
+            this.documentos = documentos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.formaPagos.length) {
-      this.apiService.getAll('formas-de-pago/list').subscribe(
-        (formaPagos) => {
-          this.formaPagos = formaPagos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('formas-de-pago/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (formaPagos) => {
+            this.formaPagos = formaPagos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.usuarios.length) {
-      this.apiService.getAll('usuarios/list').subscribe(
-        (usuarios) => {
-          this.usuarios = usuarios;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('usuarios/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (usuarios) => {
+            this.usuarios = usuarios;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (!this.canales.length) {
-      this.apiService.getAll('canales/list').subscribe(
-        (canales) => {
-          this.canales = canales;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('canales/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (canales) => {
+            this.canales = canales;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
 
     if (
       !this.proyectos.length &&
       this.apiService.auth_user().empresa.modulo_proyectos
     ) {
-      this.apiService.getAll('proyectos/list').subscribe(
-        (proyectos) => {
-          this.proyectos = proyectos;
-        },
-        (error) => {
-          this.alertService.error(error);
-        }
-      );
+      this.apiService.getAll('proyectos/list')
+        .pipe(this.untilDestroyed())
+        .subscribe({
+          next: (proyectos) => {
+            this.proyectos = proyectos;
+          },
+          error: (error) => {
+            this.alertService.error(error);
+          }
+        });
     }
-    this.modalRef = this.modalService.show(template);
+    this.openModal(template);
   }
 
   // public openDescargar(template: TemplateRef<any>) {
-  //   this.modalRef = this.modalService.show(template);
+  //   this.openModal(template);
   // }
   public openDescargar(template: TemplateRef<any>) {
     this.reporteSeleccionado = '';
@@ -476,9 +572,11 @@ export class VentasComponent implements OnInit {
         // Cerrar ambos modales
         if (this.modalRefAcumulado) {
           this.modalRefAcumulado.hide();
+          this.modalRefAcumulado = undefined;
         }
         if (this.modalRefDescargar) {
           this.modalRefDescargar.hide();
+          this.modalRefDescargar = undefined;
         }
 
         this.downloadingVentas = false;
@@ -554,46 +652,53 @@ export class VentasComponent implements OnInit {
     }
   }
 
-  public onSubmit() {
+  public async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
+    const ventaToSave = item || this.venta;
     this.saving = true;
-    this.apiService.store('venta', this.venta).subscribe(venta => {
+    try {
+      const venta = await this.apiService.store('venta', ventaToSave)
+        .pipe(this.untilDestroyed())
+        .toPromise();
       this.venta = {};
       this.saving = false;
       if (this.modalRef) {
-        this.modalRef.hide();
+        this.closeModal();
       }
       this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
-    }, error => { this.alertService.error(error); this.saving = false; });
+      // Actualizar el listado después de guardar
+      this.filtrarVentas();
+    } catch (error: any) {
+      this.alertService.error(error);
+      this.saving = false;
+    }
+  }
+
+    public setRecurrencia(venta:any){
+        this.venta = venta;
+        this.venta.recurrente = true;
+
+        this.apiService.store('venta', this.venta).subscribe(venta => {
+            this.venta = {};
+            this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
+        },error => {this.alertService.error(error); this.saving = false; });
 
   }
 
-  public setRecurrencia(venta: any) {
-    this.venta = venta;
-    this.venta.recurrente = true;
-
-    this.apiService.store('venta', this.venta).subscribe(venta => {
-      this.venta = {};
-      this.alertService.success('Venta guardada', 'La venta se marco como recurrente exitosamente.');
-    }, error => { this.alertService.error(error); this.saving = false; });
-
-  }
-
-  public openAbono(template: TemplateRef<any>, venta: any) {
-    this.venta = venta;
-    this.modalRef = this.modalService.show(template);
-  }
+    public openAbono(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.openModal(template);
+    }
 
 
   // DTE
 
-  openDTE(template: TemplateRef<any>, venta: any) {
-    this.venta = venta;
-    this.alertService.modal = true;
-    this.modalRef = this.modalService.show(template);
-    if (!this.venta.dte) {
-      this.emitirDTE();
+    openDTE(template: TemplateRef<any>, venta:any){
+        this.venta = venta;
+        this.openModal(template);
+        if(!this.venta.dte){
+            this.emitirDTE();
+        }
     }
-  }
 
   imprimirDTEPDF(venta: any) {
     window.open(this.apiService.baseUrl + '/api/reporte/dte/' + venta.id + '/' + venta.tipo_dte + '/' + '?token=' + this.apiService.auth_token(), 'hola', 'width=400');
@@ -768,6 +873,26 @@ export class VentasComponent implements OnInit {
     this.apiService.getAll('ventas/nums-ids').subscribe(numsIds => {
       this.numeros_ids = numsIds;
     }, error => { this.alertService.error(error); });
+  }
+
+  generarPartidaContable(venta:any){
+    this.apiService.store('contabilidad/partida/venta', venta).subscribe(venta => {
+      this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+    },error => {this.alertService.error(error);});
+  }
+
+  verificarAccesoContabilidad() {
+    this.funcionalidadesService.verificarAcceso('contabilidad')
+      .pipe(this.untilDestroyed())
+      .subscribe({
+        next: (acceso: any) => {
+          this.contabilidadHabilitada = acceso === true || acceso === 1;
+        },
+        error: (error) => {
+          console.error('Error al verificar acceso a contabilidad:', error);
+          this.contabilidadHabilitada = false;
+        }
+      });
   }
 
   descargarPorMarcasPorMes() {
