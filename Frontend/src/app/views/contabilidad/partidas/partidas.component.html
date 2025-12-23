@@ -309,22 +309,12 @@
             <form (ngSubmit)="imprimirDiarioAux()" #auxForm="ngForm">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Año:</label>
-                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de reporte:</label>
@@ -369,22 +359,12 @@
             <form #reporteForm="ngForm" (ngSubmit)="imprimirDiarioMayor()" novalidate>
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Año:</label>
-                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de reporte:</label>
@@ -429,22 +409,12 @@
             <form (ngSubmit)="imprimirBalanceComprobacion()" #balanceForm="ngForm">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Año:</label>
-                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de reporte:</label>
@@ -489,22 +459,12 @@
             <form (ngSubmit)="imprimirBalanceGeneral()" #balanceGeneralForm="ngForm">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Año:</label>
-                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de reporte:</label>
@@ -550,22 +510,12 @@
             <form (ngSubmit)="imprimirEstadoResultados()" #estadoResultadosForm="ngForm">
               <div class="row g-3">
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Mes:</label>
-                  <select class="form-select" name="month" required [(ngModel)]="reporte.month">
-                    <option value="">Seleccione un mes</option>
-                    <option *ngFor="let month of months" [value]="month.value">
-                      {{ month.label }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Del:</label>
+                  <input type="date" class="form-control" name="fecha_inicio" required [(ngModel)]="reporte.fecha_inicio">
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label fw-bold">Año:</label>
-                  <select class="form-select" name="year" required [(ngModel)]="reporte.year" (change)="onYearChange()">
-                    <option value="">Seleccione un año</option>
-                    <option *ngFor="let year of years" [value]="year">
-                      {{ year }}
-                    </option>
-                  </select>
+                  <label class="form-label fw-bold">Al:</label>
+                  <input type="date" class="form-control" name="fecha_fin" required [(ngModel)]="reporte.fecha_fin">
                 </div>
                 <div class="col-md-6">
                   <label class="form-label fw-bold">Tipo de reporte:</label>
