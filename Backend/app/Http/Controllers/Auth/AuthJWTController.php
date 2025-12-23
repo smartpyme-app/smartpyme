@@ -76,10 +76,11 @@ class AuthJWTController extends Controller
 
         $user->empresa = $user->empresa()->with('licencia')->first();
         $suscripcion = $user->empresa->suscripcion()
-            ->whereNotIn('estado', [
-                config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
-                config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
-            ])
+            //Esto nos rompio las pelotas >:(
+            // ->whereNotIn('estado', [
+            //     config('constants.ESTADO_SUSCRIPCION_INACTIVO'),
+            //     config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO')
+            // ])
             ->latest()
             ->first();
         $user->dias_faltantes = $suscripcion ? $suscripcion->diasFaltantes() : null;
