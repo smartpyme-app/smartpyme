@@ -126,10 +126,10 @@ class CompraService
                     // Actualizar stock de forma atómica
                     $inventario->stock += $det['cantidad'];
                     $inventario->save();
-                    
+
                     // Registrar kardex
                     // Si falla el kardex, la transacción hará rollback automáticamente
-                    $inventario->kardex($compra, $det['cantidad'], null, $det['costo']);
+                    $inventario->kardex($compra, $det['cantidad']);
                 }
             }
 
