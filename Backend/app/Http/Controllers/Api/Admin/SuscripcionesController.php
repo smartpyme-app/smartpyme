@@ -421,6 +421,13 @@ class SuscripcionesController extends Controller
 
                     $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
                     $suscripcion->save();
+
+                    // Desactivar la empresa
+                    $empresa = Empresa::find($request->input('empresa.id'));
+                    if ($empresa) {
+                        $empresa->activo = false;
+                        $empresa->save();
+                    }
                 }
             } else {
                 $suscripcion->estado = config('constants.ESTADO_SUSCRIPCION_SUSPENDIDO');
@@ -430,6 +437,13 @@ class SuscripcionesController extends Controller
                 if ($user) {
                     $user->enable = false;
                     $user->save();
+                }
+
+                // Desactivar la empresa
+                $empresa = Empresa::find($suscripcion->empresa_id);
+                if ($empresa) {
+                    $empresa->activo = false;
+                    $empresa->save();
                 }
             }
 
