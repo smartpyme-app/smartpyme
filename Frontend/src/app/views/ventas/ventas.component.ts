@@ -196,7 +196,9 @@ export class VentasComponent implements OnInit {
     // Editar
 
     public openModalEdit(template: TemplateRef<any>, venta:any) {
-        this.venta = venta;
+        // Crear una copia profunda del objeto para evitar que los cambios se reflejen inmediatamente en el listado
+        const ventaCopia = JSON.parse(JSON.stringify(venta));
+        this.venta = ventaCopia;
 
         if(!this.documentos.length){
             this.apiService.getAll('documentos/list').subscribe(documentos => {
@@ -321,6 +323,8 @@ export class VentasComponent implements OnInit {
                 this.modalRef.hide();
             }
             this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+            // Actualizar el listado después de guardar
+            this.filtrarVentas();
         },error => {this.alertService.error(error); this.saving = false; });
 
     }
