@@ -1,0 +1,240 @@
+<section class="d-flex justify-content-between bg-white p-4 rounded mb-3">
+  <h2 class="page-heading">Aguinaldos</h2>
+  <button
+    *ngIf="apiService.canCreate()"
+    (click)="openNuevoAguinaldo(mNuevoAguinaldo)"
+    tooltip="Crear nuevo aguinaldo"
+    class="btn btn-primary"
+  >
+    <i class="fa fa-plus"></i> Nuevo Aguinaldo
+  </button>
+</section>
+
+<section class="bg-white p-4 rounded mb-3">
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <span
+        class="text-muted d-flex align-items-center gap-2"
+        *ngIf="aguinaldos?.total"
+      >
+        Mostrando
+        <select
+          name="paginate"
+          class="form-select w-auto"
+          (change)="filtrarAguinaldos()"
+          [(ngModel)]="filtros.paginate"
+        >
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+        de {{ aguinaldos?.total + " registros" }}
+      </span>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="d-flex gap-2">
+        <form
+          class="d-flex input-group"
+          name="form"
+          (ngSubmit)="filtrarAguinaldos()"
+          autocomplete="off"
+        >
+          <input
+            type="search"
+            name="buscador"
+            class="form-control pull-right"
+            placeholder="Buscar por empleado"
+            [(ngModel)]="filtros.buscador"
+          />
+        </form>
+        <button
+          tooltip="Filtrar"
+          (click)="filtrarAguinaldos()"
+          class="btn btn-default"
+        >
+          <img src="/assets/icons/filter.png" class="icon" />
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="table-responsive">
+      <table class="table table-borderless table-hover mb-0">
+        <thead>
+          <tr>
+            <th (click)="setOrden('anio')" style="cursor: pointer;">
+              Año
+              <i
+                class="fa"
+                [ngClass]="{
+                  'fa-sort': filtros.orden !== 'anio',
+                  'fa-sort-up': filtros.orden === 'anio' && filtros.direccion === 'asc',
+                  'fa-sort-down': filtros.orden === 'anio' && filtros.direccion === 'desc'
+                }"
+              ></i>
+            </th>
+            <th class="text-end">Total Aguinaldos</th>
+            <th class="text-end">Total Retenciones</th>
+            <th class="text-end">Total Neto</th>
+            <th>Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              colspan="6"
+              class="text-center"
+              *ngIf="aguinaldos?.total < 1 && !loading"
+            >
+              <span class="badge bg-primary">No hay aguinaldos registrados</span>
+            </td>
+          </tr>
+          <tr *ngIf="loading">
+            <td colspan="6" class="text-center">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngFor="let aguinaldo of aguinaldos?.data">
+            <td>{{ aguinaldo.anio }}</td>
+            <td class="text-end">
+              ${{ aguinaldo.total_aguinaldos | number : "1.2-2" }}
+            </td>
+            <td class="text-end">
+              ${{ aguinaldo.total_retenciones | number : "1.2-2" }}
+            </td>
+            <td class="text-end">
+              ${{ (aguinaldo.total_aguinaldos - aguinaldo.total_retenciones) | number : "1.2-2" }}
+            </td>
+            <td>
+              <span
+                class="badge"
+                [ngClass]="getEstadoBadgeClass(aguinaldo.estado)"
+              >
+                {{ getEstadoNombre(aguinaldo.estado) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span
+                class="btn"
+                [popover]="accionesTemplate"
+                [outsideClick]="true"
+                tooltip="Acciones"
+              >
+                <i class="fa fa-ellipsis-vertical fa-fw"></i>
+              </span>
+              <ng-template #accionesTemplate>
+                <div class="list-group border-0">
+                  <a
+                    (click)="verDetalle(aguinaldo.id)"
+                    class="list-group-item list-group-item-action border-0 click"
+                  >
+                    <i class="fa fa-fw fa-eye"></i> Ver detalles
+                  </a>
+                  <a
+                    *ngIf="aguinaldo.estado === ESTADOS_AGUINALDO.BORRADOR && apiService.canDelete()"
+                    (click)="eliminarAguinaldo(aguinaldo.id)"
+                    class="list-group-item list-group-item-action border-0 click text-danger"
+                  >
+                    <i class="fa fa-fw fa-trash"></i> Eliminar
+                  </a>
+                </div>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="col-12" *ngIf="aguinaldos?.last_page > 1">
+    <app-pagination
+      [items]="aguinaldos"
+      (setPagination)="setPagination($event)"
+    ></app-pagination>
+  </div>
+</section>
+
+<!-- Modal Nuevo Aguinaldo -->
+<ng-template #mNuevoAguinaldo>
+  <div class="modal-header">
+    <h4 class="modal-title">Nuevo Aguinaldo</h4>
+    <button
+      type="button"
+      class="btn-close"
+      aria-label="Close"
+      (click)="modalRef.hide()"
+    ></button>
+  </div>
+  <div class="modal-body">
+    <form (ngSubmit)="crearAguinaldo()">
+      <div class="mb-3">
+        <label for="anio" class="form-label">Año *</label>
+        <select
+          class="form-select"
+          id="anio"
+          name="anio"
+          [(ngModel)]="aguinaldoNuevo.anio"
+          required
+        >
+          <option value="">Seleccione un año</option>
+          <option *ngFor="let anio of anios" [value]="anio">
+            {{ anio }}
+          </option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="fecha_calculo" class="form-label">Fecha de Cálculo *</label>
+        <input
+          type="date"
+          class="form-select"
+          id="fecha_calculo"
+          name="fecha_calculo"
+          [(ngModel)]="aguinaldoNuevo.fecha_calculo"
+          [value]="aguinaldoNuevo.fecha_calculo || (aguinaldoNuevo.anio ? aguinaldoNuevo.anio + '-12-12' : '')"
+          required
+        />
+        <small class="form-text text-muted">Por ley es el 12 de diciembre, pero puede modificarse</small>
+      </div>
+      <div class="mb-3">
+        <label for="observaciones" class="form-label">Observaciones</label>
+        <textarea
+          class="form-control"
+          id="observaciones"
+          name="observaciones"
+          rows="3"
+          [(ngModel)]="aguinaldoNuevo.observaciones"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="modalRef.hide()"
+          [disabled]="saving"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="saving || !aguinaldoNuevo.anio"
+        >
+          <span
+            *ngIf="saving"
+            class="spinner-border spinner-border-sm me-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
+          Crear Aguinaldo
+        </button>
+      </div>
+    </form>
+  </div>
+</ng-template>

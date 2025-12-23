@@ -20,6 +20,8 @@ import { PlanillaDetalleComponent } from './planillas/planilla-detalle.component
 import { BoletaPagoComponent } from './planillas/boleta-pago.component';
 import { VerBoletasComponent } from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from '@views/planillas/configuracion-planilla/configuracion-planilla.component';
+import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
+import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
 import { ReactiveFormsModule } from '@angular/forms';
 
 
@@ -51,7 +53,9 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     PlanillaDetalleComponent,
     BoletaPagoComponent,
     VerBoletasComponent,
-    ConfiguracionPlanillaComponent
+    ConfiguracionPlanillaComponent,
+    AguinaldosComponent,
+    AguinaldoDetalleComponent
   ],
   exports: [
     PlanillasComponent,
@@ -60,7 +64,9 @@ import { PdfViewerModule } from 'ng2-pdf-viewer';
     PlanillaDetalleComponent,
     BoletaPagoComponent,
     VerBoletasComponent,
-    ConfiguracionPlanillaComponent
+    ConfiguracionPlanillaComponent,
+    AguinaldosComponent,
+    AguinaldoDetalleComponent
   ]
 })
 export class PlanillasModule { }
