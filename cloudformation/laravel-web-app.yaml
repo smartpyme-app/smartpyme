@@ -8,8 +8,12 @@ Parameters:
   
   AppKey:
     Type: String
+    Description: Laravel APP_KEY (base64:xxxxx format)
     NoEcho: true
-    Description: Laravel APP_KEY (base64 encoded)
+  
+  FrontendUrl:
+    Type: String
+    Description: Frontend URL for CORS configuration (e.g., https://smartpyme-frontend.com)
   
   VpcId:
     Type: AWS::EC2::VPC::Id
@@ -24,6 +28,16 @@ Parameters:
     Description: Security Group ID of the RDS instance
 
 Resources:
+  # Create APP_KEY secret
+  AppKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/app-key
+      Description: Laravel APP_KEY for SmartPyme application
+      SecretString: !Ref AppKey
+      Tags:
+        - Key: Project
+          Value: NOVA
   # Security Group for App Runner
   AppRunnerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -102,6 +116,7 @@ Resources:
                 Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
                   - !ImportValue smartpyme-database-secret-arn
+                  - !Ref AppKeySecret
         - PolicyName: ParameterStoreAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -110,7 +125,8 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
       Tags:
         - Key: Project
           Value: NOVA
@@ -147,8 +163,6 @@ Resources:
                 Value: SmartPyme
               - Name: APP_ENV
                 Value: production
-              - Name: APP_KEY
-                Value: !Ref AppKey
               - Name: APP_DEBUG
                 Value: 'false'
               - Name: LOG_CHANNEL
@@ -159,6 +173,10 @@ Resources:
                 Value: sqs
               - Name: AWS_DEFAULT_REGION
                 Value: !Ref AWS::Region
+              - Name: FRONTEND_URL
+                Value: !Ref FrontendUrl
+              - Name: APP_KEY_SECRET_NAME
+                Value: smartpyme/app-key
 
               - Name: SQS_QUEUE
                 Value: !ImportValue smartpyme-queue-name
@@ -183,7 +201,7 @@ Resources:
         InstanceRoleArn: !GetAtt AppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
-        Path: /api/prueba
+        Path: /health
         Interval: 10
         Timeout: 5
         HealthyThreshold: 1
@@ -208,6 +226,12 @@ Outputs:
     Value: !Ref WebAppRunnerService
     Export:
       Name: !Sub '${AWS::StackName}-ServiceArn'
+  
+  ServiceName:
+    Description: SmartPyme Web App Runner Service Name
+    Value: !Ref WebAppRunnerService
+    Export:
+      Name: smartpyme-web-service-name
   
   VpcConnectorArn:
     Description: VPC Connector ARN for sharing
