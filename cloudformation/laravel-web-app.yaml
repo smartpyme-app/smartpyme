@@ -11,6 +11,10 @@ Parameters:
     NoEcho: true
     Description: Laravel APP_KEY (base64 encoded)
   
+  FrontendUrl:
+    Type: String
+    Description: Frontend URL for CORS configuration (e.g., https://smartpyme-frontend.com)
+  
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: VPC ID where RDS is located
@@ -110,7 +114,8 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
       Tags:
         - Key: Project
           Value: NOVA
@@ -159,6 +164,8 @@ Resources:
                 Value: sqs
               - Name: AWS_DEFAULT_REGION
                 Value: !Ref AWS::Region
+              - Name: FRONTEND_URL
+                Value: !Ref FrontendUrl
 
               - Name: SQS_QUEUE
                 Value: !ImportValue smartpyme-queue-name
@@ -172,6 +179,8 @@ Resources:
                 Value: !ImportValue smartpyme-invoice-processing-queue-name
               - Name: CRON_API_KEY_SECRET_ARN
                 Value: !ImportValue smartpyme-cron-api-key-secret-arn
+              - Name: JWT_SECRET
+                Value: !Ref AppKey
 
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
@@ -183,7 +192,7 @@ Resources:
         InstanceRoleArn: !GetAtt AppRunnerRole.Arn
       HealthCheckConfiguration:
         Protocol: HTTP
-        Path: /api/prueba
+        Path: /health
         Interval: 10
         Timeout: 5
         HealthyThreshold: 1
