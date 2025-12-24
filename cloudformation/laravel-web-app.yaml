@@ -8,8 +8,8 @@ Parameters:
   
   AppKey:
     Type: String
+    Description: Laravel APP_KEY (base64:xxxxx format)
     NoEcho: true
-    Description: Laravel APP_KEY (base64 encoded)
   
   FrontendUrl:
     Type: String
@@ -28,6 +28,16 @@ Parameters:
     Description: Security Group ID of the RDS instance
 
 Resources:
+  # Create APP_KEY secret
+  AppKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/app-key
+      Description: Laravel APP_KEY for SmartPyme application
+      SecretString: !Ref AppKey
+      Tags:
+        - Key: Project
+          Value: NOVA
   # Security Group for App Runner
   AppRunnerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -106,6 +116,7 @@ Resources:
                 Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
                   - !ImportValue smartpyme-database-secret-arn
+                  - !Ref AppKeySecret
         - PolicyName: ParameterStoreAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -152,8 +163,6 @@ Resources:
                 Value: SmartPyme
               - Name: APP_ENV
                 Value: production
-              - Name: APP_KEY
-                Value: !Ref AppKey
               - Name: APP_DEBUG
                 Value: 'false'
               - Name: LOG_CHANNEL
@@ -166,6 +175,8 @@ Resources:
                 Value: !Ref AWS::Region
               - Name: FRONTEND_URL
                 Value: !Ref FrontendUrl
+              - Name: APP_KEY_SECRET_NAME
+                Value: smartpyme/app-key
 
               - Name: SQS_QUEUE
                 Value: !ImportValue smartpyme-queue-name
@@ -179,8 +190,6 @@ Resources:
                 Value: !ImportValue smartpyme-invoice-processing-queue-name
               - Name: CRON_API_KEY_SECRET_ARN
                 Value: !ImportValue smartpyme-cron-api-key-secret-arn
-              - Name: JWT_SECRET
-                Value: !Ref AppKey
 
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true

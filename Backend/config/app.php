@@ -120,7 +120,7 @@ return [
     |
     */
 
-    'key' => env('APP_KEY'),
+    'key' => env('APP_KEY_SECRET_NAME') ? \App\Helpers\AwsConfigHelper::getSecret(env('APP_KEY_SECRET_NAME')) : env('APP_KEY'),
 
     'cipher' => 'AES-256-CBC',
 
