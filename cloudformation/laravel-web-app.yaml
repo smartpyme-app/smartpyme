@@ -229,9 +229,9 @@ Outputs:
   
   ServiceName:
     Description: SmartPyme Web App Runner Service Name
-    Value: !Ref WebAppRunnerService
+    Value: smartpyme-web-app
     Export:
-      Name: smartpyme-web-service-name
+      Name: !Sub '${AWS::StackName}-WebServiceName'
   
   VpcConnectorArn:
     Description: VPC Connector ARN for sharing

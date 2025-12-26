@@ -11,6 +11,8 @@ Parameters:
     Description: CloudFront distribution ID
     Default: ""
 
+
+
 Resources:
   # App Runner Web Service Alarms
   WebAppHighCPUAlarm:
@@ -27,7 +29,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
-          Value: !ImportValue smartpyme-web-service-name
+          Value: !ImportValue smartpyme-web-app-WebServiceName
 
   WebAppHighMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -43,7 +45,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
-          Value: !ImportValue smartpyme-web-service-name
+          Value: !ImportValue smartpyme-web-app-WebServiceName
 
   WebAppHighResponseTimeAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -59,7 +61,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
-          Value: !ImportValue smartpyme-web-service-name
+          Value: !ImportValue smartpyme-web-app-WebServiceName
 
   # App Runner Worker Service Alarms
   WorkerAppHighCPUAlarm:
@@ -76,7 +78,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
-          Value: !ImportValue smartpyme-worker-WorkerServiceName
+          Value: !ImportValue smartpyme-worker-app-WorkerServiceName
 
   WorkerAppHighMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -92,7 +94,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: ServiceName
-          Value: !ImportValue smartpyme-worker-WorkerServiceName
+          Value: !ImportValue smartpyme-worker-app-WorkerServiceName
 
   # RDS Database Alarms
   DatabaseHighCPUAlarm:
@@ -194,7 +196,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-daily-reports
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
 
   # Invoice Processing Queue High Messages
   InvoiceProcessingQueueHighMessagesAlarm:
@@ -211,7 +213,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-invoice-processing
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-queue-name]]
 
   # Shopify Sync Queue High Messages
   ShopifySyncQueueHighMessagesAlarm:
@@ -228,7 +230,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-shopify-sync
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
 
   # Email Notifications Queue High Messages
   EmailNotificationsQueueHighMessagesAlarm:
@@ -245,7 +247,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-email-notifications
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]
 
   # DLQ Alarms
   DailyReportsDLQMessagesAlarm:
@@ -262,7 +264,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-daily-reports-dlq
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
 
   InvoiceProcessingDLQMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -278,7 +280,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-invoice-processing-dlq
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-dlq-name]]
 
   EmailQueueDLQMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -294,7 +296,7 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-email-notifications-dlq
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
 
   ShopifyQueueDLQMessagesAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -310,126 +312,137 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Dimensions:
         - Name: QueueName
-          Value: smartpyme-shopify-sync-dlq
+          Value: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
 
   # CloudWatch Dashboard
   SmartPymeDashboard:
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: SmartPyme-Infrastructure
-      DashboardBody: !Sub |
-        {
-          "widgets": [
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 0,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "!ImportValue smartpyme-web-service-name" ],
-                  [ ".", "MemoryUtilization", ".", "." ],
-                  [ ".", "CPUUtilization", ".", "!ImportValue smartpyme-worker-WorkerServiceName" ],
-                  [ ".", "MemoryUtilization", ".", "." ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "App Runner - CPU & Memory",
-                "period": 300,
-                "yAxis": {
-                  "left": {
-                    "min": 0,
-                    "max": 100
+      DashboardBody: !Sub 
+        - |
+          {
+            "widgets": [
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 0,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/AppRunner", "CPUUtilization", "ServiceName", "${WebServiceName}" ],
+                    [ ".", "MemoryUtilization", ".", "." ],
+                    [ ".", "CPUUtilization", ".", "${WorkerServiceName}" ],
+                    [ ".", "MemoryUtilization", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "App Runner - CPU & Memory",
+                  "period": 300,
+                  "yAxis": {
+                    "left": {
+                      "min": 0,
+                      "max": 100
+                    }
+                  }
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 0,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/AppRunner", "ResponseTime", "ServiceName", "${WebServiceName}" ],
+                    [ ".", "RequestCount", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "Web App - Response Time & Requests",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 6,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DatabaseInstanceId}" ],
+                    [ ".", "DatabaseConnections", ".", "." ],
+                    [ ".", "FreeStorageSpace", ".", "." ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "RDS Database Metrics",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 12,
+                "y": 6,
+                "width": 12,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsQueueName}" ],
+                    [ ".", ".", ".", "${InvoiceProcessingQueueName}" ],
+                    [ ".", ".", ".", "${ShopifySyncQueueName}" ],
+                    [ ".", ".", ".", "${EmailNotificationsQueueName}" ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "SQS Queue Messages",
+                  "period": 300
+                }
+              },
+              {
+                "type": "metric",
+                "x": 0,
+                "y": 12,
+                "width": 24,
+                "height": 6,
+                "properties": {
+                  "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${DailyReportsDLQName}" ],
+                    [ ".", ".", ".", "${InvoiceProcessingDLQName}" ],
+                    [ ".", ".", ".", "${ShopifySyncDLQName}" ],
+                    [ ".", ".", ".", "${EmailNotificationsDLQName}" ]
+                  ],
+                  "view": "timeSeries",
+                  "stacked": false,
+                  "region": "${AWS::Region}",
+                  "title": "Dead Letter Queues",
+                  "period": 300,
+                  "yAxis": {
+                    "left": {
+                      "min": 0
+                    }
                   }
                 }
               }
-            },
-            {
-              "type": "metric",
-              "x": 12,
-              "y": 0,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/AppRunner", "ResponseTime", "ServiceName", "!ImportValue smartpyme-web-service-name" ],
-                  [ ".", "RequestCount", ".", "." ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Web App - Response Time & Requests",
-                "period": 300
-              }
-            },
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 6,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "${DatabaseInstanceId}" ],
-                  [ ".", "DatabaseConnections", ".", "." ],
-                  [ ".", "FreeStorageSpace", ".", "." ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "RDS Database Metrics",
-                "period": 300
-              }
-            },
-            {
-              "type": "metric",
-              "x": 12,
-              "y": 6,
-              "width": 12,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "!ImportValue smartpyme-daily-reports-queue-name" ],
-                  [ ".", ".", ".", "!ImportValue smartpyme-invoice-processing-queue-name" ],
-                  [ ".", ".", ".", "!ImportValue smartpyme-shopify-sync-queue-name" ],
-                  [ ".", ".", ".", "!ImportValue smartpyme-email-notifications-queue-name" ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "SQS Queue Messages",
-                "period": 300
-              }
-            },
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 12,
-              "width": 24,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "smartpyme-daily-reports-dlq" ],
-                  [ ".", ".", ".", "smartpyme-invoice-processing-dlq" ],
-                  [ ".", ".", ".", "smartpyme-shopify-sync-dlq" ],
-                  [ ".", ".", ".", "smartpyme-email-notifications-dlq" ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "${AWS::Region}",
-                "title": "Dead Letter Queues",
-                "period": 300,
-                "yAxis": {
-                  "left": {
-                    "min": 0
-                  }
-                }
-              }
-            }
-          ]
-        }
+            ]
+          }
+        - WebServiceName: !ImportValue smartpyme-web-app-WebServiceName
+          WorkerServiceName: !ImportValue smartpyme-worker-app-WorkerServiceName
+          DailyReportsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-queue-name]]
+          InvoiceProcessingQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-queue-name]]
+          ShopifySyncQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-queue-name]]
+          EmailNotificationsQueueName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-queue-name]]
+          DailyReportsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-daily-reports-dlq-name]]
+          InvoiceProcessingDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-invoice-processing-dlq-name]]
+          ShopifySyncDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-shopify-sync-dlq-name]]
+          EmailNotificationsDLQName: !Select [4, !Split ["/", !ImportValue smartpyme-email-notifications-dlq-name]]
 
 Conditions:
   HasCloudFront: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
