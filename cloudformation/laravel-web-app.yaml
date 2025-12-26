@@ -117,6 +117,14 @@ Resources:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
                   - !ImportValue smartpyme-database-secret-arn
                   - !Ref AppKeySecret
+                  - !ImportValue smartpyme-stripe-secret-arn
+                  - !ImportValue smartpyme-nico-secret-arn
+                  - !ImportValue smartpyme-whatsapp-secret-arn
+                  - !ImportValue smartpyme-shopify-secret-arn
+                  - !ImportValue smartpyme-mailgun-secret-arn
+                  - !ImportValue smartpyme-google-secret-arn
+                  - !ImportValue smartpyme-facebook-secret-arn
+                  - !ImportValue smartpyme-postmark-secret-arn
         - PolicyName: ParameterStoreAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -127,6 +135,13 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/mailgun/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/google/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/facebook/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/payment/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/nico/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/whatsapp/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/shopify/*'
       Tags:
         - Key: Project
           Value: NOVA

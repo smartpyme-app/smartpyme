@@ -5,23 +5,8 @@ Parameters:
   ECRRepositoryURI:
     Type: String
     Description: ECR Repository URI (e.g., 123456789.dkr.ecr.us-east-1.amazonaws.com/smartpyme-backend)
-  
-  AppKey:
-    Type: String
-    Description: Laravel APP_KEY (base64:xxxxx format)
-    NoEcho: true
 
 Resources:
-  # Create APP_KEY secret
-  AppKeySecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: smartpyme/app-key
-      Description: Laravel APP_KEY for SmartPyme application
-      SecretString: !Ref AppKey
-      Tags:
-        - Key: Project
-          Value: NOVA
   # IAM Role for App Runner Worker
   WorkerAppRunnerRole:
     Type: AWS::IAM::Role
@@ -60,7 +45,15 @@ Resources:
                 Resource:
                   - !ImportValue smartpyme-cron-api-key-secret-arn
                   - !ImportValue smartpyme-database-secret-arn
-                  - !Ref AppKeySecret
+                  - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:smartpyme/app-key-*'
+                  - !ImportValue smartpyme-stripe-secret-arn
+                  - !ImportValue smartpyme-nico-secret-arn
+                  - !ImportValue smartpyme-whatsapp-secret-arn
+                  - !ImportValue smartpyme-shopify-secret-arn
+                  - !ImportValue smartpyme-mailgun-secret-arn
+                  - !ImportValue smartpyme-google-secret-arn
+                  - !ImportValue smartpyme-facebook-secret-arn
+                  - !ImportValue smartpyme-postmark-secret-arn
         - PolicyName: ParameterStoreAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -71,6 +64,13 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/host'
                   - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/database/name'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/mailgun/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/google/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/facebook/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/payment/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/nico/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/whatsapp/*'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/smartpyme/config/services/shopify/*'
       Tags:
         - Key: Project
           Value: NOVA
@@ -165,3 +165,9 @@ Outputs:
     Value: !Ref WorkerAppRunnerService
     Export:
       Name: !Sub '${AWS::StackName}-WorkerServiceArn'
+
+  WorkerServiceName:
+    Description: SmartPyme Worker App Runner Service Name
+    Value: !Sub 'smartpyme-worker-${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-WorkerServiceName'

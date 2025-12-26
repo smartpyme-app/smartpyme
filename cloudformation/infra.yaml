@@ -23,6 +23,79 @@ Parameters:
     Description: Database password
     NoEcho: true
 
+  # Third Party Service Parameters
+  StripeKey:
+    Type: String
+    Description: Stripe publishable key
+    Default: ''
+    NoEcho: false
+
+  StripeSecret:
+    Type: String
+    Description: Stripe secret key
+    Default: ''
+    NoEcho: true
+
+  MailgunSecret:
+    Type: String
+    Description: Mailgun API secret
+    Default: ''
+    NoEcho: true
+
+  GoogleClientSecret:
+    Type: String
+    Description: Google OAuth client secret
+    Default: ''
+    NoEcho: true
+
+  FacebookClientSecret:
+    Type: String
+    Description: Facebook OAuth client secret
+    Default: ''
+    NoEcho: true
+
+  NicoApiKey:
+    Type: String
+    Description: N1co API key
+    Default: ''
+    NoEcho: true
+
+  NicoClientSecret:
+    Type: String
+    Description: N1co client secret
+    Default: ''
+    NoEcho: true
+
+  NicoSandboxApiKey:
+    Type: String
+    Description: N1co sandbox API key
+    Default: ''
+    NoEcho: true
+
+  NicoWebhookSecret:
+    Type: String
+    Description: N1co webhook secret
+    Default: ''
+    NoEcho: true
+
+  WhatsAppAccessToken:
+    Type: String
+    Description: WhatsApp Business API access token
+    Default: ''
+    NoEcho: true
+
+  WhatsAppVerifyToken:
+    Type: String
+    Description: WhatsApp webhook verify token
+    Default: 'smartpyme_verify_token'
+    NoEcho: true
+
+  ShopifyWebhookSecret:
+    Type: String
+    Description: Shopify webhook secret
+    Default: ''
+    NoEcho: true
+
 Resources:
   # Database Credentials Secret
   DatabaseSecret:
@@ -60,7 +133,294 @@ Resources:
       Tags:
         Project: NOVA
 
-  # Cron API Key Secret
+  # Third Party Services Configuration Parameters
+  MailgunDomainParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/mailgun/domain
+      Type: String
+      Value: '<not_configured>'
+      Description: Mailgun domain
+      Tags:
+        Project: NOVA
+
+  MailgunEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/mailgun/endpoint
+      Type: String
+      Value: 'api.mailgun.net'
+      Description: Mailgun API endpoint
+      Tags:
+        Project: NOVA
+
+  GoogleClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/google/client_id
+      Type: String
+      Value: '<not_configured>'
+      Description: Google OAuth client ID
+      Tags:
+        Project: NOVA
+
+  GoogleRedirectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/google/redirect
+      Type: String
+      Value: '<not_configured>'
+      Description: Google OAuth redirect URL
+      Tags:
+        Project: NOVA
+
+  FacebookClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/facebook/client_id
+      Type: String
+      Value: '<not_configured>'
+      Description: Facebook OAuth client ID
+      Tags:
+        Project: NOVA
+
+  FacebookRedirectParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/facebook/redirect
+      Type: String
+      Value: '<not_configured>'
+      Description: Facebook OAuth redirect URL
+      Tags:
+        Project: NOVA
+
+  PaymentGatewayParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/payment/default_gateway
+      Type: String
+      Value: 'n1co'
+      Description: Default payment gateway
+      Tags:
+        Project: NOVA
+
+  PaymentSandboxModeParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/payment/sandbox_mode
+      Type: String
+      Value: 'true'
+      Description: Payment sandbox mode
+      Tags:
+        Project: NOVA
+
+  NicoClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/nico/client_id
+      Type: String
+      Value: '<not_configured>'
+      Description: N1co client ID
+      Tags:
+        Project: NOVA
+
+  NicoBaseUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/nico/base_url
+      Type: String
+      Value: 'https://api.n1co.com/api/v2'
+      Description: N1co production API URL
+      Tags:
+        Project: NOVA
+
+  NicoSandboxUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/nico/sandbox_url
+      Type: String
+      Value: 'https://api-sandbox.n1co.shop/api/v2'
+      Description: N1co sandbox API URL
+      Tags:
+        Project: NOVA
+
+  WhatsAppApiUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/whatsapp/api_url
+      Type: String
+      Value: 'https://graph.facebook.com/v21.0/131106576743413/messages'
+      Description: WhatsApp Business API URL
+      Tags:
+        Project: NOVA
+
+  WhatsAppWebhookUrlParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/whatsapp/webhook_url
+      Type: String
+      Value: '/api/whatsapp/webhook'
+      Description: WhatsApp webhook URL
+      Tags:
+        Project: NOVA
+
+  WhatsAppDevModeParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/whatsapp/dev_mode
+      Type: String
+      Value: 'true'
+      Description: WhatsApp development mode
+      Tags:
+        Project: NOVA
+
+  WhatsAppUseAiParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/whatsapp/use_ai
+      Type: String
+      Value: 'false'
+      Description: WhatsApp AI integration
+      Tags:
+        Project: NOVA
+
+  WhatsAppUseBusinessParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/whatsapp/use_whatsapp_business
+      Type: String
+      Value: 'true'
+      Description: Use WhatsApp Business API
+      Tags:
+        Project: NOVA
+
+  ShopifyEnabledParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /smartpyme/config/services/shopify/enabled
+      Type: String
+      Value: 'false'
+      Description: Shopify integration enabled
+      Tags:
+        Project: NOVA
+
+  # Third Party Services Secrets
+  StripeServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/stripe
+      Description: Stripe payment credentials
+      SecretString: !Sub |
+        {
+          "key": "${StripeKey}",
+          "secret": "${StripeSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  NicoServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/nico
+      Description: N1co payment service credentials
+      SecretString: !Sub |
+        {
+          "api_key": "${NicoApiKey}",
+          "client_secret": "${NicoClientSecret}",
+          "sandbox_api_key": "${NicoSandboxApiKey}",
+          "webhook_secret": "${NicoWebhookSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  WhatsAppServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/whatsapp
+      Description: WhatsApp Business API credentials
+      SecretString: !Sub |
+        {
+          "access_token": "${WhatsAppAccessToken}",
+          "verify_token": "${WhatsAppVerifyToken}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  ShopifyServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/shopify
+      Description: Shopify webhook credentials
+      SecretString: !Sub |
+        {
+          "webhook_secret": "${ShopifyWebhookSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  MailgunServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/mailgun
+      Description: Mailgun email service credentials
+      SecretString: !Sub |
+        {
+          "secret": "${MailgunSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  GoogleOAuthServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/google
+      Description: Google OAuth credentials
+      SecretString: !Sub |
+        {
+          "client_secret": "${GoogleClientSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  FacebookOAuthServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/facebook
+      Description: Facebook OAuth credentials
+      SecretString: !Sub |
+        {
+          "client_secret": "${FacebookClientSecret}"
+        }
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  PostmarkServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/postmark
+      Description: Postmark email service credentials
+      SecretString: '{"token": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
+  BedrockServiceSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: smartpyme/config/services/bedrock
+      Description: AWS Bedrock AI service credentials
+      SecretString: '{"key": "", "secret": ""}'
+      Tags:
+        - Key: Project
+          Value: NOVA
+
   CronApiKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -306,3 +666,83 @@ Outputs:
     Value: !Ref CronApiKeySecret
     Export:
       Name: smartpyme-cron-api-key-secret-arn
+
+  # Third Party Services Secrets Exports
+  StripeSecretArn:
+    Description: Stripe Service Secret ARN
+    Value: !Ref StripeServiceSecret
+    Export:
+      Name: smartpyme-stripe-secret-arn
+
+  NicoSecretArn:
+    Description: N1co Service Secret ARN
+    Value: !Ref NicoServiceSecret
+    Export:
+      Name: smartpyme-nico-secret-arn
+
+  WhatsAppSecretArn:
+    Description: WhatsApp Service Secret ARN
+    Value: !Ref WhatsAppServiceSecret
+    Export:
+      Name: smartpyme-whatsapp-secret-arn
+
+  ShopifySecretArn:
+    Description: Shopify Service Secret ARN
+    Value: !Ref ShopifyServiceSecret
+    Export:
+      Name: smartpyme-shopify-secret-arn
+
+  MailgunSecretArn:
+    Description: Mailgun Service Secret ARN
+    Value: !Ref MailgunServiceSecret
+    Export:
+      Name: smartpyme-mailgun-secret-arn
+
+  GoogleSecretArn:
+    Description: Google OAuth Service Secret ARN
+    Value: !Ref GoogleOAuthServiceSecret
+    Export:
+      Name: smartpyme-google-secret-arn
+
+  FacebookSecretArn:
+    Description: Facebook OAuth Service Secret ARN
+    Value: !Ref FacebookOAuthServiceSecret
+    Export:
+      Name: smartpyme-facebook-secret-arn
+
+  PostmarkSecretArn:
+    Description: Postmark Service Secret ARN
+    Value: !Ref PostmarkServiceSecret
+    Export:
+      Name: smartpyme-postmark-secret-arn
+
+  # DLQ Exports
+  SmartPymeDLQName:
+    Description: Main SmartPyme DLQ Name
+    Value: !Ref SmartPymeDeadLetterQueue
+    Export:
+      Name: smartpyme-main-dlq-name
+
+  DailyReportsDLQName:
+    Description: Daily Reports DLQ Name
+    Value: !Ref DailyReportsDeadLetterQueue
+    Export:
+      Name: smartpyme-daily-reports-dlq-name
+
+  InvoiceProcessingDLQName:
+    Description: Invoice Processing DLQ Name
+    Value: !Ref InvoiceProcessingDeadLetterQueue
+    Export:
+      Name: smartpyme-invoice-processing-dlq-name
+
+  ShopifySyncDLQName:
+    Description: Shopify Sync DLQ Name
+    Value: !Ref ShopifySyncDeadLetterQueue
+    Export:
+      Name: smartpyme-shopify-sync-dlq-name
+
+  EmailNotificationsDLQName:
+    Description: Email Notifications DLQ Name
+    Value: !Ref EmailNotificationsDeadLetterQueue
+    Export:
+      Name: smartpyme-email-notifications-dlq-name
