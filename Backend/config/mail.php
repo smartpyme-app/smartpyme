@@ -40,7 +40,7 @@ return [
             'port' => env('MAIL_PORT', 587),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
-            'password' => env('MAIL_PASSWORD'),
+            'password' => env('AWS_DEFAULT_REGION') && env('MAIL_SECRET_NAME') ? \App\Helpers\AwsConfigHelper::getSecret(env('MAIL_SECRET_NAME')) : env('MAIL_PASSWORD', ''),
             'timeout' => null,
             'auth_mode' => null,
         ],
