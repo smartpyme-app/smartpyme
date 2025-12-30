@@ -21,6 +21,12 @@ class DatabaseConfigProvider extends ServiceProvider
 
     private function configureDatabase()
     {
+        // Skip AWS calls during build when no region is set
+        if (!env('AWS_DEFAULT_REGION')) {
+            error_log("DatabaseConfigProvider: Skipping AWS configuration (no region set)");
+            return;
+        }
+        
         try {
             $host = AwsConfigHelper::getParameter('/smartpyme/database/host', '127.0.0.1');
             $database = AwsConfigHelper::getParameter('/smartpyme/database/name', 'smartpyme');
