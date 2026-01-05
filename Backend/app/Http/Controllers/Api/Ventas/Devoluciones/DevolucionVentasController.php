@@ -28,9 +28,17 @@ use Illuminate\Support\Str;
 use App\Http\Requests\Ventas\Devoluciones\StoreDevolucionRequest;
 use App\Http\Requests\Ventas\Devoluciones\UpdateDevolucionRequest;
 use App\Http\Requests\Ventas\Devoluciones\FacturacionDevolucionRequest;
+use App\Services\Ventas\DevolucionVentaService;
+use Illuminate\Support\Facades\Log;
 
 class DevolucionVentasController extends Controller
 {
+    protected $devolucionVentaService;
+
+    public function __construct(DevolucionVentaService $devolucionVentaService)
+    {
+        $this->devolucionVentaService = $devolucionVentaService;
+    }
 
     public function index(Request $request) {
 
@@ -222,144 +230,61 @@ class DevolucionVentasController extends Controller
     }
 
 
-    public function facturacion(FacturacionDevolucionRequest $request){
-
-        // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
-            $venta = Venta::findOrFail($request->id_venta);
-
-            $devolucionesActivas = Devolucion::where('id_venta', $request->id_venta)
-                ->where('enable', true)
-                ->when($request->id, function ($query) use ($request) {
-                    $query->where('id', '!=', $request->id);
-                })
-                ->with('documento')
-                ->get();
-
-            $totalCreditos = 0;
-            $totalDebitos = 0;
-
-            foreach ($devolucionesActivas as $devolucionExistente) {
-                $nombreDocumentoExistente = optional($devolucionExistente->documento)->nombre;
-
-                if ($nombreDocumentoExistente == 'Nota de crédito') {
-                    $totalCreditos += $devolucionExistente->total;
-                } elseif ($nombreDocumentoExistente == 'Nota de débito') {
-                    $totalDebitos += $devolucionExistente->total;
-                }
-            }
-
-            $documentoNuevo = $request->id_documento ? Documento::find($request->id_documento) : null;
-            $nombreDocumentoNuevo = optional($documentoNuevo)->nombre;
-
-            if ($nombreDocumentoNuevo == 'Nota de crédito') {
-                $totalCreditos += $request->total;
-            } elseif ($nombreDocumentoNuevo == 'Nota de débito') {
-                $totalDebitos += $request->total;
-            }
-
-            $diferencia = abs($totalCreditos - $totalDebitos);
-            $totalVenta = $venta->total;
-
-            if ($diferencia > $totalVenta) {
-                return Response()->json([
-                    'error' => 'No se puede registrar la devolución. La diferencia entre notas de crédito y notas de débito (' .
-                              number_format($diferencia, 2) .
-                              ') supera el total de la venta (' . number_format($totalVenta, 2) . ').'
-                ], 400);
-            }
+    public function facturacion(FacturacionDevolucionRequest $request)
+    {
+        try {
+            // Validar que la diferencia entre notas de crédito y notas de débito no supere el total de la venta
+            $this->devolucionVentaService->validarLimitesDevolucion(
+                $request->id_venta,
+                $request->id,
+                $request->id_documento,
+                $request->total
+            );
+        } catch (\Exception $e) {
+            return Response()->json(['error' => $e->getMessage()], 400);
+        }
 
         DB::beginTransaction();
 
         try {
-
-        // Guardamos la devolucion
-            if($request->id)
+            // Guardamos la devolucion
+            if ($request->id) {
                 $devolucion = Devolucion::findOrFail($request->id);
-            else
+            } else {
                 $devolucion = new Devolucion;
+            }
 
             $devolucion->fill($request->all());
             $devolucion->save();
 
-            // $venta = Venta::findOrFail($request['id_venta']);
-            // $venta->estado = 'Anulada';
-            // $venta->save();
+            // Procesar detalles (crear detalles, manejar composiciones, actualizar inventario, manejar paquetes)
+            $this->devolucionVentaService->procesarDetalles(
+                $devolucion,
+                $request->detalles,
+                $request->tipo,
+                $request->id_bodega
+            );
 
-        // Guardamos los detalles
+            // Incrementar el correlativo
+            $this->devolucionVentaService->incrementarCorrelativo($devolucion);
 
-            foreach ($request->detalles as $det) {
-                $detalle = new Detalle;
-                $det['id_devolucion_venta'] = $devolucion->id;
-                $detalle->fill($det);
-                $detalle->save();
-
-                // Si es compuesto
-                if (isset($det['composiciones'])) {
-                    foreach ($det['composiciones'] as $item) {
-                        $cd = new DetalleCompuesto;
-                        $cd->id_producto = $item['id_producto'];
-                        $cd->cantidad   = $item['cantidad'];
-                        $cd->id_detalle = $detalle->id;
-                        $cd->save();
-
-                    }
-                }
-
-                // Solo afectar inventario si el tipo de nota de crédito lo requiere
-                if ($request->tipo !== 'descuento_ajuste') {
-                    $inventario = Inventario::where('id_producto', $det['id_producto'])
-                                        ->where('id_bodega', $request->id_bodega)->first();
-
-                    if ($inventario) {
-                        $inventario->stock += $det['cantidad'];
-                        $inventario->save();
-                        $inventario->kardex($devolucion, $det['cantidad']);
-                    }
-
-                    // Inventario compuestos
-                    if (isset($det['composiciones'])) {
-                        foreach ($det['composiciones'] as $comp) {
-
-                            $inventario = Inventario::where('id_producto', $comp['id_producto'])
-                                        ->where('id_bodega', $devolucion->id_bodega)->first();
-
-                            if ($inventario) {
-                                $inventario->stock += $det['cantidad'] * $comp['cantidad'];
-                                $inventario->save();
-                                $inventario->kardex($devolucion, ($det['cantidad'] * $comp['cantidad']));
-                            }
-                        }
-                    }
-                }
-
-                // Si es paquete cambiar estado
-                $paquetes = Paquete::where('id_venta', $devolucion->id_venta)->get();
-                foreach ($paquetes as $paquete) {
-                    $paquete->estado = 'En bodega';
-                    $paquete->id_venta = NULL;
-                    $paquete->id_venta_detalle = NULL;
-                    $paquete->save();
-                }
-
-            }
-
-        // Incrementar el correlarivo
-        if ($devolucion->id_documento) {
-            Documento::where('id', $devolucion->id_documento)->increment('correlativo');
-        }
-
-        DB::commit();
-        return Response()->json($devolucion, 200);
-
+            DB::commit();
+            return Response()->json($devolucion, 200);
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Error en facturacion (DevolucionVentasController): ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
             return Response()->json(['error' => $e->getMessage()], 400);
         } catch (\Throwable $e) {
             DB::rollback();
+            Log::error('Error inesperado en facturacion (DevolucionVentasController): ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
             return Response()->json(['error' => $e->getMessage()], 400);
         }
-
-
     }
 
     public function generarDoc($id){

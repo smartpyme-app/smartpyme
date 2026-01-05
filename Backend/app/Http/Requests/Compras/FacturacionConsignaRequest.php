@@ -36,7 +36,7 @@ class FacturacionConsignaRequest extends FormRequest
             'total' => 'required|numeric|min:0',
             'nota' => 'sometimes|nullable|string|max:255',
             'id_usuario' => 'required|integer|exists:users,id',
-            'id_bodega' => 'required|integer|exists:bodegas,id',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
         ];
     }

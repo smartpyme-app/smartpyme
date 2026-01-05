@@ -17,6 +17,8 @@ use App\Services\ShopifyApiClient;
 use Illuminate\Http\Request;
 use App\Services\ShopifyTransformer;
 use App\Services\ShippingService;
+use App\Services\Shopify\ShopifyVentaService;
+use App\Services\Shopify\ShopifyClienteService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -31,14 +33,24 @@ class ShopifyController extends Controller
     protected $cache;
     protected $shippingService;
     protected $impuestosService;
+    protected $shopifyVentaService;
+    protected $shopifyClienteService;
 
 
-    public function __construct(ShopifyTransformer $transformer, ShopifySyncCache $cache, ShippingService $shippingService, \App\Services\ImpuestosService $impuestosService)
-    {
+    public function __construct(
+        ShopifyTransformer $transformer,
+        ShopifySyncCache $cache,
+        ShippingService $shippingService,
+        \App\Services\ImpuestosService $impuestosService,
+        ShopifyVentaService $shopifyVentaService,
+        ShopifyClienteService $shopifyClienteService
+    ) {
         $this->transformer = $transformer;
         $this->cache = $cache;
         $this->shippingService = $shippingService;
         $this->impuestosService = $impuestosService;
+        $this->shopifyVentaService = $shopifyVentaService;
+        $this->shopifyClienteService = $shopifyClienteService;
     }
 
     public function handle($tokenEmpresa, Request $request)
@@ -397,7 +409,7 @@ class ShopifyController extends Controller
             //     'shopify_customer_id' => $request->id
             // ]);
             
-            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+            $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
             // Log::info('=== CLIENTE CREADO/ACTUALIZADO ===', [
             //     'cliente_id' => $cliente->id,
@@ -453,7 +465,7 @@ class ShopifyController extends Controller
             //     'shopify_customer_id' => $request->id
             // ]);
             
-            $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+            $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             
             // Log::info('=== CLIENTE ACTUALIZADO ===', [
             //     'cliente_id' => $cliente->id,
@@ -667,10 +679,10 @@ class ShopifyController extends Controller
                 //     'usuario_id' => $usuario->id
                 // ]);
                 
-                $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+                $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             } else {
                 // Usar cliente "Consumidor Final" por defecto
-                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                $cliente = $this->shopifyClienteService->obtenerClienteConsumidorFinal($usuario->id_empresa);
                 
                 // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL EN VENTA ===', [
                 //     'shopify_order_id' => $request->id ?? 'N/A',
@@ -1150,7 +1162,7 @@ class ShopifyController extends Controller
             ]);
 
             // Verificar si se debe revertir el inventario según la configuración de Shopify
-            $debeRevertirInventario = $this->debeRevertirInventario($request);
+            $debeRevertirInventario = $this->shopifyVentaService->debeRevertirInventario($request);
             
             // Log::info("Decisión de revertir inventario", [
             //     'debe_revertir' => $debeRevertirInventario,
@@ -1227,62 +1239,6 @@ class ShopifyController extends Controller
         }
     }
 
-    /**
-     * Determina si se debe revertir el inventario basado en el webhook de Shopify
-     */
-    private function debeRevertirInventario(Request $request)
-    {
-        
-        // 1. Verificar si hay refunds con restock
-        if (isset($request->refunds) && is_array($request->refunds)) {
-            foreach ($request->refunds as $refund) {
-                if (isset($refund['restock']) && $refund['restock'] === true) {
-                    Log::info("Inventario debe revertirse - refund con restock encontrado", [
-                        'refund_id' => $refund['id'] ?? 'N/A'
-                    ]);
-                    return true;
-                }
-            }
-        }
-        
-        // 2. Verificar el cancel_reason y financial_status
-        $cancelReason = $request->input('cancel_reason');
-        $financialStatus = $request->input('financial_status');
-        
-        // Si el pedido está voided y no hay refunds, generalmente significa que se revierte el inventario
-        if ($financialStatus === 'voided' && empty($request->refunds)) {
-            Log::info("Inventario debe revertirse - pedido voided sin refunds", [
-                'cancel_reason' => $cancelReason,
-                'financial_status' => $financialStatus
-            ]);
-            return true;
-        }
-        
-        // 3. Verificar si hay line_items con información de restock
-        if (isset($request->line_items) && is_array($request->line_items)) {
-            foreach ($request->line_items as $lineItem) {
-                // Si el line item tiene fulfillable_quantity > 0, significa que no se ha enviado
-                // y por tanto se debe revertir el inventario
-                if (isset($lineItem['fulfillable_quantity']) && $lineItem['fulfillable_quantity'] > 0) {
-                    Log::info("Inventario debe revertirse - line item con fulfillable_quantity > 0", [
-                        'line_item_id' => $lineItem['id'] ?? 'N/A',
-                        'fulfillable_quantity' => $lineItem['fulfillable_quantity']
-                    ]);
-                    return true;
-                }
-            }
-        }
-        
-        // 4. Por defecto, si no hay información específica, asumir que NO se debe revertir
-        // Esto es más seguro para evitar restaurar stock cuando no se debe
-        Log::info("No se revierte inventario - no se encontró indicación clara de restock", [
-            'cancel_reason' => $cancelReason,
-            'financial_status' => $financialStatus,
-            'has_refunds' => !empty($request->refunds)
-        ]);
-        
-        return false;
-    }
 
     /**
      * Busca o actualiza un cliente optimizando por shopify_customer_id, correo y teléfono
@@ -1291,322 +1247,7 @@ class ShopifyController extends Controller
      * @param int $empresaId
      * @return Cliente
      */
-    private function buscarOActualizarCliente($clienteData, $empresaId)
-    {
-        $shopifyCustomerId = $clienteData['shopify_customer_id'] ?? null;
-        $correo = $clienteData['correo'] ?? null;
-        $telefono = $clienteData['telefono'] ?? null;
-        
-        // Validaciones de seguridad para evitar asignaciones incorrectas
-        if (!$this->validarDatosCliente($clienteData)) {
-            Log::warning('Datos de cliente inválidos, creando cliente con datos mínimos', [
-                'shopify_customer_id' => $shopifyCustomerId,
-                'correo' => $correo,
-                'telefono' => $telefono
-            ]);
-            
-            // Crear cliente con datos mínimos válidos
-            return $this->crearClienteMinimo($clienteData, $empresaId);
-        }
-        
-        // 1. Si tenemos shopify_customer_id, buscar primero por ese campo
-        if ($shopifyCustomerId) {
-            $cliente = Cliente::where('shopify_customer_id', $shopifyCustomerId)
-                ->where('id_empresa', $empresaId)
-                ->first();
-                
-            if ($cliente) {
-                Log::info('Cliente encontrado por shopify_customer_id', [
-                    'cliente_id' => $cliente->id,
-                    'shopify_customer_id' => $shopifyCustomerId,
-                    'correo' => $cliente->correo,
-                    'telefono' => $cliente->telefono
-                ]);
-                
-                // Actualizar datos del cliente excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
-            }
-        }
-        
-        // 2. Si no se encontró por shopify_customer_id, buscar por correo
-        if ($correo) {
-            $cliente = Cliente::where('correo', $correo)
-                ->where('id_empresa', $empresaId)
-                ->first();
-                
-            if ($cliente) {
-                // Validar que no haya conflicto con shopify_customer_id existente
-                if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
-                    Log::warning('Conflicto de shopify_customer_id detectado', [
-                        'cliente_id' => $cliente->id,
-                        'correo' => $correo,
-                        'shopify_customer_id_existente' => $cliente->shopify_customer_id,
-                        'shopify_customer_id_nuevo' => $shopifyCustomerId
-                    ]);
-                    
-                    // Crear nuevo cliente para evitar conflicto
-                    return $this->crearClienteMinimo($clienteData, $empresaId);
-                }
-                
-                Log::info('Cliente encontrado por correo, actualizando shopify_customer_id', [
-                    'cliente_id' => $cliente->id,
-                    'correo' => $correo,
-                    'shopify_customer_id' => $shopifyCustomerId,
-                    'telefono_actual' => $cliente->telefono,
-                    'telefono_nuevo' => $telefono
-                ]);
-                
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
-            }
-        }
-        
-        // 3. Si no se encontró por correo, buscar por teléfono (con validación adicional)
-        if ($telefono) {
-            $cliente = Cliente::where('telefono', $telefono)
-                ->where('id_empresa', $empresaId)
-                ->first();
-                
-            if ($cliente) {
-                // Validar que no haya conflicto con shopify_customer_id existente
-                if ($cliente->shopify_customer_id && $cliente->shopify_customer_id !== $shopifyCustomerId) {
-                    Log::warning('Conflicto de shopify_customer_id detectado por teléfono', [
-                        'cliente_id' => $cliente->id,
-                        'telefono' => $telefono,
-                        'shopify_customer_id_existente' => $cliente->shopify_customer_id,
-                        'shopify_customer_id_nuevo' => $shopifyCustomerId
-                    ]);
-                    
-                    // Crear nuevo cliente para evitar conflicto
-                    return $this->crearClienteMinimo($clienteData, $empresaId);
-                }
-                
-                // Validar que el correo coincida si está disponible
-                if ($correo && $cliente->correo && $cliente->correo !== $correo) {
-                    Log::warning('Conflicto de correo detectado por teléfono', [
-                        'cliente_id' => $cliente->id,
-                        'telefono' => $telefono,
-                        'correo_cliente' => $cliente->correo,
-                        'correo_pedido' => $correo
-                    ]);
-                    
-                    // Crear nuevo cliente para evitar conflicto
-                    return $this->crearClienteMinimo($clienteData, $empresaId);
-                }
-                
-                Log::info('Cliente encontrado por teléfono, actualizando shopify_customer_id', [
-                    'cliente_id' => $cliente->id,
-                    'telefono' => $telefono,
-                    'shopify_customer_id' => $shopifyCustomerId,
-                    'correo_actual' => $cliente->correo,
-                    'correo_nuevo' => $correo
-                ]);
-                
-                // Actualizar datos incluyendo el shopify_customer_id, excluyendo campos protegidos
-                $clienteDataProtegido = $this->excluirCamposProtegidos($clienteData, $empresaId);
-                $cliente->update($clienteDataProtegido);
-                return $cliente;
-            }
-        }
-        
-        // 4. Si no existe, crear nuevo cliente
-        Log::info('Creando nuevo cliente', [
-            'correo' => $correo,
-            'telefono' => $telefono,
-            'shopify_customer_id' => $shopifyCustomerId
-        ]);
-        
-        return Cliente::create($clienteData);
-    }
 
-    /**
-     * Excluye campos protegidos del array de datos del cliente
-     * Estos campos no deben ser actualizados desde Shopify cuando el cliente ya existe
-     * Solo aplica si la empresa tiene facturación electrónica activa
-     */
-    private function excluirCamposProtegidos($clienteData, $empresaId)
-    {
-        // Verificar si la empresa tiene facturación electrónica activa
-        $empresa = Empresa::find($empresaId);
-        
-        if (!$empresa || !$empresa->facturacion_electronica) {
-            // Si no tiene facturación electrónica, retornar todos los datos sin excluir nada
-            Log::info('Empresa sin facturación electrónica - no se excluyen campos protegidos', [
-                'empresa_id' => $empresaId,
-                'facturacion_electronica' => $empresa ? $empresa->facturacion_electronica : false
-            ]);
-            return $clienteData;
-        }
-        
-        // Campos que no deben ser actualizados desde Shopify cuando el cliente ya existe
-        // Estos campos son importantes para facturación de crédito fiscal
-        $camposProtegidos = [
-            'cod_departamento',
-            'departamento',
-            'municipio',
-            'cod_municipio',
-            'pais'
-        ];
-        
-        // Crear una copia del array sin los campos protegidos
-        $clienteDataProtegido = $clienteData;
-        foreach ($camposProtegidos as $campo) {
-            unset($clienteDataProtegido[$campo]);
-        }
-        
-        // Log::info('Campos protegidos excluidos de actualización desde Shopify', [
-        //     'empresa_id' => $empresaId,
-        //     'facturacion_electronica' => true,
-        //     'campos_excluidos' => $camposProtegidos,
-        //     'campos_que_se_actualizaran' => array_keys($clienteDataProtegido)
-        // ]);
-        
-        return $clienteDataProtegido;
-    }
-
-    /**
-     * Valida los datos del cliente para evitar asignaciones incorrectas
-     * 
-     * @param array $clienteData
-     * @return bool
-     */
-    private function validarDatosCliente($clienteData)
-    {
-        $correo = $clienteData['correo'] ?? null;
-        $nombre = $clienteData['nombre'] ?? null;
-        $apellido = $clienteData['apellido'] ?? null;
-        
-        // Validar que tenga al menos un nombre
-        if (empty($nombre) && empty($apellido)) {
-            Log::warning('Cliente sin nombre válido', [
-                'nombre' => $nombre,
-                'apellido' => $apellido,
-                'correo' => $correo
-            ]);
-            return false;
-        }
-        
-        // Validar email si existe
-        if ($correo && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
-            Log::warning('Email inválido', [
-                'correo' => $correo,
-                'nombre' => $nombre
-            ]);
-            return false;
-        }
-        
-        // Validar que no sea un email genérico o de prueba
-        if ($correo && $this->esEmailGenerico($correo)) {
-            Log::warning('Email genérico detectado', [
-                'correo' => $correo,
-                'nombre' => $nombre
-            ]);
-            return false;
-        }
-        
-        return true;
-    }
-
-    /**
-     * Verifica si un email es genérico o de prueba
-     * 
-     * @param string $email
-     * @return bool
-     */
-    private function esEmailGenerico($email)
-    {
-        $emailsGenericos = [
-            'test@example.com',
-            'test@test.com',
-            'admin@shopify.com',
-            'noreply@shopify.com',
-            'support@shopify.com',
-            'info@shopify.com',
-            'contact@shopify.com'
-        ];
-        
-        $emailLower = strtolower($email);
-        
-        // Verificar emails genéricos exactos
-        if (in_array($emailLower, $emailsGenericos)) {
-            return true;
-        }
-        
-        // Verificar patrones genéricos
-        $patronesGenericos = [
-            '/^test\d*@/',
-            '/^admin\d*@/',
-            '/^user\d*@/',
-            '/^customer\d*@/',
-            '/^shopify\d*@/',
-            '/^demo\d*@/'
-        ];
-        
-        foreach ($patronesGenericos as $patron) {
-            if (preg_match($patron, $emailLower)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    /**
-     * Crea un cliente con datos mínimos válidos
-     * 
-     * @param array $clienteData
-     * @param int $empresaId
-     * @return Cliente
-     */
-    private function crearClienteMinimo($clienteData, $empresaId)
-    {
-        $clienteMinimo = [
-            'nombre' => $clienteData['nombre'] ?? 'Cliente',
-            'apellido' => $clienteData['apellido'] ?? 'Shopify',
-            'correo' => $clienteData['correo'] ?? 'cliente@shopify.com',
-            'telefono' => $clienteData['telefono'] ?? '',
-            'direccion' => $clienteData['direccion'] ?? '',
-            'pais' => $clienteData['pais'] ?? '',
-            'municipio' => $clienteData['municipio'] ?? '',
-            'departamento' => $clienteData['departamento'] ?? '',
-            'tipo' => 'Persona',
-            'enable' => 1,
-            'id_empresa' => $empresaId,
-            'id_usuario' => $clienteData['id_usuario'] ?? null,
-            'shopify_customer_id' => $clienteData['shopify_customer_id'] ?? null,
-        ];
-        
-        Log::info('Creando cliente mínimo', [
-            'cliente_minimo' => $clienteMinimo
-        ]);
-        
-        return Cliente::create($clienteMinimo);
-    }
-
-    /**
-     * Mapea el estado financiero de Shopify al estado de SmartPyme
-     * 
-     * @param string $shopifyStatus
-     * @return string
-     */
-    private function mapearEstado($shopifyStatus)
-    {
-        $mapeo = [
-            'pending' => 'Pendiente',
-            'authorized' => 'Pendiente',
-            'partially_paid' => 'Pendiente',
-            'paid' => 'Pagada',
-            'partially_refunded' => 'Pagada',
-            'refunded' => 'Anulada', // Cambiado de 'Reembolsada' a 'Anulada'
-            'voided' => 'Anulada'
-        ];
-
-        return $mapeo[$shopifyStatus] ?? 'Pendiente';
-    }
 
     /**
      * Actualiza las cantidades de productos en una venta existente
@@ -1614,6 +1255,7 @@ class ShopifyController extends Controller
      * @param Venta $venta
      * @param Request $request
      * @return void
+     * @deprecated Usar ShopifyVentaService::actualizarCantidadesProductos() en su lugar
      */
     private function actualizarCantidadesProductos($venta, $request, $usuario)
     {
@@ -2087,7 +1729,7 @@ class ShopifyController extends Controller
         ]);
 
         // Recalcular totales después de actualizar envíos
-        $this->recalcularTotalesVenta($venta);
+        $this->shopifyVentaService->recalcularTotalesVenta($venta);
     }
 
     /**
@@ -2216,7 +1858,7 @@ class ShopifyController extends Controller
             }
 
             // Actualizar estado de la venta si es necesario
-            $nuevoEstado = $this->mapearEstado($request->financial_status ?? 'pending');
+            $nuevoEstado = $this->shopifyVentaService->mapearEstado($request->financial_status ?? 'pending');
             $financialStatus = $request->financial_status ?? 'pending';
             
             if ($venta->estado !== $nuevoEstado) {
@@ -2258,10 +1900,10 @@ class ShopifyController extends Controller
             }
 
             // Actualizar envíos si han cambiado
-            $this->actualizarEnvio($venta, $request, $usuario);
+            $this->shopifyVentaService->actualizarEnvio($venta, $request, $usuario);
 
             // Actualizar cantidades de productos y crear productos nuevos si han cambiado
-            $this->actualizarCantidadesProductos($venta, $request, $usuario);
+            $this->shopifyVentaService->actualizarCantidadesProductos($venta, $request, $usuario);
 
             return response()->json([
                 'status' => 'success',
@@ -2442,10 +2084,10 @@ class ShopifyController extends Controller
                 //     'usuario_id' => $usuario->id
                 // ]);
                 
-                $cliente = $this->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
+                $cliente = $this->shopifyClienteService->buscarOActualizarCliente($clienteData, $usuario->id_empresa);
             } else {
                 // Usar cliente "Consumidor Final" por defecto
-                $cliente = $this->obtenerClienteConsumidorFinal($usuario->id_empresa);
+                $cliente = $this->shopifyClienteService->obtenerClienteConsumidorFinal($usuario->id_empresa);
                 
                 // Log::info('=== USANDO CLIENTE CONSUMIDOR FINAL ===', [
                 //     'shopify_draft_order_id' => $request->id ?? 'N/A',
@@ -2631,39 +2273,6 @@ class ShopifyController extends Controller
      * @param int $empresaId
      * @return Cliente
      */
-    private function obtenerClienteConsumidorFinal($empresaId)
-    {
-        // Buscar cliente "Consumidor Final" existente
-        $cliente = Cliente::where('nombre', 'Consumidor Final')
-            ->where('apellido', '')
-            ->where('id_empresa', $empresaId)
-            ->first();
-            
-        if (!$cliente) {
-            // Crear cliente "Consumidor Final" si no existe
-            $cliente = Cliente::create([
-                'nombre' => 'Consumidor Final',
-                'apellido' => '',
-                'correo' => '',
-                'telefono' => '',
-                'direccion' => '',
-                'pais' => '',
-                'municipio' => '',
-                'departamento' => '',
-                'tipo' => 'Persona',
-                'enable' => 1,
-                'id_empresa' => $empresaId,
-                'id_usuario' => null, // No asociado a usuario específico
-            ]);
-            
-            Log::info('Cliente Consumidor Final creado', [
-                'cliente_id' => $cliente->id,
-                'empresa_id' => $empresaId
-            ]);
-        }
-        
-        return $cliente;
-    }
 
     /**
      * Procesa el webhook de prueba enviado por Shopify

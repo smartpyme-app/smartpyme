@@ -33,7 +33,7 @@ class StoreUsuarioRequest extends FormRequest
             ],
             'rol_id' => 'required|integer|exists:roles,id',
             'id_empresa' => 'required|integer|exists:empresas,id',
-            'id_bodega' => 'required|integer|exists:bodegas,id',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
             'id_sucursal' => 'required|integer|exists:sucursales,id',
             'password' => array_merge(
                 $isUpdate ? ['nullable'] : ['required'],

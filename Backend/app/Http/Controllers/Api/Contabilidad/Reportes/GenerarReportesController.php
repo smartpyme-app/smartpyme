@@ -19,9 +19,16 @@ use App\Models\Contabilidad\Catalogo\CuentaReporte;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Monolog\Handler\ZendMonitorHandler;
+use App\Services\Contabilidad\ReporteContabilidadService;
 
 class GenerarReportesController extends Controller
 {
+    protected $reporteContabilidadService;
+
+    public function __construct(ReporteContabilidadService $reporteContabilidadService)
+    {
+        $this->reporteContabilidadService = $reporteContabilidadService;
+    }
 
     public function mayorizacion($codigo_c)
     {
@@ -237,67 +244,8 @@ class GenerarReportesController extends Controller
                 }
             })->get();
 
-        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
-                return strpos($detalle->codigo, (string)$cod_padre) === 0;
-            });
-
-            // Convertir el resultado a una colección nuevamente (opcional)
-            $partidasFiltradas = $partidasFiltradas->values();
-
-            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
-
-            $sum_deb = 0;
-            $sum_hab = 0;
-            foreach ($partidasFiltradas as $det_part) {
-
-                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb += $det_part->debe;
-                $sum_hab += $det_part->haber;
-            }
-
-            if (count($partidasFiltradas) != 0) {
-
-                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
-
-
-                $cuenta_reporte = new CuentaReporte();
-                $cuenta_reporte->cuenta = $cod_padre;
-                $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->naturaleza = $cnt->naturaleza;
-                $cuenta_reporte->cargo = $sum_deb;
-                $cuenta_reporte->abono = $sum_hab;
-                $cuenta_reporte->saldo_actual = 0;
-                $cuenta_reporte->saldo_anterior = 0;
-
-                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
-                $saldo_actual = 0;
-                foreach ($partidasFiltradas as $detalle) {
-                    $debe_valor = (float)($detalle->debe ?? 0);
-                    $haber_valor = (float)($detalle->haber ?? 0);
-                    
-                    // Calcular saldo según naturaleza de la cuenta
-                    if ($cnt->naturaleza == 'Deudor') {
-                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
-                    } else {
-                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
-                    }
-                    
-                    // Agregar el saldo calculado al detalle
-                    $detalle->saldo_calculado = $saldo_actual;
-                }
-                
-                // Actualizar el saldo final de la cuenta para totales
-                $cuenta_reporte->saldo_actual = $saldo_actual;
-                $cuenta_reporte->detalles = $partidasFiltradas;
-
-
-                array_push($cuentas, $cuenta_reporte);
-            }
-        }
+        // Procesar cuentas padre y generar reporte
+        $cuentas = $this->reporteContabilidadService->procesarCuentasPadreParaLibroMayor($cuentas_padre, $partidas);
 
         $empresa = Empresa::findOrfail($empresa_id);
 
@@ -343,67 +291,8 @@ class GenerarReportesController extends Controller
                 }
             })->get();
 
-        //elegir entre los detalles de las partidas cuales tienen cuentas que empiezan con los cuatros digitos de las partidas padre
-        foreach ($cuentas_padre->pluck('codigo') as $cod_padre) {
-            $partidasFiltradas = $partidas->filter(function ($detalle) use ($cod_padre) {
-                return strpos($detalle->codigo, (string)$cod_padre) === 0;
-            });
-
-            // Convertir el resultado a una colección nuevamente (opcional)
-            $partidasFiltradas = $partidasFiltradas->values();
-
-            //            LLENADO DE LOS DEBE Y HABER DE CADA CUENTA
-
-            $sum_deb = 0;
-            $sum_hab = 0;
-            foreach ($partidasFiltradas as $det_part) {
-
-                //                las cuentas de ACTIVO, COSTO Y GASTOS (son de saldo deudor), aumentan con un cargo (debe) y disminuyen con un abono(haber) y las cuentas de PASIVO,
-                //                PATRIMONIO E INGRESOS(son de saldo acreedor) aumentan con un abono (haber) y disminuyen con un cargo(debe)
-
-                $sum_deb += $det_part->debe;
-                $sum_hab += $det_part->haber;
-            }
-
-            if (count($partidasFiltradas) != 0) {
-
-                $cnt = $cuentas_padre->firstWhere('codigo', $cod_padre);
-
-
-                $cuenta_reporte = new CuentaReporte();
-                $cuenta_reporte->cuenta = $cod_padre;
-                $cuenta_reporte->nombre = $cnt->nombre;
-                $cuenta_reporte->naturaleza = $cnt->naturaleza;
-                $cuenta_reporte->cargo = $sum_deb;
-                $cuenta_reporte->abono = $sum_hab;
-                $cuenta_reporte->saldo_actual = 0;
-                $cuenta_reporte->saldo_anterior = 0;
-
-                // Calcular saldos progresivos para cada detalle según naturaleza de la cuenta
-                $saldo_actual = 0;
-                foreach ($partidasFiltradas as $detalle) {
-                    $debe_valor = (float)($detalle->debe ?? 0);
-                    $haber_valor = (float)($detalle->haber ?? 0);
-                    
-                    // Calcular saldo según naturaleza de la cuenta
-                    if ($cnt->naturaleza == 'Deudor') {
-                        $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
-                    } else {
-                        $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
-                    }
-                    
-                    // Agregar el saldo calculado al detalle
-                    $detalle->saldo_calculado = $saldo_actual;
-                }
-                
-                // Actualizar el saldo final de la cuenta para totales
-                $cuenta_reporte->saldo_actual = $saldo_actual;
-                $cuenta_reporte->detalles = $partidasFiltradas;
-
-
-                array_push($cuentas, $cuenta_reporte);
-            }
-        }
+        // Procesar cuentas padre y generar reporte
+        $cuentas = $this->reporteContabilidadService->procesarCuentasPadreParaLibroMayor($cuentas_padre, $partidas);
 
         $empresa = Empresa::findOrfail($empresa_id);
 
@@ -446,7 +335,7 @@ class GenerarReportesController extends Controller
             $cuentasQuery->where('id', $cuenta);
         }
         $todasLasCuentas = $cuentasQuery->get();
-        $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
+        $cuentas = collect($this->reporteContabilidadService->ordenarJerarquicamente($todasLasCuentas));
 
         // Obtener los movimientos del rango de fechas filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
@@ -466,7 +355,7 @@ class GenerarReportesController extends Controller
         $cuentas_saldos = [];
 
         // Obtener saldos iniciales correctos (del período anterior o catálogo)
-        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+        $saldosIniciales = $this->reporteContabilidadService->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Crear un mapa de ID a código para facilitar las búsquedas
         $idACodigo = [];
@@ -491,15 +380,7 @@ class GenerarReportesController extends Controller
         }
 
         // Ahora sumamos los valores a las cuentas padre
-        foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
-                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
-                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
-                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-                $cuentas_saldos[$codigo_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
-            }
-        }
+        $this->reporteContabilidadService->consolidarSaldosHaciaPadre($cuentas, $cuentas_saldos, $idACodigo);
 
         // Variables para totales
         $total_saldo_inicial = 0;
@@ -515,18 +396,10 @@ class GenerarReportesController extends Controller
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
 
             // Calcular saldo final según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $saldo_final = $saldo_inicial + $debe - $haber;
-            } else {
-                $saldo_final = $saldo_inicial + $haber - $debe;
-            }
+            $saldo_final = $this->reporteContabilidadService->calcularSaldoFinal($saldo_inicial, $debe, $haber, $cuenta->naturaleza);
 
             // Calcular operaciones del mes según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $operaciones_mes = $debe - $haber;
-            } else { // Acreedor
-                $operaciones_mes = $haber - $debe;
-            }
+            $operaciones_mes = $this->reporteContabilidadService->calcularOperacionesMes($debe, $haber, $cuenta->naturaleza);
 
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
@@ -585,7 +458,7 @@ class GenerarReportesController extends Controller
             $cuentasQuery->where('id', $cuenta);
         }
         $todasLasCuentas = $cuentasQuery->get();
-        $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
+        $cuentas = collect($this->reporteContabilidadService->ordenarJerarquicamente($todasLasCuentas));
 
         // Obtener los movimientos del rango de fechas filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
@@ -605,7 +478,7 @@ class GenerarReportesController extends Controller
         $cuentas_saldos = [];
 
         // Obtener saldos iniciales correctos (del período anterior o catálogo)
-        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+        $saldosIniciales = $this->reporteContabilidadService->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Crear un mapa de ID a código para facilitar las búsquedas
         $idACodigo = [];
@@ -630,15 +503,7 @@ class GenerarReportesController extends Controller
         }
 
         // Ahora sumamos los valores a las cuentas padre
-        foreach ($cuentas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
-                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
-                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
-                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-                $cuentas_saldos[$codigo_padre]['saldoFinal'] += $cuentas_saldos[$cuenta->codigo]['saldoFinal'];
-            }
-        }
+        $this->reporteContabilidadService->consolidarSaldosHaciaPadre($cuentas, $cuentas_saldos, $idACodigo);
 
         // Variables para totales
         $total_saldo_inicial = 0;
@@ -654,18 +519,10 @@ class GenerarReportesController extends Controller
             $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
 
             // Calcular saldo final según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $saldo_final = $saldo_inicial + $debe - $haber;
-            } else {
-                $saldo_final = $saldo_inicial + $haber - $debe;
-            }
+            $saldo_final = $this->reporteContabilidadService->calcularSaldoFinal($saldo_inicial, $debe, $haber, $cuenta->naturaleza);
 
             // Calcular operaciones del mes según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $operaciones_mes = $debe - $haber;
-            } else { // Acreedor
-                $operaciones_mes = $haber - $debe;
-            }
+            $operaciones_mes = $this->reporteContabilidadService->calcularOperacionesMes($debe, $haber, $cuenta->naturaleza);
 
             // Sumar a totales SOLO las cuentas padre (nivel 0) que ya tienen consolidados sus valores
             if ($cuenta->nivel == 0) {
@@ -796,21 +653,10 @@ class GenerarReportesController extends Controller
             ->get();
 
         // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
-        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
-            ->where('partidas.id_empresa', $empresa_id)
-            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereBetween('partidas.fecha', [$startDate, $endDate])
-            ->select(
-                'partida_detalles.id_cuenta',
-                DB::raw('SUM(partida_detalles.debe) as total_debe'),
-                DB::raw('SUM(partida_detalles.haber) as total_haber')
-            )
-            ->groupBy('partida_detalles.id_cuenta')
-            ->get()
-            ->keyBy('id_cuenta');
+        $partida_detalles = $this->reporteContabilidadService->obtenerMovimientosPartidas($startDate, $endDate, $empresa_id);
 
         // Obtener saldos iniciales correctos (del período anterior o catálogo)
-        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+        $saldosIniciales = $this->reporteContabilidadService->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         // Calcular saldos consolidados similar al balance de comprobación
         $cuentas_saldos = [];
@@ -837,69 +683,10 @@ class GenerarReportesController extends Controller
         }
 
         // Consolidar hacia cuentas padre
-        foreach ($cuentasJerarquicas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
-                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
-                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
-                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-            }
-        }
+        $this->reporteContabilidadService->consolidarSaldosHaciaPadre($cuentasJerarquicas, $cuentas_saldos, $idACodigo);
 
         // Clasificar por rubros del Balance General
-        $balance_general = [
-            'activos' => [],
-            'pasivos' => [],
-            'patrimonio' => [],
-            'totales' => [
-                'activos' => 0,
-                'pasivos' => 0,
-                'patrimonio' => 0
-            ]
-        ];
-
-        foreach ($cuentasJerarquicas as $cuenta) {
-            $codigo = $cuenta->codigo;
-            $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
-            $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
-            $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
-
-            // Calcular saldo final según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $saldo_final = $saldo_inicial + $debe - $haber;
-            } else {
-                $saldo_final = $saldo_inicial + $haber - $debe;
-            }
-
-            $cuenta_data = [
-                'codigo' => $codigo,
-                'nombre' => $cuenta->nombre,
-                'saldo_final' => $saldo_final,
-                'naturaleza' => $cuenta->naturaleza
-            ];
-
-            // Clasificar según rubro
-            $rubro = strtolower(trim($cuenta->rubro));
-
-            if (strpos($rubro, 'activo') !== false) {
-                $balance_general['activos'][] = $cuenta_data;
-                $balance_general['totales']['activos'] += $saldo_final;
-            }
-            elseif (strpos($rubro, 'pasivo') !== false) {
-                $balance_general['pasivos'][] = $cuenta_data;
-                $balance_general['totales']['pasivos'] += $saldo_final;
-            }
-            elseif (strpos($rubro, 'capital') !== false ||
-                    strpos($rubro, 'patrimonio') !== false ||
-                    strpos($rubro, 'resultado') !== false) {
-                $balance_general['patrimonio'][] = $cuenta_data;
-                $balance_general['totales']['patrimonio'] += $saldo_final;
-            }
-        }
-
-        // Verificar ecuación contable
-        $balance_general['ecuacion_cuadra'] = abs($balance_general['totales']['activos'] -
-            ($balance_general['totales']['pasivos'] + $balance_general['totales']['patrimonio'])) < 0.01;
+        $balance_general = $this->reporteContabilidadService->clasificarCuentasPorRubroBalanceGeneral($cuentasJerarquicas, $cuentas_saldos);
 
         $pdf = \PDF::loadView('reportes.contabilidad.balance_general', compact('balance_general', 'empresa', 'month_name', 'year'));
         $pdf->setPaper('US Letter', 'portrait');
@@ -944,7 +731,7 @@ class GenerarReportesController extends Controller
             ->get();
 
         // Obtener saldos iniciales correctos (del período anterior o catálogo)
-        $saldosIniciales = $this->obtenerSaldosIniciales($year, $month, $empresa_id);
+        $saldosIniciales = $this->reporteContabilidadService->obtenerSaldosIniciales($year, $month, $empresa_id);
 
         $cuentas_saldos = [];
         $idACodigo = [];
@@ -968,67 +755,10 @@ class GenerarReportesController extends Controller
         }
 
         // Consolidar hacia cuentas padre
-        foreach ($cuentasJerarquicas->sortByDesc('nivel') as $cuenta) {
-            if($cuenta->id_cuenta_padre && isset($idACodigo[$cuenta->id_cuenta_padre])) {
-                $codigo_padre = $idACodigo[$cuenta->id_cuenta_padre];
-                $cuentas_saldos[$codigo_padre]['saldo_inicial'] += $cuentas_saldos[$cuenta->codigo]['saldo_inicial'];
-                $cuentas_saldos[$codigo_padre]['debe'] += $cuentas_saldos[$cuenta->codigo]['debe'];
-                $cuentas_saldos[$codigo_padre]['haber'] += $cuentas_saldos[$cuenta->codigo]['haber'];
-            }
-        }
+        $this->reporteContabilidadService->consolidarSaldosHaciaPadre($cuentasJerarquicas, $cuentas_saldos, $idACodigo);
 
         // Clasificar por rubros del Balance General
-        $balance_general = [
-            'activos' => [],
-            'pasivos' => [],
-            'patrimonio' => [],
-            'totales' => [
-                'activos' => 0,
-                'pasivos' => 0,
-                'patrimonio' => 0
-            ]
-        ];
-
-        foreach ($cuentas as $cuenta) {
-            $codigo = $cuenta->codigo;
-            $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
-            $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
-            $haber = $cuentas_saldos[$codigo]['haber'] ?? 0;
-
-            // Calcular saldo final según naturaleza de la cuenta
-            if ($cuenta->naturaleza == 'Deudor') {
-                $saldo_final = $saldo_inicial + $debe - $haber;
-            } else {
-                $saldo_final = $saldo_inicial + $haber - $debe;
-            }
-
-            $cuenta_data = [
-                'codigo' => $codigo,
-                'nombre' => $cuenta->nombre,
-                'saldo_final' => $saldo_final,
-                'naturaleza' => $cuenta->naturaleza
-            ];
-
-            $rubro = strtolower(trim($cuenta->rubro));
-
-            if (strpos($rubro, 'activo') !== false) {
-                $balance_general['activos'][] = $cuenta_data;
-                $balance_general['totales']['activos'] += $saldo_final;
-            }
-            elseif (strpos($rubro, 'pasivo') !== false) {
-                $balance_general['pasivos'][] = $cuenta_data;
-                $balance_general['totales']['pasivos'] += $saldo_final;
-            }
-            elseif (strpos($rubro, 'capital') !== false ||
-                    strpos($rubro, 'patrimonio') !== false ||
-                    strpos($rubro, 'resultado') !== false) {
-                $balance_general['patrimonio'][] = $cuenta_data;
-                $balance_general['totales']['patrimonio'] += $saldo_final;
-            }
-        }
-
-        $balance_general['ecuacion_cuadra'] = abs($balance_general['totales']['activos'] -
-            ($balance_general['totales']['pasivos'] + $balance_general['totales']['patrimonio'])) < 0.01;
+        $balance_general = $this->reporteContabilidadService->clasificarCuentasPorRubroBalanceGeneral($cuentas, $cuentas_saldos);
 
         $data = [
             'empresa' => $empresa,
@@ -1068,72 +798,10 @@ class GenerarReportesController extends Controller
             ->get();
 
         // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
-        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
-            ->where('partidas.id_empresa', $empresa_id)
-            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereBetween('partidas.fecha', [$startDate, $endDate])
-            ->select(
-                'partida_detalles.id_cuenta',
-                DB::raw('SUM(partida_detalles.debe) as total_debe'),
-                DB::raw('SUM(partida_detalles.haber) as total_haber')
-            )
-            ->groupBy('partida_detalles.id_cuenta')
-            ->get()
-            ->keyBy('id_cuenta');
+        $partida_detalles = $this->reporteContabilidadService->obtenerMovimientosPartidas($startDate, $endDate, $empresa_id);
 
-        $estado_resultados = [
-            'ingresos' => [],
-            'costos_gastos' => [],
-            'totales' => [
-                'ingresos' => 0,
-                'costos_gastos' => 0,
-                'utilidad_perdida' => 0
-            ]
-        ];
-
-        // Procesar cada cuenta
-        foreach ($cuentas as $cuenta) {
-            $movimientos = $partida_detalles->get($cuenta->id);
-
-            if (!$movimientos) {
-                $debe = 0;
-                $haber = 0;
-            } else {
-                $debe = $movimientos->total_debe ?? 0;
-                $haber = $movimientos->total_haber ?? 0;
-            }
-
-            // Calcular saldo según naturaleza de la cuenta
-            if ($cuenta->naturaleza === 'Deudor') {
-                $saldo_final = $debe - $haber;
-            } else {
-                $saldo_final = $haber - $debe;
-            }
-
-            // Solo incluir cuentas con saldo diferente de cero
-            if ($saldo_final != 0) {
-                $cuenta_info = [
-                    'codigo' => $cuenta->codigo,
-                    'nombre' => $cuenta->nombre,
-                    'saldo_final' => $saldo_final,
-                    'naturaleza' => $cuenta->naturaleza,
-                    'rubro' => $cuenta->rubro
-                ];
-
-                // Clasificar según el rubro
-                if ($cuenta->rubro === 'Ingresos') {
-                    $estado_resultados['ingresos'][] = $cuenta_info;
-                    $estado_resultados['totales']['ingresos'] += abs($saldo_final);
-                } elseif ($cuenta->rubro === 'Costos y gastos') {
-                    $estado_resultados['costos_gastos'][] = $cuenta_info;
-                    $estado_resultados['totales']['costos_gastos'] += abs($saldo_final);
-                }
-            }
-        }
-
-        // Calcular utilidad/pérdida
-        $estado_resultados['totales']['utilidad_perdida'] =
-            $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
+        // Clasificar cuentas por rubros del Estado de Resultados
+        $estado_resultados = $this->reporteContabilidadService->clasificarCuentasPorRubroEstadoResultados($cuentas, $partida_detalles);
 
         $pdf = \PDF::loadView('reportes.contabilidad.estado_resultados', compact(
             'estado_resultados',
@@ -1167,72 +835,10 @@ class GenerarReportesController extends Controller
             ->get();
 
         // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
-        $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
-            ->where('partidas.id_empresa', $empresa_id)
-            ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereBetween('partidas.fecha', [$startDate, $endDate])
-            ->select(
-                'partida_detalles.id_cuenta',
-                DB::raw('SUM(partida_detalles.debe) as total_debe'),
-                DB::raw('SUM(partida_detalles.haber) as total_haber')
-            )
-            ->groupBy('partida_detalles.id_cuenta')
-            ->get()
-            ->keyBy('id_cuenta');
+        $partida_detalles = $this->reporteContabilidadService->obtenerMovimientosPartidas($startDate, $endDate, $empresa_id);
 
-        $estado_resultados = [
-            'ingresos' => [],
-            'costos_gastos' => [],
-            'totales' => [
-                'ingresos' => 0,
-                'costos_gastos' => 0,
-                'utilidad_perdida' => 0
-            ]
-        ];
-
-        // Procesar cada cuenta
-        foreach ($cuentas as $cuenta) {
-            $movimientos = $partida_detalles->get($cuenta->id);
-
-            if (!$movimientos) {
-                $debe = 0;
-                $haber = 0;
-            } else {
-                $debe = $movimientos->total_debe ?? 0;
-                $haber = $movimientos->total_haber ?? 0;
-            }
-
-            // Calcular saldo según naturaleza de la cuenta
-            if ($cuenta->naturaleza === 'Deudor') {
-                $saldo_final = $debe - $haber;
-            } else {
-                $saldo_final = $haber - $debe;
-            }
-
-            // Solo incluir cuentas con saldo diferente de cero
-            if ($saldo_final != 0) {
-                $cuenta_info = [
-                    'codigo' => $cuenta->codigo,
-                    'nombre' => $cuenta->nombre,
-                    'saldo_final' => $saldo_final,
-                    'naturaleza' => $cuenta->naturaleza,
-                    'rubro' => $cuenta->rubro
-                ];
-
-                // Clasificar según el rubro
-                if ($cuenta->rubro === 'Ingresos') {
-                    $estado_resultados['ingresos'][] = $cuenta_info;
-                    $estado_resultados['totales']['ingresos'] += abs($saldo_final);
-                } elseif ($cuenta->rubro === 'Costos y gastos') {
-                    $estado_resultados['costos_gastos'][] = $cuenta_info;
-                    $estado_resultados['totales']['costos_gastos'] += abs($saldo_final);
-                }
-            }
-        }
-
-        // Calcular utilidad/pérdida
-        $estado_resultados['totales']['utilidad_perdida'] =
-            $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
+        // Clasificar cuentas por rubros del Estado de Resultados
+        $estado_resultados = $this->reporteContabilidadService->clasificarCuentasPorRubroEstadoResultados($cuentas, $partida_detalles);
 
         $data = [
             'estado_resultados' => $estado_resultados,
@@ -1245,79 +851,6 @@ class GenerarReportesController extends Controller
         return Excel::download(new EstadoResultadosExport($data), 'estado_resultados_' . $fecha_inicio . '_' . $fecha_fin . '.xlsx');
     }
 
-    /**
-     * Ordena las cuentas jerárquicamente en un array plano (padre seguido de sus hijos)
-     */
-    private function ordenarJerarquicamente($cuentas, $padreId = null, $nivel = 0)
-    {
-        $resultado = [];
-        foreach ($cuentas as $cuenta) {
-            if (
-                ($padreId === null && ($cuenta->id_cuenta_padre === null || $cuenta->id_cuenta_padre == 0)) ||
-                ($cuenta->id_cuenta_padre == $padreId && $padreId !== null)
-            ) {
-                $cuenta->nivel_visual = $nivel;
-                $resultado[] = $cuenta;
-                $hijos = $this->ordenarJerarquicamente($cuentas, $cuenta->id, $nivel + 1);
-                foreach ($hijos as $hijo) {
-                    $resultado[] = $hijo;
-                }
-            }
-        }
-        return $resultado;
-    }
-
-    /**
-     * Obtener saldos iniciales del período (igual que CierreMesService)
-     */
-    private function obtenerSaldosIniciales($year, $month, $empresa_id)
-    {
-        // Si es enero del primer año, usar catálogo
-        if ($month == 1) {
-            // Verificar si existe algún período anterior en cualquier año
-            $hayPeriodoAnterior = \App\Models\Contabilidad\SaldoMensual::where('id_empresa', $empresa_id)
-                ->where(function($q) use ($year, $month) {
-                    $q->where('year', '<', $year)
-                      ->orWhere(function($q2) use ($year, $month) {
-                          $q2->where('year', $year)->where('month', '<', $month);
-                      });
-                })
-                ->exists();
-
-            if (!$hayPeriodoAnterior) {
-                // Primer período de la empresa - usar catálogo
-                return [];
-            }
-        }
-
-        // Obtener período anterior
-        $periodoAnterior = $this->obtenerPeriodoAnterior($year, $month);
-
-        $saldosAnteriores = \App\Models\Contabilidad\SaldoMensual::where('year', $periodoAnterior['year'])
-            ->where('month', $periodoAnterior['month'])
-            ->where('id_empresa', $empresa_id)
-            ->get()
-            ->keyBy('id_cuenta');
-
-        $saldosIniciales = [];
-        foreach ($saldosAnteriores as $saldo) {
-            // Asegurar que el saldo final nunca sea null
-            $saldosIniciales[$saldo->id_cuenta] = (float)($saldo->saldo_final ?? 0);
-        }
-
-        return $saldosIniciales;
-    }
-
-    /**
-     * Obtener período anterior
-     */
-    private function obtenerPeriodoAnterior($year, $month)
-    {
-        if ($month == 1) {
-            return ['year' => $year - 1, 'month' => 12];
-        }
-        return ['year' => $year, 'month' => $month - 1];
-    }
 
 
 }

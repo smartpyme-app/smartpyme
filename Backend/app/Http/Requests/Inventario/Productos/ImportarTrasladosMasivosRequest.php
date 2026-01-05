@@ -22,8 +22,8 @@ class ImportarTrasladosMasivosRequest extends FormRequest
         return [
             'archivo' => 'required|file|mimes:xlsx,xls,csv|max:10240',
             'concepto' => 'required|string|max:500',
-            'id_bodega_origen' => 'required|integer|exists:bodegas,id',
-            'id_bodega_destino' => 'required|integer|exists:bodegas,id|different:id_bodega_origen',
+            'id_bodega_origen' => 'required|integer|exists:sucursal_bodegas,id',
+            'id_bodega_destino' => 'required|integer|exists:sucursal_bodegas,id|different:id_bodega_origen',
         ];
     }
 

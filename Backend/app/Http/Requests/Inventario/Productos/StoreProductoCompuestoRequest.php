@@ -29,7 +29,7 @@ class StoreProductoCompuestoRequest extends FormRequest
             'detalles' => 'required|array|min:1',
             'detalles.*.id_producto' => 'required|integer|exists:productos,id',
             'detalles.*.cantidad' => 'required|numeric|min:0.01',
-            'id_bodega' => 'required|integer|exists:bodegas,id',
+            'id_bodega' => 'required|integer|exists:sucursal_bodegas,id',
             'stock' => 'sometimes|nullable|numeric|min:0',
             'codigo' => 'sometimes|nullable|string|max:255',
         ];
