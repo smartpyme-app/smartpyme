@@ -95,9 +95,9 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
                     })
                     ->exists();
                 
-                if ($existeNcr) {
-                    throw new \Exception("Ya existe una empresa con el NCR: {$row['ncr']}");
-                }
+                // if ($existeNcr) {
+                //     throw new \Exception("Ya existe una empresa con el NCR: {$row['ncr']}");
+                // }
             }
             $numeroRegistro = $ncrNormalizado ?: $row['ncr'];
         } else {
