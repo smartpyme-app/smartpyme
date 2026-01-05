@@ -80,8 +80,8 @@ class GenerarReportesController extends Controller
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
-        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
-        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+        $startDate = Carbon::createFromFormat('Y-m-d', $fecha_inicio)->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', $fecha_fin)->endOfDay();
         
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
@@ -138,8 +138,8 @@ class GenerarReportesController extends Controller
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
-        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
-        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+        $startDate = Carbon::createFromFormat('Y-m-d', $fecha_inicio)->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', $fecha_fin)->endOfDay();
         
         // Calcular mes y año para mostrar en las vistas
         $month = $startDate->month;
