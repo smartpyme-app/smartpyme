@@ -11,6 +11,13 @@ import Swal from 'sweetalert2';
 @Component({
   selector: 'app-planilla-detalle',
   templateUrl: './planilla-detalle.component.html',
+  styles: [
+    `
+      .text-alert-descuentos {
+        font-size: 0.8rem;
+      }
+    `,
+  ],
 })
 export class PlanillaDetalleComponent implements OnInit {
   public planilla: any = {};
@@ -1075,6 +1082,11 @@ export class PlanillaDetalleComponent implements OnInit {
     // Ambos tipos de contrato sin prestaciones (Por obra y Servicios Profesionales) no tienen ISSS/AFP
     const esContratoSinPrestaciones = esPorObra || esServiciosProfesionales;
 
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
     let isssEmpleado = 0;
     let afpEmpleado = 0;
     let isssPatronal = 0;
@@ -1087,12 +1099,25 @@ export class PlanillaDetalleComponent implements OnInit {
       isssPatronal = 0;
       afpPatronal = 0;
     } else {
-      // Para empleados regulares
-      const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
-      isssEmpleado = baseISSSEmpleado * 0.03;
-      afpEmpleado = totalIngresos * 0.0725;
-      isssPatronal = baseISSSEmpleado * 0.075;
-      afpPatronal = totalIngresos * 0.0875;
+      // Para empleados regulares - verificar configuración del empleado
+      if (aplicarIsss) {
+        const baseISSSEmpleado = Math.min(totalIngresos, 1000.00);
+        isssEmpleado = baseISSSEmpleado * 0.03;
+        isssPatronal = baseISSSEmpleado * 0.075;
+      } else {
+        // No aplicar ISSS si está desactivado en la configuración
+        isssEmpleado = 0;
+        isssPatronal = 0;
+      }
+
+      if (aplicarAfp) {
+        afpEmpleado = totalIngresos * 0.0725;
+        afpPatronal = totalIngresos * 0.0875;
+      } else {
+        // No aplicar AFP si está desactivado en la configuración
+        afpEmpleado = 0;
+        afpPatronal = 0;
+      }
     }
 
     this.detalleSeleccionado.isss_empleado = Number(isssEmpleado.toFixed(2));
@@ -1679,11 +1704,16 @@ export class PlanillaDetalleComponent implements OnInit {
   private aplicarResultadosConfigurables(resultado: any): void {
     const resultados = resultado.resultados;
 
-    // Aplicar valores calculados
-    this.detalleSeleccionado.isss_empleado = this.round(resultados.isss_empleado || 0);
-    this.detalleSeleccionado.isss_patronal = this.round(resultados.isss_patronal || 0);
-    this.detalleSeleccionado.afp_empleado = this.round(resultados.afp_empleado || 0);
-    this.detalleSeleccionado.afp_patronal = this.round(resultados.afp_patronal || 0);
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
+    // Aplicar valores calculados respetando la configuración del empleado
+    this.detalleSeleccionado.isss_empleado = aplicarIsss ? this.round(resultados.isss_empleado || 0) : 0;
+    this.detalleSeleccionado.isss_patronal = aplicarIsss ? this.round(resultados.isss_patronal || 0) : 0;
+    this.detalleSeleccionado.afp_empleado = aplicarAfp ? this.round(resultados.afp_empleado || 0) : 0;
+    this.detalleSeleccionado.afp_patronal = aplicarAfp ? this.round(resultados.afp_patronal || 0) : 0;
     this.detalleSeleccionado.renta = this.round(resultados.renta || 0);
 
     // Aplicar totales
@@ -1709,6 +1739,11 @@ export class PlanillaDetalleComponent implements OnInit {
     const otrosDescuentos = Number(this.detalleSeleccionado.otros_descuentos) || 0;
     const descuentosJudiciales = Number(this.detalleSeleccionado.descuentos_judiciales) || 0;
 
+    // Obtener configuración de descuentos del empleado
+    const configDescuentos = this.detalleSeleccionado.empleado?.configuracion_descuentos || {};
+    const aplicarAfp = configDescuentos.aplicar_afp !== false; // Por defecto true si no existe
+    const aplicarIsss = configDescuentos.aplicar_isss !== false; // Por defecto true si no existe
+
     // Usar tu lógica actual (PlanillaConstants)
     const calculos = PlanillaConstants.calcularDescuentosEmpleado(
       salarioDevengado,
@@ -1719,12 +1754,12 @@ export class PlanillaDetalleComponent implements OnInit {
       this.planilla.tipo_planilla
     );
 
-    // Asignar valores calculados
+    // Asignar valores calculados respetando la configuración del empleado
     this.detalleSeleccionado.total_ingresos = calculos.totalIngresos;
-    this.detalleSeleccionado.isss_empleado = calculos.isssEmpleado;
-    this.detalleSeleccionado.isss_patronal = calculos.isssPatronal;
-    this.detalleSeleccionado.afp_empleado = calculos.afpEmpleado;
-    this.detalleSeleccionado.afp_patronal = calculos.afpPatronal;
+    this.detalleSeleccionado.isss_empleado = aplicarIsss ? calculos.isssEmpleado : 0;
+    this.detalleSeleccionado.isss_patronal = aplicarIsss ? calculos.isssPatronal : 0;
+    this.detalleSeleccionado.afp_empleado = aplicarAfp ? calculos.afpEmpleado : 0;
+    this.detalleSeleccionado.afp_patronal = aplicarAfp ? calculos.afpPatronal : 0;
     this.detalleSeleccionado.renta = calculos.renta;
 
     // Calcular total de descuentos

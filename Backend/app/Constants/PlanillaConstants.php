@@ -208,6 +208,13 @@ class PlanillaConstants
     // Deducción para empleados asalariados con ingresos anuales hasta $9,100.00
     const DEDUCCION_EMPLEADOS_ASALARIADOS = 1600.00;
 
+    // === CONSTANTES DE AGUINALDO ===
+    // Decreto 900: Primeros $1,500 de aguinaldo están exentos de renta
+    const AGUINALDO_EXENTO_DECRETO_2023 = 1500.00;
+
+    // Estados de aguinaldo
+    const AGUINALDO_BORRADOR = 1;
+    const AGUINALDO_PAGADO = 2;
 
     // Arrays para usar en forms y selects
     public static function getTiposContrato()
@@ -391,5 +398,24 @@ class PlanillaConstants
     {
         return $tipoContrato == self::TIPO_CONTRATO_POR_OBRA ||
                $tipoContrato == self::TIPO_CONTRATO_SERVICIOS_PROFESIONALES;
+    }
+
+    /**
+     * Verifica si el tipo de contrato tiene derecho a aguinaldo
+     * Según la legislación salvadoreña, tienen derecho:
+     * - Contratos Permanentes
+     * - Contratos Temporales
+     * 
+     * NO tienen derecho:
+     * - Contratos Por Obra
+     * - Contratos de Servicios Profesionales
+     *
+     * @param int $tipoContrato
+     * @return bool
+     */
+    public static function contratoTieneDerechoAguinaldo($tipoContrato)
+    {
+        return $tipoContrato == self::TIPO_CONTRATO_PERMANENTE ||
+               $tipoContrato == self::TIPO_CONTRATO_TEMPORAL;
     }
 }

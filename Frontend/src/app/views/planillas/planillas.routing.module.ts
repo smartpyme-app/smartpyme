@@ -9,6 +9,8 @@ import {PlanillaDetalleComponent} from './planillas/planilla-detalle.component';
 import {BoletaPagoComponent} from './planillas/boleta-pago.component';
 import {VerBoletasComponent} from './planillas/ver-boletas.component';
 import { ConfiguracionPlanillaComponent } from './configuracion-planilla/configuracion-planilla.component';
+import { AguinaldosComponent } from './aguinaldos/aguinaldos.component';
+import { AguinaldoDetalleComponent } from './aguinaldos/aguinaldo-detalle.component';
 
 const routes: Routes = [
   {
@@ -30,7 +32,9 @@ const routes: Routes = [
         component: BoletaPagoComponent,
       },
       {path: 'boletas/:id', component: VerBoletasComponent},
-      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent}
+      {path: 'configuracion-planilla', component: ConfiguracionPlanillaComponent},
+      {path: 'aguinaldos', component: AguinaldosComponent},
+      {path: 'aguinaldo/detalle/:id', component: AguinaldoDetalleComponent}
     ],
   },
 ];
