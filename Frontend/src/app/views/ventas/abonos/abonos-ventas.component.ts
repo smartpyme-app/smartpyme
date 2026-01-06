@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './abonos-ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -35,7 +36,8 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'venta/abono',
@@ -70,7 +72,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
           this.filtros.orden = columna;
           this.filtros.direccion = 'asc';
         }
-
+        this.cdr.markForCheck();
         this.filtrarAbonos();
     }
 
@@ -89,6 +91,7 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
 
     public filtrarAbonos(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('ventas/abonos', this.filtros)
             .pipe(this.untilDestroyed())
             .subscribe(abonos => { 
@@ -97,7 +100,8 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public async setEstado(abono:any){
@@ -149,7 +153,8 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
                 this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.openModal(template, abono);
     }
@@ -159,13 +164,15 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
             .pipe(this.untilDestroyed())
             .subscribe(clientes => {
                 this.clientes = clientes;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         if (!this.documentos.length) {
             this.apiService.getAll('documentos/list-nombre')
@@ -173,9 +180,11 @@ export class AbonosVentasComponent extends BaseCrudComponent<any> implements OnI
                 .subscribe(
                     (documentos) => {
                         this.documentos = documentos;
+                        this.cdr.markForCheck();
                     },
                     (error) => {
                         this.alertService.error(error);
+                        this.cdr.markForCheck();
                     }
                 );
         }

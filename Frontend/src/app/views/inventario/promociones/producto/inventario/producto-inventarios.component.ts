@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseModalComponent } from '../../../../../shared/base/base-modal.compon
     templateUrl: './producto-inventarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoInventariosComponent extends BaseModalComponent implements OnInit {
 
@@ -32,7 +32,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -43,14 +44,17 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public loadAll(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('producto/sucursales/' + this.producto.id).pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.producto.sucursales = sucursales;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
         this.apiService.getAll('sucursales').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setAjuste(event:any){
@@ -80,6 +84,7 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
         console.log (sucursal);
         this.sucursal = sucursal;
         this.loading = true;
+        this.cdr.markForCheck();
         this.sucursal.producto_id = this.producto.id;
         this.apiService.store('producto/sucursal', this.sucursal).pipe(this.untilDestroyed()).subscribe(sucursal => {
             if(!this.sucursal.id)
@@ -87,9 +92,10 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
             this.sucursal = {};
             this.producto.bodega_venta_id = sucursal.bodega_venta_id;
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
             this.alertService.success("Registro guardado", "El registro fue guardado exitosamente");
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public deleteSucursal(id:number) {
@@ -100,7 +106,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
                         this.producto.sucursales.splice(i, 1);
                 }
                 this.alertService.success("Registro eliminado", "El registro fue eliminado exitosamente");
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 
@@ -119,13 +126,15 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
 
     public agregarInventario() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('inventario', this.inventario).pipe(this.untilDestroyed()).subscribe(inventario => {
             if(!this.inventario.id)
                 this.producto.sucursal.inventarios.push(inventario);
             this.inventario = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false; });
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public delete(id:number) {
@@ -136,7 +145,8 @@ export class ProductoInventariosComponent extends BaseModalComponent implements 
                         this.producto.sucursal.inventarios.splice(i, 1);
                 }
                 this.alertService.success("Registro eliminado", "El registro fue eliminado exitosamente");
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 

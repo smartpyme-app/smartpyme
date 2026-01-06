@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     templateUrl: './combo-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, BuscadorProductoComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ComboDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -37,7 +37,8 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
   constructor(
     private apiService: ApiService, 
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -55,6 +56,7 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
       detalle.cantidad = 0;
     }
     detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
+    this.cdr.markForCheck();
     this.update.emit(this.producto);
   }
 
@@ -65,6 +67,7 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
 
   public supervisorCheck() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.store('usuario-validar', this.supervisor)
       .pipe(this.untilDestroyed())
       .subscribe(supervisor => {
@@ -72,7 +75,8 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
       this.delete(this.detalle);
       this.loading = false;
       this.supervisor = {};
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   // Agregar detalle
@@ -93,6 +97,7 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
     if (!detalle)
       this.producto.detalles.push(this.detalle);
 
+    this.cdr.markForCheck();
     this.update.emit(this.producto);
     this.detalle = {};
     this.closeModal();
@@ -114,6 +119,7 @@ export class ComboDetallesComponent extends BaseModalComponent implements OnInit
         const indexAEliminar = this.producto.detalles.findIndex((item: any) => item.id_producto === detalle.id_producto);
         if (indexAEliminar !== -1) {
           this.producto.detalles.splice(indexAEliminar, 1);
+          this.cdr.markForCheck();
           // Ejecutar la función pasada por el padre
           this.sumTotal.emit();
         }

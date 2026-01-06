@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './vendedor-dash.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, VendedorDatosComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class VendedorDashComponent implements OnInit {
@@ -26,7 +27,9 @@ export class VendedorDashComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor( 
-        public apiService: ApiService, private alertService: AlertService
+        public apiService: ApiService, 
+        private alertService: AlertService,
+        private cdr: ChangeDetectorRef
     ) { }
 
 
@@ -37,7 +40,8 @@ export class VendedorDashComponent implements OnInit {
           .subscribe(dash => {
             this.dash = dash;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         
         this.dashResfresh = setInterval(()=> {
             if (!this.loading)
@@ -47,12 +51,14 @@ export class VendedorDashComponent implements OnInit {
     
     public loadAll(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('dash/vendedor')
           .pipe(this.untilDestroyed())
           .subscribe(dash => {
             this.dash = dash;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     ngOnDestroy(){

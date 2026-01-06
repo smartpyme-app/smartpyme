@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './proveedores.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, ImportarExcelComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProveedoresComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -30,7 +30,8 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
     constructor(
         apiService:ApiService, 
         alertService:AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'proveedor',
@@ -76,10 +77,12 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
             this.proveedores = await this.apiService.getAll('proveedores', this.filtros)
                 .pipe(this.untilDestroyed())
                 .toPromise();
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -126,10 +129,12 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
                 }
             }
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -153,11 +158,13 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.alertService.modal = false;
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
             this.alertService.modal = false;
         } finally {
             this.downloading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -178,11 +185,13 @@ export class ProveedoresComponent extends BaseCrudComponent<any> implements OnIn
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.alertService.modal = false;
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
             this.alertService.modal = false;
         } finally {
             this.downloading = false;
+            this.cdr.markForCheck();
         }
     }
 

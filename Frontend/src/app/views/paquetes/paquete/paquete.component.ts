@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import * as moment from 'moment';
     templateUrl: './paquete.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PaqueteComponent implements OnInit {
 
@@ -38,7 +38,8 @@ export class PaqueteComponent implements OnInit {
 
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) { }
 
 	ngOnInit() {
@@ -46,21 +47,25 @@ export class PaqueteComponent implements OnInit {
 
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public loadAll(){
@@ -70,7 +75,8 @@ export class PaqueteComponent implements OnInit {
             this.apiService.read('paquete/', id).pipe(this.untilDestroyed()).subscribe(paquete => {
                 this.paquete = paquete;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.paquete = {};
             this.paquete.forma_pago = 'Efectivo';
@@ -82,6 +88,7 @@ export class PaqueteComponent implements OnInit {
             this.paquete.id_empresa = this.apiService.auth_user().id_empresa;
             this.paquete.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.paquete.id_usuario = this.apiService.auth_user().id;
+            this.cdr.markForCheck();
         }
 
     }
@@ -89,6 +96,7 @@ export class PaqueteComponent implements OnInit {
     public setProveedor(proveedor:any){
         this.proveedores.push(proveedor);
         this.paquete.id_proveedor = proveedor.id;
+        this.cdr.markForCheck();
     }
 
 

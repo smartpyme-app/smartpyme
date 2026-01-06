@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,7 +30,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
         TiendaVentaCitasComponent,
         LazyImageDirective
     ],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VentaDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -57,7 +57,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -86,6 +87,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     detalle.total_costo = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(4);
     detalle.total = (parseFloat(detalle.cantidad) * parseFloat(detalle.precio) - parseFloat(detalle.descuento)).toFixed(4);
     detalle.gravada = detalle.total;
+    this.cdr.markForCheck();
     this.update.emit(this.venta);
   }
 
@@ -102,6 +104,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
 
   public supervisorCheck() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.store('usuario-validar', this.supervisor)
         .pipe(this.untilDestroyed())
         .subscribe(supervisor => {
@@ -111,7 +114,8 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
       this.delete(this.detalle);
       this.loading = false;
       this.supervisor = {};
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   // Agregar detalle
@@ -240,6 +244,7 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
     if (!detalle)
       this.venta.detalles.push(this.detalle);
 
+    this.cdr.markForCheck();
     this.update.emit(this.venta);
     this.detalle = {};
     if (this.modalRef) {
@@ -276,10 +281,12 @@ export class VentaDetallesComponent extends BaseModalComponent implements OnInit
                 .pipe(this.untilDestroyed())
                 .subscribe(detalle => {
               this.venta.detalles.splice(indexAEliminar, 1);
+              this.cdr.markForCheck();
               this.update.emit(this.venta);
-            }, error => { this.alertService.error(error); this.loading = false; });
+            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
           } else {
             this.venta.detalles.splice(indexAEliminar, 1);
+            this.cdr.markForCheck();
             this.update.emit(this.venta);
           }
 

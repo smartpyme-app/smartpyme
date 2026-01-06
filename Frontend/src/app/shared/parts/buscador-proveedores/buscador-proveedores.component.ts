@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { fromEvent, timer } from 'rxjs';
     templateUrl: './buscador-proveedores.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorProveedoresComponent implements OnInit {
 
@@ -26,6 +26,7 @@ export class BuscadorProveedoresComponent implements OnInit {
 
 	private destroyRef = inject(DestroyRef);
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
+	private cdr = inject(ChangeDetectorRef);
 
 	constructor(private apiService: ApiService, private alertService: AlertService) { }
 
@@ -46,14 +47,16 @@ export class BuscadorProveedoresComponent implements OnInit {
                 .subscribe(proveedores => {
                this.proveedores = proveedores;
                this.searching = false;
-            }, error => {this.alertService.error(error);this.searching = false;});
-        }else if (!this.proveedor.nombre  || this.proveedor.nombre.length < 1 ){ this.searching = false; this.proveedor = {}; this.proveedores.total = 0; }
+               this.cdr.markForCheck();
+            }, error => {this.alertService.error(error);this.searching = false; this.cdr.markForCheck();});
+        }else if (!this.proveedor.nombre  || this.proveedor.nombre.length < 1 ){ this.searching = false; this.proveedor = {}; this.proveedores.total = 0; this.cdr.markForCheck(); }
     }
 
     selectProveedor(proveedor:any){
         this.proveedores = [];
         this.proveedor = proveedor;
         console.log(this.proveedor);
+        this.cdr.markForCheck();
         this.setProveedor.emit({proveedor: this.proveedor});
     }
 

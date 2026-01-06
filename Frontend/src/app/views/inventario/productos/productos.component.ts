@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './productos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, DescargarInventarioComponent, SumPipe, PopoverModule, TooltipModule, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductosComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -46,7 +46,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'producto',
@@ -112,18 +113,21 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             .pipe(this.untilDestroyed())
             .subscribe(categorias => {
                 this.categorias = categorias;
+                this.cdr.markForCheck();
             }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('bodegas/list')
             .pipe(this.untilDestroyed())
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
+                this.cdr.markForCheck();
             }, error => { this.alertService.error(error); });
 
         this.apiService.getAll('productos/marca-productos')
             .pipe(this.untilDestroyed())
             .subscribe(marcas => {
                 this.marcas = marcas;
+                this.cdr.markForCheck();
             }, error => { this.alertService.error(error); });
 
     }
@@ -191,7 +195,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
                 this.productos = productos;
                 this.loading = false;
                 this.closeModal();
-            }, error => { this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setEstado(producto: any) {
@@ -237,7 +242,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-        }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+        }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -246,6 +252,7 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => {
                 this.proveedores = proveedores;
+                this.cdr.markForCheck();
             }, error => { this.alertService.error(error); });
 
         this.openModal(template, { class: 'modal-md', backdrop: 'static' });
@@ -279,7 +286,8 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.closeModal();
             this.alertService.modal = false;
             this.loading = false;
-        }, error => { this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     }
 
@@ -307,9 +315,11 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 this.loading = false;
+                this.cdr.markForCheck();
             }, (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             });
     }
 
@@ -400,9 +410,11 @@ export class ProductosComponent extends BaseCrudComponent<any> implements OnInit
             this.alertService.success('Solicitud registrada', 'Su solicitud ha sido registrada en la cola de procesamiento. Recibirá un correo electrónico cuando el kardex esté listo.');
             this.loading = false;
             this.closeModal();
+            this.cdr.markForCheck();
         }, (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
         });
     }
 

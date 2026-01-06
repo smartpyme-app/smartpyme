@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,6 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './venta.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, CrearAbonoVentaComponent, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class VentaComponent implements OnInit {
@@ -40,9 +41,15 @@ export class VentaComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
-        private location: Location
+    constructor( 
+        public apiService:ApiService, 
+        private alertService:AlertService, 
+        private sumPipe:SumPipe,
+        private route: ActivatedRoute, 
+        private router: Router, 
+        private modalService: BsModalService,
+        private location: Location,
+        private cdr: ChangeDetectorRef
     ) {
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
         this.route.data
@@ -110,10 +117,12 @@ export class VentaComponent implements OnInit {
                         this.customFields = customFields;
                         // Continuar con la carga de la cotización después de obtener los campos
                         this.loadCotizacion();
+                        this.cdr.markForCheck();
                     },
                     error => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                 );
         } else {
@@ -133,11 +142,13 @@ export class VentaComponent implements OnInit {
                         this.loadProyecto();
                     } else {
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                 },
                 error => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             );
     }
@@ -149,10 +160,12 @@ export class VentaComponent implements OnInit {
                 proyecto => {
                     this.proyecto = proyecto;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             );
     }
@@ -162,12 +175,14 @@ export class VentaComponent implements OnInit {
 
     public setEstado(abono:any){
         this.saving = false;
+        this.cdr.markForCheck();
         this.apiService.store('venta/abono', abono)
             .pipe(this.untilDestroyed())
             .subscribe(abono => {
                 this.loadAll();
                 this.saving = false;
-            }, error => {this.alertService.error(error); this.saving = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
     public imprimirRecibo(abono:any){

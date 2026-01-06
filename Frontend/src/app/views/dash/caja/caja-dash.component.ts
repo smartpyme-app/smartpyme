@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './caja-dash.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -38,7 +39,8 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
         public apiService: ApiService,
         private router: Router,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -50,6 +52,7 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
 
     public loadAll(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('caja')
           .pipe(this.untilDestroyed())
           .subscribe(caja => {
@@ -62,8 +65,9 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
                 sessionStorage.setItem('worder_corte', JSON.stringify(caja.corte));
             }
             this.loading = false;
+            this.cdr.markForCheck();
 
-        }, error => {this.alertService.error(error); this.loading = false;});
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public modalSupervisor(tipo:any){
@@ -74,6 +78,7 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
 
     public supervisorCheck(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('usuario-validar', this.supervisor)
           .pipe(this.untilDestroyed())
           .subscribe(supervisor => {
@@ -91,7 +96,8 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
             }
 
             this.loading = false;
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public override openModal(template: TemplateRef<any>, corte:any) {
@@ -126,7 +132,8 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
                 this.closeModal();
             }
             this.loadAll();
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     }
 
@@ -145,7 +152,8 @@ export class CajaDashComponent extends BaseModalComponent implements OnInit {
                 if (this.modalRef){
                     this.closeModal();
                 }
-            },error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         // }
 
     }

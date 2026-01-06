@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './bodegas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -28,7 +28,8 @@ export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
         alertService: AlertService,
         modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'bodega',
@@ -58,7 +59,8 @@ export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     ngOnInit() {
@@ -77,7 +79,8 @@ export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => {
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
         super.openModal(template, bodega);
     }
@@ -91,7 +94,8 @@ export class BodegasComponent extends BaseCrudComponent<any> implements OnInit {
             }else{
                 this.alertService.success('Bodega desactivada', 'La bodega fue desactivada exitosamente.');
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 }

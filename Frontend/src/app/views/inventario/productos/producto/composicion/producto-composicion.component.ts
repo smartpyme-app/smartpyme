@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './producto-composicion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
 
@@ -31,7 +31,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
     	private route: ActivatedRoute, 
-    	private router: Router
+    	private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -43,7 +44,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
           .pipe(this.untilDestroyed())
           .subscribe(productos => {
             this.productos = productos;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         
         if(compuesto.id){
             this.composicion = compuesto;
@@ -58,6 +60,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     onSubmit(){
        
         this.saving = true;
+        this.cdr.markForCheck();
         this.apiService.store('producto/composicion', this.composicion)
           .pipe(this.untilDestroyed())
           .subscribe(composicion => {
@@ -67,8 +70,9 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             }
             this.composicion = {};
             this.saving = false;
+            this.cdr.markForCheck();
             this.closeModal();
-        },error => {this.alertService.error(error); this.saving = false;});
+        },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
 
     }
 
@@ -82,7 +86,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
                         this.producto.composiciones.splice(i, 1);
                     }
                 }
-            },error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
     }
 
@@ -94,13 +99,15 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
               .pipe(this.untilDestroyed())
               .subscribe(productos => {
                 this.productos = productos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
             super.openModal(template, {class: 'modal-md'});
         }
 
         public agregarOpcion(){
             this.loading = true;
+            this.cdr.markForCheck();
             this.opcion.id_composicion = this.composicion.id;
             this.apiService.store('producto/composicion/opcion', this.opcion)
               .pipe(this.untilDestroyed())
@@ -108,7 +115,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
                 this.composicion.opciones.push(opcion);
                 this.opcion = {};
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
 
         public deleteOpcion(opcion:any){
@@ -120,7 +128,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
                         if (this.composicion.opciones[i].id == opcion.id )
                             this.composicion.opciones.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
             }
         }
 

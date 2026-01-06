@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { CrearAbonoGastoComponent } from '@shared/modals/crear-abono-gasto/crear
     templateUrl: './gasto-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, CrearAbonoGastoComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GastoDetallesComponent extends BaseComponent implements OnInit {
 
@@ -30,7 +30,8 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
 	    private route: ActivatedRoute, 
 	    private router: Router, 
 	    private modalService: BsModalService,
-	    private location: Location
+	    private location: Location,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -50,11 +51,13 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
                         .subscribe(gasto => {
                             this.gasto = gasto;
                             this.loading = false;
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.gasto = {};
                     this.gasto.id_empresa = this.apiService.auth_user().id_empresa;
                     this.gasto.id_usuario = this.apiService.auth_user().id;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -69,7 +72,8 @@ export class GastoDetallesComponent extends BaseComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(abono => {
                 this.loadAll();
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public goBack() {

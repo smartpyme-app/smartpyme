@@ -66,7 +66,8 @@ export class EmpresaComponent implements OnInit {
 
     constructor(
         public apiService: ApiService, public mhService: MHService, private alertService: AlertService,
-        private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+        private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -75,6 +76,7 @@ export class EmpresaComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(canales => {
             this.canales = canales;
+            this.cdr.markForCheck();
         }, error => { this.alertService.error(error); });
 
         this.loadAll();
@@ -89,6 +91,7 @@ export class EmpresaComponent implements OnInit {
 
     public loadAll() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.read('empresa/', this.apiService.auth_user().id_empresa)
             .pipe(this.untilDestroyed())
             .subscribe(empresa => {
@@ -102,11 +105,13 @@ export class EmpresaComponent implements OnInit {
                 this.cargarEstadisticasPruebas();
                 // this.cargarDocumentosBase();
             }
-        }, error => { this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public async onSubmit(): Promise<any> {
         this.saving = true;
+        this.cdr.markForCheck();
         try {
             const empresaGuardada = await this.apiService.store('empresa', this.empresa)
                 .pipe(this.untilDestroyed())
@@ -128,18 +133,22 @@ export class EmpresaComponent implements OnInit {
             }
 
             this.alertService.success('Empresa actualiza', 'Tus datos fueron guardados exitosamente.');
+            this.cdr.markForCheck();
             return null;
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
             return null;
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
     setGiro() {
         this.empresa.giro = this.actividad_economicas.find((item: any) => item.cod == this.empresa.cod_actividad_economica).nombre;
         console.log(this.empresa);
+        this.cdr.markForCheck();
     }
 
     setDistrito() {
@@ -151,6 +160,7 @@ export class EmpresaComponent implements OnInit {
             this.empresa.distrito = distrito.nombre;
             this.empresa.cod_distrito = distrito.cod;
         }
+        this.cdr.markForCheck();
     }
 
     setMunicipio() {
@@ -162,6 +172,7 @@ export class EmpresaComponent implements OnInit {
             this.empresa.distrito = '';
             this.empresa.cod_distrito = '';
         }
+        this.cdr.markForCheck();
     }
 
     setDepartamento() {
@@ -175,6 +186,7 @@ export class EmpresaComponent implements OnInit {
         this.empresa.cod_municipio = '';
         this.empresa.distrito = '';
         this.empresa.cod_distrito = '';
+        this.cdr.markForCheck();
     }
 
     setPais() {
@@ -215,6 +227,7 @@ export class EmpresaComponent implements OnInit {
         this.empresa.cod_municipio = " ";
 
         console.log(this.empresa);
+        this.cdr.markForCheck();
     }
 
     setCobrarIVA() {
@@ -225,6 +238,7 @@ export class EmpresaComponent implements OnInit {
             this.empresa.cobra_iva = 'Si';
         }
         console.log(this.empresa.cobra_iva);
+        this.cdr.markForCheck();
     }
 
 
@@ -272,16 +286,19 @@ export class EmpresaComponent implements OnInit {
                     this.alertService.success('Logo actualizado', 'Tu logo fue guardado exitosamente.');
                 }
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         );
     }
 
     public onCheckMH(): void {
         this.cheking = true;
+        this.cdr.markForCheck();
 
         this.onSubmit().then(() => {
             this.mhService.auth()
@@ -295,21 +312,25 @@ export class EmpresaComponent implements OnInit {
                     this.cheking = false;
                     this.alertService.success('Conexión a la API exitosa', 'El proceso se realizo correctamente.');
                 }
-            }, error => { this.alertService.error(error); this.cheking = false; });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.cheking = false; this.cdr.markForCheck(); });
         });
 
     }
 
     public mostrarPassword() {
         this.showpassword = !this.showpassword;
+        this.cdr.markForCheck();
     }
 
     public mostrarPassword2() {
         this.showpassword2 = !this.showpassword2;
+        this.cdr.markForCheck();
     }
 
     public onCheckFE() {
         this.cheking = true;
+        this.cdr.markForCheck();
 
         this.mhService.verificarFirmador()
             .pipe(this.untilDestroyed())
@@ -321,6 +342,7 @@ export class EmpresaComponent implements OnInit {
             } else {
                 this.alertService.warning('Datos incorrectos', 'No se pudo conectar al firmador');
             };
+            this.cdr.markForCheck();
         }, error => {
             console.log(error)
             if (error.status == 200) {
@@ -329,6 +351,7 @@ export class EmpresaComponent implements OnInit {
                 this.alertService.warning('Datos incorrectos', 'No se pudo conectar al firmador');
             };
             this.cheking = false;
+            this.cdr.markForCheck();
         });
 
     }
@@ -342,10 +365,12 @@ export class EmpresaComponent implements OnInit {
                     this.estadisticasPruebas = data.tipos;
                     this.estadoPruebasCompletado = data.estado.completado;
                     this.fechaCompletadoPruebas = data.estado.fecha_completado;
+                    this.cdr.markForCheck();
                 },
                 (error) => {
                     console.error('Error al cargar estadísticas de pruebas:', error);
                     this.alertService.error('No se pudieron cargar las estadísticas de pruebas masivas');
+                    this.cdr.markForCheck();
                 }
             );
         }
@@ -499,6 +524,7 @@ export class EmpresaComponent implements OnInit {
     confirmarEjecucion() {
         this.modalRef.hide();
         this.procesando = true;
+        this.cdr.markForCheck();
 
         // Llamada al servicio para ejecutar las pruebas
         this.mhService.ejecutarPruebasMasivas(
@@ -530,10 +556,12 @@ export class EmpresaComponent implements OnInit {
                 } else {
                     this.alertService.error(response.message);
                 }
+                this.cdr.markForCheck();
             },
             (error) => {
                 this.procesando = false;
                 this.alertService.error('Error al ejecutar pruebas masivas: ' + error);
+                this.cdr.markForCheck();
             }
         );
     }
@@ -637,6 +665,7 @@ export class EmpresaComponent implements OnInit {
                     icon: 'success',
                     confirmButtonText: 'Aceptar'
                 });
+                this.cdr.markForCheck();
             },
             error => {
                 this.saving = false;
@@ -648,6 +677,7 @@ export class EmpresaComponent implements OnInit {
                     icon: 'error',
                     confirmButtonText: 'Aceptar'
                 });
+                this.cdr.markForCheck();
             }
         );
     }
@@ -698,6 +728,7 @@ export class EmpresaComponent implements OnInit {
 
     public disconnectWooCommerce() {
         this.saving = true;
+        this.cdr.markForCheck();
 
         this.empresa.woocommerce_store_url = '';
         this.empresa.woocommerce_consumer_key = '';
@@ -715,6 +746,7 @@ export class EmpresaComponent implements OnInit {
                     icon: 'success',
                     confirmButtonText: 'Aceptar'
                 });
+                this.cdr.markForCheck();
 
             }, error => {
                 this.saving = false;
@@ -725,6 +757,7 @@ export class EmpresaComponent implements OnInit {
                     icon: 'error',
                     confirmButtonText: 'Aceptar'
                 });
+                this.cdr.markForCheck();
             }
         );
 
@@ -733,6 +766,7 @@ export class EmpresaComponent implements OnInit {
 
     public disconnectShopify() {
         this.saving = true;
+        this.cdr.markForCheck();
 
         this.empresa.shopify_store_url = '';
         this.empresa.shopify_consumer_secret = '';
@@ -749,6 +783,7 @@ export class EmpresaComponent implements OnInit {
                     icon: 'success',
                     confirmButtonText: 'Aceptar'
                 });
+                this.cdr.markForCheck();
 
             }, error => {
                 this.saving = false;
@@ -860,6 +895,7 @@ export class EmpresaComponent implements OnInit {
     public descargarWooCommerce() {
         console.log('descargarWooCommerce');
         this.downloading = true;
+        this.cdr.markForCheck();
 
         Swal.fire({
             title: 'Exportando productos a WooCommerce',
@@ -896,10 +932,12 @@ export class EmpresaComponent implements OnInit {
                 this.downloading = false;
 
                 this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+                this.cdr.markForCheck();
             },
             (error) => {
                 this.alertService.error('Error en la exportación: ' + error);
                 this.downloading = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -907,6 +945,7 @@ export class EmpresaComponent implements OnInit {
     public descargarShopify() {
         console.log('descargarShopify');
         this.downloading = true;
+        this.cdr.markForCheck();
 
         Swal.fire({
             title: 'Exportando productos a Shopify',
@@ -943,10 +982,12 @@ export class EmpresaComponent implements OnInit {
                 this.downloading = false;
 
                 this.alertService.success('Exportación completada', 'El archivo CSV ha sido generado correctamente.');
+                this.cdr.markForCheck();
             },
             (error) => {
                 this.alertService.error('Error en la exportación: ' + error);
                 this.downloading = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -1050,6 +1091,7 @@ export class EmpresaComponent implements OnInit {
                     console.log('Total productos en Shopify:', response.total_productos_shopify);
                     console.log('Productos importados:', response.productos_importados);
                 }
+                this.cdr.markForCheck();
             },
             error => {
                 Swal.close();
@@ -1194,6 +1236,7 @@ export class EmpresaComponent implements OnInit {
     // Método para cambiar la configuración de ticket en PDF
     public updateTicketEnPdf(enabled: boolean) {
         this.addCustomConfig('configuraciones', 'ticket_en_pdf', enabled);
+        this.cdr.markForCheck();
 
         // Guardar automáticamente
         this.onSubmit().then(() => {
@@ -1201,6 +1244,7 @@ export class EmpresaComponent implements OnInit {
                 'Configuración actualizada',
                 `Ticket en PDF ${enabled ? 'habilitado' : 'deshabilitado'} correctamente`
             );
+            this.cdr.markForCheck();
         });
     }
 

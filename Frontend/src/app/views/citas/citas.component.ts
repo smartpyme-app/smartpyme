@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,6 +23,7 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     templateUrl: './citas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, CalendarioComponent, NgSelectModule, PopoverModule, TooltipModule, CrearEventoComponent, TruncatePipe, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -45,7 +46,8 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
   constructor(
     protected override apiService: ApiService,
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'evento',
@@ -134,6 +136,7 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
 
   public filtrarEventos() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('eventos', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(eventos => {
@@ -142,7 +145,8 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
       if (this.modalRef) {
         this.closeModal();
       }
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
   }
 
@@ -151,6 +155,7 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
       this.calendario.loadAll();
     }
     this.filtrarEventos();
+    this.cdr.markForCheck();
   }
 
   onEventoUpdate() {
@@ -161,6 +166,7 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
     if (this.modalRef) {
       this.closeModal();
     }
+    this.cdr.markForCheck();
   }
 
   // Cuando se abra un modal, comprueba si no existen datos en clientes y si no existen, obtenerlas
@@ -271,6 +277,7 @@ export class CitasComponent extends BaseCrudComponent<any> implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(clientes => {
       this.clientes = clientes;
+      this.cdr.markForCheck();
     }, error => {
       this.alertService.error(error);
     });

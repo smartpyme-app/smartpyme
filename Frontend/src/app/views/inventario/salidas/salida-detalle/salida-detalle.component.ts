@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './salida-detalle.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SalidaDetalleComponent implements OnInit {
 
@@ -21,6 +21,7 @@ export class SalidaDetalleComponent implements OnInit {
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public apiService: ApiService,
@@ -42,9 +43,11 @@ export class SalidaDetalleComponent implements OnInit {
     this.apiService.read('salida/', id).pipe(this.untilDestroyed()).subscribe(salida => {
       this.salida = salida;
       this.loading = false;
+      this.cdr.markForCheck();
     }, error => {
       this.alertService.error(error);
       this.loading = false;
+      this.cdr.markForCheck();
     });
   }
 

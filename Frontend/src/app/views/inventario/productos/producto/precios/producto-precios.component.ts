@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, AfterViewInit, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ declare var bootstrap: any;
     templateUrl: './producto-precios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoPreciosComponent extends BaseModalComponent implements OnInit, AfterViewInit {
 
@@ -32,7 +32,8 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -73,7 +74,8 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
           .subscribe(usuarios => { 
             this.usuarios = usuarios;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         super.openModal(template, {class: 'modal-md'});
     }
@@ -82,6 +84,7 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
         this.usuarios.forEach((item:any) =>{
             item.autorizado = !item.autorizado;
         });
+        this.cdr.markForCheck();
     }
 
     public calPrecioBase(){
@@ -103,6 +106,7 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
     onSubmit(){
        
         this.loading = true;
+        this.cdr.markForCheck();
         this.precio.id_producto = this.producto.id;
         this.precio.usuarios = this.usuarios;
         this.apiService.store('producto/precio', this.precio)
@@ -117,13 +121,14 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
             }
             this.precio = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
             
             // Reinicializar tooltips después de agregar nuevo precio
             setTimeout(() => {
                 this.initializeTooltips();
             }, 100);
-        },error => {this.alertService.error(error); this.loading = false;});
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
@@ -137,7 +142,8 @@ export class ProductoPreciosComponent extends BaseModalComponent implements OnIn
                         this.producto.precios.splice(i, 1);
                     }
                 }
-            },error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
     }
 

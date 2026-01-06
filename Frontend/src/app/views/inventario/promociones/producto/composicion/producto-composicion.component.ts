@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseModalComponent } from '../../../../../shared/base/base-modal.compon
     templateUrl: './producto-composicion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoComposicionComponent extends BaseModalComponent implements OnInit {
 
@@ -29,7 +29,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
     	private route: ActivatedRoute, 
-    	private router: Router
+    	private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -61,6 +62,7 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
     onSubmit(){
        
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('producto/composicion', this.composicion).pipe(this.untilDestroyed()).subscribe(composicion => {
             if(!this.composicion.id) {
                 this.composicion.id = composicion.id;
@@ -68,8 +70,9 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
             }
             this.composicion = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false;});
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
@@ -81,7 +84,8 @@ export class ProductoComposicionComponent extends BaseModalComponent implements 
                         this.producto.composiciones.splice(i, 1);
                     }
                 }
-            },error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
     }
 

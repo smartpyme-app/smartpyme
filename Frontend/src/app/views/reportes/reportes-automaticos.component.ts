@@ -3,7 +3,9 @@ import {
   OnInit,
   TemplateRef,
   Pipe,
-  PipeTransform
+  PipeTransform,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
 import { ConfiguracionReporte, crearConfiguracionDefault, TIPOS_REPORTE } from '../../models/configuracion-reporte.interface';
 import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/base-paginated-modal.component';
@@ -31,6 +33,7 @@ export class ReplacePipe implements PipeTransform {
     templateUrl: './reportes-automaticos.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class ReportesAutomaticosComponent extends BasePaginatedModalComponent implements OnInit {
@@ -103,7 +106,8 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    modalManager: ModalManagerService
+    modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager);
   }
@@ -123,6 +127,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
   public loadAll() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('reportes-configuracion', this.filtros).pipe(this.untilDestroyed()).subscribe(
       (configuraciones) => {
         this.configuraciones = configuraciones;
@@ -130,15 +135,18 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
         // Obtener los tipos de reporte activos para validación
         this.actualizarTiposReporteActivos();
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
     this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(
       (categorias) => {
         this.categorias = categorias;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -147,6 +155,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -178,6 +187,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
   public filtrarConfiguraciones() {
     this.loadAll();
+    this.cdr.markForCheck();
   }
 
   // setPagination() ahora se hereda de BasePaginatedComponent
@@ -274,6 +284,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
   }
 
   public guardarConfiguracion() {
+    this.cdr.markForCheck();
     // Validar que haya al menos un horario seleccionado
     if (
       !this.configuracionActual.envio_matutino &&
@@ -353,6 +364,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
           if (result.isConfirmed) {
             // El usuario decidió continuar y desactivar la configuración existente
             this.saving = true;
+            this.cdr.markForCheck();
             this.apiService
               .store('reportes-configuracion', this.configuracionActual)
               .pipe(this.untilDestroyed())
@@ -367,10 +379,12 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
                       : 'Configuración creada',
                     'La configuración de reportes ha sido guardada exitosamente.'
                   );
+                  this.cdr.markForCheck();
                 },
                 (error) => {
                   this.alertService.error(error);
                   this.saving = false;
+                  this.cdr.markForCheck();
                 }
               );
           }
@@ -380,6 +394,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     }
 
     this.saving = true;
+    this.cdr.markForCheck();
     this.apiService
       .store('reportes-configuracion', this.configuracionActual)
       .pipe(this.untilDestroyed())
@@ -394,10 +409,12 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
               : 'Configuración creada',
             'La configuración de reportes ha sido guardada exitosamente.'
           );
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         }
       );
   }
@@ -423,10 +440,12 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
     this.configuracionActual.destinatarios.push(this.emailInput);
     this.emailInput = '';
+    this.cdr.markForCheck();
   }
 
   public eliminarEmail(index: number) {
     this.configuracionActual.destinatarios.splice(index, 1);
+    this.cdr.markForCheck();
   }
 
   public cambiarEstado(config: any) {
@@ -488,9 +507,11 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             `La configuración ha sido ${nuevoEstado ? 'activada' : 'desactivada'
             } exitosamente.`
           );
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
   }
@@ -508,6 +529,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
   public confirmarEnvioPrueba() {
     this.enviandoPrueba = true;
+    this.cdr.markForCheck();
 
 
     if (!this.fechaInicio || !this.fechaFin) {
@@ -533,10 +555,12 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             'Reporte enviado',
             `El reporte de prueba para el período ${this.fechaInicio} al ${this.fechaFin} ha sido enviado correctamente.`
           );
+          this.cdr.markForCheck();
         },
         (error) => {
           this.enviandoPrueba = false;
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
   }
@@ -552,6 +576,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
   public confirmarEliminacion() {
     this.eliminando = true;
+    this.cdr.markForCheck();
 
     this.apiService
       .delete('reportes-configuracion/', this.configuracionEliminar.id!)
@@ -565,10 +590,12 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             'Configuración eliminada',
             'La configuración de reportes ha sido eliminada exitosamente.'
           );
+          this.cdr.markForCheck();
         },
         (error) => {
           this.eliminando = false;
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
   }
@@ -616,6 +643,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
       }
     });
     this.actualizarCategoriasSeleccionadas();
+    this.cdr.markForCheck();
   }
 
   public actualizarPorcentaje(categoria: any) {
@@ -629,6 +657,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
           categoria.porcentaje;
       }
     }
+    this.cdr.markForCheck();
   }
 
   public actualizarCategoriasSeleccionadas() {
@@ -666,6 +695,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     });
 
     this.actualizarCategoriasSeleccionadas();
+    this.cdr.markForCheck();
   }
 
 
@@ -694,6 +724,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
 
     this.downloading = true;
+    this.cdr.markForCheck();
 
     // Preparar parámetros para la petición
     const params = {
@@ -770,6 +801,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
               this.procesarDescarga(tipoCorrectoBlob, nombreArchivo, fileType);
 
               this.downloading = false;
+              this.cdr.markForCheck();
 
               // Mostrar mensaje de éxito
               this.alertService.success(
@@ -790,6 +822,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             if (blob.size === 0) {
               this.alertService.error(`El archivo Excel generado está vacío`);
               this.downloading = false;
+              this.cdr.markForCheck();
               return;
             }
 
@@ -797,6 +830,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             this.procesarDescarga(blob, nombreArchivo, fileType);
 
             this.downloading = false;
+            this.cdr.markForCheck();
 
             // Mostrar mensaje de éxito
             this.alertService.success(
@@ -809,6 +843,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
           console.error('Error al descargar el reporte:', error);
           this.alertService.error('Error al generar el reporte. Por favor intente nuevamente');
           this.downloading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -824,6 +859,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     tipo = this.tiposReporte.find((t: any) => t.tipo === tipo)?.nombre || tipo;
 
     this.downloading = true;
+    this.cdr.markForCheck();
 
     // Preparar parámetros para la petición
     const params = {
@@ -904,6 +940,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
               this.downloading = false;
               this.modalRefFechas.hide();
+              this.cdr.markForCheck();
             };
 
             // Leer solo los primeros bytes para detectar la firma
@@ -918,6 +955,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
             if (blob.size === 0) {
               this.alertService.error(`El archivo Excel generado está vacío`);
               this.downloading = false;
+              this.cdr.markForCheck();
               return;
             }
 
@@ -926,12 +964,14 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
             this.downloading = false;
             this.modalRefFechas.hide();
+            this.cdr.markForCheck();
           }
         },
         error: (error) => {
           console.error('Error al descargar el reporte:', error);
           this.alertService.error('Error al generar el reporte. Por favor intente nuevamente');
           this.downloading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -960,6 +1000,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
 
   public toggleMostrarPeriodos(): void {
     this.periodosExpandidos = !this.periodosExpandidos;
+    this.cdr.markForCheck();
   }
 
   // Método para seleccionar períodos predefinidos
@@ -1065,6 +1106,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     // Convertir las fechas a formato YYYY-MM-DD
     this.fechaInicio = fechaInicio.toISOString().split('T')[0];
     this.fechaFin = fechaFin.toISOString().split('T')[0];
+    this.cdr.markForCheck();
   }
 
   public isAllSucursalesSelected(): boolean {
@@ -1080,6 +1122,7 @@ export class ReportesAutomaticosComponent extends BasePaginatedModalComponent im
     } else {
       this.configuracionActual.sucursales = this.sucursales.map((s) => s.id);
     }
+    this.cdr.markForCheck();
   }
 
   public getNombresSucursales(sucursalesIds: any[]): string {
