@@ -26,8 +26,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   public partida: any = {};
   public override saving: boolean = false;
   public reporte = {
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
+    fecha_inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    fecha_fin: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
     concepto: '',
     cuenta: '',
     tipo_descarga: 'pdf',
@@ -188,8 +188,9 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
     this.filtrarPartidas();
 
-    this.reporte.month = new Date().getMonth() + 1;
-    this.reporte.year = new Date().getFullYear();
+    const today = new Date();
+    this.reporte.fecha_inicio = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    this.reporte.fecha_fin = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
     this.reporte.tipo_descarga = 'pdf';
     this.reporte.tipo_cuenta = 'all';
     this.reporte.concepto = '';
@@ -410,17 +411,17 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   // Métodos existentes sin cambios...
   public imprimirDiarioAux() {
     if (
-      this.reporte.month &&
-      this.reporte.year &&
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
       this.reporte.tipo_descarga &&
       this.reporte.tipo_cuenta
     ) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/libro/diario/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_cuenta +
           '/' +
@@ -434,13 +435,13 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   public imprimirMayor() {
-    if (this.reporte.month && this.reporte.year && this.reporte.concepto) {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.concepto) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_cuenta +
           '/' +
@@ -455,17 +456,17 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
   public imprimirDiarioMayor() {
     if (
-      this.reporte.month &&
-      this.reporte.year &&
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
       this.reporte.tipo_descarga &&
       this.reporte.tipo_cuenta
     ) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/libro/diario/mayor/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_cuenta +
           '/' +
@@ -479,13 +480,13 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
   }
 
   public imprimirMovCuenta() {
-    if (this.reporte.month && this.reporte.year && this.reporte.cuenta) {
+    if (this.reporte.fecha_inicio && this.reporte.fecha_fin && this.reporte.cuenta) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/movimiento/cuenta/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.cuenta +
           '?token=' +
@@ -498,17 +499,17 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
   public imprimirBalanceComprobacion() {
     if (
-      this.reporte.month &&
-      this.reporte.year &&
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
       this.reporte.tipo_descarga &&
       this.reporte.tipo_cuenta
     ) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/balance/comprobacion/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_cuenta +
           '/' +
@@ -523,16 +524,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
   public imprimirBalanceGeneral() {
     if (
-      this.reporte.month &&
-      this.reporte.year &&
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
       this.reporte.tipo_descarga
     ) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/balance/general/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_descarga +
           '?token=' +
@@ -545,16 +546,16 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
 
   public imprimirEstadoResultados() {
     if (
-      this.reporte.month &&
-      this.reporte.year &&
+      this.reporte.fecha_inicio &&
+      this.reporte.fecha_fin &&
       this.reporte.tipo_descarga
     ) {
       window.open(
         this.apiService.baseUrl +
           '/api/reportes/estado/resultados/' +
-          this.reporte.month +
+          this.reporte.fecha_inicio +
           '/' +
-          this.reporte.year +
+          this.reporte.fecha_fin +
           '/' +
           this.reporte.tipo_descarga +
           '?token=' +

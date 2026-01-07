@@ -66,21 +66,27 @@ class GenerarReportesController extends Controller
         return collect($mayorizada);
     }
 
-    public function generarRepLibroDiario($month, $year, $cuenta, $type)
+    public function generarRepLibroDiario($fecha_inicio, $fecha_fin, $cuenta, $type)
     {
         if ($type === 'pdf') {
-            return $this->generarRepLibroDiarioPDF($month, $year, $cuenta);
+            return $this->generarRepLibroDiarioPDF($fecha_inicio, $fecha_fin, $cuenta);
         } else {
-            return $this->generarRepLibroDiarioExcel($month, $year, $cuenta);
+            return $this->generarRepLibroDiarioExcel($fecha_inicio, $fecha_fin, $cuenta);
         }
     }
 
-    public function generarRepLibroDiarioPDF($month, $year, $cuenta = null)
+    public function generarRepLibroDiarioPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         $query = Partida::with(['detalles' => function ($query) use ($cuenta) {
             $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
@@ -91,8 +97,7 @@ class GenerarReportesController extends Controller
         }])
             ->where('id_empresa', $empresa_id)
             ->whereIn('estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('fecha', [$startDate, $endDate])
             ->orderBy('fecha', 'desc');
 
 
@@ -122,18 +127,24 @@ class GenerarReportesController extends Controller
             ];
         });
 
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa', 'month_name', 'year'));
+        $pdf = \PDF::loadView('reportes.contabilidad.libro_diario', compact('reporteLibroDiario', 'empresa', 'month_name', 'year'));
         $pdf->setPaper('US Letter', 'landscape');
 
         return  $pdf->stream();
     }
 
-    public function generarRepLibroDiarioExcel($month, $year, $cuenta = null)
+    public function generarRepLibroDiarioExcel($fecha_inicio, $fecha_fin, $cuenta = null)
     {
 
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrfail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         $query = Partida::with(['detalles' => function ($query) use ($cuenta) {
             $query->select('id', 'id_partida', 'id_cuenta', 'codigo', 'nombre_cuenta', 'concepto', 'debe', 'haber');
@@ -144,8 +155,7 @@ class GenerarReportesController extends Controller
         }])
             ->where('id_empresa', $empresa_id)
             ->whereIn('estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('fecha', [$startDate, $endDate])
             ->orderBy('fecha', 'desc');
 
 
@@ -187,16 +197,16 @@ class GenerarReportesController extends Controller
         return Excel::download(new DiarioAuxiliarExport($data), 'libro_diario.xlsx');
     }
 
-    public function generarRepLibroDiarioMayor($month, $year, $cuenta, $type)
+    public function generarRepLibroDiarioMayor($fecha_inicio, $fecha_fin, $cuenta, $type)
     {
         if ($type === 'pdf') {
-            return $this->generarRepLibroDiarioMayorPDF($month, $year, $cuenta);
+            return $this->generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $cuenta);
         } else {
-            return $this->generarRepLibroDiarioMayorExcel($month, $year, $cuenta);
+            return $this->generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta);
         }
     }
 
-    public function generarRepLibroDiarioMayorPDF($month, $year, $cuenta = null)
+    public function generarRepLibroDiarioMayorPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
 
         $cuentas = [];
@@ -205,18 +215,23 @@ class GenerarReportesController extends Controller
         $nivel_datos = 2;
 
         $empresa_id = auth()->user()->id_empresa;
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
         $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
-            ->whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
+            ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate, $cuenta) {
                 $query->where('id_empresa', $empresa_id)
                     ->whereIn('estado', ['Aplicada', 'Cerrada'])
                     //->where('id_cuenta', $cuenta)
-                    ->whereYear('fecha', $year)
-                    ->whereMonth('fecha', $month);
+                    ->whereBetween('fecha', [$startDate, $endDate]);
 
                 if ($cuenta && $cuenta !== 'all') {
                     $query->where('id_cuenta', $cuenta);
@@ -264,18 +279,18 @@ class GenerarReportesController extends Controller
                 foreach ($partidasFiltradas as $detalle) {
                     $debe_valor = (float)($detalle->debe ?? 0);
                     $haber_valor = (float)($detalle->haber ?? 0);
-                    
+
                     // Calcular saldo según naturaleza de la cuenta
                     if ($cnt->naturaleza == 'Deudor') {
                         $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
                     } else {
                         $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
                     }
-                    
+
                     // Agregar el saldo calculado al detalle
                     $detalle->saldo_calculado = $saldo_actual;
                 }
-                
+
                 // Actualizar el saldo final de la cuenta para totales
                 $cuenta_reporte->saldo_actual = $saldo_actual;
                 $cuenta_reporte->detalles = $partidasFiltradas;
@@ -290,7 +305,7 @@ class GenerarReportesController extends Controller
         //if ($concepto != null) {
         //$pdf = PDF::loadView('reportes.contabilidad.libro_mayor', compact('cuentas', 'empresa', 'month_name', 'year', 'concepto'));
         // } else {
-        $pdf = PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'year'));
+        $pdf = \PDF::loadView('reportes.contabilidad.libro_diario_mayor', compact('cuentas', 'empresa', 'month_name', 'year'));
         //}
 
         $pdf->setPaper('US Letter', 'portrait');
@@ -298,7 +313,7 @@ class GenerarReportesController extends Controller
         return $pdf->stream();
     }
 
-    public function generarRepLibroDiarioMayorExcel($month, $year, $cuenta = null)
+    public function generarRepLibroDiarioMayorExcel($fecha_inicio, $fecha_fin, $cuenta = null)
     {
 
         $cuentas = [];
@@ -307,17 +322,22 @@ class GenerarReportesController extends Controller
         $nivel_datos = 2;
 
         $empresa_id = auth()->user()->id_empresa;
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         //cuentas que no aceptan datos segun nivel
         $cuentas_padre = Cuenta::where('nivel', $nivel_datos)->where('id_empresa', auth()->user()->id_empresa)->get();
 
         $partidas = Detalle::with(['partida:id,correlativo,fecha,concepto'])
-            ->whereHas('partida', function ($query) use ($empresa_id, $month, $year, $cuenta) {
+            ->whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate, $cuenta) {
                 $query->where('id_empresa', $empresa_id)
                     ->whereIn('estado', ['Aplicada', 'Cerrada'])
-                    ->whereYear('fecha', $year)
-                    ->whereMonth('fecha', $month);
+                    ->whereBetween('fecha', [$startDate, $endDate]);
 
                 if ($cuenta && $cuenta !== 'all') {
                     $query->where('id_cuenta', $cuenta);
@@ -365,18 +385,18 @@ class GenerarReportesController extends Controller
                 foreach ($partidasFiltradas as $detalle) {
                     $debe_valor = (float)($detalle->debe ?? 0);
                     $haber_valor = (float)($detalle->haber ?? 0);
-                    
+
                     // Calcular saldo según naturaleza de la cuenta
                     if ($cnt->naturaleza == 'Deudor') {
                         $saldo_actual = $saldo_actual + $debe_valor - $haber_valor;
                     } else {
                         $saldo_actual = $saldo_actual - $debe_valor + $haber_valor;
                     }
-                    
+
                     // Agregar el saldo calculado al detalle
                     $detalle->saldo_calculado = $saldo_actual;
                 }
-                
+
                 // Actualizar el saldo final de la cuenta para totales
                 $cuenta_reporte->saldo_actual = $saldo_actual;
                 $cuenta_reporte->detalles = $partidasFiltradas;
@@ -400,20 +420,26 @@ class GenerarReportesController extends Controller
         return Excel::download(new DiarioMayorExport($data), 'libro_diario_mayor.xlsx');
     }
 
-    public function generarRepBalanceComprobacion($month, $year, $cuenta, $type)
+    public function generarRepBalanceComprobacion($fecha_inicio, $fecha_fin, $cuenta, $type)
     {
         if ($type === 'pdf') {
-            return $this->generarRepBalanceComprobacionPDF($month, $year, $cuenta);
+            return $this->generarRepBalanceComprobacionPDF($fecha_inicio, $fecha_fin, $cuenta);
         } else {
-            return $this->generarRepBalanceComprobacionExcel($month, $year, $cuenta);
+            return $this->generarRepBalanceComprobacionExcel($fecha_inicio, $fecha_fin, $cuenta);
         }
     }
 
-    public function generarRepBalanceComprobacionPDF($month, $year, $cuenta = null)
+    public function generarRepBalanceComprobacionPDF($fecha_inicio, $fecha_fin, $cuenta = null)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Obtener todas las cuentas y aplicar ordenamiento jerárquico
         $cuentasQuery = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo');
@@ -423,12 +449,11 @@ class GenerarReportesController extends Controller
         $todasLasCuentas = $cuentasQuery->get();
         $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
-        // Obtener los movimientos del mes filtrado (APLICADAS Y CERRADAS)
+        // Obtener los movimientos del rango de fechas filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -537,17 +562,23 @@ class GenerarReportesController extends Controller
             'diferencia' => $total_debe - $total_haber
         ];
 
-        $pdf = PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year', 'totales'));
+        $pdf = \PDF::loadView('reportes.contabilidad.rep_balance_comprobacion', compact('balance', 'empresa', 'month_name', 'year', 'totales'));
         $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream();
     }
 
-    public function generarRepBalanceComprobacionExcel($month, $year, $cuenta = null)
+    public function generarRepBalanceComprobacionExcel($fecha_inicio, $fecha_fin, $cuenta = null)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Obtener todas las cuentas y aplicar ordenamiento jerárquico
         $cuentasQuery = Cuenta::where('id_empresa', $empresa_id)->orderBy('codigo');
@@ -557,12 +588,11 @@ class GenerarReportesController extends Controller
         $todasLasCuentas = $cuentasQuery->get();
         $cuentas = collect($this->ordenarJerarquicamente($todasLasCuentas));
 
-        // Obtener los movimientos del mes filtrado (APLICADAS Y CERRADAS)
+        // Obtener los movimientos del rango de fechas filtrado (APLICADAS Y CERRADAS)
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -681,7 +711,7 @@ class GenerarReportesController extends Controller
         return Excel::download(new BalanceComprobacionExport($data), 'balance_comprobacion.xlsx');
     }
 
-    public function generarRepMovCuenta($startDate, $endDate, $cuenta_cod)
+    public function generarRepMovCuenta($fecha_inicio, $fecha_fin, $cuenta_cod)
     {
 
         $empresa_id = auth()->user()->id_empresa;
@@ -690,16 +720,17 @@ class GenerarReportesController extends Controller
 
         //        dd($cuenta_cod);
 
-        $det_agrup = Detalle::whereHas('partida', function ($query) use ($empresa_id) {
-            $query->where('id_empresa', $empresa_id);
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        $det_agrup = Detalle::whereHas('partida', function ($query) use ($empresa_id, $startDate, $endDate) {
+            $query->where('id_empresa', $empresa_id)
+                  ->whereBetween('fecha', [$startDate, $endDate]);
         })
-            ->whereBetween('created_at', [$startDate, $endDate])->where('codigo', $cuenta_cod)
+            ->where('codigo', $cuenta_cod)
             ->get();
 
         $empresa = Empresa::findOrfail($empresa_id);
-
-        $month = $startDate;
-        $year = $endDate;
 
         // Fecha en formato dd/mm/yyyy
         $fecha = date('d/m/Y');
@@ -729,39 +760,47 @@ class GenerarReportesController extends Controller
         $cuenta_reporte->saldo_actual = 0;  //este dato llega a la blade actualizado con el dato de salgo anterior para que se haga el calculo en la blade
         $cuenta_reporte->saldo_anterior = 0;
 
-        $pdf = PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
+        $desde = Carbon::parse($fecha_inicio)->format('d/m/Y');
+        $hasta = Carbon::parse($fecha_fin)->format('d/m/Y');
+
+        $pdf = \PDF::loadView('reportes.contabilidad.movimiento_cuenta', compact('cuenta_reporte',  'desde', 'hasta', 'empresa', 'fecha', 'hora'));
 
         $pdf->setPaper('US Letter', 'landscape');
 
         return $pdf->stream();
     }
 
-    public function generarBalanceGeneral($month, $year, $type)
+    public function generarBalanceGeneral($fecha_inicio, $fecha_fin, $type)
     {
         if ($type === 'pdf') {
-            return $this->generarBalanceGeneralPDF($month, $year);
+            return $this->generarBalanceGeneralPDF($fecha_inicio, $fecha_fin);
         } else {
-            return $this->generarBalanceGeneralExcel($month, $year);
+            return $this->generarBalanceGeneralExcel($fecha_inicio, $fecha_fin);
         }
     }
 
-    public function generarBalanceGeneralPDF($month, $year)
+    public function generarBalanceGeneralPDF($fecha_inicio, $fecha_fin)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Obtener todas las cuentas con jerarquía completa
         $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
-        // Obtener los movimientos del mes filtrado para todas las cuentas
+        // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -826,7 +865,7 @@ class GenerarReportesController extends Controller
             ->orderBy('codigo')
             ->get();
 
-        foreach ($cuentas as $cuenta) {
+        foreach ($cuentasJerarquicas as $cuenta) {
             $codigo = $cuenta->codigo;
             $saldo_inicial = $cuentas_saldos[$codigo]['saldo_inicial'] ?? 0;
             $debe = $cuentas_saldos[$codigo]['debe'] ?? 0;
@@ -869,17 +908,23 @@ class GenerarReportesController extends Controller
         $balance_general['ecuacion_cuadra'] = abs($balance_general['totales']['activos'] -
             ($balance_general['totales']['pasivos'] + $balance_general['totales']['patrimonio'])) < 0.01;
 
-        $pdf = PDF::loadView('reportes.contabilidad.balance_general', compact('balance_general', 'empresa', 'month_name', 'year'));
+        $pdf = \PDF::loadView('reportes.contabilidad.balance_general', compact('balance_general', 'empresa', 'month_name', 'year'));
         $pdf->setPaper('US Letter', 'portrait');
 
         return $pdf->stream();
     }
 
-    public function generarBalanceGeneralExcel($month, $year)
+    public function generarBalanceGeneralExcel($fecha_inicio, $fecha_fin)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Reutilizar la misma lógica del PDF pero para Excel
         $cuentas = Cuenta::where('id_empresa', $empresa_id)
@@ -890,8 +935,7 @@ class GenerarReportesController extends Controller
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -1003,32 +1047,37 @@ class GenerarReportesController extends Controller
         return Excel::download(new BalanceGeneralExport($data), 'balance_general.xlsx');
     }
 
-    public function generarEstadoResultados($month, $year, $type)
+    public function generarEstadoResultados($fecha_inicio, $fecha_fin, $type)
     {
         if ($type === 'pdf') {
-            return $this->generarEstadoResultadosPDF($month, $year);
+            return $this->generarEstadoResultadosPDF($fecha_inicio, $fecha_fin);
         } else {
-            return $this->generarEstadoResultadosExcel($month, $year);
+            return $this->generarEstadoResultadosExcel($fecha_inicio, $fecha_fin);
         }
     }
 
-    public function generarEstadoResultadosPDF($month, $year)
+    public function generarEstadoResultadosPDF($fecha_inicio, $fecha_fin)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Obtener todas las cuentas con jerarquía completa
         $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
-        // Obtener los movimientos del mes filtrado para todas las cuentas
+        // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -1131,7 +1180,7 @@ class GenerarReportesController extends Controller
         $estado_resultados['totales']['utilidad_perdida'] =
             $estado_resultados['totales']['ingresos'] - $estado_resultados['totales']['costos_gastos'];
 
-        $pdf = PDF::loadView('reportes.contabilidad.estado_resultados', compact(
+        $pdf = \PDF::loadView('reportes.contabilidad.estado_resultados', compact(
             'estado_resultados',
             'empresa',
             'month_name',
@@ -1144,23 +1193,28 @@ class GenerarReportesController extends Controller
         return $pdf->stream();
     }
 
-    public function generarEstadoResultadosExcel($month, $year)
+    public function generarEstadoResultadosExcel($fecha_inicio, $fecha_fin)
     {
         $empresa_id = auth()->user()->id_empresa;
         $empresa = Empresa::findOrFail($empresa_id);
-        $month_name = Carbon::createFromDate($year, $month)->monthName;
+        $startDate = Carbon::parse($fecha_inicio)->startOfDay();
+        $endDate = Carbon::parse($fecha_fin)->endOfDay();
+
+        // Calcular mes y año para mostrar en las vistas
+        $month = $startDate->month;
+        $year = $startDate->year;
+        $month_name = $startDate->translatedFormat('F');
 
         // Obtener todas las cuentas con jerarquía completa
         $cuentasJerarquicas = Cuenta::where('id_empresa', $empresa_id)
             ->orderBy('codigo')
             ->get();
 
-        // Obtener los movimientos del mes filtrado para todas las cuentas
+        // Obtener los movimientos del rango de fechas filtrado para todas las cuentas
         $partida_detalles = Detalle::join('partidas', 'partida_detalles.id_partida', '=', 'partidas.id')
             ->where('partidas.id_empresa', $empresa_id)
             ->whereIn('partidas.estado', ['Aplicada', 'Cerrada'])
-            ->whereYear('fecha', $year)
-            ->whereMonth('fecha', $month)
+            ->whereBetween('partidas.fecha', [$startDate, $endDate])
             ->select(
                 'partida_detalles.id_cuenta',
                 DB::raw('SUM(partida_detalles.debe) as total_debe'),
@@ -1271,7 +1325,7 @@ class GenerarReportesController extends Controller
             'year' => $year
         ];
 
-        return Excel::download(new EstadoResultadosExport($data), 'estado_resultados_' . $month . '_' . $year . '.xlsx');
+        return Excel::download(new EstadoResultadosExport($data), 'estado_resultados_' . $fecha_inicio . '_' . $fecha_fin . '.xlsx');
     }
 
     /**
