@@ -262,7 +262,7 @@ class AuthService
             'plan_id' => $plan->id,
             'usuario_id' => $usuario->id,
             'tipo_plan' => $empresa->tipo_plan,
-            'estado' => config('constants.ESTADO_SUSCRIPCION_PRUEBA'),
+            'estado' => config('constants.ESTADO_SUSCRIPCION_EN_PRUEBA', 'En prueba'),
             'monto' => $empresa->total,
             'id_pago' => null,
             'id_orden' => null,
