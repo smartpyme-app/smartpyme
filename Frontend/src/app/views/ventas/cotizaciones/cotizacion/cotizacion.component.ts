@@ -132,14 +132,14 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('cotizacion')) {
       this.apiService.getAll('custom-fields', this.filtros).pipe(this.untilDestroyed()).subscribe(
         (customFields) => {
-          console.log('customFields', customFields);
+
           this.customFields = customFields;
           //verificar si hay campos personalizados
           if (this.customFields.data.length > 0) {
-            console.log('hay campos personalizados');
+
             this.customField = true;
           }else{
-            console.log('no hay campos personalizados');
+
             this.customField = false;
           }
 
@@ -263,11 +263,8 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
         this.documentos = this.documentos.filter(
           (doc: any) => doc.id_sucursal == this.venta.id_sucursal
         );
-        console.log(this.documentos);
-        console.log(this.venta);
 
         if (!this.venta.id_documento && !this.venta.correlativo) {
-          console.log('entro');
 
           let documento = this.documentos.find(
             (x: any) => x.predeterminado == 1
@@ -281,7 +278,6 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
           }
 
           if (this.venta.cotizacion == 1) {
-            //console.log('entro a cotizacion');
             this.documentos = this.documentos;
             this.documentos = this.documentos.filter(
               (x: any) => x.nombre == 'Cotización'
@@ -503,8 +499,6 @@ if (
 ) {
   this.facturarCotizacion = true;
 
-  console.log('facturar cotizacion');
-
   this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
     (impuestos) => {
       this.impuestos = impuestos;
@@ -662,7 +656,6 @@ if (
                     this.venta.detalles.push(detalle);
                     this.sumTotal();
                     this.loading = false;
-                    console.log(this.venta);
                   },
                   (error) => {
                     this.alertService.error(error);
@@ -691,7 +684,6 @@ if (
     this.venta.efectivo = this.formaPagos.find(
       (item: any) => item.nombre == 'Efectivo'
     ).total;
-    console.log(this.venta);
   }
 
   public sumTotal() {
@@ -796,7 +788,6 @@ if (
                 this.sumTotal();
             }
         }
-        console.log(cliente);
     }
 
   // Proyecto
@@ -840,7 +831,6 @@ if (
         item.total = null;
       });
     }
-    console.log(this.venta);
   }
 
   public setDocumento(id_documento: any) {
@@ -1108,11 +1098,9 @@ if (
   public setBodega() {
 
     let bodegaSeleccionada = this.bodegas.find((b: any) => b.id == this.venta.id_bodega);
-   // console.log("bodega", bodegaSeleccionada);
     this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
     if (bodegaSeleccionada) {
-     // console.log("bodegaSeleccionada", bodegaSeleccionada);
       this.venta.id_sucursal = bodegaSeleccionada.id_sucursal;
 
       this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe(

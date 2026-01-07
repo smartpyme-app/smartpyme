@@ -202,7 +202,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     // }
 
     public calPrecioBase() {
-      if (this.usuario.empresa.iva > 0) {
+      if (this.usuario?.empresa?.iva > 0) {
         this.producto.impuesto = this.usuario.empresa.iva / 100;
         this.producto.precio = (
           this.producto.precio_final /
@@ -212,7 +212,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
     }
 
   public calPrecioFinal() {
-    if (this.usuario.empresa.iva > 0) {
+    if (this.usuario?.empresa?.iva > 0) {
       this.producto.impuesto = this.usuario.empresa.iva / 100;
       this.producto.precio_final = (
         this.producto.precio * 1 +

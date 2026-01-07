@@ -62,6 +62,12 @@ class CotizacionesController extends Controller
             $request->merge(['id_usuario' => $request->usuario_id]);
         }
         
+        // Establecer paginación por defecto alta para mantener compatibilidad
+        // con consumidores que esperan recibir todos los resultados filtrados
+        if (!$request->has('paginate')) {
+            $request->merge(['paginate' => 100000]);
+        }
+        
         $cotizaciones = $this->ordenCompraService->listarOrdenes($request);
         return Response()->json($cotizaciones, 200);
     }

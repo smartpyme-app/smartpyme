@@ -9,12 +9,13 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '@shared/base/base-modal.component';
+import { TruncatePipe } from '@pipes/truncate.pipe';
 
 @Component({
     selector: 'app-producto-proveedores',
     templateUrl: './producto-proveedores.component.html',
     standalone: true,
-    imports: [CommonModule, RouterModule, FormsModule],
+    imports: [CommonModule, RouterModule, FormsModule, TruncatePipe],
     
 })
 export class ProductoProveedoresComponent extends BaseModalComponent implements OnInit {
