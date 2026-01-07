@@ -507,7 +507,7 @@
           }
 
           <!-- Lista de productos -->
-          @for (item of distribucion; track $index) {
+          @for (item of distribucion; track trackByDistribucion($index, item)) {
             <tr>
               <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
               <td class="text-center">{{ item.cantidad }}</td>
@@ -652,7 +652,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of distribucion; track $index) {
+            @for (item of distribucion; track trackByDistribucion($index, item)) {
               <tr>
                 <td>{{ item?.producto?.nombre || "Producto sin nombre" }}</td>
                 <td class="text-center">{{ item.cantidad }}</td>

@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+// ScrollingModule removido temporalmente - se puede agregar cuando se implemente virtual scrolling completo
+// import { ScrollingModule } from '@angular/cdk/scrolling';
 import { SumPipe } from '@pipes/sum.pipe';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
@@ -18,6 +20,8 @@ import { CrearProveedorComponent } from '@shared/modals/crear-proveedor/crear-pr
 import { CrearProyectoComponent } from '@shared/modals/crear-proyecto/crear-proyecto.component';
 import { CompraDetallesComponent } from './detalles/compra-detalles.component';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
+import { ProveedorSearchService } from '@workers/proveedor-search.service';
+import { firstValueFrom } from 'rxjs';
 
 import * as moment from 'moment';
 import { DetalleComprasComponent } from '@views/reportes/compras/detalle/detalle-compras.component';
@@ -93,7 +97,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         private route: ActivatedRoute,
         private router: Router,
         private sharedDataService: SharedDataService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private proveedorSearchService: ProveedorSearchService
     ) {
         super(modalManager, alertService);
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -469,7 +474,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
     public setBodega(){
         this.compra.id_sucursal = this.bodegas.find((item:any) => item.id == this.compra.id_bodega).id_sucursal;
-        // console.log(this.compra);
     }
 
     public updatecompra(compra:any) {
@@ -480,7 +484,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     public selectTipoDocumento(){
         if(this.compra.tipo_documento == 'Sujeto excluido'){
             let documento = this.documentos.find((x:any) => x.nombre == this.compra.tipo_documento);
-            // console.log(documento);
             this.compra.referencia = documento.correlativo;
         }
     }
@@ -577,9 +580,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       this.compra.recurrente = false;
     }
 
-    console.log('=== COMPRA COMPONENT DEBUG ===');
-    console.log('Datos de compra a enviar:', this.compra);
-
     this.apiService.store('compra/facturacion', this.compra)
       .pipe(this.untilDestroyed())
       .subscribe(
@@ -618,14 +618,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       error => {
         this.saving = false;
 
-        console.log('=== ERROR RECIBIDO ===');
-        console.log('Error status:', error.status);
-        console.log('Error object:', error);
-        console.log('Error body:', error.error);
-
         // Error 403 = primera solicitud de autorización (abre modal)
         if (error.status === 403 && error.error?.requires_authorization) {
-          console.log('Debería abrir modal de autorización');
           // El interceptor ya abrió el modal
           // No hacer nada más aquí
           return;
@@ -774,9 +768,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   }
 
   openAuthModal() {
-    console.log('Abriendo modal, showAuthModal antes:', this.showAuthModal);
     this.showAuthModal = true;
-    console.log('Abriendo modal, showAuthModal después:', this.showAuthModal);
   }
 
   closeAuthModal() {
@@ -784,8 +776,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   }
 
   onAuthorizationRequested(event: any) {
-    console.log('Authorization requested:', event);
-
     if (event.shouldProceedWithSubmit) {
       // Agregar el id_authorization a la compra para que no requiera autorización de nuevo
       this.compra.id_authorization = event.authorization.id;
@@ -813,7 +803,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
   }
 
-  processJsonData() {
+  async processJsonData() {
     this.processingJson = true;
 
     try {
@@ -821,7 +811,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       const jsonData = JSON.parse(this.jsonContent);
 
       // Mapear los datos del JSON al modelo de Compra
-      this.mapJsonToCompra(jsonData);
+      await this.mapJsonToCompra(jsonData);
 
       // Cerrar el modal y mostrar mensaje de éxito
       this.closeModal();
@@ -849,112 +839,63 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     return tiposDte[tipoDte as keyof typeof tiposDte] || 'Factura';
   }
 
-      getProveedor(proveedor: any) {
-        //console.log('Buscando proveedor del DTE:', proveedor);
-        let proveedorEncontrado = null;
+      async getProveedor(proveedor: any): Promise<any> {
+        try {
+          // Usar Web Worker para búsqueda no bloqueante
+          const proveedorEncontrado: any = await firstValueFrom(
+            this.proveedorSearchService.searchProveedor(proveedor, this.proveedores)
+          );
 
-        // 1. Buscar primero por NIT (prioridad más alta)
-        if (proveedor.nit) {
-          proveedorEncontrado = this.searchNit(proveedor.nit);
           if (proveedorEncontrado) {
-            console.log('Proveedor encontrado por NIT:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
             return proveedorEncontrado;
+          } else {
+            return null;
           }
+        } catch (error) {
+          return null;
         }
-
-        // 2. Buscar por NRC si no se encontró por NIT
-        if (proveedor.nrc && !proveedorEncontrado) {
-          proveedorEncontrado = this.searchNrc(proveedor.nrc);
-          if (proveedorEncontrado) {
-            console.log('Proveedor encontrado por NRC:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
-            return proveedorEncontrado;
-          }
-        }
-
-        // 3. Buscar por DUI si no se encontró por NIT ni NRC
-        if (proveedor.dui && !proveedorEncontrado) {
-          proveedorEncontrado = this.searchDui(proveedor.dui);
-          if (proveedorEncontrado) {
-            console.log('Proveedor encontrado por DUI:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
-            return proveedorEncontrado;
-          }
-        }
-
-        // 4. Como último recurso, buscar por nombre
-        if (!proveedorEncontrado && proveedor.nombre) {
-          proveedorEncontrado = this.searchNombre(proveedor.nombre);
-          if (proveedorEncontrado) {
-            console.log('Proveedor encontrado por nombre:', proveedorEncontrado.nombre_empresa || proveedorEncontrado.nombre);
-            return proveedorEncontrado;
-          }
-        }
-
-        // Si no encuentra por ningún método, NO se selecciona nada
-        if (!proveedorEncontrado) {
-          console.log('No se encontró proveedor con los datos:', {
-            nit: proveedor.nit,
-            nrc: proveedor.nrc,
-            dui: proveedor.dui,
-            nombre: proveedor.nombre
-          });
-        }
-
-        return proveedorEncontrado;
       }
 
-  searchNit(nit: string) {
-    // console.log('Buscando proveedor por NIT:', nit);
-    // console.log('Lista de proveedores:', this.proveedores);
-
-    let proveedor = this.proveedores.find((proveedor: any) => {
-      // console.log('Comparando NIT:', proveedor.nit, 'con:', nit);
-      return proveedor.nit === nit || proveedor.nit == nit;
-    });
-
-    // console.log('Proveedor encontrado por NIT:', proveedor);
-    return proveedor;
+  // Métodos mantenidos para compatibilidad, pero ahora usan Web Workers internamente
+  async searchNit(nit: string): Promise<any> {
+    try {
+      return await firstValueFrom(
+        this.proveedorSearchService.searchNit(nit, this.proveedores)
+      );
+    } catch (error) {
+      return null;
+    }
   }
 
-      searchNombre(nombre: string) {
-        // console.log('Buscando proveedor por nombre:', nombre);
+  async searchNombre(nombre: string): Promise<any> {
+    try {
+      return await firstValueFrom(
+        this.proveedorSearchService.searchNombre(nombre, this.proveedores)
+      );
+    } catch (error) {
+      return null;
+    }
+  }
 
-        let proveedor = this.proveedores.find((proveedor: any) => {
-          //console.log('Comparando nombres:', proveedor.nombre_empresa, 'con:', nombre);
-          return proveedor.nombre_empresa === nombre ||
-                 proveedor.nombre_empresa == nombre ||
-                 proveedor.nombre === nombre ||
-                 proveedor.nombre == nombre;
-        });
+  async searchNrc(nrc: string): Promise<any> {
+    try {
+      return await firstValueFrom(
+        this.proveedorSearchService.searchNrc(nrc, this.proveedores)
+      );
+    } catch (error) {
+      return null;
+    }
+  }
 
-        // console.log('Proveedor encontrado por nombre:', proveedor);
-        return proveedor;
-      }
-
-      searchNrc(nrc: string) {
-        // console.log('Buscando proveedor por NRC:', nrc);
-        // console.log('Lista de proveedores:', this.proveedores);
-
-        let proveedor = this.proveedores.find((proveedor: any) => {
-          // console.log('Comparando NRC:', proveedor.ncr, 'con:', nrc);
-          return proveedor.ncr === nrc || proveedor.ncr == nrc;
-        });
-
-        // console.log('Proveedor encontrado por NRC:', proveedor);
-        return proveedor;
-      }
-
-      searchDui(dui: string) {
-        // console.log('Buscando proveedor por DUI:', dui);
-        // console.log('Lista de proveedores:', this.proveedores);
-
-        let proveedor = this.proveedores.find((proveedor: any) => {
-          // console.log('Comparando DUI:', proveedor.dui, 'con:', dui);
-          return proveedor.dui === dui || proveedor.dui == dui;
-        });
-
-        // console.log('Proveedor encontrado por DUI:', proveedor);
-        return proveedor;
-      }
+  async searchDui(dui: string): Promise<any> {
+    try {
+      return await firstValueFrom(
+        this.proveedorSearchService.searchDui(dui, this.proveedores)
+      );
+    } catch (error) {
+      return null;
+    }
+  }
 
   async procesarProductosDTE(cuerpoDocumento: any[]) {
     this.compra.detalles = [];
@@ -988,7 +929,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           todosEncontrados = false;
         }
       } catch (error) {
-        console.error('Error buscando producto:', error);
         todosEncontrados = false;
       }
     }
@@ -1037,7 +977,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
 
       return null;
     } catch (error) {
-      console.error('Error en búsqueda optimizada:', error);
       return null;
     }
   }
@@ -1067,7 +1006,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           .toPromise();
         item.sugerencias = sugerencias || [];
       } catch (error) {
-        console.error('Error cargando sugerencias para:', item.descripcion, error);
         item.sugerencias = [];
       }
     }
@@ -1213,14 +1151,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
   getProductosAsignados(): number {
     const asignados = this.productosNoEncontrados.filter(item => {
       const tieneProducto = item.productoSeleccionado && item.productoSeleccionado.id;
-      // console.log(`Item ${item.numItem}:`, {
-      //     productoSeleccionado: item.productoSeleccionado,
-      //     tieneId: item.productoSeleccionado?.id,
-      //     asignado: tieneProducto
-      // });
       return tieneProducto;
     }).length;
-    // console.log('Total asignados:', asignados);
     return asignados;
   }
 
@@ -1229,7 +1161,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       const noTieneProducto = !item.productoSeleccionado || !item.productoSeleccionado.id;
       return noTieneProducto;
     }).length;
-    // console.log('Total pendientes:', pendientes);
     return pendientes;
   }
 
@@ -1239,18 +1170,21 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     return producto1.id === producto2.id;
   }
 
+  // Método trackBy para optimizar el renderizado de listas grandes
+  trackByItem(index: number, item: any): any {
+    return item.numItem || index;
+  }
+
   // Método para manejar la selección de productos
   onProductoSeleccionado(item: any, producto: any) {
-    // console.log('Producto seleccionado:', producto);
     item.productoSeleccionado = producto;
     // Forzar detección de cambios
     setTimeout(() => {
-      //console.log('Estado actualizado:', item.productoSeleccionado);
     }, 0);
   }
 
   // Método para actualizar mapJsonToCompra con la nueva lógica
-  mapJsonToCompra(jsonData: any) {
+  async mapJsonToCompra(jsonData: any) {
     if (jsonData.identificacion.fecEmi) {
       this.compra.fecha = jsonData.identificacion.fecEmi;
     }
@@ -1262,10 +1196,10 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
       this.compra.tipo_documento = this.getTipoDocumento(jsonData.identificacion.tipoDte) || 'Factura';
     }
 
-    let proveedor = this.getProveedor(jsonData.emisor);
+    // Búsqueda asíncrona usando Web Worker
+    const proveedor = await this.getProveedor(jsonData.emisor);
     if(proveedor && proveedor.id){
-      this.compra.id_proveedor = proveedor.id;
-      //console.log('Proveedor asignado:', proveedor.nombre_empresa || proveedor.nombre, 'ID:', proveedor.id);
+      this.compra.id_proveedor = proveedor.id;  
     } else {
       console.log('No se pudo asignar proveedor. Proveedor encontrado:', proveedor);
     }
@@ -1337,13 +1271,6 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     }
 
     crearProducto() {
-        // Debug: mostrar valores actuales
-        console.log('Valores del formulario:', {
-            nombre: this.nuevoProducto.nombre,
-            tipo: this.nuevoProducto.tipo,
-            costo: this.nuevoProducto.costo,
-            id_categoria: this.nuevoProducto.id_categoria
-        });
 
         // Validación más específica
         const errores = [];

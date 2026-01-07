@@ -3,10 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
+// ScrollingModule removido temporalmente - se puede agregar cuando se implemente virtual scrolling completo
+// import { ScrollingModule } from '@angular/cdk/scrolling';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AlertService } from '@services/alert.service';
 import { ApiService } from '@services/api.service';
 import { BaseComponent } from '@shared/base/base.component';
+import { RetaceoProcessorService } from '@workers/retaceo-processor.service';
+import { firstValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 
@@ -87,7 +91,8 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     public apiService: ApiService,
     protected alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private retaceoProcessorService: RetaceoProcessorService
   ) {
     super();
   }
@@ -217,26 +222,25 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     this.calcularTotalGastos();
   }
 
-  cargarRetaceoExistente(id: number) {
+  async cargarRetaceoExistente(id: number) {
     this.loading = true;
-    this.apiService.read('retaceo/', id)
-      .pipe(this.untilDestroyed())
-      .subscribe(
-      (retaceo) => {
-        this.retaceo = retaceo;
+    try {
+      const retaceo = await firstValueFrom(
+        this.apiService.read('retaceo/', id).pipe(this.untilDestroyed())
+      );
+      
+      this.retaceo = retaceo;
 
-        // Cargar gastos y distribución directamente del retaceo
-        this.procesarGastosDelRetaceo(retaceo.gastos);
-        this.procesarDistribucionDelRetaceo(retaceo.distribucion);
+      // Cargar gastos y distribución directamente del retaceo usando Web Workers
+      await this.procesarGastosDelRetaceo(retaceo.gastos);
+      await this.procesarDistribucionDelRetaceo(retaceo.distribucion);
 
-        this.calcularTotalGastos();
-        this.loading = false;
-      },
-      (error) => {
-        this.alertService.error(error);
-        this.loading = false;
-      }
-    );
+      this.calcularTotalGastos();
+      this.loading = false;
+    } catch (error) {
+      this.alertService.error(error);
+      this.loading = false;
+    }
   }
 
   cargarFiltros() {
@@ -799,7 +803,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     return incoterms[this.retaceo.incoterm] || 'FOB';
   }
 
-  procesarGastosDelRetaceo(gastos: any[]) {
+  async procesarGastosDelRetaceo(gastos: any[]) {
     if (!gastos || gastos.length === 0) {
       return;
     }
@@ -810,59 +814,106 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
       this.gastosMap[tipo].seleccionados = [];
     });
 
-    // Agrupar gastos por tipo
-    gastos.forEach((gasto: any) => {
-      const tipo = gasto.tipo_gasto;
+    try {
+      // Usar Web Worker para procesamiento no bloqueante
+      const gastosProcesados: { [tipo: string]: { lista: Gasto[]; seleccionados: number[] } } = await firstValueFrom(
+        this.retaceoProcessorService.processGastos(gastos)
+      );
 
-      if (this.gastosMap[tipo]) {
-        const gastoObj: Gasto = {
-          id: gasto.id,
-          id_retaceo: gasto.id_retaceo,
-          id_gasto: gasto.id_gasto,
-          tipo_gasto: tipo as any,
-          monto: parseFloat(gasto.monto || 0)
-        };
-
-        this.gastosMap[tipo].lista.push(gastoObj);
-        this.gastosMap[tipo].seleccionados.push(gasto.id_gasto);
-      }
-    });
+      // Actualizar el mapa de gastos con los resultados procesados
+      Object.keys(gastosProcesados).forEach(tipo => {
+        if (this.gastosMap[tipo]) {
+          this.gastosMap[tipo].lista = gastosProcesados[tipo].lista;
+          this.gastosMap[tipo].seleccionados = gastosProcesados[tipo].seleccionados;
+        }
+      });
+    } catch (error) {
+      console.error('Error procesando gastos:', error);
+      // Fallback al procesamiento local si el worker falla
+      gastos.forEach((gasto: any) => {
+        const tipo = gasto.tipo_gasto;
+        if (this.gastosMap[tipo]) {
+          const gastoObj: Gasto = {
+            id: gasto.id,
+            id_retaceo: gasto.id_retaceo,
+            id_gasto: gasto.id_gasto,
+            tipo_gasto: tipo as any,
+            monto: parseFloat(gasto.monto || 0)
+          };
+          this.gastosMap[tipo].lista.push(gastoObj);
+          this.gastosMap[tipo].seleccionados.push(gasto.id_gasto);
+        }
+      });
+    }
   }
 
-  procesarDistribucionDelRetaceo(distribucion: any[]) {
+  // Método trackBy para optimizar el renderizado de listas grandes
+  trackByDistribucion(index: number, item: any): any {
+    return item.id || item.id_producto || index;
+  }
+
+  async procesarDistribucionDelRetaceo(distribucion: any[]) {
     if (!distribucion || distribucion.length === 0) {
       return;
     }
 
-    this.distribucion = distribucion.map(item => ({
-      ...item,
-      cantidad: parseFloat(item.cantidad || 0),
-      costo_original: parseFloat(item.costo_original || 0),
-      valor_fob: parseFloat(item.valor_fob || 0),
-      porcentaje_distribucion: parseFloat(item.porcentaje_distribucion || 0),
-      porcentaje_dai: parseFloat(item.porcentaje_dai || 0),
-      monto_transporte: parseFloat(item.monto_transporte || 0),
-      monto_seguro: parseFloat(item.monto_seguro || 0),
-      monto_dai: parseFloat(item.monto_dai || 0),
-      monto_otros: parseFloat(item.monto_otros || 0),
-      costo_landed: parseFloat(item.costo_landed || 0),
-      costo_retaceado: parseFloat(item.costo_retaceado || 0),
-    }));
+    try {
+      // Usar Web Worker para procesamiento no bloqueante
+      const distribucionProcesada: ItemDistribucion[] = await firstValueFrom(
+        this.retaceoProcessorService.processDistribucion(distribucion)
+      );
 
-    // Cargar los productos para cada ítem de la distribución
-    this.distribucion.forEach((item) => {
-      if (item.id_producto) {
-        this.apiService.read('producto/', item.id_producto)
-          .pipe(this.untilDestroyed())
-          .subscribe(
-          (producto) => {
-            item.producto = producto;
-          },
-          (error) => {
-            console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
-          }
+      this.distribucion = distribucionProcesada;
+
+      // Cargar los productos para cada ítem de la distribución de forma asíncrona
+      // Usar Promise.all para cargar todos los productos en paralelo
+      const promesasProductos = this.distribucion
+        .filter(item => item.id_producto)
+        .map(item => 
+          firstValueFrom(this.apiService.read('producto/', item.id_producto))
+            .then(producto => {
+              item.producto = producto;
+            })
+            .catch(error => {
+              console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+            })
         );
-      }
-    });
+
+      // Esperar a que todos los productos se carguen
+      await Promise.all(promesasProductos);
+    } catch (error) {
+      console.error('Error procesando distribución:', error);
+      // Fallback al procesamiento local si el worker falla
+      this.distribucion = distribucion.map(item => ({
+        ...item,
+        cantidad: parseFloat(item.cantidad || 0),
+        costo_original: parseFloat(item.costo_original || 0),
+        valor_fob: parseFloat(item.valor_fob || 0),
+        porcentaje_distribucion: parseFloat(item.porcentaje_distribucion || 0),
+        porcentaje_dai: parseFloat(item.porcentaje_dai || 0),
+        monto_transporte: parseFloat(item.monto_transporte || 0),
+        monto_seguro: parseFloat(item.monto_seguro || 0),
+        monto_dai: parseFloat(item.monto_dai || 0),
+        monto_otros: parseFloat(item.monto_otros || 0),
+        costo_landed: parseFloat(item.costo_landed || 0),
+        costo_retaceado: parseFloat(item.costo_retaceado || 0),
+      }));
+
+      // Cargar productos en fallback
+      this.distribucion.forEach((item) => {
+        if (item.id_producto) {
+          this.apiService.read('producto/', item.id_producto)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+            (producto) => {
+              item.producto = producto;
+            },
+            (error) => {
+              console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+            }
+          );
+        }
+      });
+    }
   }
 }

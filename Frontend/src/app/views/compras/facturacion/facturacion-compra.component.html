@@ -470,7 +470,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (item of productosNoEncontrados; track item.numItem || $index) {
+            @for (item of productosNoEncontrados; track trackByItem($index, item)) {
               <tr>
                 <td>
                   <span class="badge bg-primary">{{ item.numItem }}</span>
