@@ -489,6 +489,28 @@
                     </div>
 
                     <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Versión de facturación.</p>
+                        <select class="form-select" 
+                            id="version_facturacion"
+                            [value]="getVersionFacturacion()"
+                            (change)="updateVersionFacturacion($any($event.target).value)"
+                            name="version_facturacion">
+                            <option value="original">Original (Los precios no incluyen IVA, se agrega al final.)</option>
+                            <option value="v2">V2 (Los precios ya incluyen IVA, se desglosa automáticamente.)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
+                        <p>Mostrar campos contables (Tipo de operación y Tipo de ingreso) en ventas.</p>
+                        <div class="form-switch bg-light-info rounded">
+                            <label for="mostrar_campos_contables">Mostrar campos contables</label>
+                            <input class="form-check-input float-end" type="checkbox" role="switch"
+                                id="mostrar_campos_contables" [checked]="isCamposContablesEnabled()"
+                                (change)="toggleCamposContables()" name="mostrar_campos_contables">
+                        </div>
+                    </div>
+
+                    <div class="form-group col-md-12 col-xl-6 without-label">
                         <p>Se imprimirá el documento al momento de procesar la venta.</p>
                         <div class="form-switch bg-light-info rounded">
                             <label for="impresion_en_facturacion">Imprimir en facturación</label>

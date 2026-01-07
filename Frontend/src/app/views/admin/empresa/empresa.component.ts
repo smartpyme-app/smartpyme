@@ -1054,7 +1054,9 @@ export class EmpresaComponent implements OnInit {
             },
             modulos: {},
             configuraciones: {
-                ticket_en_pdf: false
+                ticket_en_pdf: false,
+                version_facturacion: 'original', // 'original' o 'v2'
+                mostrar_campos_contables: true // Mostrar tipo de operación y tipo de ingreso
             },
             campos_personalizados: {}
         };
@@ -1158,6 +1160,53 @@ export class EmpresaComponent implements OnInit {
     public toggleTicketEnPdf() {
         const currentValue = this.isTicketEnPdfEnabled();
         this.updateTicketEnPdf(!currentValue);
+    }
+
+    // Método para obtener la versión de facturación configurada
+    public getVersionFacturacion(): string {
+        return this.getCustomConfig('configuraciones', 'version_facturacion', 'original');
+    }
+
+    // Método para actualizar la versión de facturación
+    public updateVersionFacturacion(version: string) {
+        this.addCustomConfig('configuraciones', 'version_facturacion', version);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Versión de facturación cambiada a ${version === 'v2' ? 'V2 (precios con IVA)' : 'Original'}`
+            );
+        });
+    }
+
+    // Método para verificar si está usando la versión v2
+    public isVersionFacturacionV2(): boolean {
+        return this.getVersionFacturacion() === 'v2';
+    }
+
+    // Método para verificar si los campos contables están habilitados
+    public isCamposContablesEnabled(): boolean {
+        return this.getCustomConfig('configuraciones', 'mostrar_campos_contables', true);
+    }
+
+    // Método para actualizar la configuración de campos contables
+    public updateCamposContables(enabled: boolean) {
+        this.addCustomConfig('configuraciones', 'mostrar_campos_contables', enabled);
+
+        // Guardar automáticamente
+        this.onSubmit().then(() => {
+            this.alertService.success(
+                'Configuración actualizada',
+                `Campos contables ${enabled ? 'habilitados' : 'deshabilitados'} correctamente`
+            );
+        });
+    }
+
+    // Método para alternar campos contables
+    public toggleCamposContables() {
+        const currentValue = this.isCamposContablesEnabled();
+        this.updateCamposContables(!currentValue);
     }
 
     setCamposRenta() {

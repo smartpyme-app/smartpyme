@@ -32,6 +32,7 @@ import { DevolucionVentaNuevaComponent } from '@views/ventas/devoluciones/devolu
 import { DevolucionVentaDetallesComponent } from '@views/ventas/devoluciones/devolucion-nueva/detalles/devolucion-venta-detalles.component';
 import { DevolucionVentaComponent } from '@views/ventas/devoluciones/devolucion/devolucion-venta.component';
 import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/documento-historial.component';
+import { FacturacionVersionGuard } from '@guards/facturacion-version.guard';
 
 @NgModule({
   imports: [
@@ -84,6 +85,9 @@ import { DocumentoHistorialComponent } from '@views/ventas/documentos/historial/
     DevolucionVentaNuevaComponent,
     DevolucionVentaDetallesComponent,
     DocumentoHistorialComponent
+  ],
+  providers: [
+    FacturacionVersionGuard
   ]
 })
 export class VentasModule { }
