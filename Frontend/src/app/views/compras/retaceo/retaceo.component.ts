@@ -870,7 +870,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
       const promesasProductos = this.distribucion
         .filter(item => item.id_producto)
         .map(item => 
-          firstValueFrom(this.apiService.read('producto/', item.id_producto))
+          firstValueFrom(this.apiService.read('producto/', item.id_producto).pipe(this.untilDestroyed()))
             .then(producto => {
               item.producto = producto;
             })
