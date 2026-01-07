@@ -114,7 +114,7 @@
     <div class="header">
         <h1>{{ $empresa->nombre }}</h1>
         <h2>ESTADO DE RESULTADOS</h2>
-        <h3>Del 1 al {{ date('t', mktime(0, 0, 0, $month, 1, $year)) }} de {{ $month_name }} de {{ $year }}</h3>
+        <h3>Del {{ \Carbon\Carbon::parse($fecha_inicio)->format('d') }} al {{ \Carbon\Carbon::parse($fecha_fin)->format('d') }} de {{ $month_name }} de {{ $year }}</h3>
         <h3>(Expresado en US Dólares)</h3>
     </div>
 

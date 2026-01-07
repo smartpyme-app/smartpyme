@@ -4,9 +4,9 @@
 
 export const environment = {
   production: false,
-  //  API_URL: 'https://api.smartpyme.test',
+    API_URL: 'https://api.smartpyme.test',
   // API_URL: 'http://127.0.0.1:8000',
-  API_URL: 'https://apiconta.smartpyme.site',
+  //API_URL: 'https://apiconta.smartpyme.site',
   APP_URL: 'http://localhost:4200',
 };
 
