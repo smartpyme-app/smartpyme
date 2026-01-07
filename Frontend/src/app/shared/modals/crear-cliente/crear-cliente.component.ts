@@ -8,6 +8,7 @@ import { ApiService } from '@services/api.service';
 import { subscriptionHelper } from '@shared/utils/subscription.helper';
 import { ModalManagerService } from '@services/modal-manager.service';
 import { BaseModalComponent } from '../../base/base-modal.component';
+import { DuplicateCheckService } from '@services/duplicate-check.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -41,7 +42,8 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private duplicateCheckService: DuplicateCheckService
     ) {
         super(modalManager, alertService);
     }
@@ -156,18 +158,23 @@ export class CrearClienteComponent extends BaseModalComponent implements OnInit 
     }
 
     public verificarSiExiste(){
-        if(this.cliente.nombre && this.cliente.apellido){
-            this.apiService.getAll('clientes', { nombre: this.cliente.nombre, apellido: this.cliente.apellido, estado: 1, })
-                .pipe(this.untilDestroyed())
-                .subscribe(clientes => {
-                if(clientes.data[0]){
-                    this.alertService.warning('🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
-                        'Por favor, verificar. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'
-                    );
-                }
+        this.duplicateCheckService.verificarSiExiste({
+            endpoint: 'clientes',
+            searchParams: {
+                nombre: this.cliente.nombre,
+                apellido: this.cliente.apellido,
+                estado: 1,
+            },
+            showEditLink: false, // No mostrar enlace en el modal de creación
+            onComplete: () => {
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }
+            },
+            onError: () => {
+                this.loading = false;
+            }
+        })
+        .pipe(this.untilDestroyed())
+        .subscribe();
     }
 
     openModalContacto(template: TemplateRef<any>, contacto: any) {
