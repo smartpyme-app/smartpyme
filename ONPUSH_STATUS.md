@@ -8,9 +8,9 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 
 ## 📊 Resumen General
 
-- **Total de componentes con OnPush:** 90
-- **Total de componentes pendientes:** ~133
-- **Progreso:** ~40%
+- **Total de componentes con OnPush:** 103
+- **Total de componentes pendientes:** ~120
+- **Progreso:** ~46%
 
 ---
 
@@ -92,13 +92,20 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 
 ## 🟡 MÓDULOS PARCIALES
 
-### 10. Inventario (Parcial - ~24/53 componentes) 🟡
+### 10. Inventario (Parcial - ~31/53 componentes) 🟡
 
 #### ✅ Completados:
 - ✅ `inventario/productos/productos.component.ts`
 - ✅ `inventario/categorias/categorias.component.ts`
 - ✅ `inventario/bodegas/bodegas.component.ts`
 - ✅ `inventario/ajustes/ajustes.component.ts`
+- ✅ `inventario/entradas/inventario-entradas.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/salidas/inventario-salidas.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/traslados/traslados.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/kardex/kardex.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/materias-prima/materias-prima.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/servicios/servicios.component.ts` ⭐ **NUEVO**
+- ✅ `inventario/promociones/promociones.component.ts` ⭐ **NUEVO**
 - ✅ `inventario/entradas/entrada-detalle/entrada-detalle.component.ts`
 - ✅ `inventario/salidas/salida-detalle/salida-detalle.component.ts`
 - ✅ `inventario/materias-prima/materia-prima/informacion/materia-prima-informacion.component.ts`
@@ -121,17 +128,10 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 - ✅ `inventario/promociones/producto/composicion/producto-composicion.component.ts`
 
 #### ❌ Pendientes:
-- ❌ `inventario/entradas/inventario-entradas.component.ts`
 - ❌ `inventario/entradas/entrada/inventario-entrada.component.ts`
-- ❌ `inventario/salidas/inventario-salidas.component.ts`
 - ❌ `inventario/salidas/salida/inventario-salida.component.ts`
-- ❌ `inventario/traslados/traslados.component.ts`
 - ❌ `inventario/traslados/traslado/traslado.component.ts`
-- ❌ `inventario/kardex/kardex.component.ts`
-- ❌ `inventario/materias-prima/materias-prima.component.ts`
 - ❌ `inventario/materias-prima/materia-prima/materia-prima.component.ts`
-- ❌ `inventario/servicios/servicios.component.ts`
-- ❌ `inventario/promociones/promociones.component.ts`
 - ❌ `inventario/promociones/producto/producto.component.ts`
 - ❌ `inventario/promociones/producto/informacion/producto-informacion.component.ts`
 - ❌ `inventario/promociones/producto/historial/ventas/producto-ventas.component.ts`
@@ -153,12 +153,17 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 
 ---
 
-### 11. Compras (Parcial - ~7/30 componentes) 🟡
+### 11. Compras (Parcial - ~12/30 componentes) 🟡
 
 #### ✅ Completados:
 - ✅ `compras/compras.component.ts`
 - ✅ `compras/proveedores/proveedores.component.ts`
 - ✅ `compras/gastos/gastos.component.ts`
+- ✅ `compras/abonos/abonos-compras.component.ts` ⭐
+- ✅ `compras/cotizaciones/cotizaciones-compras.component.ts` ⭐
+- ✅ `compras/devoluciones/devoluciones-compras.component.ts` ⭐
+- ✅ `compras/recurrentes/compras-recurrentes.component.ts` ⭐ **NUEVO**
+- ✅ `compras/retaceo/retaceos-list.component.ts` ⭐ **NUEVO**
 - ✅ `compras/gastos/gasto-detalles/gasto-detalles.component.ts`
 - ✅ `compras/facturacion/compra-producto/compra-producto.component.ts`
 - ✅ `compras/facturacion/detalles/compra-detalles.component.ts`
@@ -166,16 +171,11 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 
 #### ❌ Pendientes:
 - ❌ `compras/compra/compra.component.ts`
-- ❌ `compras/abonos/abonos-compras.component.ts`
-- ❌ `compras/cotizaciones/cotizaciones-compras.component.ts`
 - ❌ `compras/cotizaciones/components/orden-compra-form/orden-compra-form.component.ts`
-- ❌ `compras/devoluciones/devoluciones-compras.component.ts`
 - ❌ `compras/devoluciones/devolucion/devolucion-compra.component.ts`
 - ❌ `compras/devoluciones/devolucion-nueva/devolucion-compra-nueva.component.ts`
 - ❌ `compras/facturacion/facturacion-compra.component.ts`
 - ❌ `compras/facturacion/facturacion-consigna/facturacion-compra-consigna.component.ts`
-- ❌ `compras/recurrentes/compras-recurrentes.component.ts`
-- ❌ `compras/retaceo/retaceos-list.component.ts`
 - ❌ `compras/retaceo/retaceo.component.ts`
 - ❌ `compras/proveedores/proveedor/proveedor.component.ts`
 - ❌ `compras/proveedores/proveedor-detalles/proveedor-detalles.component.ts`
@@ -191,16 +191,16 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 
 ---
 
-### 12. Contabilidad (Parcial - ~3/26 componentes) 🟡
+### 12. Contabilidad (Parcial - ~4/26 componentes) 🟡
 
 #### ✅ Completados:
 - ✅ `contabilidad/partidas/partidas.component.ts`
 - ✅ `contabilidad/partidas/datos-partidas/datos-partida.component.ts`
 - ✅ `contabilidad/partidas/partida/detalles/partida-detalles.component.ts`
+- ✅ `contabilidad/presupuestos/presupuestos.component.ts` ⭐ **NUEVO**
 
 #### ❌ Pendientes:
 - ❌ `contabilidad/partidas/partida/partida.component.ts`
-- ❌ `contabilidad/presupuestos/presupuestos.component.ts`
 - ❌ `contabilidad/presupuestos/presupuesto/presupuesto.component.ts`
 - ❌ `contabilidad/presupuestos/presupuesto-detalles/presupuesto-detalles.component.ts`
 - ❌ `contabilidad/bancos/cuentas/cuentas.component.ts`
@@ -285,11 +285,11 @@ Este documento muestra el estado de implementación de `ChangeDetectionStrategy.
 | **Dash** | 7 | 0 | 7 | 100% ✅ |
 | **Organizaciones Admin** | 2 | 0 | 2 | 100% ✅ |
 | **Ventas (sin facturación)** | 11 | 12 | 23 | 48% 🟡 |
-| **Inventario** | 24 | 29 | 53 | 45% 🟡 |
-| **Compras** | 7 | 23 | 30 | 23% 🟡 |
-| **Contabilidad** | 3 | 23 | 26 | 12% 🟡 |
+| **Inventario** | 31 | 22 | 53 | 58% 🟡 |
+| **Compras** | 12 | 18 | 30 | 40% 🟡 |
+| **Contabilidad** | 4 | 22 | 26 | 15% 🟡 |
 | **Super Admin** | 0 | 15 | 15 | 0% ❌ |
-| **TOTAL** | **90** | **133** | **223** | **40%** |
+| **TOTAL** | **103** | **120** | **223** | **46%** |
 
 ---
 

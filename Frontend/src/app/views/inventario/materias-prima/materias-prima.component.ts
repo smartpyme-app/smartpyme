@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './materias-prima.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MateriasPrimaComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -29,7 +29,8 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'producto',
@@ -60,7 +61,8 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
               .pipe(this.untilDestroyed())
               .subscribe(categorias => { 
                 this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
     }
 
@@ -75,10 +77,12 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
               .pipe(this.untilDestroyed())
               .subscribe(sucursales => { 
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
             this.loading = false; 
             this.filtrado = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public search(){
@@ -90,7 +94,8 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
                 this.productos = productos;
                 this.loading = false; 
                 this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.loadAll();
         }
@@ -114,10 +119,12 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
                     }
                     this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error: any) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -133,7 +140,8 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
               .pipe(this.untilDestroyed())
               .subscribe(categorias => { 
                 this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.openModal(template);
     }
@@ -147,7 +155,8 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
             this.loading = false; 
             this.filtrado = true;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     openModalPrecio(template: TemplateRef<any>, producto:any) {

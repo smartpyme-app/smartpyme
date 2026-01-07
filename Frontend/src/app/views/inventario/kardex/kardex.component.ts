@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './kardex.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class KardexComponent implements OnInit {
 
@@ -26,7 +26,13 @@ export class KardexComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(private apiService: ApiService, private alertService: AlertService,  private route: ActivatedRoute, private router: Router){ }
+    constructor(
+        private apiService: ApiService, 
+        private alertService: AlertService,  
+        private route: ActivatedRoute, 
+        private router: Router,
+        private cdr: ChangeDetectorRef
+    ){ }
 
 	ngOnInit() {
         this.filtros.inicio = this.apiService.date();
@@ -48,7 +54,8 @@ export class KardexComponent implements OnInit {
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public loadAll() {
@@ -59,12 +66,14 @@ export class KardexComponent implements OnInit {
             .subscribe(producto => {
                 this.producto = producto;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
     selectProducto(producto:any){
         this.filtros.id_producto = producto.id;
+        this.cdr.markForCheck();
         // console.log(this.filtros);
     }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     templateUrl: './retaceos-list.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RetaceosListComponent extends BaseModalComponent implements OnInit {
 
@@ -35,7 +35,8 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
     public apiService: ApiService,
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -88,9 +89,11 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
       this.retaceos = response
       this.loading = false;
       this.closeModal();
+      this.cdr.markForCheck();
     }, error => {
       this.alertService.error(error);
       this.loading = false;
+      this.cdr.markForCheck();
     });
   }
 
@@ -113,8 +116,10 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
           .subscribe(() => {
           this.alertService.success('Retaceo eliminado correctamente', 'Retaceo eliminado');
           this.cargarRetaceos();
+          this.cdr.markForCheck();
         }, error => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         });
       }
     });
@@ -129,21 +134,24 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
         .pipe(this.untilDestroyed())
         .subscribe(clientes => {
           this.clientes = clientes;
-      }, error => {this.alertService.error(error); });
+          this.cdr.markForCheck();
+      }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
     if(!this.usuarios.length){
       this.apiService.getAll('usuarios/list')
         .pipe(this.untilDestroyed())
         .subscribe(usuarios => {
           this.usuarios = usuarios;
-      }, error => {this.alertService.error(error); });
+          this.cdr.markForCheck();
+      }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
     if(!this.sucursales.length){
       this.apiService.getAll('sucursales/list')
         .pipe(this.untilDestroyed())
         .subscribe(sucursales => {
         this.sucursales = sucursales;
-      }, error => {this.alertService.error(error); });
+        this.cdr.markForCheck();
+      }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
     this.openModal(template);
   }
@@ -166,10 +174,12 @@ export class RetaceosListComponent extends BaseModalComponent implements OnInit 
           // Marcar el retaceo como contabilizado
           retaceo.contabilizado = true;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       );
   }

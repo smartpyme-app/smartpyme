@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './servicios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -34,7 +34,8 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'servicio',
@@ -66,11 +67,13 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
             };
 
             this.filtrarServicios();
+            this.cdr.markForCheck();
         });
 
         this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public override loadAll() {
@@ -100,7 +103,8 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
         this.apiService.getAll('servicios', this.filtros).pipe(this.untilDestroyed()).subscribe(servicios => { 
             this.servicios = servicios;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public override async delete(item: any | number): Promise<void> {
@@ -121,10 +125,13 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
                 this.servicios.data.splice(index, 1);
             }
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -157,7 +164,8 @@ export class ServiciosComponent extends BaseCrudComponent<any> implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

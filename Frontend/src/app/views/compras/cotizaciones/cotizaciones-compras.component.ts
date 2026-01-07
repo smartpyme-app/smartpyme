@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './cotizaciones-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CotizacionesComprasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -37,7 +37,8 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
   constructor(
     apiService: ApiService, 
     alertService: AlertService,
-    modalManager: ModalManagerService
+    modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'orden-de-compra',
@@ -68,7 +69,8 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
         .pipe(this.untilDestroyed())
         .subscribe(proveedores => {
             this.proveedores = proveedores;
-        }, error => { this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
   }
 
   public setOrden(columna: string) {
@@ -106,7 +108,8 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
             this.loading = false;
             this.comprasOriginal = Object.assign({}, compras);
             this.closeModal();
-        }, error => { this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   async setEstado(cotizacion: any) {
@@ -143,11 +146,13 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
       }
       
       this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
       if (Index !== -1 && Index !== undefined && this.compras.data && error.error?.currentState) {
         this.compras.data[Index].estado = error.error.currentState;
       }
+      this.cdr.markForCheck();
     }
   }
 
@@ -176,10 +181,13 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
       }
       
       this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
+      this.cdr.markForCheck();
     } finally {
       this.loading = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -194,7 +202,8 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
         .pipe(this.untilDestroyed())
         .subscribe(documentos => {
             this.documentos = documentos;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
     this.openModal(template, compra);
   }
@@ -204,13 +213,15 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
         .pipe(this.untilDestroyed())
         .subscribe(sucursales => { 
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
     this.apiService.getAll('usuarios/list')
         .pipe(this.untilDestroyed())
         .subscribe(usuarios => { 
             this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
     this.openModal(template);
   }
@@ -234,7 +245,8 @@ export class CotizacionesComprasComponent extends BaseCrudComponent<any> impleme
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         this.downloading = false;
-      }, (error) => { this.alertService.error(error); this.downloading = false; }
+        this.cdr.markForCheck();
+      }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
     );
   }
 
