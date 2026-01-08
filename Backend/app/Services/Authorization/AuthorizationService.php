@@ -16,13 +16,17 @@ class AuthorizationService
 {
     public function requiresAuthorization($typeName, $data = [])
     {
-        $type = AuthorizationType::where('name', $typeName)
-            ->where('active', true)
-            ->first();
-
-        if (!$type) return false;
-
-        return $type->evaluateConditions($data);
+        // Siempre retorna false para no requerir autorización
+        return false;
+        
+        // Código original comentado:
+        // $type = AuthorizationType::where('name', $typeName)
+        //     ->where('active', true)
+        //     ->first();
+        //
+        // if (!$type) return false;
+        //
+        // return $type->evaluateConditions($data);
     }
 
     public function requestAuthorization($typeName, $model, $description, $data = [])
