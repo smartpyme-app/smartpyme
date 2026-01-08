@@ -27,7 +27,7 @@ class MHAnulacion extends Model
             "version" => 2,
             "ambiente" => $DTE['identificacion']['ambiente'],
             "codigoGeneracion" => $codigoGeneracion,
-            "fecAnula" => \Carbon\Carbon::now()->format('Y-m-d'),
+            "fecAnula" => \Carbon\Carbon::parse($this->venta->fecha_anulacion)->format('Y-m-d'),
             "horAnula" => \Carbon\Carbon::now()->format('H:i:s'),
         ];
 
@@ -82,9 +82,34 @@ class MHAnulacion extends Model
         // 2. Rescindir de la operación realizada.
         // 3. Otro.
 
+        // Usar valores directamente de la venta (ya están guardados)
+        $tipoAnulacion = $this->venta->tipo_anulacion ?? 2;
+        
+        // Si la venta tiene motivo_anulacion guardado, usarlo directamente
+        // Si no, usar el texto predeterminado según el tipo
+        if ($this->venta->motivo_anulacion) {
+            $motivoTexto = $this->venta->motivo_anulacion;
+        } else {
+            // Textos predeterminados según el tipo de anulación
+            switch ($tipoAnulacion) {
+                case 1:
+                    $motivoTexto = 'Error en la Información del Documento Tributario Electrónico a invalidar.';
+                    break;
+                case 2:
+                    $motivoTexto = 'Se rescinde la operación.';
+                    break;
+                case 3:
+                    $motivoTexto = 'Otro.';
+                    break;
+                default:
+                    $motivoTexto = 'Se rescinde la operación.';
+                    break;
+            }
+        }
+
         $motivo = [
-            "tipoAnulacion" => 2,
-            "motivoAnulacion" => 'Se rescinde la operación.',
+            "tipoAnulacion" => $tipoAnulacion,
+            "motivoAnulacion" => $motivoTexto,
             "nombreResponsable" => $DTE['emisor']['nombre'],
             "tipDocResponsable" => '36',
             "numDocResponsable" => $DTE['emisor']['nit'],
