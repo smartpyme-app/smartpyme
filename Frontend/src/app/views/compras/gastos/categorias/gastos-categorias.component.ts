@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import Swal from 'sweetalert2';
     templateUrl: './gastos-categorias.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class GastosCategoriasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -29,7 +29,8 @@ export class GastosCategoriasComponent extends BaseCrudComponent<any> implements
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'gastos/categoria',

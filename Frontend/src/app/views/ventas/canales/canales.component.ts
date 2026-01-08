@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     templateUrl: './canales.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -25,6 +25,7 @@ export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
     public canal:any = {};
     public filtro:any = {};
     public filtrado:boolean = false;
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(
         apiService: ApiService,
@@ -71,10 +72,13 @@ export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
                 .pipe(this.untilDestroyed())
                 .toPromise();
             this.filtrado = false;
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -109,9 +113,11 @@ export class CanalesComponent extends BaseCrudComponent<any> implements OnInit {
                 }
                 this.alertService.success('Estado actualizado', 'El estado del canal fue cambiado exitosamente.');
                 this.loading = false;
+                this.cdr.markForCheck();
             } catch (error: any) {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         } else {
             // Usar el método base para operaciones normales

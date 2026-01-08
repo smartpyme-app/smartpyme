@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,9 +15,10 @@ import { SumPipe } from '../../../../pipes/sum.pipe';
     templateUrl: './tops.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, SumPipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
-export class TopsComponent implements OnInit {
+export class TopsComponent implements OnInit, OnChanges {
 	@ViewChild(BaseChartDirective)
 	public chart!: BaseChartDirective;
 
@@ -34,20 +35,24 @@ export class TopsComponent implements OnInit {
     };
     public chartType: ChartType = 'doughnut';
 
-	constructor( private alertService:AlertService, private apiService:ApiService
+	constructor( 
+        private alertService:AlertService, 
+        private apiService:ApiService,
+        private cdr: ChangeDetectorRef
 	) { }
 
 	ngOnInit() {
 
 	}
 
-	ngOnChanges(){
+	ngOnChanges(changes: SimpleChanges){
     // setTimeout(()=>{  
   	// 	this.chartData.labels = this.dash?.productos.map(function(a:any) {return a.nombre});
   	// 	this.chartData.datasets[0].data = this.dash?.productos.map(function(a:any) {return a.total});
   	// 	if (this.chart)
   	// 		this.chart!.chart!.update();
     // },2000);
+    this.cdr.markForCheck();
 	}
 
 }

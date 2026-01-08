@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './sucursal.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class SucursalComponent extends BaseComponent implements OnInit {
@@ -25,7 +26,8 @@ export class SucursalComponent extends BaseComponent implements OnInit {
 
       constructor( 
           public apiService: ApiService, private alertService: AlertService,
-          private route: ActivatedRoute, private router: Router
+          private route: ActivatedRoute, private router: Router,
+          private cdr: ChangeDetectorRef
       ) {
         super();
       }
@@ -37,23 +39,27 @@ export class SucursalComponent extends BaseComponent implements OnInit {
       public loadAll(){
             const id = +this.route.snapshot.paramMap.get('id')!;
             this.loading = true;
+            this.cdr.markForCheck();
             this.apiService.read('sucursal/', id)
                 .pipe(this.untilDestroyed())
                 .subscribe(sucursal => {
                 this.sucursal = sucursal;
                 this.loading = false;
-            },error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
             let tabId = +this.route.snapshot.queryParamMap.get('tab')!;
             setTimeout(()=>{
                 if (this.staticTabs?.tabs[tabId]) {
                   this.staticTabs.tabs[tabId].active = true;
+                  this.cdr.markForCheck();
                 }
             },700);
       }
 
       public onSubmit() {
           this.loading = true;
+          this.cdr.markForCheck();
           // Guardamos la sucursal
           this.apiService.store('sucursal', this.sucursal)
               .pipe(this.untilDestroyed())
@@ -61,7 +67,8 @@ export class SucursalComponent extends BaseComponent implements OnInit {
               // this.sucursal = sucursal;
               this.alertService.success('Sucursal guardada', 'La sucursal fue guardada exitosamente.');
               this.loading = false;
-          },error => {this.alertService.error(error); this.loading = false; });
+              this.cdr.markForCheck();
+          },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
       }
 
 }

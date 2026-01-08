@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, ViewChild, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -24,6 +24,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './suscripcion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class SuscripcionComponent extends BaseModalComponent implements OnInit {
@@ -80,7 +81,8 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private sanitizer: DomSanitizer,
-    private n1coPaymentService: N1coPaymentService
+    private n1coPaymentService: N1coPaymentService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -98,6 +100,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       (suscripcion) => {
         this.suscripcion = suscripcion;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         const authUser = JSON.parse(
@@ -116,6 +119,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
           );
         }
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
 
@@ -127,6 +131,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(paises => {
       this.paises = paises;
+      this.cdr.markForCheck();
     }, error => {this.alertService.error(error); });
   }
 
@@ -136,9 +141,11 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       .subscribe(
       estados => {
         this.estados = estados;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -148,6 +155,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       this.getEstados(this.billingInfo.countryCode);
       this.billingInfo.stateCode = '';
       this.billingInfo.zipCode = '';
+      this.cdr.markForCheck();
     }
   }
 
@@ -156,6 +164,7 @@ export class SuscripcionComponent extends BaseModalComponent implements OnInit {
       const estadoSeleccionado = this.estados.find(
         (estado) => estado.codigo === this.billingInfo.stateCode
       );
+      this.cdr.markForCheck();
 
       if (estadoSeleccionado && estadoSeleccionado.codigo_postal) {
         this.billingInfo.zipCode = estadoSeleccionado.codigo_postal;

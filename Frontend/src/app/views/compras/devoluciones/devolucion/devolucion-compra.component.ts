@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './devolucion-compra.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionCompraComponent extends BaseComponent implements OnInit {
@@ -33,7 +33,8 @@ export class DevolucionCompraComponent extends BaseComponent implements OnInit {
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -52,6 +53,11 @@ export class DevolucionCompraComponent extends BaseComponent implements OnInit {
                 this.detalles = devolucion.detalles;
                 this.proveedor = devolucion.proveedor;
                 this.loading = false;
+                this.cdr.markForCheck();
+            }, error => {
+                this.alertService.error(error);
+                this.loading = false;
+                this.cdr.markForCheck();
             });
     }
 

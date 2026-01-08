@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class FacturacionCompraConsignaComponent extends BaseModalComponent implements OnInit {
@@ -50,6 +50,8 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
     public detalle: any = {};
 
     
+    private cdr = inject(ChangeDetectorRef);
+
 	constructor( 
 	    public apiService: ApiService,
         protected override alertService: AlertService,
@@ -86,6 +88,7 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
         ).subscribe(results => {
             this.searchResults = results || [];
             this.searchLoading = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -103,7 +106,8 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                             this.compra.cobrar_impuestos = this.compra.iva ? true : false;
                             this.loading = false;
                             this.cargarDatos();
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.compra = {};
                     this.compra.id_empresa = this.apiService.auth_user().id_empresa;
@@ -118,31 +122,36 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => {
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('bancos/list')
             .pipe(this.untilDestroyed())
             .subscribe(bancos => {
                 this.bancos = bancos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('documentos/list')
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
                 this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
     }
 
@@ -252,8 +261,9 @@ export class FacturacionCompraConsignaComponent extends BaseModalComponent imple
                 this.loading = false;
                 this.router.navigate(['/compras']);
                 this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+                this.cdr.markForCheck();
 
-            },error => {this.alertService.error(error); this.loading = false; });
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
         }
 

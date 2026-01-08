@@ -266,6 +266,7 @@ export class ProductoInformacionComponent extends BaseModalComponent implements 
         },
         error: (err) => {
           this.alertService.error(err);
+          this.cdr.markForCheck();
           // `guardar` se apaga en finalize()
         }
       });

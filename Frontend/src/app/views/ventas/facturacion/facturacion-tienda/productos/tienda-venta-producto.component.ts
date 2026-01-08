@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './tienda-venta-producto.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, NgSelectModule, PaginationComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TiendaVentaProductoComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -41,7 +41,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe:SumPipe
+        private sumPipe:SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -70,14 +71,16 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
                 if (results && (results.length == 1 ) && (this.buscador == results[0].codigo)) { 
                     this.selectProducto(results[0]);
                 }
-              });
+                this.cdr.markForCheck();
+              }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     override openModal(template: TemplateRef<any>) {
 
         this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.loadAll();
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
@@ -101,7 +104,8 @@ export class TiendaVentaProductoComponent extends BasePaginatedModalComponent im
         this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => { 
             this.productosData = productos;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {

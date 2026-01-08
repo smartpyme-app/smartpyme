@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './presupuesto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PresupuestoComponent extends BaseComponent implements OnInit {
 
@@ -30,7 +30,8 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router,
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
     ) {
         super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -42,7 +43,8 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
           .subscribe(proyectos => {
             this.proyectos = proyectos;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         this.loadAll();
 	}
@@ -58,7 +60,8 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
 	              .subscribe(presupuesto => {
 		            this.presupuesto = presupuesto;
 	            	this.loading = false;
-	            }, error => {this.alertService.error(error); this.loading = false; });
+	            	this.cdr.markForCheck();
+	            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 	        }
 	        else{
 	    		this.presupuesto = {};
@@ -79,7 +82,8 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
                         this.presupuesto.fecha_inicio = proyecto.fecha_inicio;
                         this.presupuesto.fecha_fin = proyecto.fecha_fin;
                         this.alertService.info('Genial','Hemos completado alguna información en base a los datos del proyecto.');
-                    }, error => {this.alertService.error(error); this.loading = false; });
+                        this.cdr.markForCheck();
+                    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
                 }
 	        }
 	    });
@@ -91,6 +95,7 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
             this.proyectos.push(proyecto);
         }
         this.presupuesto.id_proyecto = proyecto.id;
+        this.cdr.markForCheck();
     }
 
 
@@ -106,7 +111,8 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
             }
             this.router.navigateByUrl('/presupuestos');
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
     }
 
     sumEgresos(){
@@ -126,11 +132,13 @@ export class PresupuestoComponent extends BaseComponent implements OnInit {
                                     + (this.presupuesto.gastos_administrativos ? parseFloat(this.presupuesto.gastos_administrativos) : 0)
                                     + (this.presupuesto.publicidad ? parseFloat(this.presupuesto.publicidad) : 0)).toFixed(2);
         console.log(this.presupuesto);
+        this.cdr.markForCheck();
     }
 
     calUtilidad(){
         this.presupuesto.utilidad = (this.presupuesto.ingresos - this.presupuesto.egresos - this.presupuesto.compras).toFixed(2);
          this.presupuesto.margen = (this.presupuesto.utilidad / this.presupuesto.ingresos * 100).toFixed(2)
+         this.cdr.markForCheck();
     }
 
 }

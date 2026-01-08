@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './inventario-entrada.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, BuscadorProductosComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InventarioEntradaComponent extends BaseModalComponent implements OnInit {
 
@@ -32,7 +32,8 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 	    protected override alertService: AlertService,
 	    protected override modalManager: ModalManagerService,
 	    private route: ActivatedRoute, 
-	    private router: Router
+	    private router: Router,
+	    private cdr: ChangeDetectorRef
     ) { 
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -46,7 +47,8 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
           .subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
 	}
 
@@ -69,7 +71,8 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
               .subscribe(entrada => {
 	            this.entrada = entrada;
             	this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+            	this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
 	}
 
@@ -89,11 +92,13 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 		this.entrada.detalles.push(this.detalle);
 		this.producto = {};
 		this.detalle = {};
+		this.cdr.markForCheck();
     	// document.getElementById('cantidad')!.focus();
     }
    
     updateDetalle(detalle:any){
         detalle.total = detalle.cantidad * detalle.costo;
+        this.cdr.markForCheck();
     }
 	
 	public async onSubmit() {
@@ -104,10 +109,13 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
                 .toPromise();
             
             this.router.navigateByUrl('/entradas');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -123,7 +131,8 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 						}
 					}
 		        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
-	        	}, error => {this.alertService.error(error); });
+		        	this.cdr.markForCheck();
+	        	}, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 			}else{
 				for (var i = 0; i < this.entrada.detalles.length; ++i) {
 					if (this.entrada.detalles[i].id_producto === detalle.id_producto ){
@@ -131,6 +140,7 @@ export class InventarioEntradaComponent extends BaseModalComponent implements On
 					}
 				}
 	        	this.alertService.success("Eliminado", "El registro fue eliminado exitosamente.");
+	        	this.cdr.markForCheck();
 			}
 		}
 	}

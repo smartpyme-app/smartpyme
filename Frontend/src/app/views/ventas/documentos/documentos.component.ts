@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { PaginationComponent } from '@shared/parts/pagination/pagination.compone
     templateUrl: './documentos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -33,7 +34,8 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'documento',
@@ -67,10 +69,13 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
                 .pipe(this.untilDestroyed())
                 .toPromise();
             this.filtrado = false;
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -99,8 +104,10 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
                 this.sucursales = await this.apiService.getAll('sucursales/list')
                     .pipe(this.untilDestroyed())
                     .toPromise();
+                this.cdr.markForCheck();
             } catch (error: any) {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
 
             super.openModal(template, documento, {class: 'modal-md', backdrop: 'static'});
@@ -151,10 +158,13 @@ export class DocumentosComponent extends BaseCrudComponent<any> implements OnIni
                 this.documentos.splice(index, 1);
             }
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 

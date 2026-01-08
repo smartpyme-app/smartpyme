@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import Swal from 'sweetalert2';
     templateUrl: './cuentas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, ImportarExcelComponent, PaginationComponent, NotificacionesContainerComponent, TooltipModule, PopoverModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CuentasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -37,7 +37,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -55,7 +56,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
           .pipe(this.untilDestroyed())
           .subscribe(clientes => { 
             this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.loadAll();
     }
@@ -95,7 +97,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 
@@ -110,7 +113,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
           .pipe(this.untilDestroyed())
           .subscribe(usuarios => { 
             this.usuarios = usuarios;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.openModal(template, {class: 'modal-lg', backdrop: 'static'});
     }
 
@@ -140,7 +144,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
                         if (this.cuentas.data[i].id == data.id )
                             this.cuentas.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -163,7 +168,8 @@ export class CuentasComponent extends BasePaginatedModalComponent implements OnI
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
 }

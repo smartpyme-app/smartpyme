@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import Swal from 'sweetalert2';
     styleUrls: ['./whatsapp.component.scss'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TooltipModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class WhatsAppComponent extends BaseComponent implements OnInit {
@@ -74,7 +75,8 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     public alertService: AlertService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private cdr: ChangeDetectorRef
   ) {
     super();
   }
@@ -94,6 +96,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
       this.loadUsuarios()
     ]).finally(() => {
       this.loading = false;
+      this.cdr.markForCheck();
     });
   }
 
@@ -136,12 +139,14 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
           
           this.connectionStatus = this.determineConnectionStatus();
           this.lastUpdate = new Date();
+          this.cdr.markForCheck();
           resolve();
         },
         (error) => {
           console.error('Error cargando estadísticas:', error);
           this.connectionStatus = 'disconnected';
           this.connectionStatus = 'connected';
+          this.cdr.markForCheck();
           resolve();
         }
       );
@@ -165,11 +170,13 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
           } else {
             this.executiveSummary = response;
           }
+          this.cdr.markForCheck();
           resolve();
         },
         (error) => {
           console.error('Error cargando resumen ejecutivo:', error);
           this.executiveSummary = null;
+          this.cdr.markForCheck();
           resolve();
         }
       );
@@ -190,11 +197,13 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
           } else {
             this.sessions = response || { data: [], total: 0, last_page: 1 };
           }
+          this.cdr.markForCheck();
           resolve();
         },
         (error) => {
           console.error('Error cargando sesiones:', error);
           this.sessions = { data: [], total: 0, last_page: 1 };
+          this.cdr.markForCheck();
           resolve();
         }
       );
@@ -210,11 +219,13 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
         .subscribe(
         (usuarios) => {
           this.usuarios = usuarios || [];
+          this.cdr.markForCheck();
           resolve();
         },
         (error) => {
           console.error('Error cargando usuarios:', error);
           this.usuarios = [];
+          this.cdr.markForCheck();
           resolve();
         }
       );
@@ -228,6 +239,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
       this.loadExecutiveSummary()
     ]).then(() => {
       console.log('✅ Estadísticas actualizadas');
+      this.cdr.markForCheck();
     });
   }
 
@@ -260,6 +272,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
 
     this.filtros.search = this.filtros.buscador;
     this.filtros.empresa_id = this.filtros.id_empresa;
+    this.cdr.markForCheck();
     this.loadSessions();
   }
 
@@ -292,11 +305,13 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
       this.filtros.orden = campo;
       this.filtros.direccion = 'asc';
     }
+    this.cdr.markForCheck();
     this.filtrarSesiones();
   }
 
   setPagination(event: any) {
     this.filtros.page = event.page;
+    this.cdr.markForCheck();
     this.loadSessions();
   }
 
@@ -325,9 +340,11 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
          (response) => {
            this.alertService.success('Sesión desconectada correctamente', 'WhatsApp');
            this.refreshData();
+           this.cdr.markForCheck();
          },
          (error) => {
            this.alertService.error('Error al desconectar sesión');
+           this.cdr.markForCheck();
          }
        );
      }
@@ -355,9 +372,11 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
           (response) => {
             this.alertService.success('Sesión conectada correctamente', 'WhatsApp');
             this.refreshData();
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error('Error al conectar sesión');
+            this.cdr.markForCheck();
           }
         );
       }
@@ -385,9 +404,11 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
           (response) => {
             this.alertService.success('Sesión eliminada correctamente', 'WhatsApp');
             this.refreshData();
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error('Error al eliminar sesión');
+            this.cdr.markForCheck();
           }
         );
       }
@@ -413,6 +434,7 @@ export class WhatsAppComponent extends BaseComponent implements OnInit {
     ]).finally(() => {
       this.refreshing = false;
       console.log('✅ Datos refrescados');
+      this.cdr.markForCheck();
     });
   }
 

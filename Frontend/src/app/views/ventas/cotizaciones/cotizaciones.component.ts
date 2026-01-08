@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './cotizaciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 
@@ -38,7 +39,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
   constructor(
     apiService: ApiService,
     alertService: AlertService,
-    modalManager: ModalManagerService
+    modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'cotizacion',
@@ -69,7 +71,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
       .pipe(this.untilDestroyed())
       .subscribe(clientes => {
         this.clientes = clientes;
-      }, error => { this.alertService.error(error); });
+        this.cdr.markForCheck();
+      }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
   }
 
   public setOrden(columna: string) {
@@ -79,7 +82,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
     }
-
+    this.cdr.markForCheck();
     this.filtrarVentas();
   }
 
@@ -100,6 +103,7 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
 
   public filtrarVentas() {
     this.loading = true;
+    this.cdr.markForCheck();
     if (!this.filtros.id_cliente) this.filtros.id_cliente = '';
   
     this.apiService.getAll('cotizaciones', this.filtros)
@@ -110,7 +114,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         if (this.modalRef) {
           this.closeModal();
         }
-      }, error => { this.alertService.error(error); this.loading = false; });
+        this.cdr.markForCheck();
+      }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   private normalizeVentas(ventas: any) {
@@ -132,9 +137,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
       .subscribe({
         next: () => {
           this.alertService.success('Cotización actualizada', 'La cotización fue actualizada exitosamente.');
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -157,10 +164,12 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
           }
           this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: (error: any) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -176,7 +185,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
       .pipe(this.untilDestroyed())
       .subscribe(documentos => {
         this.documentos = documentos;
-      }, error => { this.alertService.error(error); });
+        this.cdr.markForCheck();
+      }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
     this.openModal(template, venta);
   }
@@ -187,7 +197,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         .pipe(this.untilDestroyed())
         .subscribe(sucursales => {
           this.sucursales = sucursales;
-        }, error => { this.alertService.error(error); });
+          this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     if (!this.usuarios.length) {
@@ -195,7 +206,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         .pipe(this.untilDestroyed())
         .subscribe(usuarios => {
           this.usuarios = usuarios;
-        }, error => { this.alertService.error(error); });
+          this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     if (!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos) {
@@ -203,7 +215,8 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         .pipe(this.untilDestroyed())
         .subscribe(proyectos => {
           this.proyectos = proyectos;
-        }, error => { this.alertService.error(error); });
+          this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     this.openModal(template);
@@ -241,9 +254,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         next: () => {
           this.alertService.success(`Cotización ${estado}`, `La cotización fue ${estado} exitosamente.`);
           this.filtrarVentas();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -255,9 +270,11 @@ export class CotizacionesComponent extends BaseCrudComponent<any> implements OnI
         next: () => {
           this.alertService.success('Cotización duplicada', 'La cotización fue duplicada exitosamente.');
           this.filtrarVentas();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }

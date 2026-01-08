@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
     templateUrl: './cuentas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TooltipModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -29,7 +29,8 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'cuenta',
@@ -91,10 +92,12 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
                 if(this.modalRef){
                     this.closeModal();
                 }
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
           });
     }
@@ -102,6 +105,7 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
     public override openModal(template: TemplateRef<any>, cuenta?: any) {
         this.cuenta = cuenta || {};
         super.openModal(template, {class: 'modal-lg', backdrop: 'static'});
+        this.cdr.markForCheck();
     }
 
     public openFilter(template: TemplateRef<any>) {
@@ -131,9 +135,11 @@ export class CuentasComponent extends BaseCrudComponent<any> implements OnInit {
                             if (this.cuentas.data[i].id == data.id )
                                 this.cuentas.data.splice(i, 1);
                         }
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
+                        this.cdr.markForCheck();
                     }
                   });
           } else if (result.dismiss === Swal.DismissReason.cancel) {

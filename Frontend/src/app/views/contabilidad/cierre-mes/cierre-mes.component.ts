@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import Swal from 'sweetalert2';
     styleUrls: ['./cierre-mes.component.scss'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CierreMesComponent implements OnInit {
 
@@ -59,7 +59,8 @@ export class CierreMesComponent implements OnInit {
   constructor(
     public apiService: ApiService,
     private alertService: AlertService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -104,9 +105,11 @@ export class CierreMesComponent implements OnInit {
       .subscribe(
       (catalogo: any) => {
         this.catalogo = catalogo;
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -159,10 +162,12 @@ export class CierreMesComponent implements OnInit {
         if (!estado.cerrado) {
           this.cargarValidacionesPrevias();
         }
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.cargandoPeriodo = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -189,10 +194,12 @@ export class CierreMesComponent implements OnInit {
           };
         }
         this.cargandoValidaciones = false;
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.cargandoValidaciones = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -223,11 +230,13 @@ export class CierreMesComponent implements OnInit {
             'Revise las observaciones antes de continuar'
           );
         }
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.cargandoSimulacion = false;
         this.simulacionActiva = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -245,11 +254,13 @@ export class CierreMesComponent implements OnInit {
       (balance: any) => {
         this.balanceComprobacion = balance;
         this.cargandoBalance = false;
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.cargandoBalance = false;
         this.mostrandoBalance = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -260,6 +271,7 @@ export class CierreMesComponent implements OnInit {
   public ocultarBalance(): void {
     this.mostrandoBalance = false;
     this.balanceComprobacion = null;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -275,6 +287,7 @@ export class CierreMesComponent implements OnInit {
     }
 
     this.confirmacionFinal = true;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -282,6 +295,7 @@ export class CierreMesComponent implements OnInit {
    */
   public cancelarConfirmacion(): void {
     this.confirmacionFinal = false;
+    this.cdr.markForCheck();
   }
 
   /**
@@ -397,6 +411,7 @@ export class CierreMesComponent implements OnInit {
                 // Recargar estado del período
                 this.cargarEstadoPeriodo();
                 this.confirmacionFinal = false;
+                this.cdr.markForCheck();
               });
             },
             (error: any) => {
@@ -416,16 +431,19 @@ export class CierreMesComponent implements OnInit {
                 // Recargar estado del período
                 this.cargarEstadoPeriodo();
                 this.confirmacionFinal = false;
+                this.cdr.markForCheck();
               });
             }
           );
         } else {
           this.alertService.error(resultado.message || 'Error desconocido en el cierre');
         }
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.procesandoCierre = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -479,10 +497,12 @@ export class CierreMesComponent implements OnInit {
         } else {
           this.alertService.error(resultado.message || 'Error desconocido en la reapertura');
         }
+        this.cdr.markForCheck();
       },
       (error: any) => {
         this.alertService.error(error);
         this.procesandoCierre = false;
+        this.cdr.markForCheck();
       }
     );
   }

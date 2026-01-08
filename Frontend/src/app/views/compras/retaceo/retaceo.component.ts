@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -42,7 +42,7 @@ interface ItemDistribucion {
     styleUrls: ['./retaceo.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RetaceoComponent extends BaseComponent implements OnInit {
   public retaceo: any = {};
@@ -87,7 +87,8 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     public apiService: ApiService,
     protected alertService: AlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     super();
   }
@@ -110,12 +111,14 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
       (bodegas) => {
         this.bodegas = bodegas;
         this.loading = false;
+        this.cdr.markForCheck();
 
         this.cargarDatosPorBodega();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -156,10 +159,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
           (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
         );
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
 
@@ -173,10 +178,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
         //   (c: any) => c.estado === 'Confirmado'
         // );
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -215,6 +222,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     });
 
     this.calcularTotalGastos();
+    this.cdr.markForCheck();
   }
 
   cargarRetaceoExistente(id: number) {
@@ -231,10 +239,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
         this.calcularTotalGastos();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -315,6 +325,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
         });
 
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -397,6 +408,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
     this.recalcularTotalRetaceado();
     this.alertService.success('Distribución calculada correctamente', 'Distribución');
+    this.cdr.markForCheck();
   }
 
   // Método auxiliar para calcular el total por tipo de gasto
@@ -438,21 +450,25 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
             (response) => {
               this.retaceo.contabilizado = true;
               this.loading = false;
+              this.cdr.markForCheck();
             },
             (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           );
         }
         
         this.router.navigate(['/retaceos']);
         this.saving = false;
+        this.cdr.markForCheck();
 
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -773,10 +789,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
         this.alertService.success(mensaje, 'Cambio de estado');
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -857,9 +875,11 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
           .subscribe(
           (producto) => {
             item.producto = producto;
+            this.cdr.markForCheck();
           },
           (error) => {
             console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
+            this.cdr.markForCheck();
           }
         );
       }

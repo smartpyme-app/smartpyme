@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './devolucion-venta.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionVentaComponent implements OnInit {
@@ -32,8 +32,15 @@ export class DevolucionVentaComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
     
-	constructor(private apiService: ApiService, private alertService: AlertService, private route: ActivatedRoute, private router: Router, private modalService: BsModalService){}
+	constructor(
+        private apiService: ApiService, 
+        private alertService: AlertService, 
+        private route: ActivatedRoute, 
+        private router: Router, 
+        private modalService: BsModalService
+    ){}
 
 	ngOnInit() {
         this.devolucion.sub_total = 0;
@@ -51,7 +58,8 @@ export class DevolucionVentaComponent implements OnInit {
                 this.devolucion = devolucion;
                 this.detalles = devolucion.detalles;
                 this.proveedor = devolucion.proveedor;
-            });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
 }

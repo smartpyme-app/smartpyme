@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     templateUrl: './devoluciones-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionesComprasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -35,7 +35,8 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'devolucion/compra',
@@ -85,7 +86,8 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
                 this.compras = compras;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setEstado(compra:any, enable:string){
@@ -123,10 +125,12 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
                     }
                     this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error: any) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -147,19 +151,22 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => { 
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => { 
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.openModal(template);
     }
@@ -172,7 +179,8 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
             .subscribe(compras => {
                 this.comprasList = compras;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         super.openModal(template);
     }
 
@@ -195,7 +203,8 @@ export class DevolucionesComprasComponent extends BaseCrudComponent<any> impleme
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

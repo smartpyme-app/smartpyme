@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './proveedor-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorDetallesComponent extends BaseComponent implements OnInit {
 
@@ -29,7 +29,8 @@ export class ProveedorDetallesComponent extends BaseComponent implements OnInit 
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -49,11 +50,13 @@ export class ProveedorDetallesComponent extends BaseComponent implements OnInit 
                         .subscribe(proveedor => {
                             this.proveedor = proveedor;
                             this.loading = false;
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.proveedor = {};
                     this.proveedor.id_empresa = this.apiService.auth_user().id_empresa;
                     this.proveedor.id_usuario = this.apiService.auth_user().id;
+                    this.cdr.markForCheck();
                 }
             });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     templateUrl: './compra-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, CompraProductoComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CompraDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -40,7 +40,8 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
   constructor(
     public apiService: ApiService,
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -60,6 +61,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
     }
     detalle.total  = (parseFloat((detalle.cantidad ?? 0)) * parseFloat((detalle.costo ?? 0)) - parseFloat((detalle.descuento ?? 0))).toFixed(2);
     detalle.fobTotal = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
+    this.cdr.markForCheck();
     this.update.emit(this.compra);
   }
 
@@ -70,6 +72,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
 
   public supervisorCheck() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.store('usuario-validar', this.supervisor)
         .pipe(this.untilDestroyed())
         .subscribe(supervisor => {
@@ -77,7 +80,8 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
             this.delete(this.detalle);
             this.loading = false;
             this.supervisor = {};
-        }, error => { this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
   }
 
   // Agregar detalle
@@ -99,6 +103,7 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
     if (!detalle)
       this.compra.detalles.push(this.detalle);
 
+    this.cdr.markForCheck();
     this.update.emit(this.compra);
     console.log(this.compra);
     this.detalle = {};
@@ -125,10 +130,12 @@ export class CompraDetallesComponent extends BaseModalComponent implements OnIni
                     .pipe(this.untilDestroyed())
                     .subscribe(detalle => {
                         this.compra.detalles.splice(indexAEliminar, 1);
+                        this.cdr.markForCheck();
                         this.update.emit(this.compra);
-                    },error => {this.alertService.error(error); this.loading = false; });
+                    },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
             }else{
                 this.compra.detalles.splice(indexAEliminar, 1);
+                this.cdr.markForCheck();
                 this.update.emit(this.compra);
             }
 

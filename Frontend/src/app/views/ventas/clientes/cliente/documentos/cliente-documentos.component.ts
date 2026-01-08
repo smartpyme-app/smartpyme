@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './cliente-documentos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteDocumentosComponent extends BaseCrudComponent<any> implements OnInit {
     public documento: any = {};
@@ -24,7 +24,8 @@ export class ClienteDocumentosComponent extends BaseCrudComponent<any> implement
         alertService: AlertService,
         modalManager: ModalManagerService,
         private route: ActivatedRoute,
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'cliente/documento',
@@ -74,10 +75,12 @@ export class ClienteDocumentosComponent extends BaseCrudComponent<any> implement
                 next: (documentos) => {
                     this.documentos = documentos;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -106,11 +109,13 @@ export class ClienteDocumentosComponent extends BaseCrudComponent<any> implement
                     this.documento = {};
                     this.loading = false;
                     this.alertService.success('Documento guardado', 'El documento fue guardado exitosamente');
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
                     this.documento = {};
+                    this.cdr.markForCheck();
                 }
             });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './productos-consignas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductosConsignasComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -30,7 +30,8 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'producto',
@@ -62,9 +63,11 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
           .subscribe({
             next: (categorias) => {
               this.categorias = categorias;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
 
@@ -73,9 +76,11 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
           .subscribe({
             next: (sucursales) => {
               this.sucursales = sucursales;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
     }
@@ -89,10 +94,12 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
             next: (productos) => {
               this.productos = productos;
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           });
     }
@@ -106,10 +113,12 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
                 next: (productos) => {
                   this.productos = productos;
                   this.loading = false;
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
                   this.loading = false;
+                  this.cdr.markForCheck();
                 }
               });
         }else{
@@ -127,9 +136,11 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
                       if (this.productos['data'][i].id == data.id )
                           this.productos['data'].splice(i, 1);
                   }
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
         }
@@ -144,10 +155,12 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
               this.productos = productos;
               this.loading = false;
               this.closeModal();
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           });
     }
@@ -158,6 +171,7 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
             class: 'modal-lg',
             backdrop: 'static'
         });
+        this.cdr.markForCheck();
     }
 
     public override async onSubmit() {
@@ -172,11 +186,13 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
               this.alertService.success('Consigna guardada', 'La consigna fue guardado exitosamente.');
               this.closeModal();
               this.loadAll();
+              this.cdr.markForCheck();
         } catch (error: any) {
               this.alertService.error(error);
         } finally {
               this.loading = false;
             this.saving = false;
+            this.cdr.markForCheck();
             }
     }
 
@@ -196,10 +212,12 @@ export class ProductosConsignasComponent extends BaseCrudComponent<any> implemen
               document.body.removeChild(a);
               window.URL.revokeObjectURL(url);
               this.downloading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.downloading = false;
+              this.cdr.markForCheck();
             }
           });
     }

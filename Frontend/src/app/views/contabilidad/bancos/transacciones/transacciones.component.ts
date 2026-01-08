@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import Swal from 'sweetalert2';
     templateUrl: './transacciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class TransaccionesComponent extends BasePaginatedModalComponent implements OnInit {
@@ -32,7 +32,8 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -81,13 +82,15 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 
     public override openModal(template: TemplateRef<any>, transaccion:any) {
         this.transaccion = transaccion;
         super.openModal(template, {class: 'modal-lg', backdrop: 'static'});
+        this.cdr.markForCheck();
     }
 
 
@@ -137,7 +140,8 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
                         if (this.transacciones.data[i].id == data.id )
                             this.transacciones.data.splice(i, 1);
                     }
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -160,7 +164,8 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
     public descargar(){
@@ -178,7 +183,8 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -187,7 +193,8 @@ export class TransaccionesComponent extends BasePaginatedModalComponent implemen
           .pipe(this.untilDestroyed())
           .subscribe(transaccion => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-        },error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
 }

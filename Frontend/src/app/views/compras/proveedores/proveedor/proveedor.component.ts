@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './proveedor.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorComponent extends BaseComponent implements OnInit {
 
@@ -41,7 +41,8 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         private route: ActivatedRoute, 
         private router: Router, 
         private modalService: BsModalService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private cdr: ChangeDetectorRef
     ) {
         super();
     }
@@ -71,18 +72,22 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
                             .pipe(this.untilDestroyed())
                             .subscribe(catalogo => {
                                 this.catalogo = catalogo;
-                            }, error => {this.alertService.error(error);});
+                                this.cdr.markForCheck();
+                            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
                     }
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);
                     this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
 
     setPais(){
         this.proveedor.pais = this.paises.find((item:any) => item.cod == this.proveedor.cod_pais).nombre;
+        this.cdr.markForCheck();
     }
     
     setDistrito(){
@@ -94,6 +99,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
             this.proveedor.distrito = distrito.nombre; 
             this.proveedor.cod_distrito = distrito.cod;
         }
+        this.cdr.markForCheck();
     }
 
     setMunicipio(){
@@ -105,6 +111,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
             this.proveedor.distrito = ''; 
             this.proveedor.cod_distrito = '';
         }
+        this.cdr.markForCheck();
     }
 
     setDepartamento(){
@@ -118,6 +125,7 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
         this.proveedor.cod_municipio = '';
         this.proveedor.distrito = ''; 
         this.proveedor.cod_distrito = '';
+        this.cdr.markForCheck();
     }
 
     public loadAll(){
@@ -131,7 +139,8 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
                         .subscribe(proveedor => {
                             this.proveedor = proveedor;
                             this.loading = false;
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.proveedor = {};
                     this.proveedor.tipo = 'Persona';
@@ -160,7 +169,8 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
                 this.router.navigate(['/proveedores']);
                 this.proveedor = proveedor;
                 this.saving = false;
-            }, error => {this.alertService.error(error); this.saving = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
 
@@ -175,7 +185,8 @@ export class ProveedorComponent extends BaseComponent implements OnInit {
                         );
                     }
                     this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
     }
 

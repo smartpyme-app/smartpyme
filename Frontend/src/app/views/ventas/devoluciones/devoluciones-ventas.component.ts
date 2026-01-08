@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import Swal from 'sweetalert2';
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionesVentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -44,7 +44,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private mhService: MHService
+        private mhService: MHService,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'devolucion/venta',
@@ -71,11 +72,13 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             .pipe(this.untilDestroyed())
             .subscribe(clientes => {
                 this.clientes = clientes;
-            }, error => { this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public override loadAll() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.filtros.id_sucursal = '';
         this.filtros.estado = '';
         this.filtros.id_cliente = '';
@@ -89,6 +92,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     public filtrarVentas() {
         this.loading = true;
+        this.cdr.markForCheck();
         if (this.filtros.id_cliente == null) {
             this.filtros.id_cliente = '';
         }
@@ -100,7 +104,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 if (this.modalRef) {
                     this.closeModal();
                 }
-            }, error => { this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setEstado(venta: any, enable: string) {
@@ -153,7 +158,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             this.filtros.orden = columna;
             this.filtros.direccion = 'asc';
         }
-
+        this.cdr.markForCheck();
         this.filtrarVentas();
     }
 
@@ -162,13 +167,15 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             .pipe(this.untilDestroyed())
             .subscribe(clientes => {
                 this.clientes = clientes;
-            }, error => { this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-            }, error => { this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
         if (!this.documentos.length) {
             this.apiService.getAll('documentos/list-nombre')
@@ -176,9 +183,11 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                 .subscribe(
                     (documentos) => {
                         this.documentos = documentos;
+                        this.cdr.markForCheck();
                     },
                     (error) => {
                         this.alertService.error(error);
+                        this.cdr.markForCheck();
                     }
                 );
         }
@@ -194,7 +203,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             .subscribe(ventas => {
                 this.ventasList = ventas;
                 this.loading = false;
-            }, error => { this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         super.openModal(template);
     }
 
@@ -217,7 +227,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-        }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+        }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -263,10 +274,12 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     setTimeout(() => {
                         this.closeModal();
                     }, 5000);
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.sending = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -381,6 +394,7 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
 
     public actualizarDevolucion() {
         this.saving = true;
+        this.cdr.markForCheck();
 
         this.apiService.store('devolucion/venta/actualizar', this.devolucionEditar)
             .pipe(this.untilDestroyed())
@@ -392,11 +406,13 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     setTimeout(() => {
                         this.devolucionEditar = {};
                         this.alertService.success('Devolución actualizada', 'La devolución fue actualizada exitosamente.');
+                        this.cdr.markForCheck();
                     }, 200);
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.saving = false;
+                    this.cdr.markForCheck();
                 }
             });
     }

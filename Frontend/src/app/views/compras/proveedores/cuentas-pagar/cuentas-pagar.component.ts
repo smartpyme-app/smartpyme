@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { ApiService } from '../../../../services/api.service';
     templateUrl: './cuentas-pagar.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CuentasPagarComponent extends BasePaginatedComponent implements OnInit {
@@ -20,7 +20,7 @@ export class CuentasPagarComponent extends BasePaginatedComponent implements OnI
 	public pagos: PaginatedResponse<any> = {} as PaginatedResponse;
     public buscador:any = '';
 
-    constructor(apiService: ApiService, alertService: AlertService){
+    constructor(apiService: ApiService, alertService: AlertService, private cdr: ChangeDetectorRef){
         super(apiService, alertService);
     }
 
@@ -43,7 +43,8 @@ export class CuentasPagarComponent extends BasePaginatedComponent implements OnI
             .subscribe(pagos => { 
                 this.pagos = pagos;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public search(){
@@ -52,7 +53,8 @@ export class CuentasPagarComponent extends BasePaginatedComponent implements OnI
                 .pipe(this.untilDestroyed())
                 .subscribe(pagos => { 
                     this.pagos = pagos;
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
     }
 

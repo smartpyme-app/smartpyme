@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { fromEvent, timer } from 'rxjs';
     templateUrl: './buscador-materias-primas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorMateriasPrimasComponent implements OnInit {
 
@@ -26,6 +26,7 @@ export class BuscadorMateriasPrimasComponent implements OnInit {
 
 	private destroyRef = inject(DestroyRef);
 	private untilDestroyed = subscriptionHelper(this.destroyRef);
+	private cdr = inject(ChangeDetectorRef);
 
 	constructor(private apiService: ApiService, private alertService: AlertService) { }
 
@@ -46,13 +47,15 @@ export class BuscadorMateriasPrimasComponent implements OnInit {
                 .subscribe(productos => {
                this.productos = productos;
                this.searching = false;
-            }, error => {this.alertService.error(error);this.searching = false;});
-        }else if (!this.producto.nombre  || this.producto.nombre.length < 1 ){ this.searching = false; this.producto = {}; this.productos.total = 0; }
+               this.cdr.markForCheck();
+            }, error => {this.alertService.error(error);this.searching = false; this.cdr.markForCheck();});
+        }else if (!this.producto.nombre  || this.producto.nombre.length < 1 ){ this.searching = false; this.producto = {}; this.productos.total = 0; this.cdr.markForCheck(); }
     }
 
     productoSelect(producto:any){
         this.productos = [];
         this.producto = producto;
+        this.cdr.markForCheck();
         this.selectProducto.emit(this.producto);
     }
 

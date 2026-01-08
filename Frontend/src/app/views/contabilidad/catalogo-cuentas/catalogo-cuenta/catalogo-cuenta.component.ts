@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import * as moment from 'moment';
     templateUrl: './catalogo-cuenta.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CatalogoCuentaComponent extends BaseComponent implements OnInit {
 
@@ -33,7 +33,8 @@ export class CatalogoCuentaComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -44,7 +45,8 @@ export class CatalogoCuentaComponent extends BaseComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(cuentas => {
             this.cuentas = cuentas;
-        }, error => { this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
         // this.apiService.getAll('bancos/list').subscribe(bancos => {
         //     this.bancos = bancos;
@@ -60,7 +62,8 @@ export class CatalogoCuentaComponent extends BaseComponent implements OnInit {
               .subscribe(cuenta => {
                 this.cuenta = cuenta;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.cuenta = {};
             this.cuenta.id_empresa = this.apiService.auth_user().id_empresa;
@@ -81,7 +84,8 @@ export class CatalogoCuentaComponent extends BaseComponent implements OnInit {
             }
             this.router.navigate(['/catalogo/cuentas']);
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
 }

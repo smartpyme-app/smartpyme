@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, TemplateRef } from '@angular/core';
+import { Component, OnInit, Input, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     templateUrl: './empresas-usuarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -33,7 +34,8 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
     constructor( 
         apiService:ApiService, 
         alertService:AlertService, 
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'admin-usuario',
@@ -70,15 +72,18 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
         this.apiService.getAll('licencias/empresas/list').pipe(this.untilDestroyed()).subscribe({
             next: (empresas) => {
                 this.empresas = empresas;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         });
     }
 
     public override loadAll(){
-        this.loading = true;        
+        this.loading = true;
+        this.cdr.markForCheck();        
         this.apiService.getAll('licencias/usuarios', this.filtros).pipe(this.untilDestroyed()).subscribe({
             next: (usuarios) => {
                 this.usuarios = usuarios;
@@ -87,10 +92,12 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
                     usuario.rol_name = usuario.roles[0].name;
                 });
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
 
@@ -102,9 +109,11 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
                                      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                                      .join(' ');
                 });
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         });
     }
@@ -116,9 +125,11 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
             next: (sucursales) => {
                 this.sucursalesList = sucursales;
                 this.setSucursales();
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         });
 
@@ -147,10 +158,12 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
                 }else{
                     this.alertService.success('Usuario desactivado', 'El usuario fue desactivado exitosamente.');
                 }
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
     }
@@ -174,15 +187,18 @@ export class EmpresasUsuariosComponent extends BaseCrudComponent<any> implements
 
     onFiltrar(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('admin-usuarios/filtrar', this.filtros).pipe(this.untilDestroyed()).subscribe({
             next: (usuarios) => {
                 this.usuarios = usuarios;
                 this.loading = false;
                 this.closeModal();
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     styleUrls: ['./partidas.component.scss'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PartidasComponent extends BasePaginatedModalComponent implements OnInit {
   public partidas: any = {}; // Usar any porque tiene propiedades adicionales (total_anuladas, total_pendientes, totales_generales)
@@ -62,7 +62,8 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
     protected override modalManager: ModalManagerService,
     private cacheService: HttpCacheService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager);
   }
@@ -86,6 +87,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       .subscribe(
       (catalogo) => {
         this.catalogo = catalogo;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -218,6 +220,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         if (this.modalRef) {
           this.closeModal();
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -357,10 +360,12 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       if (this.modalRef) {
         this.closeModal();
       }
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
     } finally {
       this.saving = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -383,6 +388,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
         if (this.modalRef) {
           this.closeModal();
         }
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.saving = false;
@@ -573,6 +579,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
       next: (response) => {
         this.alertService.success('Partida abierta', 'La partida ha sido reabierta exitosamente.');
         this.filtrarPartidas();
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error.error.error || 'Error al abrir la partida');
@@ -613,6 +620,7 @@ export class PartidasComponent extends BasePaginatedModalComponent implements On
             if (this.modalRef) {
               this.closeModal();
             }
+            this.cdr.markForCheck();
           },
           error: (error) => {
             this.saving = false;
