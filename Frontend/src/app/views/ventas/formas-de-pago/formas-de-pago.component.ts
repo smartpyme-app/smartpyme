@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './formas-de-pago.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnInit {
@@ -23,6 +23,8 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
     public empresa:any = {};
     public bancos:any = [];
     public wompiActivo:boolean = false;
+
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(
         apiService: ApiService,
@@ -55,7 +57,8 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
             .subscribe(bancos => { 
                 this.bancos = bancos;
                 this.loading = false;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public override loadAll() {
@@ -66,7 +69,8 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
             this.formas_pago = formas_pago;
             this.wompiActivo = formas_pago.filter((item:any) => item.nombre == 'Wompi')[0]?.activo || false;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     protected aplicarFiltros(): void {
@@ -84,7 +88,8 @@ export class FormasDePagoComponent extends BaseCrudComponent<any> implements OnI
             .subscribe(forma_pago => {
             this.saving = false;
             this.alertService.success('Conexión exitosa', 'Conexión con Wompi exitosa, ya puede crear enlaces de pago para tus ventas.');
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
 }

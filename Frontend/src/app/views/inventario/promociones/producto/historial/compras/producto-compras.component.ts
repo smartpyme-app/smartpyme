@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,6 +7,8 @@ import { BsModalService, BsModalRef } from 'ngx-bootstrap/modal';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
 import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-paginated.component';
+import { ModalManagerService } from '../../../../../../services/modal-manager.service';
+import { BasePaginatedModalComponent } from '@shared/base/base-paginated-modal.component';
 
 declare var $:any;
 
@@ -15,7 +17,7 @@ declare var $:any;
     templateUrl: './producto-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ProductoComprasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -33,7 +35,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
         alertService: AlertService,
         modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -56,7 +59,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
         this.apiService.getAll('producto/compras/'+ this.producto_id).pipe(this.untilDestroyed()).subscribe(compras => { 
             this.compras = compras;
             this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public search(){
@@ -73,7 +77,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
         compra.estado = estado;
         this.apiService.store('compra', compra).pipe(this.untilDestroyed()).subscribe(compra => { 
             this.alertService.success('Actualizado', 'El estado fue actualizado exitosamente');
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public delete(id:number) {
@@ -83,7 +88,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
                     if (this.compras['data'][i].id == data.id )
                         this.compras['data'].splice(i, 1);
                 }
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 
@@ -113,7 +119,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
         if(!this.proveedores.length){
             this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.openModal(template);
     }
@@ -124,7 +131,8 @@ export class ProductoComprasComponent extends BasePaginatedModalComponent implem
             this.compras = compras;
             this.loading = false; this.filtrado = true;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

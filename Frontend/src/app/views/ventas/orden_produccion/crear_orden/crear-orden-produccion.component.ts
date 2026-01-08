@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './crear-orden-produccion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CrearOrdenProduccionComponent implements OnInit {
   public orden: any = {
@@ -35,6 +35,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private fileService: FileService,
@@ -128,6 +129,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
         this.alertService.error('Error al cargar la orden');
         this.loading = false;
         this.router.navigate(['/ordenes-produccion']);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -146,6 +148,7 @@ export class CrearOrdenProduccionComponent implements OnInit {
             'Solo se pueden crear órdenes de producción de cotizaciones aceptadas'
           );
           this.router.navigate(['/cotizaciones']);
+          this.cdr.markForCheck();
           return;
         }
 
@@ -192,11 +195,13 @@ export class CrearOrdenProduccionComponent implements OnInit {
 
         // Cargar custom fields después de tener la cotización
         this.loadCustomFields();
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error('Error al cargar la cotización');
         this.loading = false;
         this.router.navigate(['/cotizaciones']);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -208,10 +213,12 @@ export class CrearOrdenProduccionComponent implements OnInit {
       (response) => {
         this.customFields = response.data;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -355,9 +362,11 @@ export class CrearOrdenProduccionComponent implements OnInit {
           'Estado actualizado',
           'El estado de la orden de producción fue actualizado.'
         );
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -409,10 +418,12 @@ export class CrearOrdenProduccionComponent implements OnInit {
           document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
           this.downloading = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
           this.downloading = false;
+          this.cdr.markForCheck();
         }
       );
   }

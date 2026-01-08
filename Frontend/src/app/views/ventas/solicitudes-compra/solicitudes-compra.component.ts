@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './solicitudes-compra.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class SolicitudesCompraComponent extends BaseCrudComponent<any> implements OnInit {
@@ -31,7 +31,8 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'orden-de-compra',
@@ -62,7 +63,8 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -118,6 +120,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             this.alertService.success('Solicitud de compra actualizada', 'La solicitud de compra fue actualizada exitosamente.');
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         }
     }
 
@@ -141,8 +144,10 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -159,10 +164,12 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
                 .toPromise();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             if (documentos) {
                 this.documentos = documentos;
             }
+            this.cdr.markForCheck();
             this.openModal(template, compra);
         }
     }
@@ -181,6 +188,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             ]);
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             if (sucursales) {
                 this.sucursales = sucursales;
@@ -188,6 +196,7 @@ export class SolicitudesCompraComponent extends BaseCrudComponent<any> implement
             if (usuarios) {
                 this.usuarios = usuarios;
             }
+            this.cdr.markForCheck();
             this.openModal(template);
         }
     }

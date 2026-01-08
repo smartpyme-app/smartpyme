@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import * as moment from 'moment';
     templateUrl: './conciliacion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConciliacionComponent extends BaseComponent implements OnInit {
 
@@ -35,7 +35,8 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -56,7 +57,8 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(cuentas => {
             this.cuentas = cuentas;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
     }
 
@@ -76,7 +78,8 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
                 }, 100);
                 
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         } else {
             this.conciliacion = {};
             this.conciliacion.id_cuenta = '';
@@ -132,9 +135,10 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
 
                 this.total();
                 this.verificar();
+                this.cdr.markForCheck();
 
-            }, error => {this.alertService.error(error); this.loading = false;});
-        }, error => {this.alertService.error(error);});
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public verificar(){
@@ -147,6 +151,7 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
         const saldoFinal = this.conciliacion.saldo_final || 0;
         
         this.conciliacion.diferencia = (saldoActual - saldoFinal).toFixed(2);
+        this.cdr.markForCheck();
     }
 
     public total(){
@@ -178,6 +183,7 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
         this.conciliacion.saldo_final = saldoAnterior + 
                                        (entradas + otrasEntradas) - 
                                        (salidas + impuestos + gastos);
+        this.cdr.markForCheck();
     }
 
     public onSubmit(){
@@ -198,7 +204,8 @@ export class ConciliacionComponent extends BaseComponent implements OnInit {
                 }
                 this.router.navigate(['/bancos/conciliaciones']);
                 this.saving = false;
-            }, error => {this.alertService.error(error); this.saving = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
         }
     }   
 

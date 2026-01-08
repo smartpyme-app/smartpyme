@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './contabilidad-configuracion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, GastosCategoriasComponent, TooltipModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContabilidadConfiguracionComponent extends BaseComponent implements OnInit {
 
@@ -33,7 +33,8 @@ export class ContabilidadConfiguracionComponent extends BaseComponent implements
         protected alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router,
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private cdr: ChangeDetectorRef
     ) {
         super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -49,9 +50,11 @@ export class ContabilidadConfiguracionComponent extends BaseComponent implements
           .subscribe(catalogo => {
             this.catalogo = catalogo;
             this.loadingCatalogo = false;
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error);
             this.loadingCatalogo = false;
+            this.cdr.markForCheck();
         });
 
         this.loadAll();
@@ -68,7 +71,8 @@ export class ContabilidadConfiguracionComponent extends BaseComponent implements
                 this.configuracion.id_empresa = this.apiService.auth_user().id_empresa;
             }
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     // Función trackBy para mejorar el rendimiento de ngFor
@@ -87,7 +91,8 @@ export class ContabilidadConfiguracionComponent extends BaseComponent implements
                     this.alertService.success('Configuracion guardada', 'El configuracion fue guardado exitosamente.');
                 }
                 this.saving = false;
-            }, error => {this.alertService.error(error); this.saving = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
 
 

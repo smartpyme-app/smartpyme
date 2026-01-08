@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import Swal from 'sweetalert2';
     templateUrl: './devoluciones-ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionesVentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -227,7 +227,8 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-        }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+        }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -273,10 +274,12 @@ export class DevolucionesVentasComponent extends BaseCrudComponent<any> implemen
                     setTimeout(() => {
                         this.closeModal();
                     }, 5000);
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.sending = false;
+                    this.cdr.markForCheck();
                 }
             });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './presupuesto-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PresupuestoDetallesComponent implements OnInit {
 
@@ -26,6 +26,7 @@ export class PresupuestoDetallesComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
@@ -50,13 +51,15 @@ export class PresupuestoDetallesComponent implements OnInit {
 	              .subscribe(presupuesto => {
 		            this.presupuesto = presupuesto;
 	            	this.loading = false;
-	            }, error => {this.alertService.error(error); this.loading = false; });
+	            	this.cdr.markForCheck();
+	            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 	        }
 	        else{
 	    		this.presupuesto = {};
 	            this.presupuesto.fecha = this.apiService.date();
 	            this.presupuesto.id_empresa = this.apiService.auth_user().empresa.id;
 	            this.presupuesto.estado = "En Proceso";
+	            this.cdr.markForCheck();
 	        }
 	    });
 	}

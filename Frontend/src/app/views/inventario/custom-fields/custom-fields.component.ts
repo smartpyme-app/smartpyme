@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -33,7 +33,7 @@ interface CustomField {
     templateUrl: './custom-fields.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implements OnInit {
     public customFields: any = {
@@ -68,7 +68,8 @@ export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implem
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'custom-fields',
@@ -148,10 +149,12 @@ export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implem
                         field.in_use = field.product_custom_fields.length > 0;
                     }
                 });
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error('Error');
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
     }
@@ -211,13 +214,16 @@ export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implem
                 };
 
                 this.originalField = { ...this.field };
+                this.cdr.markForCheck();
             } catch (error) {
                 this.alertService.error('No se pudo cargar la información del campo');
+                this.cdr.markForCheck();
                 return;
             }
         }
     
         super.openModal(template, this.field as CustomField, { class: 'modal-lg', backdrop: 'static', ...modalConfig });
+        this.cdr.markForCheck();
     }
 
     addValue(value: string) {
@@ -237,6 +243,7 @@ export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implem
         });
 
         this.newValue = '';
+        this.cdr.markForCheck();
     }
 
     removeValue(valueId: number) {
@@ -251,6 +258,7 @@ export class CustomFieldsComponent extends BaseCrudComponent<CustomField> implem
         }
 
         this.field.values = this.field.values.filter(v => (v.id || v.temp_id) !== valueId);
+        this.cdr.markForCheck();
     }
 
     async deleteField(field: CustomField) {

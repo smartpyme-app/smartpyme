@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     styleUrls: ['./orden-compra-form.component.css'],
     standalone: true,
     imports: [CommonModule, ReactiveFormsModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OrdenCompraFormComponent implements OnInit {
   ordenCompraForm?: FormGroup;
@@ -48,6 +48,7 @@ export class OrdenCompraFormComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
   private cacheService = inject(HttpCacheService, { optional: true });
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(private _fb: FormBuilder, public apiService: ApiService, private alertService: AlertService, private router: Router, private activatedRoute: ActivatedRoute) {
     this.ordenCompraForm = this._fb.group({
@@ -87,10 +88,12 @@ export class OrdenCompraFormComponent implements OnInit {
         this.documentos = documentos;
         this.proveedores = proveedores;
         this.proyectos = proyectos;
+        this.cdr.markForCheck();
       }
     ).catch(
       error => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -107,9 +110,11 @@ export class OrdenCompraFormComponent implements OnInit {
           this.detalles = compra.detalles;
           this.compraDTO.detalles = [...compra.detalles];
           this.sumTotal();
+          this.cdr.markForCheck();
 
         }, error => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         });
       }
     });

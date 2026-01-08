@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     templateUrl: './tienda-venta-buscador.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -41,7 +41,8 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         apiService: ApiService,
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe:SumPipe
+        private sumPipe:SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -87,9 +88,11 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
               ) {
                 this.selectProducto(results[0]);
               }
+              this.cdr.markForCheck();
             },
             error: (err) => {
               console.error('Error no controlado:', err); // Log en caso de un error en la suscripción.
+              this.cdr.markForCheck();
             }
           });
 
@@ -99,7 +102,8 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
 
         this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.loadAll();
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
@@ -123,7 +127,8 @@ export class TiendaVentaBuscadorComponent extends BasePaginatedModalComponent im
         this.apiService.getAll('productos', this.filtros).pipe(this.untilDestroyed()).subscribe(productos => {
             this.productosData = productos;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public setOrden(columna: string) {

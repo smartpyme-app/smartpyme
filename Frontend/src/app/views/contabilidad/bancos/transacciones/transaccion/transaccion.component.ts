@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import * as moment from 'moment';
     templateUrl: './transaccion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransaccionComponent extends BaseComponent implements OnInit {
 
@@ -33,7 +33,8 @@ export class TransaccionComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -45,7 +46,8 @@ export class TransaccionComponent extends BaseComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(cuentas => {
             this.cuentas = cuentas;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
     }
 
@@ -58,7 +60,8 @@ export class TransaccionComponent extends BaseComponent implements OnInit {
               .subscribe(transaccion => {
                 this.transaccion = transaccion;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.transaccion = {};
             this.transaccion.estado = 'Pendiente';
@@ -84,7 +87,8 @@ export class TransaccionComponent extends BaseComponent implements OnInit {
             }
             this.router.navigate(['/bancos/transacciones']);
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
     public setFile(event:any) {
@@ -102,16 +106,18 @@ export class TransaccionComponent extends BaseComponent implements OnInit {
             this.transaccion.url_referencia = transaccion.url_referencia;
             this.loading = false;
             this.alertService.success('Documento guardado', 'La transaccion fue actualizada exitosamente.');
+            this.cdr.markForCheck();
         
             //Generar partida contable
             if(this.apiService.auth_user().empresa.generar_partidas == 'Auto'){
                 this.apiService.store('contabilidad/partida/transaccion', transaccion)
                   .pipe(this.untilDestroyed())
                   .subscribe(transaccion => {
-                },error => {this.alertService.error(error);});
+                    this.cdr.markForCheck();
+                },error => {this.alertService.error(error); this.cdr.markForCheck();});
             }
 
-        }, error => {this.alertService.error(error); this.loading = false;});
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public verDocumento(transaccion:any){

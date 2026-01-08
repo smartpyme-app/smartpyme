@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { DevolucionVentaDetallesComponent } from './detalles/devolucion-venta-de
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, DevolucionVentaDetallesComponent, CurrencyPipe],
     providers: [SumPipe],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionVentaNuevaComponent extends BaseModalComponent implements OnInit {
@@ -29,6 +29,7 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
     public override loading:boolean = false;
     public override saving:boolean = false;
     public imprimir:boolean = true;
+    private cdr = inject(ChangeDetectorRef);
 
 	constructor(
         public apiService: ApiService,
@@ -92,8 +93,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 // this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
+                this.cdr.markForCheck();
                 // console.log(this.devolucion);
-            }, error => {this.alertService.error(error);this.loading = false;});
+            }, error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck(); });
         }
 
     }
@@ -121,8 +123,9 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                     this.devolucion.correlativo = documento.correlativo;
                 }
             }
+            this.cdr.markForCheck();
 
-        }, error => {this.alertService.error(error);});
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setDocumento(id_documento:any){
@@ -206,7 +209,8 @@ export class DevolucionVentaNuevaComponent extends BaseModalComponent implements
                 }
                 this.router.navigate(['/devoluciones/ventas']);
                 this.alertService.success('Devolucion de venta creada', 'La devolución de venta fue guardado exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
 
     public imprimirDocDevolucion(devolucion:any){

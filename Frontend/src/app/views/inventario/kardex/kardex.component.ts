@@ -90,7 +90,8 @@ export class KardexComponent implements OnInit {
             a.click();
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
-          }, (error) => {console.error('Error al exportar kardex:', error); }
+            this.cdr.markForCheck();
+          }, (error) => {console.error('Error al exportar kardex:', error); this.cdr.markForCheck(); }
         );
     }
 

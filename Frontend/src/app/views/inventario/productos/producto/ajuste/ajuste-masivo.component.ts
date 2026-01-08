@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './ajuste-masivo.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AjusteMasivoComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -37,7 +37,8 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe: SumPipe
+        private sumPipe: SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -67,13 +68,15 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
           .pipe(this.untilDestroyed())
           .subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('bodegas/list')
           .pipe(this.untilDestroyed())
           .subscribe(bodegas => { 
             this.bodegas = bodegas;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public initFilters() {
@@ -111,15 +114,18 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
             this.loading = false;
             
             this.closeModal();
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error); 
             this.loading = false;
+            this.cdr.markForCheck();
         });
     }
 
     public toggleSeleccion(producto: any) {
         producto.seleccionado = !producto.seleccionado;
         this.actualizarSeleccionados();
+        this.cdr.markForCheck();
     }
 
     public seleccionarTodos(event: any) {
@@ -128,16 +134,19 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
             producto.seleccionado = seleccionado;
         });
         this.actualizarSeleccionados();
+        this.cdr.markForCheck();
     }
 
     public actualizarSeleccionados() {
         this.seleccionados = this.productos.data.filter((p: any) => p.seleccionado);
+        this.cdr.markForCheck();
     }
 
     public calcularDiferencia(producto: any) {
         const stockActual = parseFloat(producto.stock_actual) || 0;
         const stockNuevo = parseFloat(producto.stock_nuevo) || 0;
         producto.diferencia = stockNuevo - stockActual;
+        this.cdr.markForCheck();
         return producto.diferencia;
     }
 
@@ -209,10 +218,12 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
                 this.closeModal();
                 this.saving = false;
                 this.loadAll();
+                this.cdr.markForCheck();
             },
             error => {
                 this.alertService.error(error);
                 this.saving = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -236,10 +247,12 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 this.downloading = false;
+                this.cdr.markForCheck();
             }, 
             (error) => { 
                 this.alertService.error(error); 
-                this.downloading = false; 
+                this.downloading = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -248,6 +261,7 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
         // Inicializar bodega seleccionada
         this.bodegaSeleccionada = this.bodegas.length > 0 ? this.bodegas[0] : null;
         super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        this.cdr.markForCheck();
     }
 
     public importarAjustes(fileInput: HTMLInputElement, detalle: string) {
@@ -305,10 +319,12 @@ export class AjusteMasivoComponent extends BasePaginatedModalComponent implement
                 this.closeModal();
                 this.saving = false;
                 this.loadAll();
+                this.cdr.markForCheck();
             },
             error => {
                 this.alertService.error(error);
                 this.saving = false;
+                this.cdr.markForCheck();
             }
         );
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import * as moment from 'moment';
     templateUrl: './libro-anulados.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class LibroAnuladosComponent extends BaseModalComponent implements OnInit {
@@ -30,7 +30,8 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -55,7 +56,8 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
           .pipe(this.untilDestroyed())
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         this.loadAll();
     }
@@ -67,7 +69,8 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
           .subscribe(ivas => { 
             this.ivas = ivas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public setTime() {
@@ -75,6 +78,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
         this.filtros.inicio = moment([this.filtros.anio, this.filtros.mes - 1]).startOf('month').format('YYYY-MM-DD');
         this.filtros.fin = moment([this.filtros.anio, this.filtros.mes - 1]).endOf('month').format('YYYY-MM-DD');
         this.loadAll();
+        this.cdr.markForCheck();
     }
 
     get faltaNombre(): boolean {
@@ -100,6 +104,7 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             this.alertService.error(error);
         }
         this.downloading = false;
+        this.cdr.markForCheck();
     }
 
     public descargarLibro(){
@@ -117,7 +122,8 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.manejarErrorDescarga(error); }
+            this.cdr.markForCheck();
+          }, (error) => { this.manejarErrorDescarga(error); this.cdr.markForCheck(); }
         );
     }
 
@@ -136,8 +142,10 @@ export class LibroAnuladosComponent extends BaseModalComponent implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
+            this.cdr.markForCheck();
         }, (error) => {
             this.manejarErrorDescarga(error);
+            this.cdr.markForCheck();
         });
     }
 

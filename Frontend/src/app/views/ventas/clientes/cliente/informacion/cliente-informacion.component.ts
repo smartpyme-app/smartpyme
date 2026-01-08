@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
   public cliente: any = {
@@ -41,6 +41,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public tipoAnterior = '';
   public catalogo:any = [];
   public contabilidadHabilitada: boolean = false;
+
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public apiService: ApiService,
@@ -77,12 +79,15 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
                             .pipe(this.untilDestroyed())
                             .subscribe(catalogo => {
                                 this.catalogo = catalogo;
-                            }, error => {this.alertService.error(error);});
+                                this.cdr.markForCheck();
+                            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                     }
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);
                     this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -100,10 +105,12 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
             }
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
       } else {
@@ -246,10 +253,12 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
               );
             }
             this.loading = false;
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
     }
@@ -347,9 +356,11 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
           if (this.modalRef) {
             this.closeModal();
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error('Error al guardar el contacto: ' + error);
+          this.cdr.markForCheck();
           this.loading_contacto = false;
         },
       });
@@ -405,12 +416,14 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
                 'El contacto fue eliminado exitosamente.'
               );
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(
                 'Error al eliminar el contacto: ' + error
               );
               this.loading = false;
+              this.cdr.markForCheck();
             },
           });
         } else {

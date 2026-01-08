@@ -113,7 +113,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
                 this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     private searchProductos(term: string): Observable<any[]> {
@@ -210,7 +210,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
                 this.producto.inventarios = inventarios;
                 this.cdr.markForCheck();
             }
-        }, error => {this.alertService.error(error);});
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public setBodega(){
@@ -242,13 +242,13 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(productos => {
                 this.productos = productos;
                 this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
                 this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); });
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.openModal(template);
     }
 
@@ -275,6 +275,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
                 error: (error: any) => {
                     this.alertService.error(error);
                     this.saving = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -285,7 +286,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(ajuste => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
             this.cdr.markForCheck();
-        },error => {this.alertService.error(error);});
+        },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public descargar(){

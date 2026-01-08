@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { BasePaginatedModalComponent, PaginatedResponse } from '@shared/base/bas
     templateUrl: './documento-historial.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DocumentoHistorialComponent extends BasePaginatedModalComponent implements OnInit {
     public documentos: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -32,7 +32,8 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
         private router: Router,
         alertService: AlertService,
         apiService: ApiService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -65,10 +66,12 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
             documentos => {
                 this.documentos = documentos;
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             error => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -91,7 +94,8 @@ export class DocumentoHistorialComponent extends BasePaginatedModalComponent imp
 
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => {
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         
         super.openModal(template, { class: 'modal-md', backdrop: 'static' });
     }

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import Swal from 'sweetalert2';
     styleUrls: ['./combo-index.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   combos: any = [];
@@ -27,7 +27,8 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
   constructor(
     public apiService: ApiService, 
     protected override alertService: AlertService,
-    protected override modalManager: ModalManagerService
+    protected override modalManager: ModalManagerService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -38,12 +39,14 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(combos => {
       this.combos = combos;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     this.apiService.getAll('usuarios/list')
       .pipe(this.untilDestroyed())
       .subscribe(usuarios => {
       this.usuarios = usuarios;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
     this.openModal(template);
 
   }
@@ -54,7 +57,8 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(bodegas => {
       this.bodegas = bodegas;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
   }
 
@@ -78,7 +82,8 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       .subscribe(combos => {
       this.combos = combos;
       this.loading = false;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
   }
   setOrden(columna: string) {
     if (this.filtros.orden === columna) {
@@ -112,7 +117,8 @@ export class ComboIndexComponent extends BaseModalComponent implements OnInit {
       .subscribe((res: any) => {
       this.alertService.success("Cambio de estado exitoso", res.message);
       this.loadAll();
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
   }
 
 }

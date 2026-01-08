@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './producto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ProductoInformacionComponent, ProductoComposicionComponent, ProductoInventariosComponent, ProductoPreciosComponent, ProductoProveedoresComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoComponent implements OnInit {
 
@@ -34,6 +34,7 @@ export class ProductoComponent implements OnInit {
 	constructor( 
 	    public apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
+	    private cdr: ChangeDetectorRef
 	) {	}
 
 	ngOnInit() {
@@ -50,7 +51,8 @@ export class ProductoComponent implements OnInit {
                 this.producto.impuesto = this.apiService.auth_user().empresa.iva / 100;
                 this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
 	            this.loading = false;
-		    },error => {this.alertService.error(error);this.loading = false;});
+	            this.cdr.markForCheck();
+		    },error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
 	      	} else {
 				this.producto = {};
 				this.producto.tipo = 'Producto';
@@ -61,6 +63,7 @@ export class ProductoComponent implements OnInit {
 				    this.producto.tipo = this.route.snapshot.queryParamMap.get('tipo')!;
 				    this.producto.precio = 0;
 				}
+				this.cdr.markForCheck();
 
 	      	}
 	    });

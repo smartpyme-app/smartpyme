@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
     templateUrl: './retenciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, FilterPipe, NgSelectModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class RetencionesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -31,7 +31,8 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'retencion',
@@ -66,7 +67,8 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
                 this.retenciones = retenciones;
                 this.loading = false;
                 this.filtrado = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     protected aplicarFiltros(): void {
@@ -79,7 +81,8 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
             .pipe(this.untilDestroyed())
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         
         super.openModal(template, retencion, {class: 'modal-md', backdrop: 'static'});
     }
@@ -111,9 +114,11 @@ export class RetencionesComponent extends BaseCrudComponent<any> implements OnIn
                         }
                         this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }, error => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     });
           }
         });

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
   templateUrl: './abonos-gastos.component.html',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TooltipModule, PaginationComponent, LazyImageDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class AbonosGastosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -33,7 +34,8 @@ export class AbonosGastosComponent extends BaseCrudComponent<any> implements OnI
     constructor(
         apiService: ApiService,
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'gasto/abono',

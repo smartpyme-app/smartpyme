@@ -95,7 +95,7 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
                 this.loading = false; 
                 this.filtrado = true;
                 this.cdr.markForCheck();
-            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+            }, error => {this.alertService.error(error); this.loading = false; this.filtrado = false; this.cdr.markForCheck();});
         }else{
             this.loadAll();
         }
@@ -156,7 +156,7 @@ export class MateriasPrimaComponent extends BaseCrudComponent<any> implements On
             this.filtrado = true;
             this.closeModal();
             this.cdr.markForCheck();
-        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
+        }, error => {this.alertService.error(error); this.loading = false; this.filtrado = false; this.cdr.markForCheck();});
     }
 
     openModalPrecio(template: TemplateRef<any>, producto:any) {
