@@ -35,17 +35,19 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
         try {
             $empresa = Empresa::find(FacadesAuth::user()->id_empresa);
             if ($empresa) {
+                $codPais = $empresa->cod_pais;
+                $pais = trim($empresa->pais ?? '');
+                
                 // Si tiene código de país 'SV', es El Salvador
-                if ($empresa->cod_pais === 'SV') {
+                if ($codPais === 'SV') {
                     $this->esElSalvador = true;
                 }
                 // Si tiene código de país diferente a 'SV' y no es NULL, no es El Salvador
-                elseif ($empresa->cod_pais !== null && $empresa->cod_pais !== 'SV') {
+                elseif ($codPais !== null && $codPais !== 'SV') {
                     $this->esElSalvador = false;
                 }
                 // Si cod_pais es NULL, verificar campo pais
                 else {
-                    $pais = trim($empresa->pais ?? '');
                     // Si pais es 'El Salvador', es El Salvador
                     if (strtolower($pais) === 'el salvador') {
                         $this->esElSalvador = true;
@@ -64,7 +66,7 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
                 $this->esElSalvador = true;
             }
         } catch (\Exception $e) {
-            Log::warning("Error al detectar país de empresa en ClientesEmpresas: " . $e->getMessage());
+            Log::error("Error al detectar país de empresa en ClientesEmpresas: " . $e->getMessage());
             // Por defecto, asumir que es El Salvador para mantener compatibilidad
             $this->esElSalvador = true;
         }
@@ -73,7 +75,15 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
     public function model(array $row)
     {
         // Validar campos requeridos según el país
-        $campoIdentificacion = $this->esElSalvador ? 'ncr' : ($row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? null);
+        // Para otros países, aceptar diferentes nombres de columnas
+        $campoIdentificacion = null;
+        if ($this->esElSalvador) {
+            $campoIdentificacion = $row['ncr'] ?? null;
+        } else {
+            // Para otros países, aceptar ncr, numero_registro, identificacion_fiscal, n. de registro
+            $campoIdentificacion = $row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
+                                   $row['n. de registro'] ?? $row['n_de_registro'] ?? null;
+        }
         
         if (empty($row['nombre_empresa']) || empty($campoIdentificacion)) {
             return null;
@@ -102,7 +112,9 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
             $numeroRegistro = $ncrNormalizado ?: $row['ncr'];
         } else {
             // Para otros países, usar el campo como número de registro (texto libre)
-            $numeroRegistro = $row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? null;
+            // Aceptar diferentes nombres de columnas
+            $numeroRegistro = $row['ncr'] ?? $row['numero_registro'] ?? $row['identificacion_fiscal'] ?? 
+                             $row['n. de registro'] ?? $row['n_de_registro'] ?? null;
         }
 
         // Buscar códigos solo si es El Salvador
@@ -118,7 +130,9 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
             $cliente->giro = $row['giro'] ?? null;
             $cliente->cod_giro = $codigos['actividad_economica'] ? $codigos['actividad_economica']->cod : null;
         } else {
-            $cliente->giro = $row['giro'] ?? $row['actividad_economica'] ?? null;
+            // Para otros países, aceptar "Giro o Rubro" o "Giro" o "Rubro"
+            $cliente->giro = $row['giro'] ?? $row['giro o rubro'] ?? $row['rubro'] ?? 
+                            $row['actividad_economica'] ?? null;
             $cliente->cod_giro = null;
         }
         
@@ -158,9 +172,14 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
 
         $cliente->id_usuario = FacadesAuth::user()->id;
         $cliente->id_empresa = FacadesAuth::user()->id_empresa;
-        // $cliente->save();
-
-        return $cliente;
+        
+        try {
+            $cliente->save();
+            return $cliente;
+        } catch (\Exception $e) {
+            Log::error("Error al guardar cliente empresa: " . $e->getMessage(), $row);
+            return null;
+        }
     }
 
     private function normalizarNcr($ncr)
@@ -176,48 +195,64 @@ class ClientesEmpresas implements ToModel, WithHeadingRow, WithValidation, Skips
 
     public function rules(): array
     {
-
-        return [];
+        // Para El Salvador: validaciones estrictas con códigos MH
+        if ($this->esElSalvador) {
+            return [
+                // Campos obligatorios básicos
+                'nombre_empresa' => 'required|string|max:255',
+                'ncr' => 'required|max:50',
+                
+                // Validar giro/actividad económica
+                'giro' => 'required|string',
+                'cod_giro' => [
+                    'required',
+                    Rule::exists('actividades_economicas', 'cod')
+                ],
+                
+                // Validar departamento
+                'departamento' => 'required|string',
+                'cod_departamento' => [
+                    'required',
+                    Rule::exists('departamentos', 'cod')
+                ],
+                
+                // Validar municipio
+                'municipio' => 'required|string', 
+                'cod_municipio' => [
+                    'required',
+                    Rule::exists('municipios', 'cod')
+                ],
+                
+                // Validar distrito
+                'distrito' => 'required|string',
+                'cod_distrito' => [
+                    'required',
+                    Rule::exists('distritos', 'cod')
+                ],
+                
+                // Campos opcionales
+                'tipo_contribuyente' => 'nullable|string|max:100',
+                'dui' => 'nullable|string|max:20',
+                'nit' => 'nullable|string|max:20',
+                'direccion' => 'nullable|string|max:500',
+                'telefono' => 'nullable|string|max:20',
+                'correo' => 'nullable|email|max:255',
+            ];
+        }
+        
+        // Para otros países: validaciones mínimas (solo campos básicos)
         return [
             // Campos obligatorios básicos
             'nombre_empresa' => 'required|string|max:255',
-            'ncr' => 'required|max:50',
+            'numero_registro' => 'required|max:50', // Puede ser ncr, numero_registro o identificacion_fiscal
             
-            // Validar giro/actividad económica
-            'giro' => 'required|string',
-            'cod_giro' => [
-                'required',
-                Rule::exists('actividades_economicas', 'cod')
-            ],
-            
-            // Validar departamento
-            'departamento' => 'required|string',
-            'cod_departamento' => [
-                'required',
-                Rule::exists('departamentos', 'cod')
-            ],
-            
-            // Validar municipio
-            'municipio' => 'required|string', 
-            'cod_municipio' => [
-                'required',
-                Rule::exists('municipios', 'cod')
-            ],
-            
-            // Validar distrito
-            'distrito' => 'required|string',
-            'cod_distrito' => [
-                'required',
-                Rule::exists('distritos', 'cod')
-            ],
+            // Giro/Rubro es opcional para otros países
+            'giro' => 'nullable|string|max:255',
             
             // Campos opcionales
-            'tipo_contribuyente' => 'nullable|string|max:100',
-            'dui' => 'nullable|string|max:20',
-            'nit' => 'nullable|string|max:20',
-            'direccion' => 'nullable|string|max:500',
-            'telefono' => 'nullable|string|max:20',
             'correo' => 'nullable|email|max:255',
+            'telefono' => 'nullable|max:20',
+            'direccion' => 'nullable|string|max:500',
         ];
     }
 

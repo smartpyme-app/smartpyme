@@ -156,6 +156,22 @@ export class EmpresaComponent implements OnInit {
     }
 
     setPais() {
+        // Mapeo de países a códigos ISO
+        const mapeoCodigosPais: { [key: string]: string } = {
+            'El Salvador': 'SV',
+            'Belice': 'BZ',
+            'Guatemala': 'GT',
+            'Honduras': 'HN',
+            'Nicaragua': 'NI',
+            'Costa Rica': 'CR',
+            'Panamá': 'PA',
+            'México': 'MX'
+        };
+
+        // Establecer el código de país
+        this.empresa.cod_pais = mapeoCodigosPais[this.empresa.pais] || null;
+
+        // Configurar moneda e IVA según el país
         if (this.empresa.pais == 'El Salvador') {
             this.empresa.moneda = 'USD';
             this.empresa.iva = 13;
@@ -189,10 +205,9 @@ export class EmpresaComponent implements OnInit {
             this.empresa.iva = 16;
         }
 
+        // Limpiar códigos de ubicación cuando se cambia de país
         this.empresa.cod_departamento = " ";
         this.empresa.cod_municipio = " ";
-
-        console.log(this.empresa);
     }
 
     setCobrarIVA() {

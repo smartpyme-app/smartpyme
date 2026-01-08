@@ -123,6 +123,11 @@ class EmpresasController extends Controller
 
         $this->handleCustomEmpresa($request, $empresa); // Maneja la personalización de la empresa
 
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa->fill($request->all());
 
         if ($request->hasFile('file')) {
@@ -138,6 +143,11 @@ class EmpresasController extends Controller
 
     private function createEmpresa(Request $request)
     {
+        // Si se envía el país pero no el cod_pais, establecerlo automáticamente
+        if ($request->has('pais') && !$request->has('cod_pais')) {
+            $request->merge(['cod_pais' => $this->mapearCodigoPais($request->pais)]);
+        }
+
         $empresa = new Empresa;
         $empresa->fill($request->all());
 
