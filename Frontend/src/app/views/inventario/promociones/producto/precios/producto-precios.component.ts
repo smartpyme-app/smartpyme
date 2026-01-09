@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './producto-precios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoPreciosComponent implements OnInit {
 
@@ -37,8 +37,12 @@ export class ProductoPreciosComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( private alertService:AlertService, private apiService:ApiService,
-      private route: ActivatedRoute, private router: Router,
+    constructor( 
+      private alertService:AlertService, 
+      private apiService:ApiService,
+      private route: ActivatedRoute, 
+      private router: Router,
+      private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -72,8 +76,9 @@ export class ProductoPreciosComponent implements OnInit {
                 data: producto.ventas_precios
             }];
             this.labels       = producto.ventas_fechas;
+            this.cdr.markForCheck();
 
-        }, error => {this.alertService.error(error); });
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
       
     }
 

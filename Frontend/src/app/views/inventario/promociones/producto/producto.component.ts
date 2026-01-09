@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './producto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoComponent implements OnInit {
 
@@ -29,6 +29,7 @@ export class ProductoComponent implements OnInit {
 	constructor( 
 	    private apiService: ApiService, private alertService: AlertService,
 	    private route: ActivatedRoute, private router: Router,
+	    private cdr: ChangeDetectorRef
 	) {
 		this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
 	}
@@ -54,7 +55,8 @@ export class ProductoComponent implements OnInit {
 				this.producto.utilidad = (this.producto.precio - this.producto.costo).toFixed(2);
 				this.producto.rentabilidad = ((this.producto.utilidad / this.producto.costo) * 100).toFixed(0);
 	           	this.loading = false;
-	        },error => {this.alertService.error(error);this.loading = false;});
+	           	this.cdr.markForCheck();
+	        },error => {this.alertService.error(error);this.loading = false;this.cdr.markForCheck();});
 	    }
 
 	}

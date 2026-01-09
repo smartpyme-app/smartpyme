@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     styleUrls: ['./cotizacion-form.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, VentaDetallesComponent, CrearClienteComponent, CrearProyectoComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CotizacionFormComponent extends BaseComponent implements OnInit {
   venta: any = {};
@@ -37,6 +37,8 @@ export class CotizacionFormComponent extends BaseComponent implements OnInit {
 
   @ViewChild('msupervisor') supervisorTemplate!: TemplateRef<any>;
   modalRefInstance!: any;
+
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public apiService: ApiService,
@@ -77,13 +79,13 @@ export class CotizacionFormComponent extends BaseComponent implements OnInit {
 
   }
   ngOnInit(): void {
-    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.usuarios = _);
-    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.sucursales = _);
-    this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.documentos = _);
-    this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.clientes = _);
-    this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.formaPagos = _);
-    this.apiService.getAll('proyectos/list').pipe(this.untilDestroyed()).subscribe((_: any) => this.proyectos = _);
-    this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe((_: any) => { this.venta.impuestos = _; this.impuestos = _ });
+    this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.usuarios = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.sucursales = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('documentos/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.documentos = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('clientes/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.clientes = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.formaPagos = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('proyectos/list').pipe(this.untilDestroyed()).subscribe((_: any) => { this.proyectos = _; this.cdr.markForCheck(); });
+    this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe((_: any) => { this.venta.impuestos = _; this.impuestos = _; this.cdr.markForCheck(); });
 
     this._activeRoute.paramMap.pipe(this.untilDestroyed()).subscribe(params => {
       if (params.has('id')) {
@@ -95,8 +97,10 @@ export class CotizacionFormComponent extends BaseComponent implements OnInit {
             return _detalle;
           })
           this.updateVenta(venta);
-        });
+          this.cdr.markForCheck();
+        }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
       }
+      this.cdr.markForCheck();
     });
 
   }

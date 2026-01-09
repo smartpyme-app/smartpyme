@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,6 +15,7 @@ import * as moment from 'moment';
     templateUrl: './organizaciones-dash.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class OrganizacionesDashComponent extends BaseModalComponent implements OnInit {
@@ -29,7 +30,8 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
     constructor( 
         public apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -51,6 +53,7 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
           .pipe(this.untilDestroyed())
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
+            this.cdr.markForCheck();
         }, error => {this.alertService.error(error); });
 
     }
@@ -59,6 +62,7 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
         this.filtro.time = $time;
         this.filtro.inicio = moment().startOf(this.filtro.time).format('YYYY-MM-DD');
         this.filtro.fin = moment().endOf(this.filtro.time).format('YYYY-MM-DD');
+        this.cdr.markForCheck();
         this.onFiltrar();
     }
 
@@ -68,6 +72,7 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
     
     public onFiltrar(){     
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('dash/organizaciones', this.filtro)
           .pipe(this.untilDestroyed())
           .subscribe(dash => { 
@@ -77,7 +82,8 @@ export class OrganizacionesDashComponent extends BaseModalComponent implements O
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

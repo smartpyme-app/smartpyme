@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ declare var $:any;
     templateUrl: './producto-ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class ProductoVentasComponent extends BasePaginatedModalComponent implements OnInit {
@@ -33,7 +33,8 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
         alertService: AlertService,
         modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -53,23 +54,27 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
 
     public loadAll() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('producto/ventas/'+ this.producto_id)
           .pipe(this.untilDestroyed())
           .subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public search(){
         if(this.buscador && this.buscador.length > 2) {
             this.loading = true;
+            this.cdr.markForCheck();
             this.apiService.read('ventas/buscar/', this.buscador)
               .pipe(this.untilDestroyed())
               .subscribe(ventas => { 
                 this.ventas = ventas;
                 this.loading = false;this.filtrado = true;
-            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false;this.filtrado = false; this.cdr.markForCheck(); });
         }
     }
 
@@ -91,7 +96,8 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
                     if (this.ventas['data'][i].id == data.id )
                         this.ventas['data'].splice(i, 1);
                 }
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 
@@ -99,12 +105,14 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
 
     public filtrar(filtro:any, txt:any){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.read('ventas/filtrar/' + filtro + '/', txt)
           .pipe(this.untilDestroyed())
           .subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     }
 
@@ -125,20 +133,23 @@ export class ProductoVentasComponent extends BasePaginatedModalComponent impleme
               .pipe(this.untilDestroyed())
               .subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.openModal(template);
     }
 
     onFiltrar(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('ventas/filtrar', this.filtro)
           .pipe(this.untilDestroyed())
           .subscribe(ventas => { 
             this.ventas = ventas;
             this.loading = false; this.filtrado = true;
+            this.cdr.markForCheck();
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

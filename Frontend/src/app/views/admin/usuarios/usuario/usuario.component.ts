@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,6 +20,7 @@ interface Permission {
     templateUrl: './usuario.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class UsuarioComponent extends BaseComponent implements OnInit {
@@ -148,7 +149,8 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     private alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    public encryptService: EncryptService
+    public encryptService: EncryptService,
+    private cdr: ChangeDetectorRef
   ) {
     super();
   }
@@ -178,9 +180,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       (sucursales) => {
         this.sucursales = sucursales;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -190,6 +194,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
 
   public loadAll(id: number) {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.read('usuario/', id)
       .pipe(this.untilDestroyed())
       .subscribe(
@@ -209,10 +214,12 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         }
 
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
 
@@ -231,6 +238,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
               .join(' '),
           };
         });
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -240,6 +248,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
 
   public onSubmit() {
     this.loading = true;
+    this.cdr.markForCheck();
 
     if (this.usuario.rol_id == 2) {
       this.usuario.caja_id = null;
@@ -291,11 +300,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           'Usuario guardado',
           'El usuario fue guardado exitosamente.'
         );
+        this.cdr.markForCheck();
       },
       (error) => {
         this.loading = false;
 
         if (error.status === 403 && error.error?.requires_authorization) {
+          this.cdr.markForCheck();
           return;
         }
 
@@ -310,6 +321,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         }
 
         this.alertService.error(errorMessage);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -323,6 +335,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       url = reader.result;
       this.url_img_preview = url;
       this.preview = true;
+      this.cdr.markForCheck();
     };
     reader.readAsDataURL(this.file!);
   }
@@ -364,6 +377,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
 
     // Save the password changes
     this.apiService
@@ -395,11 +409,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
               'La contraseña se ha actualizado correctamente.'
             );
           }
+          this.cdr.markForCheck();
         },
         (error) => {
           console.error('Error al actualizar contraseña:', error);
           this.loading = false;
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
   }
@@ -407,11 +423,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   editarEmail() {
     this.editandoEmail = true;
     this.nuevoEmail = this.usuario.email;
+    this.cdr.markForCheck();
   }
 
   cancelarEmail() {
     this.editandoEmail = false;
     this.nuevoEmail = '';
+    this.cdr.markForCheck();
   }
 
   guardarEmail() {
@@ -433,9 +451,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
             'Correo actualizado correctamente',
             'El correo electrónico se ha actualizado correctamente.'
           );
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
   }
@@ -445,18 +465,21 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     this.editandoPassword = true;
     this.newPassword = '';
     this.confirmPassword = '';
+    this.cdr.markForCheck();
   }
 
   editarCodigoAuth() {
     this.editandoCodigoAuth = true;
     this.newPassword = '';
     this.confirmPassword = '';
+    this.cdr.markForCheck();
   }
 
   cancelarCodigoAuth() {
     this.editandoCodigoAuth = false;
     this.newPassword = '';
     this.confirmPassword = '';
+    this.cdr.markForCheck();
   }
 
   guardarCodigoAuth() {
@@ -498,9 +521,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
                     'Código de autorización actualizado correctamente',
                     'El código de autorización se ha actualizado correctamente.'
                 );
+                this.cdr.markForCheck();
             },
             (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         );
   }
@@ -511,6 +536,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     this.confirmPassword = '';
     this.showPassword = false;
     this.showConfirmPassword = false;
+    this.cdr.markForCheck();
   }
 
   guardarPassword() {
@@ -525,6 +551,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     }
 
     this.loading = true; // Agregar loading state
+    this.cdr.markForCheck();
 
     this.apiService
       .update('usuario/password', this.usuario.id, {
@@ -552,6 +579,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
               'La contraseña se ha actualizado correctamente.'
             );
           }
+          this.cdr.markForCheck();
         },
         (error) => {
           console.error('Error completo:', error);
@@ -580,12 +608,14 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           }
 
           this.alertService.error(errorMessage);
+          this.cdr.markForCheck();
         }
       );
   }
 
   loadPermissions(id: number) {
     this.permissionsLoading = true;
+    this.cdr.markForCheck();
 
     this.apiService.getAll(`roles-permissions/user/${id}`)
       .pipe(this.untilDestroyed())
@@ -602,17 +632,20 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
           this.effectivePermissions = response.data.effectivePermissions || [];
         }
         this.permissionsLoading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         console.error('Error cargando permisos:', error);
         this.alertService.error(error);
         this.permissionsLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
 
   toggleModule(module: any) {
     module.expanded = !module.expanded;
+    this.cdr.markForCheck();
   }
 
   sendFile(file: File) {
@@ -623,9 +656,11 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(
       (response: any) => {
+        this.cdr.markForCheck();
       },
       (error) => {
         console.error('Error completo:', error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -634,6 +669,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
   onCountryChange(country: any) {
     this.selectedCountry = country;
     this.usuario.telefono = '';
+    this.cdr.markForCheck();
   }
 
 
@@ -847,11 +883,12 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
         this.addedPermissions.push(permissionName);
       }
     }
-
+    this.cdr.markForCheck();
   }
 
   savePermissions() {
     this.permissionsLoading = true;
+    this.cdr.markForCheck();
 
     const data = {
       added_permissions: this.addedPermissions,
@@ -877,11 +914,13 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
             this.loadPermissions(this.usuario.id);
           }
           this.permissionsLoading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al guardar permisos:', error);
           this.alertService.error(error);
           this.permissionsLoading = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -905,7 +944,7 @@ export class UsuarioComponent extends BaseComponent implements OnInit {
     }
 
     this.filterModules = this.modules.filter((mod) => mod.name.includes(module.name));
-
+    this.cdr.markForCheck();
   }
 
   public usuarioLogueado() {

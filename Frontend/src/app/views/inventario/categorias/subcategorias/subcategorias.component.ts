@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, ViewChild, Output, EventEmitter, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ViewChild, Output, EventEmitter, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     templateUrl: './subcategorias.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class SubCategoriasComponent extends BaseModalComponent implements OnInit {
@@ -37,7 +37,8 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
     constructor(
         public apiService: ApiService, 
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -54,7 +55,8 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
             this.subcategorias = subcategorias;
             this.file = null!;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     override openModal(template: TemplateRef<any>, subcategoria:any) {
@@ -64,12 +66,14 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
 
     slug(){
         this.subcategoria.slug = this.apiService.slug(this.subcategoria.nombre);
+        this.cdr.markForCheck();
     }
 
     public setTipoComision(){
         if (this.subcategoria.tipo_comision == 'Ninguna') {
             this.subcategoria.comision = 0.0;
         }
+        this.cdr.markForCheck();
     }
 
     async onSubmit(){
@@ -90,10 +94,12 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
                 this.categoria.subcategorias.push(subcategoriaGuardada);
             }
             this.closeModal();
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -118,8 +124,10 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
                         if (this.subcategorias[i].id == data.id )
                             this.subcategorias.splice(i, 1);
                     }
+                    this.cdr.markForCheck();
                 } catch (error: any) {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
             }
         }
@@ -134,6 +142,7 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
             url = reader.result;
             this.url_img_preview = url;
             this.preview = true;
+            this.cdr.markForCheck();
            };
         reader.readAsDataURL(this.file!);
     }
@@ -145,7 +154,8 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
               .pipe(this.untilDestroyed())
               .subscribe(categorias => { 
                 this.categorias = categorias;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         super.openModal(this.categoriasTemplate);
 
@@ -161,7 +171,8 @@ export class SubCategoriasComponent extends BaseModalComponent implements OnInit
             this.update.emit();
             this.loading = false;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 }

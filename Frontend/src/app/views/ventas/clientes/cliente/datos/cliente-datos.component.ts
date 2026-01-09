@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import * as moment from 'moment';
     templateUrl: './cliente-datos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteDatosComponent implements OnInit {
     public dash:any;
@@ -22,6 +22,7 @@ export class ClienteDatosComponent implements OnInit {
     public filtro:any = {};
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
     constructor( public apiService:ApiService, private alertService:AlertService, private route: ActivatedRoute ){}
 
@@ -40,7 +41,8 @@ export class ClienteDatosComponent implements OnInit {
         this.apiService.store('cliente/datos', this.filtro).pipe(this.untilDestroyed()).subscribe(dash => { 
             this.dash = dash;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

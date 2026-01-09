@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
@@ -25,6 +25,7 @@ import { LazyImageDirective } from '../../directives/lazy-image.directive';
     templateUrl: './ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, CrearAbonoVentaComponent, TruncatePipe, PopoverModule, TooltipModule, NgSelectModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -78,7 +79,8 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     private route: ActivatedRoute,
     protected override modalManager: ModalManagerService,
     private sharedDataService: SharedDataService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'venta',
@@ -148,9 +150,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       .subscribe({
         next: (sucursales) => {
           this.sucursales = sucursales;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -159,9 +163,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       .subscribe({
         next: (categorias) => {
           this.categorias = categorias;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -170,9 +176,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       .subscribe({
         next: (marcas) => {
           this.marcas = marcas;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -219,7 +227,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       this.filtros.orden = columna;
       this.filtros.direccion = 'asc';
     }
-
+    this.cdr.markForCheck();
     this.filtrarVentas();
   }
 
@@ -271,6 +279,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
     });
 
     this.loading = true;
+    this.cdr.markForCheck();
 
     if (!this.filtros.id_cliente) {
       this.filtros.id_cliente = '';
@@ -291,10 +300,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
         if (this.modalRef) {
           this.closeModal();
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -354,9 +365,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
               .subscribe({
                 next: (proyectos) => {
                   this.proyectos = proyectos;
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
           }
@@ -370,9 +383,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
                   this.documentos = this.documentos.filter(
                     (x: any) => x.id_sucursal == ventaCompleta.id_sucursal
                   );
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
           }
@@ -383,9 +398,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
               .subscribe({
                 next: (formaPagos) => {
                   this.formaPagos = formaPagos;
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
           }
@@ -396,9 +413,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
               .subscribe({
                 next: (usuarios) => {
                   this.usuarios = usuarios;
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
           }
@@ -409,9 +428,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
               .subscribe({
                 next: (canales) => {
                   this.canales = canales;
+                  this.cdr.markForCheck();
                 },
                 error: (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               });
           }
@@ -419,10 +440,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
           // Abrir el modal pasando ventaCompleta como parámetro
           // BaseCrudComponent hará una copia con { ...item }, pero eso está bien para las propiedades de primer nivel
           this.openModal(template, ventaCompleta);
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -652,6 +675,7 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
   public override async onSubmit(item?: any, isStatusChange?: boolean): Promise<void> {
     const ventaToSave = item || this.venta;
     this.saving = true;
+    this.cdr.markForCheck();
     try {
       const venta = await this.apiService.store('venta', ventaToSave)
         .pipe(this.untilDestroyed())
@@ -662,9 +686,11 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
         this.closeModal();
       }
       this.alertService.success('Venta guardada', 'La venta fue guardada exitosamente.');
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
       this.saving = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -882,10 +908,12 @@ export class VentasComponent extends BaseCrudComponent<any> implements OnInit {
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);
           this.contabilidadHabilitada = false;
+          this.cdr.markForCheck();
         }
       });
   }

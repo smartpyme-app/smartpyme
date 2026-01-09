@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { ApiService } from '../../../../../services/api.service';
     templateUrl: './proveedor-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProveedorComprasComponent extends BasePaginatedComponent implements OnInit {
 
@@ -24,7 +24,7 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
 		public token:string = '';
         public filtro:any = {};
 
-	    constructor(apiService: ApiService, alertService: AlertService,  private route: ActivatedRoute, private router: Router){
+	    constructor(apiService: ApiService, alertService: AlertService,  private route: ActivatedRoute, private router: Router, private cdr: ChangeDetectorRef){
             super(apiService, alertService);
         }
 
@@ -60,13 +60,15 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
                     .pipe(this.untilDestroyed())
                     .subscribe(proveedor => {
                         this.proveedor = proveedor;
-                    }, error => {this.alertService.error(error); this.loading = false; });
+                        this.cdr.markForCheck();
+                    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
    	            this.apiService.read('proveedor/compras/', this.id)
                     .pipe(this.untilDestroyed())
                     .subscribe(compras => {
                         this.compras = compras;
                         this.loading = false;
-                    }, error => {this.alertService.error(error); this.loading = false; });
+                        this.cdr.markForCheck();
+                    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
    	        }
 
 	    }
@@ -77,7 +79,8 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
                 .pipe(this.untilDestroyed())
                 .subscribe(compras => { 
                     this.compras = compras;
-                }, error => {this.alertService.error(error);});
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         }
 
@@ -88,7 +91,8 @@ export class ProveedorComprasComponent extends BasePaginatedComponent implements
                 .subscribe(compra => {
                     this.loadAll();
                     this.alertService.success('Compra guardada', 'La compra fue guardada exitosamente.');
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
 
 	    // setPagination() ahora se hereda de BasePaginatedComponent

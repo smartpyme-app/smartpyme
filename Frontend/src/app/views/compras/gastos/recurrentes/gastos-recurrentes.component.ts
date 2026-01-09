@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ declare var $:any;
     templateUrl: './gastos-recurrentes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class GastosRecurrentesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -33,7 +33,8 @@ export class GastosRecurrentesComponent extends BaseCrudComponent<any> implement
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'gasto',

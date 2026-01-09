@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, TemplateRef, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './traslados.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit, OnDestroy {
 
@@ -43,7 +43,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'traslado',
@@ -140,11 +141,13 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
                     this.filtrarTrasladosSinNavegar();
                 }
                 this.isNavigating = false;
+                this.cdr.markForCheck();
             });
 
         this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(sucursales => { 
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     ngOnDestroy() {
@@ -189,7 +192,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         this.apiService.getAll('traslados', this.filtros).pipe(this.untilDestroyed()).subscribe(traslados => { 
             this.traslados = traslados;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -245,7 +249,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
         if(!this.productos.length){
             this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
                 this.productos = productos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         }
         super.openLargeModal(template);
     }
@@ -257,10 +262,12 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
                 next: (productos) => { 
                     this.productos = productos;
                     this.isLoadingProductos = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.isLoadingProductos = false;
+                    this.cdr.markForCheck();
                 }
             });
         }
@@ -274,7 +281,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
     generarPartidaContable(traslado:any){
         this.apiService.store('contabilidad/partida/traslado', traslado).pipe(this.untilDestroyed()).subscribe(traslado => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-        },error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public descargar(){
@@ -290,7 +298,8 @@ export class TrasladosComponent extends BaseCrudComponent<any> implements OnInit
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

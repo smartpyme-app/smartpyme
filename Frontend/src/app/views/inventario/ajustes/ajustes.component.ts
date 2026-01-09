@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './ajustes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -43,7 +43,8 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         alertService: AlertService,
         modalManager: ModalManagerService,
         private router: Router, 
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'ajuste',
@@ -75,6 +76,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         ).subscribe(productos => {
             this.productos = productos;
             this.loadingProductos = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -110,7 +112,8 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(bodegas => {
                 this.bodegas = bodegas;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     private searchProductos(term: string): Observable<any[]> {
@@ -124,7 +127,7 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
         );
     }
 
-    public override () {
+    public override loadAll() {
         this.filtros.id_bodega = '';
         this.filtros.id_producto = '';
         this.filtros.id_usuario = '';
@@ -151,7 +154,8 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(ajustes => {
                 this.ajustes = ajustes;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -204,8 +208,9 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(inventarios => {
             if (this.producto && this.producto.id == productoId) {
                 this.producto.inventarios = inventarios;
+                this.cdr.markForCheck();
             }
-        }, error => {this.alertService.error(error);});
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public setBodega(){
@@ -236,12 +241,14 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(productos => {
                 this.productos = productos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.openModal(template);
     }
 
@@ -263,10 +270,12 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
                     this.closeModal();
                     this.filtrarAjustes();
                     this.saving = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error: any) => {
                     this.alertService.error(error);
                     this.saving = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -276,7 +285,8 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(ajuste => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-        },error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public descargar(){
@@ -294,7 +304,8 @@ export class AjustesComponent extends BaseCrudComponent<any> implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

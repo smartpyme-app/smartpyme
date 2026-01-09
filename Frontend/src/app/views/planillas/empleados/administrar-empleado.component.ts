@@ -1,5 +1,5 @@
 // nuevo-empleado.component.ts
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -25,7 +25,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './administrar-empleado.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdministrarEmpleadoComponent extends BaseModalComponent implements OnInit {
   private eventListener: any;
@@ -80,8 +80,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     protected override modalManager: ModalManagerService,
     private route: ActivatedRoute,
     private router: Router,
-    private changeDetectorRef: ChangeDetectorRef,
-    
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
     this.eventListener = () => {
@@ -240,10 +239,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           // Recargar documentos
           this.loadDocumentos();
           this.saving = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -260,10 +261,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           this.documentos = response;
           this.filtrarDocumentos();
           this.loading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error('Error al cargar los documentos');
           this.loading = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -365,10 +368,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error('Error al descargar el documento');
         console.error('Error descargando documento:', error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -395,6 +400,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     if (tab === 'documentos' && this.empleado.id) {
       this.loadDocumentos();
     }
+    this.cdr.markForCheck();
   }
 
   private inicializarEmpleado() {
@@ -460,10 +466,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           this.closeModal();
         }
         this.saving = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -490,7 +498,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           setTimeout(() => {
             this.empleado.id_cargo = nuevoCargoId;
             // Forzar detección de cambios si es necesario
-            this.changeDetectorRef.detectChanges();
+            this.cdr.markForCheck();
           }, 100);
         });
         
@@ -498,10 +506,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           this.closeModal();
         }
         this.saving = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -533,6 +543,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       this.cargosFiltrados = [];
       this.empleado.id_cargo = '';
     }
+    this.cdr.markForCheck();
   }
 
   
@@ -568,10 +579,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
               }
 
               this.loading = false;
+              this.cdr.markForCheck();
             },
             (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           );
         } else {
@@ -626,10 +639,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         (response) => {
           this.historialContratos = response;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error('Error al cargar el historial de contratos');
           this.loading = false;
+          this.cdr.markForCheck();
         }
       );
   }
@@ -641,6 +656,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService
       .getAll(`empleados/${this.empleado.id}/historialesBajas`)
       .pipe(this.untilDestroyed())
@@ -648,10 +664,12 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
         (response) => {
           this.historialBajas = response;
           this.loading = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error('Error al cargar el historial de bajas');
           this.loading = false;
+          this.cdr.markForCheck();
         }
       );
   }
@@ -735,8 +753,10 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       this.router.navigate(['/planilla/empleados']);
     } catch (error: any) {
       this.alertService.error(error);
+      this.cdr.markForCheck();
     } finally {
       this.saving = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -757,9 +777,11 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
                 'Por favor, verifica la información. Puedes ignorar esta alerta si consideras que no estas duplicando el registro.'
               );
             }
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
+            this.cdr.markForCheck();
           }
         );
     }
@@ -770,6 +792,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
       let dui = this.empleado.dui.replace(/\D/g, '');
       if (dui.length >= 9) {
         this.empleado.dui = dui.substr(0, 8) + '-' + dui.substr(8, 1);
+        this.cdr.markForCheck();
       }
     }
   }
@@ -786,6 +809,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
           nit.substr(10, 3) +
           '-' +
           nit.substr(13, 1);
+        this.cdr.markForCheck();
       }
     }
   }
@@ -805,6 +829,7 @@ export class AdministrarEmpleadoComponent extends BaseModalComponent implements 
     if (index !== -1) {
       this.documentos.data.splice(index, 1);
       this.documentosFiltrados = [...this.documentos.data];
+      this.cdr.markForCheck();
     }
   }
 

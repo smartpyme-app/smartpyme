@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './abonos-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class AbonosComprasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -33,7 +33,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'compra/abono',
@@ -60,9 +61,10 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
     ngOnInit() {
         this.loadAll();
 
-        this.apiService.getAll('proveedores/list').subscribe(proveedores => { 
+        this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => { 
             this.proveedores = proveedores;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -96,7 +98,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
                 this.abonos = abonos;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public async setEstado(cotizacion:any){
@@ -106,8 +109,10 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
                 .toPromise();
             
             this.alertService.success('Orden de compra actualizada', 'La orden de compra fue actualizada exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         }
     }
 
@@ -130,10 +135,13 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
                 this.abonos.data.splice(index, 1);
             }
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -148,7 +156,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             .pipe(this.untilDestroyed())
             .subscribe(documentos => {
                 this.documentos = documentos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.openModal(template, abono);
     }
@@ -158,7 +167,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => { 
                 this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.openModal(template);
     }
 
@@ -177,7 +187,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -186,7 +197,8 @@ export class AbonosComprasComponent extends BaseCrudComponent<any> implements On
             .pipe(this.untilDestroyed())
             .subscribe(abono => {
             this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
-        },error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
 }

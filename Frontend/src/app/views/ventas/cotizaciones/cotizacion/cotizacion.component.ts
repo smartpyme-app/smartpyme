@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -41,6 +41,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
         LazyImageDirective
     ],
     providers: [SumPipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class CotizacionComponent extends BaseModalComponent implements OnInit {
@@ -94,7 +95,8 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     private sumPipe: SumPipe,
     private route: ActivatedRoute,
     private router: Router,
-    private sharedDataService: SharedDataService
+    private sharedDataService: SharedDataService,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
     this.router.routeReuseStrategy.shouldReuseRoute = function () {
@@ -111,6 +113,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     this.apiService.getAll('sucursales/list').pipe(this.untilDestroyed()).subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
+        this.cdr.markForCheck();
         // if (this.apiService.auth_user().tipo != 'Administrador') {
         //   this.sucursales = this.sucursales.filter(
         //     (item: any) => item.id == this.apiService.auth_user().id_sucursal
@@ -125,6 +128,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -174,6 +178,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(
       (usuarios) => {
         this.usuarios = usuarios;
+        this.cdr.markForCheck();
         // if (
         //   this.apiService.auth_user().tipo != 'Administrador' &&
         //   this.apiService.auth_user().tipo != 'Supervisor'
@@ -189,6 +194,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -199,15 +205,18 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
     this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
     this.apiService.getAll('canales/list').pipe(this.untilDestroyed()).subscribe(
       (canales) => {
         this.canales = canales;
+        this.cdr.markForCheck();
 
         if (this.route.snapshot.queryParamMap.get('cotizacion')) {
           this.venta.id_canal = null;
@@ -217,12 +226,14 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
     this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
       (impuestos) => {
         this.impuestos = impuestos;
+        this.cdr.markForCheck();
         if (!this.venta.impuestos || this.venta.iva == 0) {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
@@ -230,6 +241,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -248,10 +260,12 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       (proyectos) => {
         this.proyectos = proyectos;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -307,6 +321,7 @@ export class CotizacionComponent extends BaseModalComponent implements OnInit {
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -928,6 +943,7 @@ if (
   // Guardar venta
   public onSubmit() {
     this.saving = true;
+    this.cdr.markForCheck();
 
     // Si se esta duplicando una venta, esta ya no se marca como recurrente para
     // que no aparezca en las ventas recurrentes
@@ -1019,10 +1035,12 @@ if (
           this.closeModal();
         }
         this.saving = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }

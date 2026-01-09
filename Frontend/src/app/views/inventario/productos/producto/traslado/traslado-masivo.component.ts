@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './traslado-masivo.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TrasladoMasivoComponent extends BaseModalComponent implements OnInit {
     public productos: any = [];
@@ -60,7 +60,8 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         public apiService: ApiService, 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private sumPipe: SumPipe
+        private sumPipe: SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -101,10 +102,12 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
               this.productos = Array.isArray(results) ? results : [];
               this.procesarProductosEncontrados();
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (err) => {
               console.error('Error no controlado:', err);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           });
     }
@@ -162,7 +165,8 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         
         this.apiService.getAll('categorias/list').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('bodegas/list').pipe(this.untilDestroyed()).subscribe(bodegas => { 
             this.bodegas = bodegas;
@@ -171,8 +175,8 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             this.bodegas.forEach((bodega: any) => {
                 this.bodegasMap.set(bodega.id.toString(), bodega.nombre);
             });
-            
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('usuarios/list').pipe(this.untilDestroyed()).subscribe(usuarios => {
             this.usuarios = usuarios;
@@ -180,8 +184,10 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                 this.usuarios = this.usuarios.filter((item: any) => item.id == this.apiService.auth_user().id);
             }
             this.traslado.id_usuario = this.apiService.auth_user().id;
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         });
     }
 
@@ -194,6 +200,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                 this.productos = [];
                 this.searchControl.setValue('');
                 this.guardarFiltros();
+                this.cdr.markForCheck();
             } else {
                 // Restaurar bodega origen anterior
                 const filtrosGuardados = localStorage.getItem('trasladoInventarioFiltros');
@@ -201,9 +208,11 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                     const filtrosAnteriores = JSON.parse(filtrosGuardados);
                     this.filtros.id_bodega_origen = filtrosAnteriores.id_bodega_origen;
                 }
+                this.cdr.markForCheck();
             }
         } else {
             this.guardarFiltros();
+            this.cdr.markForCheck();
         }
     }
 
@@ -212,10 +221,12 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         if (this.filtros.id_bodega_origen === this.filtros.id_bodega_destino) {
             this.alertService.warning('No puede seleccionar la misma bodega como origen y destino.', 'Bodega duplicada');
             this.filtros.id_bodega_destino = '';
+            this.cdr.markForCheck();
             return;
         }
         
         this.guardarFiltros();
+        this.cdr.markForCheck();
     }
 
     private guardarFiltros() {
@@ -266,6 +277,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         // Limpiar buscador
         this.searchControl.setValue('');
         this.productos = [];
+        this.cdr.markForCheck();
     }
 
     public productoYaSeleccionado(idProducto: number): boolean {
@@ -275,6 +287,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
     public quitarProducto(producto: any) {
         this.seleccionados = this.seleccionados.filter(p => p.id !== producto.id);
         this.actualizarProductosParaTraslado();
+        this.cdr.markForCheck();
     }
 
     public limpiarSeleccion() {
@@ -289,6 +302,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             if (result.isConfirmed) {
                 this.seleccionados = [];
                 this.productosParaTraslado = [];
+                this.cdr.markForCheck();
             }
         });
     }
@@ -305,6 +319,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         }
         
         this.actualizarProductosParaTraslado();
+        this.cdr.markForCheck();
     }
 
     public actualizarProductosParaTraslado() {
@@ -321,6 +336,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
             cantidad_traslado: p.cantidad_traslado,
             nombre: p.nombre // Para mostrar en el modal de confirmación
         }));
+        this.cdr.markForCheck();
     }
 
     public getNombreBodega(idBodega: string): string {
@@ -347,6 +363,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
 
         this.trasladoInventario.productos = this.productosParaTraslado;
         super.openModal(template, {class: 'modal-md', backdrop: 'static'});
+        this.cdr.markForCheck();
     }
 
     public realizarTraslado() {
@@ -379,10 +396,12 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                 this.productosParaTraslado = [];
                 this.productos = [];
                 this.searchControl.setValue('');
+                this.cdr.markForCheck();
             },
             error => {
                 this.alertService.error(error);
                 this.saving = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -421,10 +440,12 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 this.downloading = false;
+                this.cdr.markForCheck();
             }, 
             (error) => { 
                 this.alertService.error(error); 
-                this.downloading = false; 
+                this.downloading = false;
+                this.cdr.markForCheck();
             }
         );
     }
@@ -436,6 +457,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
         }
         
         super.openModal(template, {class: 'modal-md'});
+        this.cdr.markForCheck();
     }
 
     public importarTraslado(fileInput: HTMLInputElement, detalle: string) {
@@ -476,6 +498,7 @@ export class TrasladoMasivoComponent extends BaseModalComponent implements OnIni
                     });
                     this.alertService.warning(mensajeErrores, 'Advertencias durante el traslado');
                 }
+                this.cdr.markForCheck();
             },
             error => {
             this.alertService.error(error);

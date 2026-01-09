@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -33,7 +33,7 @@ import Swal from 'sweetalert2';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearProveedorComponent, CrearProyectoComponent, CompraDetallesComponent],
     providers: [SumPipe],
-
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class FacturacionCompraComponent extends BaseModalComponent implements OnInit {
@@ -89,6 +89,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
     @ViewChild('productosAjuste')
     public productosAjusteTemplate!: TemplateRef<any>;
 
+    private cdr = inject(ChangeDetectorRef);
+
     constructor(
         public apiService: ApiService,
         protected override alertService: AlertService,
@@ -129,6 +131,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         ).subscribe(results => {
             this.searchResults = results || [];
             this.searchLoading = false;
+            this.cdr.markForCheck();
         });
 
     }
@@ -144,9 +147,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           .subscribe({
             next: (sucursales) => {
               this.sucursales = sucursales;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
 
@@ -154,16 +159,19 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           .pipe(this.untilDestroyed())
           .subscribe(bodegas => {
             this.bodegas = bodegas;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.sharedDataService.getUsuarios()
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (usuarios) => {
               this.usuarios = usuarios;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
 
@@ -171,16 +179,19 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
           .pipe(this.untilDestroyed())
           .subscribe(bancos => {
           this.bancos = bancos;
-      }, error => {this.alertService.error(error);});
+          this.cdr.markForCheck();
+      }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.sharedDataService.getFormasDePago()
           .pipe(this.untilDestroyed())
           .subscribe({
             next: (formaPagos) => {
               this.formaPagos = formaPagos;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
 
@@ -190,8 +201,9 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.impuestos = impuestos;
             this.compra.impuestos = this.impuestos;
             this.sumTotal();
+            this.cdr.markForCheck();
 
-        }, error => {this.alertService.error(error);});
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.sharedDataService.getProveedores()
           .pipe(this.untilDestroyed())
@@ -199,10 +211,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             next: (proveedores) => {
               this.proveedores = proveedores;
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           });
 
@@ -212,10 +226,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             next: (proyectos) => {
               this.proyectos = proyectos;
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           });
     }
@@ -252,9 +268,11 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                   x.nombre != 'Nota de crédito' &&
                   x.nombre != 'Nota de débito'
                 );              }
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
+              this.cdr.markForCheck();
             }
           });
     }
@@ -318,7 +336,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                     this.compra.cobrar_impuestos = (this.compra.iva > 0) ? true : false;
                     this.compra.cobrar_percepcion = (this.compra.percepcion > 0) ? true : false;
                     this.loading = false;
-                }, error => {this.alertService.error(error); this.loading = false;});
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
             }
         });
 
@@ -339,7 +358,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
                 this.compra.detalles.forEach((detalle:any) => {
                     detalle.id = null;
                 });
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
 
         if (this.route.snapshot.queryParamMap.get('id_proyecto')!) {
@@ -380,7 +400,8 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             this.compra.detalles.forEach((detalle: any) => {
               detalle.id = null;
             });
-          }, error => { this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+          }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
 
         this.cargarDocumentos();
@@ -392,10 +413,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             .subscribe({
                 next: (acceso) => {
                     this.contabilidadHabilitada = acceso;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);
                     this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -593,6 +616,7 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
             'La compra se ha creado y está esperando aprobación. Recibirá una notificación cuando sea autorizada.'
           );
           this.router.navigate(['/compras']);
+          this.cdr.markForCheck();
           return;
         }
 
@@ -600,17 +624,19 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         if (this.compra.cotizacion == 1) {
           this.router.navigate(['/ordenes-de-compras']);
           this.alertService.success('Orden de compra creada', 'La orden de compra fue añadida exitosamente.');
+          this.cdr.markForCheck();
         } else {
           this.router.navigate(['/compras']);
           this.alertService.success('Compra creada', 'La compra fue añadida exitosamente.');
+          this.cdr.markForCheck();
 
           // Generar partida contable solo para compras aprobadas
           if (this.apiService.auth_user().empresa.generar_partidas == 'Auto') {
             this.apiService.store('contabilidad/partida/compra', compra)
               .pipe(this.untilDestroyed())
               .subscribe(
-              compra => {},
-              error => { this.alertService.error(error); }
+              compra => { this.cdr.markForCheck(); },
+              error => { this.alertService.error(error); this.cdr.markForCheck(); }
             );
           }
         }
@@ -622,10 +648,12 @@ export class FacturacionCompraComponent extends BaseModalComponent implements On
         if (error.status === 403 && error.error?.requires_authorization) {
           // El interceptor ya abrió el modal
           // No hacer nada más aquí
+          this.cdr.markForCheck();
           return;
         }
 
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }

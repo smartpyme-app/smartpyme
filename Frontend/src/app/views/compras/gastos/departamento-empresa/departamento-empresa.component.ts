@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './departamento-empresa.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> implements OnInit {
@@ -36,7 +36,8 @@ export class DepartamentoEmpresaComponent extends BaseCrudComponent<any> impleme
         protected override apiService: ApiService, 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'departamentosEmpresa',

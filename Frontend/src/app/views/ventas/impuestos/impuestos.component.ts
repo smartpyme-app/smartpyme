@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     templateUrl: './impuestos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, FilterPipe, PaginationComponent, PopoverModule, TooltipModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -29,6 +29,7 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
     public catalogo:any = [];
     public filtro:any = {};
     public filtrado:boolean = false;
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(
         apiService: ApiService,
@@ -68,7 +69,8 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
                 this.impuestos = impuestos;
                 this.loading = false;
                 this.filtrado = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     protected aplicarFiltros(): void {
@@ -81,7 +83,8 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
             .pipe(this.untilDestroyed())
             .subscribe(catalogo => {
                 this.catalogo = catalogo;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         
         super.openModal(template, impuesto, {class: 'modal-md', backdrop: 'static'});
     }
@@ -113,9 +116,11 @@ export class ImpuestosComponent extends BaseCrudComponent<any> implements OnInit
                         }
                         this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }, error => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     });
           }
         });

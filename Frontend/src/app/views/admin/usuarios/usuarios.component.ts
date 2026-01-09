@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { EncryptService } from '@services/encryption/encrypt.service';
     templateUrl: './usuarios.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -59,7 +60,8 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
         protected override apiService:ApiService,
         protected override alertService:AlertService,
         protected override modalManager: ModalManagerService,
-        public encryptService: EncryptService
+        public encryptService: EncryptService,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'usuario',
@@ -113,6 +115,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       .subscribe(
       (sucursales) => {
         this.sucursales = sucursales;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -124,6 +127,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       .subscribe(
       (bodegas) => {
         this.bodegas = bodegas;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -141,16 +145,19 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
           ...module,
           expanded: false
         }));
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
         this.modules = [];
+        this.cdr.markForCheck();
       }
     );
   }
 
   protected aplicarFiltros(): void {
     this.loading = true;
+    this.cdr.markForCheck();
     if(!this.filtros.id_sucursal){
       this.filtros.id_sucursal = '';
     }
@@ -169,7 +176,8 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
       });
       this.contarActivos();
       this.loading = false;
-    }, error => {this.alertService.error(error); this.loading = false;});
+      this.cdr.markForCheck();
+    }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     this.apiService.getAll('roles')
       .pipe(this.untilDestroyed())
@@ -181,6 +189,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
           .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
       });
+      this.cdr.markForCheck();
     }, error => {this.alertService.error(error); });
   }
 
@@ -188,6 +197,7 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
     this.usuarios_activos = this.usuarios.data.filter(
       (item: any) => item.enable == '1'
     ).length;
+    this.cdr.markForCheck();
   }
 
 
@@ -236,18 +246,22 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
         );
       }
       this.contarActivos();
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
+      this.cdr.markForCheck();
     }
   }
 
 
   selectSucursal() {
     this.usuario.id_bodega = this.usuario.id_sucursal;
+    this.cdr.markForCheck();
   }
 
   onFiltrar() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.store('usuarios/filtrar', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(
@@ -255,10 +269,12 @@ export class UsuariosComponent extends BaseCrudComponent<any> implements OnInit 
         this.usuarios = usuarios;
         this.loading = false;
         this.modalRef?.hide();
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -276,6 +292,7 @@ public changePhoneNumber(event: any) {
 // Métodos para el modal de roles
   toggleModule(module: any) {
     module.expanded = !module.expanded;
+    this.cdr.markForCheck();
   }
 
   getSimplePermissionName(fullName: string): string {
@@ -299,6 +316,7 @@ public changePhoneNumber(event: any) {
         this.role.permissions.splice(index, 1);
       }
     }
+    this.cdr.markForCheck();
   }
 
   isPermissionSelected(permissionName: string): boolean {
@@ -335,10 +353,12 @@ public changePhoneNumber(event: any) {
 
   saveRole() {
     this.loading = true;
+    this.cdr.markForCheck();
 
     if (!this.role.name) {
       this.alertService.error('El nombre del rol es requerido');
       this.loading = false;
+      this.cdr.markForCheck();
       return;
     }
 
@@ -356,10 +376,12 @@ public changePhoneNumber(event: any) {
         this.closeModal();
         this.loadAll(); // Recargar para actualizar la lista de roles
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -46,7 +46,7 @@ interface ItemDistribucion {
     styleUrls: ['./retaceo.component.css'],
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RetaceoComponent extends BaseComponent implements OnInit {
   public retaceo: any = {};
@@ -92,7 +92,8 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     protected alertService: AlertService,
     private route: ActivatedRoute,
     private router: Router,
-    private retaceoProcessorService: RetaceoProcessorService
+    private retaceoProcessorService: RetaceoProcessorService,
+    private cdr: ChangeDetectorRef
   ) {
     super();
   }
@@ -115,12 +116,14 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
       (bodegas) => {
         this.bodegas = bodegas;
         this.loading = false;
+        this.cdr.markForCheck();
 
         this.cargarDatosPorBodega();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -161,10 +164,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
           (c: any) => c.estado === 'Pagada' || c.estado === 'Pendiente'
         );
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
 
@@ -178,10 +183,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
         //   (c: any) => c.estado === 'Confirmado'
         // );
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -220,6 +227,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
     });
 
     this.calcularTotalGastos();
+    this.cdr.markForCheck();
   }
 
   async cargarRetaceoExistente(id: number) {
@@ -237,9 +245,11 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
       this.calcularTotalGastos();
       this.loading = false;
+      this.cdr.markForCheck();
     } catch (error) {
       this.alertService.error(error);
       this.loading = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -319,6 +329,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
         });
 
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
@@ -401,6 +412,7 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
     this.recalcularTotalRetaceado();
     this.alertService.success('Distribución calculada correctamente', 'Distribución');
+    this.cdr.markForCheck();
   }
 
   // Método auxiliar para calcular el total por tipo de gasto
@@ -442,21 +454,25 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
             (response) => {
               this.retaceo.contabilizado = true;
               this.loading = false;
+              this.cdr.markForCheck();
             },
             (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           );
         }
         
         this.router.navigate(['/retaceos']);
         this.saving = false;
+        this.cdr.markForCheck();
 
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -777,10 +793,12 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
         this.alertService.success(mensaje, 'Cambio de estado');
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -865,22 +883,23 @@ export class RetaceoComponent extends BaseComponent implements OnInit {
 
       this.distribucion = distribucionProcesada;
 
-      // Cargar los productos para cada ítem de la distribución de forma asíncrona
-      // Usar Promise.all para cargar todos los productos en paralelo
-      const promesasProductos = this.distribucion
-        .filter(item => item.id_producto)
-        .map(item => 
-          firstValueFrom(this.apiService.read('producto/', item.id_producto).pipe(this.untilDestroyed()))
-            .then(producto => {
+      // Cargar los productos para cada ítem de la distribución
+      this.distribucion.forEach((item) => {
+        if (item.id_producto) {
+          this.apiService.read('producto/', item.id_producto)
+            .pipe(this.untilDestroyed())
+            .subscribe(
+            (producto) => {
               item.producto = producto;
-            })
-            .catch(error => {
+              this.cdr.markForCheck();
+            },
+            (error) => {
               console.error(`Error al cargar producto ID ${item.id_producto}:`, error);
-            })
-        );
-
-      // Esperar a que todos los productos se carguen
-      await Promise.all(promesasProductos);
+              this.cdr.markForCheck();
+            }
+          );
+        }
+      });
     } catch (error) {
       console.error('Error procesando distribución:', error);
       // Fallback al procesamiento local si el worker falla

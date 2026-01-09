@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import { BaseComponent } from '@shared/base/base.component';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ComboDetallesComponent],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoComboComponent extends BaseComponent implements OnInit {
 
@@ -40,6 +40,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
     private route: ActivatedRoute, 
     private router: Router, 
     private sumPipe: SumPipe,
+    private cdr: ChangeDetectorRef
   ) {
     super();
     // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -59,26 +60,30 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       .pipe(this.untilDestroyed())
       .subscribe(categorias => {
       this.categorias = categorias;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
     this.apiService.getAll('subcategorias')
       .pipe(this.untilDestroyed())
       .subscribe(subcategorias => {
       this.subcategorias = subcategorias;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
     this.apiService.getAll('proveedores/list')
       .pipe(this.untilDestroyed())
       .subscribe(proveedores => {
       this.proveedores = proveedores;
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     this.apiService.getAll('bodegas/list')
       .pipe(this.untilDestroyed())
       .subscribe(bodegas => {
       this.bodegas = bodegas;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
   }
 
@@ -91,7 +96,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       this.categorias.push(categoria);
       this.producto.id_categoria = categoria.id;
     }
-
+    this.cdr.markForCheck();
   }
 
   public setCompuesto() {
@@ -100,6 +105,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
     } else {
       this.producto.tipo = 'Producto';
     }
+    this.cdr.markForCheck();
   }
 
   // CALCULO DEL STOCK MULTIPLICADO
@@ -109,6 +115,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
         detalle.cantidad_combo = detalle.cantidad * this.producto.stock;
       });
     }
+    this.cdr.markForCheck();
   }
 
   public calPrecioFinal() {
@@ -116,6 +123,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       this.producto.impuesto = this.usuario.empresa.iva / 100;
       this.producto.precio_final = ((this.producto.precio * 1) + (this.producto.precio * this.producto.impuesto)).toFixed(2);
     }
+    this.cdr.markForCheck();
   }
 
   public calPrecioBase() {
@@ -123,6 +131,7 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       this.producto.impuesto = this.usuario.empresa.iva / 100;
       this.producto.precio = (parseFloat(this.producto.precio_final) / (1 + this.producto.impuesto)).toFixed(2);
     }
+    this.cdr.markForCheck();
   }
 
   public onSubmit() {
@@ -137,7 +146,8 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
       }
       this.alertService.success('success', 'Producto compuesto creado correctamente');
       this.router.navigate(['/productos']);
-    }, error => { this.alertService.error(error); this.guardar = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.guardar = false; this.cdr.markForCheck(); });
   }
 
   public barcode() {
@@ -155,17 +165,20 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
           );
         }
         this.loading = false;
-      }, error => { this.alertService.error(error); this.loading = false; });
+        this.cdr.markForCheck();
+      }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
   }
 
   public sumTotal() {
     this.producto.costo = (parseFloat(this.sumPipe.transform(this.producto.detalles, 'total'))).toFixed(2);
+    this.cdr.markForCheck();
   }
 
   public updatecompra(producto: any) {
     this.producto = producto;
     this.sumTotal();
+    this.cdr.markForCheck();
   }
 
   // creacion de sku
@@ -179,17 +192,19 @@ export class ProductoComboComponent extends BaseComponent implements OnInit {
     this.subcategRes = this.subcategorias.filter((cat: any) => { return cat.id_cate_padre == event; });    
 
     this.producto.codigo =  `${categoriaSeleccionada?.nombre ? categoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${subcategoriaSeleccionada?.nombre ? subcategoriaSeleccionada?.nombre.slice(0, 3).toUpperCase() : ''}${this.correlativo.toString().padStart(5, '0')}`;
-  
+    this.cdr.markForCheck();
   }
 
   //   variantes
 
   addVariant(): void {
     this.variants.push({ nombre: '', cantidad: 0 });
+    this.cdr.markForCheck();
   }
 
   removeVariant(index: number): void {
     this.variants.splice(index, 1);
+    this.cdr.markForCheck();
   }
 
 

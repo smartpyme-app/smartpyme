@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
     templateUrl: './devolucion-venta-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DevolucionVentaDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -34,6 +34,8 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
 
     public buscador:string = '';
     public override loading:boolean = false;
+
+    private cdr = inject(ChangeDetectorRef);
 
     constructor( 
         private apiService: ApiService,
@@ -80,6 +82,7 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
         this.devolucion.detalles.forEach((detalle: any) => {
             detalle.seleccionado = this.todosSeleccionados;
         });
+        this.cdr.markForCheck();
     }
 
     actualizarSeleccion() {
@@ -113,6 +116,7 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
                 this.todosSeleccionados = false;
                 this.update.emit(this.devolucion);
                 this.sumTotal.emit();
+                this.cdr.markForCheck();
             }
         });
     }
@@ -128,7 +132,8 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
             this.delete(this.detalle);
             this.loading = false;
             this.supervisor = {};
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     // Eliminar detalle
@@ -149,6 +154,7 @@ export class DevolucionVentaDetallesComponent extends BaseModalComponent impleme
                     if (indexAEliminar !== -1) {
                         this.devolucion.detalles.splice(indexAEliminar, 1);
                         this.update.emit(this.devolucion);
+                        this.cdr.markForCheck();
                     }
               } else if (result.dismiss === Swal.DismissReason.cancel) {
                 // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');

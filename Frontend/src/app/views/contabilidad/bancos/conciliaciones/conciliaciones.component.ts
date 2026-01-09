@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import Swal from 'sweetalert2';
     templateUrl: './conciliaciones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ReactiveFormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ConciliacionesComponent extends BasePaginatedModalComponent implements OnInit {
@@ -32,7 +32,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
     constructor(
         protected override apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -52,7 +53,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
           .pipe(this.untilDestroyed())
           .subscribe(cuentas => {
             this.cuentas = cuentas;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
     }
 
     public setOrden(columna: string) {
@@ -90,7 +92,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 
@@ -107,7 +110,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
               .pipe(this.untilDestroyed())
               .subscribe(usuarios => { 
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.filtros.inicio = this.apiService.date();
         this.filtros.fin    = this.apiService.date();
@@ -142,7 +146,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
                             this.conciliaciones.data.splice(i, 1);
                     }
                     this.alertService.success('Conciliación eliminada', 'La conciliación fue eliminada exitosamente.');
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
           } else if (result.dismiss === Swal.DismissReason.cancel) {
             // Swal.fire('Cancelado', 'Tu archivo está seguro :)', 'info');
           }
@@ -165,7 +170,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
             if(this.modalRef){
                 this.closeModal();
             }
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
     public descargar(){
@@ -183,7 +189,8 @@ export class ConciliacionesComponent extends BasePaginatedModalComponent impleme
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

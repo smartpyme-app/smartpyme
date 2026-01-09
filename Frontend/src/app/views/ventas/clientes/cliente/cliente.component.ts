@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,6 +16,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './cliente.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ClienteInformacionComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class ClienteComponent implements OnInit {
@@ -28,8 +29,12 @@ export class ClienteComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
 	constructor( 
-	    private apiService: ApiService, private alertService: AlertService,
-	    private route: ActivatedRoute, private router: Router, private modalService: BsModalService
+	    private apiService: ApiService, 
+        private alertService: AlertService,
+	    private route: ActivatedRoute, 
+        private router: Router, 
+        private modalService: BsModalService,
+        private cdr: ChangeDetectorRef
 	) { }
 
 	ngOnInit() {
@@ -47,11 +52,13 @@ export class ClienteComponent implements OnInit {
                         .subscribe(cliente => {
                             this.cliente = cliente;
                             this.loading = false;
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.cliente = {};
                     this.cliente.id_empresa = this.apiService.auth_user().id_empresa;
                     this.cliente.id_usuario = this.apiService.auth_user().id;
+                    this.cdr.markForCheck();
                 }
             });
     }

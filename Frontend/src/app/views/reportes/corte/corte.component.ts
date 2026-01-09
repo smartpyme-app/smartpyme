@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './corte.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class CorteComponent implements OnInit {
@@ -25,7 +26,7 @@ export class CorteComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor(public apiService: ApiService, public alertService: AlertService) {}
+    constructor(public apiService: ApiService, public alertService: AlertService, private cdr: ChangeDetectorRef) {}
 
     ngOnInit(){
         this.usuario = this.apiService.auth_user();
@@ -46,6 +47,7 @@ export class CorteComponent implements OnInit {
                 if(this.filtros.id_sucursal){
                     this.sucursales = sucursales.filter((item:any) => item.id == this.filtros.id_sucursal);
                 }
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
 
         this.apiService.getAll('usuarios/list')
@@ -58,6 +60,7 @@ export class CorteComponent implements OnInit {
                 if((this.apiService.validateRole('super_admin', false) || this.apiService.validateRole('admin', false)) && this.apiService.validateRole('usuario_supervisor', false) ){
                     this.usuarios = this.usuarios.filter((item:any) => item.id == this.apiService.auth_user().id );
                 }
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error);});
 
 
@@ -74,12 +77,14 @@ export class CorteComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(indicadores => { 
                 this.indicadores = indicadores;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
     }
 
     public onUsuarioClear(){
         this.filtros.id_usuario = '';
         this.filtrar();
+        this.cdr.markForCheck();
     }
     
 }

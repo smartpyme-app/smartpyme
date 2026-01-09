@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './sucursales.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class SucursalesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -27,7 +28,8 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
         alertService: AlertService,
         modalManager: ModalManagerService,
   	    private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
   	) {
         super(apiService, alertService, modalManager, {
             endpoint: 'sucursal',
@@ -65,16 +67,19 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
 
     public override loadAll() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.getAll('sucursales', this.filtros)
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => {
             this.sucursales = sucursales;
             this.loading = false;
             this.contarActivos();
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     protected aplicarFiltros(): void {
+        this.cdr.markForCheck();
         this.loadAll();
     }
 
@@ -84,6 +89,7 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
 
     public contarActivos(){
         this.sucursales_activas = this.sucursales.data?.filter((item:any) => item.activo == '1').length || 0;
+        this.cdr.markForCheck();
     }
 
     public setEstado(sucursal:any){
@@ -96,7 +102,8 @@ export class SucursalesComponent extends BaseCrudComponent<any> implements OnIni
                 this.alertService.success('Sucursal desactivada', 'La sucursal fue desactivada exitosamente.');
             }
             this.contarActivos();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
 }

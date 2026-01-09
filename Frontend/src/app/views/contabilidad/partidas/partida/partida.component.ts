@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, inject, ViewChild } from '@angular/core';
+import { Component, OnInit,TemplateRef, inject, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,7 +21,7 @@ import * as moment from 'moment';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PartidaDetallesComponent],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PartidaComponent extends BaseModalComponent implements OnInit {
 
@@ -43,7 +43,8 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
       protected override modalManager: ModalManagerService,
       private cacheService: HttpCacheService,
       private sumPipe:SumPipe,
-      private route: ActivatedRoute, private router: Router
+      private route: ActivatedRoute, private router: Router,
+      private cdr: ChangeDetectorRef
   ) {
       super(modalManager, alertService);
   }
@@ -111,7 +112,8 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
                 }
                 
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.partida = {};
             this.partida.fecha = this.apiService.date();
@@ -216,11 +218,13 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
                 }
                 
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 console.error('Error al cargar más detalles:', error);
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
     }
@@ -253,6 +257,7 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
             diferencia: this.partida.diferencia,
             detalles_count: this.partida.detalles?.length || 0
         });
+        this.cdr.markForCheck();
     }
 
     public updatePartida(partida:any) {
@@ -262,6 +267,7 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
         if (!this.partida.id) {
             this.sumTotal();
         }
+        this.cdr.markForCheck();
     }
     
     public onTotalesActualizados(totales: any) {
@@ -270,6 +276,7 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
         this.partida.debe = totales.debe;
         this.partida.haber = totales.haber;
         this.partida.diferencia = totales.diferencia;
+        this.cdr.markForCheck();
     }
 
     public onSubmit(){
@@ -336,11 +343,13 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
                 }
                 this.router.navigate(['/contabilidad/partidas']);
                 this.saving = false;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 console.error('Error al guardar partida:', error);
                 this.alertService.error(error);
                 this.saving = false;
+                this.cdr.markForCheck();
             }
           });
     }
@@ -370,7 +379,8 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
             }
             this.saving = false;
             this.alertService.success('Proveedor creado', 'Tu proveedor fue añadido exitosamente.');
-        },error => {this.alertService.error(error); this.saving = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
     }
 
     openModalCliente(template: TemplateRef<any>) {
@@ -401,7 +411,8 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
             }
             this.saving = false;
             this.alertService.success('Cliente creado', 'El cliente ha sido agregado.');
-        },error => {this.alertService.error(error); this.saving = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
     }
 
     generarPartidasDelDia(){
@@ -463,12 +474,14 @@ export class PartidaComponent extends BaseModalComponent implements OnInit {
                 }
 
                 this.saving = false;
+                this.cdr.markForCheck();
               }
             },
             error: (error) => {
               console.error('Error al generar partidas:', error);
               this.alertService.error(error);
               this.saving = false;
+              this.cdr.markForCheck();
             }
           });
       }

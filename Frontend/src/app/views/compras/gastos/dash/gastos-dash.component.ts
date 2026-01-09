@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, Input, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './gastos-dash.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgChartsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GastosDashComponent extends BaseComponent implements OnInit {
 
@@ -47,7 +47,7 @@ export class GastosDashComponent extends BaseComponent implements OnInit {
     };
     public chartType2: ChartType = 'bar';
 
-    constructor( private alertService:AlertService, private apiService:ApiService
+    constructor( private alertService:AlertService, private apiService:ApiService, private cdr: ChangeDetectorRef
     ) {
         super();
     }

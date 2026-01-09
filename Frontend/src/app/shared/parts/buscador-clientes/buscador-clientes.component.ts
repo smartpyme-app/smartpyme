@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Output, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { debounceTime, distinctUntilChanged, filter, map } from 'rxjs/operators'
     templateUrl: './buscador-clientes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorClientesComponent implements OnInit {
 
@@ -27,6 +27,7 @@ export class BuscadorClientesComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(private apiService: ApiService, private alertService: AlertService) { }
 
@@ -53,9 +54,11 @@ export class BuscadorClientesComponent implements OnInit {
             .subscribe(clientes => {
             this.clientes = clientes;
             this.searching = false;
+            this.cdr.markForCheck();
         }, error => {
             this.alertService.error(error);
             this.searching = false;
+            this.cdr.markForCheck();
         });
     }
 
@@ -67,6 +70,7 @@ export class BuscadorClientesComponent implements OnInit {
         this.searchExecuted = false;
         this.clientes = [];
         this.cliente = cliente;
+        this.cdr.markForCheck();
         this.selectCliente.emit(cliente);
     }
 

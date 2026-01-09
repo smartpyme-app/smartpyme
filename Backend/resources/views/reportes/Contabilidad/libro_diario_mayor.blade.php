@@ -81,41 +81,52 @@
             text-align: left;
             border-collapse: collapse;
             margin-bottom: 10px;
+            width: 18cm;
+            table-layout: fixed;
         }
 
         table td {
             height: 0.5cm;
             text-align: left;
+            padding: 2px;
+            word-wrap: break-word;
+            overflow: hidden;
         }
 
         .id_partida {
-            width: 3.5cm;
+            width: 2.2cm;
+            text-align: center;
+        }
+
+        .correlativo {
+            width: 2.5cm;
             text-align: center;
         }
 
         .fecha_partida {
-            width: 3.5cm;
+            width: 2.5cm;
             text-align: center;
+            font-size: 10px;
         }
 
         .concepto {
-            width: 7.5cm;
+            width: 5cm;
             text-align: left;
         }
 
         .cargo {
             width: 2cm;
-            text-align: center;
+            text-align: right;
         }
 
         .abono {
             width: 2cm;
-            text-align: center;
+            text-align: right;
         }
 
         .saldo {
             width: 2cm;
-            text-align: center;
+            text-align: right;
         }
 
 
@@ -183,9 +194,9 @@
                     <td style="border: none;"></td>
                     <td style="border: none;"></td>
                     <td style="border: none;">Saldo inicial:</td>
-                    <td style="border: none; text-align: center;">0.00</td>
-                    <td style="border: none; text-align: center;">0.00</td>
-                    <td style="border: none; text-align: center;">{{ number_format($cuenta->saldo_anterior ?? 0, 2) }}</td>
+                    <td style="border: none; text-align: right;">0.00</td>
+                    <td style="border: none; text-align: right;">0.00</td>
+                    <td style="border: none; text-align: right;">{{ number_format($cuenta->saldo_anterior ?? 0, 2) }}</td>
                 </tr>
                 @foreach($cuenta->detalles as $detalle)
                     <tr>
@@ -208,9 +219,9 @@
                     <th></th>
                     <th></th>
                     <th>Total por cuenta:</th>
-                    <th>{{ number_format($cuenta->cargo ?? 0, 2) }}</th>
-                    <th>{{ number_format($cuenta->abono ?? 0, 2) }}</th>
-                    <th>{{ number_format($cuenta->saldo_actual ?? 0, 2) }}</th>
+                    <th style="text-align: right;">{{ number_format($cuenta->cargo ?? 0, 2) }}</th>
+                    <th style="text-align: right;">{{ number_format($cuenta->abono ?? 0, 2) }}</th>
+                    <th style="text-align: right;">{{ number_format($cuenta->saldo_actual ?? 0, 2) }}</th>
                 </tr>
             </table>
         @endforeach

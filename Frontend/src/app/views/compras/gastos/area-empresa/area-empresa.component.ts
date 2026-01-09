@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './area-empresa.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnInit {
@@ -38,7 +38,8 @@ export class AreaEmpresaComponent extends BaseCrudComponent<any> implements OnIn
         protected override apiService: ApiService, 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager, {
             endpoint: 'area-empresa',
