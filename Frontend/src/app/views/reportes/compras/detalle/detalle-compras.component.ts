@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ declare var $:any;
     templateUrl: './detalle-compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -32,7 +33,8 @@ export class DetalleComprasComponent implements OnInit {
 
     constructor(
         public apiService: ApiService, private alertService: AlertService, 
-        private modalService: BsModalService
+        private modalService: BsModalService,
+        private cdr: ChangeDetectorRef
     ){}
 
     ngOnInit() {
@@ -41,6 +43,7 @@ export class DetalleComprasComponent implements OnInit {
             .pipe(this.untilDestroyed())
             .subscribe(categorias => { 
                 this.categorias = categorias;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
     }
 
@@ -60,7 +63,8 @@ export class DetalleComprasComponent implements OnInit {
             .subscribe(compras => { 
                 this.compras = compras;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

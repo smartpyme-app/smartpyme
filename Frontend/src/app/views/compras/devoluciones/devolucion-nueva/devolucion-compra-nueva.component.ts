@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, DevolucionCompraDetallesComponent, CurrencyPipe],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class DevolucionCompraNuevaComponent extends BaseModalComponent implements OnInit {
@@ -30,6 +30,8 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
     public override loading = false;
     public override saving = false;
     public imprimir:boolean = true;
+
+    private cdr = inject(ChangeDetectorRef);
 
     constructor(
         public apiService: ApiService,
@@ -79,7 +81,8 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
                 this.sumTotal();
                 this.cargarDocumentos();
                 this.loading = false;
-            }, error => {this.alertService.error(error);this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
         }
 
     }
@@ -90,6 +93,7 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
             .subscribe(documentos => {
             this.documentos = documentos;
             this.documentos = this.documentos.filter((x:any) => x.id_sucursal == this.compra.id_sucursal);
+            this.cdr.markForCheck();
 
             if (this.route.snapshot.queryParamMap.get('tipo_documento')! == 'nota_debito') {
                 let documento = this.documentos.find((x:any) => x.nombre == 'Nota de débito');
@@ -172,7 +176,8 @@ export class DevolucionCompraNuevaComponent extends BaseModalComponent implement
                 }
                 this.router.navigate(['/devoluciones/compras']);
                 this.alertService.success('Devolucion de compra creada', 'La devolución de compra fue guardado exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
 
     public imprimirDocDevolucion(devolucion:any){

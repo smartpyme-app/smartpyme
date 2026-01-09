@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy, ChangeDetectorRef, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,9 +14,10 @@ import { ApiService } from '../../../../services/api.service';
     templateUrl: './datos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
-export class DatosComponent implements OnInit {
+export class DatosComponent implements OnInit, OnChanges {
 
     @Input() dash:any = {};
     @Input() loading:boolean = false;
@@ -82,7 +83,10 @@ export class DatosComponent implements OnInit {
         axisY:  { showLabel: false, showGrid: false, offset: true }
     }
 
-    constructor( private alertService:AlertService, private apiService:ApiService
+    constructor( 
+        private alertService:AlertService, 
+        private apiService:ApiService,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -90,7 +94,7 @@ export class DatosComponent implements OnInit {
 
     }
 
-    ngOnChanges(){
+    ngOnChanges(changes: SimpleChanges){
 
         if (this.dash?.totales_ventas) {
             new LineChart('#chart-ventas', {
@@ -118,6 +122,7 @@ export class DatosComponent implements OnInit {
                 series: [this.dash?.totales_balance.map(function(a:any) {return a.total})]
             }, this.option);
         }
+        this.cdr.markForCheck();
 
     }
 

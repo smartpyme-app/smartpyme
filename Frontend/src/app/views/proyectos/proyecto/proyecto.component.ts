@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit,TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -21,6 +21,7 @@ import * as moment from 'moment';
     templateUrl: './proyecto.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, CrearClienteComponent, SumPipe],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class ProyectoComponent implements OnInit {
@@ -43,7 +44,8 @@ export class ProyectoComponent implements OnInit {
 	    private route: ActivatedRoute, 
 	    private router: Router, 
 	    private modalService: BsModalService,
-	    private sharedDataService: SharedDataService
+	    private sharedDataService: SharedDataService,
+	    private cdr: ChangeDetectorRef
 	) { }
 
 	ngOnInit() {
@@ -55,6 +57,7 @@ export class ProyectoComponent implements OnInit {
             .subscribe({
                 next: (sucursales) => {
                     this.sucursales = sucursales;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -66,6 +69,7 @@ export class ProyectoComponent implements OnInit {
             .subscribe({
                 next: (usuarios) => {
                     this.usuarios = usuarios;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -78,10 +82,12 @@ export class ProyectoComponent implements OnInit {
                 next: (proveedores) => {
                     this.proveedores = proveedores;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
 
@@ -91,10 +97,12 @@ export class ProyectoComponent implements OnInit {
                 next: (clientes) => {
                     this.clientes = clientes;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -103,10 +111,12 @@ export class ProyectoComponent implements OnInit {
         const id = +this.route.snapshot.paramMap.get('id')!;
         if (id) {
             this.loading = true;
+            this.cdr.markForCheck();
             this.apiService.read('proyecto/', id).pipe(this.untilDestroyed()).subscribe(proyecto => {
                 this.proyecto = proyecto;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.proyecto = {};
             this.proyecto.estado = 'Pendiente';
@@ -115,6 +125,7 @@ export class ProyectoComponent implements OnInit {
             this.proyecto.id_empresa = this.apiService.auth_user().id_empresa;
             this.proyecto.id_sucursal = this.apiService.auth_user().id_sucursal;
             this.proyecto.id_usuario = this.apiService.auth_user().id;
+            this.cdr.markForCheck();
         }
 
     }
@@ -122,16 +133,19 @@ export class ProyectoComponent implements OnInit {
     public setCliente(cliente:any){
         this.clientes.push(cliente);
         this.proyecto.id_cliente = cliente.id;
+        this.cdr.markForCheck();
     }
 
     public setProveedor(proveedor:any){
         this.proveedores.push(proveedor);
         this.proyecto.id_proveedor = proveedor.id;
+        this.cdr.markForCheck();
     }
 
 
     public async onSubmit(){
         this.saving = true;
+        this.cdr.markForCheck();
 
         try {
             const proyecto = await this.apiService.store('proyecto', this.proyecto)
@@ -150,6 +164,7 @@ export class ProyectoComponent implements OnInit {
             this.alertService.error(error);
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 

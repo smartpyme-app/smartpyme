@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -22,7 +22,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './cliente-informacion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TagInputModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteInformacionComponent extends BaseModalComponent implements OnInit {
   public cliente: any = {
@@ -42,6 +42,8 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   public tipoAnterior = '';
   public catalogo:any = [];
   public contabilidadHabilitada: boolean = false;
+
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public apiService: ApiService,
@@ -79,12 +81,15 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
                             .pipe(this.untilDestroyed())
                             .subscribe(catalogo => {
                                 this.catalogo = catalogo;
-                            }, error => {this.alertService.error(error);});
+                                this.cdr.markForCheck();
+                            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                     }
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);
                     this.contabilidadHabilitada = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -102,10 +107,12 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
             if (!this.cliente.contactos) {
               this.cliente.contactos = [];
             }
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
       } else {
@@ -227,24 +234,36 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
   }
 
   public verificarSiExiste() {
-    this.duplicateCheckService.verificarSiExiste({
-      endpoint: 'clientes',
-      searchParams: {
-        nombre: this.cliente.nombre,
-        apellido: this.cliente.apellido,
-        estado: 1,
-      },
-      editUrl: '/cliente/editar/',
-      message: 'Puedes ignorar esta alerta si consideras que no estas duplicando el registros.',
-      onComplete: () => {
-        this.loading = false;
-      },
-      onError: () => {
-        this.loading = false;
-      }
-    })
-    .pipe(this.untilDestroyed())
-    .subscribe();
+    if (this.cliente.nombre && this.cliente.apellido) {
+      this.apiService
+        .getAll('clientes', {
+          nombre: this.cliente.nombre,
+          apellido: this.cliente.apellido,
+          estado: 1,
+        })
+        .pipe(this.untilDestroyed())
+        .subscribe(
+          (clientes) => {
+            if (clientes.data[0]) {
+              this.alertService.warning(
+                '🚨 Alerta duplicado: Hemos encontrado otro registro similar con estos datos.',
+                'Por favor, verifica su información acá: <a class="btn btn-link" target="_blank" href="' +
+                  this.apiService.appUrl +
+                  '/cliente/editar/' +
+                  clientes.data[0].id +
+                  '">Ver cliente</a>. <br> Puedes ignorar esta alerta si consideras que no estas duplicando el registros.'
+              );
+            }
+            this.loading = false;
+            this.cdr.markForCheck();
+          },
+          (error) => {
+            this.alertService.error(error);
+            this.loading = false;
+            this.cdr.markForCheck();
+          }
+        );
+    }
   }
 
   // openModal(template: TemplateRef<any>, contacto: any) {
@@ -339,9 +358,11 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
           if (this.modalRef) {
             this.closeModal();
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error('Error al guardar el contacto: ' + error);
+          this.cdr.markForCheck();
           this.loading_contacto = false;
         },
       });
@@ -397,12 +418,14 @@ export class ClienteInformacionComponent extends BaseModalComponent implements O
                 'El contacto fue eliminado exitosamente.'
               );
               this.loading = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(
                 'Error al eliminar el contacto: ' + error
               );
               this.loading = false;
+              this.cdr.markForCheck();
             },
           });
         } else {

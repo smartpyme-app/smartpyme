@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,7 +14,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './categoria-cuentas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class CategoriaCuentasComponent extends BaseModalComponent implements OnInit {
@@ -27,7 +27,8 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
     constructor(
         public apiService: ApiService, 
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -38,13 +39,15 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
           .pipe(this.untilDestroyed())
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('catalogo/list')
           .pipe(this.untilDestroyed())
           .subscribe(catalogo => {
             this.catalogo = catalogo;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         
     }
@@ -70,7 +73,8 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
             }
             this.saving = false;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
 
     }
 
@@ -83,7 +87,8 @@ export class CategoriaCuentasComponent extends BaseModalComponent implements OnI
                     if (this.categoria.cuentas[i].id == data.id )
                         this.categoria.cuentas.splice(i, 1);
                 }
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 

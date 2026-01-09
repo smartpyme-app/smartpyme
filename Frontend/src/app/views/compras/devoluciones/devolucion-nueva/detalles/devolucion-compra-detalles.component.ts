@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
     templateUrl: './devolucion-compra-detalles.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DevolucionCompraDetallesComponent extends BaseModalComponent implements OnInit {
 
@@ -38,7 +38,8 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
     constructor( 
         private apiService: ApiService,
         protected override alertService: AlertService,
-        protected override modalManager: ModalManagerService
+        protected override modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ) {
         super(modalManager, alertService);
     }
@@ -55,6 +56,7 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
     public updateTotal(detalle:any){
         detalle.total  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo) - parseFloat(detalle.descuento)).toFixed(2);
         detalle.total_costo  = (parseFloat(detalle.cantidad) * parseFloat(detalle.costo)).toFixed(2);
+        this.cdr.markForCheck();
         this.update.emit(this.devolucion);
     }
 
@@ -65,6 +67,7 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
 
     public supervisorCheck(){
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('usuario-validar', this.supervisor)
           .pipe(this.untilDestroyed())
           .subscribe(supervisor => {
@@ -72,7 +75,8 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
             this.delete(this.detalle);
             this.loading = false;
             this.supervisor = {};
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     // Eliminar detalle
@@ -92,6 +96,7 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
                     indexAEliminar = this.devolucion.detalles.findIndex((item:any) => item.id_producto === detalle.id_producto);
                     if (indexAEliminar !== -1) {
                         this.devolucion.detalles.splice(indexAEliminar, 1);
+                        this.cdr.markForCheck();
                         this.update.emit(this.devolucion);
                     }
               } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -110,11 +115,13 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
         this.devolucion.detalles.forEach((detalle: any) => {
             detalle.seleccionado = this.todosSeleccionados;
         });
+        this.cdr.markForCheck();
     }
     actualizarSeleccion() {
         this.todosSeleccionados = this.devolucion.detalles.every(
             (detalle: any) => detalle.seleccionado
         );
+        this.cdr.markForCheck();
     }
 
     haySeleccionados(): boolean {
@@ -139,6 +146,7 @@ export class DevolucionCompraDetallesComponent extends BaseModalComponent implem
                     (detalle: any) => !detalle.seleccionado
                 );
                 this.todosSeleccionados = false;
+                this.cdr.markForCheck();
                 this.update.emit(this.devolucion);
                 this.sumTotal.emit();
             }

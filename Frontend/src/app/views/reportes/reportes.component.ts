@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,6 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './reportes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 export class ReportesComponent implements OnInit {
@@ -25,7 +26,7 @@ export class ReportesComponent implements OnInit {
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
     constructor(public apiService: ApiService, public alertService: AlertService, 
-        private sanitizer: DomSanitizer) {}
+        private sanitizer: DomSanitizer, private cdr: ChangeDetectorRef) {}
 
     ngOnInit(){
         this.usuario = this.apiService.auth_user();
@@ -47,6 +48,7 @@ export class ReportesComponent implements OnInit {
                 for (let i = 0; i < this.dashboards['data'].length; i++) { 
                     this.dashboards['data'][i].codigo_embed = this.sanitizer.bypassSecurityTrustHtml(this.dashboards['data'][i].codigo_embed);
                 }
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
     }
     

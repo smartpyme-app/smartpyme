@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,6 +19,7 @@ import Swal from 'sweetalert2';
     templateUrl: './proyectos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, PopoverModule, TooltipModule],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 
@@ -33,7 +34,8 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'proyecto',
@@ -65,6 +67,7 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
             .pipe(this.untilDestroyed())
             .subscribe(clientes => { 
                 this.clientes = clientes;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
 
         this.loadAll();
@@ -97,6 +100,7 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
 
     public filtrarProyectos(){
         this.loading = true;
+        this.cdr.markForCheck();
         
         if(!this.filtros.id_cliente){
             this.filtros.id_cliente = '';
@@ -110,7 +114,8 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     override openModal(template: TemplateRef<any>, proyecto?: any) {
@@ -122,6 +127,7 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => { 
                 this.usuarios = usuarios;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
         super.openLargeModal(template);
     }
@@ -160,10 +166,12 @@ export class ProyectosComponent extends BaseCrudComponent<any> implements OnInit
                             }
                             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                             this.loading = false;
+                            this.cdr.markForCheck();
                         },
                         error: (error: any) => {
                             this.alertService.error(error);
                             this.loading = false;
+                            this.cdr.markForCheck();
                         }
                     });
           }

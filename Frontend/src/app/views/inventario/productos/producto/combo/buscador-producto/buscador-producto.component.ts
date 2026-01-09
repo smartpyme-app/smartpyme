@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../../../../directives/lazy-image.dire
     templateUrl: './buscador-producto.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, SumPipe, FilterPipe, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BuscadorProductoComponent extends BaseModalComponent implements OnInit {
 
@@ -39,7 +39,8 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
     private apiService: ApiService, 
     protected override alertService: AlertService,
     protected override modalManager: ModalManagerService,
-    private sumPipe: SumPipe
+    private sumPipe: SumPipe,
+    private cdr: ChangeDetectorRef
   ) {
     super(modalManager, alertService);
   }
@@ -55,6 +56,7 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
       .subscribe((results: any[]) => {
         this.productos = Array.isArray(results) ? results : [];
         this.loading = false;
+        this.cdr.markForCheck();
 
         if (results && (results.length == 1) && (this.buscador == results[0].codigo)) {
           this.selectProducto(results[0]);
@@ -80,7 +82,8 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
       .pipe(this.untilDestroyed())
       .subscribe(categorias => {
       this.categorias = categorias;
-    }, error => { this.alertService.error(error); });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.cdr.markForCheck(); });
 
     if (this.filtros.id_categoria == null) {
       this.filtros.id_categoria = '';
@@ -90,12 +93,14 @@ export class BuscadorProductoComponent extends BaseModalComponent implements OnI
     }
 
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.getAll('productos', this.filtros)
       .pipe(this.untilDestroyed())
       .subscribe(productos => {
       this.productos = productos;
       this.loading = false;
-    }, error => { this.alertService.error(error); this.loading = false; });
+      this.cdr.markForCheck();
+    }, error => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
   }

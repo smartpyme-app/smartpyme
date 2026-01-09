@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './materia-prima-informacion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MateriaPrimaInformacionComponent extends BaseComponent implements OnInit {
 
@@ -28,6 +28,7 @@ export class MateriaPrimaInformacionComponent extends BaseComponent implements O
         protected alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -39,13 +40,15 @@ export class MateriaPrimaInformacionComponent extends BaseComponent implements O
           .pipe(this.untilDestroyed())
           .subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         
     }
 
 
     public onSubmit() {
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('materia-prima', this.producto)
           .pipe(this.untilDestroyed())
           .subscribe(producto => {
@@ -55,7 +58,8 @@ export class MateriaPrimaInformacionComponent extends BaseComponent implements O
                 this.router.navigate(['/materia-prima/'+ producto.id]);
             }
             this.alertService.success('Materia prima guardada', 'La materia prima fue guardada exitosamente');
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
     
 

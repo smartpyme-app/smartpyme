@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './ordenes-produccion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent, PopoverModule, TooltipModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OrdenesProduccionComponent extends BaseCrudComponent<any> implements OnInit {
   public ordenes:any = {};
@@ -32,7 +32,8 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
     apiService: ApiService, 
     alertService: AlertService,
     modalManager: ModalManagerService,
-    private modalService: BsModalService
+    private modalService: BsModalService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'orden-produccion',
@@ -61,9 +62,11 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
       .subscribe({
         next: (clientes) => {
           this.clientes = clientes;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -103,10 +106,12 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
           if (this.modalRef) {
             this.modalRef.hide();
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.loading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -117,9 +122,11 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
       .subscribe({
         next: () => {
           this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }
@@ -131,6 +138,7 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
         next: () => {
           this.alertService.success('Orden actualizada', 'El estado de la orden fue actualizado exitosamente.');
           this.filtrarOrdenes();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           if (error.status === 400 && error.error && error.error.message) {
@@ -148,6 +156,7 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
           } else {
             this.alertService.error('Ocurrió un error al actualizar el estado de la orden.');
           }
+          this.cdr.markForCheck();
         }
       });
   }
@@ -163,9 +172,11 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
         .subscribe({
           next: (usuarios) => {
             this.asesores = usuarios;
+            this.cdr.markForCheck();
           },
           error: (error) => {
             this.alertService.error(error);
+            this.cdr.markForCheck();
           }
         });
     }
@@ -189,10 +200,12 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
           document.body.removeChild(a);
           window.URL.revokeObjectURL(url);
           this.downloading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.downloading = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -205,9 +218,11 @@ export class OrdenesProduccionComponent extends BaseCrudComponent<any> implement
           this.alertService.success('Orden anulada', 'La orden fue anulada exitosamente.');
           orden.estado = 'anulada';
           this.filtrarOrdenes();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
   }

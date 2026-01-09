@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     templateUrl: './cliente-ventas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ClienteVentasComponent extends BaseCrudComponent<any> implements OnInit {
 
@@ -29,7 +29,8 @@ export class ClienteVentasComponent extends BaseCrudComponent<any> implements On
         alertService: AlertService,  
     	private route: ActivatedRoute, 
         private router: Router,
-    	modalManager: ModalManagerService
+    	modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'venta',
@@ -81,10 +82,12 @@ export class ClienteVentasComponent extends BaseCrudComponent<any> implements On
                     next: (ventas) => {
                         this.ventas = ventas;
                         this.loading = false;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
                         this.loading = false;
+                        this.cdr.markForCheck();
                     }
                 });
         }
@@ -99,10 +102,12 @@ export class ClienteVentasComponent extends BaseCrudComponent<any> implements On
                 next: (ventas) => {
                     this.ventas = ventas;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -148,7 +153,8 @@ export class ClienteVentasComponent extends BaseCrudComponent<any> implements On
             if(this.ventas.data[i].estado == 'Pendiente') {
                 this.ventas.data[i].estado = 'Cobrada';
                 this.apiService.store('venta', this.ventas.data[i]).pipe(this.untilDestroyed()).subscribe(venta => {
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
             }
         }
         this.loadAll();

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,12 +14,13 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './boleta-pago.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BoletaPagoComponent implements OnInit {
   planillaDetalle: any;
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cdr = inject(ChangeDetectorRef);
   
   constructor(
     private apiService: ApiService,
@@ -40,9 +41,11 @@ export class BoletaPagoComponent implements OnInit {
     this.apiService.read('planillas/detalles/', id).pipe(this.untilDestroyed()).subscribe({
       next: (detalle) => {
         this.planillaDetalle = detalle;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     });
   }

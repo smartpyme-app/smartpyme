@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, Input, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -12,7 +12,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
     templateUrl: './producto-imagenes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoImagenesComponent implements OnInit {
 
@@ -23,8 +23,12 @@ export class ProductoImagenesComponent implements OnInit {
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
 
-    constructor( public apiService:ApiService, private alertService:AlertService,
-            private route: ActivatedRoute, private router: Router,
+    constructor( 
+        public apiService:ApiService, 
+        private alertService:AlertService,
+        private route: ActivatedRoute, 
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ) { }
 
     ngOnInit() {
@@ -42,14 +46,16 @@ export class ProductoImagenesComponent implements OnInit {
             formData.append(key, this.imagen[key]);
         }
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('producto/imagen', formData).pipe(this.untilDestroyed()).subscribe(imagen => {
             if(!this.imagen.id) {
                 this.producto.imagenes.push(imagen);
             }
             this.imagen = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.alertService.success('Guardado', 'La imagen fue guardada exitosamente');
-        }, error => {this.alertService.error(error); this.loading = false; this.imagen = {};});
+        }, error => {this.alertService.error(error); this.loading = false; this.imagen = {}; this.cdr.markForCheck();});
     }
 
     // onOrder(){
@@ -70,7 +76,8 @@ export class ProductoImagenesComponent implements OnInit {
                         this.producto.imagenes.splice(i, 1);
                 }
                 this.alertService.success('Eliminado', 'La imagen fue eliminada exitosamente');
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
     }

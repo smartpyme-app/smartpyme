@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import Swal from 'sweetalert2';
     templateUrl: './paquetes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PaginationComponent, ImportarExcelComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -32,7 +32,8 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'paquete',
@@ -63,7 +64,8 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
             .pipe(this.untilDestroyed())
             .subscribe(clientes => { 
                 this.clientes = clientes;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.getGuias();
         this.loadAll();
@@ -74,7 +76,8 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
             .pipe(this.untilDestroyed())
             .subscribe(paquetes => { 
                 this.guias = paquetes;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -122,10 +125,11 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
             .subscribe(paquetes => { 
                 this.paquetes = paquetes;
                 this.loading = false;
+                this.cdr.markForCheck();
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); this.loading = false;});
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     override openModal(template: TemplateRef<any>, paquete?: any) {
@@ -137,12 +141,14 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => { 
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.apiService.getAll('sucursales/list')
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => { 
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         super.openLargeModal(template);
     }
 
@@ -174,10 +180,12 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
                             }
                             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
                             this.loading = false;
+                            this.cdr.markForCheck();
                         },
                         error: (error: any) => {
                             this.alertService.error(error);
                             this.loading = false;
+                            this.cdr.markForCheck();
                         }
                     });
           }
@@ -199,7 +207,8 @@ export class PaquetesComponent extends BaseCrudComponent<any> implements OnInit 
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 

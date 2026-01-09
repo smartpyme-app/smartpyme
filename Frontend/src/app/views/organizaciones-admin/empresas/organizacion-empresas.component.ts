@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -14,6 +14,7 @@ import { BaseCrudComponent } from '@shared/base/base-crud.component';
     templateUrl: './organizacion-empresas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
+    changeDetection: ChangeDetectionStrategy.OnPush,
     
 })
 
@@ -26,7 +27,8 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
     constructor(
         apiService: ApiService, 
         alertService: AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'licencia/empresa',
@@ -73,10 +75,12 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
                 next: (empresas) => {
                     this.empresas = empresas;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -89,6 +93,7 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
           this.filtros.direccion = 'asc';
         }
 
+        this.cdr.markForCheck();
         this.filtrarEmpresas();
     }
 
@@ -98,9 +103,11 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
             .subscribe({
                 next: () => {
                     this.alertService.success('Empresa guardada', 'La empresa fue guardada exitosamente.');
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
             });
     }
@@ -131,9 +138,11 @@ export class OrganizacionEmpresasComponent extends BaseCrudComponent<any> implem
             .subscribe({
                 next: (empresasList) => {
                     this.empresasList = empresasList;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
             });
         

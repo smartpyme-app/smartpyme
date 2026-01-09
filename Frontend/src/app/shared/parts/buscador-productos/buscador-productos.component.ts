@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,8 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     selector: 'app-buscador-productos',
     templateUrl: './buscador-productos.component.html',
     standalone: true,
-    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, LazyImageDirective]
+    imports: [CommonModule, FormsModule, RouterModule, ReactiveFormsModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BuscadorProductosComponent implements OnInit {
 
@@ -28,6 +29,7 @@ export class BuscadorProductosComponent implements OnInit {
 
     private destroyRef = inject(DestroyRef);
     private untilDestroyed = subscriptionHelper(this.destroyRef);
+    private cdr = inject(ChangeDetectorRef);
 
     constructor( 
         private apiService: ApiService, private alertService: AlertService
@@ -65,6 +67,7 @@ export class BuscadorProductosComponent implements OnInit {
             next: (results: any[]) => {
               this.productos = Array.isArray(results) ? results : [];
               this.loading = false;
+              this.cdr.markForCheck();
 
               if (
                 results &&

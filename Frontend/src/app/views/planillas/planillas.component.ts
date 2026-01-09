@@ -1,4 +1,4 @@
-import {Component, OnInit, TemplateRef, ViewChild} from '@angular/core';
+import {Component, OnInit, TemplateRef, ViewChild, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import Swal from 'sweetalert2';
     templateUrl: './planillas.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillasComponent extends BasePaginatedModalComponent implements OnInit {
   public planillas: PaginatedResponse<any> = {} as PaginatedResponse;
@@ -67,7 +67,8 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
     apiService: ApiService,
     alertService: AlertService,
     modalManager: ModalManagerService,
-    private cacheService: HttpCacheService
+    private cacheService: HttpCacheService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager);
     this.generarPeriodos();
@@ -130,10 +131,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       next: (planillas) => {
         this.planillas = planillas;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -204,10 +207,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         this.loadPlanillas();
         this.closeModal();
         this.saving = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -244,10 +249,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
               );
               this.loadPlanillas();
               this.procesando = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(error);
               this.procesando = false;
+              this.cdr.markForCheck();
             },
           });
       }
@@ -281,10 +288,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             this.alertService.success('Éxito', 'Planilla revertida exitosamente');
             this.loadPlanillas();
             this.procesando = false;
+            this.cdr.markForCheck();
           },
           error: (error) => {
             this.alertService.error(error);
             this.procesando = false;
+            this.cdr.markForCheck();
           },
         });
       }
@@ -317,6 +326,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             });
             this.loadPlanillas();
             this.procesando = false;
+            this.cdr.markForCheck();
           },
           error: (error) => {
             Swal.fire({
@@ -326,6 +336,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
             });
             this.alertService.error(error);
             this.procesando = false;
+            this.cdr.markForCheck();
           },
         });
       }
@@ -421,12 +432,14 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         this.apiService.downloadFile(response, filename);
         this.alertService.success('Éxito', 'Boletas generadas exitosamente');
         this.procesando = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(
           'Error al generar las boletas: ' + error.message
         );
         this.procesando = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -448,10 +461,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         next: (response) => {
           this.alertService.success('Exito', 'Boletas enviadas exitosamente');
           this.procesando = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.procesando = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -473,10 +488,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         next: () => {
           this.alertService.success('Éxito', 'Boletas enviadas exitosamente');
           this.procesando = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.procesando = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -499,10 +516,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         this.procesando = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error('Error al exportar la planilla a Excel');
         this.procesando = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -523,10 +542,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         this.procesando = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error('Error al exportar la planilla a PDF');
         this.procesando = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -574,10 +595,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           this.loadPlanillas();
           this.closeModal();
           this.saving = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -619,6 +642,7 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
       if (this.validarArchivo(file)) {
         this.datosImportacion.archivo = file;
         this.archivoSeleccionado = true;
+        this.cdr.markForCheck();
       }
     }
   }
@@ -715,10 +739,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
         this.closeModal();
         this.loadPlanillas(); // Recargar la lista de planillas
         this.procesandoImportacion = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
         this.procesandoImportacion = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -743,10 +769,12 @@ export class PlanillasComponent extends BasePaginatedModalComponent implements O
           window.URL.revokeObjectURL(url);
           this.closeModal();
           this.procesandoExportacion = false;
+          this.cdr.markForCheck();
         },
         (error) => {
           this.alertService.error('Error al exportar las planillas');
           this.procesandoExportacion = false;
+          this.cdr.markForCheck();
         }
       );
   }

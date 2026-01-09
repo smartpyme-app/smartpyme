@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BasePaginatedComponent, PaginatedResponse } from '@shared/base/base-pag
     templateUrl: './presupuestos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, PopoverModule, TooltipModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class PresupuestosComponent extends BasePaginatedComponent implements OnInit {
@@ -35,7 +35,8 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
     modalRef!: BsModalRef;
 
     constructor(apiService: ApiService, alertService: AlertService,
-                private modalService: BsModalService
+                private modalService: BsModalService,
+                private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService);
     }
@@ -56,7 +57,8 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
           .pipe(this.untilDestroyed())
           .subscribe(sucursales => { 
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -92,7 +94,8 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
             if(this.modalRef){
                 this.modalRef.hide();
             }
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setAnulacion(presupuesto:any, estado:any){
@@ -102,7 +105,8 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
               .pipe(this.untilDestroyed())
               .subscribe(presupuesto => { 
                 this.alertService.success('Presupuesto actualizado', 'El presupuesto fue actualizado exitosamente.');
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
     }
 
@@ -114,7 +118,8 @@ export class PresupuestosComponent extends BasePaginatedComponent implements OnI
               .pipe(this.untilDestroyed())
               .subscribe(proyectos => { 
                 this.proyectos = proyectos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.modalRef = this.modalService.show(template);
     }

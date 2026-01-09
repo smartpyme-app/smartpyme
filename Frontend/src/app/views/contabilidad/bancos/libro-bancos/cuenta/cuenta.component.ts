@@ -1,4 +1,4 @@
-import { Component, OnInit,TemplateRef } from '@angular/core';
+import { Component, OnInit,TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ import * as moment from 'moment';
     templateUrl: './cuenta.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CuentaComponent extends BaseComponent implements OnInit {
 
@@ -36,7 +36,8 @@ export class CuentaComponent extends BaseComponent implements OnInit {
 	    protected alertService: AlertService,
 	    private route: ActivatedRoute, 
 	    private router: Router, 
-	    private modalService: BsModalService
+	    private modalService: BsModalService,
+	    private cdr: ChangeDetectorRef
 	) {
         super();
     }
@@ -48,27 +49,31 @@ export class CuentaComponent extends BaseComponent implements OnInit {
           .pipe(this.untilDestroyed())
           .subscribe(sucursales => {
             this.sucursales = sucursales;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('usuarios/list')
           .pipe(this.untilDestroyed())
           .subscribe(usuarios => {
             this.usuarios = usuarios;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 
         this.apiService.getAll('proveedores/list')
           .pipe(this.untilDestroyed())
           .subscribe(proveedores => {
             this.proveedores = proveedores;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         this.apiService.getAll('clientes/list')
           .pipe(this.untilDestroyed())
           .subscribe(clientes => {
             this.clientes = clientes;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public loadAll(){
@@ -80,7 +85,8 @@ export class CuentaComponent extends BaseComponent implements OnInit {
               .subscribe(cuenta => {
                 this.cuenta = cuenta;
                 this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }else{
             this.cuenta = {};
             this.cuenta.estado = 'Pendiente';
@@ -96,6 +102,7 @@ export class CuentaComponent extends BaseComponent implements OnInit {
     public setProveedor(proveedor:any){
         this.proveedores.push(proveedor);
         this.cuenta.id_proveedor = proveedor.id;
+        this.cdr.markForCheck();
     }
 
 
@@ -112,7 +119,8 @@ export class CuentaComponent extends BaseComponent implements OnInit {
             }
             this.router.navigate(['/cuentas']);
             this.saving = false;
-        }, error => {this.alertService.error(error); this.saving = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck();});
     }
 
 }

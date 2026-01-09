@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AlertService } from '../../../../../../services/alert.service';
 import { ApiService } from '../../../../../../services/api.service';
@@ -10,7 +10,8 @@ declare var $:any;
 
 @Component({
   selector: 'app-producto-ajustes',
-  templateUrl: './producto-ajustes.component.html'
+  templateUrl: './producto-ajustes.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class ProductoAjustesComponent extends BasePaginatedModalComponent implements OnInit {
@@ -28,7 +29,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
         alertService: AlertService,
         modalManager: ModalManagerService,
         private route: ActivatedRoute, 
-        private router: Router
+        private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager);
     }
@@ -51,7 +53,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
         this.apiService.getAll('producto/ajustes/'+ this.producto_id).pipe(this.untilDestroyed()).subscribe(ajustes => { 
             this.ajustes = ajustes;
             this.loading = false;this.filtrado = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public search(){
@@ -68,7 +71,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
         compra.estado = estado;
         this.apiService.store('compra', compra).pipe(this.untilDestroyed()).subscribe(compra => { 
             this.alertService.success('Actualizado', 'El ajuste fue actualizado exitosamente');
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public delete(id:number) {
@@ -78,7 +82,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
                     if (this.ajustes['data'][i].id == data.id )
                         this.ajustes['data'].splice(i, 1);
                 }
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
                    
         }
 
@@ -108,7 +113,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
         if(!this.proveedores.length){
             this.apiService.getAll('proveedores/list').pipe(this.untilDestroyed()).subscribe(proveedores => { 
                 this.proveedores = proveedores;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
         this.openModal(template);
     }
@@ -119,7 +125,8 @@ export class ProductoAjustesComponent extends BasePaginatedModalComponent implem
             this.ajustes = ajustes;
             this.loading = false; this.filtrado = true;
             this.closeModal();
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 

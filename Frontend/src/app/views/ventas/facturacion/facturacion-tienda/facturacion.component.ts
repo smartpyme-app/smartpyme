@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -42,7 +42,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
         LazyImageDirective
     ],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FacturacionComponent extends BaseModalComponent implements OnInit {
   public venta: any = {};
@@ -91,6 +91,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
   @ViewChild('mcredito')
   public creditoTemplate!: TemplateRef<any>;
 
+  private cdr = inject(ChangeDetectorRef);
+
   constructor(
     public apiService: ApiService,
     public mhService: MHService,
@@ -124,9 +126,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.sucursales = this.sucursales.filter(
             (item: any) => item.id == this.apiService.auth_user().id_sucursal);
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -144,10 +148,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             // console.log('no hay campos personalizados');
             this.customField = false;
           }
+          this.cdr.markForCheck();
 
         },
         (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
     }
@@ -158,9 +164,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       .subscribe({
         next: (bodegas) => {
           this.bodegas = bodegas;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       });
 
@@ -168,18 +176,22 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.sharedDataService.getUsuarios().pipe(this.untilDestroyed()).subscribe({
       next: (usuarios) => {
         this.usuarios = usuarios;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     });
 
     this.apiService.getAll('formas-de-pago/list').pipe(this.untilDestroyed()).subscribe(
       (formaPagos) => {
         this.formaPagos = formaPagos;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -187,9 +199,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       (canales) => {
         this.canales = canales;
         this.venta.id_canal = this.canales[0].id;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -200,9 +214,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.venta.impuestos = this.impuestos;
           this.sumTotal();
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
 
@@ -210,10 +226,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       (proyectos) => {
         this.proyectos = proyectos;
         this.loading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -260,9 +278,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             );
           }
         }
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     );
   }
@@ -364,7 +384,8 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             usedCustomFieldIds
           ) as number[];
           this.updateCustomFields();
-        });
+          this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     if (
@@ -400,10 +421,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               detalle.id = null;
             });
             this.sumTotal();
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
     }
@@ -418,6 +441,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       this.apiService.getAll('impuestos').pipe(this.untilDestroyed()).subscribe(
         (impuestos) => {
           this.impuestos = impuestos;
+          this.cdr.markForCheck();
 
           this.apiService.read(
             'cotizacionVentas/',
@@ -488,20 +512,24 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
                   // Completar carga de otros datos
                   this.loadData();
+                  this.cdr.markForCheck();
                 },
                 (error) => {
                   this.alertService.error(error);
+                  this.cdr.markForCheck();
                 }
               );
             },
             (error) => {
               this.alertService.error(error);
               this.loading = false;
+              this.cdr.markForCheck();
             }
           );
         },
         (error) => {
           this.alertService.error(error);
+          this.cdr.markForCheck();
         }
       );
 
@@ -512,6 +540,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     if (this.route.snapshot.queryParamMap.get('facturar_orden_compra')!) {
       this.apiService.read('orden-de-compra/solicitud/', +this.route.snapshot.queryParamMap.get('id_orden_compra')!).pipe(this.untilDestroyed()).subscribe((ordenCompra) => {
         this.venta.num_orden = ordenCompra.id;
+        this.cdr.markForCheck();
 
         this.apiService.getAll('clientes/buscar/' + (ordenCompra.empresa.dui ?? ordenCompra.empresa.nit)).pipe(this.untilDestroyed()).subscribe((empresa) => {
           if(empresa.length > 0){
@@ -520,6 +549,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
 
             // Solo procesar productos si el cliente existe
             this.procesarProductosOrdenCompra(ordenCompra.detalles);
+            this.cdr.markForCheck();
           }else{
             Swal.fire({
               title: 'Cliente no encontrado',
@@ -540,10 +570,11 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
               window.history.back();
             });
             // No procesar productos si el cliente no existe
+            this.cdr.markForCheck();
             return;
           }
-        });
-      }, (error) => { this.alertService.error(error); this.loading = false; }
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
+      }, (error) => { this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); }
     );
     console.log(this.venta);
     }
@@ -568,6 +599,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           detalle.total = detalle.precio * detalle.cantidad;
           this.venta.detalles.push(detalle);
           this.sumTotal();
+          this.cdr.markForCheck();
         } else {
            Swal.fire({
              title: 'Producto no encontrado',
@@ -587,6 +619,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
            }).then(() => {
              window.history.back();
            });
+          this.cdr.markForCheck();
         }
       }, (error) => {
         Swal.fire({
@@ -607,6 +640,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         }).then(() => {
           window.history.back();
         });
+        this.cdr.markForCheck();
       });
     });
 
@@ -667,6 +701,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                       parseFloat(detalle.descuento)
                     ).toFixed(4);
 
+                    this.venta.detalles.push(detalle);
+                    this.sumTotal();
+                    this.cdr.markForCheck();
+
                     if (!this.venta.propina) {
                       this.venta.propina = 0;
                     }
@@ -678,17 +716,21 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                     this.venta.detalles.push(detalle);
                     this.sumTotal();
                     this.loading = false;
+                    this.cdr.markForCheck();
                   },
                   (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                   }
                 );
             });
+            this.cdr.markForCheck();
           },
           (error) => {
             this.alertService.error(error);
             this.loading = false;
+            this.cdr.markForCheck();
           }
         );
     }
@@ -1008,6 +1050,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.apiService.getAll('recintos').pipe(this.untilDestroyed()).subscribe(
                 (recintos) => {
                     this.recintos = recintos;
+                    this.cdr.markForCheck();
                 },
                 (error) => {
                     this.alertService.error(error);
@@ -1016,17 +1059,21 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
             this.apiService.getAll('regimenes').pipe(this.untilDestroyed()).subscribe(
                 (regimenes) => {
                     this.regimenes = regimenes;
+                    this.cdr.markForCheck();
                 },
                 (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
             );
             this.apiService.getAll('incoterms').pipe(this.untilDestroyed()).subscribe(
                 (incoterms) => {
                     this.incoterms = incoterms;
+                    this.cdr.markForCheck();
                 },
                 (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                 }
             );
         }
@@ -1169,9 +1216,10 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 .store('contabilidad/partida/venta', venta)
                 .pipe(this.untilDestroyed())
                 .subscribe(
-                  (venta) => { },
+                  (venta) => { this.cdr.markForCheck(); },
                   (error) => {
                     this.alertService.error(error);
+                    this.cdr.markForCheck();
                   }
                 );
             }
@@ -1182,10 +1230,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
           this.closeModal();
         }
         this.saving = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.saving = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -1208,10 +1258,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
         this.cargarDatosIniciales();
         this.loading = false;
         this.supervisor = {};
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -1260,10 +1312,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
       (dte) => {
         this.alertService.success('DTE enviado.', 'El DTE fue enviado.');
         this.sending = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error('DTE no pudo ser enviado por correo.');
         this.sending = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -1294,6 +1348,7 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
                 x.nombre !== 'Cotización' && x.nombre !== 'Orden de compra'
             );
           }
+          this.cdr.markForCheck();
 
           let documentoPredeterminado = this.documentos.find(
             (x: any) => x.predeterminado == 1
@@ -1347,10 +1402,12 @@ export class FacturacionComponent extends BaseModalComponent implements OnInit {
     this.funcionalidadesService.verificarAcceso('cobro-propina').pipe(this.untilDestroyed()).subscribe(
         (acceso) => {
             this.tieneAccesoPropina = acceso;
+            this.cdr.markForCheck();
         },
         (error) => {
             console.error('Error al verificar acceso a propina:', error);
             this.tieneAccesoPropina = false;
+            this.cdr.markForCheck();
         }
     );
 }

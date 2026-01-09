@@ -1,4 +1,4 @@
-import { Component, OnInit, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,7 +18,7 @@ import { LazyImageDirective } from '../../../../../directives/lazy-image.directi
     templateUrl: './tienda-venta-paquetes.component.html',
     standalone: true,
     imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -37,7 +37,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         apiService: ApiService, 
         alertService: AlertService,
         modalManager: ModalManagerService,
-        private sumPipe:SumPipe
+        private sumPipe:SumPipe,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
     }
@@ -59,7 +60,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
             .pipe(this.untilDestroyed())
             .subscribe(clientes => { 
             this.clientes = clientes;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         this.loadAll();
         super.openModal(template, { class: 'modal-xl', backdrop: 'static' });
         
@@ -73,7 +75,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
                 this.closeModal();
             }
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     public loadAll() {
@@ -107,7 +110,8 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
             radio.checked = false;
 
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false;});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
     }
 
@@ -195,6 +199,7 @@ export class TiendaVentaPaquetesComponent extends BasePaginatedModalComponent im
         }
 
         console.log(this.detalles);
+        this.cdr.markForCheck();
     }
 
     onCheckAllPaquete(){

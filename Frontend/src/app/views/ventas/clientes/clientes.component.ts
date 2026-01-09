@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -18,6 +18,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './clientes.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, ImportarExcelComponent, PaginationComponent, TruncatePipe, PopoverModule, TooltipModule, LazyImageDirective],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 
 })
 export class ClientesComponent extends BaseCrudComponent<any> implements OnInit {
@@ -31,7 +32,8 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
     constructor(
         apiService:ApiService,
         alertService:AlertService,
-        modalManager: ModalManagerService
+        modalManager: ModalManagerService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'cliente',
@@ -78,14 +80,18 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
 
     public async filtrarClientes(): Promise<void> {
         this.loading = true;
+        this.cdr.markForCheck();
         try {
             this.clientes = await this.apiService.getAll('clientes', this.filtros)
                 .pipe(this.untilDestroyed())
                 .toPromise();
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -96,18 +102,20 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
           this.filtros.orden = columna;
           this.filtros.direccion = 'asc';
         }
-
+        this.cdr.markForCheck();
         this.loadAll();
     }
 
     public setTipo(cliente:any){
         this.cliente = cliente;
+        this.cdr.markForCheck();
         this.onSubmit();
     }
 
     public setActivo(cliente:any, estado:any){
         this.cliente = cliente;
         this.cliente.enable = estado;
+        this.cdr.markForCheck();
         this.onSubmit();
     }
 
@@ -129,10 +137,13 @@ export class ClientesComponent extends BaseCrudComponent<any> implements OnInit 
                 this.clientes.data.splice(index, 1);
             }
             this.alertService.success('Registro eliminado', 'El registro fue eliminado exitosamente.');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 

@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import Swal from 'sweetalert2';
     templateUrl: './planilla-detalle.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PlanillaDetalleComponent implements OnInit {
   public planilla: any = {};
@@ -71,7 +71,8 @@ export class PlanillaDetalleComponent implements OnInit {
     private alertService: AlertService,
     private modalService: BsModalService,
     private configPlanillaService: ConfiguracionPlanillaService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -96,10 +97,12 @@ export class PlanillaDetalleComponent implements OnInit {
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);
           this.contabilidadHabilitada = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -108,15 +111,17 @@ export class PlanillaDetalleComponent implements OnInit {
     this.apiService.getAll('departamentosPlanilla/list').pipe(this.untilDestroyed()).subscribe({
       next: (departamentos) => {
         this.departamentos = departamentos;
+        this.cdr.markForCheck();
       },
-      error: (error) => this.alertService.error(error),
+      error: (error) => { this.alertService.error(error); this.cdr.markForCheck(); },
     });
 
     this.apiService.getAll('cargos/list').pipe(this.untilDestroyed()).subscribe({
       next: (cargos) => {
         this.cargos = cargos;
+        this.cdr.markForCheck();
       },
-      error: (error) => this.alertService.error(error),
+      error: (error) => { this.alertService.error(error); this.cdr.markForCheck(); },
     });
   }
 
@@ -138,6 +143,7 @@ export class PlanillaDetalleComponent implements OnInit {
       this.cargosFiltrados = [];
       this.filtros.id_cargo = '';
     }
+    this.cdr.markForCheck();
   }
 
   /*** Método para limpiar filtros y mostrar vista normal*/
@@ -170,6 +176,7 @@ export class PlanillaDetalleComponent implements OnInit {
         this.calcularTotalesPlanilla();
         this.calcularTotalesPatronales();
         this.loading = false;
+        this.cdr.markForCheck();
 
         this.loadConceptosConfigurados();
 
@@ -177,6 +184,7 @@ export class PlanillaDetalleComponent implements OnInit {
       error: (error) => {
         this.alertService.error(error);
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -335,9 +343,11 @@ export class PlanillaDetalleComponent implements OnInit {
         this.configPlanilla = config;
         this.conceptosConfigurados = config?.configuracion?.conceptos || null;
         this.cargarConceptosDeduccion();
+        this.cdr.markForCheck();
       },
       error: () => {
         console.warn('⚠️ No hay configuración personalizada');
+        this.cdr.markForCheck();
       }
     });
   }
@@ -418,6 +428,7 @@ export class PlanillaDetalleComponent implements OnInit {
       this.detalleSeleccionado.sueldo_neto = Number(
         (this.detalleSeleccionado.total_ingresos - totalFinal).toFixed(2)
       );
+      this.cdr.markForCheck();
     }
   }
 
@@ -438,6 +449,7 @@ export class PlanillaDetalleComponent implements OnInit {
     }
     this.detalleSeleccionado = { ...detalle };
     this.calcularTotales();
+    this.cdr.markForCheck();
 
     setTimeout(() => {
       const element = document.querySelector('.card-header');
@@ -447,6 +459,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
   public cancelarEdicion() {
     this.detalleSeleccionado = null;
+    this.cdr.markForCheck();
   }
 
   getEstadoDetalle(estado: number) {
@@ -589,10 +602,12 @@ export class PlanillaDetalleComponent implements OnInit {
           this.calcularTotalesPlanilla();
           this.detalleSeleccionado = null;
           this.saving = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -732,12 +747,14 @@ export class PlanillaDetalleComponent implements OnInit {
               this.loadPlanillas(this.planilla.id);
               // this.calcularTotalesPlanilla();
               this.saving = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(
                 'Error al retirar el empleado de la planilla'
               );
               this.saving = false;
+              this.cdr.markForCheck();
             },
           });
       }
@@ -780,12 +797,14 @@ export class PlanillaDetalleComponent implements OnInit {
               this.loadPlanillas(this.planilla.id);
               // this.calcularTotalesPlanilla();
               this.saving = false;
+              this.cdr.markForCheck();
             },
             error: (error) => {
               this.alertService.error(
                 'Error al incluir el empleado en la planilla'
               );
               this.saving = false;
+              this.cdr.markForCheck();
             },
           });
       }
@@ -841,6 +860,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.mostrarTodos = true;
     this.filtros.paginate = 1000; // Número alto para mostrar todos
     this.filtrarDetallePlanillas();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -851,6 +871,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.mostrarTodos = false;
     this.filtros.paginate = 10; // Volver a paginación normal
     this.filtrarDetallePlanillas();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -859,6 +880,7 @@ export class PlanillaDetalleComponent implements OnInit {
   public mostrarDescuentosPatronales() {
     this.vistaActual = 'descuentos_patronales';
     this.cargarDescuentosPatronales();
+    this.cdr.markForCheck();
   }
 
   /**
@@ -871,10 +893,12 @@ export class PlanillaDetalleComponent implements OnInit {
         this.descuentosPatronales = response;
         // console.log(this.descuentosPatronales);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error('Error al cargar los descuentos patronales');
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -1164,6 +1188,7 @@ export class PlanillaDetalleComponent implements OnInit {
     if (!this.esElSalvador) {
       this.actualizarDeduccionesCalculadas();
     }
+    this.cdr.markForCheck();
   }
 
   /**
@@ -1194,6 +1219,7 @@ export class PlanillaDetalleComponent implements OnInit {
     const totalIngresos = Number(this.detalleSeleccionado.total_ingresos) || 0;
     const sueldoNeto = totalIngresos - totalDescuentos;
     this.detalleSeleccionado.sueldo_neto = Number(sueldoNeto.toFixed(2));
+    this.cdr.markForCheck();
   }
 
 
@@ -1665,10 +1691,12 @@ export class PlanillaDetalleComponent implements OnInit {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         this.downloading = false;
+        this.cdr.markForCheck();
       },
       (error) => {
         this.alertService.error(error);
         this.downloading = false;
+        this.cdr.markForCheck();
       }
     );
   }
@@ -1728,6 +1756,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
     // Recalcular totales de planilla
     this.calcularTotalesPlanilla();
+    this.cdr.markForCheck();
 
   }
 
@@ -1768,6 +1797,7 @@ export class PlanillaDetalleComponent implements OnInit {
     this.detalleSeleccionado.sueldo_neto = this.round(calculos.totalIngresos - totalDescuentos);
 
     this.calcularTotalesPlanilla();
+    this.cdr.markForCheck();
   }
 
 
@@ -1803,6 +1833,7 @@ export class PlanillaDetalleComponent implements OnInit {
 
     // Redondear totales
     this.roundTotalesPlanilla();
+    this.cdr.markForCheck();
   }
 
   public calcularTotalesPatronales() {

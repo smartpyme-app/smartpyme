@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -15,7 +15,7 @@ import { ModalManagerService } from '@services/modal-manager.service';
     templateUrl: './bodega.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PaginationComponent],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BodegaComponent extends BasePaginatedModalComponent implements OnInit {
 
@@ -35,6 +35,7 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
         modalManager: ModalManagerService,
         private route: ActivatedRoute,
         private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super(apiService, alertService, modalManager);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -60,7 +61,8 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
           .subscribe(productos => { 
             this.productos = productos;
             this.loading = false;
-        }, error => {this.alertService.error(error); });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     override openModal(template: TemplateRef<any>, producto:any) {
@@ -78,10 +80,12 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
             this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
             this.closeModal();
             this.loadAll();
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error._body || error);
         } finally {
             this.loading = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -91,7 +95,8 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
               .pipe(this.untilDestroyed())
               .subscribe(productos => { 
                 this.productos = productos;
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
         }
     }
 
@@ -122,7 +127,8 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
                 this.loading = false;
                 this.alertService.success("Bodega guardada", 'La bodega fue guardada exitosamente.');
                 this.closeModal();
-            }, error => {this.alertService.error(error._body); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error._body); this.loading = false; this.cdr.markForCheck(); });
 
 
         }
@@ -139,7 +145,8 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
                   .pipe(this.untilDestroyed())
                   .subscribe(categorias => { 
                     this.categorias = categorias;
-                }, error => {this.alertService.error(error); });
+                    this.cdr.markForCheck();
+                }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
             }
             this.openModal(template, null);
         }
@@ -156,7 +163,8 @@ export class BodegaComponent extends BasePaginatedModalComponent implements OnIn
                 this.productos = productos;
                 this.loading = false; this.filtrado = true;
                 this.closeModal();
-            }, error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
 
         }
 

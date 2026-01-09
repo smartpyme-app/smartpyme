@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './compra.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, CrearAbonoCompraComponent, LazyImageDirective],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CompraComponent extends BaseComponent implements OnInit {
 
@@ -30,7 +30,8 @@ export class CompraComponent extends BaseComponent implements OnInit {
 
     constructor( public apiService:ApiService, private alertService:AlertService, private sumPipe:SumPipe,
         private route: ActivatedRoute, private router: Router, private modalService: BsModalService,
-        private location: Location
+        private location: Location,
+        private cdr: ChangeDetectorRef
     ) {
         super();
         // this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -54,10 +55,12 @@ export class CompraComponent extends BaseComponent implements OnInit {
                 next: (compra) => {
                     this.compra = compra;
                     this.loading = false;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
     }

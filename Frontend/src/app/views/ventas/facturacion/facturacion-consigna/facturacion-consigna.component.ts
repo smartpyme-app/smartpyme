@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, ViewChild, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, ViewChild, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -19,7 +19,7 @@ import { LazyImageDirective } from '../../../../directives/lazy-image.directive'
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, LazyImageDirective],
     providers: [SumPipe],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 
 export class FacturacionConsignaComponent extends BaseModalComponent implements OnInit {
@@ -37,6 +37,8 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
     public imprimir:boolean = false;
 
     
+    private cdr = inject(ChangeDetectorRef);
+
 	constructor( 
 	    public apiService: ApiService,
         protected override alertService: AlertService,
@@ -64,7 +66,8 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                             this.loading = false;
                             this.cargarDocumentos();
                             this.cargarDatos();
-                        }, error => {this.alertService.error(error); this.loading = false;});
+                            this.cdr.markForCheck();
+                        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
                 }else{
                     this.venta = {};
                     this.venta.id_empresa = this.apiService.auth_user().id_empresa;
@@ -79,32 +82,37 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
             .pipe(this.untilDestroyed())
             .subscribe(sucursales => {
                 this.sucursales = sucursales;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('usuarios/list')
             .pipe(this.untilDestroyed())
             .subscribe(usuarios => {
                 this.usuarios = usuarios;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('bancos/list')
             .pipe(this.untilDestroyed())
             .subscribe(bancos => {
                 this.bancos = bancos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('formas-de-pago/list')
             .pipe(this.untilDestroyed())
             .subscribe(formaPagos => {
                 this.formaPagos = formaPagos;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('canales/list')
             .pipe(this.untilDestroyed())
             .subscribe(canales => {
                 this.canales = canales;
                 this.venta.id_canal = this.canales[0].id;
-            }, error => {this.alertService.error(error);});
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 
         this.apiService.getAll('impuestos')
             .pipe(this.untilDestroyed())
@@ -112,8 +120,9 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                 this.impuestos = impuestos;
                 this.venta.impuestos = this.impuestos;
                 this.sumTotal();
+                this.cdr.markForCheck();
 
-            }, error => {this.alertService.error(error);});
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
     
     public cargarDocumentos(){
@@ -131,8 +140,9 @@ export class FacturacionConsignaComponent extends BaseModalComponent implements 
                     this.venta.id_documento = documentos[0].id;
                     this.venta.correlativo = documentos[0].correlativo;
                 }
+                this.cdr.markForCheck();
 
-            }, error => {this.alertService.error(error);});
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public updateTotal(detalle:any){

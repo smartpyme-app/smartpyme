@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -24,7 +24,7 @@ declare var $:any;
     templateUrl: './compras.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
@@ -63,7 +63,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         private router: Router, 
         private route: ActivatedRoute,
         private sharedDataService: SharedDataService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'compra',
@@ -122,6 +123,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             };
 
             this.filtrarCompras();
+            this.cdr.markForCheck();
         });
 
         this.getNumsIds();
@@ -130,6 +132,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: (proveedores) => {
                     this.proveedores = proveedores;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -193,7 +196,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                 if(this.modalRef){
                     this.closeModal();
                 }
-            }, error => {this.alertService.error(error); });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -234,6 +238,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: (compraCompleta) => {
                     this.loading = false;
+                    this.cdr.markForCheck();
 
                     // Cargar datos auxiliares
                     if(!this.proyectos.length && this.apiService.auth_user().empresa.modulo_proyectos){
@@ -242,6 +247,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                             .subscribe({
                                 next: (proyectos) => {
                                     this.proyectos = proyectos;
+                                    this.cdr.markForCheck();
                                 },
                                 error: (error) => {
                                     this.alertService.error(error);
@@ -254,6 +260,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                         .subscribe({
                             next: (documentos) => {
                                 this.documentos = documentos;
+                                this.cdr.markForCheck();
                             },
                             error: (error) => {
                                 this.alertService.error(error);
@@ -266,6 +273,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                             .subscribe({
                                 next: (formaPagos) => {
                                     this.formaPagos = formaPagos;
+                                    this.cdr.markForCheck();
                                 },
                                 error: (error) => {
                                     this.alertService.error(error);
@@ -279,6 +287,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                             .subscribe({
                                 next: (usuarios) => {
                                     this.usuarios = usuarios;
+                                    this.cdr.markForCheck();
                                 },
                                 error: (error) => {
                                     this.alertService.error(error);
@@ -322,7 +331,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe(compra => {
                 this.compra = {};
                 this.alertService.success('Compra guardada', 'La compra se marco como recurrente exitosamente.');
-            },error => {this.alertService.error(error); this.saving = false; });
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
 
     }
 
@@ -347,7 +357,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloadingCompras = false; this.saving = false;
-          }, (error) => {this.alertService.error(error); this.downloadingCompras = false; this.saving = false;}
+            this.cdr.markForCheck();
+          }, (error) => {this.alertService.error(error); this.downloadingCompras = false; this.saving = false; this.cdr.markForCheck();}
         );
     }
 
@@ -366,7 +377,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloadingDetalles = false; this.saving = false;
-          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; }
+            this.cdr.markForCheck();
+          }, (error) => {this.alertService.error(error); this.downloadingDetalles = false; this.saving = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -383,6 +395,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: (documentos) => {
                     this.documentos = documentos;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -395,6 +408,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                 .subscribe({
                     next: (formaPagos) => {
                         this.formaPagos = formaPagos;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
@@ -408,6 +422,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                 .subscribe({
                     next: (sucursales) => {
                         this.sucursales = sucursales;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
@@ -421,6 +436,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                 .subscribe({
                     next: (usuarios) => {
                         this.usuarios = usuarios;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
@@ -434,6 +450,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
                 .subscribe({
                     next: (proyectos) => {
                         this.proyectos = proyectos;
+                        this.cdr.markForCheck();
                     },
                     error: (error) => {
                         this.alertService.error(error);
@@ -486,7 +503,8 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
             setTimeout(()=>{
                 this.closeModal();
             },5000);
-        },error => {this.alertService.error(error); this.sending = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.sending = false; this.cdr.markForCheck(); });
     }
 
     anularDTE(compra:any){
@@ -618,6 +636,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         .pipe(this.untilDestroyed())
         .subscribe(numsIds => {
             this.numeros_ids = numsIds;
+            this.cdr.markForCheck();
         }, error => {this.alertService.error(error); });
   }
 
@@ -626,6 +645,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
         .pipe(this.untilDestroyed())
         .subscribe(compra => {
       this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+      this.cdr.markForCheck();
     },error => {this.alertService.error(error);});
   }
 
@@ -635,6 +655,7 @@ export class ComprasComponent extends BaseCrudComponent<any> implements OnInit {
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);

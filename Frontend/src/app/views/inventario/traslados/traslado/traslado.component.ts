@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseModalComponent } from '@shared/base/base-modal.component';
     templateUrl: './traslado.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TrasladoComponent extends BaseModalComponent implements OnInit {
 
@@ -34,7 +34,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 	    protected override alertService: AlertService,
 	    protected override modalManager: ModalManagerService,
 	    private route: ActivatedRoute, 
-	    private router: Router
+	    private router: Router,
+	    private cdr: ChangeDetectorRef
     ) { 
         super(modalManager, alertService);
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -49,7 +50,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
             this.traslado.id_bodega_de = this.bodegas[0].id;
             this.traslado.id_bodega = this.bodegas[1].id;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
 	}
 
@@ -70,7 +72,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
             this.apiService.read('traslado/', id).pipe(this.untilDestroyed()).subscribe(traslado => {
 	            this.traslado = traslado;
             	this.loading = false;
-            }, error => {this.alertService.error(error); this.loading = false; });
+            	this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
         }
 	}
 
@@ -78,7 +81,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 		if(!this.productos.length){
 		    this.apiService.getAll('productos/list').pipe(this.untilDestroyed()).subscribe(productos => {
 		        this.productos = productos;
-		    }, error => {this.alertService.error(error);});
+		        this.cdr.markForCheck();
+		    }, error => {this.alertService.error(error); this.cdr.markForCheck();});
 		}
         super.openModal(template);
     }
@@ -108,6 +112,7 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 		this.detalle = {};
         this.alertService.modal = false;
         this.closeModal();
+        this.cdr.markForCheck();
 	}
 
 	public async onSubmit() {
@@ -118,10 +123,13 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
                 .toPromise();
             
             this.router.navigateByUrl('/traslados');
+            this.cdr.markForCheck();
         } catch (error: any) {
             this.alertService.error(error);
+            this.cdr.markForCheck();
         } finally {
             this.saving = false;
+            this.cdr.markForCheck();
         }
     }
 
@@ -136,7 +144,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
     	    this.apiService.store('traslado/detalle', this.detalle).pipe(this.untilDestroyed()).subscribe(data => {
     	    	this.detalle = {};
     			this.saving = false;
-    		}, error => {this.alertService.error(error); this.saving = false; });
+    			this.cdr.markForCheck();
+    		}, error => {this.alertService.error(error); this.saving = false; this.cdr.markForCheck(); });
         }
         this.alertService.modal = false;
         this.closeModal();
@@ -166,7 +175,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 						}
 					}
 		        	this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
-	        	}, error => {this.alertService.error(error); });
+		        	this.cdr.markForCheck();
+	        	}, error => {this.alertService.error(error); this.cdr.markForCheck(); });
 			}else{
 				for (var i = 0; i < this.traslado.detalles.length; ++i) {
 					if (this.traslado.detalles[i].id_producto === detalle.id_producto ){
@@ -174,6 +184,7 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 					}
 				}
 	        	this.alertService.success('Detalle eliminado', 'El detalle fue eliminado exitosamente.');
+	        	this.cdr.markForCheck();
 			}
 		}
 	}
@@ -185,7 +196,8 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 		    this.apiService.getAll('traslados/requisicion/' + this.traslado.id_origen + '/' + this.traslado.id_destino).pipe(this.untilDestroyed()).subscribe(productos => {
 		       this.productos = productos;
 		       this.loading = false;
-			}, error => {this.alertService.error(error);this.loading = false;});
+		       this.cdr.markForCheck();
+			}, error => {this.alertService.error(error);this.loading = false; this.cdr.markForCheck();});
 
 	        super.openLargeModal(template);
 	    }
@@ -196,6 +208,7 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 					this.productos.splice(i, 1);
 				}
 			}
+			this.cdr.markForCheck();
 	    }
 
 	    agregarProductos(){
@@ -203,6 +216,7 @@ export class TrasladoComponent extends BaseModalComponent implements OnInit {
 	    		this.traslado.detalles = this.productos;
 	    		this.alertService.modal = false;
 	    		this.closeModal();
+	    		this.cdr.markForCheck();
 	    	}
 	    }
 

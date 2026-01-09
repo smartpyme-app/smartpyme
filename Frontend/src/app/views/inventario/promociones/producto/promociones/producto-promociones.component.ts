@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input, inject } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -17,7 +17,7 @@ declare var $:any;
     templateUrl: './producto-promociones.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductoPromocionesComponent extends BaseModalComponent implements OnInit {
 
@@ -29,7 +29,8 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
         protected override alertService: AlertService,
         protected override modalManager: ModalManagerService,
     	private route: ActivatedRoute, 
-    	private router: Router
+    	private router: Router,
+        private cdr: ChangeDetectorRef
     ){
         super(modalManager, alertService);
     }
@@ -55,6 +56,7 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
         this.promocion.producto_id = this.producto.id;
         console.log(this.promocion);
         this.loading = true;
+        this.cdr.markForCheck();
         this.apiService.store('producto/promocion', this.promocion).pipe(this.untilDestroyed()).subscribe(promocion => {
             if(!this.promocion.id) {
                 this.promocion.id = promocion.id;
@@ -62,8 +64,9 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
             }
             this.promocion = {};
             this.loading = false;
+            this.cdr.markForCheck();
             this.closeModal();
-        },error => {this.alertService.error(error); this.loading = false;});
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
     }
 
     deletePromocion(promocion:any){
@@ -74,7 +77,8 @@ export class ProductoPromocionesComponent extends BaseModalComponent implements 
                         this.producto.promociones.splice(i, 1);
                     }
                 }
-            },error => {this.alertService.error(error); this.loading = false;});
+                this.cdr.markForCheck();
+            },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck();});
         }
     }
 

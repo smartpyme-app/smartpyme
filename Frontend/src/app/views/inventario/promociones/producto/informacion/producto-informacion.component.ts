@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef, Input } from '@angular/core';
+import { Component, OnInit, TemplateRef, Input, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -16,7 +16,7 @@ import { BaseComponent } from '@shared/base/base.component';
     templateUrl: './producto-informacion.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, TagInputModule],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductoInformacionComponent extends BaseComponent implements OnInit {
 
@@ -32,6 +32,7 @@ export class ProductoInformacionComponent extends BaseComponent implements OnIni
         protected alertService: AlertService,
         private route: ActivatedRoute, 
         private router: Router,
+        private cdr: ChangeDetectorRef
     ) {
         super();
         this.router.routeReuseStrategy.shouldReuseRoute = function() {return false; };
@@ -42,11 +43,13 @@ export class ProductoInformacionComponent extends BaseComponent implements OnIni
 
         this.apiService.getAll('categorias').pipe(this.untilDestroyed()).subscribe(categorias => {
             this.categorias = categorias;
-        }, error => {this.alertService.error(error);});
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.cdr.markForCheck();});
         this.apiService.getAll('bodegas').pipe(this.untilDestroyed()).subscribe(bodegas => {
             this.bodegas = bodegas;
             this.loading = false;
-        }, error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
 
     }
 
@@ -63,7 +66,8 @@ export class ProductoInformacionComponent extends BaseComponent implements OnIni
                 this.router.navigate(['/producto/'+ producto.id]);
             }
             this.alertService.success("Producto guardado", "El producto fue guardado exitosamente");
-        },error => {this.alertService.error(error); this.loading = false; });
+            this.cdr.markForCheck();
+        },error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public barcode(){

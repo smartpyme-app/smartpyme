@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -20,7 +20,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './empleados.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, PopoverModule, TooltipModule, PaginationComponent, VerHistorialButtonComponent, NotificacionesContainerComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit {
   public empleados:any = {};
@@ -38,7 +38,8 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
     apiService: ApiService,
     alertService: AlertService,
     modalManager: ModalManagerService,
-    private funcionalidadesService: FuncionalidadesService
+    private funcionalidadesService: FuncionalidadesService,
+    private cdr: ChangeDetectorRef
   ) {
     super(apiService, alertService, modalManager, {
       endpoint: 'empleados',
@@ -71,10 +72,12 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
       .subscribe({
         next: (acceso) => {
           this.contabilidadHabilitada = acceso;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error al verificar acceso a contabilidad:', error);
           this.contabilidadHabilitada = false;
+          this.cdr.markForCheck();
         }
       });
   }
@@ -109,10 +112,12 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
             next: (empleados) => {
                 this.empleados = empleados;
                 this.loading = false;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
                 this.loading = false;
+                this.cdr.markForCheck();
             }
         });
   }
@@ -123,9 +128,11 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
         .subscribe({
             next: (departamentos) => {
                 this.departamentos = departamentos;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         });
 
@@ -134,9 +141,11 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
         .subscribe({
             next: (cargos) => {
                 this.cargos = cargos;
+                this.cdr.markForCheck();
             },
             error: (error) => {
                 this.alertService.error(error);
+                this.cdr.markForCheck();
             }
         });
   }
@@ -172,10 +181,13 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
           'Empleado'
       );
       this.loadEmpleados();
+      this.cdr.markForCheck();
     } catch (error: any) {
       this.alertService.error(error);
+      this.cdr.markForCheck();
     } finally {
       this.saving = false;
+      this.cdr.markForCheck();
     }
   }
 
@@ -231,6 +243,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
         return;
       }
       this.empleado.documento_respaldo = file;
+      this.cdr.markForCheck();
     }
   }
 
@@ -256,6 +269,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
         return;
       }
       this.datosImportacion.archivo = file;
+      this.cdr.markForCheck();
     }
   }
 
@@ -302,6 +316,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
                 this.loadEmpleados();
                 this.procesandoImportacion = false;
                 this.datosImportacion.archivo = null;
+                this.cdr.markForCheck();
                 
                 // Mostrar errores si los hay
                 if (response.data?.errores && response.data.errores.length > 0) {
@@ -314,6 +329,7 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
             error: (error) => {
                 this.alertService.error(error);
                 this.procesandoImportacion = false;
+                this.cdr.markForCheck();
             },
         });
   }
@@ -385,10 +401,12 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
             'Empleado dado de baja correctamente'
           );
           this.loadEmpleados();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -430,10 +448,12 @@ export class EmpleadosComponent extends BaseCrudComponent<any> implements OnInit
             'Empleado dado de alta correctamente'
           );
           this.loadEmpleados();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.alertService.error(error);
           this.saving = false;
+          this.cdr.markForCheck();
         },
       });
   }

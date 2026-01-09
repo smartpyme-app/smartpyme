@@ -1,4 +1,4 @@
-import { Component, OnInit, TemplateRef } from '@angular/core';
+import { Component, OnInit, TemplateRef, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -23,7 +23,7 @@ import { LazyImageDirective } from '../../../directives/lazy-image.directive';
     templateUrl: './gastos.component.html',
     standalone: true,
     imports: [CommonModule, RouterModule, FormsModule, NgSelectModule, TruncatePipe, PopoverModule, TooltipModule, PaginationComponent, CrearAbonoGastoComponent, LazyImageDirective],
-
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 
 export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
@@ -51,7 +51,8 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
         private router: Router,
         private route: ActivatedRoute,
         private modalService: BsModalService,
-        private funcionalidadesService: FuncionalidadesService
+        private funcionalidadesService: FuncionalidadesService,
+        private cdr: ChangeDetectorRef
     ){
         super(apiService, alertService, modalManager, {
             endpoint: 'gasto',
@@ -107,18 +108,21 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             };
 
             this.filtrarGastos();
+            this.cdr.markForCheck();
         });
 
         this.apiService.getAll('proveedores/list')
             .pipe(this.untilDestroyed())
             .subscribe(proveedores => {
                 this.proveedores = proveedores;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
 
         this.apiService.getAll('area-empresa/list')
             .pipe(this.untilDestroyed())
             .subscribe(areas => {
                 this.areas = areas;
+                this.cdr.markForCheck();
             }, error => {this.alertService.error(error); });
     }
 
@@ -177,7 +181,8 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 this.gastos = gastos;
                 this.loading = false;
                 this.closeModal();
-            }, error => {this.alertService.error(error); this.loading = false; });
+                this.cdr.markForCheck();
+            }, error => {this.alertService.error(error); this.loading = false; this.cdr.markForCheck(); });
     }
 
     public setOrden(columna: string) {
@@ -253,7 +258,8 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
             this.downloading = false;
-          }, (error) => { this.alertService.error(error); this.downloading = false; }
+            this.cdr.markForCheck();
+          }, (error) => { this.alertService.error(error); this.downloading = false; this.cdr.markForCheck(); }
         );
     }
 
@@ -263,6 +269,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 .pipe(this.untilDestroyed())
                 .subscribe(sucursales => {
                     this.sucursales = sucursales;
+                    this.cdr.markForCheck();
                 }, error => {this.alertService.error(error); });
         }
 
@@ -271,6 +278,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                 .pipe(this.untilDestroyed())
                 .subscribe(usuarios => {
                     this.usuarios = usuarios;
+                    this.cdr.markForCheck();
                 }, error => {this.alertService.error(error); });
         }
 
@@ -281,6 +289,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                  .pipe(this.untilDestroyed())
                  .subscribe(proyectos => {
                      this.proyectos = proyectos;
+                     this.cdr.markForCheck();
                  }, error => {this.alertService.error(error); });
          }
 
@@ -297,6 +306,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: (numsIds) => {
                     this.numeros_ids = numsIds;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -346,6 +356,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
                     setTimeout(() => {
                         this.closeModal();
                     }, 5000);
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -434,6 +445,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: () => {
                     this.alertService.success('Partida generada.', 'La partida contable fue generada exitosamente.');
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     this.alertService.error(error);
@@ -447,6 +459,7 @@ export class GastosComponent extends BaseCrudComponent<any> implements OnInit {
             .subscribe({
                 next: (acceso) => {
                     this.contabilidadHabilitada = acceso;
+                    this.cdr.markForCheck();
                 },
                 error: (error) => {
                     console.error('Error al verificar acceso a contabilidad:', error);

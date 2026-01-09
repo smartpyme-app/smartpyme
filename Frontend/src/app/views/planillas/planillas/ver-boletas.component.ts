@@ -1,4 +1,4 @@
-import { Component, OnInit, DestroyRef, inject } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,7 +27,7 @@ import { subscriptionHelper } from '@shared/utils/subscription.helper';
       }
     `,
     ],
-    
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VerBoletasComponent implements OnInit {
   public planillaId: number;
@@ -36,6 +36,7 @@ export class VerBoletasComponent implements OnInit {
   public loading: boolean = false;
   private destroyRef = inject(DestroyRef);
   private untilDestroyed = subscriptionHelper(this.destroyRef);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     private route: ActivatedRoute,
@@ -65,24 +66,29 @@ export class VerBoletasComponent implements OnInit {
     this.apiService.getAll('planillas/detalles', params).pipe(this.untilDestroyed()).subscribe({
       next: (response) => {
         this.planilla = response;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error(error);
+        this.cdr.markForCheck();
       }
     });
 }
 
   cargarBoletas() {
     this.loading = true;
+    this.cdr.markForCheck();
     this.apiService.generatePayrollSlips(this.planillaId).pipe(this.untilDestroyed()).subscribe({
       next: (response: Blob) => {
         const url = URL.createObjectURL(response);
         this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.alertService.error('Error al cargar las boletas');
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
