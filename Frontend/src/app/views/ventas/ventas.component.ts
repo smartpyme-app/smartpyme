@@ -315,6 +315,14 @@ export class VentasComponent implements OnInit {
     }
 
     public onSubmit() {
+        // Normalizar campos que pueden venir como cadena vacía a null
+        if (this.venta.id_vendedor === '' || this.venta.id_vendedor === 'Todos' || this.venta.id_vendedor === null || this.venta.id_vendedor === undefined) {
+            this.venta.id_vendedor = null;
+        } else {
+            // Convertir a número si tiene valor
+            this.venta.id_vendedor = +this.venta.id_vendedor;
+        }
+        
         this.saving = true;
         this.apiService.store('venta', this.venta).subscribe(venta => {
             this.venta = {};
