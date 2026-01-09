@@ -182,6 +182,11 @@ class VentasController extends Controller
     {
 
         $venta = Venta::where('id', $id)->with('devoluciones', 'detalles.composiciones', 'detalles.vendedor', 'detalles.producto', 'abonos.usuario', 'cliente', 'impuestos.impuesto', 'metodos_de_pago')->first();
+        
+        if (!$venta) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
+        
         $venta->saldo = $venta->saldo;
         return Response()->json($venta, 200);
     }
@@ -317,13 +322,18 @@ class VentasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'id'                => 'required|numeric',
             'fecha'             => 'required',
             'estado'            => 'required',
             'id_usuario'        => 'required',
         ]);
 
-
-        $venta = Venta::where('id', $request->id)->with('detalles')->firstOrFail();
+        // Buscar la venta respetando el scope global de empresa
+        $venta = Venta::where('id', $request->id)->with('detalles')->first();
+        
+        if (!$venta) {
+            return response()->json(['error' => 'No se encontro ningun registro.', 'code' => 404], 404);
+        }
 
         // Ajustar stocks
         foreach ($venta->detalles as $detalle) {
