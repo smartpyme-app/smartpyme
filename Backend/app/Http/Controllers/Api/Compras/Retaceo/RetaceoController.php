@@ -16,6 +16,7 @@ use App\Models\Compras\Retaceo\RetaceoGasto;
 use App\Models\Inventario\Inventario;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class RetaceoController extends Controller
 {
@@ -106,6 +107,7 @@ class RetaceoController extends Controller
             $retaceo->id_sucursal = $request->id_sucursal;
             $retaceo->id_bodega = $compra->id_bodega;
             $retaceo->id_usuario = $request->id_usuario;
+            $retaceo->estado = $request->estado ?? 'Pendiente';
             $retaceo->save();
 
             // Guardar los gastos
@@ -257,7 +259,7 @@ class RetaceoController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:retaceos,id',
-            'estado' => 'required|in:Borrador,Aplicado,Anulado',
+            'estado' => 'required|in:Pendiente,Aplicado,Anulado',
         ]);
 
         if ($validator->fails()) {
@@ -270,8 +272,12 @@ class RetaceoController extends Controller
             $retaceo = Retaceo::findOrFail($request->id);
 
             // Validar transiciones de estado
-            if ($retaceo->estado === 'Aplicado' && $request->estado === 'Borrador') {
-                return response()->json(['error' => 'No se puede cambiar de Aplicado a Borrador'], 422);
+            if ($retaceo->estado === 'Aplicado' && $request->estado === 'Pendiente') {
+                return response()->json(['error' => 'No se puede cambiar de Aplicado a Pendiente'], 422);
+            }
+
+            if ($retaceo->estado === 'Anulado') {
+                return response()->json(['error' => 'Un retaceo anulado no puede cambiar de estado'], 422);
             }
 
             $estadoAnterior = $retaceo->estado;
@@ -403,5 +409,25 @@ class RetaceoController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Imprimir retaceo
+     */
+    public function imprimir($id)
+    {
+        $retaceo = Retaceo::with([
+            'compra.proveedor',
+            'compra.empresa',
+            'gastos.gasto',
+            'distribucion.producto',
+            'empresa',
+            'sucursal',
+            'usuario'
+        ])->findOrFail($id);
+
+        $pdf = PDF::loadView('reportes.compras.retaceo', compact('retaceo'));
+        $pdf->setPaper('US Letter', 'portrait');
+        return $pdf->stream('retaceo-' . $retaceo->codigo . '.pdf');
     }
 }

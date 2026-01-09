@@ -36,7 +36,7 @@ class Retaceo extends Model
     ];
 
     protected $attributes = [
-        'estado' => 'Borrador'
+        'estado' => 'Pendiente'
     ];
 
     protected static function boot()

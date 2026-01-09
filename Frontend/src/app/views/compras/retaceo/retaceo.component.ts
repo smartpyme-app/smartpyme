@@ -713,7 +713,7 @@ export class RetaceoComponent implements OnInit {
 
     // Confirmar el cambio de estado
     let mensaje = nuevoEstado === 'Aplicado'
-      ? 'Esta acción aplicará los nuevos costos a los productos en inventario. ¿Desea continuar?'
+      ? 'Esta acción aplicará el retaceo y los nuevos costos serán aplicados a los productos en inventario. ¿Desea continuar?'
       : 'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
 
     Swal.fire({

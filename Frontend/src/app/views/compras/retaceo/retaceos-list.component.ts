@@ -157,4 +157,69 @@ export class RetaceosListComponent implements OnInit {
       );
   }
 
+  imprimir(retaceo: any) {
+    window.open(this.apiService.baseUrl + '/api/retaceo/imprimir/' + retaceo.id + '?token=' + this.apiService.auth_token());
+  }
+
+  cambiarEstado(retaceo: any) {
+    const estadoAnterior = retaceo.estado;
+    
+    // Validar transiciones de estado
+    if (retaceo.estado === 'Anulado') {
+      this.alertService.warning('Un retaceo anulado no puede cambiar de estado', 'Cambio de estado');
+      retaceo.estado = estadoAnterior;
+      return;
+    }
+
+    // Confirmar el cambio de estado
+    let mensaje = '';
+    if (retaceo.estado === 'Aplicado') {
+      mensaje = 'Esta acción aplicará el retaceo y los costos serán aplicados. ¿Desea continuar?';
+    } else if (retaceo.estado === 'Anulado') {
+      mensaje = 'Esta acción anulará el retaceo y los costos no serán aplicados. ¿Desea continuar?';
+    } else {
+      mensaje = '¿Desea cambiar el estado del retaceo?';
+    }
+
+    Swal.fire({
+      title: 'Cambiar estado',
+      text: mensaje,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.actualizarEstado(retaceo);
+      } else {
+        // Revertir el cambio si el usuario cancela
+        retaceo.estado = estadoAnterior;
+      }
+    });
+  }
+
+  actualizarEstado(retaceo: any) {
+    this.loading = true;
+
+    const datosActualizacion = {
+      id: retaceo.id,
+      estado: retaceo.estado,
+    };
+
+    this.apiService.store('retaceo/estado', datosActualizacion).subscribe(
+      (response) => {
+        this.alertService.success('Estado actualizado correctamente', 'Cambio de estado');
+        this.loading = false;
+        // Recargar los retaceos para asegurar que los datos estén actualizados
+        this.cargarRetaceos();
+      },
+      (error) => {
+        this.alertService.error(error);
+        this.loading = false;
+        // Revertir el estado en caso de error
+        this.cargarRetaceos();
+      }
+    );
+  }
+
 }

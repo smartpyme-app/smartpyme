@@ -65,13 +65,21 @@
               <td>{{ retaceo.fecha | date:'dd/MM/yyyy' }}</td>
               <td>{{ retaceo.total_retaceado | currency:'USD':'symbol':'1.2' }}</td>
               <td>
-                <span class="badge" [ngClass]="{
-                  'bg-success': retaceo.estado === 'Aplicado',
-                  'bg-warning': retaceo.estado === 'Pendiente',
-                  'bg-danger': retaceo.estado === 'Anulado'
-                }">
-                  {{ retaceo.estado }}
-                </span>
+                <select 
+                  class="form-select form-select-sm" 
+                  [(ngModel)]="retaceo.estado" 
+                  (change)="cambiarEstado(retaceo)"
+                  [disabled]="retaceo.estado === 'Anulado'"
+                  [ngClass]="{
+                    'border-success': retaceo.estado === 'Aplicado',
+                    'border-warning': retaceo.estado === 'Pendiente',
+                    'border-danger': retaceo.estado === 'Anulado'
+                  }"
+                  style="min-width: 120px;">
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Aplicado">Aplicado</option>
+                  <option value="Anulado">Anulado</option>
+                </select>
               </td>
               <td class="text-center">
                 <span class="btn" [popover]="accionesTemplate" [outsideClick]="true" tooltip="Acciones">
@@ -81,6 +89,9 @@
                   <div class="list-group border-0">
                     <a routerLink="/retaceo/{{retaceo.id}}" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-magnifying-glass"></i>Ver detalles
+                    </a>
+                    <a (click)="imprimir(retaceo)" class="list-group-item list-group-item-action border-0 click">
+                      <i class="fa fa-fw fa-print"></i>Imprimir
                     </a>
                     <a *ngIf="apiService.canEdit()" (click)="eliminarRetaceo(retaceo.id)" class="list-group-item list-group-item-action border-0 click">
                       <i class="fa fa-fw fa-trash"></i>Eliminar
@@ -130,9 +141,9 @@
                   <label for="filtros.estado">Estado:</label>
                   <select [(ngModel)]="filtros.estado" class="form-control form-select" name="filtros.estado">
                       <option value="">Todos</option>
-                      <option value="Aplicado">Aplicados</option>
                       <option value="Pendiente">Pendientes</option>
-                      <option value="Anulada">Anuladas</option>
+                      <option value="Aplicado">Aplicados</option>
+                      <option value="Anulado">Anulados</option>
                   </select>
               </div>
               <div class="form-group col-sm-6">
