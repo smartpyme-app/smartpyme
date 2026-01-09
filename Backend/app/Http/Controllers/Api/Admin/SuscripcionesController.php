@@ -62,6 +62,16 @@ class SuscripcionesController extends Controller
                         $query->whereDate('fecha_ultimo_pago', '<=', $request->pago_fin);
                     });
                 })
+                ->when($request->fecha_pago_inicio, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '>=', $request->fecha_pago_inicio);
+                    });
+                })
+                ->when($request->fecha_pago_fin, function ($q) use ($request) {
+                    return $q->whereHas('suscripcion', function ($query) use ($request) {
+                        $query->whereDate('fecha_proximo_pago', '<=', $request->fecha_pago_fin);
+                    });
+                })
                 ->when($request->plan, function ($q) use ($request) {
                     return $q->whereHas('suscripcion.plan', function ($query) use ($request) {
                         $query->where('nombre', $request->plan);

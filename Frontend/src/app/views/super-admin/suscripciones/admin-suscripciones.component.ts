@@ -141,6 +141,8 @@ export class AdminSuscripcionesComponent implements OnInit {
       direccion: 'desc',
       paginate: 10,
       campania: '',
+      fecha_pago_inicio: '',
+      fecha_pago_fin: '',
     };
 
     this.filtrarSuscripciones();
