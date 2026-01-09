@@ -142,17 +142,9 @@ class MHDTEController extends Controller
             $venta = Venta::where('id', $request->id)->firstOrFail();
         }
         
-        // Guardar los datos de anulación si vienen en el request
+        // Guardar solo la fecha de anulación si viene en el request
         if ($request->has('fecha_anulacion')) {
             $venta->fecha_anulacion = $request->fecha_anulacion;
-        }
-        if ($request->has('tipo_anulacion')) {
-            $venta->tipo_anulacion = $request->tipo_anulacion;
-        }
-        if ($request->has('motivo_anulacion')) {
-            $venta->motivo_anulacion = $request->motivo_anulacion;
-        }
-        if ($request->has('fecha_anulacion') || $request->has('tipo_anulacion') || $request->has('motivo_anulacion')) {
             $venta->save();
         }
         
@@ -233,15 +225,9 @@ class MHDTEController extends Controller
             $v = Venta::findOrFail($venta->id);
             $v->estado = 'Anulada';
             $v->dte_invalidacion = $DTEAnular;
-            // Guardar los datos de anulación si vienen en el request
+            // Guardar solo la fecha de anulación si viene en el request
             if ($request->has('fecha_anulacion')) {
                 $v->fecha_anulacion = $request->fecha_anulacion;
-            }
-            if ($request->has('tipo_anulacion')) {
-                $v->tipo_anulacion = $request->tipo_anulacion;
-            }
-            if ($request->has('motivo_anulacion')) {
-                $v->motivo_anulacion = $request->motivo_anulacion;
             }
             $v->save();
 

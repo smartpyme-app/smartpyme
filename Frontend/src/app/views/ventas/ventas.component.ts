@@ -42,13 +42,6 @@ export class VentasComponent implements OnInit, OnDestroy {
   
   // Campos para anulación
   public fechaAnulacion: string = '';
-  public tipoAnulacion: number = 2;
-  public motivoAnulacion: string = '';
-  public motivosAnulacion: any[] = [
-    { valor: 1, texto: 'Error en la Información del Documento Tributario Electrónico a invalidar' },
-    { valor: 2, texto: 'Rescindir de la operación realizada' },
-    { valor: 3, texto: 'Otro' }
-  ];
   public filtrosAcumulado: any = {
     inicio: '',
     fin: '',
@@ -775,21 +768,12 @@ export class VentasComponent implements OnInit, OnDestroy {
     this.venta = { ...venta }; // Crear copia para no modificar el original
     // Inicializar valores por defecto
     this.fechaAnulacion = this.apiService.date();
-    this.tipoAnulacion = 2;
-    this.motivoAnulacion = '';
     this.venta.errores = null; // Limpiar errores previos
     this.saving = false; // Asegurar que saving esté en false
     this.modalRef = this.modalService.show(template, {
       class: 'modal-md',
       backdrop: 'static'
     });
-  }
-
-  onTipoAnulacionChange() {
-    // Limpiar el motivo cuando se cambia el tipo, excepto si es tipo 3
-    if (this.tipoAnulacion != 3) {
-      this.motivoAnulacion = '';
-    }
   }
 
   anularDTE(venta: any) {
@@ -812,29 +796,10 @@ export class VentasComponent implements OnInit, OnDestroy {
       this.alertService.error('Debe seleccionar una fecha de anulación.');
       return;
     }
-    if (!this.tipoAnulacion) {
-      this.alertService.error('Debe seleccionar un tipo de anulación.');
-      return;
-    }
-    if (this.tipoAnulacion == 3 && !this.motivoAnulacion) {
-      this.alertService.error('Debe ingresar el motivo de anulación.');
-      return;
-    }
-
-    // Si el tipo no es 3, usar el texto predeterminado según el tipo
-    let motivoTexto = '';
-    if (this.tipoAnulacion == 1) {
-      motivoTexto = 'Error en la Información del Documento Tributario Electrónico a invalidar.';
-    } else if (this.tipoAnulacion == 2) {
-      motivoTexto = 'Se rescinde la operación.';
-    } else {
-      motivoTexto = this.motivoAnulacion;
-    }
 
     // Asignar valores a la venta
+    // Usar valores por defecto para tipo y motivo según Hacienda
     this.venta.fecha_anulacion = this.fechaAnulacion;
-    this.venta.tipo_anulacion = this.tipoAnulacion;
-    this.venta.motivo_anulacion = motivoTexto;
     this.venta.errores = null; // Limpiar errores previos
 
     this.saving = true;
@@ -856,6 +821,17 @@ export class VentasComponent implements OnInit, OnDestroy {
             this.venta.dte_invalidacion.sello = dte.selloRecibido;
             this.venta.sello_mh = dte.selloRecibido;
             this.venta.estado = 'Anulada';
+            
+            // Cerrar el modal primero
+            if (this.modalRef) {
+              this.modalRef.hide();
+            }
+            
+            // Limpiar el estado del modal
+            this.saving = false;
+            this.venta.errores = null;
+            
+            // Guardar la venta
             this.onSubmit();
             
             // Actualizar la venta en el listado
@@ -869,7 +845,7 @@ export class VentasComponent implements OnInit, OnDestroy {
                 this.enviarDTE(this.venta);
               }, 3000);
             }
-            this.modalRef.hide();
+            
             this.alertService.success('DTE anulado.', 'El DTE fue anulado exitosamente.');
           } else {
             this.venta.errores = dte;

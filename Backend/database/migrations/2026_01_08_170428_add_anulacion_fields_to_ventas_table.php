@@ -15,8 +15,6 @@ class AddAnulacionFieldsToVentasTable extends Migration
     {
         Schema::table('ventas', function (Blueprint $table) {
             $table->date('fecha_anulacion')->nullable()->after('fecha_pago');
-            $table->integer('tipo_anulacion')->nullable()->after('fecha_anulacion');
-            $table->text('motivo_anulacion')->nullable()->after('tipo_anulacion');
         });
     }
 
@@ -28,7 +26,7 @@ class AddAnulacionFieldsToVentasTable extends Migration
     public function down()
     {
         Schema::table('ventas', function (Blueprint $table) {
-            $table->dropColumn(['fecha_anulacion', 'tipo_anulacion', 'motivo_anulacion']);
+            $table->dropColumn(['fecha_anulacion']);
         });
     }
 }
